@@ -63,7 +63,7 @@ public class ShowTypeNotionSyncService implements INotionSyncService {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Show Types");
+        String databaseId = notionHandler.getDatabaseId("Show Type");
         if (databaseId != null) {
           int processedCount = 0;
           int created = 0;

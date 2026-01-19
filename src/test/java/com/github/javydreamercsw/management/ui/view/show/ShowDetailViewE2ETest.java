@@ -95,7 +95,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     // Wait for the dialog to open
     WebElement dialog =
         wait.until(
-            ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+            ExpectedConditions.visibilityOfElementLocated(By.id("add-segment-dialog-layout")));
 
     // Fill in the form
     Assertions.assertNotNull(dialog);

@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +73,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     clickElement(createButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Find the components
     WebElement nameField =
@@ -91,8 +90,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(saveButton);
     clickElement(saveButton);
 
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Verify that the new wrestler appears in the grid
     wait.until(
@@ -110,55 +108,63 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testEditWrestler() {
+
     // Create a wrestler to edit
+
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Edit"));
+
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    // Find the menu for the wrestler and click it
-    WebElement menu =
+
+    // Find the menu for the wrestler
+
+    WebElement menuBar =
         wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath(
-                    "//vaadin-menu-bar[@id='action-menu-"
-                        + wrestler.getId()
-                        + "']/vaadin-menu-bar-button")));
-    Assertions.assertNotNull(menu);
-    clickElement(menu);
+            ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    // Find the "Edit" button for the wrestler and click it
-    WebElement editButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("edit-" + wrestler.getId())));
+    Assertions.assertNotNull(menuBar);
 
-    Assertions.assertNotNull(editButton);
-    clickElement(editButton);
+    // Select "Edit" from the menu
+
+    selectFromVaadinMenuBar(menuBar, "Edit");
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Find the editor's name field and change the value
+
     WebElement nameEditor =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
 
     Assertions.assertNotNull(nameEditor);
+
     nameEditor.sendKeys(" Updated", Keys.TAB);
 
     // Find the "Save" button and click it
+
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
+
     Assertions.assertNotNull(saveButton);
+
     clickElement(saveButton);
 
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Verify that the grid is updated
+
     wait.until(
         d -> {
           try {
+
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Edit Updated"));
+
           } catch (Exception e) {
+
             return false;
           }
         });
@@ -169,134 +175,155 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testDeleteWrestler() {
+
     // Create a wrestler to delete
+
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Delete"));
+
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
     long initialSize = wrestlerRepository.count();
 
-    // Find the menu for the wrestler and click it
-    WebElement menu =
+    // Find the menu for the wrestler
+
+    WebElement menuBar =
         wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath(
-                    "//vaadin-menu-bar[@id='action-menu-"
-                        + wrestler.getId()
-                        + "']/vaadin-menu-bar-button")));
-    Assertions.assertNotNull(menu);
-    clickElement(menu);
+            ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    // Find the "Delete" button for the wrestler and click it
-    WebElement deleteButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("delete-" + wrestler.getId())));
+    Assertions.assertNotNull(menuBar);
 
-    Assertions.assertNotNull(deleteButton);
-    clickElement(deleteButton);
+    // Select "Delete" from the menu
+
+    selectFromVaadinMenuBar(menuBar, "Delete");
 
     // Verify that the wrestler is removed from the grid
+
     wait.until(
         d -> {
           try {
+
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .noneMatch(it -> it.getText().equals("Delete"));
+
           } catch (Exception e) {
+
             return false;
           }
         });
+
     assertEquals(initialSize - 1, wrestlerRepository.count());
   }
 
   @Test
   void testAddBump() {
+
     // Create a wrestler
+
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Bump"));
+
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Find the menu for the wrestler and click it
-    WebElement menu =
+    // Find the menu for the wrestler
+
+    WebElement menuBar =
         wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath(
-                    "//vaadin-menu-bar[@id='action-menu-"
-                        + wrestler.getId()
-                        + "']/vaadin-menu-bar-button")));
-    Assertions.assertNotNull(menu);
-    clickElement(menu);
+            ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    // Find the "Add Bump" button for the wrestler and click it
-    WebElement addBumpButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("add-bump-" + wrestler.getId())));
+    Assertions.assertNotNull(menuBar);
 
-    Assertions.assertNotNull(addBumpButton);
-    clickElement(addBumpButton);
+    // Select "Add Bump" from the menu
+
+    selectFromVaadinMenuBar(menuBar, "Add Bump");
 
     // Verify that the bump count is updated
+
     wait.until(
         d -> {
           try {
+
             Assertions.assertNotNull(wrestler.getId());
+
             return wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps() == 1;
+
           } catch (Exception e) {
+
             return false;
           }
         });
+
     Assertions.assertNotNull(wrestler.getId());
+
     assertEquals(1, wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps());
   }
 
   @Test
   void testHealBump() {
+
     // Create a wrestler with a bump
+
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Heal Bump"));
+
     wrestler.addBump();
+
     wrestlerRepository.save(wrestler);
+
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Find the menu for the wrestler and click it
-    WebElement menu =
+    // Find the menu for the wrestler
+
+    WebElement menuBar =
         wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath(
-                    "//vaadin-menu-bar[@id='action-menu-"
-                        + wrestler.getId()
-                        + "']/vaadin-menu-bar-button")));
-    clickElement(menu);
+            ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    // Find the "Heal Bump" button for the wrestler and click it
-    WebElement healBumpButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("heal-bump-" + wrestler.getId())));
+    Assertions.assertNotNull(menuBar);
 
-    Assertions.assertNotNull(healBumpButton);
-    clickElement(healBumpButton);
+    // Select "Heal Bump" from the menu
+
+    selectFromVaadinMenuBar(menuBar, "Heal Bump");
 
     // Verify that the bump count is updated
+
     wait.until(
         d -> {
           try {
+
             Assertions.assertNotNull(wrestler.getId());
+
             return wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps() == 0;
+
           } catch (Exception e) {
+
             return false;
           }
         });
+
     Assertions.assertNotNull(wrestler.getId());
+
     assertEquals(0, wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps());
   }
 
   @Test
   void testManageInjuries() {
+
     // Create a wrestler
+
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Injuries"));
+
     // Create a couple of injuries for the wrestler
+
     injuryService.createInjury(
         wrestler.getId(),
         "Bruised Ribs",
         "Slightly bruised ribs.",
         InjurySeverity.MINOR,
         "Fell off the top rope.");
+
     Injury injuryToHeal =
         injuryService
             .createInjury(
@@ -308,98 +335,125 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             .get();
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Find the menu for the wrestler and click it
-    WebElement menu =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath(
-                    "//vaadin-menu-bar[@id='action-menu-"
-                        + wrestler.getId()
-                        + "']/vaadin-menu-bar-button")));
-    Assertions.assertNotNull(menu);
-    clickElement(menu);
+    // Find the menu for the wrestler
 
-    // Find the "Manage Injuries" button for the wrestler and click it
-    WebElement manageInjuriesButton =
+    WebElement menuBar =
         wait.until(
-            ExpectedConditions.elementToBeClickable(By.id("manage-injuries-" + wrestler.getId())));
+            ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    Actions actions = new Actions(driver);
-    Assertions.assertNotNull(manageInjuriesButton);
-    actions.moveToElement(manageInjuriesButton).click().perform();
+    Assertions.assertNotNull(menuBar);
+
+    // Select "Manage Injuries" from the menu
+
+    selectFromVaadinMenuBar(menuBar, "Manage Injuries");
 
     // Verify that the InjuryDialog appears
-    WebElement dialog = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("overlay")));
+
+    WebElement dialog =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
+
     Assertions.assertNotNull(dialog);
+
     assertTrue(dialog.isDisplayed());
 
     // Verify the injuries are in the grid
+
     wait.until(
         d -> {
           try {
+
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Bruised Ribs"));
+
           } catch (Exception e) {
+
             return false;
           }
         });
+
     wait.until(
         d -> {
           try {
+
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Twisted Ankle"));
+
           } catch (Exception e) {
+
             return false;
           }
         });
 
     // Heal an injury
+
     WebElement healButton =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("heal-injury-" + injuryToHeal.getId())));
+
     Assertions.assertNotNull(healButton);
+
     clickElement(healButton);
 
     // Create a new injury
+
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-button")));
+
     Assertions.assertNotNull(createButton);
+
     clickElement(createButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Fill the form
+
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-name")));
+
     Assertions.assertNotNull(nameField);
+
     nameField.sendKeys("Broken Leg");
+
     WebElement descriptionField =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-description")));
+
     Assertions.assertNotNull(descriptionField);
+
     descriptionField.sendKeys("A very broken leg.");
+
     WebElement severitySelector =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-severity")));
+
     Assertions.assertNotNull(severitySelector);
+
     clickElement(severitySelector);
 
     severitySelector.sendKeys("CRITICAL", Keys.TAB);
 
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));
+
     Assertions.assertNotNull(saveButton);
+
     clickElement(saveButton);
 
     // Verify the new injury is in the grid
+
     wait.until(
         d -> {
           try {
+
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Broken Leg"));
+
           } catch (Exception e) {
+
             return false;
           }
         });

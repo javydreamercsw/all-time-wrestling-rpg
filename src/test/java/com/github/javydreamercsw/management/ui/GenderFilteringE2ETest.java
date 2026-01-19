@@ -207,20 +207,19 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Wait for the dialog to appear
       log.info("Waiting for dialog");
-      wait.until(
-          ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
       // Select "FEMALE" in the dialog's gender ComboBox
       log.info("Filtering tier boundaries by FEMALE");
       WebElement dialogGenderComboBox =
-          driver.findElement(By.cssSelector("vaadin-dialog-overlay vaadin-combo-box"));
+          driver.findElement(By.cssSelector("vaadin-dialog vaadin-combo-box"));
       selectFromVaadinComboBox(dialogGenderComboBox, "FEMALE");
 
       // Verify that the female tier boundaries are displayed in the dialog's grid
       log.info("Verifying female tier boundaries");
       wait.until(
           ExpectedConditions.textToBePresentInElementLocated(
-              By.cssSelector("vaadin-dialog-overlay vaadin-grid"), "Midcarder"));
+              By.cssSelector("vaadin-dialog vaadin-grid"), "Midcarder"));
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);

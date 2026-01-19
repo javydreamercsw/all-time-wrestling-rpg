@@ -17,27 +17,23 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.model.pages.PageProperty.Date;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,296 +83,60 @@ public class TeamNotionSyncService implements INotionSyncService {
               Map<String, PageProperty> properties = new HashMap<>();
               properties.put(
                   "Name", // Assuming Notion property is "Name"
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
+                  NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
               // Map Description
               if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
                 properties.put(
                     "Description", // Assuming Notion property is "Description"
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.RichText,
-                        Collections.singletonList(
-                            new PageProperty.RichText(
-                                RichTextType.Text,
-                                new PageProperty.RichText.Text(entity.getDescription()),
-                                null,
-                                null,
-                                null,
-                                null,
-                                null)),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
               }
 
-              // Map Wrestler 1 (Relation)
+              // Map Member 1 (Relation)
               if (entity.getWrestler1() != null) {
-                List<PageProperty.PageReference> relations =
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getWrestler1().getExternalId()));
                 properties.put(
-                    "Wrestler 1", // Assuming Notion property is "Wrestler 1"
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Relation,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        relations,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    "Member 1", // Assuming Notion property is "Member 1"
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getWrestler1().getExternalId()));
               }
 
-              // Map Wrestler 2 (Relation)
+              // Map Member 2 (Relation)
               if (entity.getWrestler2() != null) {
-                List<PageProperty.PageReference> relations =
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getWrestler2().getExternalId()));
                 properties.put(
-                    "Wrestler 2", // Assuming Notion property is "Wrestler 2"
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Relation,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        relations,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    "Member 2", // Assuming Notion property is "Member 2"
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getWrestler2().getExternalId()));
               }
 
               // Map Faction (Relation)
               if (entity.getFaction() != null) {
-                List<PageProperty.PageReference> relations =
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getFaction().getExternalId()));
                 properties.put(
                     "Faction", // Assuming Notion property is "Faction"
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Relation,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        relations,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getFaction().getExternalId()));
               }
 
               // Map Status (Checkbox)
               if (entity.getStatus() != null) {
                 properties.put(
                     "Status", // Assuming Notion property is "Status"
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Checkbox, // Changed to Checkbox
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.isActive(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
               }
 
               // Map Formed Date
               if (entity.getFormedDate() != null) {
                 properties.put(
                     "Formed Date", // Assuming Notion property is "Formed Date"
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Date,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        new Date(entity.getFormedDate().atOffset(ZoneOffset.UTC).toString(), null),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createDateProperty(
+                        entity.getFormedDate().atOffset(ZoneOffset.UTC).toString()));
               }
 
               // Map Disbanded Date
               if (entity.getDisbandedDate() != null) {
                 properties.put(
                     "Disbanded Date",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Date,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        new Date(
-                            entity.getDisbandedDate().atOffset(ZoneOffset.UTC).toString(), null),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
-              } else {
-                // If disbanded date is null, ensure it's removed from Notion to reflect active
-                // status
-                // if it was previously set
-                properties.put(
-                    "Disbanded Date",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Date,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null, // Set date to null to clear it
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createDateProperty(
+                        entity.getDisbandedDate().atOffset(ZoneOffset.UTC).toString()));
               }
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 // Update existing page

@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.Status;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.Status;
 
 @ExtendWith(MockitoExtension.class)
 class SyncHealthMonitorTest {
@@ -62,6 +62,7 @@ class SyncHealthMonitorTest {
 
       // Then - The status might be DOWN due to missing NOTION_TOKEN in test environment
       // Let's check that the health details are populated correctly regardless
+      assert health != null;
       assertThat(health.getDetails()).containsKey("successfulSyncs");
       assertThat(health.getDetails()).containsKey("failedSyncs");
       assertThat(health.getDetails()).containsKey("successRate");
@@ -88,6 +89,7 @@ class SyncHealthMonitorTest {
 
     // Then - If configuration is invalid, it will return DOWN with error details
     // If configuration is valid, it will return DOWN with consecutive failures
+    assert health != null;
     assertThat(health.getStatus()).isEqualTo(Status.DOWN);
     // The health check might fail due to configuration or consecutive failures
     boolean hasConfigError = health.getDetails().containsKey("error");
@@ -198,6 +200,7 @@ class SyncHealthMonitorTest {
     Health health = healthMonitor.health();
 
     // Then
+    assert health != null;
     assertThat(health.getStatus()).isEqualTo(Status.UP);
     assertThat(health.getDetails()).doesNotContainKey("error");
   }

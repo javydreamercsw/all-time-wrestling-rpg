@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.service.sync.ISyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.NoOpSyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServiceDependencies;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -38,6 +39,10 @@ public class TestNotionConfiguration {
 
   @Bean
   @Primary
+  @ConditionalOnProperty(
+      name = "test.mock.notion-handler",
+      havingValue = "true",
+      matchIfMissing = true)
   public NotionHandler testNotionHandler() {
     return mock(NotionHandler.class);
   }

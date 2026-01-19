@@ -63,7 +63,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(createButton);
     createButton.click();
 
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement descriptionField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("description")));
@@ -85,8 +85,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     WebElement saveButton = driver.findElement(By.id("holiday-save"));
     saveButton.click();
 
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     wait.until(
         d -> {
@@ -117,7 +116,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(createButton);
     createButton.click();
 
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement descriptionField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("description")));
@@ -141,8 +140,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     WebElement saveButton = driver.findElement(By.id("holiday-save"));
     saveButton.click();
 
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     wait.until(
         d -> {
@@ -181,7 +179,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(editButton);
     editButton.click();
 
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement themeField =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("holiday-theme")));
@@ -194,8 +192,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     WebElement saveButton = driver.findElement(By.id("holiday-save"));
     saveButton.click();
 
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     try {
       wait.until(
@@ -236,15 +233,13 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     // Confirm dialog
     WebElement confirmDialog =
         wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.tagName("vaadin-confirm-dialog-overlay")));
+            ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-confirm-dialog")));
     WebElement confirmDeleteButton =
         confirmDialog.findElement(By.cssSelector("vaadin-button[theme='error primary']"));
     confirmDeleteButton.click();
 
     wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(
-            By.tagName("vaadin-confirm-dialog-overlay")));
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-confirm-dialog")));
 
     wait.until(
         d -> {

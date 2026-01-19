@@ -31,8 +31,8 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -94,7 +94,7 @@ public class SegmentRule extends AbstractEntity<Long> {
     return requiresHighHeat != null && requiresHighHeat;
   }
 
-  @NotNull @Override
+  @NonNull @Override
   public String toString() {
     return name;
   }

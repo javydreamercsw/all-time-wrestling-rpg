@@ -17,20 +17,11 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.time.Instant;
-import java.util.Collections;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import lombok.NonNull;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 public class TestUtils {
   /**
@@ -52,67 +43,37 @@ public class TestUtils {
    * @return Created wrestler.
    */
   public static Wrestler createWrestler(@NonNull String name) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setName(name);
-    wrestler.setExternalId(UUID.randomUUID().toString());
+    Wrestler wrestler =
+        createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
     wrestler.setDescription("Test Wrestler");
-    wrestler.setDeckSize(15);
-    wrestler.setStartingHealth(15);
-    wrestler.setStartingStamina(15);
-    wrestler.setLowHealth(4);
-    wrestler.setLowStamina(2);
-    wrestler.setTier(WrestlerTier.ROOKIE);
-    wrestler.setCreationDate(Instant.now());
-    wrestler.setFans(10_00L); // Default fan count
-    wrestler.setActive(true);
+    wrestler.setFans(1_000L); // Default fan count
     return wrestler;
   }
 
-  public static void runAsAdmin(@NonNull Runnable runnable) {
-    // Save the current security context
-    SecurityContext originalContext = SecurityContextHolder.getContext();
-
-    try {
-      // Create a mock admin user
-      Account account = new Account("admin", "admin", "admin@localhost.com");
-      Role adminRole = new Role(RoleName.ADMIN, "Admin role");
-      account.setRoles(Collections.singleton(adminRole));
-      CustomUserDetails userDetails = new CustomUserDetails(account, null);
-
-      // Create an authentication token
-      Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-      // Set the authentication in the security context
-      SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-      securityContext.setAuthentication(authentication);
-      SecurityContextHolder.setContext(securityContext);
-
-      // Run the code as the admin user
-      runnable.run();
-    } finally {
-      // Restore the original security context
-      SecurityContextHolder.setContext(originalContext);
+  public static Wrestler createWrestler(
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull WrestlerTier tier,
+      Account account) {
+    Wrestler w = new Wrestler();
+    w.setName(name);
+    if (account != null) {
+      w.setAccount(account);
     }
-  }
-
-  public static <T> T runAsAdmin(@NonNull Callable<T> callable) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
-    try {
-      Account account = new Account("admin", "admin", "admin@localhost.com");
-      Role adminRole = new Role(RoleName.ADMIN, "Admin role");
-      account.setRoles(Collections.singleton(adminRole));
-      CustomUserDetails userDetails = new CustomUserDetails(account, null);
-      Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-      SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-      securityContext.setAuthentication(authentication);
-      SecurityContextHolder.setContext(securityContext);
-      return callable.call();
-    } catch (Exception e) {
-      throw new RuntimeException("Error running callable as admin", e);
-    } finally {
-      SecurityContextHolder.setContext(originalContext);
-    }
+    w.setDescription(description);
+    w.setIsPlayer(account != null);
+    w.setTier(tier);
+    w.setDescription(description);
+    // Defaults
+    w.setDeckSize(15);
+    w.setStartingHealth(15);
+    w.setLowHealth(4);
+    w.setStartingStamina(15);
+    w.setLowStamina(2);
+    w.setFans(0L);
+    w.setGender(Gender.MALE);
+    w.setBumps(0);
+    w.setActive(true);
+    return w;
   }
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,10 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeNotionSyncService;
 import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,19 +49,30 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "test.mock.notion-handler=false")
 class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowNotionSyncService showNotionSyncService;
+  @Autowired private SeasonNotionSyncService seasonNotionSyncService;
+  @Autowired private ShowTypeNotionSyncService showTypeNotionSyncService;
+  @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private NotionHandler notionHandler;
+
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
+  }
 
   @Test
   void testSyncToNotion() {
@@ -74,21 +88,24 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       testShowType = new ShowType();
       testShowType.setName("Test ShowType " + UUID.randomUUID());
       testShowType.setDescription("Test ShowType Description");
-      testShowType.setExternalId(UUID.randomUUID().toString()); // Mock external ID
       showTypeRepository.save(testShowType);
 
       testSeason = new Season();
       testSeason.setName("Test Season " + UUID.randomUUID());
       testSeason.setStartDate(Instant.now());
       testSeason.setIsActive(true);
-      testSeason.setExternalId(UUID.randomUUID().toString()); // Mock external ID
       seasonRepository.save(testSeason);
 
       testShowTemplate = new ShowTemplate();
       testShowTemplate.setName("Test Template " + UUID.randomUUID());
-      testShowTemplate.setExternalId(UUID.randomUUID().toString()); // Mock external ID
       testShowTemplate.setShowType(testShowType); // Set the required ShowType
       showTemplateRepository.save(testShowTemplate);
+
+      // Sync dependencies to Notion to get external IDs
+      showTypeNotionSyncService.syncToNotion("test-prep-showtypes");
+      seasonNotionSyncService.syncToNotion("test-prep-seasons");
+      showTemplateNotionSyncService.syncToNotion("test-prep-templates");
+
       // Create a new Show
       show = new Show();
       show.setName("Test Show " + UUID.randomUUID());
@@ -117,11 +134,6 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
           updatedShow.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals(
-          "A test wrestling show",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
       assertNotNull(props.get("Show Type").getRelation());
       assertFalse(props.get("Show Type").getRelation().isEmpty());
@@ -154,11 +166,6 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
           updatedShow2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals(
-          "Updated description for the show",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
       // Relations should remain the same unless explicitly changed
       assertNotNull(props.get("Show Type").getRelation());

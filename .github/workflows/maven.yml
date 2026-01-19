@@ -53,9 +53,6 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Apply code formatting
-      run: mvn spotless:apply
-
     - name: Run unit tests with coverage
       run: mvn -B verify -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
 

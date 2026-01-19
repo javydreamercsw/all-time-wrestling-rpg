@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -73,8 +74,8 @@ public interface SegmentNarrationService {
   @ToString // Add this annotation
   class SegmentNarrationContext {
     // Getters and setters
-    private List<WrestlerContext> wrestlers;
-    private SegmentTypeContext segmentType;
+    @NotNull private List<WrestlerContext> wrestlers;
+    @NotNull private SegmentTypeContext segmentType;
     private RefereeContext referee;
     private List<NPCContext> npcs;
     private String determinedOutcome;
@@ -108,7 +109,7 @@ public interface SegmentNarrationService {
   @ToString // Add this annotation
   class WrestlerContext {
     // Getters and setters
-    private String name;
+    @NotNull private String name;
     private String description;
     private String team;
     private String gender;
@@ -156,7 +157,7 @@ public interface SegmentNarrationService {
   @ToString // Add this annotation
   class SegmentTypeContext {
     // Getters and setters
-    private String segmentType; // Singles, Tag Team, Triple Threat, etc.
+    @NotNull private String segmentType; // Singles, Tag Team, Triple Threat, etc.
     private List<String> rules; // No DQ, Falls Count Anywhere, etc.
     private String stipulation; // Championship, #1 Contender, etc.
     private int timeLimit; // in minutes, 0 for no time limit

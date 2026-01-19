@@ -20,6 +20,7 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
@@ -30,12 +31,14 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
+import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 
 class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
@@ -52,25 +55,26 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
     // Create test-specific accounts
     createTestAccount("feud_admin", RoleName.ADMIN);
+    createTestAccount("feud_viewer", RoleName.VIEWER);
     Account bookerAccount = createTestAccount("feud_booker", RoleName.BOOKER);
     Account playerAccount1 = createTestAccount("feud_player1", RoleName.PLAYER);
     Account playerAccount2 = createTestAccount("feud_player2", RoleName.PLAYER);
     Account playerAccount3 = createTestAccount("feud_player3", RoleName.PLAYER);
 
-    // Create wrestlers using the service with admin privileges and distinct accounts
-    TestUtils.runAsAdmin(
-        () -> {
-          wrestler1 =
-              wrestlerService.createWrestler(
-                  "Wrestler One", true, "Desc1", WrestlerTier.ROOKIE, playerAccount1);
-          wrestler2 =
-              wrestlerService.createWrestler(
-                  "Wrestler Two", true, "Desc2", WrestlerTier.ROOKIE, playerAccount2);
-          wrestlerService.createWrestler(
-              "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
-          wrestlerService.createWrestler(
-              "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
-        });
+    // Create wrestlers using the repository directly to bypass service security checks
+    wrestler1 = createWrestler("Wrestler One", "Desc1", WrestlerTier.ROOKIE, playerAccount1);
+    wrestler2 = createWrestler("Wrestler Two", "Desc2", WrestlerTier.ROOKIE, playerAccount2);
+    createWrestler("Wrestler Three", "Desc3", WrestlerTier.ROOKIE, playerAccount3);
+    createWrestler("Booker Wrestler", "DescB", WrestlerTier.ROOKIE, bookerAccount);
+    refreshSecurityContext();
+  }
+
+  private Wrestler createWrestler(
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull WrestlerTier tier,
+      Account account) {
+    return wrestlerRepository.save(TestUtils.createWrestler(name, description, tier, account));
   }
 
   @Test
@@ -104,7 +108,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotCreateFeud() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.createFeud(
                 "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId())));
@@ -130,13 +134,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotAddParticipant() {
     Optional<MultiWrestlerFeud> feud =
-        TestUtils.runAsAdmin(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.addParticipant(
                 feud.get().getId(), wrestler2.getId(), FeudRole.PROTAGONIST));
@@ -162,13 +167,17 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotRemoveParticipant() {
     Optional<MultiWrestlerFeud> feud =
-        TestUtils.runAsAdmin(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId())));
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud",
+                        "Description",
+                        "",
+                        List.of(wrestler1.getId(), wrestler2.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.removeParticipant(
                 feud.get().getId(), wrestler2.getId(), "Reason"));
@@ -179,18 +188,19 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotRemoveOwnWrestlerFromFeud() {
     // Create a feud as admin with player1's wrestler (wrestler1) and another wrestler (wrestler2)
     Optional<MultiWrestlerFeud> feud =
-        TestUtils.runAsAdmin(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Player Feud",
-                    "Description",
-                    "",
-                    List.of(wrestler1.getId(), wrestler2.getId())));
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Player Feud",
+                        "Description",
+                        "",
+                        List.of(wrestler1.getId(), wrestler2.getId())));
     Assertions.assertTrue(feud.isPresent());
 
     // Attempt to remove wrestler1 (owned by player1) from the feud as player1
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.removeParticipant(
                 feud.get().getId(), wrestler1.getId(), "Player trying to remove own wrestler"));
@@ -215,13 +225,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotEndFeud() {
     Optional<MultiWrestlerFeud> feud =
-        TestUtils.runAsAdmin(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () -> multiWrestlerFeudService.endFeud(feud.get().getId(), "Ended for testing"));
   }
 
@@ -229,13 +240,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_admin", roles = "ADMIN")
   void testAdminCanDeleteFeud() {
     final Long[] feudId = new Long[1];
-    TestUtils.runAsAdmin(
-        () -> {
-          Optional<MultiWrestlerFeud> createdFeud =
-              multiWrestlerFeudService.createFeud(
-                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
-          createdFeud.ifPresent(f -> feudId[0] = f.getId());
-        });
+    GeneralSecurityUtils.runAsAdmin(
+        (Runnable)
+            () -> {
+              Optional<MultiWrestlerFeud> createdFeud =
+                  multiWrestlerFeudService.createFeud(
+                      "Test Feud", "Description", "", List.of(wrestler1.getId()));
+              createdFeud.ifPresent(f -> feudId[0] = f.getId());
+            });
     multiWrestlerFeudService.deleteFeud(feudId[0]);
     Assertions.assertTrue(feudRepository.findById(feudId[0]).isEmpty());
   }
@@ -244,39 +256,42 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotDeleteFeud() {
     final Long[] feudId = new Long[1];
-    TestUtils.runAsAdmin(
-        () -> {
-          Optional<MultiWrestlerFeud> createdFeud =
-              multiWrestlerFeudService.createFeud(
-                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
-          createdFeud.ifPresent(f -> feudId[0] = f.getId());
-        });
+    GeneralSecurityUtils.runAsAdmin(
+        (Runnable)
+            () -> {
+              Optional<MultiWrestlerFeud> createdFeud =
+                  multiWrestlerFeudService.createFeud(
+                      "Test Feud", "Description", "", List.of(wrestler1.getId()));
+              createdFeud.ifPresent(f -> feudId[0] = f.getId());
+            });
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> multiWrestlerFeudService.deleteFeud(feudId[0]));
+        AuthorizationDeniedException.class, () -> multiWrestlerFeudService.deleteFeud(feudId[0]));
   }
 
   @Test
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testAuthenticatedCanGetAllFeuds() {
-    TestUtils.runAsAdmin(
-        () ->
-            multiWrestlerFeudService.createFeud(
-                "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Optional<MultiWrestlerFeud>>)
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
     multiWrestlerFeudService.getAllFeuds(Pageable.unpaged());
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "feud_viewer", roles = "VIEWER")
   void testAuthenticatedCanGetFeudById() {
     final Long[] feudId = new Long[1];
-    TestUtils.runAsAdmin(
-        () -> {
-          Optional<MultiWrestlerFeud> createdFeud =
-              multiWrestlerFeudService.createFeud(
-                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
-          createdFeud.ifPresent(f -> feudId[0] = f.getId());
-        });
+    GeneralSecurityUtils.runAsAdmin(
+        (Runnable)
+            () -> {
+              Optional<MultiWrestlerFeud> createdFeud =
+                  multiWrestlerFeudService.createFeud(
+                      "Test Feud", "Description", "", List.of(wrestler1.getId()));
+              createdFeud.ifPresent(f -> feudId[0] = f.getId());
+            });
     multiWrestlerFeudService.getFeudById(feudId[0]);
     // No exception means success
   }
@@ -284,21 +299,23 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testAuthenticatedCanGetFeudsForWrestler() {
-    TestUtils.runAsAdmin(
-        () ->
-            multiWrestlerFeudService.createFeud(
-                "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Optional<MultiWrestlerFeud>>)
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
     multiWrestlerFeudService.getActiveFeudsForWrestler(wrestler1.getId());
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "feud_viewer", roles = "VIEWER")
   void testAuthenticatedCanGetActiveFeuds() {
-    TestUtils.runAsAdmin(
-        () ->
-            multiWrestlerFeudService.createFeud(
-                "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Optional<MultiWrestlerFeud>>)
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
     multiWrestlerFeudService.getActiveFeuds();
     // No exception means success
   }
@@ -322,13 +339,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotAddHeat() {
     Optional<MultiWrestlerFeud> feud =
-        TestUtils.runAsAdmin(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () -> multiWrestlerFeudService.addHeat(feud.get().getId(), 10, "Heated rivalry"));
   }
 }

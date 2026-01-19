@@ -29,18 +29,19 @@ spring.profiles.active=dev
 ## Accessing the Application
 
 Once started, navigate to:
+
 ```
 http://localhost:8080/atw-rpg
 ```
 
 ## Default Login Credentials
 
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | ADMIN |
-| booker | booker123 | BOOKER |
-| player | player123 | PLAYER |
-| viewer | viewer123 | VIEWER |
+| Username | Password  |  Role  |
+|----------|-----------|--------|
+| admin    | admin123  | ADMIN  |
+| booker   | booker123 | BOOKER |
+| player   | player123 | PLAYER |
+| viewer   | viewer123 | VIEWER |
 
 ## Stopping the Application
 
@@ -54,6 +55,7 @@ pkill -f "spring-boot:run"
 ## Troubleshooting
 
 ### Port 8080 Already in Use
+
 ```bash
 # Find the process
 lsof -i :8080
@@ -63,6 +65,7 @@ kill -9 <PID>
 ```
 
 ### Database Locked
+
 ```bash
 # Stop the app
 pkill -f "spring-boot:run"
@@ -75,6 +78,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ### Clean Start
+
 ```bash
 # Stop the app
 pkill -f "spring-boot:run"

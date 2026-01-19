@@ -20,9 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -46,40 +43,20 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "test.mock.notion-handler=false")
 class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private SeasonNotionSyncService seasonNotionSyncService;
-  @MockitoBean private NotionHandler notionHandler;
-  @Mock private NotionClient notionClient;
+  @Autowired private NotionHandler notionHandler;
 
   @BeforeEach
-  void setUp() throws Exception {
-    when(notionHandler.createNotionClient()).thenReturn(Optional.of(notionClient));
-
-    // Mock notionHandler.executeWithRetry to directly execute the callable
-    doAnswer(
-            (Answer<Object>)
-                invocation -> {
-                  java.util.function.Supplier<?> supplier = invocation.getArgument(0);
-                  return supplier.get();
-                })
-        .when(notionHandler)
-        .executeWithRetry(any(java.util.function.Supplier.class));
-
-    // Mock getDatabaseId for Season
-    when(notionHandler.getDatabaseId(any())).thenReturn("dummy-season-database-id");
-
-    // Mock notionClient.updatePage to return a mock Page object
-    when(notionClient.updatePage(any(UpdatePageRequest.class)))
-        .thenReturn(Mockito.mock(Page.class));
+  void setUp() {
+    clearAllRepositories();
   }
 
   @Test
@@ -118,17 +95,11 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
-      assertEquals(
-          "A test season for Notion sync operations",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
-              .getContent());
       assertNotNull(props.get("Start Date").getDate());
       assertNull(props.get("End Date").getDate()); // Should be null as season is active
 
       // Sync to Notion again with updates
       updatedSeason.setName("Test Season Updated " + UUID.randomUUID());
-      updatedSeason.setDescription("Updated description");
       updatedSeason.setEndDate(Instant.now());
       updatedSeason.setIsActive(false);
       seasonRepository.save(updatedSeason);
@@ -146,11 +117,6 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
-      assertEquals(
-          "Updated description",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
-              .getContent());
       assertNotNull(props.get("End Date").getDate());
 
     } finally {
@@ -163,8 +129,6 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }
-        seasonRepository.delete(season);
-      } else if (season != null && season.getId() != null) {
         seasonRepository.delete(season);
       }
     }

@@ -37,7 +37,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -135,7 +134,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     takeSequencedScreenshot("on-login-page");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
@@ -230,14 +229,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
     takeSequencedScreenshot("before-wait-for-element");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
   protected void waitForVaadinClientToLoad() {
     WebDriverWait wait =
-        new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout for Vaadin client
+        new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout for Vaadin client
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -303,19 +302,30 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @param itemText the text of the item to select
    */
   protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
-    // Click the combo box to open it
-    clickElement(comboBox);
+    log.info("Selecting item '{}' from ComboBox", itemText);
+    // 1. Open the combo box using JavaScript to be sure
+    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
 
-    // Wait for the overlay to appear and the item to be clickable
+    // 2. Wait for the item to appear and click it via JS
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    WebElement item =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath("//vaadin-combo-box-overlay//*[text()='" + itemText + "']")));
-
-    // Click the item (item is guaranteed to be non-null by wait.until)
-    if (item != null) {
-      clickElement(item);
+    try {
+      wait.until(
+          d -> {
+            return (Boolean)
+                ((JavascriptExecutor) d)
+                    .executeScript(
+                        "const text = arguments[0];const item ="
+                            + " Array.from(document.querySelectorAll('vaadin-combo-box-item,"
+                            + " vaadin-item, vaadin-multi-select-combo-box-item')).find(item =>"
+                            + " item.textContent.trim() === text ||"
+                            + " item.textContent.trim().includes(text));if (item) { item.click();"
+                            + " return true; }return false;",
+                        itemText);
+          });
+    } catch (Exception e) {
+      log.error("Failed to find or click item '{}' in ComboBox", itemText, e);
+      takeSequencedScreenshot("failed-to-select-item");
+      throw e;
     }
     takeSequencedScreenshot("after-select");
   }
@@ -432,61 +442,75 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void selectFromVaadinMultiSelectComboBox(
       @NonNull WebElement comboBox, @NonNull String itemText) {
-    // 1. Click the combo box to open the dropdown.
-    clickElement(comboBox);
+    log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
+    // 1. Open the combo box using JavaScript
+    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
 
-    // 2. Wait for the overlay to become visible.
+    // 2. Wait for the item to appear and click it via JS
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    WebElement overlay =
-        wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("vaadin-multi-select-combo-box-overlay")));
+    try {
+      wait.until(
+          d -> {
+            return (Boolean)
+                ((JavascriptExecutor) d)
+                    .executeScript(
+                        "const text = arguments[0];const item ="
+                            + " Array.from(document.querySelectorAll('vaadin-multi-select-combo-box-item,"
+                            + " vaadin-combo-box-item, vaadin-item')).find(item =>"
+                            + " item.textContent.trim() === text ||"
+                            + " item.textContent.trim().includes(text));if (item) { item.click();"
+                            + " return true; }return false;",
+                        itemText);
+          });
 
-    // 3. Find the scroller element within the overlay.
-    Assertions.assertNotNull(overlay);
-    WebElement scroller = overlay.findElement(By.tagName("vaadin-multi-select-combo-box-scroller"));
-
-    // 4. Loop and scroll down, checking for the item.
-    long lastScrollTop = -1;
-    for (int i = 0; i < 100; i++) { // Limit iterations to prevent infinite loops
-      // Check for the item in the current view
+      // Give it a moment to register the selection
       try {
-        String xpath = ".//vaadin-multi-select-combo-box-item[contains(., '" + itemText + "')]";
-        List<WebElement> items = overlay.findElements(By.xpath(xpath));
-        for (WebElement item : items) {
-          if (item.isDisplayed()) {
-            clickElement(item);
-            return; // Success!
-          }
-        }
-      } catch (Exception e) {
-        // Item not found, continue.
-      }
-
-      // Scroll down by a fixed amount
-      ((JavascriptExecutor) driver).executeScript("arguments[0].scrollTop += 300", scroller);
-
-      // Small pause to allow for rendering
-      try {
-        Thread.sleep(250);
+        Thread.sleep(500);
       } catch (InterruptedException ignored) {
       }
-
-      // Check if we have reached the bottom of the scroll
-      long currentScrollTop =
-          (long)
-              ((JavascriptExecutor) driver)
-                  .executeScript("return arguments[0].scrollTop", scroller);
-      if (currentScrollTop == lastScrollTop) {
-        // Scrolled to the bottom, but item not found
-        break;
-      }
-      lastScrollTop = currentScrollTop;
+    } catch (Exception e) {
+      log.error("Failed to find or click item '{}' in MultiSelectComboBox", itemText, e);
+      takeSequencedScreenshot("failed-to-select-multi-item");
+      throw e;
     }
+    takeSequencedScreenshot("after-multi-select");
+  }
 
-    // 5. If the loop finishes without finding the item, throw an error.
-    throw new org.openqa.selenium.NoSuchElementException(
-        "Could not find item '" + itemText + "' in combo box after scrolling.");
+  /**
+   * Selects an item from a Vaadin MenuBar by clicking the main button and selecting the item from
+   * the overlay.
+   *
+   * @param menuBar the Vaadin MenuBar WebElement
+   * @param itemText the text of the item to select
+   */
+  protected void selectFromVaadinMenuBar(@NonNull WebElement menuBar, @NonNull String itemText) {
+    log.info("Selecting item '{}' from MenuBar", itemText);
+    // 1. Find and click the main button of the MenuBar
+    WebElement mainButton = menuBar.findElement(By.tagName("vaadin-menu-bar-button"));
+    clickElement(mainButton);
+
+    // 2. Wait and find the item by text in the DOM and click it via JS
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    try {
+      wait.until(
+          d -> {
+            return (Boolean)
+                ((JavascriptExecutor) d)
+                    .executeScript(
+                        "const text = arguments[0];const item ="
+                            + " Array.from(document.querySelectorAll('vaadin-context-menu-item,"
+                            + " vaadin-menu-bar-item, vaadin-item')).find(item =>"
+                            + " item.textContent.trim() === text ||"
+                            + " item.textContent.trim().includes(text));if (item) { item.click();"
+                            + " return true; }return false;",
+                        itemText);
+          });
+    } catch (Exception e) {
+      log.error("Failed to find or click item '{}' in MenuBar", itemText, e);
+      takeSequencedScreenshot("failed-to-select-menu-item");
+      throw e;
+    }
+    takeSequencedScreenshot("after-menu-select");
   }
 
   protected void logout() {

@@ -1,6 +1,7 @@
 # Notion Sync Troubleshooting Guide
 
 ## Overview
+
 This guide helps diagnose and resolve common Notion synchronization issues in the All Time Wrestling RPG system.
 
 ## Common Sync Issues and Solutions
@@ -13,6 +14,7 @@ This guide helps diagnose and resolve common Notion synchronization issues in th
 - 401 Unauthorized errors
 
 **Solutions:**
+
 ```bash
 # Check if token is set
 echo $NOTION_TOKEN
@@ -25,6 +27,7 @@ echo 'export NOTION_TOKEN=your_token_here' >> ~/.bashrc
 ```
 
 **Verification:**
+
 ```bash
 # Test token validity
 curl -H "Authorization: Bearer $NOTION_TOKEN" \
@@ -45,6 +48,7 @@ curl -H "Authorization: Bearer $NOTION_TOKEN" \
 - Consider proxy configuration if behind corporate firewall
 
 **Network Test:**
+
 ```bash
 # Test Notion API connectivity
 curl -I https://api.notion.com/v1/users/me
@@ -63,6 +67,7 @@ curl -I https://api.notion.com/v1/users/me
 - Avoid concurrent sync operations
 
 **Configuration:**
+
 ```yaml
 notion:
 sync:
@@ -83,6 +88,7 @@ sync:
 - Check disk space for H2 database files
 
 **Database Health Check:**
+
 ```bash
 # Check H2 database file
 ls -la data/management-db.mv.db
@@ -108,6 +114,7 @@ df -h
 ### 1. Enable Debug Logging
 
 Add to `application.properties`:
+
 ```properties
 # Enable detailed sync logging
 logging.level.com.github.javydreamercsw.management.service.sync=DEBUG
@@ -122,6 +129,7 @@ logging.level.com.github.javydreamercsw.base.ai.notion=DEBUG
 - Check sync history and results
 
 **Via API:**
+
 ```bash
 # Trigger manual sync
 curl -X POST http://localhost:8080/api/sync/notion/trigger
@@ -133,6 +141,7 @@ curl -X POST http://localhost:8080/api/sync/notion/trigger/shows
 ### 3. Log Analysis
 
 **Key Log Patterns:**
+
 ```bash
 # Successful sync
 grep "✅.*sync completed" logs/application.log

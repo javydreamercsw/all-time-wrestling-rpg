@@ -117,7 +117,7 @@ public class FactionService {
   }
 
   /** Create a new faction. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Faction> createFaction(@NonNull String name, String description, Long leaderId) {
     // Check if faction name already exists
     if (factionRepository.existsByName(name)) {
@@ -153,7 +153,7 @@ public class FactionService {
   }
 
   /** Add a member to a faction. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Faction> addMemberToFaction(@NonNull Long factionId, @NonNull Long wrestlerId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
@@ -193,7 +193,7 @@ public class FactionService {
   }
 
   /** Remove a member from a faction. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Faction> removeMemberFromFaction(
       @NonNull Long factionId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
@@ -231,7 +231,7 @@ public class FactionService {
   }
 
   /** Change faction leader. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Faction> changeFactionLeader(@NonNull Long factionId, @NonNull Long newLeaderId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> newLeaderOpt = wrestlerRepository.findById(newLeaderId);
@@ -266,7 +266,7 @@ public class FactionService {
   }
 
   /** Disband a faction. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Faction> disbandFaction(@NonNull Long factionId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
@@ -357,7 +357,7 @@ public class FactionService {
   }
 
   /** Save a faction. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Faction save(@NonNull Faction faction) {
     if (faction.getId() == null) {
       // New faction
@@ -370,14 +370,14 @@ public class FactionService {
   }
 
   /** Delete a faction. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void delete(@NonNull Faction faction) {
     log.info("Deleting faction: {}", faction.getName());
     factionRepository.delete(faction);
   }
 
   /** Delete a faction by ID. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void deleteById(@NonNull Long id) {
     log.info("Deleting faction with ID: {}", id);
     factionRepository.deleteById(id);

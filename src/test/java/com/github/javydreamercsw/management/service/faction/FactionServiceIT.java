@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.faction;
 
-import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -161,8 +160,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
       username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanRemoveMember() {
-    TestUtils.runAsAdmin(
-        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    faction.addMember(playerWrestler);
+    factionRepository.save(faction);
+    wrestlerRepository.save(playerWrestler);
+
     Optional<Faction> updatedFaction =
         factionService.removeMemberFromFaction(faction.getId(), playerWrestler.getId(), "Test");
     Assertions.assertTrue(updatedFaction.isPresent());
@@ -172,8 +173,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotRemoveMember() {
-    TestUtils.runAsAdmin(
-        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    faction.addMember(playerWrestler);
+    factionRepository.save(faction);
+    wrestlerRepository.save(playerWrestler);
+
     Assertions.assertThrows(
         AccessDeniedException.class,
         () ->
@@ -186,8 +189,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
       username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanChangeLeader() {
-    TestUtils.runAsAdmin(
-        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    faction.addMember(playerWrestler);
+    factionRepository.save(faction);
+    wrestlerRepository.save(playerWrestler);
+
     Optional<Faction> updatedFaction =
         factionService.changeFactionLeader(faction.getId(), playerWrestler.getId());
     Assertions.assertTrue(updatedFaction.isPresent());
@@ -197,8 +202,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotChangeLeader() {
-    TestUtils.runAsAdmin(
-        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    faction.addMember(playerWrestler);
+    factionRepository.save(faction);
+    wrestlerRepository.save(playerWrestler);
+
     Assertions.assertThrows(
         AccessDeniedException.class,
         () -> factionService.changeFactionLeader(faction.getId(), playerWrestler.getId()));

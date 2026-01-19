@@ -311,8 +311,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
       // Wait for the dialog to appear
       log.info("Waiting for edit dialog");
-      wait.until(
-          ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
       // Edit the description
       log.info("Editing summary");
@@ -506,7 +505,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     clickElement(narrateButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
@@ -520,8 +519,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to disappear
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    longWait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement summaryButton =
         wait.until(

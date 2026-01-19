@@ -34,17 +34,13 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Integration tests for TitleController. Tests the complete REST API functionality for title
@@ -53,13 +49,7 @@ import org.springframework.web.context.WebApplicationContext;
 @DisplayName("TitleController Integration Tests")
 class TitleControllerIT extends AbstractControllerTest {
 
-  @Autowired private WebApplicationContext webApplicationContext;
   @MockitoBean private TitleService titleService;
-
-  @BeforeEach
-  void setup() {
-    this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).build();
-  }
 
   @Test
   @DisplayName("Should create new title successfully")

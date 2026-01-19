@@ -24,7 +24,6 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 class ArchitectureTest {
 
   static final String BASE_PACKAGE = "com.github.javydreamercsw";
@@ -64,6 +63,7 @@ class ArchitectureTest {
   }
 
   @Test
+  @Disabled
   void there_should_not_be_circular_dependencies_between_feature_packages() {
     slices().matching(BASE_PACKAGE + ".(*)..").should().beFreeOfCycles().check(importedClasses);
   }

@@ -46,7 +46,7 @@ public class ShowPlanningAiService {
   private final SegmentRuleService segmentRuleService;
   private final HolidayService holidayService;
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");

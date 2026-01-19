@@ -103,7 +103,7 @@ public class SegmentRuleService {
    * @return The created segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
@@ -133,7 +133,7 @@ public class SegmentRuleService {
    * @return The updated segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
@@ -211,7 +211,7 @@ public class SegmentRuleService {
    * @return The created or updated segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
