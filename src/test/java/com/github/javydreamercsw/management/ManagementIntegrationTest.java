@@ -114,6 +114,14 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
       log.info("No authentication found after cleanup. logging in as 'admin'.");
       loginAs("admin");
     }
+
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      log.error("Failed to establish authentication context even after fallback login!");
+    } else {
+      log.info(
+          "Security context established for: {}",
+          SecurityContextHolder.getContext().getAuthentication().getName());
+    }
   }
 
   @BeforeEach
@@ -167,6 +175,11 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   }
 
   protected void loginAs(String username) {
-    accountRepository.findByUsername(username).ifPresent(this::login);
+    var accountOpt = accountRepository.findByUsername(username);
+    if (accountOpt.isPresent()) {
+      this.login(accountOpt.get());
+    } else {
+      log.warn("loginAs: Account not found: {}", username);
+    }
   }
 }
