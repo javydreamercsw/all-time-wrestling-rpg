@@ -25,6 +25,8 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class CampaignAbilityCardService {
 
   private final CampaignAbilityCardRepository campaignAbilityCardRepository;
+
+  public CampaignAbilityCard save(CampaignAbilityCard card) {
+    return campaignAbilityCardRepository.save(card);
+  }
+
+  public void delete(Long id) {
+    campaignAbilityCardRepository.deleteById(id);
+  }
+
+  public Page<CampaignAbilityCard> list(Pageable pageable) {
+    return campaignAbilityCardRepository.findAll(pageable);
+  }
 
   public Optional<CampaignAbilityCard> findByNameAndAlignmentAndLevel(
       String name, AlignmentType alignmentType, int level) {

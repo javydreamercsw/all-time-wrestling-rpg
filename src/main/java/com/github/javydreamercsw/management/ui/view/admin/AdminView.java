@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
+import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
 import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
 import com.github.javydreamercsw.management.ui.view.season.SeasonSettingsView;
 import com.vaadin.flow.component.Component;
@@ -85,7 +86,8 @@ public class AdminView extends VerticalLayout {
         new Tab("AI Settings"),
         new Tab("Game Settings"),
         new Tab("Holidays"),
-        new Tab("Season Settings"));
+        new Tab("Season Settings"),
+        new Tab("Campaign Cards"));
   }
 
   private Div createPages(Tabs tabs) {
@@ -97,10 +99,17 @@ public class AdminView extends VerticalLayout {
     GameSettingsView gameSettingsView = instantiator.getOrCreate(GameSettingsView.class);
     HolidayListView holidayListView = instantiator.getOrCreate(HolidayListView.class);
     SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
+    CampaignAbilityCardListView campaignAbilityCardListView =
+        instantiator.getOrCreate(CampaignAbilityCardListView.class);
 
     Div pages =
         new Div(
-            adminToolsPage, aiSettingsView, gameSettingsView, holidayListView, seasonSettingsView);
+            adminToolsPage,
+            aiSettingsView,
+            gameSettingsView,
+            holidayListView,
+            seasonSettingsView,
+            campaignAbilityCardListView);
     pages.setSizeFull();
 
     Map<Tab, Component> tabsToPages =
@@ -109,7 +118,8 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(1), aiSettingsView,
             tabs.getTabAt(2), gameSettingsView,
             tabs.getTabAt(3), holidayListView,
-            tabs.getTabAt(4), seasonSettingsView);
+            tabs.getTabAt(4), seasonSettingsView,
+            tabs.getTabAt(5), campaignAbilityCardListView);
 
     tabs.addSelectedChangeListener(
         event -> {
