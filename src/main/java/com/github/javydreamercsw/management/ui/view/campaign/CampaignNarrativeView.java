@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterRespon
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -31,6 +32,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -40,6 +42,9 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(value = "campaign/narrative", layout = MainLayout.class)
 @PageTitle("Story Narrative")
@@ -73,26 +78,29 @@ public class CampaignNarrativeView extends VerticalLayout {
 
     setSpacing(true);
     setPadding(true);
-    setAlignItems(Alignment.CENTER);
+    setAlignItems(FlexComponent.Alignment.CENTER);
 
     loadCampaign();
     initUI();
   }
 
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    if (currentCampaign != null && narrativeContainer.getComponentCount() == 0) {
+      generateNextEncounter();
+    }
+  }
+
   private void loadCampaign() {
     securityUtils
         .getAuthenticatedUser()
-        .ifPresent(
-            user -> {
-              wrestlerRepository
-                  .findByAccount(user.getAccount())
-                  .ifPresent(
-                      wrestler -> {
-                        campaignRepository
-                            .findActiveByWrestler(wrestler)
-                            .ifPresent(campaign -> currentCampaign = campaign);
-                      });
-            });
+        .flatMap(
+            user ->
+                wrestlerRepository
+                    .findByAccount(user.getAccount())
+                    .flatMap(campaignRepository::findActiveByWrestler))
+        .ifPresent(campaign -> currentCampaign = campaign);
   }
 
   private void initUI() {
@@ -121,7 +129,7 @@ public class CampaignNarrativeView extends VerticalLayout {
     choicesContainer = new HorizontalLayout();
     choicesContainer.setSpacing(true);
     choicesContainer.setPadding(true);
-    choicesContainer.setJustifyContentMode(JustifyContentMode.CENTER);
+    choicesContainer.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
     progressBar = new ProgressBar();
     progressBar.setIndeterminate(true);
@@ -129,9 +137,6 @@ public class CampaignNarrativeView extends VerticalLayout {
     progressBar.setWidth("300px");
 
     add(narrativeContainer, progressBar, choicesContainer);
-
-    // Initial Encounter Generation
-    generateNextEncounter();
   }
 
   private void generateNextEncounter() {
@@ -141,28 +146,31 @@ public class CampaignNarrativeView extends VerticalLayout {
 
     // Use a background thread for AI generation to keep UI responsive
     UI ui = UI.getCurrent();
-    new Thread(
-            () -> {
-              try {
-                CampaignEncounterResponseDTO encounter =
-                    encounterService.generateEncounter(currentCampaign);
-                ui.access(
-                    () -> {
-                      displayEncounter(encounter);
-                      showLoading(false);
-                    });
-              } catch (Exception e) {
-                log.error("Failed to generate encounter", e);
-                ui.access(
-                    () -> {
-                      Notification.show(
-                          "Failed to connect to the Story Director. Please try again.");
-                      showLoading(false);
-                      addRetryButton();
-                    });
-              }
-            })
-        .start();
+    SecurityContext context = SecurityContextHolder.getContext();
+
+    Runnable backgroundTask =
+        () -> {
+          try {
+            CampaignEncounterResponseDTO encounter =
+                encounterService.generateEncounter(currentCampaign);
+            ui.access(
+                () -> {
+                  displayEncounter(encounter);
+                  showLoading(false);
+                });
+          } catch (Exception e) {
+            log.error("Failed to generate encounter", e);
+            ui.access(
+                () -> {
+                  Notification.show("Failed to connect to the Story Director. Please try again.");
+                  showLoading(false);
+                  addRetryButton();
+                });
+          }
+        };
+
+    // Wrap the task to propagate the security context
+    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
   }
 
   private void displayEncounter(CampaignEncounterResponseDTO encounter) {
