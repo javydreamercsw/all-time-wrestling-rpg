@@ -66,7 +66,6 @@ public class CampaignAbilityCardService {
       int level,
       boolean oneTimeUse,
       AbilityTiming timing,
-      int trackRequirement,
       String effectScript,
       String secondaryEffectScript,
       boolean secondaryOneTimeUse,
@@ -90,7 +89,6 @@ public class CampaignAbilityCardService {
     card.setDescription(description);
     card.setOneTimeUse(oneTimeUse);
     card.setTiming(timing);
-    card.setTrackRequirement(trackRequirement);
     card.setEffectScript(effectScript);
     card.setSecondaryEffectScript(secondaryEffectScript);
     card.setSecondaryOneTimeUse(secondaryOneTimeUse);

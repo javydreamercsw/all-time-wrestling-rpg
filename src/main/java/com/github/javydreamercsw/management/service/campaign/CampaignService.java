@@ -132,7 +132,8 @@ public class CampaignService {
 
   /**
    * Updates the wrestler's available ability cards based on their alignment and level. If the
-   * wrestler has turned (changed alignment), old cards are removed and new ones are added.
+   * wrestler has turned (changed alignment), all current cards are removed and the system resets
+   * card inventory based on the current level.
    *
    * @param campaign The campaign to update.
    */
@@ -154,36 +155,136 @@ public class CampaignService {
 
     if (alignmentChanged) {
       // Discard all cards of wrong alignment
-      currentCards.removeIf(c -> c.getAlignmentType() != alignment.getAlignmentType());
-    }
-
-    // Determine unlocked levels based on track position (Space)
-    int trackSpace = alignment.getLevel();
-    List<Integer> unlockedLevels = new ArrayList<>();
-    if (trackSpace >= 1) unlockedLevels.add(1);
-    if (trackSpace >= 5) {
-      unlockedLevels.add(2);
-      unlockedLevels.add(3);
-    }
-
-    // Fetch potential cards
-    // This simple logic adds ALL available cards for the level.
-    // In a real game, the player might "choose" them.
-    // For MVP, we grant access to all unlocked cards.
-    for (Integer level : unlockedLevels) {
-      List<CampaignAbilityCard> availableCards =
-          campaignAbilityCardRepository.findByAlignmentTypeAndLevel(
-              alignment.getAlignmentType(), level);
-
-      for (CampaignAbilityCard card : availableCards) {
-        if (!currentCards.contains(card)) {
-          currentCards.add(card);
-        }
-      }
+      currentCards.clear();
+      // Logic for "picking new ones" after turn should probably be handled by UI.
+      // For now, we clear them and the UI should prompt for new picks.
+      log.info("Wrestler {} turned. Card inventory cleared.", wrestler.getName());
     }
 
     state.setActiveCards(currentCards);
     campaignStateRepository.save(state);
+  }
+
+  /**
+   * Handles track level changes, applying gain/loss rules for ability cards.
+   *
+   * @param campaign The campaign.
+   * @param oldLevel The previous level.
+   * @param newLevel The new level.
+   */
+  public void handleLevelChange(Campaign campaign, int oldLevel, int newLevel) {
+    Wrestler wrestler = campaign.getWrestler();
+    WrestlerAlignment alignment =
+        wrestlerAlignmentRepository
+            .findByWrestler(wrestler)
+            .orElseThrow(() -> new IllegalStateException("Alignment not found"));
+
+    AlignmentType type = alignment.getAlignmentType();
+    CampaignState state = campaign.getState();
+    List<CampaignAbilityCard> cards = state.getActiveCards();
+
+    // Rules logic
+    if (type == AlignmentType.FACE) {
+      // Face Level 4: Gain a level 2 card
+      if (oldLevel < 4 && newLevel >= 4) {
+        log.info("Face reached Level 4: Eligible for Level 2 card.");
+        // This will be handled by UI picking or automatic if only one exists
+      }
+      // Face Level 5: Gain a level 3 card, lose a level 1 card
+      if (oldLevel < 5 && newLevel >= 5) {
+        log.info("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
+        removeOneCardOfLevel(cards, 1);
+      }
+    } else {
+      // Heel Level 4: Gain a level 2 card, lose a level 1 card
+      if (oldLevel < 4 && newLevel >= 4) {
+        log.info("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
+        removeOneCardOfLevel(cards, 1);
+      }
+      // Heel Level 5: Gain another level 1 card
+      if (oldLevel < 5 && newLevel >= 5) {
+        log.info("Heel reached Level 5: Eligible for another Level 1 card.");
+      }
+    }
+
+    campaignStateRepository.save(state);
+  }
+
+  private void removeOneCardOfLevel(List<CampaignAbilityCard> cards, int level) {
+    cards.stream()
+        .filter(c -> c.getLevel() == level)
+        .findFirst()
+        .ifPresent(card -> {
+          cards.remove(card);
+          log.info("Removed Level {} card: {}", level, card.getName());
+        });
+  }
+
+  /**
+   * Gets cards that the wrestler is eligible to pick based on current state.
+   *
+   * @param campaign The campaign.
+   * @return List of pickable cards.
+   */
+  public List<CampaignAbilityCard> getPickableCards(Campaign campaign) {
+    Wrestler wrestler = campaign.getWrestler();
+    WrestlerAlignment alignment =
+        wrestlerAlignmentRepository
+            .findByWrestler(wrestler)
+            .orElseThrow(() -> new IllegalStateException("Alignment not found"));
+
+    CampaignState state = campaign.getState();
+    List<CampaignAbilityCard> currentCards = state.getActiveCards();
+    int level = alignment.getLevel();
+    AlignmentType type = alignment.getAlignmentType();
+
+    List<CampaignAbilityCard> pickable = new ArrayList<>();
+
+    // Logic to determine what can be picked based on current inventory vs rules
+    long countL1 = currentCards.stream().filter(c -> c.getLevel() == 1).count();
+    long countL2 = currentCards.stream().filter(c -> c.getLevel() == 2).count();
+    long countL3 = currentCards.stream().filter(c -> c.getLevel() == 3).count();
+
+    if (type == AlignmentType.FACE) {
+      if (level >= 1 && countL1 == 0 && level < 5) pickable.addAll(getAvailableCards(type, 1));
+      if (level >= 4 && countL2 == 0) pickable.addAll(getAvailableCards(type, 2));
+      if (level >= 5 && countL3 == 0) pickable.addAll(getAvailableCards(type, 3));
+    } else {
+      // Heel
+      if (level >= 1 && level < 4 && countL1 == 0) pickable.addAll(getAvailableCards(type, 1));
+      if (level >= 4 && countL2 == 0) pickable.addAll(getAvailableCards(type, 2));
+      if (level >= 5 && countL1 == 0)
+        pickable.addAll(getAvailableCards(type, 1)); // Regains L1 slot at L5
+    }
+
+    // Filter out cards already owned
+    pickable.removeIf(currentCards::contains);
+
+    return pickable;
+  }
+
+  private List<CampaignAbilityCard> getAvailableCards(AlignmentType type, int level) {
+    return campaignAbilityCardRepository.findByAlignmentTypeAndLevel(type, level);
+  }
+
+  /**
+   * Picks a card for the wrestler.
+   *
+   * @param campaign The campaign.
+   * @param cardId The card ID.
+   */
+  public void pickAbilityCard(Campaign campaign, Long cardId) {
+    CampaignAbilityCard card =
+        campaignAbilityCardRepository
+            .findById(cardId)
+            .orElseThrow(() -> new IllegalArgumentException("Card not found"));
+
+    CampaignState state = campaign.getState();
+    if (!state.getActiveCards().contains(card)) {
+      state.getActiveCards().add(card);
+      campaignStateRepository.save(state);
+      log.info("Wrestler {} picked card: {}", campaign.getWrestler().getName(), card.getName());
+    }
   }
 
   /**

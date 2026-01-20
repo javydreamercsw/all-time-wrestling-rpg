@@ -5,7 +5,6 @@
   "level": 1,
   "oneTimeUse": true,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "gainInitiative()"
 }, {
   "name": "Feigned Retreat",
@@ -14,7 +13,6 @@
   "level": 1,
   "oneTimeUse": true,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "spendStamina(1); gainInitiative(); gainMomentum(2)"
 }, {
   "name": "Pull Tights",
@@ -23,7 +21,6 @@
   "level": 1,
   "oneTimeUse": true,
   "timing": "OFFENSE",
-  "trackRequirement": 1,
   "effectScript": "modifyOpponentRoll(-1)"
 }, {
   "name": "Exposed Turnbuckle",
@@ -32,7 +29,6 @@
   "level": 2,
   "oneTimeUse": true,
   "timing": "OFFENSE",
-  "trackRequirement": 5,
   "effectScript": "damage(3); gainMomentum(2)"
 }, {
   "name": "Low Blow",
@@ -41,7 +37,6 @@
   "level": 1,
   "oneTimeUse": true,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "damage(2); gainInitiative()"
 }, {
   "name": "Ally",
@@ -50,7 +45,6 @@
   "level": 1,
   "oneTimeUse": false,
   "timing": "BACKSTAGE",
-  "trackRequirement": 1,
   "effectScript": "modifyBackstageDice(1)",
   "secondaryEffectScript": "damage(2)",
   "secondaryOneTimeUse": true,
@@ -62,7 +56,6 @@
   "level": 1,
   "oneTimeUse": true,
   "timing": "PINNED",
-  "trackRequirement": 1,
   "effectScript": "modifyRoll(1)"
 }, {
   "name": "Ally",
@@ -71,7 +64,6 @@
   "level": 1,
   "oneTimeUse": false,
   "timing": "OFFENSE",
-  "trackRequirement": 1,
   "effectScript": "drawCard(1)"
 }, {
   "name": "Valet",
@@ -80,7 +72,6 @@
   "level": 1,
   "oneTimeUse": true,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "gainMomentum(2); gainHitPoints(1)"
 }, {
   "name": "Crowd Pleaser",
@@ -89,7 +80,6 @@
   "level": 1,
   "oneTimeUse": false,
   "timing": "OFFENSE",
-  "trackRequirement": 1,
   "effectScript": "gainMomentum(1); drawCard(1)"
 }, {
   "name": "Ten Punches",
@@ -98,7 +88,6 @@
   "level": 1,
   "oneTimeUse": false,
   "timing": "OFFENSE",
-  "trackRequirement": 1,
   "effectScript": "gainMomentum(1); damage(2)"
 }, {
   "name": "Outwrestle",
@@ -107,7 +96,6 @@
   "level": 1,
   "oneTimeUse": false,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "spendStamina(1); gainMomentum(2)"
 }, {
   "name": "Flash Pinfall",
@@ -116,7 +104,6 @@
   "level": 2,
   "oneTimeUse": false,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "spendStamina(2); gainMomentum(1); pin()"
 }, {
   "name": "Crowd Pleaser",
@@ -125,7 +112,6 @@
   "level": 2,
   "oneTimeUse": false,
   "timing": "OFFENSE",
-  "trackRequirement": 1,
   "effectScript": "gainMomentum(1); drawCard(1)"
 }, {
   "name": "Comeback",
@@ -134,6 +120,5 @@
   "level": 3,
   "oneTimeUse": false,
   "timing": "DEFENSE",
-  "trackRequirement": 1,
   "effectScript": "gainMomentum(2); drawCard(2); gainHitPoints(2); gainStamina(2)"
 } ]

@@ -172,7 +172,6 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
               dto.getLevel(),
               dto.isOneTimeUse(),
               dto.getTiming(),
-              dto.getTrackRequirement(),
               dto.getEffectScript(),
               dto.getSecondaryEffectScript(),
               dto.isSecondaryOneTimeUse(),

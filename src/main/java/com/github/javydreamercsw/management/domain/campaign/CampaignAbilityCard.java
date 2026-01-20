@@ -65,9 +65,6 @@ public class CampaignAbilityCard {
   @Column(name = "timing")
   private AbilityTiming timing;
 
-  @Column(name = "track_requirement", nullable = false)
-  private int trackRequirement;
-
   @Column(name = "secondary_effect_script")
   private String secondaryEffectScript;
 

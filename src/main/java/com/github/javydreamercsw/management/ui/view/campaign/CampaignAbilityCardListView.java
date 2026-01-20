@@ -96,7 +96,6 @@ public class CampaignAbilityCardListView extends Main {
     Checkbox oneTimeField = new Checkbox();
     ComboBox<AbilityTiming> timingField = new ComboBox<>();
     timingField.setItems(AbilityTiming.values());
-    TextField trackField = new TextField();
     TextField scriptField = new TextField();
     TextField secondaryScriptField = new TextField();
     Checkbox secondaryOneTimeField = new Checkbox();
@@ -128,11 +127,6 @@ public class CampaignAbilityCardListView extends Main {
         .setHeader("Timing")
         .setEditorComponent(timingField)
         .setSortable(true);
-    cardGrid
-        .addColumn(CampaignAbilityCard::getTrackRequirement)
-        .setHeader("Track Req")
-        .setEditorComponent(trackField)
-        .setSortable(true);
 
     cardGrid
         .addComponentColumn(
@@ -155,10 +149,6 @@ public class CampaignAbilityCardListView extends Main {
         .bind("level");
     binder.forField(oneTimeField).bind("oneTimeUse");
     binder.forField(timingField).bind("timing");
-    binder
-        .forField(trackField)
-        .withConverter(new StringToIntegerConverter("Must be a number"))
-        .bind("trackRequirement");
     binder.forField(scriptField).bind("effectScript");
     binder.forField(secondaryScriptField).bind("secondaryEffectScript");
     binder.forField(secondaryOneTimeField).bind("secondaryOneTimeUse");

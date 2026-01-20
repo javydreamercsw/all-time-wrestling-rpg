@@ -28,7 +28,6 @@ public class CampaignAbilityCardDTO {
   private int level;
   private boolean oneTimeUse;
   private AbilityTiming timing;
-  private int trackRequirement;
   private String effectScript;
   private String secondaryEffectScript;
   private boolean secondaryOneTimeUse;
