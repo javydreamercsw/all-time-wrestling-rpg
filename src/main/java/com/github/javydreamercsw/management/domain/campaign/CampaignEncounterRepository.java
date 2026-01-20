@@ -16,8 +16,11 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
-public enum AlignmentType {
-  FACE,
-  HEEL,
-  NEUTRAL
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface CampaignEncounterRepository extends JpaRepository<CampaignEncounter, Long> {
+  List<CampaignEncounter> findByCampaignOrderByEncounterDateAsc(Campaign campaign);
 }

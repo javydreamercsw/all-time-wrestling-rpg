@@ -1,0 +1,39 @@
+[ {
+  "chapterNumber": 1,
+  "title": "The Beginning",
+  "shortDescription": "Your journey in All Time Wrestling starts here.",
+  "introText": "You stand backstage, the roar of the crowd muting your thoughts. This is your moment. The path to the All Time Championship starts here. Will you be a hero, or a villain? Your actions today will define your legacy.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 1. Your goal is to introduce the player to the world of ATW and establish their initial reputation through backstage encounters.",
+  "rules": {
+    "defaultDifficulty": "EASY",
+    "qualifyingMatches": 0,
+    "minWinsToQualify": 0,
+    "victoryPointsWin": 2,
+    "victoryPointsLoss": -1,
+    "titleWinVP": 0,
+    "titleDefenseVP": 0
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  }
+}, {
+  "chapterNumber": 2,
+  "title": "The Tournament",
+  "shortDescription": "Qualify for the All Time Wrestling Championship.",
+  "introText": "The stakes have been raised. The All Time Wrestling Championship tournament is approaching, and you must prove you belong among the elite.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 2. Your goal is to test the player's moral alignment through choices while they navigate a tournament quest. Generate encounters that reflect their current Face/Heel standing.",
+  "rules": {
+    "defaultDifficulty": "MEDIUM",
+    "qualifyingMatches": 4,
+    "minWinsToQualify": 3,
+    "victoryPointsWin": 3,
+    "victoryPointsLoss": -1,
+    "titleWinVP": 10,
+    "titleDefenseVP": 4
+  },
+  "exclusions": {
+    "excludeChampions": true,
+    "npcIds": [ ]
+  }
+} ]

@@ -47,10 +47,27 @@ public class CampaignService {
   private final CampaignAbilityCardRepository campaignAbilityCardRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignScriptService campaignScriptService;
+  private final CampaignChapterService chapterService;
 
   public Campaign startCampaign(Wrestler wrestler) {
-    // Check if wrestler already has active campaign?
-    // For now, allow new campaign.
+    if (hasActiveCampaign(wrestler)) {
+      throw new IllegalStateException("Wrestler already has an active campaign.");
+    }
+
+    // Ensure alignment is initialized
+    WrestlerAlignment alignment =
+        wrestlerAlignmentRepository
+            .findByWrestler(wrestler)
+            .orElseGet(
+                () -> {
+                  WrestlerAlignment newAlignment =
+                      WrestlerAlignment.builder()
+                          .wrestler(wrestler)
+                          .alignmentType(AlignmentType.NEUTRAL)
+                          .level(0)
+                          .build();
+                  return wrestlerAlignmentRepository.save(newAlignment);
+                });
 
     Campaign campaign =
         Campaign.builder()
@@ -71,6 +88,7 @@ public class CampaignService {
             .healthPenalty(0)
             .handSizePenalty(0)
             .staminaPenalty(0)
+            .pendingL1Picks(0) // No picks for neutral start
             .lastSync(LocalDateTime.now())
             .build();
 
@@ -80,6 +98,82 @@ public class CampaignService {
     updateAbilityCards(campaign);
 
     return campaignRepository.save(campaign);
+  }
+
+  /**
+   * Shifts the wrestler's alignment on the track. Positive moves toward Face, negative moves toward
+   * Heel.
+   *
+   * @param campaign The campaign.
+   * @param amount The shift amount.
+   */
+  public void shiftAlignment(Campaign campaign, int amount) {
+    if (amount == 0) return;
+
+    WrestlerAlignment alignment =
+        wrestlerAlignmentRepository
+            .findByWrestler(campaign.getWrestler())
+            .orElseThrow(() -> new IllegalStateException("Alignment not found"));
+
+    int oldLevel = alignment.getLevel();
+    AlignmentType oldType = alignment.getAlignmentType();
+
+    // Logic for bidirectional shift
+    if (oldType == AlignmentType.NEUTRAL) {
+      if (amount > 0) {
+        alignment.setAlignmentType(AlignmentType.FACE);
+        alignment.setLevel(amount);
+      } else {
+        alignment.setAlignmentType(AlignmentType.HEEL);
+        alignment.setLevel(Math.abs(amount));
+      }
+    } else if (oldType == AlignmentType.FACE) {
+      int newLevel = oldLevel + amount;
+      if (newLevel <= 0) {
+        alignment.setAlignmentType(AlignmentType.NEUTRAL);
+        alignment.setLevel(0);
+      } else {
+        alignment.setLevel(Math.min(5, newLevel));
+      }
+    } else { // HEEL
+      // amount > 0 moves toward Neutral (reduces level)
+      // amount < 0 moves further toward Heel (increases level)
+      int newLevel = oldLevel - amount;
+      if (newLevel <= 0) {
+        alignment.setAlignmentType(AlignmentType.NEUTRAL);
+        alignment.setLevel(0);
+      } else {
+        alignment.setLevel(Math.min(5, newLevel));
+      }
+    }
+
+    wrestlerAlignmentRepository.save(alignment);
+    handleLevelChange(campaign, oldLevel, alignment.getLevel());
+
+    // If type changed (e.g. turned), update ability cards
+    if (alignment.getAlignmentType() != oldType) {
+      updateAbilityCards(campaign);
+    }
+  }
+
+  public com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO getCurrentChapter(
+      Campaign campaign) {
+    return chapterService
+        .getChapter(campaign.getState().getCurrentChapter())
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Chapter config not found: " + campaign.getState().getCurrentChapter()));
+  }
+
+  /**
+   * Checks if the wrestler has an active campaign.
+   *
+   * @param wrestler The wrestler.
+   * @return true if an active campaign exists.
+   */
+  public boolean hasActiveCampaign(Wrestler wrestler) {
+    return campaignRepository.findActiveByWrestler(wrestler).isPresent();
   }
 
   public void processMatchResult(Campaign campaign, boolean won) {
@@ -92,17 +186,6 @@ public class CampaignService {
         vpChange = won ? 2 : -1;
         break;
       case 2:
-        // TODO: Implement Chapter 2 specific logic (Medium difficulty default?)
-        vpChange = won ? 3 : -1; // Assuming slightly higher reward? Spec doesn't specify.
-        // Spec: Chapter 2 ... Matches default to Medium difficulty.
-        // Spec: Chapter 3 ... Victories earn 4 VP, losses lose 2 VP.
-        // Spec for Chapter 1: Victories earn 2 VP, losses lose 1 VP.
-        // I will interpolate for Chapter 2 or check if spec missed it.
-        // "Chapter 2: The tournament quest. Matches default to Medium difficulty. Features a Rival
-        // system..."
-        // It doesn't specify VP for Chapter 2. I'll stick to Chapter 1 values or interpolate.
-        // Let's assume Chapter 2 is 3 VP / -1 VP for now or same as Ch 1.
-        // Given it's a tournament, maybe 3 VP.
         vpChange = won ? 3 : -1;
         break;
       case 3:
@@ -156,13 +239,33 @@ public class CampaignService {
     if (alignmentChanged) {
       // Discard all cards of wrong alignment
       currentCards.clear();
-      // Logic for "picking new ones" after turn should probably be handled by UI.
-      // For now, we clear them and the UI should prompt for new picks.
-      log.info("Wrestler {} turned. Card inventory cleared.", wrestler.getName());
+      recalculatePendingPicks(state, alignment);
+      log.info(
+          "Wrestler {} turned. Card inventory cleared and picks recalculated.", wrestler.getName());
     }
 
     state.setActiveCards(currentCards);
     campaignStateRepository.save(state);
+  }
+
+  private void recalculatePendingPicks(CampaignState state, WrestlerAlignment alignment) {
+    int level = alignment.getLevel();
+    AlignmentType type = alignment.getAlignmentType();
+
+    state.setPendingL1Picks(0);
+    state.setPendingL2Picks(0);
+    state.setPendingL3Picks(0);
+
+    if (type == AlignmentType.FACE) {
+      if (level >= 1 && level < 5) state.setPendingL1Picks(1);
+      if (level >= 4) state.setPendingL2Picks(1);
+      if (level >= 5) state.setPendingL3Picks(1);
+    } else {
+      // HEEL
+      if (level >= 1 && level < 4) state.setPendingL1Picks(1);
+      if (level >= 4) state.setPendingL2Picks(1);
+      if (level >= 5) state.setPendingL1Picks(1); // Regain L1 slot
+    }
   }
 
   /**
@@ -183,27 +286,43 @@ public class CampaignService {
     CampaignState state = campaign.getState();
     List<CampaignAbilityCard> cards = state.getActiveCards();
 
+    // Grant first pick when reaching Level 1 from 0 (Neutral)
+    if (oldLevel == 0 && newLevel >= 1 && type != AlignmentType.NEUTRAL) {
+      log.info("Reached Level 1 {}: Eligible for first Level 1 card.", type);
+      state.setPendingL1Picks(state.getPendingL1Picks() + 1);
+    }
+
     // Rules logic
     if (type == AlignmentType.FACE) {
       // Face Level 4: Gain a level 2 card
       if (oldLevel < 4 && newLevel >= 4) {
         log.info("Face reached Level 4: Eligible for Level 2 card.");
-        // This will be handled by UI picking or automatic if only one exists
+        state.setPendingL2Picks(state.getPendingL2Picks() + 1);
       }
       // Face Level 5: Gain a level 3 card, lose a level 1 card
       if (oldLevel < 5 && newLevel >= 5) {
         log.info("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
+        state.setPendingL3Picks(state.getPendingL3Picks() + 1);
+        // If they had no L1 card yet, we might want to decrement pending L1 picks instead?
+        if (state.getPendingL1Picks() > 0) {
+          state.setPendingL1Picks(state.getPendingL1Picks() - 1);
+        }
       }
     } else {
       // Heel Level 4: Gain a level 2 card, lose a level 1 card
       if (oldLevel < 4 && newLevel >= 4) {
         log.info("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
+        state.setPendingL2Picks(state.getPendingL2Picks() + 1);
+        if (state.getPendingL1Picks() > 0) {
+          state.setPendingL1Picks(state.getPendingL1Picks() - 1);
+        }
       }
       // Heel Level 5: Gain another level 1 card
       if (oldLevel < 5 && newLevel >= 5) {
         log.info("Heel reached Level 5: Eligible for another Level 1 card.");
+        state.setPendingL1Picks(state.getPendingL1Picks() + 1);
       }
     }
 
@@ -235,31 +354,16 @@ public class CampaignService {
             .orElseThrow(() -> new IllegalStateException("Alignment not found"));
 
     CampaignState state = campaign.getState();
-    List<CampaignAbilityCard> currentCards = state.getActiveCards();
-    int level = alignment.getLevel();
     AlignmentType type = alignment.getAlignmentType();
 
     List<CampaignAbilityCard> pickable = new ArrayList<>();
 
-    // Logic to determine what can be picked based on current inventory vs rules
-    long countL1 = currentCards.stream().filter(c -> c.getLevel() == 1).count();
-    long countL2 = currentCards.stream().filter(c -> c.getLevel() == 2).count();
-    long countL3 = currentCards.stream().filter(c -> c.getLevel() == 3).count();
-
-    if (type == AlignmentType.FACE) {
-      if (level >= 1 && countL1 == 0 && level < 5) pickable.addAll(getAvailableCards(type, 1));
-      if (level >= 4 && countL2 == 0) pickable.addAll(getAvailableCards(type, 2));
-      if (level >= 5 && countL3 == 0) pickable.addAll(getAvailableCards(type, 3));
-    } else {
-      // Heel
-      if (level >= 1 && level < 4 && countL1 == 0) pickable.addAll(getAvailableCards(type, 1));
-      if (level >= 4 && countL2 == 0) pickable.addAll(getAvailableCards(type, 2));
-      if (level >= 5 && countL1 == 0)
-        pickable.addAll(getAvailableCards(type, 1)); // Regains L1 slot at L5
-    }
+    if (state.getPendingL1Picks() > 0) pickable.addAll(getAvailableCards(type, 1));
+    if (state.getPendingL2Picks() > 0) pickable.addAll(getAvailableCards(type, 2));
+    if (state.getPendingL3Picks() > 0) pickable.addAll(getAvailableCards(type, 3));
 
     // Filter out cards already owned
-    pickable.removeIf(currentCards::contains);
+    pickable.removeIf(state.getActiveCards()::contains);
 
     return pickable;
   }
@@ -283,6 +387,20 @@ public class CampaignService {
     CampaignState state = campaign.getState();
     if (!state.getActiveCards().contains(card)) {
       state.getActiveCards().add(card);
+
+      // Decrement appropriate pending pick counter
+      switch (card.getLevel()) {
+        case 1:
+          if (state.getPendingL1Picks() > 0) state.setPendingL1Picks(state.getPendingL1Picks() - 1);
+          break;
+        case 2:
+          if (state.getPendingL2Picks() > 0) state.setPendingL2Picks(state.getPendingL2Picks() - 1);
+          break;
+        case 3:
+          if (state.getPendingL3Picks() > 0) state.setPendingL3Picks(state.getPendingL3Picks() - 1);
+          break;
+      }
+
       campaignStateRepository.save(state);
       log.info("Wrestler {} picked card: {}", campaign.getWrestler().getName(), card.getName());
     }

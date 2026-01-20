@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -90,6 +91,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final InjuryService injuryService;
   private final AccountService accountService;
   private final NpcService npcService;
+  private final CampaignService campaignService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -121,7 +123,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       SeasonService seasonService,
       InjuryService injuryService,
       NpcService npcService,
-      @Qualifier("baseAccountService") AccountService accountService) {
+      @Qualifier("baseAccountService") AccountService accountService,
+      CampaignService campaignService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -132,6 +135,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.injuryService = injuryService;
     this.npcService = npcService;
     this.accountService = accountService;
+    this.campaignService = campaignService;
 
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setSrc("https://via.placeholder.com/150");
@@ -240,6 +244,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               wrestlerService,
               injuryService,
               npcService,
+              campaignService,
               this::updateView,
               true,
               securityUtils,

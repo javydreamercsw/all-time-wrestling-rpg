@@ -18,41 +18,27 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.domain.campaign.CampaignState;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class CampaignScriptServiceTest {
 
-  @InjectMocks private CampaignScriptService campaignScriptService;
+  private final CampaignScriptService scriptService = new CampaignScriptService();
 
   @Test
-  void testExecuteScriptUpdatesState() {
-    // Arrange
-    CampaignState state = new CampaignState();
-    state.setCurrentChapter(0);
-    state.setVictoryPoints(10); // Should be reset
+  void testEvaluateSnippet() {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("val", 10);
+    Object result = scriptService.evaluateSnippet("val * 2", variables);
+    assertThat(result).isEqualTo(20);
+  }
 
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("Test Wrestler");
-
-    Map<String, Object> context = new HashMap<>();
-    context.put("campaignState", state);
-    context.put("wrestler", wrestler);
-
-    // Act
-    Object result = campaignScriptService.executeScript("chapter1_start.groovy", context);
-
-    // Assert
-    assertThat(result).isEqualTo("Chapter 1 Started");
-    assertThat(state.getCurrentChapter()).isEqualTo(1);
-    assertThat(state.getVictoryPoints()).isEqualTo(0);
-    assertThat(state.getBumps()).isEqualTo(0);
+  @Test
+  void testExecuteEffect() {
+    Campaign campaign = new Campaign();
+    // This just verifies it runs without crashing, as methods currently only log
+    scriptService.executeEffect("spendStamina(1); gainInitiative()", campaign);
   }
 }

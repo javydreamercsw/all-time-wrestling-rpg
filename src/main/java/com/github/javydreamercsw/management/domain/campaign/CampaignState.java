@@ -111,4 +111,32 @@ public class CampaignState {
       inverseJoinColumns = @JoinColumn(name = "card_id"))
   @Builder.Default
   private List<CampaignAbilityCard> activeCards = new ArrayList<>();
+
+  @Column(name = "pending_l1_picks", nullable = false)
+  @Builder.Default
+  private int pendingL1Picks = 0;
+
+  @Column(name = "pending_l2_picks", nullable = false)
+  @Builder.Default
+  private int pendingL2Picks = 0;
+
+  @Column(name = "pending_l3_picks", nullable = false)
+  @Builder.Default
+  private int pendingL3Picks = 0;
+
+  @Column(name = "matches_played", nullable = false)
+  @Builder.Default
+  private int matchesPlayed = 0;
+
+  @Column(name = "wins", nullable = false)
+  @Builder.Default
+  private int wins = 0;
+
+  @Column(name = "losses", nullable = false)
+  @Builder.Default
+  private int losses = 0;
+
+  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "rival_id")
+  private com.github.javydreamercsw.management.domain.npc.Npc rival;
 }

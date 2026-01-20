@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.component;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -53,6 +54,7 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
       @NonNull NpcService npcService,
+      @NonNull CampaignService campaignService,
       @NonNull Runnable refreshProvider,
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
@@ -71,6 +73,20 @@ public class WrestlerActionMenu extends MenuBar {
                         new RouteParameters("wrestlerId", String.valueOf(wrestler.getId()))));
     viewProfileItem.addComponentAsFirst(new Icon(VaadinIcon.USER));
     viewProfileItem.setEnabled(!isProfileView);
+
+    MenuItem startCampaignItem =
+        subMenu.addItem(
+            "Start Campaign",
+            e -> {
+              campaignService.startCampaign(wrestler);
+              Notification.show("Campaign started for " + wrestler.getName())
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            });
+    startCampaignItem.addComponentAsFirst(new Icon(VaadinIcon.ROCKET));
+    startCampaignItem.setVisible(
+        wrestler.getAccount() != null
+            && (securityUtils.isAdmin() || securityUtils.isOwner(wrestler))
+            && !campaignService.hasActiveCampaign(wrestler));
 
     MenuItem editItem =
         subMenu.addItem(

@@ -25,6 +25,9 @@ CREATE TABLE campaign_state (
     last_action_success BOOLEAN DEFAULT TRUE,
     promo_unlocked BOOLEAN DEFAULT FALSE NOT NULL,
     attack_unlocked BOOLEAN DEFAULT FALSE NOT NULL,
+    pending_l1_picks INT DEFAULT 0 NOT NULL,
+    pending_l2_picks INT DEFAULT 0 NOT NULL,
+    pending_l3_picks INT DEFAULT 0 NOT NULL,
     last_sync TIMESTAMP,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id)
 );
@@ -32,7 +35,7 @@ CREATE TABLE campaign_state (
 CREATE TABLE wrestler_alignment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     wrestler_id BIGINT NOT NULL,
-    alignment_type VARCHAR(50) NOT NULL, -- FACE or HEEL
+    alignment_type VARCHAR(50) NOT NULL, -- FACE, HEEL or NEUTRAL
     level INT NOT NULL DEFAULT 0,
     FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id)
 );
@@ -57,7 +60,9 @@ CREATE TABLE campaign_ability_card (
     effect_script VARCHAR(255),
     one_time_use BOOLEAN DEFAULT TRUE NOT NULL,
     timing VARCHAR(50),
-    track_requirement INT DEFAULT 0 NOT NULL
+    secondary_effect_script VARCHAR(255),
+    secondary_one_time_use BOOLEAN DEFAULT FALSE NOT NULL,
+    secondary_timing VARCHAR(50)
 );
 
 CREATE TABLE campaign_state_cards (

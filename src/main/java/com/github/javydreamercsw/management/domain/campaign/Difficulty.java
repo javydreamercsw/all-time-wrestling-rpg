@@ -16,8 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
-public enum AlignmentType {
-  FACE,
-  HEEL,
-  NEUTRAL
+public enum Difficulty {
+  EASY,
+  MEDIUM,
+  HARD,
+  LEGENDARY
 }

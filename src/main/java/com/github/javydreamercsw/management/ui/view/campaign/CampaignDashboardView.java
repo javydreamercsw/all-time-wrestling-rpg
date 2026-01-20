@@ -16,25 +16,35 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
+import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.util.Optional;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -47,6 +57,8 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignRepository campaignRepository;
   private final CampaignService campaignService;
   private final WrestlerRepository wrestlerRepository;
+  private final CampaignAbilityCardRepository cardRepository;
+  private final SecurityUtils securityUtils;
 
   private Campaign currentCampaign;
 
@@ -54,10 +66,14 @@ public class CampaignDashboardView extends VerticalLayout {
   public CampaignDashboardView(
       CampaignRepository campaignRepository,
       CampaignService campaignService,
-      WrestlerRepository wrestlerRepository) {
+      WrestlerRepository wrestlerRepository,
+      CampaignAbilityCardRepository cardRepository,
+      SecurityUtils securityUtils) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
+    this.cardRepository = cardRepository;
+    this.securityUtils = securityUtils;
 
     setSpacing(true);
     setPadding(true);
@@ -67,17 +83,19 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void loadCampaign() {
-    // For MVP/Testing: Pick first active campaign.
-    // In production, filter by authenticated user's wrestler.
-    Optional<Campaign> c =
-        campaignRepository.findAll().stream()
-            .filter(
-                camp ->
-                    camp.getStatus()
-                        == com.github.javydreamercsw.management.domain.campaign.CampaignStatus
-                            .ACTIVE)
-            .findFirst();
-    c.ifPresent(campaign -> currentCampaign = campaign);
+    securityUtils
+        .getAuthenticatedUser()
+        .ifPresent(
+            user -> {
+              wrestlerRepository
+                  .findByAccount(user.getAccount())
+                  .ifPresent(
+                      wrestler -> {
+                        campaignRepository
+                            .findActiveByWrestler(wrestler)
+                            .ifPresent(campaign -> currentCampaign = campaign);
+                      });
+            });
   }
 
   private void initUI() {
@@ -85,26 +103,40 @@ public class CampaignDashboardView extends VerticalLayout {
       add(new H2("Campaign Mode"));
       add(
           new Span(
-              "No active campaign found. Please ask an Admin to assign a campaign (or implement"
-                  + " 'Start New Campaign' flow)."));
-
-      // Temporary "Start Campaign" for debugging/testing if user is Admin?
-      Button startButton = new Button("Start New Campaign (Debug)", e -> startDebugCampaign());
-      add(startButton);
+              "No active campaign found. To start a campaign, please navigate to the Wrestler"
+                  + " List and use the 'Start Campaign' action on your assigned wrestler."));
       return;
     }
 
     CampaignState state = currentCampaign.getState();
     Wrestler wrestler = currentCampaign.getWrestler();
+    WrestlerAlignment alignment = wrestler.getAlignment();
 
     add(new H2("Campaign: All or Nothing (Season 1)"));
     add(new H3("Wrestler: " + wrestler.getName()));
+
+    // Alignment Track
+    if (alignment != null) {
+      add(new AlignmentTrackComponent(alignment));
+    }
 
     HorizontalLayout statsLayout = new HorizontalLayout();
     statsLayout.add(createStatCard("Chapter", String.valueOf(state.getCurrentChapter())));
     statsLayout.add(createStatCard("Victory Points", String.valueOf(state.getVictoryPoints())));
     statsLayout.add(createStatCard("Skill Tokens", String.valueOf(state.getSkillTokens())));
     statsLayout.add(createStatCard("Bumps", String.valueOf(state.getBumps())));
+
+    if (alignment != null) {
+      statsLayout.add(
+          createStatCard(
+              "Alignment",
+              (alignment.getAlignmentType() == AlignmentType.NEUTRAL
+                      ? "NEUTRAL"
+                      : alignment.getAlignmentType().name())
+                  + " (Lvl "
+                  + alignment.getLevel()
+                  + ")"));
+    }
 
     add(statsLayout);
 
@@ -124,6 +156,24 @@ public class CampaignDashboardView extends VerticalLayout {
                 + state.getHandSizePenalty()));
     add(healthLayout);
 
+    // Pending Picks Section
+    addPendingPicksSection(currentCampaign);
+
+    // My Cards Section
+    add(new H4("My Ability Cards"));
+    HorizontalLayout myCardsLayout = new HorizontalLayout();
+    myCardsLayout.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.MEDIUM);
+    if (state.getActiveCards().isEmpty()) {
+      myCardsLayout.add(
+          new Span("No cards currently held. Advance your alignment track to earn cards!"));
+    } else {
+      state
+          .getActiveCards()
+          .forEach(card -> myCardsLayout.add(new CampaignAbilityCardComponent(card)));
+    }
+    add(myCardsLayout);
+
+    // Actions
     add(new H4("Actions"));
     HorizontalLayout actionsLayout = new HorizontalLayout();
     actionsLayout.add(
@@ -133,6 +183,105 @@ public class CampaignDashboardView extends VerticalLayout {
             "Story Narrative",
             e -> UI.getCurrent().navigate("campaign/narrative"))); // To be implemented
     add(actionsLayout);
+
+    // Global Card Library
+    addGlobalCardLibrary();
+  }
+
+  private void addPendingPicksSection(Campaign campaign) {
+    CampaignState state = campaign.getState();
+    if (state.getPendingL1Picks() <= 0
+        && state.getPendingL2Picks() <= 0
+        && state.getPendingL3Picks() <= 0) {
+      return;
+    }
+
+    VerticalLayout pendingSection = new VerticalLayout();
+    pendingSection.setPadding(true);
+    pendingSection.addClassNames(
+        LumoUtility.Background.CONTRAST_10, LumoUtility.BorderRadius.MEDIUM, LumoUtility.Gap.SMALL);
+
+    H4 header = new H4("Available Card Picks");
+    header.addClassNames(LumoUtility.Margin.NONE, LumoUtility.TextColor.PRIMARY);
+    pendingSection.add(header);
+
+    Span info =
+        new Span(
+            "You have earned new ability slots! Choose a card to add to your permanent"
+                + " inventory.");
+    info.addClassNames(LumoUtility.FontSize.SMALL);
+    pendingSection.add(info);
+
+    HorizontalLayout picksContainer = new HorizontalLayout();
+    picksContainer.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.MEDIUM);
+
+    List<CampaignAbilityCard> pickable = campaignService.getPickableCards(campaign);
+    for (CampaignAbilityCard card : pickable) {
+      VerticalLayout cardWrapper = new VerticalLayout();
+      cardWrapper.setPadding(false);
+      cardWrapper.setSpacing(true);
+      cardWrapper.setAlignItems(Alignment.CENTER);
+      cardWrapper.setWidth("wrap-content");
+
+      cardWrapper.add(new CampaignAbilityCardComponent(card));
+
+      Button pickButton =
+          new Button(
+              "Pick This Card",
+              e -> {
+                campaignService.pickAbilityCard(campaign, card.getId());
+                refreshUI();
+              });
+      pickButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
+      cardWrapper.add(pickButton);
+
+      picksContainer.add(cardWrapper);
+    }
+
+    pendingSection.add(picksContainer);
+    add(pendingSection);
+  }
+
+  private void refreshUI() {
+    removeAll();
+    loadCampaign();
+    initUI();
+  }
+
+  private void addGlobalCardLibrary() {
+    VerticalLayout libraryContent = new VerticalLayout();
+    libraryContent.setPadding(false);
+
+    HorizontalLayout splitLayout = new HorizontalLayout();
+    splitLayout.setWidthFull();
+    splitLayout.addClassNames(LumoUtility.Gap.LARGE);
+
+    // Heel Section
+    VerticalLayout heelCol = new VerticalLayout();
+    heelCol.add(new H4("Heel Abilities"));
+    HorizontalLayout heelCards = new HorizontalLayout();
+    heelCards.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
+    cardRepository.findByAlignmentType(AlignmentType.HEEL).stream()
+        .sorted(java.util.Comparator.comparingInt(CampaignAbilityCard::getLevel))
+        .forEach(card -> heelCards.add(new CampaignAbilityCardComponent(card)));
+    heelCol.add(heelCards);
+
+    // Face Section
+    VerticalLayout faceCol = new VerticalLayout();
+    faceCol.add(new H4("Face Abilities"));
+    HorizontalLayout faceCards = new HorizontalLayout();
+    faceCards.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
+    cardRepository.findByAlignmentType(AlignmentType.FACE).stream()
+        .sorted(java.util.Comparator.comparingInt(CampaignAbilityCard::getLevel))
+        .forEach(card -> faceCards.add(new CampaignAbilityCardComponent(card)));
+    faceCol.add(faceCards);
+
+    splitLayout.add(heelCol, faceCol);
+    libraryContent.add(splitLayout);
+
+    Details libraryDetails = new Details("Campaign Card Library", libraryContent);
+    libraryDetails.addClassNames(LumoUtility.Width.FULL, LumoUtility.Margin.Top.LARGE);
+    add(libraryDetails);
   }
 
   private VerticalLayout createStatCard(String label, String value) {
@@ -149,18 +298,5 @@ public class CampaignDashboardView extends VerticalLayout {
     valueSpan.getStyle().set("font-size", "1.2em");
     card.add(valueSpan);
     return card;
-  }
-
-  private void startDebugCampaign() {
-    // Find a wrestler or create one?
-    // Just pick the first available wrestler.
-    Optional<Wrestler> w = wrestlerRepository.findAll().stream().findFirst();
-    if (w.isPresent()) {
-      currentCampaign = campaignService.startCampaign(w.get());
-      removeAll();
-      initUI();
-    } else {
-      add(new Span("No wrestlers found in DB to start campaign."));
-    }
   }
 }
