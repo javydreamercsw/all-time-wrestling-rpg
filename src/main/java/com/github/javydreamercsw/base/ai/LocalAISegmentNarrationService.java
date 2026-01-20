@@ -48,7 +48,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   @Override
   public boolean isAvailable() {
-    return getBaseUrl() != null && !getBaseUrl().isEmpty();
+    return config.isEnabled() && getBaseUrl() != null && !getBaseUrl().isEmpty();
   }
 
   private String getBaseUrl() {
