@@ -9,6 +9,7 @@ This guide provides instructions for developers on how to work with the security
 - [Securing Service Methods](#securing-service-methods)
 - [Ownership-Based Security for Players](#ownership-based-security-for-players)
 - [Role-Based UI Components](#role-based-ui-components)
+- [Campaign System Scripting](#campaign-system-scripting)
 
 ## Security Architecture Overview
 
@@ -113,3 +114,8 @@ The `SecurityUtils` class provides the following convenient methods:
 -   `isAdmin()`, `isBooker()`, `isPlayer()`, `isViewer()`: Convenient booleans to check for a specific role.
 
 Always use these `SecurityUtils` methods to control the visibility of UI components based on the current user's permissions. This ensures that the UI accurately reflects what the user is allowed to do, as enforced by the backend's method-level security.
+
+## Campaign System Scripting
+
+The solo campaign uses dynamic scripting for ability cards (Ally, Valet, Face/Heel cards). For a detailed guide on available methods and script syntax, refer to the [Campaign Scripting Guide](CAMPAIGN_SCRIPTING.md).
+
