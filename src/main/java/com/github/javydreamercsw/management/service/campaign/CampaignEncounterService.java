@@ -54,9 +54,10 @@ public class CampaignEncounterService {
     CampaignState state = campaign.getState();
     CampaignChapterDTO chapter =
         chapterService
-            .getChapter(state.getCurrentChapter())
+            .getChapter(state.getCurrentChapterId())
             .orElseThrow(
-                () -> new IllegalStateException("Chapter not found: " + state.getCurrentChapter()));
+                () ->
+                    new IllegalStateException("Chapter not found: " + state.getCurrentChapterId()));
 
     List<CampaignEncounter> history =
         encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign);
@@ -74,7 +75,7 @@ public class CampaignEncounterService {
       CampaignEncounter encounter =
           CampaignEncounter.builder()
               .campaign(campaign)
-              .chapterNumber(chapter.getChapterNumber())
+              .chapterId(chapter.getId())
               .narrativeText(response.getNarrative())
               .encounterDate(LocalDateTime.now())
               .build();
@@ -179,8 +180,8 @@ public class CampaignEncounterService {
           "3. Provide choices that define the player's reaction or immediate next steps (e.g.,"
               + " backstage interview, locker room confrontation).\n");
     } else {
-      sb.append("1. Generate a professional wrestling narrative segment appropriate for Chapter ")
-          .append(chapter.getChapterNumber())
+      sb.append("1. Generate a professional wrestling narrative segment appropriate for chapter ")
+          .append(chapter.getId())
           .append(" (")
           .append(chapter.getTitle())
           .append(").\n");

@@ -14,12 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.campaign;
+package com.github.javydreamercsw.management.dto.campaign;
 
-public enum Difficulty {
-  ENTRY,
-  EASY,
-  MEDIUM,
-  HARD,
-  LEGENDARY
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * Represents a point of entry or exit for a chapter. A point is active if ALL its criteria are met.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChapterPointDTO {
+  private String name; // Label for the point (e.g. "Hero's Path", "Success Exit")
+  private List<ChapterCriteriaDTO> criteria;
 }

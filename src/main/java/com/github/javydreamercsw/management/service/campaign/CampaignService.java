@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDateTime;
@@ -102,7 +103,6 @@ public class CampaignService {
     CampaignState state =
         CampaignState.builder()
             .campaign(campaign)
-            .currentChapter(1)
             .victoryPoints(0)
             .skillTokens(0)
             .bumps(0)
@@ -112,6 +112,12 @@ public class CampaignService {
             .pendingL1Picks(0) // No picks for neutral start
             .lastSync(LocalDateTime.now())
             .build();
+
+    // Select initial chapter
+    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    if (!available.isEmpty()) {
+      state.setCurrentChapterId(available.get(0).getId());
+    }
 
     campaignStateRepository.save(state);
     campaign.setState(state);
@@ -270,11 +276,11 @@ public class CampaignService {
   public com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO getCurrentChapter(
       Campaign campaign) {
     return chapterService
-        .getChapter(campaign.getState().getCurrentChapter())
+        .getChapter(campaign.getState().getCurrentChapterId())
         .orElseThrow(
             () ->
                 new IllegalStateException(
-                    "Chapter config not found: " + campaign.getState().getCurrentChapter()));
+                    "Chapter config not found: " + campaign.getState().getCurrentChapterId()));
   }
 
   /**
@@ -289,6 +295,7 @@ public class CampaignService {
 
   public void processMatchResult(Campaign campaign, boolean won) {
     CampaignState state = campaign.getState();
+    Wrestler wrestler = campaign.getWrestler();
     com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO.ChapterRules rules =
         getCurrentChapter(campaign).getRules();
 
@@ -302,22 +309,44 @@ public class CampaignService {
     }
 
     // Check for chapter completion/tournament qualification
-    if (state.getCurrentChapter() == 2
-        && state.getMatchesPlayed() >= rules.getQualifyingMatches()) {
-      if (state.getWins() >= rules.getMinWinsToQualify()) {
-        log.info(
-            "Wrestler {} QUALIFIED for the tournament finals!", campaign.getWrestler().getName());
-        state.setFinalsPhase(true);
+    if ("ch2_tournament".equals(state.getCurrentChapterId())) {
+      if (!state.isFinalsPhase()) {
+        // Qualifying Phase
+        if (state.getMatchesPlayed() >= rules.getQualifyingMatches()) {
+          if (state.getWins() >= rules.getMinWinsToQualify()) {
+            log.info("Wrestler {} QUALIFIED for the tournament finals!", wrestler.getName());
+            state.setFinalsPhase(true);
+            state.setMatchesPlayed(0); // Reset for finals phase tracking
+            state.setWins(0);
+            state.setLosses(0);
+          } else {
+            log.info(
+                "Wrestler {} FAILED to qualify for the tournament finals.", wrestler.getName());
+            state.setFailedToQualify(true);
+          }
+        }
       } else {
-        log.info(
-            "Wrestler {} FAILED to qualify for the tournament finals.",
-            campaign.getWrestler().getName());
-        // Handle failure (e.g. restart chapter or special fallout)
+        // Finals Phase
+        if (!won) {
+          log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
+          // They lost in the finals, they didn't win the tournament
+          // We can use a flag or just let the matchesPlayed count determine where they failed
+        } else if (state.getWins() >= rules.getTotalFinalsMatches()) {
+          log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
+          state.setTournamentWinner(true);
+        }
       }
     }
 
     state.setCurrentPhase(CampaignPhase.POST_MATCH);
     campaignStateRepository.save(state);
+
+    // Automatic check for chapter completion
+    if (chapterService.isChapterComplete(state)) {
+      log.info("Chapter {} complete! Ready to advance.", state.getCurrentChapterId());
+      // For now we don't automatically advance here to allow for post-match narrative.
+      // The CampaignNarrativeView choice will likely trigger advanceChapter.
+    }
   }
 
   /**
@@ -335,9 +364,22 @@ public class CampaignService {
 
   public void advanceChapter(Campaign campaign) {
     CampaignState state = campaign.getState();
-    if (state.getCurrentChapter() < 3) {
-      state.setCurrentChapter(state.getCurrentChapter() + 1);
+    String oldId = state.getCurrentChapterId();
+
+    if (oldId != null) {
+      state.getCompletedChapterIds().add(oldId);
+    }
+
+    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    if (!available.isEmpty()) {
+      // Pick next chapter - could be enhanced with choosing logic
+      state.setCurrentChapterId(available.get(0).getId());
+      state.setMatchesPlayed(0); // Reset chapter-specific counters
+      state.setWins(0);
+      state.setLosses(0);
+      state.setFinalsPhase(false);
       campaignStateRepository.save(state);
+      log.info("Advanced to chapter: {}", state.getCurrentChapterId());
     } else {
       completeCampaign(campaign);
     }

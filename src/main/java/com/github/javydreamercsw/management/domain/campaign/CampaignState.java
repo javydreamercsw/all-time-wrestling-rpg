@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -53,8 +55,16 @@ public class CampaignState {
   @JoinColumn(name = "campaign_id", nullable = false)
   private Campaign campaign;
 
-  @Column(name = "current_chapter", nullable = false)
-  private int currentChapter;
+  @Column(name = "current_chapter_id")
+  private String currentChapterId;
+
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+      name = "campaign_completed_chapters",
+      joinColumns = @JoinColumn(name = "campaign_state_id"))
+  @Column(name = "chapter_id")
+  @Builder.Default
+  private List<String> completedChapterIds = new ArrayList<>();
 
   @Column(name = "victory_points", nullable = false)
   private int victoryPoints;
@@ -143,6 +153,14 @@ public class CampaignState {
   @Column(name = "finals_phase", nullable = false)
   @Builder.Default
   private boolean finalsPhase = false;
+
+  @Column(name = "tournament_winner", nullable = false)
+  @Builder.Default
+  private boolean tournamentWinner = false;
+
+  @Column(name = "failed_to_qualify", nullable = false)
+  @Builder.Default
+  private boolean failedToQualify = false;
 
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "current_match_id")

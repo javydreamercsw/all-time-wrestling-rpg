@@ -46,8 +46,8 @@ public class CampaignEncounter {
   @JoinColumn(name = "campaign_id", nullable = false)
   private Campaign campaign;
 
-  @Column(name = "chapter_number", nullable = false)
-  private int chapterNumber;
+  @Column(name = "chapter_id", nullable = false)
+  private String chapterId;
 
   @Column(name = "narrative_text", nullable = false, length = 4000)
   private String narrativeText;

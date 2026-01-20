@@ -63,7 +63,123 @@ public class CampaignChapterService {
     return Collections.unmodifiableList(chapters);
   }
 
-  public Optional<CampaignChapterDTO> getChapter(int chapterNumber) {
-    return chapters.stream().filter(c -> c.getChapterNumber() == chapterNumber).findFirst();
+  public Optional<CampaignChapterDTO> getChapter(String id) {
+    return chapters.stream().filter(c -> c.getId().equals(id)).findFirst();
+  }
+
+  /**
+   * Finds all chapters that the player is currently eligible to enter.
+   *
+   * @param state The current campaign state.
+   * @return List of eligible chapters.
+   */
+  public List<CampaignChapterDTO> findAvailableChapters(
+      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+    return chapters.stream()
+        .filter(c -> !state.getCompletedChapterIds().contains(c.getId())) // Not already completed
+        .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
+        .toList();
+  }
+
+  /**
+   * Checks if the current chapter is ready to be exited.
+   *
+   * @param state The current campaign state.
+   * @return true if any exit point is active.
+   */
+  public boolean isChapterComplete(
+      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+    if (state.getCurrentChapterId() == null) return false;
+
+    return getChapter(state.getCurrentChapterId())
+        .map(c -> isAnyPointActive(c.getExitPoints(), state))
+        .orElse(false);
+  }
+
+  private boolean isAnyPointActive(
+      List<com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO> points,
+      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+    if (points == null || points.isEmpty()) {
+      // If no points are defined, we might want a default behavior.
+      // For entry: maybe only the first chapter?
+      // For now, assume if no points are defined, it's not active unless it's an intro.
+      return false;
+    }
+    return points.stream().anyMatch(p -> areAllCriteriaMet(p.getCriteria(), state));
+  }
+
+  private boolean areAllCriteriaMet(
+      List<com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO> criteriaList,
+      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+    if (criteriaList == null || criteriaList.isEmpty()) return true;
+
+    return criteriaList.stream().allMatch(c -> isCriteriaMet(c, state));
+  }
+
+  private boolean isCriteriaMet(
+      com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO criteria,
+      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+    // Check Victory Points
+    if (criteria.getMinVictoryPoints() != null
+        && state.getVictoryPoints() < criteria.getMinVictoryPoints()) {
+      return false;
+    }
+
+    // Check Matches Played
+    if (criteria.getMinMatchesPlayed() != null
+        && state.getMatchesPlayed() < criteria.getMinMatchesPlayed()) {
+      return false;
+    }
+
+    // Check Wins
+    if (criteria.getMinWins() != null && state.getWins() < criteria.getMinWins()) {
+      return false;
+    }
+
+    // Check Tournament Status
+    if (criteria.getTournamentWinner() != null
+        && state.isTournamentWinner() != criteria.getTournamentWinner()) {
+      return false;
+    }
+
+    if (criteria.getFailedToQualify() != null
+        && state.isFailedToQualify() != criteria.getFailedToQualify()) {
+      return false;
+    }
+
+    // Check Championship Status
+    if (criteria.getIsChampion() != null) {
+      boolean holdsTitle =
+          state.getCampaign().getWrestler().getReigns().stream()
+              .anyMatch(
+                  com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign);
+      if (holdsTitle != criteria.getIsChampion()) {
+        return false;
+      }
+    }
+
+    // Check Alignment
+    if (criteria.getRequiredAlignmentType() != null) {
+      com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment alignment =
+          state.getCampaign().getWrestler().getAlignment();
+      if (alignment == null
+          || !alignment.getAlignmentType().name().equals(criteria.getRequiredAlignmentType())) {
+        return false;
+      }
+      if (criteria.getMinAlignmentLevel() != null
+          && alignment.getLevel() < criteria.getMinAlignmentLevel()) {
+        return false;
+      }
+    }
+
+    // Check Completed Chapters
+    if (criteria.getRequiredCompletedChapterIds() != null
+        && !state.getCompletedChapterIds().containsAll(criteria.getRequiredCompletedChapterIds())) {
+      return false;
+    }
+
+    // TODO: Implement customEvaluationScript logic using Groovy
+
+    return true;
   }
 }

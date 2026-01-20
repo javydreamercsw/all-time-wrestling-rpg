@@ -110,12 +110,7 @@ public class CampaignNarrativeView extends VerticalLayout {
       return;
     }
 
-    add(
-        new H2(
-            "Chapter "
-                + currentCampaign.getState().getCurrentChapter()
-                + ": "
-                + campaignService.getCurrentChapter(currentCampaign).getTitle()));
+    add(new H2("Story: " + campaignService.getCurrentChapter(currentCampaign).getTitle()));
 
     narrativeContainer = new VerticalLayout();
     narrativeContainer.setWidthFull();

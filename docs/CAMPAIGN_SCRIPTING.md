@@ -98,3 +98,79 @@ The scripting engine is powered by:
 - **`CampaignEffectContext.java`**: Defines the Java methods exposed to scripts.
 - **`CampaignScriptService.java`**: Evaluates the Groovy snippets using `GroovyShell`.
 - **`CampaignService.java`**: Triggers the execution when `useAbilityCard()` is called.
+
+## Campaign Chapters
+
+Campaigns are organized into chapters defined in `campaign_chapters.json`. Each chapter defines its own narrative tone, rules, and progression criteria.
+
+### Chapter Configuration (JSON)
+
+Example structure:
+
+```json
+{
+  "id": "ch2_tournament",
+  "title": "The Tournament",
+  "shortDescription": "Qualify for the All Time Wrestling Championship.",
+  "introText": "The stakes have been raised...",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 2...",
+  "difficulty": "MEDIUM",
+  "entryPoints": [
+    {
+      "name": "Tournament Invite",
+      "criteria": [
+        { "requiredCompletedChapterIds": ["ch1_beginning"] }
+      ]
+    }
+  ],
+  "exitPoints": [
+    {
+      "name": "Failed to Qualify",
+      "criteria": [
+        { "failedToQualify": true }
+      ]
+    }
+  ],
+  "rules": {
+    "qualifyingMatches": 4,
+    "minWinsToQualify": 3,
+    "totalFinalsMatches": 2,
+    "victoryPointsWin": 3,
+    "victoryPointsLoss": -1
+  }
+}
+```
+
+### Entry & Exit Points
+
+Each chapter can have multiple entry and exit points.
+- **Entry Points:** Define when a chapter becomes available to the player.
+- **Exit Points:** Define when a chapter is considered complete and what narrative path follows.
+
+Logical evaluation:
+- Within a **Point**, all criteria in a single criteria object must be met (**AND**).
+- Between multiple **Points**, any one point being active triggers the transition (**OR**).
+
+### Progression Criteria
+
+The following fields can be used in a `criteria` object:
+
+| Field | Description |
+|:---|:---|
+| `minVictoryPoints` | Minimum VP required. |
+| `minMatchesPlayed` | Minimum matches played in the current chapter. |
+| `minWins` | Minimum wins in the current chapter. |
+| `tournamentWinner` | Boolean check for tournament victory. |
+| `failedToQualify` | Boolean check for tournament qualification failure. |
+| `isChampion` | Boolean check if the wrestler currently holds any title. |
+| `requiredAlignmentType` | `FACE`, `HEEL`, or `NEUTRAL`. |
+| `minAlignmentLevel` | Minimum level on the alignment track (0-5). |
+| `requiredCompletedChapterIds` | List of IDs of chapters that must be finished. |
+| `customEvaluationScript` | (Experimental) Groovy script for complex logic. |
+
+### AI Narrative Integration
+
+Chapters influence the AI Director via:
+- `aiSystemPrompt`: Tailors the AI's persona and goals for the chapter.
+- **Phase Context:** The system uses the `CampaignPhase` (BACKSTAGE, MATCH, POST_MATCH) to determine which prompt instructions to send to the AI.
+- **Match Result Context:** During the `POST_MATCH` phase, the AI receives details about the last match (won/lost, opponent, type) to generate immediate reactions.

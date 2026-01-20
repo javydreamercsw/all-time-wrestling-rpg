@@ -12,7 +12,7 @@ CREATE TABLE campaign (
 CREATE TABLE campaign_state (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     campaign_id BIGINT NOT NULL,
-    current_chapter INT NOT NULL DEFAULT 1,
+    current_chapter_id VARCHAR(255),
     victory_points INT NOT NULL DEFAULT 0,
     skill_tokens INT NOT NULL DEFAULT 0,
     bumps INT NOT NULL DEFAULT 0,
@@ -33,11 +33,19 @@ CREATE TABLE campaign_state (
     losses INT DEFAULT 0 NOT NULL,
     rival_id BIGINT,
     finals_phase BOOLEAN DEFAULT FALSE NOT NULL,
+    tournament_winner BOOLEAN DEFAULT FALSE NOT NULL,
+    failed_to_qualify BOOLEAN DEFAULT FALSE NOT NULL,
     current_match_id BIGINT,
     last_sync TIMESTAMP,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id),
     FOREIGN KEY (rival_id) REFERENCES npc(id),
     FOREIGN KEY (current_match_id) REFERENCES segment(segment_id)
+);
+
+CREATE TABLE campaign_completed_chapters (
+    campaign_state_id BIGINT NOT NULL,
+    chapter_id VARCHAR(255) NOT NULL,
+    FOREIGN KEY (campaign_state_id) REFERENCES campaign_state(id)
 );
 
 CREATE TABLE wrestler_alignment (
@@ -83,7 +91,7 @@ CREATE TABLE campaign_state_cards (
 CREATE TABLE campaign_encounter (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     campaign_id BIGINT NOT NULL,
-    chapter_number INT NOT NULL,
+    chapter_id VARCHAR(255) NOT NULL,
     narrative_text TEXT NOT NULL,
     player_choice TEXT,
     alignment_shift INT DEFAULT 0 NOT NULL,

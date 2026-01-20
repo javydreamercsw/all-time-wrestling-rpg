@@ -73,7 +73,8 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
     wrestlerRepository.save(rival);
 
     Campaign campaign = Campaign.builder().wrestler(player).build();
-    CampaignState state = CampaignState.builder().campaign(campaign).currentChapter(2).build();
+    CampaignState state =
+        CampaignState.builder().campaign(campaign).currentChapterId("ch2_tournament").build();
     campaign.setState(state);
 
     when(random.nextInt(org.mockito.ArgumentMatchers.anyInt())).thenReturn(0);

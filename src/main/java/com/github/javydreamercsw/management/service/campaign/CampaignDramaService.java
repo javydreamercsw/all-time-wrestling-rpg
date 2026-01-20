@@ -53,7 +53,7 @@ public class CampaignDramaService {
     Wrestler player = campaign.getWrestler();
 
     // Chapter 2: Rivalry
-    if (state.getCurrentChapter() == 2) {
+    if ("ch2_tournament".equals(state.getCurrentChapterId())) {
       // Check if player has active rivalry.
       // For now, if no active rivalry, trigger one.
       if (player.getActiveRivalries().isEmpty()) {
@@ -63,7 +63,7 @@ public class CampaignDramaService {
     }
 
     // Chapter 3: Outsider
-    if (state.getCurrentChapter() == 3) {
+    if ("ch3_outsider".equals(state.getCurrentChapterId())) {
       // Check if player has active outsider feud (we'll use Rivalry for now with special flag or
       // just check event history?)
       // Simpler: Trigger it if not triggered yet?

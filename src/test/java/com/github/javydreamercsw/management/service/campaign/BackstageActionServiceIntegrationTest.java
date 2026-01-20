@@ -51,7 +51,11 @@ class BackstageActionServiceIntegrationTest extends AbstractIntegrationTest {
             .build();
 
     CampaignState state =
-        CampaignState.builder().campaign(campaign).currentChapter(1).skillTokens(0).build();
+        CampaignState.builder()
+            .campaign(campaign)
+            .currentChapterId("ch1_beginning")
+            .skillTokens(0)
+            .build();
 
     campaign.setState(state);
     campaignRepository.save(campaign);

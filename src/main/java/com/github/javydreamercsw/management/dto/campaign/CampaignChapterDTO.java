@@ -28,11 +28,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CampaignChapterDTO {
-  private int chapterNumber;
+  private String id;
   private String title;
   private String shortDescription;
   private String introText;
   private String aiSystemPrompt;
+  private Difficulty difficulty;
+  private List<ChapterPointDTO> entryPoints;
+  private List<ChapterPointDTO> exitPoints;
   private ChapterRules rules;
   private ChapterExclusions exclusions;
 
@@ -41,9 +44,9 @@ public class CampaignChapterDTO {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class ChapterRules {
-    private Difficulty defaultDifficulty;
     private int qualifyingMatches;
     private int minWinsToQualify;
+    private int totalFinalsMatches; // e.g., 2 for semi-finals and finals
     private int victoryPointsWin;
     private int victoryPointsLoss;
     private int titleWinVP;

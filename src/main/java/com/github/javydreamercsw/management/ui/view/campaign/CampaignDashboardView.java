@@ -145,7 +145,7 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     // Tournament Tracker (Chapter 2)
-    if (state.getCurrentChapter() == 2) {
+    if ("ch2_tournament".equals(state.getCurrentChapterId())) {
       if (state.isFinalsPhase()) {
         addTournamentBracket(state);
       } else {
@@ -154,7 +154,7 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     HorizontalLayout statsLayout = new HorizontalLayout();
-    statsLayout.add(createStatCard("Chapter", String.valueOf(state.getCurrentChapter())));
+    statsLayout.add(createStatCard("Chapter", state.getCurrentChapterId()));
     statsLayout.add(createStatCard("Victory Points", String.valueOf(state.getVictoryPoints())));
     statsLayout.add(createStatCard("Skill Tokens", String.valueOf(state.getSkillTokens())));
     statsLayout.add(createStatCard("Bumps", String.valueOf(state.getBumps())));
