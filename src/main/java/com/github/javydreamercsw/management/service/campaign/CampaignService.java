@@ -178,22 +178,33 @@ public class CampaignService {
 
   public void processMatchResult(Campaign campaign, boolean won) {
     CampaignState state = campaign.getState();
-    int chapter = state.getCurrentChapter();
-    int vpChange = 0;
+    com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO.ChapterRules rules =
+        getCurrentChapter(campaign).getRules();
 
-    switch (chapter) {
-      case 1:
-        vpChange = won ? 2 : -1;
-        break;
-      case 2:
-        vpChange = won ? 3 : -1;
-        break;
-      case 3:
-        vpChange = won ? 4 : -2;
-        break;
+    state.setMatchesPlayed(state.getMatchesPlayed() + 1);
+    if (won) {
+      state.setWins(state.getWins() + 1);
+      state.setVictoryPoints(state.getVictoryPoints() + rules.getVictoryPointsWin());
+    } else {
+      state.setLosses(state.getLosses() + 1);
+      state.setVictoryPoints(state.getVictoryPoints() + rules.getVictoryPointsLoss());
     }
 
-    state.setVictoryPoints(state.getVictoryPoints() + vpChange);
+    // Check for chapter completion/tournament qualification
+    if (state.getCurrentChapter() == 2
+        && state.getMatchesPlayed() >= rules.getQualifyingMatches()) {
+      if (state.getWins() >= rules.getMinWinsToQualify()) {
+        log.info(
+            "Wrestler {} QUALIFIED for the tournament finals!", campaign.getWrestler().getName());
+        state.setFinalsPhase(true);
+      } else {
+        log.info(
+            "Wrestler {} FAILED to qualify for the tournament finals.",
+            campaign.getWrestler().getName());
+        // Handle failure (e.g. restart chapter or special fallout)
+      }
+    }
+
     campaignStateRepository.save(state);
   }
 

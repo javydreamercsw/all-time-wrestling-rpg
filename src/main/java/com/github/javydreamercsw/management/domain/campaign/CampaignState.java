@@ -139,4 +139,8 @@ public class CampaignState {
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "rival_id")
   private com.github.javydreamercsw.management.domain.npc.Npc rival;
+
+  @Column(name = "finals_phase", nullable = false)
+  @Builder.Default
+  private boolean finalsPhase = false;
 }

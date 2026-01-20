@@ -4,8 +4,8 @@ CREATE TABLE campaign (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     wrestler_id BIGINT NOT NULL,
     status VARCHAR(50) NOT NULL,
-    started_at TIMESTAMP,
-    ended_at TIMESTAMP,
+    started_at DATETIME,
+    ended_at DATETIME,
     FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id)
 );
 
@@ -28,8 +28,14 @@ CREATE TABLE campaign_state (
     pending_l1_picks INT DEFAULT 0 NOT NULL,
     pending_l2_picks INT DEFAULT 0 NOT NULL,
     pending_l3_picks INT DEFAULT 0 NOT NULL,
-    last_sync TIMESTAMP,
-    FOREIGN KEY (campaign_id) REFERENCES campaign(id)
+    matches_played INT DEFAULT 0 NOT NULL,
+    wins INT DEFAULT 0 NOT NULL,
+    losses INT DEFAULT 0 NOT NULL,
+    rival_id BIGINT,
+    finals_phase BOOLEAN DEFAULT FALSE NOT NULL,
+    last_sync DATETIME,
+    FOREIGN KEY (campaign_id) REFERENCES campaign(id),
+    FOREIGN KEY (rival_id) REFERENCES npc(id)
 );
 
 CREATE TABLE wrestler_alignment (
@@ -44,7 +50,7 @@ CREATE TABLE backstage_action_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     campaign_id BIGINT NOT NULL,
     action_type VARCHAR(50) NOT NULL,
-    action_date TIMESTAMP NOT NULL,
+    action_date DATETIME NOT NULL,
     dice_rolled INT NOT NULL,
     successes INT NOT NULL,
     outcome_description TEXT,
@@ -72,11 +78,24 @@ CREATE TABLE campaign_state_cards (
     FOREIGN KEY (card_id) REFERENCES campaign_ability_card(id)
 );
 
+CREATE TABLE campaign_encounter (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    campaign_id BIGINT NOT NULL,
+    chapter_number INT NOT NULL,
+    narrative_text TEXT NOT NULL,
+    player_choice TEXT,
+    alignment_shift INT DEFAULT 0 NOT NULL,
+    vp_reward INT DEFAULT 0 NOT NULL,
+    encounter_date DATETIME NOT NULL,
+    FOREIGN KEY (campaign_id) REFERENCES campaign(id)
+);
+
 CREATE INDEX idx_campaign_wrestler ON campaign(wrestler_id);
 CREATE INDEX idx_campaign_state_campaign ON campaign_state(campaign_id);
 CREATE INDEX idx_wrestler_alignment_wrestler ON wrestler_alignment(wrestler_id);
 CREATE INDEX idx_backstage_action_history_campaign ON backstage_action_history(campaign_id);
 CREATE INDEX idx_campaign_ability_card_alignment ON campaign_ability_card(alignment_type, level);
+CREATE INDEX idx_campaign_encounter_campaign ON campaign_encounter(campaign_id);
 
 -- Updates to existing tables
 ALTER TABLE injury ADD COLUMN stamina_penalty INT DEFAULT 0 NOT NULL;

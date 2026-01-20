@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
@@ -118,6 +119,15 @@ public class CampaignDashboardView extends VerticalLayout {
     // Alignment Track
     if (alignment != null) {
       add(new AlignmentTrackComponent(alignment));
+    }
+
+    // Tournament Tracker (Chapter 2)
+    if (state.getCurrentChapter() == 2) {
+      if (state.isFinalsPhase()) {
+        addTournamentBracket(state);
+      } else {
+        addTournamentTracker(state);
+      }
     }
 
     HorizontalLayout statsLayout = new HorizontalLayout();
@@ -240,6 +250,138 @@ public class CampaignDashboardView extends VerticalLayout {
 
     pendingSection.add(picksContainer);
     add(pendingSection);
+  }
+
+  private void addTournamentBracket(CampaignState state) {
+    VerticalLayout bracketContainer = new VerticalLayout();
+    bracketContainer.setPadding(false);
+    bracketContainer.setSpacing(true);
+    bracketContainer.addClassNames(LumoUtility.Margin.Vertical.MEDIUM);
+
+    H4 title = new H4("Tournament Finals Bracket");
+    title.addClassNames(LumoUtility.Margin.NONE);
+    bracketContainer.add(title);
+
+    HorizontalLayout rounds = new HorizontalLayout();
+    rounds.setSpacing(false);
+    rounds.setAlignItems(Alignment.CENTER);
+
+    // Semi-Finals
+    VerticalLayout semiFinals = new VerticalLayout();
+    semiFinals.setSpacing(true);
+    semiFinals.setWidth("200px");
+    semiFinals.add(createBracketBox(currentCampaign.getWrestler().getName(), true));
+    semiFinals.add(createBracketBox("Opponent A", false));
+    semiFinals.add(new Div()); // Spacer
+    semiFinals.add(createBracketBox("Opponent B", false));
+    semiFinals.add(createBracketBox("Opponent C", false));
+
+    // Finals
+    VerticalLayout finals = new VerticalLayout();
+    finals.setSpacing(true);
+    finals.setWidth("200px");
+    finals.setPadding(true);
+    finals.add(createBracketBox("TBD", false));
+
+    rounds.add(semiFinals, finals);
+    bracketContainer.add(rounds);
+    add(bracketContainer);
+  }
+
+  private Div createBracketBox(String name, boolean isPlayer) {
+    Div box = new Div();
+    box.setText(name);
+    box.setWidthFull();
+    box.setHeight("40px");
+    box.addClassNames(
+        LumoUtility.Display.FLEX,
+        LumoUtility.AlignItems.CENTER,
+        LumoUtility.Padding.Horizontal.SMALL,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.SMALL,
+        LumoUtility.FontSize.SMALL);
+
+    if (isPlayer) {
+      box.getStyle().set("background-color", "var(--lumo-primary-color-10pct)");
+      box.getStyle().set("border-color", "var(--lumo-primary-color)");
+      box.getStyle().set("font-weight", "bold");
+    } else {
+      box.addClassNames(LumoUtility.Background.CONTRAST_5);
+    }
+    return box;
+  }
+
+  private void addTournamentTracker(CampaignState state) {
+    com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO.ChapterRules rules =
+        campaignService.getCurrentChapter(currentCampaign).getRules();
+
+    if (rules.getQualifyingMatches() <= 0) return;
+
+    VerticalLayout tracker = new VerticalLayout();
+    tracker.setPadding(false);
+    tracker.setSpacing(true);
+    tracker.addClassNames(LumoUtility.Margin.Vertical.MEDIUM);
+
+    H4 title = new H4("Tournament Qualifying Tracker");
+    title.addClassNames(LumoUtility.Margin.NONE);
+    tracker.add(title);
+
+    HorizontalLayout slots = new HorizontalLayout();
+    slots.setSpacing(true);
+
+    int total = rules.getQualifyingMatches();
+    int wins = state.getWins();
+    int losses = state.getLosses();
+
+    for (int i = 0; i < total; i++) {
+      Div slot = new Div();
+      slot.setWidth("40px");
+      slot.setHeight("40px");
+      slot.addClassNames(
+          LumoUtility.Display.FLEX,
+          LumoUtility.AlignItems.CENTER,
+          LumoUtility.JustifyContent.CENTER,
+          LumoUtility.BorderRadius.SMALL,
+          LumoUtility.FontWeight.BOLD,
+          LumoUtility.Border.ALL);
+
+      if (i < wins) {
+        slot.setText("W");
+        slot.getStyle().set("background-color", "#c8e6c9");
+        slot.getStyle().set("color", "#2e7d32");
+        slot.getStyle().set("border-color", "#2e7d32");
+      } else if (i < (wins + losses)) {
+        slot.setText("L");
+        slot.getStyle().set("background-color", "#ffcdd2");
+        slot.getStyle().set("color", "#c62828");
+        slot.getStyle().set("border-color", "#c62828");
+      } else {
+        slot.setText("?");
+        slot.addClassNames(LumoUtility.TextColor.DISABLED, LumoUtility.Background.CONTRAST_5);
+      }
+      slots.add(slot);
+    }
+
+    tracker.add(slots);
+
+    String statusText;
+    if (wins >= rules.getMinWinsToQualify()) {
+      statusText = "STATUS: QUALIFIED FOR FINALS!";
+    } else if (losses > (total - rules.getMinWinsToQualify())) {
+      statusText = "STATUS: ELIMINATED FROM TOURNAMENT";
+    } else {
+      statusText = "NEED " + (rules.getMinWinsToQualify() - wins) + " MORE WINS TO QUALIFY";
+    }
+
+    Span status = new Span(statusText);
+    status.addClassNames(
+        LumoUtility.FontWeight.BOLD,
+        wins >= rules.getMinWinsToQualify()
+            ? LumoUtility.TextColor.SUCCESS
+            : LumoUtility.TextColor.PRIMARY);
+    tracker.add(status);
+
+    add(tracker);
   }
 
   private void refreshUI() {
