@@ -3,7 +3,7 @@
   "description": "Gain Initiative.",
   "alignmentType": "HEEL",
   "level": 1,
-  "oneTimeUse": true,
+  "oneTimeUse": false,
   "timing": "DEFENSE",
   "effectScript": "gainInitiative()"
 }, {
@@ -11,7 +11,7 @@
   "description": "Spend 1 Stamina to gain Initiative and 2 Momentum.",
   "alignmentType": "HEEL",
   "level": 1,
-  "oneTimeUse": true,
+  "oneTimeUse": false,
   "timing": "DEFENSE",
   "effectScript": "spendStamina(1); gainInitiative(); gainMomentum(2)"
 }, {
@@ -19,7 +19,7 @@
   "description": "Opponent suffers -1 dice roll on kickout attempt.",
   "alignmentType": "HEEL",
   "level": 1,
-  "oneTimeUse": true,
+  "oneTimeUse": false,
   "timing": "OFFENSE",
   "effectScript": "modifyOpponentRoll(-1)"
 }, {
@@ -27,7 +27,7 @@
   "description": "Deal 3 damage and gain 2 momentum.",
   "alignmentType": "HEEL",
   "level": 2,
-  "oneTimeUse": true,
+  "oneTimeUse": false,
   "timing": "OFFENSE",
   "effectScript": "damage(3); gainMomentum(2)"
 }, {
@@ -35,7 +35,7 @@
   "description": "Deal 2 damage and gain the initiative.",
   "alignmentType": "HEEL",
   "level": 1,
-  "oneTimeUse": true,
+  "oneTimeUse": false,
   "timing": "DEFENSE",
   "effectScript": "damage(2); gainInitiative()"
 }, {
@@ -70,7 +70,7 @@
   "description": "Your valet rallies the crowd.",
   "alignmentType": "FACE",
   "level": 1,
-  "oneTimeUse": true,
+  "oneTimeUse": false,
   "timing": "DEFENSE",
   "effectScript": "gainMomentum(2); gainHitPoints(1)"
 }, {
