@@ -214,10 +214,11 @@ public class CampaignService {
     cards.stream()
         .filter(c -> c.getLevel() == level)
         .findFirst()
-        .ifPresent(card -> {
-          cards.remove(card);
-          log.info("Removed Level {} card: {}", level, card.getName());
-        });
+        .ifPresent(
+            card -> {
+              cards.remove(card);
+              log.info("Removed Level {} card: {}", level, card.getName());
+            });
   }
 
   /**
