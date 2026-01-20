@@ -113,13 +113,15 @@ public class CampaignAbilityCardComponent extends Div {
     effectDiv.add(timingBadge);
 
     if (oneTime) {
-      Span oneTimeBadge = new Span("One-Time Use");
+      Span oneTimeBadge = new Span("Single Use");
+      oneTimeBadge.getElement().setAttribute("title", "Discarded from inventory after one use.");
       oneTimeBadge.getElement().getThemeList().add("badge small error");
       effectDiv.add(oneTimeBadge);
     } else {
-      Span passiveBadge = new Span("Passive");
-      passiveBadge.getElement().getThemeList().add("badge small success");
-      effectDiv.add(passiveBadge);
+      Span activeBadge = new Span("Once per Match");
+      activeBadge.getElement().setAttribute("title", "Can be activated once in every match.");
+      activeBadge.getElement().getThemeList().add("badge small success");
+      effectDiv.add(activeBadge);
     }
 
     Span scriptSpan = new Span(script);

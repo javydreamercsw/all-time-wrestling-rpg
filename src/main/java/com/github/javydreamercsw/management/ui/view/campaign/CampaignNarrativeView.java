@@ -199,11 +199,33 @@ public class CampaignNarrativeView extends VerticalLayout {
     narrativeContainer.add(p);
 
     if ("MATCH".equals(choice.getNextPhase())) {
-      Button startMatchBtn =
-          new Button("Proceed to Match", e -> UI.getCurrent().navigate("campaign"));
-      startMatchBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-      choicesContainer.add(startMatchBtn);
+      try {
+        com.github.javydreamercsw.management.domain.show.segment.Segment match =
+            campaignService.createMatchForEncounter(
+                currentCampaign,
+                choice.getForcedOpponentName(),
+                response.getNarrative(),
+                choice.getMatchType());
+
+        Button startMatchBtn =
+            new Button("Proceed to Match", e -> UI.getCurrent().navigate("match/" + match.getId()));
+        startMatchBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+        choicesContainer.add(startMatchBtn);
+      } catch (Exception e) {
+        log.error("Failed to create match segment", e);
+        Notification.show("Error setting up match. Returning to dashboard.");
+        Button dashboardBtn =
+            new Button("Back to Dashboard", e2 -> UI.getCurrent().navigate("campaign"));
+        choicesContainer.add(dashboardBtn);
+      }
+    } else if ("BACKSTAGE".equals(choice.getNextPhase())) {
+      campaignService.completePostMatch(currentCampaign);
+      Button dashboardBtn =
+          new Button("Return to Management", e -> UI.getCurrent().navigate("campaign"));
+      dashboardBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      choicesContainer.add(dashboardBtn);
     } else {
+      // POST_MATCH or other narrative continuation
       Button continueBtn = new Button("Continue Story", e -> generateNextEncounter());
       choicesContainer.add(continueBtn);
     }

@@ -14,7 +14,7 @@
     "titleDefenseVP": 0
   },
   "exclusions": {
-    "excludeChampions": false,
+    "excludeChampions": true,
     "npcIds": [ ]
   }
 }, {

@@ -106,6 +106,29 @@ public class CampaignDashboardView extends VerticalLayout {
           new Span(
               "No active campaign found. To start a campaign, please navigate to the Wrestler"
                   + " List and use the 'Start Campaign' action on your assigned wrestler."));
+
+      // Debug button for E2E tests and quick start
+      Button debugStartButton =
+          new Button(
+              "Start New Campaign (Debug)",
+              e -> {
+                securityUtils
+                    .getAuthenticatedUser()
+                    .ifPresent(
+                        user -> {
+                          wrestlerRepository
+                              .findByAccount(user.getAccount())
+                              .ifPresent(
+                                  wrestler -> {
+                                    campaignService.startCampaign(wrestler);
+                                    refreshUI();
+                                  });
+                        });
+              });
+      debugStartButton.addThemeVariants(
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY);
+      debugStartButton.setId("debug-start-campaign");
+      add(debugStartButton);
       return;
     }
 

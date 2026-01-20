@@ -27,32 +27,56 @@ class CampaignE2ETest extends AbstractE2ETest {
 
   @Test
   void testCampaignFlow() {
-    // 1. Navigate to Campaign Dashboard
+    // 1. Assign a wrestler to the admin account first
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    waitForVaadinClientToLoad();
+    takeSequencedScreenshot("wrestler-list");
+
+    // Click the first action menu
+    WebElement firstMenu =
+        waitForVaadinElement(driver, By.xpath("//vaadin-menu-bar[contains(@id, 'action-menu-')]"));
+    selectFromVaadinMenuBar(firstMenu, "Edit");
+    waitForVaadinClientToLoad();
+    takeSequencedScreenshot("edit-wrestler-dialog");
+
+    // Check Is Player
+    WebElement isPlayerCheckbox =
+        waitForVaadinElement(driver, By.id("wrestler-dialog-is-player-field"));
+    if (!isPlayerCheckbox.isSelected()) {
+      clickElement(isPlayerCheckbox);
+    }
+
+    // Select admin account
+    WebElement accountCombo =
+        waitForVaadinElement(driver, By.id("wrestler-dialog-account-combo-box"));
+    selectFromVaadinComboBox(accountCombo, "admin");
+
+    // Save
+    WebElement saveButton = waitForVaadinElement(driver, By.id("wrestler-dialog-save-button"));
+    clickElement(saveButton);
+    waitForVaadinClientToLoad();
+
+    // 2. Navigate to Campaign Dashboard
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("campaign-dashboard-initial");
 
-    // 2. Start Campaign if not started (Debug button)
-    // We expect "Start New Campaign (Debug)" if no campaign exists.
-    // Or "Campaign: All or Nothing" if it does.
-
+    // 3. Start Campaign if not started (Debug button)
     boolean campaignExists = driver.getPageSource().contains("Campaign: All or Nothing");
 
     if (!campaignExists) {
-      WebElement startButton =
-          waitForVaadinElement(
-              driver, By.xpath("//vaadin-button[text()='Start New Campaign (Debug)']"));
+      WebElement startButton = waitForVaadinElement(driver, By.id("debug-start-campaign"));
       clickElement(startButton);
       waitForVaadinClientToLoad();
       takeSequencedScreenshot("campaign-started");
 
       // Verify dashboard loaded
-      assertTrue(driver.getPageSource().contains("Campaign: All or Nothing"));
+      waitForText("Campaign: All or Nothing");
       assertTrue(driver.getPageSource().contains("Chapter"));
       assertTrue(driver.getPageSource().contains("Victory Points"));
     }
 
-    // 3. Navigate to Backstage Actions
+    // 4. Navigate to Backstage Actions
     WebElement actionsButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Backstage Actions']"));
     clickElement(actionsButton);
@@ -60,24 +84,27 @@ class CampaignE2ETest extends AbstractE2ETest {
     takeSequencedScreenshot("backstage-actions-view");
 
     // Verify we are on Backstage Actions view
-    assertTrue(driver.getPageSource().contains("Backstage Actions"));
+    waitForText("Backstage Actions");
     assertTrue(driver.getPageSource().contains("Training (Drive)"));
 
-    // 4. Perform an action (Training)
+    // 5. Perform an action (Training)
     WebElement trainingButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Training (Drive)']"));
     clickElement(trainingButton);
 
-    // Verify notification (Success or Fail) - difficult to catch notification in E2E sometimes, but
-    // we can check if it didn't crash.
+    // Verify notification (Success or Fail)
     takeSequencedScreenshot("after-training-action");
 
-    // 5. Navigate back
+    // 6. Navigate back
     WebElement backButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Back to Dashboard']"));
     clickElement(backButton);
     waitForVaadinClientToLoad();
 
-    assertTrue(driver.getPageSource().contains("Campaign: All or Nothing"));
+    waitForText("Campaign: All or Nothing");
+  }
+
+  private void waitForText(String text) {
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

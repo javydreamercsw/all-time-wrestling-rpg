@@ -20,13 +20,27 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +62,13 @@ public class CampaignService {
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignScriptService campaignScriptService;
   private final CampaignChapterService chapterService;
+  private final WrestlerRepository wrestlerRepository;
+  private final ShowService showService;
+  private final SegmentService segmentService;
+  private final SeasonRepository seasonRepository;
+  private final SegmentTypeRepository segmentTypeRepository;
+  private final ShowTypeRepository showTypeRepository;
+  private final SegmentParticipantRepository participantRepository;
 
   public Campaign startCampaign(Wrestler wrestler) {
     if (hasActiveCampaign(wrestler)) {
@@ -98,6 +119,96 @@ public class CampaignService {
     updateAbilityCards(campaign);
 
     return campaignRepository.save(campaign);
+  }
+
+  /**
+   * Creates a match segment for a campaign encounter.
+   *
+   * @param campaign The campaign.
+   * @param opponentName The name of the opponent.
+   * @param narration The narrative text for the match.
+   * @param segmentTypeName The name of the segment type (e.g., "One on One").
+   * @return The created Segment.
+   */
+  public Segment createMatchForEncounter(
+      Campaign campaign, String opponentName, String narration, String segmentTypeName) {
+    CampaignState state = campaign.getState();
+    Wrestler player = campaign.getWrestler();
+
+    // 1. Find/Create Campaign Season
+    Season season =
+        seasonRepository
+            .findByName("Campaign Mode")
+            .orElseGet(
+                () -> {
+                  Season s = new Season();
+                  s.setName("Campaign Mode");
+                  s.setStartDate(
+                      java.time.LocalDate.now().atStartOfDay().toInstant(java.time.ZoneOffset.UTC));
+                  s.setEndDate(
+                      java.time.LocalDate.now()
+                          .plusYears(1)
+                          .atStartOfDay()
+                          .toInstant(java.time.ZoneOffset.UTC));
+                  return seasonRepository.save(s);
+                });
+
+    // 2. Find/Create Campaign Show
+    ShowType weekly =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(() -> showTypeRepository.findAll().get(0));
+
+    Show show =
+        showService.findByName("Campaign: " + player.getName()).stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    showService.createShow(
+                        "Campaign: " + player.getName(),
+                        "Story matches for " + player.getName(),
+                        weekly.getId(),
+                        java.time.LocalDate.now(),
+                        season.getId(),
+                        null));
+
+    // 3. Create Segment
+    String finalTypeName = segmentTypeName != null ? segmentTypeName : "One on One";
+    SegmentType type =
+        segmentTypeRepository
+            .findByName(finalTypeName)
+            .orElseGet(
+                () ->
+                    segmentTypeRepository
+                        .findByName("One on One")
+                        .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
+
+    Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
+    segment.setNarration(narration);
+    segmentService.updateSegment(segment);
+
+    // 4. Assign Participants
+    Wrestler opponent =
+        wrestlerRepository
+            .findByName(opponentName)
+            .orElseThrow(() -> new IllegalArgumentException("Opponent not found: " + opponentName));
+
+    addParticipant(segment, player);
+    addParticipant(segment, opponent);
+
+    state.setCurrentMatch(segment);
+    state.setCurrentPhase(CampaignPhase.MATCH);
+    campaignStateRepository.save(state);
+
+    return segment;
+  }
+
+  private void addParticipant(Segment segment, Wrestler wrestler) {
+    SegmentParticipant participant = new SegmentParticipant();
+    participant.setSegment(segment);
+    participant.setWrestler(wrestler);
+    participant.setIsWinner(false);
+    participantRepository.save(participant);
   }
 
   /**
@@ -205,6 +316,20 @@ public class CampaignService {
       }
     }
 
+    state.setCurrentPhase(CampaignPhase.POST_MATCH);
+    campaignStateRepository.save(state);
+  }
+
+  /**
+   * Completes the post-match narrative and returns the campaign to the backstage phase.
+   *
+   * @param campaign The campaign to transition.
+   */
+  public void completePostMatch(Campaign campaign) {
+    CampaignState state = campaign.getState();
+    state.setCurrentPhase(CampaignPhase.BACKSTAGE);
+    state.setActionsTaken(0); // Reset actions for the next "turn"
+    state.setCurrentMatch(null); // Clear the match reference now that post-match is done
     campaignStateRepository.save(state);
   }
 

@@ -33,9 +33,11 @@ CREATE TABLE campaign_state (
     losses INT DEFAULT 0 NOT NULL,
     rival_id BIGINT,
     finals_phase BOOLEAN DEFAULT FALSE NOT NULL,
+    current_match_id BIGINT,
     last_sync TIMESTAMP,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id),
-    FOREIGN KEY (rival_id) REFERENCES npc(id)
+    FOREIGN KEY (rival_id) REFERENCES npc(id),
+    FOREIGN KEY (current_match_id) REFERENCES segment(segment_id)
 );
 
 CREATE TABLE wrestler_alignment (
@@ -96,6 +98,7 @@ CREATE INDEX idx_wrestler_alignment_wrestler ON wrestler_alignment(wrestler_id);
 CREATE INDEX idx_backstage_action_history_campaign ON backstage_action_history(campaign_id);
 CREATE INDEX idx_campaign_ability_card_alignment ON campaign_ability_card(alignment_type, level);
 CREATE INDEX idx_campaign_encounter_campaign ON campaign_encounter(campaign_id);
+CREATE INDEX idx_campaign_state_current_match ON campaign_state(current_match_id);
 
 -- Updates to existing tables
 ALTER TABLE injury ADD COLUMN stamina_penalty INT DEFAULT 0 NOT NULL;

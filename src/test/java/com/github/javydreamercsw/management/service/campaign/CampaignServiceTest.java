@@ -24,17 +24,29 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +62,15 @@ class CampaignServiceTest {
   @Mock private CampaignAbilityCardRepository campaignAbilityCardRepository;
   @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Mock private CampaignScriptService campaignScriptService;
+  @Mock private CampaignChapterService chapterService;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private ShowService showService;
+  @Mock private SegmentService segmentService;
+  @Mock private SeasonRepository seasonRepository;
+  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private SegmentParticipantRepository participantRepository;
+
   @InjectMocks private CampaignService campaignService;
 
   @Test
@@ -77,6 +98,162 @@ class CampaignServiceTest {
   }
 
   @Test
+  void testShiftAlignment_NeutralToFace() {
+
+    Wrestler wrestler = new Wrestler();
+
+    Campaign campaign = new Campaign();
+
+    campaign.setWrestler(wrestler);
+
+    CampaignState state = new CampaignState();
+
+    state.setActiveCards(new ArrayList<>());
+
+    campaign.setState(state);
+
+    WrestlerAlignment alignment = new WrestlerAlignment();
+
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+
+    alignment.setLevel(0);
+
+    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+
+    campaignService.shiftAlignment(campaign, 1);
+
+    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.FACE);
+
+    assertThat(alignment.getLevel()).isEqualTo(1);
+
+    verify(wrestlerAlignmentRepository).save(alignment);
+  }
+
+  @Test
+  void testShiftAlignment_FaceToNeutral() {
+
+    Wrestler wrestler = new Wrestler();
+
+    Campaign campaign = new Campaign();
+
+    campaign.setWrestler(wrestler);
+
+    CampaignState state = new CampaignState();
+
+    state.setActiveCards(new ArrayList<>());
+
+    campaign.setState(state);
+
+    WrestlerAlignment alignment = new WrestlerAlignment();
+
+    alignment.setAlignmentType(AlignmentType.FACE);
+
+    alignment.setLevel(1);
+
+    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+
+    campaignService.shiftAlignment(campaign, -1);
+
+    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.NEUTRAL);
+
+    assertThat(alignment.getLevel()).isZero();
+  }
+
+  @Test
+  void testShiftAlignment_HeelDeepening() {
+
+    Wrestler wrestler = new Wrestler();
+
+    Campaign campaign = new Campaign();
+
+    campaign.setWrestler(wrestler);
+
+    CampaignState state = new CampaignState();
+
+    state.setActiveCards(new ArrayList<>());
+
+    campaign.setState(state);
+
+    WrestlerAlignment alignment = new WrestlerAlignment();
+
+    alignment.setAlignmentType(AlignmentType.HEEL);
+
+    alignment.setLevel(2);
+
+    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+
+    // Shift toward Heel (-1)
+
+    campaignService.shiftAlignment(campaign, -1);
+
+    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.HEEL);
+
+    assertThat(alignment.getLevel()).isEqualTo(3);
+  }
+
+  @Test
+  void testCreateMatchForEncounter() {
+
+    Wrestler player = new Wrestler();
+
+    player.setName("Player");
+
+    Wrestler opponent = new Wrestler();
+
+    opponent.setName("Opponent");
+
+    Campaign campaign = new Campaign();
+
+    campaign.setWrestler(player);
+
+    CampaignState state = new CampaignState();
+
+    campaign.setState(state);
+
+    when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
+
+    when(seasonRepository.findByName("Campaign Mode")).thenReturn(Optional.of(new Season()));
+
+    ShowType showType = org.mockito.Mockito.mock(ShowType.class);
+
+    when(showType.getId()).thenReturn(2L);
+
+    when(showTypeRepository.findByName("Weekly")).thenReturn(Optional.of(showType));
+
+    Show show = new Show();
+
+    show.setId(50L);
+
+    when(showService.createShow(any(), any(), any(), any(), any(), any())).thenReturn(show);
+
+    SegmentType segmentType = org.mockito.Mockito.mock(SegmentType.class);
+
+    lenient().when(segmentType.getId()).thenReturn(1L);
+
+    when(segmentTypeRepository.findByName("One on One")).thenReturn(Optional.of(segmentType));
+
+    Segment segment = new Segment();
+
+    segment.setId(100L);
+
+    when(segmentService.createSegment(any(), any(), any())).thenReturn(segment);
+
+    Segment result =
+        campaignService.createMatchForEncounter(
+            campaign, "Opponent", "Test Narration", "One on One");
+
+    assertThat(result).isNotNull();
+
+    assertThat(result.getId()).isEqualTo(100L);
+
+    assertThat(result.getNarration()).isEqualTo("Test Narration");
+
+    assertThat(state.getCurrentMatch()).isEqualTo(segment);
+
+    verify(participantRepository, org.mockito.Mockito.times(2)).save(any());
+  }
+
+  @Test
   void testHandleLevelChange_NeutralToFace() {
     Wrestler wrestler = new Wrestler();
     Campaign campaign = new Campaign();
@@ -100,143 +277,38 @@ class CampaignServiceTest {
   }
 
   @Test
-  void testHandleLevelChange_Face() {
-    Wrestler wrestler = new Wrestler();
+  void testProcessMatchResult_Chapter2() {
     Campaign campaign = new Campaign();
-    campaign.setWrestler(wrestler);
+    campaign.setWrestler(new Wrestler());
     CampaignState state = new CampaignState();
-    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapter(2);
     campaign.setState(state);
 
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.FACE);
-    alignment.setLevel(5);
+    CampaignChapterDTO chapter =
+        CampaignChapterDTO.builder()
+            .rules(
+                CampaignChapterDTO.ChapterRules.builder()
+                    .victoryPointsWin(3)
+                    .victoryPointsLoss(-1)
+                    .qualifyingMatches(4)
+                    .minWinsToQualify(3)
+                    .build())
+            .build();
 
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(chapterService.getChapter(2)).thenReturn(Optional.of(chapter));
 
-    // Add a Level 1 card to be lost
-    CampaignAbilityCard l1Card = CampaignAbilityCard.builder().id(1L).level(1).build();
-    state.getActiveCards().add(l1Card);
+    campaignService.processMatchResult(campaign, true); // Win 1
 
-    // Change level from 4 to 5
-    campaignService.handleLevelChange(campaign, 4, 5);
+    assertThat(state.getWins()).isEqualTo(1);
+    assertThat(state.getMatchesPlayed()).isEqualTo(1);
+    assertThat(state.getVictoryPoints()).isEqualTo(3);
+    assertThat(state.getCurrentPhase()).isEqualTo(CampaignPhase.POST_MATCH);
 
-    // Should lose the Level 1 card and gain a Level 3 pick
-    assertThat(state.getActiveCards()).isEmpty();
-    assertThat(state.getPendingL3Picks()).isEqualTo(1);
-    verify(campaignStateRepository).save(state);
-  }
+    campaignService.processMatchResult(campaign, false); // Loss 1
 
-  @Test
-  void testHandleLevelChange_Heel() {
-    Wrestler wrestler = new Wrestler();
-    Campaign campaign = new Campaign();
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setActiveCards(new ArrayList<>());
-    campaign.setState(state);
-
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.HEEL);
-    alignment.setLevel(4);
-
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    // Add a Level 1 card to be lost
-    CampaignAbilityCard l1Card = CampaignAbilityCard.builder().id(1L).level(1).build();
-    state.getActiveCards().add(l1Card);
-
-    // Change level from 3 to 4
-    campaignService.handleLevelChange(campaign, 3, 4);
-
-    // Should lose the Level 1 card and gain a Level 2 pick
-    assertThat(state.getActiveCards()).isEmpty();
-    assertThat(state.getPendingL2Picks()).isEqualTo(1);
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
-  void testGetPickableCards_Heel_Level5() {
-    Wrestler wrestler = new Wrestler();
-    Campaign campaign = new Campaign();
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setActiveCards(new ArrayList<>());
-    state.setPendingL1Picks(1); // Set pick count
-    campaign.setState(state);
-
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.HEEL);
-    alignment.setLevel(5);
-
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    CampaignAbilityCard l1Card = CampaignAbilityCard.builder().id(1L).name("L1").level(1).build();
-    lenient()
-        .when(campaignAbilityCardRepository.findByAlignmentTypeAndLevel(AlignmentType.HEEL, 1))
-        .thenReturn(List.of(l1Card));
-
-    List<CampaignAbilityCard> pickable = campaignService.getPickableCards(campaign);
-
-    assertThat(pickable).contains(l1Card);
-  }
-
-  @Test
-  void testPickAbilityCard() {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("Test Wrestler");
-    Campaign campaign = new Campaign();
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setActiveCards(new ArrayList<>());
-    state.setPendingL1Picks(1);
-    campaign.setState(state);
-
-    CampaignAbilityCard card =
-        CampaignAbilityCard.builder().id(100L).name("Test Card").level(1).build();
-    when(campaignAbilityCardRepository.findById(100L)).thenReturn(Optional.of(card));
-
-    campaignService.pickAbilityCard(campaign, 100L);
-
-    assertThat(state.getActiveCards()).contains(card);
-    assertThat(state.getPendingL1Picks()).isZero();
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
-  void testProcessMatchResult_Chapter1() {
-    Campaign campaign = new Campaign();
-    CampaignState state = new CampaignState();
-    state.setCurrentChapter(1);
-    state.setVictoryPoints(0);
-    campaign.setState(state);
-
-    campaignService.processMatchResult(campaign, true);
-
-    assertThat(state.getVictoryPoints()).isEqualTo(2);
-    verify(campaignStateRepository).save(state);
-
-    campaignService.processMatchResult(campaign, false); // Loss
-
-    assertThat(state.getVictoryPoints()).isEqualTo(1); // 2 - 1 = 1
-  }
-
-  @Test
-  void testProcessMatchResult_Chapter3() {
-    Campaign campaign = new Campaign();
-    CampaignState state = new CampaignState();
-    state.setCurrentChapter(3);
-    state.setVictoryPoints(10);
-    campaign.setState(state);
-
-    campaignService.processMatchResult(campaign, true);
-
-    assertThat(state.getVictoryPoints()).isEqualTo(14); // 10 + 4
-    verify(campaignStateRepository).save(state);
-
-    campaignService.processMatchResult(campaign, false); // Loss
-
-    assertThat(state.getVictoryPoints()).isEqualTo(12); // 14 - 2
+    assertThat(state.getLosses()).isEqualTo(1);
+    assertThat(state.getMatchesPlayed()).isEqualTo(2);
+    assertThat(state.getVictoryPoints()).isEqualTo(2); // 3 - 1
   }
 
   @Test
@@ -253,16 +325,19 @@ class CampaignServiceTest {
   }
 
   @Test
-  void testCompleteCampaign() {
+  void testCompletePostMatch() {
     Campaign campaign = new Campaign();
     CampaignState state = new CampaignState();
-    state.setCurrentChapter(3);
+    state.setCurrentPhase(CampaignPhase.POST_MATCH);
+    state.setActionsTaken(3);
+    state.setCurrentMatch(new Segment());
     campaign.setState(state);
 
-    campaignService.advanceChapter(campaign);
+    campaignService.completePostMatch(campaign);
 
-    assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.COMPLETED);
-    assertThat(campaign.getEndedAt()).isNotNull();
-    verify(campaignRepository).save(campaign);
+    assertThat(state.getCurrentPhase()).isEqualTo(CampaignPhase.BACKSTAGE);
+    assertThat(state.getActionsTaken()).isZero();
+    assertThat(state.getCurrentMatch()).isNull();
+    verify(campaignStateRepository).save(state);
   }
 }

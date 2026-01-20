@@ -21,8 +21,12 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignEncounter;
 import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
@@ -42,6 +46,7 @@ public class CampaignEncounterService {
   private final CampaignStateRepository stateRepository;
   private final CampaignChapterService chapterService;
   private final CampaignService campaignService;
+  private final WrestlerRepository wrestlerRepository;
   private final ObjectMapper objectMapper;
 
   @Transactional
@@ -89,11 +94,22 @@ public class CampaignEncounterService {
 
     sb.append("PLAYER CONTEXT:\n");
     sb.append("- Wrestler: ").append(campaign.getWrestler().getName()).append("\n");
+    if (campaign.getWrestler().getDescription() != null) {
+      String bio = campaign.getWrestler().getDescription();
+      sb.append("- Bio: ").append(bio.substring(0, Math.min(200, bio.length()))).append("\n");
+    }
+    sb.append("- Gender: ").append(campaign.getWrestler().getGender()).append("\n");
+    sb.append("- Tier: ").append(campaign.getWrestler().getTier()).append("\n");
     sb.append("- Alignment: ")
         .append(campaign.getWrestler().getAlignment().getAlignmentType())
         .append(" (Level ")
         .append(campaign.getWrestler().getAlignment().getLevel())
         .append(")\n");
+
+    if (campaign.getWrestler().getFaction() != null) {
+      sb.append("- Faction: ").append(campaign.getWrestler().getFaction().getName()).append("\n");
+    }
+
     sb.append("- Tournament Progress: ")
         .append(campaign.getState().getWins())
         .append(" Wins, ")
@@ -103,6 +119,40 @@ public class CampaignEncounterService {
     if (campaign.getState().getRival() != null) {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
     }
+
+    if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH
+        && campaign.getState().getCurrentMatch() != null) {
+      Segment match = campaign.getState().getCurrentMatch();
+      boolean won = match.getWinners().contains(campaign.getWrestler());
+      sb.append("\nIMMEDIATE MATCH RESULT:\n");
+      sb.append("- Just competed in a ")
+          .append(match.getSegmentType().getName())
+          .append(" match.\n");
+      sb.append("- Result: ").append(won ? "VICTORY" : "DEFEAT").append("\n");
+      String opponents =
+          match.getWrestlers().stream()
+              .filter(w -> !w.equals(campaign.getWrestler()))
+              .map(Wrestler::getName)
+              .collect(java.util.stream.Collectors.joining(", "));
+      sb.append("- Opponents: ").append(opponents).append("\n");
+    }
+
+    // List available NPCs for the AI to pick from
+    sb.append("\nAVAILABLE ROSTER (Possible Opponents/Participants):\n");
+    wrestlerRepository.findAll().stream()
+        .filter(w -> !w.getName().equals(campaign.getWrestler().getName()))
+        .limit(20) // Don't overwhelm but give choice
+        .forEach(
+            w -> {
+              sb.append("- ").append(w.getName());
+              sb.append(" (Tier: ").append(w.getTier());
+              sb.append(", Gender: ").append(w.getGender()).append(")");
+              if (w.getDescription() != null) {
+                String bio = w.getDescription();
+                sb.append(". Bio: ").append(bio.substring(0, Math.min(150, bio.length())));
+              }
+              sb.append("\n");
+            });
 
     if (!history.isEmpty()) {
       sb.append("\nRECENT HISTORY (Player Decisions):\n");
@@ -120,19 +170,32 @@ public class CampaignEncounterService {
     }
 
     sb.append("\nINSTRUCTIONS:\n");
-    sb.append("1. Generate a professional wrestling narrative segment appropriate for Chapter ")
-        .append(chapter.getChapterNumber())
-        .append(" (")
-        .append(chapter.getTitle())
-        .append(").\n");
-    sb.append("2. Provide exactly 2 or 3 distinct choices for the player.\n");
+    if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH) {
+      sb.append(
+          "1. Generate a 'Post-Match' narrative segment. This should be the immediate aftermath of"
+              + " the match result mentioned above.\n");
+      sb.append("2. Reflect the winner/loser behavior based on the player's alignment.\n");
+      sb.append(
+          "3. Provide choices that define the player's reaction or immediate next steps (e.g.,"
+              + " backstage interview, locker room confrontation).\n");
+    } else {
+      sb.append("1. Generate a professional wrestling narrative segment appropriate for Chapter ")
+          .append(chapter.getChapterNumber())
+          .append(" (")
+          .append(chapter.getTitle())
+          .append(").\n");
+      sb.append("2. Provide exactly 2 or 3 distinct choices for the player.\n");
+    }
     sb.append(
         "3. For each choice, define the 'alignmentShift' (positive value moves toward Babyface,"
             + " negative toward Heel), 'vpReward' (Victory Points granted immediately), and"
-            + " 'nextPhase' (MATCH or POST_MATCH).\n");
+            + " 'nextPhase' (MATCH, POST_MATCH, or BACKSTAGE). Use BACKSTAGE to end the current"
+            + " story loop and return to management.\n");
     sb.append(
-        "4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentId' if the"
-            + " story dictates a specific opponent (use null if any opponent is fine).\n");
+        "4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentName' (string) if"
+            + " the story dictates a specific opponent from the ROSTER above. Also provide a"
+            + " 'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',"
+            + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match']. Defaults to 'One on One'.\n");
     sb.append("5. IMPORTANT: Return ONLY a valid JSON object matching the following structure:\n");
     sb.append("{\n");
     sb.append("  \"narrative\": \"The story text here...\",\n");
@@ -140,7 +203,7 @@ public class CampaignEncounterService {
     sb.append(
         "    { \"text\": \"Full choice description\", \"label\": \"Short button label\","
             + " \"alignmentShift\": 1, \"vpReward\": 0, \"nextPhase\": \"MATCH\","
-            + " \"forcedOpponentId\": null }\n");
+            + " \"forcedOpponentName\": null, \"matchType\": \"One on One\" }\n");
     sb.append("  ]\n");
     sb.append("}\n");
 

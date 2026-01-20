@@ -18,5 +18,6 @@ package com.github.javydreamercsw.management.domain.campaign;
 
 public enum CampaignPhase {
   BACKSTAGE,
-  MATCH
+  MATCH,
+  POST_MATCH
 }

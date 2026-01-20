@@ -39,7 +39,8 @@ public class CampaignEncounterResponseDTO {
     private String label; // Short label for UI buttons
     private int alignmentShift;
     private int vpReward;
-    private Long forcedOpponentId;
-    private String nextPhase; // e.g., "MATCH", "POST_MATCH"
+    private String forcedOpponentName;
+    private String matchType; // e.g., "One on One", "Triple Threat"
+    private String nextPhase; // e.g., "MATCH", "POST_MATCH", "BACKSTAGE"
   }
 }
