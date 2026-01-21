@@ -155,18 +155,18 @@ Logical evaluation:
 
 The following fields can be used in a `criteria` object:
 
-| Field | Description |
-|:---|:---|
-| `minVictoryPoints` | Minimum VP required. |
-| `minMatchesPlayed` | Minimum matches played in the current chapter. |
-| `minWins` | Minimum wins in the current chapter. |
-| `tournamentWinner` | Boolean check for tournament victory. |
-| `failedToQualify` | Boolean check for tournament qualification failure. |
-| `isChampion` | Boolean check if the wrestler currently holds any title. |
-| `requiredAlignmentType` | `FACE`, `HEEL`, or `NEUTRAL`. |
-| `minAlignmentLevel` | Minimum level on the alignment track (0-5). |
-| `requiredCompletedChapterIds` | List of IDs of chapters that must be finished. |
-| `customEvaluationScript` | (Experimental) Groovy script for complex logic. |
+| Field                         | Description                                              |
+|:------------------------------|:---------------------------------------------------------|
+| `minVictoryPoints`            | Minimum VP required.                                     |
+| `minMatchesPlayed`            | Minimum matches played in the current chapter.           |
+| `minWins`                     | Minimum wins in the current chapter.                     |
+| `tournamentWinner`            | Boolean check for tournament victory.                    |
+| `failedToQualify`             | Boolean check for tournament qualification failure.      |
+| `isChampion`                  | Boolean check if the wrestler currently holds any title. |
+| `requiredAlignmentType`       | `FACE`, `HEEL`, or `NEUTRAL`.                            |
+| `minAlignmentLevel`           | Minimum level on the alignment track (0-5).              |
+| `requiredCompletedChapterIds` | List of IDs of chapters that must be finished.           |
+| `customEvaluationScript`      | (Experimental) Groovy script for complex logic.          |
 
 ### AI Narrative Integration
 

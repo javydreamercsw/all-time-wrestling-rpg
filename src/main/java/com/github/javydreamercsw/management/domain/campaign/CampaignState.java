@@ -53,6 +53,7 @@ public class CampaignState {
 
   @OneToOne
   @JoinColumn(name = "campaign_id", nullable = false)
+  @com.fasterxml.jackson.annotation.JsonIgnore
   private Campaign campaign;
 
   @Column(name = "current_chapter_id")

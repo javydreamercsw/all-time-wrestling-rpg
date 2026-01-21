@@ -65,6 +65,7 @@ public class Campaign {
   private LocalDateTime endedAt;
 
   @OneToOne(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+  @com.fasterxml.jackson.annotation.JsonIgnore
   private CampaignState state;
 
   @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
