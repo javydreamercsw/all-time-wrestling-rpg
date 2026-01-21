@@ -16,15 +16,32 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class LocalAIStatusService {
+
+  private final LocalAIConfigProperties config;
+  private final HttpClient httpClient =
+      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
   @Getter @Setter private Status status = Status.NOT_STARTED;
   @Getter @Setter private String message = "LocalAI is not initialized.";
+  private int failureCount = 0;
+  private static final int MAX_FAILURES = 3;
 
   public enum Status {
     NOT_STARTED,
@@ -36,5 +53,58 @@ public class LocalAIStatusService {
 
   public boolean isReady() {
     return status == Status.READY;
+  }
+
+  @Scheduled(fixedDelay = 10_000) // Check every 10 seconds
+  public void checkStatus() {
+    if (!config.isEnabled()) {
+      status = Status.NOT_STARTED;
+      message = "LocalAI is disabled in configuration.";
+      return;
+    }
+
+    // If already ready, only check once every 2 minutes to reduce noise
+    if (status == Status.READY && (System.currentTimeMillis() % 120_000 > 10_000)) {
+      return;
+    }
+
+    String baseUrl = config.getBaseUrl();
+    if (baseUrl == null || baseUrl.isEmpty()) {
+      status = Status.FAILED;
+      message = "LocalAI Base URL is not configured.";
+      return;
+    }
+    URI uri = URI.create(baseUrl + "/readyz");
+    log.debug("Checking LocalAI health at: {}", uri);
+
+    try {
+      HttpRequest request =
+          HttpRequest.newBuilder().uri(uri).timeout(Duration.ofSeconds(3)).GET().build();
+
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        status = Status.READY;
+        message = "LocalAI is ready.";
+        failureCount = 0; // Reset on success
+      } else {
+        failureCount++;
+        if (failureCount >= MAX_FAILURES) {
+          status = Status.STARTING;
+          message = "LocalAI is starting up (HTTP " + response.statusCode() + ")";
+        }
+      }
+    } catch (Exception e) {
+      failureCount++;
+      if (failureCount >= MAX_FAILURES || status != Status.READY) {
+        status = Status.FAILED;
+        String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        message = "Cannot connect to LocalAI at " + baseUrl + "/readyz: " + errorMsg;
+      }
+      log.debug(
+          "LocalAI health check failed at " + baseUrl + " (failure count: " + failureCount + ")",
+          e);
+    }
   }
 }

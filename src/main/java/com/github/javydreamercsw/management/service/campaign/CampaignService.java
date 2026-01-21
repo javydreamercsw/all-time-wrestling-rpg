@@ -33,8 +33,12 @@ import com.github.javydreamercsw.management.domain.show.SegmentParticipantReposi
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -46,6 +50,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -66,9 +71,12 @@ public class CampaignService {
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
   private final SegmentService segmentService;
+  private final SegmentRepository segmentRepository;
+  private final SegmentRuleRepository segmentRuleRepository;
   private final SeasonRepository seasonRepository;
   private final SegmentTypeRepository segmentTypeRepository;
   private final ShowTypeRepository showTypeRepository;
+  private final ShowTemplateRepository showTemplateRepository;
   private final SegmentParticipantRepository participantRepository;
 
   public Campaign startCampaign(Wrestler wrestler) {
@@ -145,42 +153,8 @@ public class CampaignService {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
-    // 1. Find/Create Campaign Season
-    Season season =
-        seasonRepository
-            .findByName("Campaign Mode")
-            .orElseGet(
-                () -> {
-                  Season s = new Season();
-                  s.setName("Campaign Mode");
-                  s.setStartDate(
-                      java.time.LocalDate.now().atStartOfDay().toInstant(java.time.ZoneOffset.UTC));
-                  s.setEndDate(
-                      java.time.LocalDate.now()
-                          .plusYears(1)
-                          .atStartOfDay()
-                          .toInstant(java.time.ZoneOffset.UTC));
-                  return seasonRepository.save(s);
-                });
-
-    // 2. Find/Create Campaign Show
-    ShowType weekly =
-        showTypeRepository
-            .findByName("Weekly")
-            .orElseGet(() -> showTypeRepository.findAll().get(0));
-
-    Show show =
-        showService.findByName("Campaign: " + player.getName()).stream()
-            .findFirst()
-            .orElseGet(
-                () ->
-                    showService.createShow(
-                        "Campaign: " + player.getName(),
-                        "Story matches for " + player.getName(),
-                        weekly.getId(),
-                        java.time.LocalDate.now(),
-                        season.getId(),
-                        null));
+    // 1. Find/Create Campaign Show
+    Show show = getOrCreateCampaignShow(campaign);
 
     // 3. Create Segment
     String finalTypeName = segmentTypeName != null ? segmentTypeName : "One on One";
@@ -195,7 +169,11 @@ public class CampaignService {
 
     Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
     segment.setNarration(narration);
-    segmentService.updateSegment(segment);
+
+    // Add "Normal" segment rule by default
+    segmentRuleRepository.findByName("Normal").ifPresent(segment::addSegmentRule);
+
+    segmentRepository.save(segment);
 
     // 4. Assign Participants
     Wrestler opponent =
@@ -382,10 +360,93 @@ public class CampaignService {
     state.setCurrentPhase(CampaignPhase.BACKSTAGE);
     state.setActionsTaken(0); // Reset actions for the next "turn"
     state.setCurrentMatch(null); // Clear the match reference now that post-match is done
+    state.setMomentumBonus(0); // Reset momentum bonus for the next "turn"
+
+    // Advance game date by 1 day
+    if (state.getCurrentGameDate() == null) {
+      state.setCurrentGameDate(java.time.LocalDate.now());
+    }
+    state.setCurrentGameDate(state.getCurrentGameDate().plusDays(1));
+
     campaignStateRepository.save(state);
   }
 
-  public void advanceChapter(Campaign campaign) {
+  public Show getOrCreateCampaignShow(Campaign campaign) {
+    CampaignState state = campaign.getState();
+    Wrestler player = campaign.getWrestler();
+    java.time.LocalDate date = state.getCurrentGameDate();
+    if (date == null) {
+      date = java.time.LocalDate.now();
+      state.setCurrentGameDate(date);
+    }
+
+    // Find/Create Campaign Season
+    Season season =
+        seasonRepository
+            .findByName("Campaign Mode")
+            .orElseGet(
+                () -> {
+                  Season s = new Season();
+                  s.setName("Campaign Mode");
+                  s.setStartDate(
+                      java.time.LocalDate.now().atStartOfDay().toInstant(java.time.ZoneOffset.UTC));
+                  s.setEndDate(
+                      java.time.LocalDate.now()
+                          .plusYears(1)
+                          .atStartOfDay()
+                          .toInstant(java.time.ZoneOffset.UTC));
+                  return seasonRepository.save(s);
+                });
+
+    // Determine show name and template
+    String showName;
+    Long templateId = null;
+    if (date.getDayOfWeek() == java.time.DayOfWeek.FRIDAY) {
+      showName = "Continuum";
+      templateId =
+          showTemplateRepository.findByName("Continuum").map(ShowTemplate::getId).orElse(null);
+    } else {
+      showName = "Campaign: " + player.getName() + " - " + date;
+    }
+
+    final String finalShowName = showName;
+    final Long finalTemplateId = templateId;
+    final java.time.LocalDate finalDate = date;
+    return showService.findByName(finalShowName).stream()
+        .filter(s -> s.getShowDate().equals(finalDate))
+        .findFirst()
+        .orElseGet(
+            () -> {
+              ShowType weekly =
+                  showTypeRepository
+                      .findByName("Weekly")
+                      .orElseGet(() -> showTypeRepository.findAll().get(0));
+
+              return showService.createShow(
+                  finalShowName,
+                  "Story matches for " + player.getName(),
+                  weekly.getId(),
+                  finalDate,
+                  season.getId(),
+                  finalTemplateId);
+            });
+  }
+
+  public SegmentType getPromoSegmentType() {
+    return segmentTypeRepository
+        .findByName("Promo")
+        .orElseGet(
+            () ->
+                segmentTypeRepository
+                    .findByName("One on One")
+                    .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
+  }
+
+  public void saveSegment(@NonNull Segment segment) {
+    segmentRepository.save(segment);
+  }
+
+  public void advanceChapter(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     String oldId = state.getCurrentChapterId();
 
@@ -408,7 +469,7 @@ public class CampaignService {
     }
   }
 
-  public void completeCampaign(Campaign campaign) {
+  public void completeCampaign(@NonNull Campaign campaign) {
     campaign.setStatus(CampaignStatus.COMPLETED);
     campaign.setEndedAt(LocalDateTime.now());
     campaignRepository.save(campaign);
@@ -421,7 +482,7 @@ public class CampaignService {
    *
    * @param campaign The campaign to update.
    */
-  public void updateAbilityCards(Campaign campaign) {
+  public void updateAbilityCards(@NonNull Campaign campaign) {
     Wrestler wrestler = campaign.getWrestler();
     Optional<WrestlerAlignment> alignmentOpt = wrestlerAlignmentRepository.findByWrestler(wrestler);
 
@@ -449,7 +510,8 @@ public class CampaignService {
     campaignStateRepository.save(state);
   }
 
-  private void recalculatePendingPicks(CampaignState state, WrestlerAlignment alignment) {
+  private void recalculatePendingPicks(
+      @NonNull CampaignState state, @NonNull WrestlerAlignment alignment) {
     int level = alignment.getLevel();
     AlignmentType type = alignment.getAlignmentType();
 
@@ -476,7 +538,7 @@ public class CampaignService {
    * @param oldLevel The previous level.
    * @param newLevel The new level.
    */
-  public void handleLevelChange(Campaign campaign, int oldLevel, int newLevel) {
+  public void handleLevelChange(@NonNull Campaign campaign, int oldLevel, int newLevel) {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
@@ -530,7 +592,7 @@ public class CampaignService {
     campaignStateRepository.save(state);
   }
 
-  private void removeOneCardOfLevel(List<CampaignAbilityCard> cards, int level) {
+  private void removeOneCardOfLevel(@NonNull List<CampaignAbilityCard> cards, int level) {
     cards.stream()
         .filter(c -> c.getLevel() == level)
         .findFirst()
@@ -547,7 +609,7 @@ public class CampaignService {
    * @param campaign The campaign.
    * @return List of pickable cards.
    */
-  public List<CampaignAbilityCard> getPickableCards(Campaign campaign) {
+  public List<CampaignAbilityCard> getPickableCards(@NonNull Campaign campaign) {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
@@ -579,7 +641,7 @@ public class CampaignService {
    * @param campaign The campaign.
    * @param cardId The card ID.
    */
-  public void pickAbilityCard(Campaign campaign, Long cardId) {
+  public void pickAbilityCard(@NonNull Campaign campaign, @NonNull Long cardId) {
     CampaignAbilityCard card =
         campaignAbilityCardRepository
             .findById(cardId)
@@ -608,46 +670,6 @@ public class CampaignService {
   }
 
   /**
-   * Uses a one-time ability card, removing it from the active inventory.
-   *
-   * @param campaign The campaign.
-   * @param cardId The ID of the card to use.
-   */
-  public void useAbilityCard(Campaign campaign, Long cardId) {
-    CampaignState state = campaign.getState();
-    CampaignAbilityCard card =
-        campaignAbilityCardRepository
-            .findById(cardId)
-            .orElseThrow(() -> new IllegalArgumentException("Card not found"));
-
-    if (state.getActiveCards().contains(card)) {
-      boolean anyEffectTriggered = false;
-
-      if (card.isOneTimeUse()) {
-        campaignScriptService.executeEffect(card.getEffectScript(), campaign);
-        anyEffectTriggered = true;
-      }
-
-      if (card.isSecondaryOneTimeUse()) {
-        campaignScriptService.executeEffect(card.getSecondaryEffectScript(), campaign);
-        anyEffectTriggered = true;
-      }
-
-      if (anyEffectTriggered) {
-        // TODO: For cards with both passive and one-time effects, we might want to keep the card
-        // in activeCards but mark the one-time effect as spent.
-        // For now, we remove the card entirely when a one-time effect is used.
-        state.getActiveCards().remove(card);
-        campaignStateRepository.save(state);
-        log.info(
-            "Used ability card: {} for wrestler: {}",
-            card.getName(),
-            campaign.getWrestler().getName());
-      }
-    }
-  }
-
-  /**
    * Switches the wrestler's alignment (Turn).
    *
    * @param campaign The campaign.
@@ -664,9 +686,7 @@ public class CampaignService {
             ? AlignmentType.HEEL
             : AlignmentType.FACE;
     alignment.setAlignmentType(newType);
-    // Keep level? Rules say "based on their current position on the track".
-    // Usually a turn might reset or keep progress. Assuming keep level for now based on "based on
-    // their current position".
+
     wrestlerAlignmentRepository.save(alignment);
 
     updateAbilityCards(campaign);

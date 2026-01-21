@@ -36,7 +36,7 @@ public class GameSettingService {
   public static final String CURRENT_GAME_DATE_KEY = "current_game_date";
   private final GameSettingRepository repository;
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("permitAll()")
   public LocalDate getCurrentGameDate() {
     return repository
         .findById(CURRENT_GAME_DATE_KEY)
@@ -54,7 +54,7 @@ public class GameSettingService {
     repository.save(setting);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("permitAll()")
   public Optional<GameSetting> findById(String key) {
     return repository.findById(key);
   }
@@ -78,7 +78,7 @@ public class GameSettingService {
     save(setting);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("permitAll()")
   public List<GameSetting> findAll() {
     return repository.findAll();
   }

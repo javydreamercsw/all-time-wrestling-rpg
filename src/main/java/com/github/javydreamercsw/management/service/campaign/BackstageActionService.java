@@ -25,24 +25,41 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.LocalDateTime;
 import java.util.Random;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 @Slf4j
-@RequiredArgsConstructor
 public class BackstageActionService {
 
   private final Random random;
   private final CampaignStateRepository campaignStateRepository;
   private final BackstageActionHistoryRepository actionHistoryRepository;
   private final InjuryService injuryService;
+  private final CampaignService campaignService;
+  private final SegmentRuleRepository segmentRuleRepository;
+
+  public BackstageActionService(
+      Random random,
+      CampaignStateRepository campaignStateRepository,
+      BackstageActionHistoryRepository actionHistoryRepository,
+      InjuryService injuryService,
+      @Lazy CampaignService campaignService,
+      SegmentRuleRepository segmentRuleRepository) {
+    this.random = random;
+    this.campaignStateRepository = campaignStateRepository;
+    this.actionHistoryRepository = actionHistoryRepository;
+    this.injuryService = injuryService;
+    this.campaignService = campaignService;
+    this.segmentRuleRepository = segmentRuleRepository;
+  }
 
   /**
    * Perform a backstage action.
@@ -142,10 +159,22 @@ public class BackstageActionService {
         break;
       case PROMO:
         if (successes > 0) {
-          outcomeDescription = "Promo successful. Alignment shifted. Gained Momentum.";
+          // Advance one space on chosen Face or Heel track
+          campaignService.shiftAlignment(campaign, 1);
+
+          // Gain +1 momentum per success for start of next match
+          state.setMomentumBonus(state.getMomentumBonus() + successes);
+
+          outcomeDescription =
+              "Promo successful! Gained +1 on alignment track and +"
+                  + successes
+                  + " momentum for your next match.";
         } else {
-          outcomeDescription = "Promo failed.";
+          outcomeDescription = "Promo failed. The crowd wasn't feeling it.";
         }
+
+        // Create a Promo segment
+        createPromoSegment(campaign, isSuccess, outcomeDescription);
         break;
       case ATTACK:
         if (successes > 0) {
@@ -191,6 +220,38 @@ public class BackstageActionService {
       }
     }
     return successes;
+  }
+
+  private void createPromoSegment(Campaign campaign, boolean success, String description) {
+    try {
+      // Use existing service to create a segment but forced to Promo
+      var show = campaignService.getOrCreateCampaignShow(campaign);
+      var promoType = campaignService.getPromoSegmentType();
+
+      var segment = new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      segment.setShow(show);
+      segment.setSegmentType(promoType);
+      segment.setSegmentDate(java.time.Instant.now());
+      segment.setNarration("Backstage Promo: " + description);
+      segment.setStatus(
+          com.github.javydreamercsw.management.domain.show.segment.SegmentStatus.COMPLETED);
+      segment.setAdjudicationStatus(
+          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+
+      // Add participants
+      segment.addParticipant(campaign.getWrestler());
+      if (success) {
+        segment.setWinners(java.util.List.of(campaign.getWrestler()));
+      }
+
+      // Add "Promo" rule
+      segmentRuleRepository.findByName("Promo").ifPresent(segment::addSegmentRule);
+
+      campaignService.saveSegment(segment);
+      log.info("Created promo segment for campaign {}", campaign.getId());
+    } catch (Exception e) {
+      log.error("Failed to create promo segment", e);
+    }
   }
 
   public record ActionOutcome(int successes, String description) {}

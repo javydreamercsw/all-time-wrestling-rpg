@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.Initializable;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
@@ -79,7 +80,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
-public class DataInitializer implements com.github.javydreamercsw.base.Initializable {
+public class DataInitializer implements Initializable {
 
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;
@@ -224,6 +225,17 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     String localAiModelUrl = env.getProperty("AI_LOCALAI_MODEL_URL");
     if (localAiModelUrl != null && !localAiModelUrl.isEmpty()) {
       gameSettingService.save("AI_LOCALAI_MODEL_URL", localAiModelUrl);
+    }
+
+    boolean openAiEnabled =
+        Boolean.parseBoolean(gameSettingService.findById("AI_OPENAI_ENABLED").get().getValue());
+    boolean claudeEnabled =
+        Boolean.parseBoolean(gameSettingService.findById("AI_CLAUDE_ENABLED").get().getValue());
+    boolean geminiEnabled =
+        Boolean.parseBoolean(gameSettingService.findById("AI_GEMINI_ENABLED").get().getValue());
+    if (!openAiEnabled && !claudeEnabled && !geminiEnabled) {
+      log.info("All remote AI providers are disabled. Enabling LocalAI.");
+      gameSettingService.save("AI_LOCALAI_ENABLED", "true");
     }
 
     log.info("AI settings synchronization complete.");

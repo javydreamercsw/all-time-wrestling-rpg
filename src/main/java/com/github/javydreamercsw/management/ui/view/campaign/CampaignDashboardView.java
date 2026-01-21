@@ -31,9 +31,11 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
+import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
@@ -45,6 +47,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import lombok.NonNull;
@@ -216,10 +219,26 @@ public class CampaignDashboardView extends VerticalLayout {
       }
     }
 
+    // Stats Section
+    DashboardCard statsCard = new DashboardCard("Campaign Progress");
     HorizontalLayout statsLayout = new HorizontalLayout();
+    statsLayout.setWidthFull();
+    statsLayout.addClassNames(FlexWrap.WRAP, Gap.MEDIUM);
+
     statsLayout.add(createStatCard("Chapter", state.getCurrentChapterId()));
+    if (state.getCurrentGameDate() != null) {
+      statsLayout.add(
+          createStatCard(
+              "Game Date",
+              state
+                  .getCurrentGameDate()
+                  .format(java.time.format.DateTimeFormatter.ofPattern("EEE, MMM d"))));
+    }
     statsLayout.add(createStatCard("Victory Points", String.valueOf(state.getVictoryPoints())));
     statsLayout.add(createStatCard("Skill Tokens", String.valueOf(state.getSkillTokens())));
+    if (state.getMomentumBonus() > 0) {
+      statsLayout.add(createStatCard("Next Match Momentum", "+" + state.getMomentumBonus()));
+    }
     statsLayout.add(createStatCard("Bumps", String.valueOf(state.getBumps())));
 
     if (alignment != null) {
@@ -233,10 +252,14 @@ public class CampaignDashboardView extends VerticalLayout {
                   + alignment.getLevel()
                   + ")"));
     }
+    statsCard.add(statsLayout);
+    add(statsCard);
 
-    add(statsLayout);
-
+    DashboardCard healthCard = new DashboardCard("Status & Penalties");
     HorizontalLayout healthLayout = new HorizontalLayout();
+    healthLayout.setWidthFull();
+    healthLayout.addClassNames(FlexWrap.WRAP, Gap.MEDIUM);
+
     healthLayout.add(
         createStatCard(
             "Health",
@@ -250,7 +273,8 @@ public class CampaignDashboardView extends VerticalLayout {
                 + state.getStaminaPenalty()
                 + ", Hand: -"
                 + state.getHandSizePenalty()));
-    add(healthLayout);
+    healthCard.add(healthLayout);
+    add(healthCard);
 
     // Pending Picks Section
     addPendingPicksSection(currentCampaign);
@@ -292,19 +316,60 @@ public class CampaignDashboardView extends VerticalLayout {
 
     // Actions
     add(new H4("Actions"));
+
+    Span actionsInfo =
+        new Span("Backstage actions are only available before continuing the story narrative.");
+    actionsInfo.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Bottom.SMALL);
+    add(actionsInfo);
+
+    if (state.getCurrentPhase()
+        == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE) {
+      Span remainingActions =
+          new Span("Remaining actions for today: " + (2 - state.getActionsTaken()));
+      remainingActions.addClassNames(FontSize.SMALL, FontWeight.BOLD, TextColor.PRIMARY);
+      add(remainingActions);
+    }
+
     HorizontalLayout actionsLayout = new HorizontalLayout();
     actionsLayout.add(
         new Button("Backstage Actions", e -> UI.getCurrent().navigate(BackstageActionView.class)));
     actionsLayout.add(
-        new Button("Story Narrative", e -> UI.getCurrent().navigate("campaign/narrative")));
+        new Button(
+            "Story Narrative",
+            e -> {
+              if (state.getActionsTaken() < 2
+                  && state.getCurrentPhase()
+                      == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
+                          .BACKSTAGE) {
+                ConfirmDialog dialog = new ConfirmDialog();
+                dialog.setHeader("Unused Actions");
+                dialog.setText(
+                    "You still have "
+                        + (2 - state.getActionsTaken())
+                        + " actions remaining for today. Proceeding to the story will skip these"
+                        + " actions. Are you sure?");
+                dialog.setCancelable(true);
+                dialog.setConfirmText("Proceed Anyway");
+                dialog.setConfirmButtonTheme("error primary");
+                dialog.addConfirmListener(event -> UI.getCurrent().navigate("campaign/narrative"));
+                dialog.open();
+              } else {
+                if (state.getCurrentPhase()
+                    == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
+                        .POST_MATCH) {
+                  log.info("Completing post-match phase before navigating to narrative.");
+                  campaignService.completePostMatch(currentCampaign);
+                }
+                UI.getCurrent().navigate("campaign/narrative");
+              }
+            }));
 
-    // Only show "Next Show" if they have used their actions or are in BACKSTAGE
-    if (state.getActionsTaken() >= 2
-        && state.getCurrentPhase()
-            == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE) {
+    // Only show "Next Show" if they are in POST_MATCH
+    if (state.getCurrentPhase()
+        == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.POST_MATCH) {
       Button nextShowButton =
           new Button(
-              "Next Show",
+              "Continue to Next Day",
               e -> {
                 campaignService.completePostMatch(currentCampaign);
                 refreshUI();
@@ -595,17 +660,23 @@ public class CampaignDashboardView extends VerticalLayout {
 
   private VerticalLayout createStatCard(@NonNull String label, @NonNull String value) {
     VerticalLayout card = new VerticalLayout();
-    card.addClassName("stat-card"); // CSS class needed
     card.setPadding(true);
     card.setSpacing(false);
-    card.getStyle().set("border", "1px solid #ccc");
-    card.getStyle().set("border-radius", "5px");
+    card.setWidth("200px");
+    card.addClassNames(
+        Background.CONTRAST_5,
+        Border.ALL,
+        BorderRadius.MEDIUM,
+        BoxShadow.XSMALL,
+        AlignItems.CENTER);
 
-    card.add(new Span(label));
+    Span labelSpan = new Span(label);
+    labelSpan.addClassNames(FontSize.SMALL, TextColor.SECONDARY, FontWeight.MEDIUM);
+
     Span valueSpan = new Span(value);
-    valueSpan.getStyle().set("font-weight", "bold");
-    valueSpan.getStyle().set("font-size", "1.2em");
-    card.add(valueSpan);
+    valueSpan.addClassNames(FontSize.XLARGE, FontWeight.BOLD, TextColor.PRIMARY);
+
+    card.add(labelSpan, valueSpan);
     return card;
   }
 }

@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -32,6 +34,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -57,6 +60,8 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final CampaignEncounterService encounterService;
   private final CampaignService campaignService;
   private final SecurityUtils securityUtils;
+  private final SegmentNarrationServiceFactory aiFactory;
+  private final LocalAIStatusService localAIStatus;
 
   private Campaign currentCampaign;
   private VerticalLayout narrativeContainer;
@@ -69,12 +74,16 @@ public class CampaignNarrativeView extends VerticalLayout {
       WrestlerRepository wrestlerRepository,
       CampaignEncounterService encounterService,
       CampaignService campaignService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      SegmentNarrationServiceFactory aiFactory,
+      LocalAIStatusService localAIStatus) {
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
     this.securityUtils = securityUtils;
+    this.aiFactory = aiFactory;
+    this.localAIStatus = localAIStatus;
 
     setSpacing(true);
     setPadding(true);
@@ -135,6 +144,29 @@ public class CampaignNarrativeView extends VerticalLayout {
   }
 
   private void generateNextEncounter() {
+    if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
+      showLoading(false);
+      narrativeContainer.removeAll();
+      choicesContainer.removeAll();
+
+      H2 title = new H2("Story Director Offline");
+      title.addClassNames(LumoUtility.TextColor.ERROR);
+      narrativeContainer.add(title);
+
+      String reason = "No AI providers are currently enabled or reachable.";
+      if (localAIStatus.getStatus() != LocalAIStatusService.Status.READY) {
+        reason = "LocalAI is still initializing: " + localAIStatus.getMessage();
+      }
+
+      Paragraph p =
+          new Paragraph(
+              reason + " Please check your configuration and ensure the AI service is running.");
+      narrativeContainer.add(p);
+
+      addRetryButton();
+      return;
+    }
+
     showLoading(true);
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
@@ -157,7 +189,8 @@ public class CampaignNarrativeView extends VerticalLayout {
             log.error("Failed to generate encounter", e);
             ui.access(
                 () -> {
-                  Notification.show("Failed to connect to the Story Director. Please try again.");
+                  Notification.show("Failed to connect to the Story Director. Please try again.")
+                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
                   showLoading(false);
                   addRetryButton();
                 });
@@ -221,6 +254,11 @@ public class CampaignNarrativeView extends VerticalLayout {
       choicesContainer.add(dashboardBtn);
     } else {
       // POST_MATCH or other narrative continuation
+      // If it's not a match, the day should be over.
+      if (!"MATCH".equals(choice.getNextPhase())) {
+        log.info("Non-match choice made, completing post-match to reset actions.");
+        campaignService.completePostMatch(currentCampaign);
+      }
       Button continueBtn = new Button("Continue Story", e -> generateNextEncounter());
       choicesContainer.add(continueBtn);
     }

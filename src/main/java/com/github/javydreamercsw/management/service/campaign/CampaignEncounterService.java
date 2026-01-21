@@ -66,8 +66,16 @@ public class CampaignEncounterService {
 
     try {
       String aiResponse = aiFactory.generateText(prompt);
-      // Clean AI response if it contains markdown code blocks
-      String json = aiResponse.replaceAll("```json", "").replaceAll("```", "").trim();
+      // Clean AI response - find the first { and last } to extract JSON
+      int start = aiResponse.indexOf('{');
+      int end = aiResponse.lastIndexOf('}');
+
+      if (start == -1 || end == -1 || end <= start) {
+        log.error("AI response did not contain valid JSON: {}", aiResponse);
+        throw new RuntimeException("AI response did not contain valid JSON.");
+      }
+
+      String json = aiResponse.substring(start, end + 1).trim();
       CampaignEncounterResponseDTO response =
           objectMapper.readValue(json, CampaignEncounterResponseDTO.class);
 
@@ -96,8 +104,7 @@ public class CampaignEncounterService {
     sb.append("PLAYER CONTEXT:\n");
     sb.append("- Wrestler: ").append(campaign.getWrestler().getName()).append("\n");
     if (campaign.getWrestler().getDescription() != null) {
-      String bio = campaign.getWrestler().getDescription();
-      sb.append("- Bio: ").append(bio.substring(0, Math.min(200, bio.length()))).append("\n");
+      sb.append("- Bio: ").append(campaign.getWrestler().getDescription()).append("\n");
     }
     sb.append("- Gender: ").append(campaign.getWrestler().getGender()).append("\n");
     sb.append("- Tier: ").append(campaign.getWrestler().getTier()).append("\n");
@@ -151,8 +158,7 @@ public class CampaignEncounterService {
               sb.append(" (Tier: ").append(w.getTier());
               sb.append(", Gender: ").append(w.getGender()).append(")");
               if (w.getDescription() != null) {
-                String bio = w.getDescription();
-                sb.append(". Bio: ").append(bio.substring(0, Math.min(150, bio.length())));
+                sb.append(". Bio: ").append(w.getDescription());
               }
               sb.append("\n");
             });
@@ -172,7 +178,7 @@ public class CampaignEncounterService {
       }
     }
 
-    sb.append("\nINSTRUCTIONS:\n");
+    sb.append("\nFINAL INSTRUCTIONS (CRITICAL):\n");
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH) {
       sb.append(
           "1. Generate a 'Post-Match' narrative segment. This should be the immediate aftermath of"
@@ -200,7 +206,10 @@ public class CampaignEncounterService {
             + " the story dictates a specific opponent from the ROSTER above. Also provide a"
             + " 'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',"
             + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match']. Defaults to 'One on One'.\n");
-    sb.append("5. IMPORTANT: Return ONLY a valid JSON object matching the following structure:\n");
+    sb.append(
+        "5. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
+            + " filler before or after the JSON.\n");
+    sb.append("REQUIRED JSON STRUCTURE:\n");
     sb.append("{\n");
     sb.append("  \"narrative\": \"The story text here...\",\n");
     sb.append("  \"choices\": [\n");

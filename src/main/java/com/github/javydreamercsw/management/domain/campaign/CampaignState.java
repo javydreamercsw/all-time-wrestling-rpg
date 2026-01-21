@@ -85,6 +85,13 @@ public class CampaignState {
   @Column(name = "stamina_penalty", nullable = false)
   private int staminaPenalty;
 
+  @Column(name = "momentum_bonus", nullable = false)
+  @Builder.Default
+  private int momentumBonus = 0;
+
+  @Column(name = "current_game_date")
+  private java.time.LocalDate currentGameDate;
+
   @Column(name = "last_sync")
   private LocalDateTime lastSync;
 

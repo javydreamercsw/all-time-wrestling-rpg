@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -61,6 +62,7 @@ class NarrationDialogTest {
   @Mock private LocalAIConfigProperties localAIConfigProperties;
   @Mock private Environment env;
   @Mock private SegmentNarrationController segmentNarrationController;
+  @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
 
   private NarrationDialog narrationDialog;
@@ -126,7 +128,8 @@ class NarrationDialogTest {
             rivalryService,
             localAIStatusService,
             localAIConfigProperties,
-            segmentNarrationController);
+            segmentNarrationController,
+            segmentNarrationServiceFactory);
 
     // Create mocks for the UI components that teamsLayout would contain
     VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
