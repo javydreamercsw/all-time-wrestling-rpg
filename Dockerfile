@@ -1,8 +1,9 @@
 FROM tomcat:11-jdk25
 COPY src/main/resources/docker/tomcat/server.xml /usr/local/tomcat/conf/server.xml
 COPY target/all-time-wrestling-rpg-*.war /usr/local/tomcat/webapps/atw-rpg.war
-ENV GEMINI_API_KEY=
-ENV OPENAI_API_KEY=
+ENV AI_GEMINI_ENABLED=
+ENV AI_OPENAI_API_KEY=
+ENV AI_CLAUDE_API_KEY=
 ENV NOTION_TOKEN=
 ENV SPRING_DATASOURCE_URL=jdbc:h2:file:/data/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
 ENV SPRING_DATASOURCE_USERNAME=sa
