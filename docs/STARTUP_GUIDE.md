@@ -96,3 +96,35 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 **Stop:** `pkill -f "spring-boot:run"`
 **URL:** http://localhost:8080/atw-rpg
 **Login:** admin / admin123
+
+## Configuration
+
+The application can be configured using environment variables. These variables will populate the database settings on every startup.
+
+### Notion Configuration
+
+|    Variable    |            Description            |
+|----------------|-----------------------------------|
+| `NOTION_TOKEN` | Your Notion API integration token |
+
+### AI Configuration
+
+|         Variable          |                    Description                    |                  Default                   |
+|---------------------------|---------------------------------------------------|--------------------------------------------|
+| `AI_TIMEOUT`              | AI request timeout in seconds                     | 300                                        |
+| `AI_PROVIDER_AUTO`        | Automatically select the first available provider | true                                       |
+| `AI_OPENAI_ENABLED`       | Enable OpenAI                                     | false                                      |
+| `AI_OPENAI_API_KEY`       | OpenAI API Key                                    |                                            |
+| `AI_OPENAI_API_URL`       | OpenAI API URL                                    | https://api.openai.com/v1/chat/completions |
+| `AI_OPENAI_DEFAULT_MODEL` | Default OpenAI Model                              | gpt-3.5-turbo                              |
+| `AI_OPENAI_PREMIUM_MODEL` | Premium OpenAI Model                              | gpt-4                                      |
+| `AI_CLAUDE_ENABLED`       | Enable Claude                                     | false                                      |
+| `AI_CLAUDE_API_KEY`       | Claude API Key                                    |                                            |
+| `AI_CLAUDE_MODEL_NAME`    | Claude Model Name                                 | claude-3-haiku-20240307                    |
+| `AI_GEMINI_ENABLED`       | Enable Gemini                                     | false                                      |
+| `AI_GEMINI_API_KEY`       | Gemini API Key                                    |                                            |
+| `AI_GEMINI_MODEL_NAME`    | Gemini Model Name                                 | gemini-2.5-flash                           |
+| `AI_LOCALAI_ENABLED`      | Enable LocalAI                                    | false                                      |
+| `AI_LOCALAI_BASE_URL`     | LocalAI Base URL                                  | http://localhost:8088                      |
+| `AI_LOCALAI_MODEL`        | LocalAI Model Name                                | llama-3.2-1b-instruct:q4_k_m               |
+

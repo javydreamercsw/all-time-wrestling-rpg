@@ -100,6 +100,7 @@ class DataInitializerTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
+  @Mock private org.springframework.core.env.Environment env;
 
   @BeforeEach
   void setUp() {
@@ -122,7 +123,8 @@ class DataInitializerTest {
             factionService,
             teamService,
             teamRepository,
-            campaignAbilityCardService);
+            campaignAbilityCardService,
+            env);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);

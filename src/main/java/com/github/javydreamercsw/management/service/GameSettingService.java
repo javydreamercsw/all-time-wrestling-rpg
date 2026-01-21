@@ -23,12 +23,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GameSettingService {
 
   public static final String CURRENT_GAME_DATE_KEY = "current_game_date";
@@ -57,10 +59,23 @@ public class GameSettingService {
     return repository.findById(key);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @Transactional
   public GameSetting save(GameSetting gameSetting) {
+    log.debug(
+        "Saving game setting: {} = {}",
+        gameSetting.getId(),
+        gameSetting.getId().contains("KEY") ? "********" : gameSetting.getValue());
     return repository.save(gameSetting);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN')")
+  @Transactional
+  public void save(String key, String value) {
+    GameSetting setting = repository.findById(key).orElseGet(GameSetting::new);
+    setting.setId(key);
+    setting.setValue(value);
+    save(setting);
   }
 
   @PreAuthorize("isAuthenticated()")

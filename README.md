@@ -214,7 +214,21 @@ To run the application using Docker, you need to provide the required environmen
 
 	*   `-p 9090:9090`: Maps the container's port 9090 to the host's port 9090.
 	*   `-v /path/to/your/data:/data`: Mounts a directory from your host machine to the `/data` directory inside the container. This is where the H2 database file will be stored, ensuring data persistence. Replace `/path/to/your/data` with the absolute path on your host machine.
-	*   `-e`: Sets the environment variables required for Notion integration. AI API keys are configured in-application.
+	*   `-e`: Sets the environment variables required for Notion integration and AI services. AI settings can be configured via environment variables or in-application in the AI Settings view.
+
+#### AI Environment Variables
+The following environment variables can be used to configure AI services:
+- `AI_TIMEOUT`: Request timeout in seconds (default: 300).
+- `AI_PROVIDER_AUTO`: Automatically select the first available provider (default: true).
+- `AI_OPENAI_ENABLED`: Enable OpenAI (default: false).
+- `AI_OPENAI_API_KEY`: Your OpenAI API key.
+- `AI_CLAUDE_ENABLED`: Enable Claude (default: false).
+- `AI_CLAUDE_API_KEY`: Your Claude API key.
+- `AI_GEMINI_ENABLED`: Enable Gemini (default: false).
+- `AI_GEMINI_API_KEY`: Your Gemini API key.
+- `AI_LOCALAI_ENABLED`: Enable LocalAI (default: false).
+
+See the [Startup Guide](./docs/STARTUP_GUIDE.md) for a full list of available environment variables.
 
 	The application will be accessible at `http://localhost:9090/atw-rpg`.
 
@@ -249,7 +263,7 @@ You can also deploy the application to a standalone Tomcat server.
 	export SPRING_DATASOURCE_USERNAME="sa"
 	export SPRING_DATASOURCE_PASSWORD=""
 	export SPRING_H2_CONSOLE_ENABLED="true"	```
-	Replace the placeholder values with your actual Notion token and desired database path. AI API keys are configured in-application.
+	Replace the placeholder values with your actual Notion token and desired database path. AI settings can also be configured here via environment variables (e.g., `AI_GEMINI_API_KEY`).
 
 4.  **Start Tomcat**:
 

@@ -71,6 +71,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -97,6 +98,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
   private final TeamService teamService;
   private final TeamRepository teamRepository;
   private final CampaignAbilityCardService campaignAbilityCardService;
+  private final Environment env;
 
   @Autowired
   public DataInitializer(
@@ -116,7 +118,8 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       FactionService factionService,
       TeamService teamService,
       TeamRepository teamRepository,
-      CampaignAbilityCardService campaignAbilityCardService) {
+      CampaignAbilityCardService campaignAbilityCardService,
+      Environment env) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -134,11 +137,14 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     this.teamService = teamService;
     this.teamRepository = teamRepository;
     this.campaignAbilityCardService = campaignAbilityCardService;
+    this.env = env;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
+    log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
+      syncAiSettingsFromEnvironment();
       initializeGameDate();
       loadSegmentRulesFromFile();
       syncShowTypesFromFile();
@@ -154,6 +160,73 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();
     }
+  }
+
+  private void syncAiSettingsFromEnvironment() {
+    log.info(
+        "Syncing AI settings from environment variables/system properties/Spring environment...");
+    gameSettingService.save("AI_TIMEOUT", env.getProperty("AI_TIMEOUT", "300"));
+    gameSettingService.save("AI_PROVIDER_AUTO", env.getProperty("AI_PROVIDER_AUTO", "true"));
+
+    // OpenAI
+    gameSettingService.save("AI_OPENAI_ENABLED", env.getProperty("AI_OPENAI_ENABLED", "false"));
+    gameSettingService.save(
+        "AI_OPENAI_API_URL",
+        env.getProperty("AI_OPENAI_API_URL", "https://api.openai.com/v1/chat/completions"));
+
+    String openAiKey = env.getProperty("AI_OPENAI_API_KEY");
+    if (openAiKey != null && !openAiKey.isEmpty()) {
+      gameSettingService.save("AI_OPENAI_API_KEY", openAiKey);
+    }
+
+    gameSettingService.save(
+        "AI_OPENAI_DEFAULT_MODEL", env.getProperty("AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo"));
+    gameSettingService.save(
+        "AI_OPENAI_PREMIUM_MODEL", env.getProperty("AI_OPENAI_PREMIUM_MODEL", "gpt-4"));
+    gameSettingService.save(
+        "AI_OPENAI_MAX_TOKENS", env.getProperty("AI_OPENAI_MAX_TOKENS", "1000"));
+    gameSettingService.save(
+        "AI_OPENAI_TEMPERATURE", env.getProperty("AI_OPENAI_TEMPERATURE", "0.7"));
+
+    // Claude
+    gameSettingService.save("AI_CLAUDE_ENABLED", env.getProperty("AI_CLAUDE_ENABLED", "false"));
+    gameSettingService.save(
+        "AI_CLAUDE_API_URL",
+        env.getProperty("AI_CLAUDE_API_URL", "https://api.anthropic.com/v1/messages/"));
+    String claudeKey = env.getProperty("AI_CLAUDE_API_KEY");
+    if (claudeKey != null && !claudeKey.isEmpty()) {
+      gameSettingService.save("AI_CLAUDE_API_KEY", claudeKey);
+    }
+    gameSettingService.save(
+        "AI_CLAUDE_MODEL_NAME", env.getProperty("AI_CLAUDE_MODEL_NAME", "claude-3-haiku-20240307"));
+
+    // Gemini
+    gameSettingService.save("AI_GEMINI_ENABLED", env.getProperty("AI_GEMINI_ENABLED", "false"));
+    gameSettingService.save(
+        "AI_GEMINI_API_URL",
+        env.getProperty(
+            "AI_GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/models/"));
+
+    String geminiKey = env.getProperty("AI_GEMINI_API_KEY");
+    if (geminiKey != null && !geminiKey.isEmpty()) {
+      gameSettingService.save("AI_GEMINI_API_KEY", geminiKey);
+    }
+    gameSettingService.save(
+        "AI_GEMINI_MODEL_NAME", env.getProperty("AI_GEMINI_MODEL_NAME", "gemini-2.5-flash"));
+
+    // LocalAI
+    gameSettingService.save("AI_LOCALAI_ENABLED", env.getProperty("AI_LOCALAI_ENABLED", "false"));
+    gameSettingService.save(
+        "AI_LOCALAI_BASE_URL", env.getProperty("AI_LOCALAI_BASE_URL", "http://localhost:8088"));
+    gameSettingService.save(
+        "AI_LOCALAI_MODEL", env.getProperty("AI_LOCALAI_MODEL", "llama-3.2-1b-instruct:q4_k_m"));
+
+    String localAiModelUrl = env.getProperty("AI_LOCALAI_MODEL_URL");
+    if (localAiModelUrl != null && !localAiModelUrl.isEmpty()) {
+      gameSettingService.save("AI_LOCALAI_MODEL_URL", localAiModelUrl);
+    }
+
+    log.info("AI settings synchronization complete.");
   }
 
   private void syncCampaignAbilityCardsFromFile() {

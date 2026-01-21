@@ -89,19 +89,32 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void loadCampaign() {
+    log.info("Loading campaign for current user...");
     securityUtils
         .getAuthenticatedUser()
-        .ifPresent(
+        .ifPresentOrElse(
             user -> {
+              log.info("Authenticated user: {}", user.getUsername());
               wrestlerRepository
                   .findByAccount(user.getAccount())
-                  .ifPresent(
+                  .ifPresentOrElse(
                       wrestler -> {
+                        log.info("Wrestler found: {}", wrestler.getName());
                         campaignRepository
                             .findActiveByWrestler(wrestler)
-                            .ifPresent(campaign -> currentCampaign = campaign);
-                      });
-            });
+                            .ifPresentOrElse(
+                                campaign -> {
+                                  log.info("Active campaign found: {}", campaign.getId());
+                                  currentCampaign = campaign;
+                                },
+                                () ->
+                                    log.info(
+                                        "No active campaign found for wrestler: {}",
+                                        wrestler.getName()));
+                      },
+                      () -> log.warn("No wrestler found for account: {}", user.getUsername()));
+            },
+            () -> log.warn("No authenticated user found during loadCampaign"));
   }
 
   private void initUI() {
@@ -113,22 +126,67 @@ public class CampaignDashboardView extends VerticalLayout {
                   + " List and use the 'Start Campaign' action on your assigned wrestler."));
 
       // Debug button for E2E tests and quick start
+
       Button debugStartButton =
           new Button(
               "Start New Campaign (Debug)",
               e -> {
+                log.info("Debug Start Campaign button clicked");
+
                 securityUtils
                     .getAuthenticatedUser()
-                    .ifPresent(
+                    .ifPresentOrElse(
                         user -> {
+                          log.info("Authenticated user found: {}", user.getUsername());
+
                           wrestlerRepository
                               .findByAccount(user.getAccount())
-                              .ifPresent(
+                              .ifPresentOrElse(
                                   wrestler -> {
+                                    log.info("Wrestler found for user: {}", wrestler.getName());
+
                                     campaignService.startCampaign(wrestler);
+
+                                    log.info("Campaign started successfully");
+
                                     refreshUI();
+                                  },
+                                  () -> {
+                                    log.info(
+                                        "No wrestler found for account {}, assigning first"
+                                            + " available...",
+                                        user.getUsername());
+
+                                    List<Wrestler> all = wrestlerRepository.findAll();
+
+                                    if (!all.isEmpty()) {
+
+                                      Wrestler first = all.get(0);
+
+                                      first.setAccount(user.getAccount());
+
+                                      first.setIsPlayer(true);
+
+                                      wrestlerRepository.save(first);
+
+                                      log.info(
+                                          "Assigned wrestler {} to account {}",
+                                          first.getName(),
+                                          user.getUsername());
+
+                                      campaignService.startCampaign(first);
+
+                                      refreshUI();
+
+                                    } else {
+
+                                      log.warn("No wrestlers exist in the database at all!");
+                                    }
                                   });
-                        });
+                        },
+                        () ->
+                            log.warn(
+                                "No authenticated user found when clicking debug start button"));
               });
       debugStartButton.addThemeVariants(
           com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY);
