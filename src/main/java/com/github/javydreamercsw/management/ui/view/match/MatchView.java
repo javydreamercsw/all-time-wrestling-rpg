@@ -274,6 +274,31 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     Wrestler playerWithInjuries = wrestlerService.findByIdWithInjuries(player.getId()).get();
 
     summary.add(new Paragraph("Bumps: ".concat(String.valueOf(playerWithInjuries.getBumps()))));
+
+    // Campaign Modifiers
+    if (player.getAlignment() != null
+        && player.getAlignment().getCampaign() != null
+        && player.getAlignment().getCampaign().getState() != null) {
+      var state = player.getAlignment().getCampaign().getState();
+      summary.add(new H3("Campaign Modifiers"));
+      summary.add(
+          new Paragraph("Effective Starting Health: " + player.getEffectiveStartingHealth()));
+      summary.add(
+          new Paragraph("Effective Starting Stamina: " + player.getEffectiveStartingStamina()));
+
+      if (!state.getUpgrades().isEmpty()) {
+        state
+            .getUpgrades()
+            .forEach(
+                upgrade -> {
+                  var p = new Paragraph("✨ " + upgrade.getName() + ": " + upgrade.getDescription());
+                  p.getStyle().set("font-weight", "bold");
+                  p.getStyle().set("color", "var(--lumo-success-text-color)");
+                  summary.add(p);
+                });
+      }
+    }
+
     if (playerWithInjuries.getInjuries().isEmpty()) {
       summary.add(new Paragraph("No current injuries."));
     } else {

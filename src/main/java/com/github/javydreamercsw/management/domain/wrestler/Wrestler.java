@@ -199,8 +199,25 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @JsonIgnore
   public Integer getEffectiveStartingHealth() {
-    int effective = startingHealth - bumps - getTotalInjuryPenalty();
+    int bonus =
+        (alignment != null
+                && alignment.getCampaign() != null
+                && alignment.getCampaign().getState() != null)
+            ? alignment.getCampaign().getState().getCampaignHealthBonus()
+            : 0;
+    int effective = startingHealth + bonus - bumps - getTotalInjuryPenalty();
     return Math.max(1, effective); // Never go below 1
+  }
+
+  @JsonIgnore
+  public Integer getEffectiveStartingStamina() {
+    int bonus =
+        (alignment != null
+                && alignment.getCampaign() != null
+                && alignment.getCampaign().getState() != null)
+            ? alignment.getCampaign().getState().getCampaignStaminaBonus()
+            : 0;
+    return startingStamina + bonus;
   }
 
   public void addFans(long fanGain) {

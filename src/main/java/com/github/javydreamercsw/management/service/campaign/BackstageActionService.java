@@ -74,6 +74,10 @@ public class BackstageActionService {
           0, "Cannot perform the same action twice in a row unless it failed.");
     }
 
+    // Training specific consecutive rule: "cannot perform Training twice in a row unless the first
+    // attempt resulted in zero successes"
+    // Our check above already handles this (isSuccess = successes > 0).
+
     // 4. Unlock Check
     if (actionType == BackstageActionType.PROMO && !state.isPromoUnlocked()) {
       return new ActionOutcome(0, "Promo action is locked.");
@@ -97,8 +101,8 @@ public class BackstageActionService {
     switch (actionType) {
       case TRAINING:
         if (successes > 0) {
-          state.setSkillTokens(state.getSkillTokens() + 1);
-          outcomeDescription = "Training successful. Gained 1 Skill Token.";
+          state.setSkillTokens(state.getSkillTokens() + successes);
+          outcomeDescription = "Training successful. Gained " + successes + " Skill Token(s).";
         } else {
           outcomeDescription = "Training failed. No tokens gained.";
         }

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.controller.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,13 +27,16 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +54,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignEncounterService campaignEncounterService;
+  @Autowired private CampaignUpgradeService upgradeService;
   @Autowired private WrestlerAlignmentRepository alignmentRepository;
 
   private Wrestler testWrestler;
@@ -60,6 +65,45 @@ class CampaignControllerTest extends AbstractIntegrationTest {
     testWrestler =
         Wrestler.builder().name("API Tester").startingHealth(100).startingStamina(100).build();
     testWrestler = wrestlerRepository.save(testWrestler);
+  }
+
+  @Test
+  void testUpgradeRestriction() throws Exception {
+    // 1. Start Campaign
+    campaignService.startCampaign(testWrestler);
+    Campaign campaign = campaignRepository.findActiveByWrestler(testWrestler).get();
+    CampaignState state = campaign.getState();
+
+    // 2. Give enough tokens for 2 upgrades
+    state.setSkillTokens(20);
+    campaignRepository.save(campaign);
+
+    List<CampaignUpgrade> allUpgrades = upgradeService.getAllUpgrades();
+    // Find two upgrades of the same type (e.g., DAMAGE)
+    List<CampaignUpgrade> damageUpgrades =
+        allUpgrades.stream().filter(u -> "DAMAGE".equals(u.getType())).toList();
+
+    assertThat(damageUpgrades.size()).isGreaterThanOrEqualTo(2);
+
+    CampaignUpgrade first = damageUpgrades.get(0);
+    CampaignUpgrade second = damageUpgrades.get(1);
+
+    // 3. Purchase first
+    upgradeService.purchaseUpgrade(campaign, first.getId());
+    assertThat(state.getUpgrades()).contains(first);
+    assertThat(state.getSkillTokens()).isEqualTo(12);
+
+    // 4. Attempt to purchase second of same type (should fail)
+    try {
+      upgradeService.purchaseUpgrade(campaign, second.getId());
+      fail("Should have thrown IllegalStateException for duplicate upgrade type");
+    } catch (IllegalStateException e) {
+      assertThat(e.getMessage()).contains("already have a permanent upgrade of type: DAMAGE");
+    }
+
+    // 5. Verify VP and tokens unchanged after failure
+    assertThat(state.getSkillTokens()).isEqualTo(12);
+    assertThat(state.getUpgrades()).hasSize(1);
   }
 
   @Test

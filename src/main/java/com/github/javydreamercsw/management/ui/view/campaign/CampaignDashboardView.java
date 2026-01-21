@@ -26,7 +26,9 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -38,7 +40,6 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
@@ -46,6 +47,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -59,6 +61,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignService campaignService;
   private final WrestlerRepository wrestlerRepository;
   private final CampaignAbilityCardRepository cardRepository;
+  private final CampaignUpgradeService upgradeService;
   private final SecurityUtils securityUtils;
 
   private Campaign currentCampaign;
@@ -69,11 +72,13 @@ public class CampaignDashboardView extends VerticalLayout {
       CampaignService campaignService,
       WrestlerRepository wrestlerRepository,
       CampaignAbilityCardRepository cardRepository,
+      CampaignUpgradeService upgradeService,
       SecurityUtils securityUtils) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
     this.cardRepository = cardRepository;
+    this.upgradeService = upgradeService;
     this.securityUtils = securityUtils;
 
     setSpacing(true);
@@ -147,7 +152,7 @@ public class CampaignDashboardView extends VerticalLayout {
     // Tournament Tracker (Chapter 2)
     if ("ch2_tournament".equals(state.getCurrentChapterId())) {
       if (state.isFinalsPhase()) {
-        addTournamentBracket(state);
+        addTournamentBracket();
       } else {
         addTournamentTracker(state);
       }
@@ -206,6 +211,27 @@ public class CampaignDashboardView extends VerticalLayout {
     }
     add(myCardsLayout);
 
+    // Purchased Skills Section
+    add(new H4("Purchased Skills"));
+    VerticalLayout skillsLayout = new VerticalLayout();
+    skillsLayout.setPadding(false);
+    if (state.getUpgrades().isEmpty()) {
+      skillsLayout.add(new Span("No permanent skills purchased yet. Train to earn Skill Tokens!"));
+    } else {
+      state
+          .getUpgrades()
+          .forEach(
+              upgrade -> {
+                Span skill = new Span("✅ " + upgrade.getName() + ": " + upgrade.getDescription());
+                skill.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.BOLD);
+                skillsLayout.add(skill);
+              });
+    }
+    add(skillsLayout);
+
+    // Skill Upgrades Section
+    addSkillUpgradesSection(currentCampaign);
+
     // Actions
     add(new H4("Actions"));
     HorizontalLayout actionsLayout = new HorizontalLayout();
@@ -235,7 +261,7 @@ public class CampaignDashboardView extends VerticalLayout {
     addGlobalCardLibrary();
   }
 
-  private void addPendingPicksSection(Campaign campaign) {
+  private void addPendingPicksSection(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     if (state.getPendingL1Picks() <= 0
         && state.getPendingL2Picks() <= 0
@@ -289,7 +315,53 @@ public class CampaignDashboardView extends VerticalLayout {
     add(pendingSection);
   }
 
-  private void addTournamentBracket(CampaignState state) {
+  private void addSkillUpgradesSection(@NonNull Campaign campaign) {
+    CampaignState state = campaign.getState();
+    if (state.getSkillTokens() < 8) return;
+
+    VerticalLayout upgradeSection = new VerticalLayout();
+    upgradeSection.setPadding(true);
+    upgradeSection.addClassNames(
+        LumoUtility.Background.CONTRAST_10, LumoUtility.BorderRadius.MEDIUM, LumoUtility.Gap.SMALL);
+
+    H4 header = new H4("Available Skill Upgrades (Cost: 8 Tokens)");
+    header.addClassNames(LumoUtility.Margin.NONE, LumoUtility.TextColor.SUCCESS);
+    upgradeSection.add(header);
+
+    HorizontalLayout upgradeContainer = new HorizontalLayout();
+    upgradeContainer.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.MEDIUM);
+
+    List<com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade> available =
+        upgradeService.getAllUpgrades();
+
+    // Filter out upgrades if the player already has one of that type
+    List<String> ownedTypes =
+        state.getUpgrades().stream()
+            .map(com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade::getType)
+            .toList();
+
+    available.removeIf(u -> ownedTypes.contains(u.getType()));
+
+    for (var upgrade : available) {
+      Button buyButton =
+          new Button(
+              upgrade.getName(),
+              e -> {
+                upgradeService.purchaseUpgrade(campaign, upgrade.getId());
+                refreshUI();
+              });
+      buyButton.setTooltipText(upgrade.getDescription());
+      buyButton.addThemeVariants(
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_SMALL);
+      upgradeContainer.add(buyButton);
+    }
+
+    upgradeSection.add(upgradeContainer);
+    add(upgradeSection);
+  }
+
+  private void addTournamentBracket() {
     VerticalLayout bracketContainer = new VerticalLayout();
     bracketContainer.setPadding(false);
     bracketContainer.setSpacing(true);
@@ -325,7 +397,7 @@ public class CampaignDashboardView extends VerticalLayout {
     add(bracketContainer);
   }
 
-  private Div createBracketBox(String name, boolean isPlayer) {
+  private Div createBracketBox(@NonNull String name, boolean isPlayer) {
     Div box = new Div();
     box.setText(name);
     box.setWidthFull();
@@ -348,8 +420,8 @@ public class CampaignDashboardView extends VerticalLayout {
     return box;
   }
 
-  private void addTournamentTracker(CampaignState state) {
-    com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO.ChapterRules rules =
+  private void addTournamentTracker(@NonNull CampaignState state) {
+    CampaignChapterDTO.ChapterRules rules =
         campaignService.getCurrentChapter(currentCampaign).getRules();
 
     if (rules.getQualifyingMatches() <= 0) return;
@@ -463,7 +535,7 @@ public class CampaignDashboardView extends VerticalLayout {
     add(libraryDetails);
   }
 
-  private VerticalLayout createStatCard(String label, String value) {
+  private VerticalLayout createStatCard(@NonNull String label, @NonNull String value) {
     VerticalLayout card = new VerticalLayout();
     card.addClassName("stat-card"); // CSS class needed
     card.setPadding(true);

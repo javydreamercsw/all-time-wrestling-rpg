@@ -123,6 +123,14 @@ public class CampaignState {
   @Builder.Default
   private List<CampaignAbilityCard> activeCards = new ArrayList<>();
 
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "campaign_state_upgrades",
+      joinColumns = @JoinColumn(name = "campaign_state_id"),
+      inverseJoinColumns = @JoinColumn(name = "upgrade_id"))
+  @Builder.Default
+  private List<CampaignUpgrade> upgrades = new ArrayList<>();
+
   @Column(name = "pending_l1_picks", nullable = false)
   @Builder.Default
   private int pendingL1Picks = 0;
@@ -166,4 +174,14 @@ public class CampaignState {
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "current_match_id")
   private com.github.javydreamercsw.management.domain.show.segment.Segment currentMatch;
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  public int getCampaignStaminaBonus() {
+    return (int) upgrades.stream().filter(u -> "STAMINA".equals(u.getType())).count() * 2;
+  }
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  public int getCampaignHealthBonus() {
+    return (int) upgrades.stream().filter(u -> "HEALTH".equals(u.getType())).count() * 2;
+  }
 }

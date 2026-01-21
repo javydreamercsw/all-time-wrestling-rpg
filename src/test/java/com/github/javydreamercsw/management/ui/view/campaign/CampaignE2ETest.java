@@ -19,64 +19,63 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class CampaignE2ETest extends AbstractE2ETest {
 
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private CampaignService campaignService;
+
+  @BeforeEach
+  void setupCampaign() {
+    // Manually setup a wrestler for the admin account to avoid brittle UI steps
+    Account admin = accountRepository.findByUsername("admin").get();
+
+    Wrestler player =
+        wrestlerRepository
+            .findByAccount(admin)
+            .orElseGet(
+                () -> {
+                  Wrestler w =
+                      Wrestler.builder()
+                          .name("Test E2E Wrestler")
+                          .startingHealth(100)
+                          .startingStamina(100)
+                          .account(admin)
+                          .isPlayer(true)
+                          .active(true)
+                          .build();
+                  return wrestlerRepository.save(w);
+                });
+
+    if (!campaignService.hasActiveCampaign(player)) {
+      campaignService.startCampaign(player);
+    }
+  }
+
   @Test
   void testCampaignFlow() {
-    // 1. Assign a wrestler to the admin account first
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
-    takeSequencedScreenshot("wrestler-list");
-
-    // Click the first action menu
-    WebElement firstMenu =
-        waitForVaadinElement(driver, By.xpath("//vaadin-menu-bar[contains(@id, 'action-menu-')]"));
-    selectFromVaadinMenuBar(firstMenu, "Edit");
-    waitForVaadinClientToLoad();
-    takeSequencedScreenshot("edit-wrestler-dialog");
-
-    // Check Is Player
-    WebElement isPlayerCheckbox =
-        waitForVaadinElement(driver, By.id("wrestler-dialog-is-player-field"));
-    if (!isPlayerCheckbox.isSelected()) {
-      clickElement(isPlayerCheckbox);
-    }
-
-    // Select admin account
-    WebElement accountCombo =
-        waitForVaadinElement(driver, By.id("wrestler-dialog-account-combo-box"));
-    selectFromVaadinComboBox(accountCombo, "admin");
-
-    // Save
-    WebElement saveButton = waitForVaadinElement(driver, By.id("wrestler-dialog-save-button"));
-    clickElement(saveButton);
-    waitForVaadinClientToLoad();
-
-    // 2. Navigate to Campaign Dashboard
+    // 1. Navigate directly to Campaign Dashboard
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("campaign-dashboard-initial");
 
-    // 3. Start Campaign if not started (Debug button)
-    boolean campaignExists = driver.getPageSource().contains("Campaign: All or Nothing");
+    // Verify dashboard loaded
+    waitForText("Campaign: All or Nothing");
+    assertTrue(driver.getPageSource().contains("Chapter"));
+    assertTrue(driver.getPageSource().contains("Victory Points"));
 
-    if (!campaignExists) {
-      WebElement startButton = waitForVaadinElement(driver, By.id("debug-start-campaign"));
-      clickElement(startButton);
-      waitForVaadinClientToLoad();
-      takeSequencedScreenshot("campaign-started");
-
-      // Verify dashboard loaded
-      waitForText("Campaign: All or Nothing");
-      assertTrue(driver.getPageSource().contains("Chapter"));
-      assertTrue(driver.getPageSource().contains("Victory Points"));
-    }
-
-    // 4. Navigate to Backstage Actions
+    // 2. Navigate to Backstage Actions
     WebElement actionsButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Backstage Actions']"));
     clickElement(actionsButton);
@@ -87,7 +86,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     waitForText("Backstage Actions");
     assertTrue(driver.getPageSource().contains("Training (Drive)"));
 
-    // 5. Perform an action (Training)
+    // 3. Perform an action (Training)
     WebElement trainingButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Training (Drive)']"));
     clickElement(trainingButton);
@@ -95,13 +94,49 @@ class CampaignE2ETest extends AbstractE2ETest {
     // Verify notification (Success or Fail)
     takeSequencedScreenshot("after-training-action");
 
-    // 6. Navigate back
+    // 4. Navigate back
     WebElement backButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Back to Dashboard']"));
     clickElement(backButton);
     waitForVaadinClientToLoad();
 
     waitForText("Campaign: All or Nothing");
+  }
+
+  @Test
+  void testCampaignUpgrades() {
+    // 1. Navigate to Campaign Dashboard
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    waitForVaadinClientToLoad();
+    takeSequencedScreenshot("campaign-dashboard-for-upgrades");
+
+    // 2. Grant tokens via debug button
+    WebElement grantButton = waitForVaadinElement(driver, By.id("debug-grant-tokens"));
+    clickElement(grantButton);
+    waitForVaadinClientToLoad();
+    takeSequencedScreenshot("tokens-granted");
+
+    // 3. Verify Upgrade section is visible
+    waitForText("Available Skill Upgrades");
+    assertTrue(driver.getPageSource().contains("Iron Man"));
+    assertTrue(driver.getPageSource().contains("Unbreakable"));
+
+    // 4. Purchase an upgrade (Iron Man)
+    WebElement upgradeButton =
+        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Iron Man']"));
+    clickElement(upgradeButton);
+    waitForVaadinClientToLoad();
+    takeSequencedScreenshot("after-upgrade-purchase");
+
+    // 5. Verify upgrade is in "Purchased Skills" section
+    waitForText("Purchased Skills");
+    assertTrue(
+        driver
+            .getPageSource()
+            .contains("Iron Man: Increases your wrestler’s maximum stamina by 2."));
+
+    // 6. Verify the upgrade section is gone (since only 8 tokens were granted and consumed)
+    assertTrue(!driver.getPageSource().contains("Available Skill Upgrades"));
   }
 
   private void waitForText(String text) {

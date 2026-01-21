@@ -57,7 +57,8 @@ public class CampaignUpgradeService {
         log.error("campaign_upgrades.json not found in resources.");
         return;
       }
-      List<CampaignUpgrade> upgrades = objectMapper.readValue(is, new TypeReference<List<CampaignUpgrade>>() {});
+      List<CampaignUpgrade> upgrades =
+          objectMapper.readValue(is, new TypeReference<List<CampaignUpgrade>>() {});
       upgradeRepository.saveAll(upgrades);
       log.info("Loaded {} campaign upgrades into database.", upgrades.size());
     } catch (IOException e) {
@@ -76,17 +77,25 @@ public class CampaignUpgradeService {
       throw new IllegalStateException("Not enough skill tokens. Need 8.");
     }
 
-    CampaignUpgrade upgrade = upgradeRepository.findById(upgradeId)
-        .orElseThrow(() -> new IllegalArgumentException("Upgrade not found."));
+    CampaignUpgrade upgrade =
+        upgradeRepository
+            .findById(upgradeId)
+            .orElseThrow(() -> new IllegalArgumentException("Upgrade not found."));
 
-    if (state.getUpgrades().contains(upgrade)) {
-      throw new IllegalStateException("Upgrade already purchased.");
+    // Check if an upgrade of the same type is already owned
+    boolean alreadyHasType =
+        state.getUpgrades().stream().anyMatch(u -> u.getType().equals(upgrade.getType()));
+
+    if (alreadyHasType) {
+      throw new IllegalStateException(
+          "You already have a permanent upgrade of type: " + upgrade.getType());
     }
 
     state.setSkillTokens(state.getSkillTokens() - 8);
     state.getUpgrades().add(upgrade);
     stateRepository.save(state);
-    
-    log.info("Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
+
+    log.info(
+        "Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
   }
 }

@@ -19,9 +19,12 @@ package com.github.javydreamercsw.management.controller.campaign;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -40,16 +43,35 @@ public class CampaignController {
   private final CampaignService campaignService;
   private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final CampaignUpgradeService upgradeService;
 
   @GetMapping("/{wrestlerId}/state")
   public ResponseEntity<CampaignState> getCampaignState(@PathVariable Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
     if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
 
-    return campaignRepository
-        .findActiveByWrestler(wrestler.get())
+    Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
+    return campaign
         .map(c -> ResponseEntity.ok(c.getState()))
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @GetMapping("/upgrades")
+  public ResponseEntity<List<CampaignUpgrade>> getAllUpgrades() {
+    return ResponseEntity.ok(upgradeService.getAllUpgrades());
+  }
+
+  @PostMapping("/{wrestlerId}/upgrades/purchase")
+  public ResponseEntity<Void> purchaseUpgrade(
+      @PathVariable Long wrestlerId, @RequestParam Long upgradeId) {
+    Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
+    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+
+    Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
+    if (campaign.isEmpty()) return ResponseEntity.notFound().build();
+
+    upgradeService.purchaseUpgrade(campaign.get(), upgradeId);
+    return ResponseEntity.ok().build();
   }
 
   @PostMapping("/{wrestlerId}/test/process-match")

@@ -306,9 +306,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     // 1. Open the combo box using JavaScript to be sure
     ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
 
-    // 2. Wait for the item to appear and click it via JS
+    // 2. Wait for the overlay to be visible in the DOM
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     try {
+      wait.until(
+          ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-combo-box-overlay")));
+
       wait.until(
           d -> {
             return (Boolean)

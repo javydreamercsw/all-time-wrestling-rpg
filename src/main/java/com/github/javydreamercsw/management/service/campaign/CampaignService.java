@@ -100,6 +100,10 @@ public class CampaignService {
 
     campaign = campaignRepository.save(campaign);
 
+    // Link alignment to campaign
+    alignment.setCampaign(campaign);
+    wrestlerAlignmentRepository.save(alignment);
+
     CampaignState state =
         CampaignState.builder()
             .campaign(campaign)
