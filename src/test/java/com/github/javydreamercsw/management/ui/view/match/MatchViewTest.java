@@ -22,16 +22,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
@@ -41,30 +47,39 @@ import com.vaadin.flow.router.RouteParameters;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MatchViewTest {
+class MatchViewTest extends AbstractViewTest {
 
   @Mock private SegmentService segmentService;
   @Mock private WrestlerService wrestlerService;
   @Mock private SecurityUtils securityUtils;
-  @InjectMocks private MatchView matchView;
+  @Mock private CampaignService campaignService;
+  @Mock private CampaignRepository campaignRepository;
+  @Mock private SegmentNarrationServiceFactory narrationServiceFactory;
+  @Mock private NpcService npcService;
+  @Mock private SegmentAdjudicationService segmentAdjudicationService;
+  @Mock private LocalAIStatusService localAIStatus;
+  private MatchView matchView;
 
   @BeforeEach
   public void setup() {
-    MockVaadin.setup();
-  }
-
-  @AfterEach
-  public void tearDown() {
-    MockVaadin.tearDown();
+    matchView =
+        new MatchView(
+            segmentService,
+            wrestlerService,
+            securityUtils,
+            campaignService,
+            campaignRepository,
+            narrationServiceFactory,
+            npcService,
+            segmentAdjudicationService,
+            localAIStatus);
   }
 
   @Test
