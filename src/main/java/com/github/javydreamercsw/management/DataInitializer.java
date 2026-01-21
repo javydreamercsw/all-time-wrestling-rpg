@@ -729,9 +729,9 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
               Faction faction = factionOpt.get();
               for (String memberName : dto.getMembers()) {
                 Optional<Wrestler> memberOpt = wrestlerRepository.findByName(memberName);
-                if (memberOpt.isPresent()) {
-                  factionService.addMemberToFaction(faction.getId(), memberOpt.get().getId());
-                }
+                memberOpt.ifPresent(
+                    wrestler ->
+                        factionService.addMemberToFaction(faction.getId(), wrestler.getId()));
               }
               if (dto.getManager() != null) {
                 Npc manager = npcService.findByName(dto.getManager());
