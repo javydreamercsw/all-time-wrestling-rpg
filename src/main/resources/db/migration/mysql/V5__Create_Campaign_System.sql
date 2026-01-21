@@ -51,9 +51,11 @@ CREATE TABLE campaign_completed_chapters (
 CREATE TABLE wrestler_alignment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     wrestler_id BIGINT NOT NULL,
+    campaign_id BIGINT,
     alignment_type VARCHAR(50) NOT NULL, -- FACE, HEEL or NEUTRAL
     level INT NOT NULL DEFAULT 0,
-    FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id)
+    CONSTRAINT fk_wa_wrestler FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id),
+    CONSTRAINT fk_wa_campaign FOREIGN KEY (campaign_id) REFERENCES campaign(id)
 );
 
 CREATE TABLE backstage_action_history (
@@ -98,6 +100,22 @@ CREATE TABLE campaign_encounter (
     vp_reward INT DEFAULT 0 NOT NULL,
     encounter_date DATETIME NOT NULL,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id)
+);
+
+CREATE TABLE campaign_upgrade (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(1000) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    sub_type VARCHAR(50)
+);
+
+CREATE TABLE campaign_state_upgrades (
+    campaign_state_id BIGINT NOT NULL,
+    upgrade_id BIGINT NOT NULL,
+    PRIMARY KEY (campaign_state_id, upgrade_id),
+    CONSTRAINT fk_csu_state FOREIGN KEY (campaign_state_id) REFERENCES campaign_state(id),
+    CONSTRAINT fk_csu_upgrade FOREIGN KEY (upgrade_id) REFERENCES campaign_upgrade(id)
 );
 
 CREATE INDEX idx_campaign_wrestler ON campaign(wrestler_id);

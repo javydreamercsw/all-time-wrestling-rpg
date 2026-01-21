@@ -36,6 +36,10 @@ class CampaignE2ETest extends AbstractE2ETest {
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
   @BeforeEach
   void setupCampaign() {
     // Manually setup a wrestler for the admin account to avoid brittle UI steps
@@ -105,16 +109,18 @@ class CampaignE2ETest extends AbstractE2ETest {
 
   @Test
   void testCampaignUpgrades() {
-    // 1. Navigate to Campaign Dashboard
+    // 1. Grant tokens directly in DB before starting test
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = wrestlerRepository.findByAccount(admin).get();
+    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
+        campaignRepository.findActiveByWrestler(player).get();
+    campaign.getState().setSkillTokens(8);
+    campaignRepository.save(campaign);
+
+    // 2. Navigate to Campaign Dashboard
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("campaign-dashboard-for-upgrades");
-
-    // 2. Grant tokens via debug button
-    WebElement grantButton = waitForVaadinElement(driver, By.id("debug-grant-tokens"));
-    clickElement(grantButton);
-    waitForVaadinClientToLoad();
-    takeSequencedScreenshot("tokens-granted");
 
     // 3. Verify Upgrade section is visible
     waitForText("Available Skill Upgrades");
