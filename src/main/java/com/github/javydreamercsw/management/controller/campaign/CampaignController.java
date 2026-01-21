@@ -76,4 +76,16 @@ public class CampaignController {
     campaignService.advanceChapter(campaign.get());
     return ResponseEntity.ok().build();
   }
+
+  @PostMapping("/{wrestlerId}/test/skip-to-show")
+  public ResponseEntity<Void> skipToShow(@PathVariable Long wrestlerId) {
+    Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
+    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+
+    Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
+    if (campaign.isEmpty()) return ResponseEntity.notFound().build();
+
+    campaignService.completePostMatch(campaign.get());
+    return ResponseEntity.ok().build();
+  }
 }

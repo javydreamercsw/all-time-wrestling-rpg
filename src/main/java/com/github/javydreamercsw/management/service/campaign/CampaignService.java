@@ -339,6 +339,25 @@ public class CampaignService {
     }
 
     state.setCurrentPhase(CampaignPhase.POST_MATCH);
+
+    // Unlock backstage actions after first match
+    if (state.getMatchesPlayed() == 1 && state.getCompletedChapterIds().isEmpty()) {
+      WrestlerAlignment alignment =
+          wrestlerAlignmentRepository
+              .findByWrestler(wrestler)
+              .orElseThrow(() -> new IllegalStateException("Alignment not found"));
+
+      if (alignment.getAlignmentType() == AlignmentType.FACE) {
+        state.setPromoUnlocked(true);
+        log.info("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
+      } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
+        state.setPromoUnlocked(true);
+        state.setAttackUnlocked(true);
+        log.info(
+            "Wrestler {} unlocked Promo and Attack actions (Heel alignment).", wrestler.getName());
+      }
+    }
+
     campaignStateRepository.save(state);
 
     // Automatic check for chapter completion

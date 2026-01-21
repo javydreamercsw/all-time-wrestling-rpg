@@ -212,9 +212,23 @@ public class CampaignDashboardView extends VerticalLayout {
     actionsLayout.add(
         new Button("Backstage Actions", e -> UI.getCurrent().navigate(BackstageActionView.class)));
     actionsLayout.add(
-        new Button(
-            "Story Narrative",
-            e -> UI.getCurrent().navigate("campaign/narrative"))); // To be implemented
+        new Button("Story Narrative", e -> UI.getCurrent().navigate("campaign/narrative")));
+
+    // Only show "Next Show" if they have used their actions or are in BACKSTAGE
+    if (state.getActionsTaken() >= 2
+        && state.getCurrentPhase()
+            == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE) {
+      Button nextShowButton =
+          new Button(
+              "Next Show",
+              e -> {
+                campaignService.completePostMatch(currentCampaign);
+                refreshUI();
+              });
+      nextShowButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+      actionsLayout.add(nextShowButton);
+    }
+
     add(actionsLayout);
 
     // Global Card Library

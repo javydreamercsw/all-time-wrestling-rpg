@@ -101,11 +101,13 @@ public class CampaignEncounterService {
     }
     sb.append("- Gender: ").append(campaign.getWrestler().getGender()).append("\n");
     sb.append("- Tier: ").append(campaign.getWrestler().getTier()).append("\n");
-    sb.append("- Alignment: ")
-        .append(campaign.getWrestler().getAlignment().getAlignmentType())
-        .append(" (Level ")
-        .append(campaign.getWrestler().getAlignment().getLevel())
-        .append(")\n");
+    if (campaign.getWrestler().getAlignment() != null) {
+      sb.append("- Alignment: ")
+          .append(campaign.getWrestler().getAlignment().getAlignmentType())
+          .append(" (Level ")
+          .append(campaign.getWrestler().getAlignment().getLevel())
+          .append(")\n");
+    }
 
     if (campaign.getWrestler().getFaction() != null) {
       sb.append("- Faction: ").append(campaign.getWrestler().getFaction().getName()).append("\n");
@@ -189,7 +191,8 @@ public class CampaignEncounterService {
     }
     sb.append(
         "3. For each choice, define the 'alignmentShift' (positive value moves toward Babyface,"
-            + " negative toward Heel), 'vpReward' (Victory Points granted immediately), and"
+            + " negative toward Heel), 'vpReward' (Victory Points granted immediately, ONLY for"
+            + " choices that lead to a MATCH), and"
             + " 'nextPhase' (MATCH, POST_MATCH, or BACKSTAGE). Use BACKSTAGE to end the current"
             + " story loop and return to management.\n");
     sb.append(
@@ -203,7 +206,7 @@ public class CampaignEncounterService {
     sb.append("  \"choices\": [\n");
     sb.append(
         "    { \"text\": \"Full choice description\", \"label\": \"Short button label\","
-            + " \"alignmentShift\": 1, \"vpReward\": 0, \"nextPhase\": \"MATCH\","
+            + " \"alignmentShift\": 1, \"vpReward\": 5, \"nextPhase\": \"MATCH\","
             + " \"forcedOpponentName\": null, \"matchType\": \"One on One\" }\n");
     sb.append("  ]\n");
     sb.append("}\n");
@@ -222,18 +225,21 @@ public class CampaignEncounterService {
     CampaignEncounter latest = encounters.get(encounters.size() - 1);
     latest.setPlayerChoice(choice.getText());
     latest.setAlignmentShift(choice.getAlignmentShift());
-    latest.setVpReward(choice.getVpReward());
+
+    // Only allow VP reward if it leads to a match
+    int finalVp = "MATCH".equals(choice.getNextPhase()) ? choice.getVpReward() : 0;
+    latest.setVpReward(finalVp);
     encounterRepository.save(latest);
 
     // Apply consequences
     campaignService.shiftAlignment(campaign, choice.getAlignmentShift());
 
     CampaignState state = campaign.getState();
-    state.setVictoryPoints(state.getVictoryPoints() + choice.getVpReward());
+    state.setVictoryPoints(state.getVictoryPoints() + finalVp);
     stateRepository.save(state);
 
     log.info(
-        "Recorded choice for wrestler {}: {}. Alignment shift:જી",
+        "Recorded choice for wrestler {}: {}. Alignment shift: {}",
         campaign.getWrestler().getName(),
         choice.getText(),
         choice.getAlignmentShift());
