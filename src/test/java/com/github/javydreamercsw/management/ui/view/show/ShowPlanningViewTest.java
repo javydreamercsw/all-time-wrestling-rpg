@@ -23,13 +23,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -42,7 +49,6 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -52,11 +58,31 @@ class ShowPlanningViewTest {
   @Mock private ShowService showService;
   @Mock private ShowPlanningService showPlanningService;
   @Mock private ShowPlanningAiService showPlanningAiService;
-  @InjectMocks private ShowPlanningView showPlanningView;
+  @Mock private WrestlerRepository wrestlerRepository;
+  private ShowPlanningView showPlanningView;
+  @Mock private TitleService titleService;
+  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private ObjectMapper objectMapper;
+  @Mock private LocalAIStatusService localAIStatus;
+  private SegmentNarrationServiceFactory aiFactory;
 
   @BeforeEach
   void setUp() {
+    aiFactory = mock(SegmentNarrationServiceFactory.class);
     MockitoAnnotations.openMocks(this);
+    showPlanningView =
+        new ShowPlanningView(
+            showService,
+            showPlanningService,
+            showPlanningAiService,
+            wrestlerRepository,
+            titleService,
+            segmentTypeRepository,
+            segmentRuleRepository,
+            objectMapper,
+            aiFactory,
+            localAIStatus);
     // Mock the UI since we are not in a Vaadin environment
     UI ui = mock(UI.class);
     UI.setCurrent(ui);
@@ -133,6 +159,17 @@ class ShowPlanningViewTest {
     ObjectMapper objectMapper = new ObjectMapper();
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
+    // Ensure the grid is initialized if not already
+    Grid<ProposedSegment> grid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    if (grid == null) {
+      grid = new Grid<>(ProposedSegment.class);
+      ReflectionTestUtils.setField(showPlanningView, "proposedSegmentsGrid", grid);
+    }
+    // Ensure AI factory returns a non-empty list so proposeSegments() does not return early
+    when(aiFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
     ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
     ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
@@ -186,9 +223,28 @@ class ShowPlanningViewTest {
     ObjectMapper objectMapper = new ObjectMapper();
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
+    // Ensure the grid is initialized if not already
+    Grid<ProposedSegment> grid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    if (grid == null) {
+      grid = new Grid<>(ProposedSegment.class);
+      ReflectionTestUtils.setField(showPlanningView, "proposedSegmentsGrid", grid);
+    }
+    // Ensure AI factory returns a non-empty list so proposeSegments() does not return early
+    when(aiFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
     showPlanningView.setParameter(mock(BeforeEvent.class), showId);
     ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
+
+    // Debug: Print grid contents
+    @SuppressWarnings("unchecked")
+    Grid<ProposedSegment> debugGrid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    List<ProposedSegment> debugItems = debugGrid.getGenericDataView().getItems().toList();
+    System.out.println("DEBUG: ProposedSegment grid items after proposeSegments(): " + debugItems);
 
     // Verify the results
     @SuppressWarnings("unchecked")
