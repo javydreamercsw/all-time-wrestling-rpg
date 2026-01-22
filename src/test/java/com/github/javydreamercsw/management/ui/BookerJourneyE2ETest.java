@@ -168,7 +168,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 10; i++) {
-      wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
+      Wrestler w = TestUtils.createWrestler("Wrestler " + i);
+      wrestlerRepository.saveAndFlush(w);
     }
   }
 

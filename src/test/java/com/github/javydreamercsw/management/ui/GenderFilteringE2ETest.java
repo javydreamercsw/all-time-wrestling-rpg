@@ -71,7 +71,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     maleWrestler.setLowStamina(0);
     maleWrestler.setIsPlayer(false);
     maleWrestler.setBumps(0);
-    wrestlerRepository.save(maleWrestler);
+    wrestlerRepository.saveAndFlush(maleWrestler);
 
     femaleWrestler = new Wrestler();
     femaleWrestler.setName("Female Wrestler");
@@ -85,7 +85,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     femaleWrestler.setLowStamina(0);
     femaleWrestler.setIsPlayer(false);
     femaleWrestler.setBumps(0);
-    wrestlerRepository.save(femaleWrestler);
+    wrestlerRepository.saveAndFlush(femaleWrestler);
 
     womensTitle = new Title();
     womensTitle.setName("Women's World Championship");

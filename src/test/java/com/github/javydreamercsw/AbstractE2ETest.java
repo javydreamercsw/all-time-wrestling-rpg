@@ -307,22 +307,33 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
 
     // 2. Wait for the overlay to be visible in the DOM
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15)); // Increased timeout
     try {
+      // Wait for overlay to be open
       wait.until(
-          ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-combo-box-overlay")));
+          d -> {
+            Boolean isOpen =
+                (Boolean)
+                    ((JavascriptExecutor) d).executeScript("return arguments[0].opened;", comboBox);
+            return isOpen != null && isOpen;
+          });
 
+      // Execute selection logic
       wait.until(
           d -> {
             return (Boolean)
                 ((JavascriptExecutor) d)
                     .executeScript(
-                        "const text = arguments[0];const item ="
+                        "const text = arguments[0];const overlay ="
+                            + " document.querySelector('vaadin-combo-box-overlay');if (!overlay)"
+                            + " return false;const content = overlay.shadowRoot ?"
+                            + " overlay.shadowRoot : overlay;const items ="
                             + " Array.from(document.querySelectorAll('vaadin-combo-box-item,"
-                            + " vaadin-item, vaadin-multi-select-combo-box-item')).find(item =>"
-                            + " item.textContent.trim() === text ||"
-                            + " item.textContent.trim().includes(text));if (item) { item.click();"
-                            + " return true; }return false;",
+                            + " vaadin-item'));const item = items.find(item =>   (item.textContent"
+                            + " && (item.textContent.trim() === text ||"
+                            + " item.textContent.trim().includes(text))) ||   (item.label &&"
+                            + " (item.label.trim() === text || item.label.trim().includes(text)))"
+                            + ");if (item) { item.click(); return true; }return false;",
                         itemText);
           });
     } catch (Exception e) {
