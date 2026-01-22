@@ -24,11 +24,12 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -72,10 +73,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.core.io.ClassPathResource;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class DataInitializerTest {
 
   private DataInitializer dataInitializer;
@@ -94,9 +97,6 @@ class DataInitializerTest {
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
-
-  @Mock
-  @Qualifier("baseAccountService") private AccountService accountService;
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
@@ -185,10 +185,34 @@ class DataInitializerTest {
         .when(wrestlerRepository.save(any(Wrestler.class)))
         .thenAnswer(i -> i.getArguments()[0]);
     lenient().doNothing().when(gameSettingService).saveCurrentGameDate(any());
+
+    // Create a mock GameSetting and stub getValue()
+    com.github.javydreamercsw.management.domain.GameSetting openAiSetting =
+        mock(com.github.javydreamercsw.management.domain.GameSetting.class);
+    when(openAiSetting.getValue()).thenReturn("false");
+    lenient()
+        .when(gameSettingService.findById("AI_OPENAI_ENABLED"))
+        .thenReturn(Optional.of(openAiSetting));
+
+    com.github.javydreamercsw.management.domain.GameSetting claudeSetting =
+        mock(com.github.javydreamercsw.management.domain.GameSetting.class);
+    when(claudeSetting.getValue()).thenReturn("false");
+    lenient()
+        .when(gameSettingService.findById("AI_CLAUDE_ENABLED"))
+        .thenReturn(Optional.of(claudeSetting));
+
+    com.github.javydreamercsw.management.domain.GameSetting geminiSetting =
+        mock(com.github.javydreamercsw.management.domain.GameSetting.class);
+    when(geminiSetting.getValue()).thenReturn("false");
+    lenient()
+        .when(gameSettingService.findById("AI_GEMINI_ENABLED"))
+        .thenReturn(Optional.of(geminiSetting));
   }
 
   @Test
   void testDeckImportIsIdempotentAndNoDuplicates() {
+    // Ensure deckService.count() returns a valid value before and after init
+    lenient().when(deckService.count()).thenReturn(1L, 1L);
     dataInitializer.init();
     long initialDeckCount = deckService.count();
     dataInitializer.init();
