@@ -66,11 +66,11 @@ public class BackstageActionService {
    *
    * @param campaign The campaign context.
    * @param actionType The type of action.
-   * @param attributeValue The value of the wrestler's attribute for this action.
+   * @param diceSides The value of the wrestler's attribute for this action.
    * @return The result of the action.
    */
   public ActionOutcome performAction(
-      Campaign campaign, BackstageActionType actionType, int attributeValue) {
+      Campaign campaign, BackstageActionType actionType, int diceSides) {
 
     CampaignState state = campaign.getState();
 
@@ -111,7 +111,7 @@ public class BackstageActionService {
       }
     }
 
-    int successes = rollDice(attributeValue);
+    int successes = rollDice(diceSides);
     String outcomeDescription = "";
     boolean isSuccess = successes > 0;
 
@@ -196,7 +196,7 @@ public class BackstageActionService {
             .campaign(campaign)
             .actionType(actionType)
             .actionDate(LocalDateTime.now())
-            .diceRolled(attributeValue)
+            .diceRolled(diceSides)
             .successes(successes)
             .outcomeDescription(outcomeDescription)
             .build();

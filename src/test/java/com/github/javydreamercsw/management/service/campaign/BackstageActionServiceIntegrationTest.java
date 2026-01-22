@@ -60,21 +60,81 @@ class BackstageActionServiceIntegrationTest extends AbstractIntegrationTest {
     campaign.setState(state);
     campaignRepository.save(campaign);
 
-    // Act - Drive = 5 dice. Approx 83% chance of at least one success.
-    // Since we can't easily mock Random inside the @Service in an Integration Test without complex
-    // setup,
-    // we'll run it and check if state *might* change, or loop to ensure success?
-    // Or we can rely on the probability.
-    // Alternatively, we can assume that with enough dice, we get a success.
-
-    // Let's rely on the result outcome string for verification in this simple pass.
+    // Success case: 100 dice guarantees success
     BackstageActionService.ActionOutcome outcome =
         backstageActionService.performAction(campaign, BackstageActionType.TRAINING, 100);
-    // 100 dice guarantees success basically.
-
-    // Assert
     assertThat(outcome.successes()).isGreaterThan(0);
-    assertThat(outcome.description()).contains("successful");
-    assertThat(campaign.getState().getSkillTokens()).isEqualTo(1);
+    assertThat(outcome.description().toLowerCase()).contains("successful");
+    assertThat(campaign.getState().getSkillTokens()).isGreaterThan(0);
+
+    // Failure case: 0 dice should never succeed
+    Campaign campaign2 =
+        Campaign.builder()
+            .wrestler(wrestler)
+            .status(CampaignStatus.ACTIVE)
+            .startedAt(LocalDateTime.now())
+            .build();
+    CampaignState state2 =
+        CampaignState.builder()
+            .campaign(campaign2)
+            .currentChapterId("ch1_beginning")
+            .skillTokens(0)
+            .build();
+    campaign2.setState(state2);
+    campaignRepository.save(campaign2);
+    BackstageActionService.ActionOutcome failOutcome =
+        backstageActionService.performAction(campaign2, BackstageActionType.TRAINING, 0);
+    assertThat(failOutcome.successes()).isEqualTo(0);
+    assertThat(failOutcome.description().toLowerCase()).contains("fail");
+    assertThat(campaign2.getState().getSkillTokens()).isEqualTo(0);
+
+    // Edge case: negative dice (should be treated as 0 or throw)
+    Campaign campaign3 =
+        Campaign.builder()
+            .wrestler(wrestler)
+            .status(CampaignStatus.ACTIVE)
+            .startedAt(LocalDateTime.now())
+            .build();
+    CampaignState state3 =
+        CampaignState.builder()
+            .campaign(campaign3)
+            .currentChapterId("ch1_beginning")
+            .skillTokens(0)
+            .build();
+    campaign3.setState(state3);
+    campaignRepository.save(campaign3);
+    BackstageActionService.ActionOutcome negativeOutcome =
+        backstageActionService.performAction(campaign3, BackstageActionType.TRAINING, -5);
+    assertThat(negativeOutcome.successes()).isEqualTo(0);
+    assertThat(negativeOutcome.description().toLowerCase()).contains("fail");
+    assertThat(campaign3.getState().getSkillTokens()).isEqualTo(0);
+
+    // Repeated action: skill tokens should increment
+    Campaign campaign4 =
+        Campaign.builder()
+            .wrestler(wrestler)
+            .status(CampaignStatus.ACTIVE)
+            .startedAt(LocalDateTime.now())
+            .build();
+    CampaignState state4 =
+        CampaignState.builder()
+            .campaign(campaign4)
+            .currentChapterId("ch1_beginning")
+            .skillTokens(0)
+            .build();
+    campaign4.setState(state4);
+    campaignRepository.save(campaign4);
+    BackstageActionService.ActionOutcome first =
+        backstageActionService.performAction(campaign4, BackstageActionType.TRAINING, 100);
+    // Reload campaign4 to get updated state
+    campaign4 = campaignRepository.findById(campaign4.getId()).orElseThrow();
+    assertThat(campaign4.getState().getSkillTokens()).isEqualTo(first.successes());
+    BackstageActionService.ActionOutcome second =
+        backstageActionService.performAction(campaign4, BackstageActionType.TRAINING, 100);
+    campaign4 = campaignRepository.findById(campaign4.getId()).orElseThrow();
+    assertThat(first.successes()).isGreaterThanOrEqualTo(0);
+    assertThat(second.successes()).isGreaterThanOrEqualTo(0);
+    assertThat(campaign4.getState().getSkillTokens())
+        .isEqualTo(first.successes() + second.successes());
   }
 }
