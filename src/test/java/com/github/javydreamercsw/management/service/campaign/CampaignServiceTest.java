@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
@@ -37,6 +36,9 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -60,9 +62,7 @@ class CampaignServiceTest {
 
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignStateRepository campaignStateRepository;
-  @Mock private CampaignAbilityCardRepository campaignAbilityCardRepository;
   @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
-  @Mock private CampaignScriptService campaignScriptService;
   @Mock private CampaignChapterService chapterService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ShowService showService;
@@ -71,6 +71,8 @@ class CampaignServiceTest {
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private ShowTypeRepository showTypeRepository;
   @Mock private SegmentParticipantRepository participantRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private SegmentRepository segmentRepository;
 
   @InjectMocks private CampaignService campaignService;
 
@@ -100,23 +102,16 @@ class CampaignServiceTest {
 
   @Test
   void testShiftAlignment_NeutralToFace() {
-
     Wrestler wrestler = new Wrestler();
-
     Campaign campaign = new Campaign();
-
     campaign.setWrestler(wrestler);
 
     CampaignState state = new CampaignState();
-
     state.setActiveCards(new ArrayList<>());
-
     campaign.setState(state);
 
     WrestlerAlignment alignment = new WrestlerAlignment();
-
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
-
     alignment.setLevel(0);
 
     when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
@@ -124,119 +119,89 @@ class CampaignServiceTest {
     campaignService.shiftAlignment(campaign, 1);
 
     assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.FACE);
-
     assertThat(alignment.getLevel()).isEqualTo(1);
-
     verify(wrestlerAlignmentRepository).save(alignment);
   }
 
   @Test
   void testShiftAlignment_FaceToNeutral() {
-
     Wrestler wrestler = new Wrestler();
-
     Campaign campaign = new Campaign();
-
     campaign.setWrestler(wrestler);
 
     CampaignState state = new CampaignState();
-
     state.setActiveCards(new ArrayList<>());
-
     campaign.setState(state);
 
     WrestlerAlignment alignment = new WrestlerAlignment();
-
     alignment.setAlignmentType(AlignmentType.FACE);
-
     alignment.setLevel(1);
 
     when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
 
     campaignService.shiftAlignment(campaign, -1);
-
     assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.NEUTRAL);
-
     assertThat(alignment.getLevel()).isZero();
   }
 
   @Test
   void testShiftAlignment_HeelDeepening() {
-
     Wrestler wrestler = new Wrestler();
-
     Campaign campaign = new Campaign();
-
     campaign.setWrestler(wrestler);
 
     CampaignState state = new CampaignState();
-
     state.setActiveCards(new ArrayList<>());
-
     campaign.setState(state);
 
     WrestlerAlignment alignment = new WrestlerAlignment();
-
     alignment.setAlignmentType(AlignmentType.HEEL);
-
     alignment.setLevel(2);
 
     when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
 
     // Shift toward Heel (-1)
-
     campaignService.shiftAlignment(campaign, -1);
-
     assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.HEEL);
-
     assertThat(alignment.getLevel()).isEqualTo(3);
   }
 
   @Test
   void testCreateMatchForEncounter() {
-
     Wrestler player = new Wrestler();
-
     player.setName("Player");
 
     Wrestler opponent = new Wrestler();
-
     opponent.setName("Opponent");
 
     Campaign campaign = new Campaign();
-
     campaign.setWrestler(player);
 
     CampaignState state = new CampaignState();
-
     campaign.setState(state);
 
     when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
-
     when(seasonRepository.findByName("Campaign Mode")).thenReturn(Optional.of(new Season()));
 
     ShowType showType = org.mockito.Mockito.mock(ShowType.class);
-
     when(showType.getId()).thenReturn(2L);
-
     when(showTypeRepository.findByName("Weekly")).thenReturn(Optional.of(showType));
 
     Show show = new Show();
-
     show.setId(50L);
-
     when(showService.createShow(any(), any(), any(), any(), any(), any())).thenReturn(show);
 
     SegmentType segmentType = org.mockito.Mockito.mock(SegmentType.class);
-
     lenient().when(segmentType.getId()).thenReturn(1L);
 
     when(segmentTypeRepository.findByName("One on One")).thenReturn(Optional.of(segmentType));
 
+    SegmentRule normalRule = new SegmentRule();
+    normalRule.setName("Normal");
+    when(segmentRuleRepository.findByName("Normal")).thenReturn(Optional.of(normalRule));
+
     Segment segment = new Segment();
-
     segment.setId(100L);
-
     when(segmentService.createSegment(any(), any(), any())).thenReturn(segment);
 
     Segment result =
@@ -244,13 +209,9 @@ class CampaignServiceTest {
             campaign, "Opponent", "Test Narration", "One on One");
 
     assertThat(result).isNotNull();
-
     assertThat(result.getId()).isEqualTo(100L);
-
     assertThat(result.getNarration()).isEqualTo("Test Narration");
-
     assertThat(state.getCurrentMatch()).isEqualTo(segment);
-
     verify(participantRepository, org.mockito.Mockito.times(2)).save(any());
   }
 
@@ -280,10 +241,17 @@ class CampaignServiceTest {
   @Test
   void testProcessMatchResult_Chapter2() {
     Campaign campaign = new Campaign();
-    campaign.setWrestler(new Wrestler());
+    Wrestler wrestler = new Wrestler();
+    campaign.setWrestler(wrestler);
     CampaignState state = new CampaignState();
     state.setCurrentChapterId("ch2_tournament");
     campaign.setState(state);
+
+    // Ensure alignment is present
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    when(wrestlerAlignmentRepository.findByWrestler(any())).thenReturn(Optional.of(alignment));
 
     CampaignChapterDTO chapter =
         CampaignChapterDTO.builder()
