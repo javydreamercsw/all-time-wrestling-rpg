@@ -255,6 +255,7 @@ public class BackstageActionView extends VerticalLayout {
     textPart.add(name, desc);
 
     Button actionBtn = new Button("Perform");
+    actionBtn.setId("action-button-" + type.name());
     actionBtn.setEnabled(enabled);
     actionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
     actionBtn.addClickListener(

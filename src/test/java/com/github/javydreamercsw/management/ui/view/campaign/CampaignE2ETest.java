@@ -40,8 +40,30 @@ class CampaignE2ETest extends AbstractE2ETest {
   private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
       campaignRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
   @BeforeEach
   void setupCampaign() {
+    wrestlerAlignmentRepository.deleteAllInBatch();
+    campaignStateRepository.deleteAllInBatch();
+    backstageActionHistoryRepository.deleteAllInBatch();
+    campaignEncounterRepository.deleteAllInBatch();
+    campaignRepository.deleteAllInBatch();
+
     // Manually setup a wrestler for the admin account to avoid brittle UI steps
     Account admin = accountRepository.findByUsername("admin").get();
 
@@ -86,13 +108,11 @@ class CampaignE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("backstage-actions-view");
 
-    // Verify we are on Backstage Actions view
+    // Verify we are on the backstage actions view
     waitForText("Backstage Actions");
-    assertTrue(driver.getPageSource().contains("Training (Drive)"));
 
     // 3. Perform an action (Training)
-    WebElement trainingButton =
-        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Training (Drive)']"));
+    WebElement trainingButton = waitForVaadinElement(driver, By.id("action-button-TRAINING"));
     clickElement(trainingButton);
 
     // Verify notification (Success or Fail)

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -70,6 +71,24 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Autowired private SegmentService segmentService;
   @Autowired private DataInitializer dataInitializer;
 
+  @Autowired private CampaignRepository campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
   @BeforeEach
   public void setupTestData() {
     dataInitializer.init();
@@ -81,6 +100,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       }
     }
 
+    wrestlerAlignmentRepository.deleteAllInBatch();
+    campaignStateRepository.deleteAllInBatch();
+    backstageActionHistoryRepository.deleteAllInBatch();
+    campaignEncounterRepository.deleteAllInBatch();
+    campaignRepository.deleteAllInBatch();
     titleReignRepository.deleteAll();
     titleRepository
         .findAll()

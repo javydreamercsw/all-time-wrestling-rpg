@@ -161,6 +161,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (segment.getShow() != null) {
       Span showName = new Span(segment.getShow().getName());
       showName.addClassNames(FontSize.LARGE, TextColor.SECONDARY, FontWeight.MEDIUM);
+      showName.setId("show-name");
       header.add(showName);
     }
 
@@ -174,6 +175,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           Padding.Horizontal.SMALL,
           BorderRadius.MEDIUM,
           Margin.Top.SMALL);
+      matchType.setId("match-type");
       header.add(matchType);
     }
     add(header);

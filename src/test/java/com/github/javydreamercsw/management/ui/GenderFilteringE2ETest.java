@@ -48,16 +48,47 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @Autowired private TitleRepository titleRepository;
   @Autowired private SegmentRepository segmentRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
   private Wrestler maleWrestler;
+
   private Wrestler femaleWrestler;
+
   private Title womensTitle;
 
   @BeforeEach
   @Transactional
   public void setupTestData() {
+
+    wrestlerAlignmentRepository.deleteAllInBatch();
+
+    campaignStateRepository.deleteAllInBatch();
+
+    backstageActionHistoryRepository.deleteAllInBatch();
+
+    campaignEncounterRepository.deleteAllInBatch();
+
+    campaignRepository.deleteAllInBatch();
+
     titleRepository.deleteAll();
-    segmentRepository.deleteAll();
-    wrestlerRepository.deleteAll();
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");
