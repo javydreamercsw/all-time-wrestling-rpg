@@ -59,7 +59,7 @@ public class GameSettingService {
     return repository.findById(key);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public GameSetting save(GameSetting gameSetting) {
     log.debug(
