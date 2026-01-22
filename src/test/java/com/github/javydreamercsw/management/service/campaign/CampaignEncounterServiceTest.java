@@ -126,6 +126,7 @@ class CampaignEncounterServiceTest {
     choice.setText("Choice 1");
     choice.setAlignmentShift(-1);
     choice.setVpReward(5);
+    choice.setNextPhase("MATCH");
 
     encounterService.recordEncounterChoice(campaign, choice);
 
