@@ -220,61 +220,7 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     // Stats Section
-    DashboardCard statsCard = new DashboardCard("Campaign Progress");
-    HorizontalLayout statsLayout = new HorizontalLayout();
-    statsLayout.setWidthFull();
-    statsLayout.addClassNames(FlexWrap.WRAP, Gap.MEDIUM);
-
-    statsLayout.add(createStatCard("Chapter", state.getCurrentChapterId()));
-    if (state.getCurrentGameDate() != null) {
-      statsLayout.add(
-          createStatCard(
-              "Game Date",
-              state
-                  .getCurrentGameDate()
-                  .format(java.time.format.DateTimeFormatter.ofPattern("EEE, MMM d"))));
-    }
-    statsLayout.add(createStatCard("Victory Points", String.valueOf(state.getVictoryPoints())));
-    statsLayout.add(createStatCard("Skill Tokens", String.valueOf(state.getSkillTokens())));
-    if (state.getMomentumBonus() > 0) {
-      statsLayout.add(createStatCard("Next Match Momentum", "+" + state.getMomentumBonus()));
-    }
-    statsLayout.add(createStatCard("Bumps", String.valueOf(state.getBumps())));
-
-    if (alignment != null) {
-      statsLayout.add(
-          createStatCard(
-              "Alignment",
-              (alignment.getAlignmentType() == AlignmentType.NEUTRAL
-                      ? "NEUTRAL"
-                      : alignment.getAlignmentType().name())
-                  + " (Lvl "
-                  + alignment.getLevel()
-                  + ")"));
-    }
-    statsCard.add(statsLayout);
-    add(statsCard);
-
-    DashboardCard healthCard = new DashboardCard("Status & Penalties");
-    HorizontalLayout healthLayout = new HorizontalLayout();
-    healthLayout.setWidthFull();
-    healthLayout.addClassNames(FlexWrap.WRAP, Gap.MEDIUM);
-
-    healthLayout.add(
-        createStatCard(
-            "Health",
-            wrestler.getCurrentHealthWithPenalties() + " / " + wrestler.getStartingHealth()));
-    healthLayout.add(
-        createStatCard(
-            "Penalties",
-            "HP: -"
-                + state.getHealthPenalty()
-                + ", Stam: -"
-                + state.getStaminaPenalty()
-                + ", Hand: -"
-                + state.getHandSizePenalty()));
-    healthCard.add(healthLayout);
-    add(healthCard);
+    add(new DashboardCard(currentCampaign));
 
     // Pending Picks Section
     addPendingPicksSection(currentCampaign);
@@ -656,27 +602,5 @@ public class CampaignDashboardView extends VerticalLayout {
     Details libraryDetails = new Details("Campaign Card Library", libraryContent);
     libraryDetails.addClassNames(LumoUtility.Width.FULL, LumoUtility.Margin.Top.LARGE);
     add(libraryDetails);
-  }
-
-  private VerticalLayout createStatCard(@NonNull String label, @NonNull String value) {
-    VerticalLayout card = new VerticalLayout();
-    card.setPadding(true);
-    card.setSpacing(false);
-    card.setWidth("200px");
-    card.addClassNames(
-        Background.CONTRAST_5,
-        Border.ALL,
-        BorderRadius.MEDIUM,
-        BoxShadow.XSMALL,
-        AlignItems.CENTER);
-
-    Span labelSpan = new Span(label);
-    labelSpan.addClassNames(FontSize.SMALL, TextColor.SECONDARY, FontWeight.MEDIUM);
-
-    Span valueSpan = new Span(value);
-    valueSpan.addClassNames(FontSize.XLARGE, FontWeight.BOLD, TextColor.PRIMARY);
-
-    card.add(labelSpan, valueSpan);
-    return card;
   }
 }
