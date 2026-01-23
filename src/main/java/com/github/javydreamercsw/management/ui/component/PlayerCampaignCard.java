@@ -31,33 +31,48 @@ import lombok.NonNull;
 
 public class PlayerCampaignCard extends Composite<Div> {
 
+  private final Div card;
+  private boolean isFlipped = false;
+
   public PlayerCampaignCard(@NonNull Campaign campaign) {
     getContent().addClassName("player-card-container");
-    getContent()
-        .addClassNames(LumoUtility.Display.FLEX, LumoUtility.Gap.LARGE, LumoUtility.FlexWrap.WRAP);
+
+    card = new Div();
+    card.addClassName("player-card");
+    card.addClickListener(e -> toggleFlip());
 
     // Front Side
-    getContent().add(createCardFront(campaign));
+    card.add(createCardFront(campaign));
 
-    // Back Side (Stats)
-    getContent().add(createCardBack(campaign));
+    // Back Side
+    card.add(createCardBack(campaign));
+
+    getContent().add(card);
+  }
+
+  private void toggleFlip() {
+    isFlipped = !isFlipped;
+    if (isFlipped) {
+      card.addClassName("flipped");
+    } else {
+      card.removeClassName("flipped");
+    }
   }
 
   private Div createCardFront(Campaign campaign) {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment = wrestler.getAlignment();
 
-    Div card = new Div();
-    card.addClassName("player-card");
+    Div face = new Div();
+    face.addClassName("player-card-face");
+    face.addClassName("player-card-front");
 
     // Header
     Div header = new Div();
     header.addClassName("player-card-header");
-    header.addClassName(
-        "wrestler-tier-" + wrestler.getTier().name().toLowerCase()); // Dynamic color
+    header.addClassName("wrestler-tier-" + wrestler.getTier().name().toLowerCase());
     header.add(new Span(wrestler.getName()));
 
-    // Alignment Icon (Placeholder for "Set" or configurable icon)
     Icon alignmentIcon;
     if (alignment != null && alignment.getAlignmentType() == AlignmentType.HEEL) {
       alignmentIcon = VaadinIcon.THUMBS_DOWN.create();
@@ -66,7 +81,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     }
     alignmentIcon.addClassName("set-icon");
     header.add(alignmentIcon);
-    card.add(header);
+    face.add(header);
 
     // Content
     Div content = new Div();
@@ -76,95 +91,184 @@ public class PlayerCampaignCard extends Composite<Div> {
     Div image = new Div();
     image.addClassName("player-card-image-placeholder");
     if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
-      // TODO: Actual Image Implementation
       image.setText("Image: " + wrestler.getName());
     } else {
       image.setText(wrestler.getName());
     }
     content.add(image);
 
-    // Vitals
+    // Status Bars
     content.add(
-        createStatRow(
+        createStatusBar(
             "Health",
-            wrestler.getCurrentHealthWithPenalties() + " / " + wrestler.getStartingHealth()));
-    content.add(createStatRow("VP", String.valueOf(campaign.getState().getVictoryPoints())));
+            wrestler.getCurrentHealthWithPenalties(),
+            wrestler.getStartingHealth(),
+            wrestler.getLowHealth(),
+            "health"));
+    content.add(
+        createStatusBar(
+            "Stamina",
+            wrestler.getEffectiveStartingStamina(), // Assuming current matches starting for now
+            wrestler.getEffectiveStartingStamina(),
+            wrestler.getLowStamina(),
+            "stamina"));
 
-    card.add(content);
+    // VP
+    content.add(
+        createStatRow("Victory Points", String.valueOf(campaign.getState().getVictoryPoints())));
 
-    // Footer
-    Div footer = new Div();
-    footer.addClassName("player-card-footer");
-    Span tierBadge = new Span(wrestler.getTier().name());
-    tierBadge.addClassName("wrestler-tier-badge");
-    tierBadge.addClassName("wrestler-tier-" + wrestler.getTier().name().toLowerCase());
-    footer.add(tierBadge);
-    card.add(footer);
+    // Bio
+    if (wrestler.getDescription() != null && !wrestler.getDescription().isEmpty()) {
+      Span bio = new Span(wrestler.getDescription());
+      bio.addClassName("player-bio");
+      content.add(bio);
+    }
 
-    return card;
+    face.add(content);
+
+    // Flip Hint
+    Span hint = new Span("Click to flip");
+    hint.addClassName("flip-hint");
+    face.add(hint);
+
+    return face;
   }
 
   private Div createCardBack(Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler wrestler = campaign.getWrestler();
 
-    Div card = new Div();
-    card.addClassName("player-card");
+    Div face = new Div();
+    face.addClassName("player-card-face");
+    face.addClassName("player-card-back");
 
     // Header
     Div header = new Div();
     header.addClassName("player-card-header");
     header.getStyle().set("background-color", "var(--lumo-contrast-80pct)");
-    header.add(new Span("Campaign Stats"));
-    card.add(header);
+    header.add(new Span("Stats & Skills"));
+    face.add(header);
 
     // Content
     Div content = new Div();
     content.addClassName("player-card-content");
 
-    // General Stats
-    content.add(createGroupTitle("Progress"));
-    content.add(createStatRow("Chapter", state.getCurrentChapterId()));
-    if (state.getCurrentGameDate() != null) {
-      content.add(
-          createStatRow(
-              "Date",
-              state
-                  .getCurrentGameDate()
-                  .format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))));
-    }
-    content.add(createStatRow("Bumps", String.valueOf(state.getBumps())));
-    content.add(createStatRow("Gender", wrestler.getGender().name()));
-
-    // Mechanics
-    content.add(createGroupTitle("Mechanics"));
+    // Detailed Stats
+    content.add(createGroupTitle("Status"));
+    content.add(
+        createStatRow(
+            "Health",
+            wrestler.getCurrentHealthWithPenalties() + " / " + wrestler.getStartingHealth()));
+    content.add(
+        createStatRow(
+            "Stamina",
+            wrestler.getEffectiveStartingStamina()
+                + " / "
+                + wrestler.getEffectiveStartingStamina()));
     content.add(createStatRow("Momentum", "+" + state.getMomentumBonus()));
+
+    // Bumps
+    Div bumpRow = new Div();
+    bumpRow.addClassName("stat-row");
+    bumpRow.add(new Span("Bumps"));
+    Div bumpIcons = new Div();
+    bumpIcons.addClassName("icon-row");
+    for (int i = 0; i < state.getBumps(); i++) {
+      Span bandaid = new Span("🩹");
+      bandaid.addClassName("bump-icon");
+      bumpIcons.add(bandaid);
+    }
+    if (state.getBumps() == 0) {
+      Span none = new Span("-");
+      none.addClassName(LumoUtility.TextColor.SECONDARY);
+      bumpIcons.add(none);
+    }
+    bumpRow.add(bumpIcons);
+    content.add(bumpRow);
+
+    // Injuries
+    Div injuryRow = new Div();
+    injuryRow.addClassName("stat-row");
+    injuryRow.add(new Span("Active Injuries"));
+    Div injuryIcons = new Div();
+    injuryIcons.addClassName("icon-row");
+    int injuryCount = wrestler.getActiveInjuries().size();
+    for (int i = 0; i < injuryCount; i++) {
+      Icon cross = VaadinIcon.PLUS.create();
+      cross.addClassName("injury-icon");
+      injuryIcons.add(cross);
+    }
+    if (injuryCount == 0) {
+      Span none = new Span("-");
+      none.addClassName(LumoUtility.TextColor.SECONDARY);
+      injuryIcons.add(none);
+    }
+    injuryRow.add(injuryIcons);
+    content.add(injuryRow);
+
+    // Penalties
+    content.add(createGroupTitle("Penalties"));
     content.add(createStatRow("HP Penalty", "-" + state.getHealthPenalty()));
     content.add(createStatRow("Stam Penalty", "-" + state.getStaminaPenalty()));
-    content.add(createStatRow("Hand Penalty", "-" + state.getHandSizePenalty()));
+    content.add(createStatRow("Hand Size Penalty", "-" + state.getHandSizePenalty()));
 
     // Skills
-    content.add(createGroupTitle("Skills"));
+    content.add(createGroupTitle("Purchased Skills"));
     Div skillsContainer = new Div();
+    skillsContainer.addClassName("skill-list");
     state
         .getUpgrades()
         .forEach(
             upgrade -> {
               Span skill = new Span(upgrade.getName());
-              skill.addClassName("skill-keyword");
-              skill.setTitle(upgrade.getDescription()); // Tooltip
+              skill.addClassName("skill-tag");
+              skill.setTitle(upgrade.getDescription());
               skillsContainer.add(skill);
             });
     if (state.getUpgrades().isEmpty()) {
       Span none = new Span("None");
-      none.addClassName(LumoUtility.FontSize.XSMALL);
+      none.addClassName(LumoUtility.FontSize.SMALL);
       none.addClassName(LumoUtility.TextColor.SECONDARY);
       skillsContainer.add(none);
     }
     content.add(skillsContainer);
 
-    card.add(content);
-    return card;
+    face.add(content);
+    return face;
+  }
+
+  private Div createStatusBar(String label, int current, int max, int lowLimit, String styleClass) {
+    Div container = new Div();
+    container.addClassName("status-bar-container");
+
+    Div labels = new Div();
+    labels.addClassName("status-bar-label");
+    labels.add(new Span(label));
+    // No numeric value on front as requested, visual cue only.
+    container.add(labels);
+
+    Div track = new Div();
+    track.addClassName("status-bar-track");
+
+    Div fill = new Div();
+    fill.addClassName("status-bar-fill");
+    fill.addClassName(styleClass);
+
+    double percent = Math.min(100.0, Math.max(0.0, (double) current / max * 100.0));
+    fill.setWidth(percent + "%");
+    track.add(fill);
+
+    // Low Limit Marker
+    if (lowLimit > 0 && lowLimit < max) {
+      Div marker = new Div();
+      marker.addClassName("status-bar-limit-marker");
+      double limitPercent = (double) lowLimit / max * 100.0;
+      marker.getStyle().set("left", limitPercent + "%");
+      track.add(marker);
+    }
+
+    container.add(track);
+    return container;
   }
 
   private Div createStatRow(String label, String value) {
@@ -182,6 +286,12 @@ public class PlayerCampaignCard extends Composite<Div> {
     Div div = new Div();
     div.setText(title);
     div.addClassName("stat-group-title");
+    div.addClassName(LumoUtility.FontSize.XSMALL);
+    div.addClassName(LumoUtility.FontWeight.BOLD);
+    div.addClassName(LumoUtility.TextColor.SECONDARY);
+    div.addClassName(LumoUtility.Margin.Top.MEDIUM);
+    div.addClassName(LumoUtility.Border.BOTTOM);
+    div.getStyle().set("text-transform", "uppercase");
     return div;
   }
 }
