@@ -44,7 +44,7 @@
   "rules": {
     "qualifyingMatches": 4,
     "minWinsToQualify": 3,
-    "totalFinalsMatches": 2,
+    "totalFinalsMatches": 4,
     "victoryPointsWin": 3,
     "victoryPointsLoss": -1,
     "titleWinVP": 10,

@@ -331,8 +331,8 @@ class CampaignControllerTest extends AbstractIntegrationTest {
     CampaignState midState = objectMapper.readValue(midStateJson, CampaignState.class);
     assertThat(midState.isFinalsPhase()).isTrue();
 
-    // 4. Win 2 Finals matches (totalFinalsMatches: 2)
-    for (int i = 0; i < 2; i++) {
+    // 4. Win 4 Finals matches (totalFinalsMatches: 4)
+    for (int i = 0; i < 4; i++) {
       mockMvc
           .perform(
               post("/api/campaign/" + testWrestler.getId() + "/test/process-match")
