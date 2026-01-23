@@ -91,7 +91,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     Div image = new Div();
     image.addClassName("player-card-image-placeholder");
     if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
-      image.setText("Image: " + wrestler.getName());
+      image.getStyle().set("background-image", "url('" + wrestler.getImageUrl() + "')");
     } else {
       image.setText(wrestler.getName());
     }
@@ -101,28 +101,23 @@ public class PlayerCampaignCard extends Composite<Div> {
     content.add(
         createStatusBar(
             "Health",
+            String.valueOf(wrestler.getCurrentHealthWithPenalties()),
             wrestler.getCurrentHealthWithPenalties(),
-            wrestler.getStartingHealth(),
+            20,
             wrestler.getLowHealth(),
             "health"));
     content.add(
         createStatusBar(
             "Stamina",
-            wrestler.getEffectiveStartingStamina(), // Assuming current matches starting for now
+            String.valueOf(wrestler.getEffectiveStartingStamina()),
             wrestler.getEffectiveStartingStamina(),
+            20,
             wrestler.getLowStamina(),
             "stamina"));
 
     // VP
     content.add(
         createStatRow("Victory Points", String.valueOf(campaign.getState().getVictoryPoints())));
-
-    // Bio
-    if (wrestler.getDescription() != null && !wrestler.getDescription().isEmpty()) {
-      Span bio = new Span(wrestler.getDescription());
-      bio.addClassName("player-bio");
-      content.add(bio);
-    }
 
     face.add(content);
 
@@ -155,16 +150,6 @@ public class PlayerCampaignCard extends Composite<Div> {
 
     // Detailed Stats
     content.add(createGroupTitle("Status"));
-    content.add(
-        createStatRow(
-            "Health",
-            wrestler.getCurrentHealthWithPenalties() + " / " + wrestler.getStartingHealth()));
-    content.add(
-        createStatRow(
-            "Stamina",
-            wrestler.getEffectiveStartingStamina()
-                + " / "
-                + wrestler.getEffectiveStartingStamina()));
     content.add(createStatRow("Momentum", "+" + state.getMomentumBonus()));
 
     // Bumps
@@ -173,12 +158,12 @@ public class PlayerCampaignCard extends Composite<Div> {
     bumpRow.add(new Span("Bumps"));
     Div bumpIcons = new Div();
     bumpIcons.addClassName("icon-row");
-    for (int i = 0; i < state.getBumps(); i++) {
-      Span bandaid = new Span("🩹");
-      bandaid.addClassName("bump-icon");
-      bumpIcons.add(bandaid);
+    for (int i = 0; i < wrestler.getBumps(); i++) {
+      Icon bumpIcon = VaadinIcon.CIRCLE.create();
+      bumpIcon.addClassName("bump-icon");
+      bumpIcons.add(bumpIcon);
     }
-    if (state.getBumps() == 0) {
+    if (wrestler.getBumps() == 0) {
       Span none = new Span("-");
       none.addClassName(LumoUtility.TextColor.SECONDARY);
       bumpIcons.add(none);
@@ -237,14 +222,15 @@ public class PlayerCampaignCard extends Composite<Div> {
     return face;
   }
 
-  private Div createStatusBar(String label, int current, int max, int lowLimit, String styleClass) {
+  private Div createStatusBar(
+      String label, String valueText, int current, int max, int lowLimit, String styleClass) {
     Div container = new Div();
     container.addClassName("status-bar-container");
 
     Div labels = new Div();
     labels.addClassName("status-bar-label");
     labels.add(new Span(label));
-    // No numeric value on front as requested, visual cue only.
+    labels.add(new Span(valueText)); // Add numeric value
     container.add(labels);
 
     Div track = new Div();
@@ -257,6 +243,19 @@ public class PlayerCampaignCard extends Composite<Div> {
     double percent = Math.min(100.0, Math.max(0.0, (double) current / max * 100.0));
     fill.setWidth(percent + "%");
     track.add(fill);
+
+    // Visual Scale
+    Div scale = new Div();
+    scale.addClassName("status-bar-scale");
+    for (int i = 1; i < 10; i++) {
+      Div tick = new Div();
+      tick.addClassName("status-bar-tick");
+      if (i == 5) {
+        tick.addClassName("major");
+      }
+      scale.add(tick);
+    }
+    track.add(scale);
 
     // Low Limit Marker
     if (lowLimit > 0 && lowLimit < max) {
