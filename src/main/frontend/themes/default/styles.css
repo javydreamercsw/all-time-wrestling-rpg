@@ -35,3 +35,98 @@
     font-weight: var(--lumo-font-weight-semibold);
     margin-left: var(--lumo-space-s);
 }
+
+/* Player Campaign Card Styles */
+.player-card {
+    width: 300px;
+    height: 450px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    background: white;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--lumo-contrast-20pct);
+    position: relative;
+    margin-bottom: var(--lumo-space-m);
+}
+
+.player-card-header {
+    padding: var(--lumo-space-s);
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.player-card-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: var(--lumo-space-s);
+}
+
+.player-card-image-placeholder {
+    width: 100%;
+    height: 180px;
+    background-color: var(--lumo-contrast-5pct);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lumo-secondary-text-color);
+    font-style: italic;
+    margin-bottom: var(--lumo-space-s);
+}
+
+.player-card-footer {
+    padding: var(--lumo-space-s);
+    background-color: var(--lumo-base-color);
+    border-top: 1px solid var(--lumo-contrast-10pct);
+}
+
+.set-icon {
+    opacity: 0.9;
+    font-size: 1.2rem;
+}
+
+.skill-keyword {
+    background: var(--lumo-primary-color-10pct);
+    color: var(--lumo-primary-text-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    display: inline-block;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--lumo-contrast-5pct);
+    font-size: var(--lumo-font-size-s);
+}
+
+.stat-label {
+    color: var(--lumo-secondary-text-color);
+}
+
+.stat-value {
+    font-weight: 600;
+}
+
+.stat-group-title {
+    font-size: var(--lumo-font-size-xs);
+    text-transform: uppercase;
+    color: var(--lumo-secondary-text-color);
+    font-weight: bold;
+    margin-top: var(--lumo-space-m);
+    margin-bottom: var(--lumo-space-xs);
+    border-bottom: 2px solid var(--lumo-contrast-10pct);
+}

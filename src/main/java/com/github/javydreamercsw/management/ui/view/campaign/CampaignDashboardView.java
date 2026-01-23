@@ -31,7 +31,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
-import com.github.javydreamercsw.management.ui.component.DashboardCard;
+import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -219,8 +219,8 @@ public class CampaignDashboardView extends VerticalLayout {
       }
     }
 
-    // Stats Section
-    add(new DashboardCard(currentCampaign));
+    // Player Card
+    add(new PlayerCampaignCard(currentCampaign));
 
     // Pending Picks Section
     addPendingPicksSection(currentCampaign);
