@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -57,6 +58,8 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   @Autowired private CampaignUpgradeService upgradeService;
   @Autowired private WrestlerAlignmentRepository alignmentRepository;
 
+  @Autowired private WrestlerRepository wrestlerRepository;
+
   private Wrestler testWrestler;
 
   @BeforeEach
@@ -65,6 +68,16 @@ class CampaignControllerTest extends AbstractIntegrationTest {
     testWrestler =
         Wrestler.builder().name("API Tester").startingHealth(100).startingStamina(100).build();
     testWrestler = wrestlerRepository.save(testWrestler);
+
+    // Populate enough wrestlers for tournament (16 total needed)
+    for (int i = 0; i < 15; i++) {
+      wrestlerRepository.save(
+          Wrestler.builder()
+              .name("Wrestler " + i)
+              .startingHealth(100)
+              .startingStamina(100)
+              .build());
+    }
   }
 
   @Test

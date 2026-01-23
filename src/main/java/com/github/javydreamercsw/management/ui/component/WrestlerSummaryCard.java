@@ -37,6 +37,14 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
   public WrestlerSummaryCard(
       @NonNull Wrestler wrestler, @NonNull WrestlerService wrestlerService, boolean isPlayer) {
+    this(wrestler, wrestlerService, isPlayer, 0);
+  }
+
+  public WrestlerSummaryCard(
+      @NonNull Wrestler wrestler,
+      @NonNull WrestlerService wrestlerService,
+      boolean isPlayer,
+      int additionalPenalty) {
     getContent().setPadding(true);
     getContent().setSpacing(false);
 
@@ -88,45 +96,47 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               getContent().add(bumps);
 
               // Campaign Modifiers
-              if (wrestler.getAlignment() != null
-                  && wrestler.getAlignment().getCampaign() != null
-                  && wrestler.getAlignment().getCampaign().getState() != null) {
+              // Always show effective HP if we have penalties or bonuses, even if not the player's
+              // card directly (e.g. opponent)
+              boolean hasCampaign =
+                  wrestler.getAlignment() != null
+                      && wrestler.getAlignment().getCampaign() != null
+                      && wrestler.getAlignment().getCampaign().getState() != null;
+
+              int effectiveHp =
+                  Math.max(1, wrestler.getEffectiveStartingHealth() - additionalPenalty);
+
+              VerticalLayout mods = new VerticalLayout();
+              mods.setPadding(false);
+              mods.setSpacing(false);
+              mods.addClassNames(Margin.Top.SMALL, Padding.Top.SMALL, Border.TOP);
+
+              String hpText = "❤️ Effective HP: " + effectiveHp;
+              if (additionalPenalty > 0) {
+                hpText += " (Opponent Penalty: -" + additionalPenalty + ")";
+              }
+              Span hp = new Span(hpText);
+
+              Span stam =
+                  new Span("⚡ Effective Stamina: " + wrestler.getEffectiveStartingStamina());
+
+              hp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              stam.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+
+              mods.add(hp, stam);
+
+              // Campaign Attributes (Only show if they have them set, defaults are 1)
+              HorizontalLayout attrs = new HorizontalLayout();
+              attrs.setSpacing(true);
+              attrs.addClassNames(FontSize.XSMALL, Margin.Vertical.XSMALL);
+              attrs.add(new Span("DRV: " + wrestler.getDrive()));
+              attrs.add(new Span("RES: " + wrestler.getResilience()));
+              attrs.add(new Span("CHA: " + wrestler.getCharisma()));
+              attrs.add(new Span("BRL: " + wrestler.getBrawl()));
+              mods.add(attrs);
+
+              if (hasCampaign) {
                 CampaignState state = wrestler.getAlignment().getCampaign().getState();
-
-                VerticalLayout mods = new VerticalLayout();
-                mods.setPadding(false);
-                mods.setSpacing(false);
-                mods.addClassNames(Margin.Top.SMALL, Padding.Top.SMALL, Border.TOP);
-
-                Span hp = new Span("❤️ Effective HP: " + wrestler.getEffectiveStartingHealth());
-
-                Span stam =
-                    new Span("⚡ Effective Stamina: " + wrestler.getEffectiveStartingStamina());
-
-                hp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
-
-                stam.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
-
-                mods.add(hp, stam);
-
-                // Campaign Attributes
-
-                HorizontalLayout attrs = new HorizontalLayout();
-
-                attrs.setSpacing(true);
-
-                attrs.addClassNames(FontSize.XSMALL, Margin.Vertical.XSMALL);
-
-                attrs.add(new Span("DRV: " + wrestler.getDrive()));
-
-                attrs.add(new Span("RES: " + wrestler.getResilience()));
-
-                attrs.add(new Span("CHA: " + wrestler.getCharisma()));
-
-                attrs.add(new Span("BRL: " + wrestler.getBrawl()));
-
-                mods.add(attrs);
-
                 if (!state.getUpgrades().isEmpty()) {
                   state
                       .getUpgrades()
@@ -157,8 +167,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                           });
                   mods.add(cardsLayout);
                 }
-                getContent().add(mods);
               }
+              getContent().add(mods);
 
               if (!wrestlerWithInjuries.getInjuries().isEmpty()) {
                 VerticalLayout injuryList = new VerticalLayout();

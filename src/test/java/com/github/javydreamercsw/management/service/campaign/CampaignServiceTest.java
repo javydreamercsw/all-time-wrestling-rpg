@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -73,6 +74,8 @@ class CampaignServiceTest {
   @Mock private SegmentParticipantRepository participantRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private SegmentRepository segmentRepository;
+  @Mock private TournamentService tournamentService;
+  @Mock private ShowTemplateRepository showTemplateRepository;
 
   @InjectMocks private CampaignService campaignService;
 
@@ -241,11 +244,14 @@ class CampaignServiceTest {
   @Test
   void testProcessMatchResult_Chapter2() {
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     Wrestler wrestler = new Wrestler();
     campaign.setWrestler(wrestler);
     CampaignState state = new CampaignState();
     state.setCurrentChapterId("ch2_tournament");
     campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
 
     // Ensure alignment is present
     WrestlerAlignment alignment = new WrestlerAlignment();

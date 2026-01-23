@@ -40,6 +40,8 @@ public class CampaignUpgradeService {
   private final ObjectMapper objectMapper;
   private final CampaignUpgradeRepository upgradeRepository;
   private final CampaignStateRepository stateRepository;
+  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
+      wrestlerRepository;
 
   @PostConstruct
   public void init() {
@@ -97,5 +99,13 @@ public class CampaignUpgradeService {
 
     log.info(
         "Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
+
+    if ("HEALTH".equals(upgrade.getType())) {
+      com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
+          campaign.getWrestler();
+      wrestler.refreshCurrentHealth();
+      wrestlerRepository.save(wrestler);
+      log.info("Refreshed health for wrestler {}", wrestler.getName());
+    }
   }
 }

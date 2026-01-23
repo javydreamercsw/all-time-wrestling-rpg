@@ -46,6 +46,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
@@ -66,6 +67,8 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignAbilityCardRepository cardRepository;
   private final CampaignUpgradeService upgradeService;
   private final SecurityUtils securityUtils;
+  private final com.github.javydreamercsw.management.service.campaign.TournamentService
+      tournamentService;
 
   private Campaign currentCampaign;
 
@@ -76,13 +79,15 @@ public class CampaignDashboardView extends VerticalLayout {
       WrestlerRepository wrestlerRepository,
       CampaignAbilityCardRepository cardRepository,
       CampaignUpgradeService upgradeService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
     this.cardRepository = cardRepository;
     this.upgradeService = upgradeService;
     this.securityUtils = securityUtils;
+    this.tournamentService = tournamentService;
 
     setSpacing(true);
     setPadding(true);
@@ -301,8 +306,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 if (state.getCurrentPhase()
                     == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
                         .POST_MATCH) {
-                  log.info("Completing post-match phase before navigating to narrative.");
-                  campaignService.completePostMatch(currentCampaign);
+                  log.info("Navigating to post-match narrative.");
                 }
                 UI.getCurrent().navigate("campaign/narrative");
               }
@@ -348,6 +352,11 @@ public class CampaignDashboardView extends VerticalLayout {
 
     // Global Card Library
     addGlobalCardLibrary();
+
+    // Debug Section
+    if (!VaadinService.getCurrent().getDeploymentConfiguration().isProductionMode()) {
+      addDebugSection();
+    }
   }
 
   private void addPendingPicksSection(@NonNull Campaign campaign, VerticalLayout parent) {
@@ -451,62 +460,73 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void addTournamentBracket(VerticalLayout parent) {
+    com.github.javydreamercsw.management.dto.campaign.TournamentDTO tournament =
+        tournamentService.getTournamentState(currentCampaign);
+
+    if (tournament == null) {
+      // Initialize if missing (e.g. legacy save)
+      tournamentService.initializeTournament(currentCampaign);
+      tournament = tournamentService.getTournamentState(currentCampaign);
+    }
+
     VerticalLayout bracketContainer = new VerticalLayout();
     bracketContainer.setPadding(false);
     bracketContainer.setSpacing(true);
     bracketContainer.addClassNames(LumoUtility.Margin.Vertical.MEDIUM);
 
-    H4 title = new H4("Tournament Finals Bracket");
+    H4 title = new H4("Tournament Finals");
     title.addClassNames(LumoUtility.Margin.NONE);
     bracketContainer.add(title);
 
-    HorizontalLayout rounds = new HorizontalLayout();
-    rounds.setSpacing(false);
-    rounds.setAlignItems(Alignment.CENTER);
+    bracketContainer.add(
+        new com.github.javydreamercsw.management.ui.component.TournamentBracketComponent(
+            tournament));
 
-    // Semi-Finals
-    VerticalLayout semiFinals = new VerticalLayout();
-    semiFinals.setSpacing(true);
-    semiFinals.setWidth("200px");
-    semiFinals.add(createBracketBox(currentCampaign.getWrestler().getName(), true));
-    semiFinals.add(createBracketBox("Opponent A", false));
-    semiFinals.add(new Div()); // Spacer
-    semiFinals.add(createBracketBox("Opponent B", false));
-    semiFinals.add(createBracketBox("Opponent C", false));
+    // Play Next Match Button
+    com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch nextMatch =
+        tournamentService.getCurrentPlayerMatch(currentCampaign);
 
-    // Finals
-    VerticalLayout finals = new VerticalLayout();
-    finals.setSpacing(true);
-    finals.setWidth("200px");
-    finals.setPadding(true);
-    finals.add(createBracketBox("TBD", false));
+    if (nextMatch != null && nextMatch.getWinnerId() == null) {
+      String opponentName =
+          nextMatch.getWrestler1Id().equals(currentCampaign.getWrestler().getId())
+              ? nextMatch.getWrestler2Name()
+              : nextMatch.getWrestler1Name();
 
-    rounds.add(semiFinals, finals);
-    bracketContainer.add(rounds);
+      Button playMatchButton =
+          new Button(
+              "Play Tournament Match vs " + opponentName,
+              e -> {
+                campaignService.createMatchForEncounter(
+                    currentCampaign,
+                    opponentName,
+                    "Tournament Match: " + opponentName,
+                    "One on One");
+                // Navigate to match handled by createMatchForEncounter setting state
+                refreshUI();
+              });
+      playMatchButton.addThemeVariants(
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
+      bracketContainer.add(playMatchButton);
+    } else if (currentCampaign.getState().isTournamentWinner()) {
+      Span winnerMsg = new Span("🏆 You are the Tournament Champion!");
+      winnerMsg.addClassNames(
+          LumoUtility.TextColor.SUCCESS, LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.BOLD);
+      bracketContainer.add(winnerMsg);
+    } else if (currentCampaign.getState().isFinalsPhase()
+        && nextMatch == null
+        && !currentCampaign.getState().isTournamentWinner()) {
+      Span loserMsg = new Span("❌ You have been eliminated from the tournament.");
+      loserMsg.addClassNames(LumoUtility.TextColor.ERROR, LumoUtility.FontWeight.BOLD);
+      bracketContainer.add(loserMsg);
+    }
+
     parent.add(bracketContainer);
   }
 
   private Div createBracketBox(@NonNull String name, boolean isPlayer) {
-    Div box = new Div();
-    box.setText(name);
-    box.setWidthFull();
-    box.setHeight("40px");
-    box.addClassNames(
-        LumoUtility.Display.FLEX,
-        LumoUtility.AlignItems.CENTER,
-        LumoUtility.Padding.Horizontal.SMALL,
-        LumoUtility.Border.ALL,
-        LumoUtility.BorderRadius.SMALL,
-        LumoUtility.FontSize.SMALL);
-
-    if (isPlayer) {
-      box.getStyle().set("background-color", "var(--lumo-primary-color-10pct)");
-      box.getStyle().set("border-color", "var(--lumo-primary-color)");
-      box.getStyle().set("font-weight", "bold");
-    } else {
-      box.addClassNames(LumoUtility.Background.CONTRAST_5);
-    }
-    return box;
+    // Legacy method, can be removed or kept if needed by other logic not yet updated
+    return new Div();
   }
 
   private void addTournamentTracker(@NonNull CampaignState state, VerticalLayout parent) {
@@ -622,5 +642,131 @@ public class CampaignDashboardView extends VerticalLayout {
     Details libraryDetails = new Details("Campaign Card Library", libraryContent);
     libraryDetails.addClassNames(LumoUtility.Width.FULL, LumoUtility.Margin.Top.LARGE);
     add(libraryDetails);
+  }
+
+  private void addDebugSection() {
+    VerticalLayout debugContent = new VerticalLayout();
+    debugContent.setPadding(true);
+    debugContent.setSpacing(true);
+
+    // Resources
+    HorizontalLayout resourcesLayout = new HorizontalLayout();
+    resourcesLayout.add(
+        new Button(
+            "+5 VP",
+            e -> {
+              currentCampaign
+                  .getState()
+                  .setVictoryPoints(currentCampaign.getState().getVictoryPoints() + 5);
+              campaignRepository.save(currentCampaign);
+              refreshUI();
+            }));
+    resourcesLayout.add(
+        new Button(
+            "+5 Skill Tokens",
+            e -> {
+              currentCampaign
+                  .getState()
+                  .setSkillTokens(currentCampaign.getState().getSkillTokens() + 5);
+              campaignRepository.save(currentCampaign);
+              refreshUI();
+            }));
+    resourcesLayout.add(
+        new Button(
+            "Set Bumps=2",
+            e -> {
+              currentCampaign.getWrestler().setBumps(2);
+              wrestlerRepository.save(currentCampaign.getWrestler());
+              refreshUI();
+            }));
+    resourcesLayout.add(
+        new Button(
+            "Heal All",
+            e -> {
+              currentCampaign.getWrestler().setBumps(0);
+              currentCampaign
+                  .getWrestler()
+                  .getActiveInjuries()
+                  .forEach(
+                      i -> {
+                        i.heal();
+                        // Assuming cascade or manual save needed if not in service
+                      });
+              wrestlerRepository.save(currentCampaign.getWrestler());
+              refreshUI();
+            }));
+    debugContent.add(new Span("Resources & Status"), resourcesLayout);
+
+    // Quick Loop
+    HorizontalLayout matchLayout = new HorizontalLayout();
+    matchLayout.add(
+        new Button(
+            "Sim. Win (Face)",
+            e -> {
+              campaignService.shiftAlignment(currentCampaign, 1);
+              simulateMatch(true);
+            }));
+    matchLayout.add(
+        new Button(
+            "Sim. Win (Heel)",
+            e -> {
+              campaignService.shiftAlignment(currentCampaign, -1);
+              simulateMatch(true);
+            }));
+    matchLayout.add(new Button("Sim. Loss", e -> simulateMatch(false)));
+
+    debugContent.add(new Span("Match Simulation"), matchLayout);
+
+    // Phase & Chapter
+    HorizontalLayout phaseLayout = new HorizontalLayout();
+    phaseLayout.add(
+        new Button(
+            "Force Backstage",
+            e -> {
+              currentCampaign
+                  .getState()
+                  .setCurrentPhase(
+                      com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE);
+              currentCampaign.getState().setActionsTaken(0);
+              campaignRepository.save(currentCampaign);
+              refreshUI();
+            }));
+    phaseLayout.add(
+        new Button(
+            "Force Complete Chapter",
+            e -> {
+              campaignService
+                  .advanceChapter(currentCampaign)
+                  .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+              refreshUI();
+            }));
+
+    debugContent.add(new Span("Phase & Chapter"), phaseLayout);
+
+    Details debugDetails = new Details("🛠️ Debug / Dev Tools", debugContent);
+    debugDetails.setOpened(false);
+    debugDetails.addClassNames(
+        LumoUtility.Width.FULL,
+        LumoUtility.Margin.Top.LARGE,
+        LumoUtility.Background.CONTRAST_5,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderColor.CONTRAST_10);
+    add(debugDetails);
+  }
+
+  private void simulateMatch(boolean win) {
+    wrestlerRepository.findAll().stream()
+        .filter(w -> !w.equals(currentCampaign.getWrestler()))
+        .findFirst()
+        .ifPresentOrElse(
+            opponent -> {
+              campaignService.createMatchForEncounter(
+                  currentCampaign, opponent.getName(), "Debug Match Simulation", "One on One");
+              campaignService.processMatchResult(currentCampaign, win);
+              refreshUI();
+            },
+            () ->
+                com.vaadin.flow.component.notification.Notification.show(
+                    "No opponent found for simulation!"));
   }
 }

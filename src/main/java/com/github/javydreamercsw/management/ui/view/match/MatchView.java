@@ -217,11 +217,21 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     if (isPlayerInMatch) {
       participantsCard.add(new WrestlerSummaryCard(playerWrestler, wrestlerService, true));
+
+      // Fetch player campaign to get opponent penalty
+      int opponentPenalty = 0;
+      var playerCampaignOpt = campaignRepository.findActiveByWrestler(playerWrestler);
+      if (playerCampaignOpt.isPresent() && playerCampaignOpt.get().getState() != null) {
+        opponentPenalty = playerCampaignOpt.get().getState().getOpponentHealthPenalty();
+      }
+      final int penalty = opponentPenalty;
+
       wrestlers.stream()
           .filter(w -> w != null && !w.equals(playerWrestler))
           .forEach(
               opponent ->
-                  participantsCard.add(new WrestlerSummaryCard(opponent, wrestlerService, false)));
+                  participantsCard.add(
+                      new WrestlerSummaryCard(opponent, wrestlerService, false, penalty)));
     } else {
       wrestlers.stream()
           .filter(java.util.Objects::nonNull)
@@ -444,7 +454,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           log.info("Updating campaign {} for wrestler {}", campaign.getId(), w.getName());
           boolean won = winners.contains(w);
           campaignService.processMatchResult(campaign, won);
-          campaignService.completePostMatch(campaign);
           campaignRepository.save(campaign);
           campaignUpdated = true;
         }

@@ -17,33 +17,22 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
-import java.util.Random;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class BackstageActionServiceTest {
 
-  @Mock private Random random;
   @InjectMocks private BackstageActionService backstageActionService;
 
   @Test
   void testRollDice() {
-    // 4, 5, 6 are successes. 1, 2, 3 are failures.
-    // We expect nextInt(6) to return 0-5. So we add 1.
-    // Success: 3 (4), 4 (5), 5 (6)
-    // Failure: 0 (1), 1 (2), 2 (3)
-
-    // Mocking 3 rolls: 4 (Success), 2 (Fail), 6 (Success)
-    when(random.nextInt(6)).thenReturn(3, 1, 5);
-
-    int successes = backstageActionService.rollDice(3);
-
-    assertThat(successes).isEqualTo(2);
+    List<Integer> rolls = backstageActionService.rollDice(3);
+    assertThat(rolls).hasSize(3);
+    assertThat(rolls).allMatch(r -> r >= 1 && r <= 6);
   }
 }

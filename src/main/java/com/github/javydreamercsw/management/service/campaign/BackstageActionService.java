@@ -28,8 +28,11 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.utils.DiceBag;
 import java.time.LocalDateTime;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -40,7 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class BackstageActionService {
 
-  private final Random random;
   private final CampaignStateRepository campaignStateRepository;
   private final BackstageActionHistoryRepository actionHistoryRepository;
   private final InjuryService injuryService;
@@ -49,14 +51,12 @@ public class BackstageActionService {
   private final WrestlerService wrestlerService;
 
   public BackstageActionService(
-      Random random,
       CampaignStateRepository campaignStateRepository,
       BackstageActionHistoryRepository actionHistoryRepository,
       InjuryService injuryService,
       @Lazy CampaignService campaignService,
       SegmentRuleRepository segmentRuleRepository,
       WrestlerService wrestlerService) {
-    this.random = random;
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
@@ -95,10 +95,6 @@ public class BackstageActionService {
           0, "Cannot perform the same action twice in a row unless it failed.");
     }
 
-    // Training specific consecutive rule: "cannot perform Training twice in a row unless the first
-    // attempt resulted in zero successes"
-    // Our check above already handles this (isSuccess = successes > 0).
-
     // 4. Unlock Check
     if (actionType == BackstageActionType.PROMO && !state.isPromoUnlocked()) {
       return new ActionOutcome(0, "Promo action is locked.");
@@ -115,7 +111,8 @@ public class BackstageActionService {
       }
     }
 
-    int successes = rollDice(diceSides);
+    java.util.List<Integer> rolls = rollDice(diceSides);
+    int successes = (int) rolls.stream().filter(r -> r >= 4).count();
     String outcomeDescription = "";
     boolean isSuccess = successes > 0;
 
@@ -154,7 +151,7 @@ public class BackstageActionService {
               bumpsRemoved++;
             }
             // Update local state copy if needed, but entity is source of truth
-            state.setBumps(Math.max(0, state.getBumps() - bumpsRemoved));
+            // state.setBumps is removed as it's no longer in CampaignState
             outcomeDescription =
                 "Recovery successful. Removed "
                     + bumpsRemoved
@@ -168,7 +165,7 @@ public class BackstageActionService {
         } else if (successes == 1) {
           if (currentBumps > 0) {
             wrestlerService.healBump(campaign.getWrestler().getId());
-            state.setBumps(Math.max(0, state.getBumps() - 1));
+            // state.setBumps is removed
             outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
           } else if (!activeInjuries.isEmpty()) {
             outcomeDescription =
@@ -203,9 +200,20 @@ public class BackstageActionService {
         break;
       case ATTACK:
         if (successes > 0) {
-          outcomeDescription = "Attack successful. Alignment shifted. Opponent damaged.";
+          campaignService.shiftAlignment(campaign, -1); // Heel progression
+          state.setOpponentHealthPenalty(state.getOpponentHealthPenalty() + successes);
+          outcomeDescription =
+              "Attack successful! Opponent starts with -"
+                  + successes
+                  + " health. Heel track advanced.";
         } else {
-          outcomeDescription = "Attack failed.";
+          outcomeDescription = "Attack failed. You missed your opportunity.";
+        }
+
+        // Self-inflicted penalty check (The "1" Rule)
+        if (rolls.contains(1)) {
+          state.setHealthPenalty(state.getHealthPenalty() + 1);
+          outcomeDescription += " Rolled a 1! You suffered -1 starting health.";
         }
         break;
     }
@@ -231,20 +239,18 @@ public class BackstageActionService {
   }
 
   /**
-   * Roll dice and return the number of successes (4+).
+   * Roll dice and return the rolls.
    *
    * @param numberOfDice Number of dice to roll (based on attribute).
-   * @return Number of successes.
+   * @return List of roll results.
    */
-  public int rollDice(int numberOfDice) {
-    int successes = 0;
-    for (int i = 0; i < numberOfDice; i++) {
-      int roll = random.nextInt(6) + 1;
-      if (roll >= 4) {
-        successes++;
-      }
-    }
-    return successes;
+  public java.util.List<Integer> rollDice(int numberOfDice) {
+    if (numberOfDice <= 0) return new ArrayList<>();
+    int[] diceConfig = new int[numberOfDice];
+    Arrays.fill(diceConfig, 6); // All d6s
+    DiceBag diceBag = new DiceBag(diceConfig);
+    diceBag.roll();
+    return Arrays.stream(diceBag.getLastRoll()).boxed().collect(Collectors.toList());
   }
 
   private void createPromoSegment(Campaign campaign, boolean success, String description) {

@@ -133,15 +133,31 @@ public class CampaignEncounterService {
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH
         && campaign.getState().getCurrentMatch() != null) {
       Segment match = campaign.getState().getCurrentMatch();
-      boolean won = match.getWinners().contains(campaign.getWrestler());
+      boolean won =
+          match.getWinners().stream()
+              .anyMatch(w -> w.getId().equals(campaign.getWrestler().getId()));
       sb.append("\nIMMEDIATE MATCH RESULT:\n");
       sb.append("- Just competed in a ")
           .append(match.getSegmentType().getName())
           .append(" match.\n");
+      if (!match.getSegmentRules().isEmpty()) {
+        sb.append("- Stipulations: ");
+        match
+            .getSegmentRules()
+            .forEach(
+                rule -> {
+                  sb.append(rule.getName());
+                  if (rule.getDescription() != null && !rule.getDescription().isBlank()) {
+                    sb.append(" (").append(rule.getDescription()).append(")");
+                  }
+                  sb.append("; ");
+                });
+        sb.append("\n");
+      }
       sb.append("- Result: ").append(won ? "VICTORY" : "DEFEAT").append("\n");
       String opponents =
           match.getWrestlers().stream()
-              .filter(w -> !w.equals(campaign.getWrestler()))
+              .filter(w -> !w.getId().equals(campaign.getWrestler().getId()))
               .map(Wrestler::getName)
               .collect(java.util.stream.Collectors.joining(", "));
       sb.append("- Opponents: ").append(opponents).append("\n");

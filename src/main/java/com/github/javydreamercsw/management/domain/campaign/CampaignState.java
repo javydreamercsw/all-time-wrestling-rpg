@@ -28,6 +28,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -73,11 +74,12 @@ public class CampaignState {
   @Column(name = "skill_tokens", nullable = false)
   private int skillTokens;
 
-  @Column(name = "bumps", nullable = false)
-  private int bumps;
-
   @Column(name = "health_penalty", nullable = false)
   private int healthPenalty;
+
+  @Column(name = "opponent_health_penalty", nullable = false)
+  @Builder.Default
+  private int opponentHealthPenalty = 0;
 
   @Column(name = "hand_size_penalty", nullable = false)
   private int handSizePenalty;
@@ -181,6 +183,10 @@ public class CampaignState {
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "current_match_id")
   private com.github.javydreamercsw.management.domain.show.segment.Segment currentMatch;
+
+  @Column(name = "tournament_state")
+  @Lob
+  private String tournamentState;
 
   @com.fasterxml.jackson.annotation.JsonIgnore
   public int getCampaignStaminaBonus() {

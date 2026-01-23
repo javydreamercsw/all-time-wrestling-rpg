@@ -54,6 +54,9 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private CampaignUpgradeService upgradeService;
   @Mock private SecurityUtils securityUtils;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService;
+
   private CustomUserDetails mockUser;
   private Account mockAccount;
   private Wrestler mockWrestler;
@@ -94,7 +97,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             wrestlerRepository,
             cardRepository,
             upgradeService,
-            securityUtils);
+            securityUtils,
+            tournamentService);
 
     UI.getCurrent().add(view);
 
@@ -144,7 +148,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             wrestlerRepository,
             cardRepository,
             upgradeService,
-            securityUtils);
+            securityUtils,
+            tournamentService);
 
     UI.getCurrent().add(view);
 
@@ -163,7 +168,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             wrestlerRepository,
             cardRepository,
             upgradeService,
-            securityUtils);
+            securityUtils,
+            tournamentService);
 
     UI.getCurrent().add(view);
 

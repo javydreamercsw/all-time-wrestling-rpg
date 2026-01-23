@@ -78,6 +78,7 @@ public class CampaignService {
   private final ShowTypeRepository showTypeRepository;
   private final ShowTemplateRepository showTemplateRepository;
   private final SegmentParticipantRepository participantRepository;
+  private final TournamentService tournamentService;
 
   public Campaign startCampaign(Wrestler wrestler) {
     if (hasActiveCampaign(wrestler)) {
@@ -117,7 +118,6 @@ public class CampaignService {
             .campaign(campaign)
             .victoryPoints(0)
             .skillTokens(0)
-            .bumps(0)
             .healthPenalty(0)
             .handSizePenalty(0)
             .staminaPenalty(0)
@@ -275,19 +275,56 @@ public class CampaignService {
     return campaignRepository.findActiveByWrestler(wrestler).isPresent();
   }
 
-  public void processMatchResult(Campaign campaign, boolean won) {
+  public void processMatchResult(Campaign campaignParam, boolean won) {
+    // Reload campaign to ensure it's attached and we can fetch lazy collections
+    Campaign campaign =
+        campaignRepository
+            .findById(campaignParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
+
     CampaignState state = campaign.getState();
     Wrestler wrestler = campaign.getWrestler();
+
+    // Initialize lazy collections to prevent LazyInitializationException in ChapterService
+    wrestler.getReigns().size();
+
     com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO.ChapterRules rules =
         getCurrentChapter(campaign).getRules();
 
+    // Update Segment if it exists
+    if (state.getCurrentMatch() != null) {
+      Segment match = state.getCurrentMatch();
+      List<Wrestler> winners = new ArrayList<>();
+      if (won) {
+        winners.add(wrestler);
+      } else {
+        // If lost, add all other participants as winners
+        match.getWrestlers().stream().filter(w -> !w.equals(wrestler)).forEach(winners::add);
+      }
+      match.setWinners(winners);
+      match.setAdjudicationStatus(
+          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+      segmentRepository.save(match);
+    }
+
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
+    int previousVP = state.getVictoryPoints();
     if (won) {
       state.setWins(state.getWins() + 1);
       state.setVictoryPoints(state.getVictoryPoints() + rules.getVictoryPointsWin());
+      log.info(
+          "Match Won. VP Change: {} + {} = {}",
+          previousVP,
+          rules.getVictoryPointsWin(),
+          state.getVictoryPoints());
     } else {
       state.setLosses(state.getLosses() + 1);
       state.setVictoryPoints(state.getVictoryPoints() + rules.getVictoryPointsLoss());
+      log.info(
+          "Match Lost. VP Change: {} + {} = {}",
+          previousVP,
+          rules.getVictoryPointsLoss(),
+          state.getVictoryPoints());
     }
 
     // Check for chapter completion/tournament qualification
@@ -301,6 +338,7 @@ public class CampaignService {
             state.setMatchesPlayed(0); // Reset for finals phase tracking
             state.setWins(0);
             state.setLosses(0);
+            tournamentService.initializeTournament(campaign);
           } else {
             log.info(
                 "Wrestler {} FAILED to qualify for the tournament finals.", wrestler.getName());
@@ -309,6 +347,7 @@ public class CampaignService {
         }
       } else {
         // Finals Phase
+        tournamentService.advanceTournament(campaign, won);
         if (!won) {
           log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
           // They lost in the finals, they didn't win the tournament

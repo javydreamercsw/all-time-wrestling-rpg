@@ -199,13 +199,15 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @JsonIgnore
   public Integer getEffectiveStartingHealth() {
-    int bonus =
-        (alignment != null
-                && alignment.getCampaign() != null
-                && alignment.getCampaign().getState() != null)
-            ? alignment.getCampaign().getState().getCampaignHealthBonus()
-            : 0;
-    int effective = startingHealth + bonus - bumps - getTotalInjuryPenalty();
+    int bonus = 0;
+    int penalty = 0;
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      bonus = alignment.getCampaign().getState().getCampaignHealthBonus();
+      penalty = alignment.getCampaign().getState().getHealthPenalty();
+    }
+    int effective = startingHealth + bonus - penalty - bumps - getTotalInjuryPenalty();
     return Math.max(1, effective); // Never go below 1
   }
 
