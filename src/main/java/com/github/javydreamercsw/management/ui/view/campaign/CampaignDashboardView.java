@@ -129,61 +129,31 @@ public class CampaignDashboardView extends VerticalLayout {
                   + " List and use the 'Start Campaign' action on your assigned wrestler."));
 
       // Debug button for E2E tests and quick start
-
       Button debugStartButton =
           new Button(
               "Start New Campaign (Debug)",
               e -> {
                 log.info("Debug Start Campaign button clicked");
-
                 securityUtils
                     .getAuthenticatedUser()
                     .ifPresentOrElse(
                         user -> {
-                          log.info("Authenticated user found: {}", user.getUsername());
-
                           wrestlerRepository
                               .findByAccount(user.getAccount())
                               .ifPresentOrElse(
                                   wrestler -> {
-                                    log.info("Wrestler found for user: {}", wrestler.getName());
-
                                     campaignService.startCampaign(wrestler);
-
-                                    log.info("Campaign started successfully");
-
                                     refreshUI();
                                   },
                                   () -> {
-                                    log.info(
-                                        "No wrestler found for account {}, assigning first"
-                                            + " available...",
-                                        user.getUsername());
-
                                     List<Wrestler> all = wrestlerRepository.findAll();
-
                                     if (!all.isEmpty()) {
-
                                       Wrestler first = all.get(0);
-
                                       first.setAccount(user.getAccount());
-
                                       first.setIsPlayer(true);
-
                                       wrestlerRepository.save(first);
-
-                                      log.info(
-                                          "Assigned wrestler {} to account {}",
-                                          first.getName(),
-                                          user.getUsername());
-
                                       campaignService.startCampaign(first);
-
                                       refreshUI();
-
-                                    } else {
-
-                                      log.warn("No wrestlers exist in the database at all!");
                                     }
                                   });
                         },
@@ -205,28 +175,51 @@ public class CampaignDashboardView extends VerticalLayout {
     add(new H2("Campaign: All or Nothing (Season 1)"));
     add(new H3("Wrestler: " + wrestler.getName()));
 
-    // Alignment Track
+    // 1. Alignment Track (Top, Full Width)
     if (alignment != null) {
       add(new AlignmentTrackComponent(alignment));
     }
 
-    // Tournament Tracker (Chapter 2)
+    // 2. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
     if ("ch2_tournament".equals(state.getCurrentChapterId())) {
+      VerticalLayout tournamentSection = new VerticalLayout();
+      tournamentSection.setPadding(false);
+      tournamentSection.setSpacing(true);
       if (state.isFinalsPhase()) {
-        addTournamentBracket();
+        addTournamentBracket(tournamentSection);
       } else {
-        addTournamentTracker(state);
+        addTournamentTracker(state, tournamentSection);
       }
+      add(tournamentSection);
     }
 
-    // Player Card
-    add(new PlayerCampaignCard(currentCampaign));
+    // 3. Main Split Layout
+    HorizontalLayout mainLayout = new HorizontalLayout();
+    mainLayout.setWidthFull();
+    mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
 
-    // Pending Picks Section
-    addPendingPicksSection(currentCampaign);
+    // Left Column
+    VerticalLayout leftColumn = new VerticalLayout();
+    leftColumn.setPadding(false);
+    leftColumn.setSpacing(true);
+    leftColumn.setWidth("50%");
+
+    // Right Column
+    VerticalLayout rightColumn = new VerticalLayout();
+    rightColumn.setPadding(false);
+    rightColumn.setSpacing(true);
+    rightColumn.setWidth("50%");
+
+    mainLayout.add(leftColumn, rightColumn);
+    add(mainLayout);
+
+    // --- LEFT COLUMN CONTENT ---
+
+    // Player Card
+    leftColumn.add(new PlayerCampaignCard(currentCampaign));
 
     // My Cards Section
-    add(new H4("My Ability Cards"));
+    leftColumn.add(new H4("My Ability Cards"));
     HorizontalLayout myCardsLayout = new HorizontalLayout();
     myCardsLayout.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.MEDIUM);
     if (state.getActiveCards().isEmpty()) {
@@ -237,10 +230,15 @@ public class CampaignDashboardView extends VerticalLayout {
           .getActiveCards()
           .forEach(card -> myCardsLayout.add(new CampaignAbilityCardComponent(card)));
     }
-    add(myCardsLayout);
+    leftColumn.add(myCardsLayout);
+
+    // --- RIGHT COLUMN CONTENT ---
+
+    // Pending Picks Section
+    addPendingPicksSection(currentCampaign, rightColumn);
 
     // Purchased Skills Section
-    add(new H4("Purchased Skills"));
+    rightColumn.add(new H4("Purchased Skills"));
     VerticalLayout skillsLayout = new VerticalLayout();
     skillsLayout.setPadding(false);
     if (state.getUpgrades().isEmpty()) {
@@ -255,25 +253,25 @@ public class CampaignDashboardView extends VerticalLayout {
                 skillsLayout.add(skill);
               });
     }
-    add(skillsLayout);
+    rightColumn.add(skillsLayout);
 
-    // Skill Upgrades Section
-    addSkillUpgradesSection(currentCampaign);
+    // Skill Upgrades Section (Placed near Purchased Skills)
+    addSkillUpgradesSection(currentCampaign, rightColumn);
 
-    // Actions
-    add(new H4("Actions"));
+    // Actions Section (Below Skills)
+    rightColumn.add(new H4("Actions"));
 
     Span actionsInfo =
         new Span("Backstage actions are only available before continuing the story narrative.");
     actionsInfo.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Bottom.SMALL);
-    add(actionsInfo);
+    rightColumn.add(actionsInfo);
 
     if (state.getCurrentPhase()
         == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE) {
       Span remainingActions =
           new Span("Remaining actions for today: " + (2 - state.getActionsTaken()));
       remainingActions.addClassNames(FontSize.SMALL, FontWeight.BOLD, TextColor.PRIMARY);
-      add(remainingActions);
+      rightColumn.add(remainingActions);
     }
 
     HorizontalLayout actionsLayout = new HorizontalLayout();
@@ -324,13 +322,35 @@ public class CampaignDashboardView extends VerticalLayout {
       actionsLayout.add(nextShowButton);
     }
 
-    add(actionsLayout);
+    rightColumn.add(actionsLayout);
+
+    // Chapter Advancement (Bottom of Page)
+    if (campaignService.isChapterComplete(currentCampaign)) {
+      Button advanceButton =
+          new Button(
+              "Complete Chapter & Advance",
+              e -> {
+                campaignService
+                    .advanceChapter(currentCampaign)
+                    .ifPresent(
+                        newChapterId -> {
+                          // Navigate to narrative to show new chapter intro
+                          UI.getCurrent().navigate("campaign/narrative");
+                        });
+              });
+      advanceButton.addThemeVariants(
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS,
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
+      advanceButton.setWidthFull();
+      add(advanceButton);
+    }
 
     // Global Card Library
     addGlobalCardLibrary();
   }
 
-  private void addPendingPicksSection(@NonNull Campaign campaign) {
+  private void addPendingPicksSection(@NonNull Campaign campaign, VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getPendingL1Picks() <= 0
         && state.getPendingL2Picks() <= 0
@@ -381,10 +401,10 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     pendingSection.add(picksContainer);
-    add(pendingSection);
+    parent.add(pendingSection);
   }
 
-  private void addSkillUpgradesSection(@NonNull Campaign campaign) {
+  private void addSkillUpgradesSection(@NonNull Campaign campaign, VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getSkillTokens() < 8) return;
 
@@ -427,10 +447,10 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     upgradeSection.add(upgradeContainer);
-    add(upgradeSection);
+    parent.add(upgradeSection);
   }
 
-  private void addTournamentBracket() {
+  private void addTournamentBracket(VerticalLayout parent) {
     VerticalLayout bracketContainer = new VerticalLayout();
     bracketContainer.setPadding(false);
     bracketContainer.setSpacing(true);
@@ -463,7 +483,7 @@ public class CampaignDashboardView extends VerticalLayout {
 
     rounds.add(semiFinals, finals);
     bracketContainer.add(rounds);
-    add(bracketContainer);
+    parent.add(bracketContainer);
   }
 
   private Div createBracketBox(@NonNull String name, boolean isPlayer) {
@@ -489,7 +509,7 @@ public class CampaignDashboardView extends VerticalLayout {
     return box;
   }
 
-  private void addTournamentTracker(@NonNull CampaignState state) {
+  private void addTournamentTracker(@NonNull CampaignState state, VerticalLayout parent) {
     CampaignChapterDTO.ChapterRules rules =
         campaignService.getCurrentChapter(currentCampaign).getRules();
 
@@ -559,7 +579,7 @@ public class CampaignDashboardView extends VerticalLayout {
             : LumoUtility.TextColor.PRIMARY);
     tracker.add(status);
 
-    add(tracker);
+    parent.add(tracker);
   }
 
   private void refreshUI() {

@@ -151,6 +151,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     // Detailed Stats
     content.add(createGroupTitle("Status"));
     content.add(createStatRow("Momentum", "+" + state.getMomentumBonus()));
+    content.add(createStatRow("Skill Tokens", String.valueOf(state.getSkillTokens())));
 
     // Bumps
     Div bumpRow = new Div();

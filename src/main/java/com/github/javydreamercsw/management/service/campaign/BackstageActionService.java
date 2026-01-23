@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignStateReposit
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDateTime;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class BackstageActionService {
   private final InjuryService injuryService;
   private final CampaignService campaignService;
   private final SegmentRuleRepository segmentRuleRepository;
+  private final WrestlerService wrestlerService;
 
   public BackstageActionService(
       Random random,
@@ -52,13 +54,15 @@ public class BackstageActionService {
       BackstageActionHistoryRepository actionHistoryRepository,
       InjuryService injuryService,
       @Lazy CampaignService campaignService,
-      SegmentRuleRepository segmentRuleRepository) {
+      SegmentRuleRepository segmentRuleRepository,
+      WrestlerService wrestlerService) {
     this.random = random;
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
     this.campaignService = campaignService;
     this.segmentRuleRepository = segmentRuleRepository;
+    this.wrestlerService = wrestlerService;
   }
 
   /**
@@ -125,36 +129,57 @@ public class BackstageActionService {
         }
         break;
       case RECOVERY:
+        var activeInjuries =
+            injuryService.getActiveInjuriesForWrestler(campaign.getWrestler().getId());
+        int currentBumps = campaign.getWrestler().getBumps();
+
         if (successes >= 2) {
-          if (!injuryService
-              .getActiveInjuriesForWrestler(campaign.getWrestler().getId())
-              .isEmpty()) {
-            if (state.getBumps() > 0) {
-              int bumpsRemoved = Math.min(state.getBumps(), 2);
-              state.setBumps(state.getBumps() - bumpsRemoved);
-              outcomeDescription = "Recovery successful. Removed " + bumpsRemoved + " bumps.";
-            } else {
-              outcomeDescription = "Recovery successful (Injury healing not auto-applied yet).";
+          // Prioritize healing 1 injury over 2 bumps (Injury is more severe)
+          if (!activeInjuries.isEmpty()) {
+            var injuryToHeal = activeInjuries.get(0); // Heal the first one found
+            injuryService.healInjuryFree(injuryToHeal.getId());
+            outcomeDescription =
+                "Recovery successful. Healed injury: "
+                    + injuryToHeal.getSeverity().getDisplayName()
+                    + " (Successes: "
+                    + successes
+                    + ")";
+          } else if (currentBumps > 0) {
+            // No injuries, so heal up to 2 bumps
+            int bumpsRemoved = 0;
+            wrestlerService.healBump(campaign.getWrestler().getId());
+            bumpsRemoved++;
+            if (currentBumps > 1) {
+              wrestlerService.healBump(campaign.getWrestler().getId());
+              bumpsRemoved++;
             }
-          } else if (state.getBumps() > 0) {
-            int bumpsRemoved = Math.min(state.getBumps(), 2);
-            state.setBumps(state.getBumps() - bumpsRemoved);
-            outcomeDescription = "Recovery successful. Removed " + bumpsRemoved + " bumps.";
+            // Update local state copy if needed, but entity is source of truth
+            state.setBumps(Math.max(0, state.getBumps() - bumpsRemoved));
+            outcomeDescription =
+                "Recovery successful. Removed "
+                    + bumpsRemoved
+                    + " bumps. (Successes: "
+                    + successes
+                    + ")";
           } else {
-            outcomeDescription = "Recovery successful. Wrestler is fully healthy.";
+            outcomeDescription =
+                "Recovery successful. Wrestler is fully healthy. (Successes: " + successes + ")";
           }
         } else if (successes == 1) {
-          if (state.getBumps() > 0) {
-            state.setBumps(state.getBumps() - 1);
-            outcomeDescription = "Recovery successful. Removed 1 bump.";
+          if (currentBumps > 0) {
+            wrestlerService.healBump(campaign.getWrestler().getId());
+            state.setBumps(Math.max(0, state.getBumps() - 1));
+            outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
+          } else if (!activeInjuries.isEmpty()) {
+            outcomeDescription =
+                "Recovery partially successful. Removed 0 injuries (Need 2+ successes). (Successes:"
+                    + " 1)";
           } else {
-            outcomeDescription = "Recovery successful. Wrestler is fully healthy.";
+            outcomeDescription = "Recovery successful. Wrestler is fully healthy. (Successes: 1)";
           }
         } else {
-          outcomeDescription = "Recovery failed.";
-          isSuccess =
-              false; // Explicitly fail if 0 successes (already default, but good for clarity logic
-          // if 1 was fail)
+          outcomeDescription = "Recovery failed. (Successes: 0)";
+          isSuccess = false;
         }
         break;
       case PROMO:

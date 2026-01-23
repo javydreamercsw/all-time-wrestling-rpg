@@ -446,7 +446,7 @@ public class CampaignService {
     segmentRepository.save(segment);
   }
 
-  public void advanceChapter(@NonNull Campaign campaign) {
+  public Optional<String> advanceChapter(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     String oldId = state.getCurrentChapterId();
 
@@ -457,15 +457,28 @@ public class CampaignService {
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
     if (!available.isEmpty()) {
       // Pick next chapter - could be enhanced with choosing logic
-      state.setCurrentChapterId(available.get(0).getId());
+      String newChapterId = available.get(0).getId();
+      state.setCurrentChapterId(newChapterId);
       state.setMatchesPlayed(0); // Reset chapter-specific counters
       state.setWins(0);
       state.setLosses(0);
       state.setFinalsPhase(false);
+
+      // Initialize Tournament Opponents if entering Chapter 2
+      if ("ch2_tournament".equals(newChapterId)) {
+        // Logic to generate opponents will be added here or handled by a separate service method
+        // called from UI/Controller
+        // For now, we can just ensure the state is clean.
+        // Real opponent generation requires persistence we haven't fully added yet (Game Object vs
+        // just ID)
+      }
+
       campaignStateRepository.save(state);
       log.info("Advanced to chapter: {}", state.getCurrentChapterId());
+      return Optional.of(newChapterId);
     } else {
       completeCampaign(campaign);
+      return Optional.empty();
     }
   }
 
@@ -473,6 +486,10 @@ public class CampaignService {
     campaign.setStatus(CampaignStatus.COMPLETED);
     campaign.setEndedAt(LocalDateTime.now());
     campaignRepository.save(campaign);
+  }
+
+  public boolean isChapterComplete(@NonNull Campaign campaign) {
+    return chapterService.isChapterComplete(campaign.getState());
   }
 
   /**
