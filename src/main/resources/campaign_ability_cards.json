@@ -10,7 +10,7 @@
   "name": "Feigned Retreat",
   "description": "Spend 1 Stamina to gain Initiative and 2 Momentum.",
   "alignmentType": "HEEL",
-  "level": 1,
+  "level": 2,
   "oneTimeUse": false,
   "timing": "DEFENSE",
   "effectScript": "spendStamina(1); gainInitiative(); gainMomentum(2)"
@@ -73,14 +73,6 @@
   "oneTimeUse": false,
   "timing": "DEFENSE",
   "effectScript": "gainMomentum(2); gainHitPoints(1)"
-}, {
-  "name": "Crowd Pleaser",
-  "description": "Gain momentum and draw a card.",
-  "alignmentType": "FACE",
-  "level": 1,
-  "oneTimeUse": false,
-  "timing": "OFFENSE",
-  "effectScript": "gainMomentum(1); drawCard(1)"
 }, {
   "name": "Ten Punches",
   "description": "Gain momentum and draw a card.",
