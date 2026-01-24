@@ -24,6 +24,7 @@ import lombok.Data;
 public class TournamentDTO {
   private List<TournamentMatch> matches = new ArrayList<>();
   private int currentRound = 1;
+  private int totalRounds;
 
   @Data
   public static class TournamentMatch {

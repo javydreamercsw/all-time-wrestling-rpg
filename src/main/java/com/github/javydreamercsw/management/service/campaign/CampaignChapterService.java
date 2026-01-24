@@ -18,13 +18,20 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
+import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,7 +44,7 @@ public class CampaignChapterService {
   private List<CampaignChapterDTO> chapters = Collections.emptyList();
 
   @Autowired
-  public CampaignChapterService(ObjectMapper objectMapper) {
+  public CampaignChapterService(@NonNull ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
@@ -52,7 +59,7 @@ public class CampaignChapterService {
         log.error("campaign_chapters.json not found in resources.");
         return;
       }
-      chapters = objectMapper.readValue(is, new TypeReference<List<CampaignChapterDTO>>() {});
+      chapters = objectMapper.readValue(is, new TypeReference<>() {});
       log.info("Loaded {} campaign chapters.", chapters.size());
     } catch (IOException e) {
       log.error("Error loading campaign chapters from JSON", e);
@@ -63,7 +70,7 @@ public class CampaignChapterService {
     return Collections.unmodifiableList(chapters);
   }
 
-  public Optional<CampaignChapterDTO> getChapter(String id) {
+  public Optional<CampaignChapterDTO> getChapter(@NonNull String id) {
     return chapters.stream().filter(c -> c.getId().equals(id)).findFirst();
   }
 
@@ -73,8 +80,7 @@ public class CampaignChapterService {
    * @param state The current campaign state.
    * @return List of eligible chapters.
    */
-  public List<CampaignChapterDTO> findAvailableChapters(
-      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+  public List<CampaignChapterDTO> findAvailableChapters(@NonNull CampaignState state) {
     return chapters.stream()
         .filter(c -> !state.getCompletedChapterIds().contains(c.getId())) // Not already completed
         .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
@@ -87,8 +93,7 @@ public class CampaignChapterService {
    * @param state The current campaign state.
    * @return true if any exit point is active.
    */
-  public boolean isChapterComplete(
-      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+  public boolean isChapterComplete(@NonNull CampaignState state) {
     if (state.getCurrentChapterId() == null) return false;
 
     return getChapter(state.getCurrentChapterId())
@@ -97,9 +102,8 @@ public class CampaignChapterService {
   }
 
   private boolean isAnyPointActive(
-      List<com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO> points,
-      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
-    if (points == null || points.isEmpty()) {
+      @NonNull List<ChapterPointDTO> points, @NonNull CampaignState state) {
+    if (points.isEmpty()) {
       // If no points are defined, we might want a default behavior.
       // For entry: maybe only the first chapter?
       // For now, assume if no points are defined, it's not active unless it's an intro.
@@ -109,16 +113,14 @@ public class CampaignChapterService {
   }
 
   private boolean areAllCriteriaMet(
-      List<com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO> criteriaList,
-      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
-    if (criteriaList == null || criteriaList.isEmpty()) return true;
+      @NonNull List<ChapterCriteriaDTO> criteriaList, @NonNull CampaignState state) {
+    if (criteriaList.isEmpty()) return true;
 
     return criteriaList.stream().allMatch(c -> isCriteriaMet(c, state));
   }
 
   private boolean isCriteriaMet(
-      com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO criteria,
-      com.github.javydreamercsw.management.domain.campaign.CampaignState state) {
+      @NonNull ChapterCriteriaDTO criteria, @NonNull CampaignState state) {
     // Check Victory Points
     if (criteria.getMinVictoryPoints() != null
         && state.getVictoryPoints() < criteria.getMinVictoryPoints()) {
@@ -151,8 +153,7 @@ public class CampaignChapterService {
     if (criteria.getIsChampion() != null) {
       boolean holdsTitle =
           state.getCampaign().getWrestler().getReigns().stream()
-              .anyMatch(
-                  com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign);
+              .anyMatch(TitleReign::isCurrentReign);
       if (holdsTitle != criteria.getIsChampion()) {
         return false;
       }
@@ -160,8 +161,7 @@ public class CampaignChapterService {
 
     // Check Alignment
     if (criteria.getRequiredAlignmentType() != null) {
-      com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment alignment =
-          state.getCampaign().getWrestler().getAlignment();
+      WrestlerAlignment alignment = state.getCampaign().getWrestler().getAlignment();
       if (alignment == null
           || !alignment.getAlignmentType().name().equals(criteria.getRequiredAlignmentType())) {
         return false;
@@ -173,13 +173,10 @@ public class CampaignChapterService {
     }
 
     // Check Completed Chapters
-    if (criteria.getRequiredCompletedChapterIds() != null
-        && !state.getCompletedChapterIds().containsAll(criteria.getRequiredCompletedChapterIds())) {
-      return false;
-    }
+    return criteria.getRequiredCompletedChapterIds() == null
+        || new HashSet<>(state.getCompletedChapterIds())
+            .containsAll(criteria.getRequiredCompletedChapterIds());
 
     // TODO: Implement customEvaluationScript logic using Groovy
-
-    return true;
   }
 }

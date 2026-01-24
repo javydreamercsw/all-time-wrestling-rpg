@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
@@ -190,11 +189,7 @@ public class CampaignDashboardView extends VerticalLayout {
       VerticalLayout tournamentSection = new VerticalLayout();
       tournamentSection.setPadding(false);
       tournamentSection.setSpacing(true);
-      if (state.isFinalsPhase()) {
-        addTournamentBracket(tournamentSection);
-      } else {
-        addTournamentTracker(state, tournamentSection);
-      }
+      addTournamentBracket(tournamentSection);
       add(tournamentSection);
     }
 
@@ -202,6 +197,29 @@ public class CampaignDashboardView extends VerticalLayout {
     HorizontalLayout mainLayout = new HorizontalLayout();
     mainLayout.setWidthFull();
     mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
+
+    // Show "Continue Match" if in a match and NOT adjudicated
+    if (state.getCurrentMatch() != null
+        && state.getCurrentPhase()
+            == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.MATCH
+        && state.getCurrentMatch().getAdjudicationStatus()
+            != com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED) {
+      Button continueMatchButton =
+          new Button(
+              "CONTINUE MATCH: " + state.getCurrentMatch().getNarration(),
+              e ->
+                  UI.getCurrent()
+                      .navigate(
+                          com.github.javydreamercsw.management.ui.view.match.MatchView.class,
+                          new com.vaadin.flow.router.RouteParameters(
+                              "matchId", String.valueOf(state.getCurrentMatch().getId()))));
+      continueMatchButton.addThemeVariants(
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE,
+          com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+      continueMatchButton.setWidthFull();
+      add(continueMatchButton);
+    }
 
     // Left Column
     VerticalLayout leftColumn = new VerticalLayout();
@@ -474,7 +492,7 @@ public class CampaignDashboardView extends VerticalLayout {
     bracketContainer.setSpacing(true);
     bracketContainer.addClassNames(LumoUtility.Margin.Vertical.MEDIUM);
 
-    H4 title = new H4("Tournament Finals");
+    H4 title = new H4("Tournament Bracket (Round " + tournament.getCurrentRound() + ")");
     title.addClassNames(LumoUtility.Margin.NONE);
     bracketContainer.add(title);
 
@@ -487,27 +505,65 @@ public class CampaignDashboardView extends VerticalLayout {
         tournamentService.getCurrentPlayerMatch(currentCampaign);
 
     if (nextMatch != null && nextMatch.getWinnerId() == null) {
-      String opponentName =
-          nextMatch.getWrestler1Id().equals(currentCampaign.getWrestler().getId())
-              ? nextMatch.getWrestler2Name()
-              : nextMatch.getWrestler1Name();
+      if (currentCampaign.getState().getCurrentMatch() != null) {
+        // Match already created/in-progress
+        // Only show continue if NOT adjudicated
+        if (currentCampaign.getState().getCurrentMatch().getAdjudicationStatus()
+            != com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED) {
+          Button continueMatchButton =
+              new Button(
+                  "Continue Tournament Match",
+                  e ->
+                      UI.getCurrent()
+                          .navigate(
+                              com.github.javydreamercsw.management.ui.view.match.MatchView.class,
+                              new com.vaadin.flow.router.RouteParameters(
+                                  "matchId",
+                                  String.valueOf(
+                                      currentCampaign.getState().getCurrentMatch().getId()))));
+          continueMatchButton.addThemeVariants(
+              com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+              com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE,
+              com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+          bracketContainer.add(continueMatchButton);
+        } else {
+          // Match finished but not cleared (Post-Match phase)
+          Button advanceButton =
+              new Button(
+                  "Match Complete - Advance to Next Day",
+                  e -> {
+                    campaignService.completePostMatch(currentCampaign);
+                    refreshUI();
+                  });
+          advanceButton.addThemeVariants(
+              com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+              com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE,
+              com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+          bracketContainer.add(advanceButton);
+        }
+      } else {
+        // Ready to book
+        String opponentName =
+            nextMatch.getWrestler1Id().equals(currentCampaign.getWrestler().getId())
+                ? nextMatch.getWrestler2Name()
+                : nextMatch.getWrestler1Name();
 
-      Button playMatchButton =
-          new Button(
-              "Play Tournament Match vs " + opponentName,
-              e -> {
-                campaignService.createMatchForEncounter(
-                    currentCampaign,
-                    opponentName,
-                    "Tournament Match: " + opponentName,
-                    "One on One");
-                // Navigate to match handled by createMatchForEncounter setting state
-                refreshUI();
-              });
-      playMatchButton.addThemeVariants(
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
-      bracketContainer.add(playMatchButton);
+        Button playMatchButton =
+            new Button(
+                "Play Tournament Match vs " + opponentName,
+                e -> {
+                  campaignService.createMatchForEncounter(
+                      currentCampaign,
+                      opponentName,
+                      "Tournament Match: " + opponentName,
+                      "One on One");
+                  refreshUI();
+                });
+        playMatchButton.addThemeVariants(
+            com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
+            com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
+        bracketContainer.add(playMatchButton);
+      }
     } else if (currentCampaign.getState().isTournamentWinner()) {
       Span winnerMsg = new Span("🏆 You are the Tournament Champion!");
       winnerMsg.addClassNames(
@@ -527,79 +583,6 @@ public class CampaignDashboardView extends VerticalLayout {
   private Div createBracketBox(@NonNull String name, boolean isPlayer) {
     // Legacy method, can be removed or kept if needed by other logic not yet updated
     return new Div();
-  }
-
-  private void addTournamentTracker(@NonNull CampaignState state, VerticalLayout parent) {
-    CampaignChapterDTO.ChapterRules rules =
-        campaignService.getCurrentChapter(currentCampaign).getRules();
-
-    if (rules.getQualifyingMatches() <= 0) return;
-
-    VerticalLayout tracker = new VerticalLayout();
-    tracker.setPadding(false);
-    tracker.setSpacing(true);
-    tracker.addClassNames(LumoUtility.Margin.Vertical.MEDIUM);
-
-    H4 title = new H4("Tournament Qualifying Tracker");
-    title.addClassNames(LumoUtility.Margin.NONE);
-    tracker.add(title);
-
-    HorizontalLayout slots = new HorizontalLayout();
-    slots.setSpacing(true);
-
-    int total = rules.getQualifyingMatches();
-    int wins = state.getWins();
-    int losses = state.getLosses();
-
-    for (int i = 0; i < total; i++) {
-      Div slot = new Div();
-      slot.setWidth("40px");
-      slot.setHeight("40px");
-      slot.addClassNames(
-          LumoUtility.Display.FLEX,
-          LumoUtility.AlignItems.CENTER,
-          LumoUtility.JustifyContent.CENTER,
-          LumoUtility.BorderRadius.SMALL,
-          LumoUtility.FontWeight.BOLD,
-          LumoUtility.Border.ALL);
-
-      if (i < wins) {
-        slot.setText("W");
-        slot.getStyle().set("background-color", "#c8e6c9");
-        slot.getStyle().set("color", "#2e7d32");
-        slot.getStyle().set("border-color", "#2e7d32");
-      } else if (i < (wins + losses)) {
-        slot.setText("L");
-        slot.getStyle().set("background-color", "#ffcdd2");
-        slot.getStyle().set("color", "#c62828");
-        slot.getStyle().set("border-color", "#c62828");
-      } else {
-        slot.setText("?");
-        slot.addClassNames(LumoUtility.TextColor.DISABLED, LumoUtility.Background.CONTRAST_5);
-      }
-      slots.add(slot);
-    }
-
-    tracker.add(slots);
-
-    String statusText;
-    if (wins >= rules.getMinWinsToQualify()) {
-      statusText = "STATUS: QUALIFIED FOR FINALS!";
-    } else if (losses > (total - rules.getMinWinsToQualify())) {
-      statusText = "STATUS: ELIMINATED FROM TOURNAMENT";
-    } else {
-      statusText = "NEED " + (rules.getMinWinsToQualify() - wins) + " MORE WINS TO QUALIFY";
-    }
-
-    Span status = new Span(statusText);
-    status.addClassNames(
-        LumoUtility.FontWeight.BOLD,
-        wins >= rules.getMinWinsToQualify()
-            ? LumoUtility.TextColor.SUCCESS
-            : LumoUtility.TextColor.PRIMARY);
-    tracker.add(status);
-
-    parent.add(tracker);
   }
 
   private void refreshUI() {

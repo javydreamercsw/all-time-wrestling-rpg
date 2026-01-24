@@ -267,7 +267,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   }
 
   @Test
-  void testTournamentExit_FailedToQualify() throws Exception {
+  void testTournamentExit_Eliminated() throws Exception {
 
     // 1. Start Campaign
     campaignService.startCampaign(testWrestler);
@@ -278,14 +278,12 @@ class CampaignControllerTest extends AbstractIntegrationTest {
     state.setCurrentChapterId("ch2_tournament");
     campaignRepository.save(campaign);
 
-    // 3. Lose 4 qualifying matches (assuming 4 matches, min 3 wins to qualify)
-    for (int i = 0; i < 4; i++) {
-      mockMvc
-          .perform(
-              post("/api/campaign/" + testWrestler.getId() + "/test/process-match")
-                  .param("won", "false"))
-          .andExpect(status().isOk());
-    }
+    // 3. Lose Round 1 match (Immediate bracket entry)
+    mockMvc
+        .perform(
+            post("/api/campaign/" + testWrestler.getId() + "/test/process-match")
+                .param("won", "false"))
+        .andExpect(status().isOk());
 
     // 4. Verify State
     String responseJson =
@@ -297,8 +295,14 @@ class CampaignControllerTest extends AbstractIntegrationTest {
             .getContentAsString();
 
     CampaignState finalState = objectMapper.readValue(responseJson, CampaignState.class);
-    assertThat(finalState.isFailedToQualify()).isTrue();
-    assertThat(finalState.isFinalsPhase()).isFalse();
+    // Should be in finals phase (bracket) but lost
+    assertThat(finalState.isFinalsPhase()).isTrue();
+    // Should not be marked as "failed to qualify" because qualifying phase is skipped
+    assertThat(finalState.isFailedToQualify()).isFalse();
+    // Should not be winner
+    assertThat(finalState.isTournamentWinner()).isFalse();
+    // Should have 1 loss
+    assertThat(finalState.getLosses()).isEqualTo(1);
   }
 
   @Test
@@ -312,7 +316,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
     state.setCurrentChapterId("ch2_tournament");
     campaignRepository.save(campaign);
 
-    // 3. Win 4 qualifying matches to reach finals
+    // 3. (Qualifying skipped) - Directly Win 4 Finals matches (R16, QF, SF, F)
     for (int i = 0; i < 4; i++) {
       mockMvc
           .perform(
@@ -321,26 +325,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
           .andExpect(status().isOk());
     }
 
-    // Check if in finals phase
-    String midStateJson =
-        mockMvc
-            .perform(get("/api/campaign/" + testWrestler.getId() + "/state"))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    CampaignState midState = objectMapper.readValue(midStateJson, CampaignState.class);
-    assertThat(midState.isFinalsPhase()).isTrue();
-
-    // 4. Win 4 Finals matches (totalFinalsMatches: 4)
-    for (int i = 0; i < 4; i++) {
-      mockMvc
-          .perform(
-              post("/api/campaign/" + testWrestler.getId() + "/test/process-match")
-                  .param("won", "true"))
-          .andExpect(status().isOk());
-    }
-
-    // 5. Verify Tournament Winner
+    // 4. Verify Tournament Winner
     String finalStateJson =
         mockMvc
             .perform(get("/api/campaign/" + testWrestler.getId() + "/state"))
@@ -348,6 +333,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
             .getResponse()
             .getContentAsString();
     CampaignState finalState = objectMapper.readValue(finalStateJson, CampaignState.class);
+    assertThat(finalState.isFinalsPhase()).isTrue();
     assertThat(finalState.isTournamentWinner()).isTrue();
   }
 }

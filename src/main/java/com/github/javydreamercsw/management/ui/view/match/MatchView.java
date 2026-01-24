@@ -454,7 +454,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           log.info("Updating campaign {} for wrestler {}", campaign.getId(), w.getName());
           boolean won = winners.contains(w);
           campaignService.processMatchResult(campaign, won);
-          campaignRepository.save(campaign);
+          // Do not save campaign here; processMatchResult handles saving state transactionally
+          // Saving here would overwrite the updated state with the stale state held by 'campaign'
           campaignUpdated = true;
         }
       }

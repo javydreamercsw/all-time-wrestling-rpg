@@ -66,7 +66,6 @@ public class CampaignService {
   private final CampaignStateRepository campaignStateRepository;
   private final CampaignAbilityCardRepository campaignAbilityCardRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
-  private final CampaignScriptService campaignScriptService;
   private final CampaignChapterService chapterService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
@@ -172,7 +171,6 @@ public class CampaignService {
 
     // Add "Normal" segment rule by default
     segmentRuleRepository.findByName("Normal").ifPresent(segment::addSegmentRule);
-
     segmentRepository.save(segment);
 
     // 4. Assign Participants
@@ -191,7 +189,7 @@ public class CampaignService {
     return segment;
   }
 
-  private void addParticipant(Segment segment, Wrestler wrestler) {
+  private void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(segment);
     participant.setWrestler(wrestler);
@@ -206,8 +204,10 @@ public class CampaignService {
    * @param campaign The campaign.
    * @param amount The shift amount.
    */
-  public void shiftAlignment(Campaign campaign, int amount) {
-    if (amount == 0) return;
+  public void shiftAlignment(@NonNull Campaign campaign, int amount) {
+    if (amount == 0) {
+      return;
+    }
 
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
@@ -255,8 +255,7 @@ public class CampaignService {
     }
   }
 
-  public com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO getCurrentChapter(
-      Campaign campaign) {
+  public CampaignChapterDTO getCurrentChapter(@NonNull Campaign campaign) {
     return chapterService
         .getChapter(campaign.getState().getCurrentChapterId())
         .orElseThrow(
@@ -271,11 +270,11 @@ public class CampaignService {
    * @param wrestler The wrestler.
    * @return true if an active campaign exists.
    */
-  public boolean hasActiveCampaign(Wrestler wrestler) {
+  public boolean hasActiveCampaign(@NonNull Wrestler wrestler) {
     return campaignRepository.findActiveByWrestler(wrestler).isPresent();
   }
 
-  public void processMatchResult(Campaign campaignParam, boolean won) {
+  public void processMatchResult(@NonNull Campaign campaignParam, boolean won) {
     // Reload campaign to ensure it's attached and we can fetch lazy collections
     Campaign campaign =
         campaignRepository
@@ -288,8 +287,7 @@ public class CampaignService {
     // Initialize lazy collections to prevent LazyInitializationException in ChapterService
     wrestler.getReigns().size();
 
-    com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO.ChapterRules rules =
-        getCurrentChapter(campaign).getRules();
+    CampaignChapterDTO.ChapterRules rules = getCurrentChapter(campaign).getRules();
 
     // Update Segment if it exists
     if (state.getCurrentMatch() != null) {
@@ -329,33 +327,21 @@ public class CampaignService {
 
     // Check for chapter completion/tournament qualification
     if ("ch2_tournament".equals(state.getCurrentChapterId())) {
-      if (!state.isFinalsPhase()) {
-        // Qualifying Phase
-        if (state.getMatchesPlayed() >= rules.getQualifyingMatches()) {
-          if (state.getWins() >= rules.getMinWinsToQualify()) {
-            log.info("Wrestler {} QUALIFIED for the tournament finals!", wrestler.getName());
-            state.setFinalsPhase(true);
-            state.setMatchesPlayed(0); // Reset for finals phase tracking
-            state.setWins(0);
-            state.setLosses(0);
-            tournamentService.initializeTournament(campaign);
-          } else {
-            log.info(
-                "Wrestler {} FAILED to qualify for the tournament finals.", wrestler.getName());
-            state.setFailedToQualify(true);
-          }
-        }
-      } else {
-        // Finals Phase
-        tournamentService.advanceTournament(campaign, won);
-        if (!won) {
-          log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
-          // They lost in the finals, they didn't win the tournament
-          // We can use a flag or just let the matchesPlayed count determine where they failed
-        } else if (state.getWins() >= rules.getTotalFinalsMatches()) {
-          log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
-          state.setTournamentWinner(true);
-        }
+      // Ensure tournament is initialized (handle legacy saves or missed init)
+      if (!state.isFinalsPhase() || state.getTournamentState() == null) {
+        state.setFinalsPhase(true);
+        tournamentService.initializeTournament(campaign);
+      }
+
+      // Finals Phase (Tournament Bracket)
+      tournamentService.advanceTournament(campaign, won);
+      if (!won) {
+        log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
+        // They lost in the finals, they didn't win the tournament
+        // We can use a flag or just let the matchesPlayed count determine where they failed
+      } else if (state.getWins() >= rules.getTotalFinalsMatches()) {
+        log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
+        state.setTournamentWinner(true);
       }
     }
 
@@ -394,7 +380,7 @@ public class CampaignService {
    *
    * @param campaign The campaign to transition.
    */
-  public void completePostMatch(Campaign campaign) {
+  public void completePostMatch(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     state.setCurrentPhase(CampaignPhase.BACKSTAGE);
     state.setActionsTaken(0); // Reset actions for the next "turn"
@@ -410,7 +396,7 @@ public class CampaignService {
     campaignStateRepository.save(state);
   }
 
-  public Show getOrCreateCampaignShow(Campaign campaign) {
+  public Show getOrCreateCampaignShow(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
     java.time.LocalDate date = state.getCurrentGameDate();
@@ -501,15 +487,13 @@ public class CampaignService {
       state.setMatchesPlayed(0); // Reset chapter-specific counters
       state.setWins(0);
       state.setLosses(0);
-      state.setFinalsPhase(false);
 
       // Initialize Tournament Opponents if entering Chapter 2
       if ("ch2_tournament".equals(newChapterId)) {
-        // Logic to generate opponents will be added here or handled by a separate service method
-        // called from UI/Controller
-        // For now, we can just ensure the state is clean.
-        // Real opponent generation requires persistence we haven't fully added yet (Game Object vs
-        // just ID)
+        state.setFinalsPhase(true); // Skip qualifying, go straight to bracket
+        tournamentService.initializeTournament(campaign);
+      } else {
+        state.setFinalsPhase(false);
       }
 
       campaignStateRepository.save(state);
@@ -687,7 +671,7 @@ public class CampaignService {
     return pickable;
   }
 
-  private List<CampaignAbilityCard> getAvailableCards(AlignmentType type, int level) {
+  private List<CampaignAbilityCard> getAvailableCards(@NonNull AlignmentType type, int level) {
     return campaignAbilityCardRepository.findByAlignmentTypeAndLevel(type, level);
   }
 
@@ -710,42 +694,24 @@ public class CampaignService {
       // Decrement appropriate pending pick counter
       switch (card.getLevel()) {
         case 1:
-          if (state.getPendingL1Picks() > 0) state.setPendingL1Picks(state.getPendingL1Picks() - 1);
+          if (state.getPendingL1Picks() > 0) {
+            state.setPendingL1Picks(state.getPendingL1Picks() - 1);
+          }
           break;
         case 2:
-          if (state.getPendingL2Picks() > 0) state.setPendingL2Picks(state.getPendingL2Picks() - 1);
+          if (state.getPendingL2Picks() > 0) {
+            state.setPendingL2Picks(state.getPendingL2Picks() - 1);
+          }
           break;
         case 3:
-          if (state.getPendingL3Picks() > 0) state.setPendingL3Picks(state.getPendingL3Picks() - 1);
+          if (state.getPendingL3Picks() > 0) {
+            state.setPendingL3Picks(state.getPendingL3Picks() - 1);
+          }
           break;
       }
 
       campaignStateRepository.save(state);
       log.info("Wrestler {} picked card: {}", campaign.getWrestler().getName(), card.getName());
     }
-  }
-
-  /**
-   * Switches the wrestler's alignment (Turn).
-   *
-   * @param campaign The campaign.
-   */
-  public void turnWrestler(Campaign campaign) {
-    Wrestler wrestler = campaign.getWrestler();
-    WrestlerAlignment alignment =
-        wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
-            .orElseThrow(() -> new IllegalStateException("Wrestler has no alignment set"));
-
-    AlignmentType newType =
-        alignment.getAlignmentType() == AlignmentType.FACE
-            ? AlignmentType.HEEL
-            : AlignmentType.FACE;
-    alignment.setAlignmentType(newType);
-
-    wrestlerAlignmentRepository.save(alignment);
-
-    updateAbilityCards(campaign);
-    log.info("Wrestler {} turned to {}", wrestler.getName(), newType);
   }
 }

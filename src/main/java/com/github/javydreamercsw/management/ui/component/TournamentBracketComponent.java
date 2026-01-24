@@ -35,14 +35,24 @@ public class TournamentBracketComponent extends HorizontalLayout {
     setWidthFull();
     getStyle().set("overflow-x", "auto");
 
-    addRound(tournament, 1, "Round of 16");
-    addRound(tournament, 2, "Quarter-Finals");
-    addRound(tournament, 3, "Semi-Finals");
-    addRound(tournament, 4, "Finals");
-    addWinner(tournament);
+    int totalRounds = tournament.getTotalRounds();
+    // Fallback if totalRounds not set (legacy)
+    if (totalRounds <= 0) totalRounds = 4;
+
+    for (int i = 1; i <= totalRounds; i++) {
+      String title;
+      if (i == totalRounds) title = "Finals";
+      else if (i == totalRounds - 1) title = "Semi-Finals";
+      else if (i == totalRounds - 2) title = "Quarter-Finals";
+      else title = "Round " + i;
+
+      addRound(tournament, i, title, totalRounds);
+    }
+
+    addWinner(tournament, totalRounds);
   }
 
-  private void addRound(TournamentDTO tournament, int round, String title) {
+  private void addRound(TournamentDTO tournament, int round, String title, int totalRounds) {
     VerticalLayout roundCol = new VerticalLayout();
     roundCol.setPadding(false);
     roundCol.setSpacing(true);
@@ -65,10 +75,13 @@ public class TournamentBracketComponent extends HorizontalLayout {
 
     for (TournamentMatch match : matches) {
       roundCol.add(createMatchCard(match));
-      // Add spacer for visual tree structure
-      if (round < 4) {
+      // Add spacer for visual tree structure (simplistic)
+      if (round < totalRounds) {
         Div spacer = new Div();
-        spacer.setHeight(getSpacerHeight(round));
+        // Dynamic spacer logic could be: 10 * 2^(round-1) ?
+        // R1: 10px. R2: 40px? No, spacing depends on previous matches.
+        // For dynamic bracket, this simplistic spacing is okay-ish.
+        spacer.setHeight("10px");
         roundCol.add(spacer);
       }
     }
@@ -76,9 +89,12 @@ public class TournamentBracketComponent extends HorizontalLayout {
     add(roundCol);
   }
 
-  private void addWinner(TournamentDTO tournament) {
+  private void addWinner(TournamentDTO tournament, int totalRounds) {
     TournamentMatch finals =
-        tournament.getMatches().stream().filter(m -> m.getRound() == 4).findFirst().orElse(null);
+        tournament.getMatches().stream()
+            .filter(m -> m.getRound() == totalRounds)
+            .findFirst()
+            .orElse(null);
 
     if (finals != null && finals.getWinnerId() != null) {
       VerticalLayout winnerCol = new VerticalLayout();
