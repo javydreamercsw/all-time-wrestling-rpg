@@ -14,3 +14,8 @@
 
 ---
 
+## Active Tracks
+
+- [~] **Track: Advanced Campaign Chapters (Fighting Champion, Gang Warfare, Authority Feud)**
+  *Link: [./tracks/advanced_campaign_chapters_20260124/](./tracks/advanced_campaign_chapters_20260124/)*
+

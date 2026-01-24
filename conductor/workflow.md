@@ -9,13 +9,21 @@
 5. **User Experience First:** Every decision should prioritize user experience
 6. **Non-Interactive & CI-Aware:** Prefer non-interactive commands. Use `CI=true` for watch-mode tools (tests, linters) to ensure single execution.
 
+## Persistent Context & Backlog Management (Beads)
+
+We use **Beads (`bd`)** for long-term memory, cross-track dependencies, and managing the backlog.
+
+* **Context Recovery:** At the start of a session or after a context loss, run `bd prime` to re-orient yourself.
+* **Backlog Management:** Use `bd create`, `bd list`, and `bd update` to manage high-level tasks and cross-cutting concerns that span multiple Conductor tracks.
+* **Track Linkage:** When starting a Conductor track, consider creating a corresponding Bead if the work is substantial, and link them via comments or descriptions.
+
 ## Task Workflow
 
 All tasks follow a strict lifecycle:
 
 ### Standard Task Workflow
 
-1. **Select Task:** Choose the next available task from `plan.md` in sequential order
+1. **Select Task:** Choose the next available task from `plan.md` in sequential order. *Optionally check `bd list` to see if there are relevant blockers or high-level context.*
 
 2. **Mark In Progress:** Before beginning work, edit `plan.md` and change the task from `[ ]` to `[~]`
 

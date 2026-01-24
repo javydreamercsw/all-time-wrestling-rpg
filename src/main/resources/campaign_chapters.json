@@ -157,4 +157,116 @@
       "wonFinale": false
     } ]
   } ]
+}, {
+  "id": "fighting_champion",
+  "title": "The Fighting Champion",
+  "shortDescription": "Defend your title against all comers.",
+  "introText": "You've reached the top of the mountain, but staying there is the hard part. The Open Challenge awaits.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 4 (Fighting Champion). Focus on the pressure of defending the title and the unpredictability of Open Challenge opponents.",
+  "difficulty": "HARD",
+  "tournament": false,
+  "tagTeam": false,
+  "entryPoints": [ {
+    "name": "Champion Status",
+    "criteria": [ {
+      "isChampion": true
+    } ]
+  } ],
+  "rules": {
+    "victoryPointsWin": 3,
+    "victoryPointsLoss": -3,
+    "titleWinVP": 0,
+    "titleDefenseVP": 5
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  },
+  "exitPoints": [ {
+    "name": "Legendary Reign",
+    "criteria": [ {
+      "minMatchesPlayed": 5,
+      "isChampion": true,
+      "minVictoryPoints": 20
+    } ]
+  }, {
+    "name": "Title Lost",
+    "criteria": [ {
+      "isChampion": false
+    } ]
+  } ]
+}, {
+  "id": "gang_warfare",
+  "title": "Gang Warfare",
+  "shortDescription": "Lead your faction to dominance.",
+  "introText": "It's a numbers game now. Your faction needs to assert control over the show.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 5 (Gang Warfare). Focus on faction dynamics, recruiting members, and battles against rival groups.",
+  "difficulty": "MEDIUM",
+  "tournament": false,
+  "tagTeam": false,
+  "entryPoints": [ {
+    "name": "Faction Heat",
+    "criteria": [ {
+      "hasFaction": true
+    } ]
+  } ],
+  "rules": {
+    "victoryPointsWin": 2,
+    "victoryPointsLoss": -1,
+    "finaleTriggerVP": 10
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  },
+  "exitPoints": [ {
+    "name": "Faction Dominance",
+    "criteria": [ {
+      "minMatchesPlayed": 4,
+      "wonFinale": true
+    } ]
+  }, {
+    "name": "Exiled",
+    "criteria": [ {
+      "minMatchesPlayed": 4,
+      "wonFinale": false
+    } ]
+  } ]
+}, {
+  "id": "corporate_power_trip",
+  "title": "Corporate Power Trip",
+  "shortDescription": "Survive the wrath of the Authority.",
+  "introText": "Management has decided you are a problem. Expect unfair officiating and impossible odds.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 6 (Authority Feud). Create scenarios where the odds are stacked against the player by a corrupt GM.",
+  "difficulty": "LEGENDARY",
+  "tournament": false,
+  "tagTeam": false,
+  "entryPoints": [ {
+    "name": "Authority Heat",
+    "criteria": [ {
+      "minVictoryPoints": 15
+    } ]
+  } ],
+  "rules": {
+    "victoryPointsWin": 5,
+    "victoryPointsLoss": -1,
+    "finaleTriggerVP": 15
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  },
+  "exitPoints": [ {
+    "name": "Takeover",
+    "criteria": [ {
+      "minMatchesPlayed": 5,
+      "wonFinale": true
+    } ]
+  }, {
+    "name": "Buried",
+    "criteria": [ {
+      "minMatchesPlayed": 5,
+      "wonFinale": false
+    } ]
+  } ]
 } ]
