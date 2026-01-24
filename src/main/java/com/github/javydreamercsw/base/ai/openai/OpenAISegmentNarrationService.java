@@ -91,7 +91,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }
-    String apiKey = aiSettingsService.getGeminiApiKey();
+    String apiKey = aiSettingsService.getOpenAIApiKey();
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
@@ -148,7 +148,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
           HttpRequest.newBuilder()
               .uri(URI.create(openAIConfigProperties.getApiUrl())) // Use configured API URL
               .header("Content-Type", "application/json")
-              .header("Authorization", "Bearer " + aiSettingsService.getGeminiApiKey())
+              .header("Authorization", "Bearer " + aiSettingsService.getOpenAIApiKey())
               .timeout(Duration.ofSeconds(segmentNarrationConfig.getAi().getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();

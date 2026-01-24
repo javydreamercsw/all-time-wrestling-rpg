@@ -50,18 +50,73 @@ class RankingViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentTypeService segmentTypeService;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired private org.springframework.cache.CacheManager cacheManager;
+
   @BeforeEach
   void setUp() {
+
+    if (cacheManager != null) {
+
+      cacheManager
+          .getCacheNames()
+          .forEach(
+              name -> {
+                org.springframework.cache.Cache cache = cacheManager.getCache(name);
+
+                if (cache != null) {
+
+                  cache.clear();
+                }
+              });
+    }
+
+    wrestlerAlignmentRepository.deleteAllInBatch();
+
+    campaignStateRepository.deleteAllInBatch();
+
+    backstageActionHistoryRepository.deleteAllInBatch();
+
+    campaignEncounterRepository.deleteAllInBatch();
+
+    campaignRepository.deleteAllInBatch();
+
     titleReignRepository.deleteAll();
+
     titleRepository
         .findAll()
         .forEach(
             t -> {
               t.setChampion(null);
+
               titleRepository.save(t);
             });
+
+    titleRepository.deleteAll();
+
     segmentRepository.deleteAll();
+
     showRepository.deleteAll();
+
     wrestlerRepository.deleteAll();
   }
 

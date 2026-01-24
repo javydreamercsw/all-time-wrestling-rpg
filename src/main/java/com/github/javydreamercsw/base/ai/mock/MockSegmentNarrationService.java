@@ -57,8 +57,49 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return "This is a mock summary.";
     }
 
+    if (prompt.contains(
+            "Generate a professional wrestling narrative segment appropriate for chapter")
+        || prompt.contains("Generate a 'Post-Match' narrative segment")) {
+      return generateMockCampaignEncounter(prompt);
+    }
+
     log.info("Mock AI generating segment narration (simulated processing time)");
     return generateMockNarration(prompt);
+  }
+
+  private String generateMockCampaignEncounter(String prompt) {
+    try {
+      var choice1 =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
+              "Accept the challenge like a hero.",
+              "Accept Heroically",
+              1,
+              5,
+              null,
+              "One on One",
+              null, // segmentRules
+              "MATCH");
+      var choice2 =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
+              "Refuse the challenge and mock them.",
+              "Refuse & Mock",
+              -1,
+              0,
+              null,
+              null,
+              null, // segmentRules
+              "BACKSTAGE");
+
+      var response =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
+              "Mock narrative: You are confronted by a local legend who wants to test your mettle.",
+              List.of(choice1, choice2));
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock campaign encounter", e);
+      return "{}";
+    }
   }
 
   @Override
@@ -73,6 +114,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   @Override
   public String generateText(@NonNull String prompt) {
+    if (prompt.contains(
+            "Generate a professional wrestling narrative segment appropriate for chapter")
+        || prompt.contains("Generate a 'Post-Match' narrative segment")) {
+      return generateMockCampaignEncounter(prompt);
+    }
     return generateMockNarration(prompt);
   }
 

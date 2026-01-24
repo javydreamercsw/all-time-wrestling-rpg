@@ -121,7 +121,7 @@ public class LocalAIContainerConfig {
       System.setProperty("ai.localai.model", modelName);
 
       statusService.setStatus(LocalAIStatusService.Status.READY);
-      statusService.setMessage("LocalAI is ready.");
+      statusService.setMessage("LocalAI is ready at " + baseUrl);
       log.info("LocalAI Container started at: {}", baseUrl);
       log.info("Model '{}' is ready.", modelName);
 

@@ -499,10 +499,26 @@ public class DramaEventService {
           generateChampionshipChallenge(severity, primaryName, secondaryName);
       case PERSONAL_ISSUE -> generatePersonalIssue(severity, primaryName);
       case MEDIA_CONTROVERSY -> generateMediaControversy(severity, primaryName);
+      case CAMPAIGN_RIVAL -> generateCampaignRival(severity, primaryName, secondaryName);
+      case CAMPAIGN_OUTSIDER -> generateCampaignOutsider(severity, primaryName, secondaryName);
     };
   }
 
   // ==================== EVENT TEMPLATE GENERATORS ====================
+
+  private DramaEventTemplate generateCampaignRival(
+      DramaEventSeverity severity, String primary, String secondary) {
+    return new DramaEventTemplate(
+        "Rival Encounter: " + secondary,
+        "You have encountered your rival " + secondary + ". The tension is palpable.");
+  }
+
+  private DramaEventTemplate generateCampaignOutsider(
+      DramaEventSeverity severity, String primary, String secondary) {
+    return new DramaEventTemplate(
+        "Outsider Threat: " + secondary,
+        "A mysterious outsider, " + secondary + ", has arrived to challenge you.");
+  }
 
   private DramaEventTemplate generateBackstageIncident(
       DramaEventSeverity severity, String primary, String secondary) {

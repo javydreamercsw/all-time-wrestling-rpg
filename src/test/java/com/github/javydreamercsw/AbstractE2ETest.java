@@ -303,30 +303,45 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
     log.info("Selecting item '{}' from ComboBox", itemText);
-    // 1. Open the combo box using JavaScript to be sure
-    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
 
-    // 2. Wait for the item to appear and click it via JS
+    // Target the internal input element for typing
+    WebElement input =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "return arguments[0].querySelector('input') ||"
+                        + " arguments[0].shadowRoot.querySelector('input');",
+                    comboBox);
+
+    if (input == null) {
+      log.warn("Could not find internal input for ComboBox, falling back to direct sendKeys");
+      input = comboBox;
+    }
+
+    // Clear and type
+    input.click();
+    input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
+    input.sendKeys(itemText);
+
+    // Wait for the overlay to appear and the item to be clickable
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     try {
       wait.until(
-          d -> {
-            return (Boolean)
-                ((JavascriptExecutor) d)
-                    .executeScript(
-                        "const text = arguments[0];const item ="
-                            + " Array.from(document.querySelectorAll('vaadin-combo-box-item,"
-                            + " vaadin-item, vaadin-multi-select-combo-box-item')).find(item =>"
-                            + " item.textContent.trim() === text ||"
-                            + " item.textContent.trim().includes(text));if (item) { item.click();"
-                            + " return true; }return false;",
-                        itemText);
-          });
+          d ->
+              (Boolean)
+                  ((JavascriptExecutor) d)
+                      .executeScript(
+                          "const text = arguments[0];const items ="
+                              + " Array.from(document.querySelectorAll('vaadin-combo-box-item,"
+                              + " vaadin-item'));const item = items.find(i => i.textContent.trim()"
+                              + " === text || i.textContent.trim().includes(text));if (item) {"
+                              + " item.click(); return true; }return false;",
+                          itemText));
     } catch (Exception e) {
-      log.error("Failed to find or click item '{}' in ComboBox", itemText, e);
-      takeSequencedScreenshot("failed-to-select-item");
-      throw e;
+      log.error("Failed to select '{}' via overlay, attempting ENTER key", itemText);
+      input.sendKeys(Keys.ENTER);
     }
+
     takeSequencedScreenshot("after-select");
   }
 

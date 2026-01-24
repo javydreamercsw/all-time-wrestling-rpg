@@ -95,11 +95,29 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   private String callGemini(@NonNull String prompt) {
     try {
       // Use configured API URL and model name
-      String fullApiUrl =
-          geminiConfigProperties.getApiUrl()
-              + geminiConfigProperties.getModelName()
-              + ":generateContent";
-      String url = fullApiUrl + "?key=" + geminiConfigProperties.getApiKey();
+      String modelName = geminiConfigProperties.getModelName();
+      String apiUrl = geminiConfigProperties.getApiUrl();
+      String fullApiUrl = apiUrl + modelName + ":generateContent";
+
+      String apiKey = geminiConfigProperties.getApiKey();
+      if (apiKey != null) {
+        apiKey = apiKey.trim();
+      }
+
+      // Logging for troubleshooting
+      int keyLen = (apiKey != null) ? apiKey.length() : 0;
+      String keyStart = (keyLen > 4) ? apiKey.substring(0, 4) : "***";
+      String keyEnd = (keyLen > 4) ? apiKey.substring(keyLen - 4) : "***";
+
+      log.debug(
+          "Gemini Request - URL: {}, Model: {}, Key Length: {}, Key: {}...{}",
+          fullApiUrl,
+          modelName,
+          keyLen,
+          keyStart,
+          keyEnd);
+
+      String url = fullApiUrl + "?key=" + apiKey;
 
       // Create request body for Gemini API
       Map<String, Object> requestBody =
@@ -145,6 +163,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
                       "BLOCK_MEDIUM_AND_ABOVE")));
 
       String jsonBody = objectMapper.writeValueAsString(requestBody);
+      log.debug("Gemini Request Body: {}", jsonBody);
 
       // Create HTTP request
       HttpRequest request =
@@ -154,7 +173,6 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
               .timeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
-
       // Send request and get response
       HttpResponse<InputStream> response =
           getHttpClient(geminiConfigProperties.getTimeout())

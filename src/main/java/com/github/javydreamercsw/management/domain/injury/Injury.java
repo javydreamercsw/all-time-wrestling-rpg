@@ -58,6 +58,12 @@ public class Injury extends AbstractEntity<Long> {
   @Column(name = "health_penalty", nullable = false)
   @Min(1) private Integer healthPenalty;
 
+  @Column(name = "stamina_penalty", nullable = false)
+  @Min(0) private Integer staminaPenalty = 0;
+
+  @Column(name = "hand_size_penalty", nullable = false)
+  @Min(0) private Integer handSizePenalty = 0;
+
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 

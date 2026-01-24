@@ -777,7 +777,8 @@ public class ShowDetailView extends Main
                   rivalryService,
                   localAIStatusService,
                   localAIConfigProperties,
-                  segmentNarrationController); // Call refreshSegmentsGrid
+                  segmentNarrationController,
+                  segmentNarrationServiceFactory); // Pass the factory
           dialog.open();
         });
 
@@ -797,6 +798,16 @@ public class ShowDetailView extends Main
   }
 
   private void generateSummary(@NonNull Segment segment) {
+    if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
+      String reason = "No AI providers are currently enabled or reachable.";
+      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
+        reason = "LocalAI is still initializing: " + localAIStatusService.getMessage();
+      }
+      Notification.show(reason, 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
+
     try {
       String summary = segmentNarrationServiceFactory.summarizeNarration(segment.getNarration());
       segment.setSummary(summary);

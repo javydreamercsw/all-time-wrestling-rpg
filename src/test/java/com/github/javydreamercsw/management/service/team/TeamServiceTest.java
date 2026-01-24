@@ -31,11 +31,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.test.context.support.WithMockUser;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
  * interactions.
  */
+@WithMockUser(
+    username = "admin",
+    roles = {"ADMIN"})
 @DisplayName("TeamService Integration Tests")
 class TeamServiceTest extends ManagementIntegrationTest {
 
@@ -57,6 +61,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should create team successfully with real database")
   void shouldCreateTeamSuccessfully() {
     // When
@@ -87,6 +94,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should not create duplicate team names")
   void shouldNotCreateDuplicateTeamNames() {
     // Given - create first team
@@ -108,6 +118,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should not create team with same wrestlers twice")
   void shouldNotCreateTeamWithSameWrestlersTwice() {
     // Given - create first team
@@ -129,6 +142,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should update team successfully")
   void shouldUpdateTeamSuccessfully() {
     // Given - create team
@@ -163,6 +179,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should disband and reactivate team")
   void shouldDisbandAndReactivateTeam() {
     // Given - create team
@@ -190,6 +209,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should delete team successfully")
   void shouldDeleteTeamSuccessfully() {
     // Given - create team
@@ -212,6 +234,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should get teams with pagination")
   void shouldGetTeamsWithPagination() {
     // Given - create multiple teams
@@ -232,6 +257,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should find teams by wrestler")
   void shouldFindTeamsByWrestler() {
     // Given - create teams
@@ -258,6 +286,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should find active teams only")
   void shouldFindActiveTeamsOnly() {
     // Given - create teams with different statuses
@@ -284,6 +315,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should count active teams correctly")
   void shouldCountActiveTeamsCorrectly() {
     // Given - create teams
@@ -307,6 +341,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should find team by both wrestlers regardless of order")
   void shouldFindTeamByBothWrestlersRegardlessOfOrder() {
     // Given - create team

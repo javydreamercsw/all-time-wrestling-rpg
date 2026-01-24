@@ -155,7 +155,8 @@ public class ApiDocumentationController {
             "Show Scheduling",
             "Segment Booking",
             "Season Organization",
-            "Title Tracking"),
+            "Title Tracking",
+            "Solo Campaign Mode"),
         "advancedFeatures",
         List.of(
             "AI Segment Narration",
@@ -221,6 +222,14 @@ public class ApiDocumentationController {
             List.of("GET", "POST"),
             "features",
             List.of("Manual sync", "Scheduled sync", "Status monitoring")),
+        "campaignSystem",
+        Map.of(
+            "baseUrl",
+            "/api/campaign",
+            "operations",
+            List.of("GET", "POST"),
+            "features",
+            List.of("Campaign progress", "Chapter management", "Tournament logic")),
         "system",
         Map.of(
             "baseUrl",

@@ -86,7 +86,9 @@ public class SegmentAdjudicationService {
     this.random = random;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (isAuthenticated() and"
+          + " @segmentService.canUserUpdateSegment(#segment.id))")
   public void adjudicateMatch(@NonNull Segment segment) {
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());

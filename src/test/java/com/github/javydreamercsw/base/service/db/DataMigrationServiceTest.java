@@ -26,9 +26,11 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -46,10 +48,33 @@ class DataMigrationServiceTest {
           .withUsername("test")
           .withPassword("test");
 
-  private static final String H2_URL = "jdbc:h2:./src/test/resources/db/sample";
+  private static final String H2_URL = "jdbc:h2:./target/db/sample_test";
   private static final String H2_PROTECTED_URL = "jdbc:h2:./target/db/sample_protected";
   private static final String H2_USER = "sa";
   private static final String H2_PASSWORD = "";
+
+  @BeforeAll
+  @SneakyThrows
+  public static void setDatabases() {
+    Path source = Paths.get("src/test/resources/db/sample.mv.db");
+    Path target = Paths.get("target/db/sample_test.mv.db");
+    if (!Files.exists(target)) {
+      Files.createDirectories(target);
+    }
+    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+
+    Path protected_target = Paths.get("target/db/sample_protected.mv.db");
+    if (!Files.exists(protected_target)) {
+      Files.createDirectories(protected_target);
+    }
+    Files.copy(source, protected_target, StandardCopyOption.REPLACE_EXISTING);
+
+    // Set password on the protected DB
+    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
+        Statement stmt = conn.createStatement()) {
+      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
+    }
+  }
 
   @BeforeEach
   void setUp() {
@@ -83,21 +108,7 @@ class DataMigrationServiceTest {
 
   @Test
   void testMigrateDataWithPassword() throws SQLException, IOException {
-    // 1. Copy sample DB to sample_protected
-    Path source = Paths.get("src/test/resources/db/sample.mv.db");
-    Path target = Paths.get("target/db/sample_protected.mv.db");
-    if (!Files.exists(target)) {
-      Files.createDirectories(target);
-    }
-    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-
-    // 2. Set password on the protected DB
-    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
-        Statement stmt = conn.createStatement()) {
-      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
-    }
-
-    // 3. Run migration with password
+    // Run migration with password
     DataMigrationService migrationService = new DataMigrationService(null, null);
     migrationService.migrateData(
         "H2_FILE",

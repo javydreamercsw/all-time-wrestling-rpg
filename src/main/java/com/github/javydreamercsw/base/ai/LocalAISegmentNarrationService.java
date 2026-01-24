@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service;
 public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   private final LocalAIConfigProperties config;
+  private final LocalAIStatusService statusService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
@@ -48,7 +49,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   @Override
   public boolean isAvailable() {
-    return getBaseUrl() != null && !getBaseUrl().isEmpty();
+    return config.isEnabled() && statusService.isReady();
   }
 
   private String getBaseUrl() {
@@ -109,7 +110,9 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
               "messages",
               List.of(systemMessage, userMessage),
               "temperature",
-              0.7);
+              0.7,
+              "response_format",
+              Map.of("type", "json_object"));
 
       String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
@@ -158,6 +161,13 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   @SuppressWarnings("unchecked")
   private String extractContentFromResponse(@NonNull String responseBody) throws Exception {
+    // Robust extraction: find first { and last } in case of conversational filler
+    int start = responseBody.indexOf('{');
+    int end = responseBody.lastIndexOf('}');
+    if (start != -1 && end != -1 && end > start) {
+      responseBody = responseBody.substring(start, end + 1);
+    }
+
     Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
     List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
     if (choices != null && !choices.isEmpty()) {

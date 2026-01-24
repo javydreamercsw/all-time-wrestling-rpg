@@ -24,11 +24,12 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -38,6 +39,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
@@ -49,6 +51,7 @@ import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -70,10 +73,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.core.io.ClassPathResource;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class DataInitializerTest {
 
   private DataInitializer dataInitializer;
@@ -91,12 +96,11 @@ class DataInitializerTest {
   @Mock private FactionService factionService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
-
-  @Mock
-  @Qualifier("baseAccountService") private AccountService accountService;
+  @Mock private CampaignAbilityCardService campaignAbilityCardService;
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
+  @Mock private org.springframework.core.env.Environment env;
 
   @BeforeEach
   void setUp() {
@@ -118,7 +122,9 @@ class DataInitializerTest {
             npcService,
             factionService,
             teamService,
-            teamRepository);
+            teamRepository,
+            campaignAbilityCardService,
+            env);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);
@@ -179,10 +185,34 @@ class DataInitializerTest {
         .when(wrestlerRepository.save(any(Wrestler.class)))
         .thenAnswer(i -> i.getArguments()[0]);
     lenient().doNothing().when(gameSettingService).saveCurrentGameDate(any());
+
+    // Create a mock GameSetting and stub getValue()
+    com.github.javydreamercsw.management.domain.GameSetting openAiSetting =
+        mock(com.github.javydreamercsw.management.domain.GameSetting.class);
+    when(openAiSetting.getValue()).thenReturn("false");
+    lenient()
+        .when(gameSettingService.findById("AI_OPENAI_ENABLED"))
+        .thenReturn(Optional.of(openAiSetting));
+
+    com.github.javydreamercsw.management.domain.GameSetting claudeSetting =
+        mock(com.github.javydreamercsw.management.domain.GameSetting.class);
+    when(claudeSetting.getValue()).thenReturn("false");
+    lenient()
+        .when(gameSettingService.findById("AI_CLAUDE_ENABLED"))
+        .thenReturn(Optional.of(claudeSetting));
+
+    com.github.javydreamercsw.management.domain.GameSetting geminiSetting =
+        mock(com.github.javydreamercsw.management.domain.GameSetting.class);
+    when(geminiSetting.getValue()).thenReturn("false");
+    lenient()
+        .when(gameSettingService.findById("AI_GEMINI_ENABLED"))
+        .thenReturn(Optional.of(geminiSetting));
   }
 
   @Test
   void testDeckImportIsIdempotentAndNoDuplicates() {
+    // Ensure deckService.count() returns a valid value before and after init
+    lenient().when(deckService.count()).thenReturn(1L, 1L);
     dataInitializer.init();
     long initialDeckCount = deckService.count();
     dataInitializer.init();
@@ -318,6 +348,17 @@ class DataInitializerTest {
               .readValue(
                   new ClassPathResource("teams.json").getInputStream(),
                   new TypeReference<List<TeamImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateCampaignAbilityCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("campaign_ability_cards.json").getInputStream(),
+                  new TypeReference<List<CampaignAbilityCardDTO>>() {});
         });
   }
 

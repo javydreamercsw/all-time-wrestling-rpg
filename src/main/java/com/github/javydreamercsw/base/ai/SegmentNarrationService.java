@@ -91,6 +91,20 @@ public interface SegmentNarrationService {
     private boolean isMainEvent; // Whether the segment is the main event
     private List<SegmentNarrationContext> previousSegments; // List of previous segments in the show
     private String narration; // The narration of the segment
+    private CampaignContext campaignContext; // Campaign specific context
+  }
+
+  /** Context for campaign status. */
+  @Setter
+  @Getter
+  @ToString
+  class CampaignContext {
+    private int chapter;
+    private String alignmentType; // "FACE" or "HEEL"
+    private int alignmentLevel;
+    private String currentRival;
+    private int bumps;
+    private List<String> activeInjuries;
   }
 
   /** Context for wrestling titles. */
