@@ -44,11 +44,16 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -76,6 +81,11 @@ class CampaignServiceTest {
   @Mock private SegmentRepository segmentRepository;
   @Mock private TournamentService tournamentService;
   @Mock private ShowTemplateRepository showTemplateRepository;
+  @Mock private TitleRepository titleRepository;
+  @Mock private TitleReignRepository titleReignRepository;
+  @Mock private TeamRepository teamRepository;
+  @Mock private TitleService titleService;
+  @Mock private SegmentAdjudicationService adjudicationService;
 
   @InjectMocks private CampaignService campaignService;
 
@@ -331,5 +341,47 @@ class CampaignServiceTest {
     assertThat(state.getActionsTaken()).isZero();
     assertThat(state.getCurrentMatch()).isNull();
     verify(campaignStateRepository).save(state);
+  }
+
+  @Test
+  void testProcessMatchResult_CallsAdjudication() {
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(10L);
+    campaign.setWrestler(wrestler);
+    CampaignState state = new CampaignState();
+    state.setCurrentChapterId("beginning");
+
+    Segment match = new Segment();
+    match.setSegmentType(org.mockito.Mockito.mock(SegmentType.class));
+    match.setParticipants(new ArrayList<>());
+    match.addParticipant(wrestler);
+    state.setCurrentMatch(match);
+
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+
+    // Mock Alignment for backstage unlock check
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    when(wrestlerAlignmentRepository.findByWrestler(any())).thenReturn(Optional.of(alignment));
+
+    CampaignChapterDTO chapter =
+        CampaignChapterDTO.builder()
+            .id("beginning")
+            .rules(
+                CampaignChapterDTO.ChapterRules.builder()
+                    .victoryPointsWin(2)
+                    .victoryPointsLoss(-1)
+                    .build())
+            .build();
+    when(chapterService.getChapter("beginning")).thenReturn(Optional.of(chapter));
+
+    campaignService.processMatchResult(campaign, true);
+
+    verify(adjudicationService).adjudicateMatch(match);
   }
 }

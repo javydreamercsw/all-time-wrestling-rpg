@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
+import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -94,6 +95,7 @@ public class CampaignService {
   private final TitleReignRepository titleReignRepository;
   private final TeamRepository teamRepository;
   private final TitleService titleService;
+  private final SegmentAdjudicationService adjudicationService;
 
   private final Random random = new Random();
 
@@ -211,6 +213,14 @@ public class CampaignService {
 
     Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
     segment.setNarration(narration);
+
+    if ("fighting_champion".equals(chapter.getId())) {
+      segment.setIsTitleSegment(true);
+      player.getReigns().stream()
+          .filter(TitleReign::isCurrentReign)
+          .map(TitleReign::getTitle)
+          .forEach(segment.getTitles()::add);
+    }
 
     // Add Segment Rules
     if (actualRules.isEmpty()) {
@@ -392,9 +402,7 @@ public class CampaignService {
         match.getWrestlers().stream().filter(w -> !w.equals(wrestler)).forEach(winners::add);
       }
       match.setWinners(winners);
-      match.setAdjudicationStatus(
-          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
-      segmentRepository.save(match);
+      adjudicationService.adjudicateMatch(match);
     }
 
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
