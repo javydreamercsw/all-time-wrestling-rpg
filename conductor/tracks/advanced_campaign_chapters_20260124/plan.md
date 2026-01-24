@@ -27,22 +27,25 @@
 
 - [x] Task: Implement Faction Logic for Campaign ee4e8c7
 
-    - [x] Create service methods to retrieve and manipulate Faction data for campaign contexts.
+  - [x] Create service methods to retrieve and manipulate Faction data for campaign contexts.
 
-    - [x] Implement "Recruitment" and "Betrayal" event logic.
+  - [x] Implement "Recruitment" and "Betrayal" event logic.
 
 - [x] Task: Create Faction-based Segments 4929a22
 
-    - [x] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
-
+  - [x] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
 - [x] Task: Conductor - User Manual Verification 'Gang Warfare' (Protocol in workflow.md)
 
 ## Phase 4: "Corporate Power Trip" (Authority Logic)
 
-- [ ] Task: Implement Authority Logic
-  - [ ] Create logic to identify active Authority NPCs.
-  - [ ] Implement "Unfair Match" modifiers (e.g., Pre-match damage, Fast count for opponent).
+- [x] Task: Implement Authority Logic f9ed916
+
+    - [x] Create logic to identify active Authority NPCs.
+
+    - [x] Implement "Unfair Match" modifiers (e.g., Pre-match damage, Fast count for opponent).
+
 - [ ] Task: Create Authority Segments
+
   - [ ] Implement specific segments: "GM Office Confrontation", "Performance Review".
 - [ ] Task: Conductor - User Manual Verification 'Corporate Power Trip' (Protocol in workflow.md)
 
