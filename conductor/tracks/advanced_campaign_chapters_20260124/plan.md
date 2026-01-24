@@ -4,13 +4,15 @@
 
 - [x] Task: Create campaign chapter definitions b453c55
 
-    - [ ] Create `campaign_chapters.json` entries for "The Fighting Champion", "Gang Warfare", and "Corporate Power Trip".
+  - [ ] Create `campaign_chapters.json` entries for "The Fighting Champion", "Gang Warfare", and "Corporate Power Trip".
 
-    - [ ] Define entry criteria (triggers) for each chapter in the JSON structure.
-- [ ] Task: Implement Chapter Trigger Logic
-  - [ ] Update `CampaignService` to evaluate player state (IsChampion, FactionMembership, Heat) against chapter criteria.
-  - [ ] Create unit tests for trigger evaluation logic.
-- [ ] Task: Conductor - User Manual Verification 'Core Systems & Triggers' (Protocol in workflow.md)
+  - [ ] Define entry criteria (triggers) for each chapter in the JSON structure.
+
+- [x] Task: Implement Chapter Trigger Logic 09f37c7
+
+    - [x] Update `CampaignService` to evaluate player state (IsChampion, FactionMembership, Heat) against chapter criteria.
+
+    - [x] Create unit tests for trigger evaluation logic.- [ ] Task: Conductor - User Manual Verification 'Core Systems & Triggers' (Protocol in workflow.md)
 
 ## Phase 2: "The Fighting Champion" (Open Challenge)
 
