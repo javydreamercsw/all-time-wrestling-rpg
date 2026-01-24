@@ -23,7 +23,7 @@
   - [x] Ensure Open Challenge matches correctly affect title history and fan calculations.
 - [x] Task: Conductor - User Manual Verification 'The Fighting Champion' (Protocol in workflow.md)
 
-## Phase 3: "Gang Warfare" (Faction Integration)
+## Phase 3: "Gang Warfare" (Faction Integration) [checkpoint: c93d1fc]
 
 - [x] Task: Implement Faction Logic for Campaign ee4e8c7
 
@@ -35,7 +35,7 @@
 
     - [x] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
 
-- [ ] Task: Conductor - User Manual Verification 'Gang Warfare' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Gang Warfare' (Protocol in workflow.md)
 
 ## Phase 4: "Corporate Power Trip" (Authority Logic)
 
