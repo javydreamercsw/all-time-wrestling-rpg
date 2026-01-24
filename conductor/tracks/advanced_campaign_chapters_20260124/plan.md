@@ -31,9 +31,10 @@
 
     - [x] Implement "Recruitment" and "Betrayal" event logic.
 
-- [ ] Task: Create Faction-based Segments
+- [x] Task: Create Faction-based Segments 4929a22
 
-  - [ ] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
+    - [x] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
+
 - [ ] Task: Conductor - User Manual Verification 'Gang Warfare' (Protocol in workflow.md)
 
 ## Phase 4: "Corporate Power Trip" (Authority Logic)
