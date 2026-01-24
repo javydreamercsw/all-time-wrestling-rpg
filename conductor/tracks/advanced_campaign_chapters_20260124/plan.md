@@ -40,22 +40,25 @@
 
 - [x] Task: Implement Authority Logic f9ed916
 
-    - [x] Create logic to identify active Authority NPCs.
+  - [x] Create logic to identify active Authority NPCs.
 
-    - [x] Implement "Unfair Match" modifiers (e.g., Pre-match damage, Fast count for opponent).
+  - [x] Implement "Unfair Match" modifiers (e.g., Pre-match damage, Fast count for opponent).
 
 - [x] Task: Create Authority Segments 11534cb
 
-    - [x] Implement specific segments: "GM Office Confrontation", "Performance Review".
-
+  - [x] Implement specific segments: "GM Office Confrontation", "Performance Review".
 - [x] Task: Conductor - User Manual Verification 'Corporate Power Trip' (Protocol in workflow.md)
 
 ## Phase 5: Testing & Integration
 
-- [ ] Task: Integration Testing
+- [~] Task: Integration Testing
+
   - [ ] Create E2E tests simulating a full run-through of each new chapter.
+
   - [ ] Verify state persistence between chapters.
+
 - [ ] Task: Polish & Balancing
+
   - [ ] Adjust difficulty curves and fan rewards for new chapters.
 - [ ] Task: Conductor - User Manual Verification 'Testing & Integration' (Protocol in workflow.md)
 

@@ -179,6 +179,13 @@ public class CampaignDashboardView extends VerticalLayout {
     add(new H2("Campaign: All or Nothing (Season 1)"));
     add(new H3("Wrestler: " + wrestler.getName()));
 
+    var chapter = campaignService.getCurrentChapter(currentCampaign);
+    Span chapterLabel = new Span("Chapter: " + chapter.getTitle());
+    chapterLabel.addClassNames(
+        LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.PRIMARY);
+    chapterLabel.setId("campaign-chapter-title");
+    add(chapterLabel);
+
     // 1. Alignment Track (Top, Full Width)
     if (alignment != null) {
       add(new AlignmentTrackComponent(alignment));
@@ -190,7 +197,7 @@ public class CampaignDashboardView extends VerticalLayout {
     mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
 
     // 3. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
-    if (campaignService.getCurrentChapter(currentCampaign).isTournament()) {
+    if (chapter.isTournament()) {
       VerticalLayout tournamentSection = new VerticalLayout();
       tournamentSection.setPadding(false);
       tournamentSection.setSpacing(true);

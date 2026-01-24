@@ -99,7 +99,16 @@ public class CampaignService {
 
   private final Random random = new Random();
 
-  public Campaign startCampaign(@NonNull Wrestler wrestler) {
+  public Campaign startCampaign(@NonNull Wrestler wrestlerParam) {
+    // Re-fetch to ensure attached and initialize lazy collections
+    Wrestler wrestler =
+        wrestlerRepository
+            .findById(wrestlerParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Wrestler not found"));
+
+    // Initialize lazy collections accessed by criteria checks (e.g. isChampion checks reigns)
+    wrestler.getReigns().size();
+
     if (hasActiveCampaign(wrestler)) {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
@@ -631,6 +640,9 @@ public class CampaignService {
   public Optional<String> advanceChapter(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     String oldId = state.getCurrentChapterId();
+
+    // Initialize lazy collections accessed by criteria checks (e.g. isChampion checks reigns)
+    campaign.getWrestler().getReigns().size();
 
     if (oldId != null) {
       state.getCompletedChapterIds().add(oldId);
