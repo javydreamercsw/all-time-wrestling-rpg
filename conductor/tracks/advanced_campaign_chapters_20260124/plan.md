@@ -44,9 +44,10 @@
 
     - [x] Implement "Unfair Match" modifiers (e.g., Pre-match damage, Fast count for opponent).
 
-- [ ] Task: Create Authority Segments
+- [x] Task: Create Authority Segments 11534cb
 
-  - [ ] Implement specific segments: "GM Office Confrontation", "Performance Review".
+    - [x] Implement specific segments: "GM Office Confrontation", "Performance Review".
+
 - [ ] Task: Conductor - User Manual Verification 'Corporate Power Trip' (Protocol in workflow.md)
 
 ## Phase 5: Testing & Integration
