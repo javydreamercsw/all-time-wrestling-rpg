@@ -44,20 +44,20 @@ class CampaignChapterServiceTest {
 
   @Test
   void testGetSpecificChapter() {
-    Optional<CampaignChapterDTO> ch1 = chapterService.getChapter("ch1_beginning");
+    Optional<CampaignChapterDTO> ch1 = chapterService.getChapter("beginning");
     assertThat(ch1).isPresent();
     assertThat(ch1.get().getTitle()).isEqualTo("The Beginning");
 
-    Optional<CampaignChapterDTO> ch2 = chapterService.getChapter("ch2_tournament");
+    Optional<CampaignChapterDTO> ch2 = chapterService.getChapter("tournament");
     assertThat(ch2).isPresent();
     assertThat(ch2.get().getTitle()).isEqualTo("The Tournament");
   }
 
   @Test
   void testChapterRules() {
-    CampaignChapterDTO ch2 = chapterService.getChapter("ch2_tournament").get();
-    assertThat(ch2.getRules().getQualifyingMatches()).isEqualTo(4);
-    assertThat(ch2.getRules().getMinWinsToQualify()).isEqualTo(3);
+    CampaignChapterDTO ch2 = chapterService.getChapter("tournament").get();
+    assertThat(ch2.getRules().getQualifyingMatches()).isEqualTo(0);
+    assertThat(ch2.getRules().getMinWinsToQualify()).isEqualTo(0);
   }
 
   @Test
@@ -67,27 +67,29 @@ class CampaignChapterServiceTest {
 
     // Initially ch1 should be available (no criteria)
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
-    assertThat(available).extracting(CampaignChapterDTO::getId).contains("ch1_beginning");
+    assertThat(available).extracting(CampaignChapterDTO::getId).contains("beginning");
 
-    // After completing ch1, ch2 should be available
-    state.getCompletedChapterIds().add("ch1_beginning");
+    // After completing ch1 with enough VP, ch2 tournament should be available
+    state.getCompletedChapterIds().add("beginning");
+    state.setVictoryPoints(5); // Requirement for tournament entry
+
     available = chapterService.findAvailableChapters(state);
-    assertThat(available).extracting(CampaignChapterDTO::getId).contains("ch2_tournament");
+    assertThat(available).extracting(CampaignChapterDTO::getId).contains("tournament");
   }
 
   @Test
   void testIsChapterComplete() {
     com.github.javydreamercsw.management.domain.campaign.CampaignState state =
         new com.github.javydreamercsw.management.domain.campaign.CampaignState();
-    state.setCurrentChapterId("ch1_beginning");
+    state.setCurrentChapterId("beginning");
     state.setMatchesPlayed(0);
     state.setVictoryPoints(0);
 
     // Not complete yet
     assertThat(chapterService.isChapterComplete(state)).isFalse();
 
-    // Meet criteria (1 match, 5 VP)
-    state.setMatchesPlayed(1);
+    // Meet criteria (3 matches, 5 VP)
+    state.setMatchesPlayed(3);
     state.setVictoryPoints(5);
     assertThat(chapterService.isChapterComplete(state)).isTrue();
   }

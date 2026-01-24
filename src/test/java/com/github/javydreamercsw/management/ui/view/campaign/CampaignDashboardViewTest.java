@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -86,6 +88,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     when(campaignRepository.findActiveByWrestler(mockWrestler))
         .thenReturn(Optional.of(mockCampaign));
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);
+    when(campaignService.getCurrentChapter(any())).thenReturn(new CampaignChapterDTO());
   }
 
   @Test

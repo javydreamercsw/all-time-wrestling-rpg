@@ -275,8 +275,11 @@ class CampaignControllerTest extends AbstractIntegrationTest {
 
     // 2. Force Chapter 2
     CampaignState state = campaign.getState();
-    state.setCurrentChapterId("ch2_tournament");
+    state.setCurrentChapterId("tournament");
     campaignRepository.save(campaign);
+
+    // Create a match so processMatchResult has context
+    campaignService.createMatchForEncounter(campaign, "Wrestler 1", "Tournament R1", "One on One");
 
     // 3. Lose Round 1 match (Immediate bracket entry)
     mockMvc
@@ -313,16 +316,28 @@ class CampaignControllerTest extends AbstractIntegrationTest {
 
     // 2. Force Chapter 2
     CampaignState state = campaign.getState();
-    state.setCurrentChapterId("ch2_tournament");
+    state.setCurrentChapterId("tournament");
     campaignRepository.save(campaign);
 
     // 3. (Qualifying skipped) - Directly Win 4 Finals matches (R16, QF, SF, F)
+    // 16 participants -> 4 rounds.
     for (int i = 0; i < 4; i++) {
+      campaignService.createMatchForEncounter(
+          campaign, "Wrestler " + (i + 2), "Round " + (i + 1), "One on One");
       mockMvc
           .perform(
               post("/api/campaign/" + testWrestler.getId() + "/test/process-match")
                   .param("won", "true"))
           .andExpect(status().isOk());
+
+      // Advance post-match to clear currentMatch for next iteration?
+      // createMatchForEncounter requires BACKSTAGE or similar?
+      // processMatchResult sets POST_MATCH.
+      // createMatchForEncounter doesn't strictly check phase, but sets it to MATCH.
+      // However, processMatchResult logic requires currentMatch.
+      // After processMatch, currentMatch is still set (but adjudicated).
+      // If we call createMatch, it overwrites currentMatch.
+      // So this should work.
     }
 
     // 4. Verify Tournament Winner

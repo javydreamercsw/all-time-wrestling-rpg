@@ -37,6 +37,7 @@ CREATE TABLE campaign_state (
     failed_to_qualify BOOLEAN DEFAULT FALSE NOT NULL,
     current_match_id BIGINT,
     momentum_bonus INT DEFAULT 0 NOT NULL,
+    tournament_state TEXT,
     current_game_date DATE,
     last_sync DATETIME,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id),
