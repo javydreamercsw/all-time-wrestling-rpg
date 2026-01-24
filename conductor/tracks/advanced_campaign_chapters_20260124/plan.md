@@ -36,7 +36,7 @@
   - [x] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
 - [x] Task: Conductor - User Manual Verification 'Gang Warfare' (Protocol in workflow.md)
 
-## Phase 4: "Corporate Power Trip" (Authority Logic)
+## Phase 4: "Corporate Power Trip" (Authority Logic) [checkpoint: 0143553]
 
 - [x] Task: Implement Authority Logic f9ed916
 
@@ -48,7 +48,7 @@
 
     - [x] Implement specific segments: "GM Office Confrontation", "Performance Review".
 
-- [ ] Task: Conductor - User Manual Verification 'Corporate Power Trip' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Corporate Power Trip' (Protocol in workflow.md)
 
 ## Phase 5: Testing & Integration
 
