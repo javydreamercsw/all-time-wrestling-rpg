@@ -53,6 +53,9 @@ public class CampaignChapterDTO {
     private int victoryPointsLoss;
     private int titleWinVP;
     private int titleDefenseVP;
+    private Integer finaleTriggerVP;
+    private String finalMatchType;
+    private List<String> finalMatchRules;
   }
 
   @Data

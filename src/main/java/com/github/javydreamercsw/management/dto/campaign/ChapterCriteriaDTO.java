@@ -33,6 +33,7 @@ public class ChapterCriteriaDTO {
   private Integer minWins;
   private Boolean tournamentWinner;
   private Boolean failedToQualify;
+  private Boolean wonFinale;
   private Boolean isChampion;
   private String requiredAlignmentType; // FACE, HEEL, or NEUTRAL
   private Integer minAlignmentLevel;

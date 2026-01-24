@@ -145,6 +145,24 @@ public class CampaignEncounterService {
       }
     }
 
+    if (campaign.getState().isFinalsPhase() && !chapter.isTournament()) {
+      sb.append("\n*** CHAPTER FINALE PHASE ***\n");
+      sb.append(
+          "The player has reached the climax of this chapter. The story must now lead to the final"
+              + " showdown.\n");
+      if (chapter.getRules().getFinalMatchType() != null) {
+        sb.append("The match type is mandated to be: ")
+            .append(chapter.getRules().getFinalMatchType())
+            .append(".\n");
+      }
+      if (chapter.getRules().getFinalMatchRules() != null
+          && !chapter.getRules().getFinalMatchRules().isEmpty()) {
+        sb.append("The match rules are mandated to be: ")
+            .append(String.join(", ", chapter.getRules().getFinalMatchRules()))
+            .append(".\n");
+      }
+    }
+
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH
         && campaign.getState().getCurrentMatch() != null) {
       Segment match = campaign.getState().getCurrentMatch();

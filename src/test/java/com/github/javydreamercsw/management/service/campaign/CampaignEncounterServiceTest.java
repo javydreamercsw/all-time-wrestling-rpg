@@ -86,7 +86,7 @@ class CampaignEncounterServiceTest {
     wrestler.setAlignment(alignment);
 
     CampaignState state = new CampaignState();
-    state.setCurrentChapterId("ch1_beginning");
+    state.setCurrentChapterId("beginning");
 
     campaign = new Campaign();
     campaign.setWrestler(wrestler);
@@ -94,7 +94,7 @@ class CampaignEncounterServiceTest {
 
     chapter =
         CampaignChapterDTO.builder()
-            .id("ch1_beginning")
+            .id("beginning")
             .title("Chapter 1")
             .aiSystemPrompt("Test Prompt")
             .build();
@@ -102,7 +102,7 @@ class CampaignEncounterServiceTest {
 
   @Test
   void testGenerateEncounter() throws Exception {
-    when(chapterService.getChapter("ch1_beginning")).thenReturn(Optional.of(chapter));
+    when(chapterService.getChapter("beginning")).thenReturn(Optional.of(chapter));
     when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
         .thenReturn(new ArrayList<>());
 

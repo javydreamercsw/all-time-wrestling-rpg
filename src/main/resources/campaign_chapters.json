@@ -1,5 +1,5 @@
 [ {
-  "id": "ch1_beginning",
+  "id": "beginning",
   "title": "The Beginning",
   "shortDescription": "Your journey in All Time Wrestling starts here.",
   "introText": "You stand backstage, the roar of the crowd muting your thoughts. This is your moment. The path to the All Time Championship starts here. Will you be a hero, or a villain? Your actions today will define your legacy.",
@@ -36,7 +36,7 @@
     "npcIds": [ ]
   }
 }, {
-  "id": "ch2_tournament",
+  "id": "tournament",
   "title": "The Tournament",
   "shortDescription": "Qualify for the All Time Wrestling Championship.",
   "introText": "The stakes have been raised. The All Time Wrestling Championship tournament is approaching, and you must prove you belong among the elite.",
@@ -47,7 +47,7 @@
   "entryPoints": [ {
     "name": "Tournament Invite",
     "criteria": [ {
-      "requiredCompletedChapterIds": [ "ch1_beginning" ],
+      "requiredCompletedChapterIds": [ "beginning" ],
       "minVictoryPoints": 5
     } ]
   } ],
@@ -83,7 +83,7 @@
     } ]
   } ]
 }, {
-  "id": "ch2_tag_team",
+  "id": "tag_team",
   "title": "Tag Team Redemption",
   "shortDescription": "Find a partner and conquer the Tag Team division.",
   "introText": "Singles competition proved too much too soon. Management has paired you with a partner to build confidence in the Tag Team division.",
@@ -94,7 +94,7 @@
   "entryPoints": [ {
     "name": "Sent to Development",
     "criteria": [ {
-      "requiredCompletedChapterIds": [ "ch1_beginning" ],
+      "requiredCompletedChapterIds": [ "beginning" ],
       "maxVictoryPoints": 4
     } ]
   } ],
@@ -123,7 +123,7 @@
     } ]
   } ]
 }, {
-  "id": "ch3_betrayal",
+  "id": "betrayal",
   "title": "Betrayal",
   "shortDescription": "Your partner has turned on you.",
   "introText": "The team is dead. Your former partner has betrayed you. It's time for revenge.",
@@ -134,12 +134,27 @@
   "entryPoints": [ {
     "name": "Betrayed",
     "criteria": [ {
-      "requiredCompletedChapterIds": [ "ch2_tag_team" ]
+      "requiredCompletedChapterIds": [ "tag_team" ]
     } ]
   } ],
   "rules": {
     "victoryPointsWin": 4,
-    "victoryPointsLoss": -2
+    "victoryPointsLoss": -2,
+    "finaleTriggerVP": 12,
+    "finalMatchType": "One on One",
+    "finalMatchRules": [ "Barbwire Exploding Deathmatch" ]
   },
-  "exitPoints": [ ]
+  "exitPoints": [ {
+    "name": "Revenge Complete",
+    "criteria": [ {
+      "minMatchesPlayed": 3,
+      "wonFinale": true
+    } ]
+  }, {
+    "name": "Revenge Failed",
+    "criteria": [ {
+      "minMatchesPlayed": 3,
+      "wonFinale": false
+    } ]
+  } ]
 } ]

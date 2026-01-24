@@ -180,6 +180,10 @@ public class CampaignState {
   @Builder.Default
   private boolean failedToQualify = false;
 
+  @Column(name = "won_finale", nullable = false)
+  @Builder.Default
+  private boolean wonFinale = false;
+
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "current_match_id")
   private com.github.javydreamercsw.management.domain.show.segment.Segment currentMatch;

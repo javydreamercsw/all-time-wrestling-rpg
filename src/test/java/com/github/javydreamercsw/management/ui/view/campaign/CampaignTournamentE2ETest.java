@@ -123,7 +123,7 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
 
     // 3. Force Chapter 2 (Tournament)
     CampaignState state = campaign.getState();
-    state.setCurrentChapterId("ch2_tournament");
+    state.setCurrentChapterId("tournament");
     campaignStateRepository.save(state);
 
     // Force re-fetch to ensure tournament init logic runs when service is called

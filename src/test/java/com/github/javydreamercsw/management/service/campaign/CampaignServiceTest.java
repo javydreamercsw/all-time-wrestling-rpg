@@ -248,7 +248,7 @@ class CampaignServiceTest {
     Wrestler wrestler = new Wrestler();
     campaign.setWrestler(wrestler);
     CampaignState state = new CampaignState();
-    state.setCurrentChapterId("ch2_tournament");
+    state.setCurrentChapterId("tournament");
 
     Segment match = new Segment();
     Show show = new Show();
@@ -267,7 +267,7 @@ class CampaignServiceTest {
 
     CampaignChapterDTO chapter =
         CampaignChapterDTO.builder()
-            .id("ch2_tournament")
+            .id("tournament")
             .tournament(true)
             .rules(
                 CampaignChapterDTO.ChapterRules.builder()
@@ -278,7 +278,7 @@ class CampaignServiceTest {
                     .build())
             .build();
 
-    when(chapterService.getChapter("ch2_tournament")).thenReturn(Optional.of(chapter));
+    when(chapterService.getChapter("tournament")).thenReturn(Optional.of(chapter));
 
     campaignService.processMatchResult(campaign, true); // Win 1
 
@@ -298,18 +298,18 @@ class CampaignServiceTest {
   void testAdvanceChapter() {
     Campaign campaign = new Campaign();
     CampaignState state = new CampaignState();
-    state.setCurrentChapterId("ch1_beginning");
+    state.setCurrentChapterId("beginning");
     campaign.setState(state);
 
     CampaignChapterDTO ch2 = new CampaignChapterDTO();
-    ch2.setId("ch2_tournament");
+    ch2.setId("tournament");
     ch2.setTournament(true);
     when(chapterService.findAvailableChapters(any())).thenReturn(List.of(ch2));
 
     campaignService.advanceChapter(campaign);
 
-    assertThat(state.getCurrentChapterId()).isEqualTo("ch2_tournament");
-    assertThat(state.getCompletedChapterIds()).contains("ch1_beginning");
+    assertThat(state.getCurrentChapterId()).isEqualTo("tournament");
+    assertThat(state.getCompletedChapterIds()).contains("beginning");
     verify(campaignStateRepository).save(state);
   }
 

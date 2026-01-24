@@ -153,6 +153,10 @@ public class CampaignChapterService {
       return false;
     }
 
+    if (criteria.getWonFinale() != null && state.isWonFinale() != criteria.getWonFinale()) {
+      return false;
+    }
+
     // Check Championship Status
     if (criteria.getIsChampion() != null) {
       boolean holdsTitle =

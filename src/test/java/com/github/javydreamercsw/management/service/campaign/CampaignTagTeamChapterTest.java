@@ -120,12 +120,15 @@ public class CampaignTagTeamChapterTest extends AbstractViewTest {
     campaignService.advanceChapter(campaign);
 
     // Reload
+
     campaign = campaignRepository.findById(campaign.getId()).get();
+
     state = campaign.getState();
 
-    assertThat(state.getCurrentChapterId()).isEqualTo("ch2_tag_team");
+    assertThat(state.getCurrentChapterId()).isEqualTo("tag_team");
 
     // Verify Tag Team Chapter Initialization
+
     // 1. Tag Team Title should be awarded (was vacant)
     Title tagTitle = titleRepository.findByName("ATW Tag Team").get();
     assertThat(tagTitle.isVacant()).isFalse();

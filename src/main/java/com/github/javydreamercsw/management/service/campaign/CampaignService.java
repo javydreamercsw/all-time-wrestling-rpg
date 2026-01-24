@@ -59,7 +59,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -178,8 +177,29 @@ public class CampaignService {
     // 1. Find/Create Campaign Show
     Show show = getOrCreateCampaignShow(campaign);
 
+    // Finale Logic Override
+    CampaignChapterDTO chapter = getCurrentChapter(campaign);
+    boolean isNarrativeFinale = state.isFinalsPhase() && !chapter.isTournament();
+
+    String actualTypeName = segmentTypeName;
+    List<String> actualRules =
+        segmentRules != null
+            ? new ArrayList<>(java.util.Arrays.asList(segmentRules))
+            : new ArrayList<>();
+
+    if (isNarrativeFinale) {
+      if (chapter.getRules().getFinalMatchType() != null) {
+        actualTypeName = chapter.getRules().getFinalMatchType();
+      }
+      if (chapter.getRules().getFinalMatchRules() != null) {
+        actualRules.clear();
+        actualRules.addAll(chapter.getRules().getFinalMatchRules());
+      }
+      narration = "CHAPTER FINALE: " + narration; // Optional flavor
+    }
+
     // 3. Create Segment
-    String finalTypeName = segmentTypeName != null ? segmentTypeName : "One on One";
+    String finalTypeName = actualTypeName != null ? actualTypeName : "One on One";
     SegmentType type =
         segmentTypeRepository
             .findByName(finalTypeName)
@@ -192,14 +212,12 @@ public class CampaignService {
     Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
     segment.setNarration(narration);
 
-    // Add "Normal" segment rule by default
-    if (segmentRules.length == 0) {
+    // Add Segment Rules
+    if (actualRules.isEmpty()) {
       segmentRuleRepository.findByName("Normal").ifPresent(segment::addSegmentRule);
     } else {
-      Arrays.stream(segmentRules)
-          .toList()
-          .forEach(
-              rule -> segmentRuleRepository.findByName(rule).ifPresent(segment::addSegmentRule));
+      actualRules.forEach(
+          rule -> segmentRuleRepository.findByName(rule).ifPresent(segment::addSegmentRule));
     }
     segmentRepository.save(segment);
 
@@ -448,6 +466,34 @@ public class CampaignService {
             log.info("Tournament won by wrestler ID: {}", finals.getWinnerId());
             awardTitleToWinner(finals.getWinnerId());
           }
+        }
+      }
+    } else if (currentChapter.getRules() != null
+        && currentChapter.getRules().getFinaleTriggerVP() != null) {
+      // Narrative Finale Logic
+      if (!state.isFinalsPhase()
+          && !state.isWonFinale()
+          && state.getVictoryPoints() >= currentChapter.getRules().getFinaleTriggerVP()) {
+        log.info("Triggering Finale Phase for chapter {}", currentChapter.getId());
+        state.setFinalsPhase(true);
+      } else if (state.isFinalsPhase()) {
+        if (won) {
+          log.info("Wrestler {} WON the chapter finale!", wrestler.getName());
+          state.setWonFinale(true);
+          state.setFinalsPhase(false); // Reset phase
+        } else {
+          log.info("Wrestler {} LOST the chapter finale. Retry needed.", wrestler.getName());
+          // Optionally reduce VP to force re-trigger? Or just keep in finalsPhase?
+          // If we keep in finalsPhase, next match is also Finale.
+          // If we want to punish, maybe reduce VP below threshold?
+          // Rules say "victoryPointsLoss: -2".
+          // If 12 -> 10.
+          // Next loop: 10 < 12. So finalsPhase NOT set (if we rely on check).
+          // But we check !state.isFinalsPhase().
+          // If I am ALREADY in finalsPhase, I stay there unless I set it false.
+          // So if lost, stay in finalsPhase?
+          // User: "Retry needed".
+          // So stay in finalsPhase.
         }
       }
     }
