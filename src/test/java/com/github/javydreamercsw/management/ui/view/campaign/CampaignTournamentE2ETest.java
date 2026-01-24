@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -68,6 +69,7 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
   @Autowired private SecurityUtils securityUtils;
   @Autowired private TournamentService tournamentService;
   @Autowired private TitleRepository titleRepository;
+  @Autowired private ObjectMapper objectMapper;
   private Campaign campaign;
 
   @BeforeEach
@@ -155,7 +157,8 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper);
 
     UI.getCurrent().add(dashboard);
 
@@ -196,7 +199,8 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
               cardRepository,
               upgradeService,
               securityUtils,
-              tournamentService);
+              tournamentService,
+              objectMapper);
       UI.getCurrent().add(dashboard);
 
       if (round < expectedRounds) {

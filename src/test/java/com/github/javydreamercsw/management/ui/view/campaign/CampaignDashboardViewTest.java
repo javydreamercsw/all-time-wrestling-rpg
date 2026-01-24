@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -58,6 +59,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
 
   @Mock
   private com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService;
+
+  private ObjectMapper objectMapper = new ObjectMapper();
 
   private CustomUserDetails mockUser;
   private Account mockAccount;
@@ -101,7 +104,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper);
 
     UI.getCurrent().add(view);
 
@@ -152,7 +156,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper);
 
     UI.getCurrent().add(view);
 
@@ -172,7 +177,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper);
 
     UI.getCurrent().add(view);
 

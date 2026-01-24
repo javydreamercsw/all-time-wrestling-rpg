@@ -134,48 +134,67 @@ public class CampaignEncounterService {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
     }
 
-    if (chapter.isTagTeam()) {
-      sb.append("- Tag Team Campaign: YES\n");
-      if (campaign.getState().getPartnerId() != null) {
-        wrestlerRepository
-            .findById(campaign.getState().getPartnerId())
-            .ifPresent(p -> sb.append("- Tag Partner: ").append(p.getName()).append("\n"));
-      } else {
-        sb.append("- Tag Partner: NONE (Player is looking for a partner)\n");
-      }
-    }
+    // Check for partner ID in feature data
+    try {
+      if (chapter.isTagTeam()) {
+        sb.append("- Tag Team Campaign: YES\n");
+        // We need to access feature data manually or via CampaignService helper if public.
+        // Since getFeatureValue is private in CampaignService, we assume direct access or
+        // refactor.
+        // However, we can read the JSON blob directly here since we have ObjectMapper.
+        String featureDataJson = campaign.getState().getFeatureData();
+        Long partnerId = null;
+        if (featureDataJson != null) {
+          java.util.Map<String, Object> data =
+              objectMapper.readValue(
+                  featureDataJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+          Object val = data.get("partnerId");
+          if (val instanceof Number) {
+            partnerId = ((Number) val).longValue();
+          }
+        }
 
-    if ("fighting_champion".equals(chapter.getId())) {
-      sb.append(
-          "- Chapter Context: OPEN CHALLENGE. The player is a champion and must defend"
-              + " their title against anyone who answers.\n");
-    } else if ("gang_warfare".equals(chapter.getId())) {
-      sb.append(
-          "- Chapter Context: FACTION WARFARE. The player is part of a faction and must"
-              + " battle rival groups. Narrative should involve tag team dynamics or faction"
-              + " beatdowns.\n");
-    } else if ("corporate_power_trip".equals(chapter.getId())) {
-      sb.append(
-          "- Chapter Context: AUTHORITY FEUD. A corrupt GM or authority figure is"
-              + " actively sabotaging the player. Matches should feel unfair or high-stakes.\n");
-    }
+        if (partnerId != null) {
+          wrestlerRepository
+              .findById(partnerId)
+              .ifPresent(p -> sb.append("- Tag Partner: ").append(p.getName()).append("\n"));
+        } else {
+          sb.append("- Tag Partner: NONE (Player is looking for a partner)\n");
+        }
+      }
 
-    if (campaign.getState().isFinalsPhase() && !chapter.isTournament()) {
-      sb.append("\n*** CHAPTER FINALE PHASE ***\n");
-      sb.append(
-          "The player has reached the climax of this chapter. The story must now lead to the final"
-              + " showdown.\n");
-      if (chapter.getRules().getFinalMatchType() != null) {
-        sb.append("The match type is mandated to be: ")
-            .append(chapter.getRules().getFinalMatchType())
-            .append(".\n");
+      // Check for Finals Phase in feature data
+      boolean isFinalsPhase = false;
+      String featureDataJson = campaign.getState().getFeatureData();
+      if (featureDataJson != null) {
+        java.util.Map<String, Object> data =
+            objectMapper.readValue(
+                featureDataJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        Object val = data.get("finalsPhase");
+        if (val instanceof Boolean) {
+          isFinalsPhase = (Boolean) val;
+        }
       }
-      if (chapter.getRules().getFinalMatchRules() != null
-          && !chapter.getRules().getFinalMatchRules().isEmpty()) {
-        sb.append("The match rules are mandated to be: ")
-            .append(String.join(", ", chapter.getRules().getFinalMatchRules()))
-            .append(".\n");
+
+      if (isFinalsPhase && !chapter.isTournament()) {
+        sb.append("\n*** CHAPTER FINALE PHASE ***\n");
+        sb.append(
+            "The player has reached the climax of this chapter. The story must now lead to the"
+                + " final showdown.\n");
+        if (chapter.getRules().getFinalMatchType() != null) {
+          sb.append("The match type is mandated to be: ")
+              .append(chapter.getRules().getFinalMatchType())
+              .append(".\n");
+        }
+        if (chapter.getRules().getFinalMatchRules() != null
+            && !chapter.getRules().getFinalMatchRules().isEmpty()) {
+          sb.append("The match rules are mandated to be: ")
+              .append(String.join(", ", chapter.getRules().getFinalMatchRules()))
+              .append(".\n");
+        }
       }
+    } catch (Exception e) {
+      log.error("Error parsing feature data in prompt builder", e);
     }
 
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH
@@ -277,7 +296,23 @@ public class CampaignEncounterService {
             + " rules: Normal, Hardcore, Submission, No DQ, Cage, Ladder, Table, Last Man Standing,"
             + " Iron Man.\n");
 
-    if (chapter.isTagTeam() && campaign.getState().getPartnerId() == null) {
+    Long currentPartnerId = null;
+    try {
+      if (campaign.getState().getFeatureData() != null) {
+        java.util.Map<String, Object> data =
+            objectMapper.readValue(
+                campaign.getState().getFeatureData(),
+                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        Object val = data.get("partnerId");
+        if (val instanceof Number) {
+          currentPartnerId = ((Number) val).longValue();
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error reading partnerId from feature data", e);
+    }
+
+    if (chapter.isTagTeam() && currentPartnerId == null) {
       sb.append(
           "6. The player is currently looking for a Tag Team partner. Generate narrative and"
               + " choices that involve scouting, teaming up with, or impressing a potential partner"

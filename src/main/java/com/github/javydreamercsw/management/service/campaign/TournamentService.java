@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -35,7 +36,9 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -58,10 +61,12 @@ public class TournamentService {
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRuleRepository segmentRuleRepository;
 
+  private static final String KEY_TOURNAMENT_STATE = "tournamentState";
+
   @Transactional
   public void initializeTournament(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
-    if (state.getTournamentState() != null && !state.getTournamentState().isEmpty()) {
+    if (getTournamentState(campaign) != null) {
       return; // Already initialized
     }
 
@@ -97,28 +102,12 @@ public class TournamentService {
     List<TournamentMatch> matches = new ArrayList<>();
 
     // Round 1 Generation
-    // We assign one real player to 'Wrestler 1' of each match first (up to bracketSize/2 matches)
-    // If we have more players than matches, we fill 'Wrestler 2'.
-    // Remaining 'Wrestler 2' slots are Byes.
-    // If we have even fewer players (e.g. 3 players for size 4), some 'Wrestler 1' might be Byes?
-    // No, algorithm:
-    // 1. Create matches.
-    // 2. Distribute players.
-
-    int matchCountR1 = bracketSize / 2;
-    // We use a list of "Slots" which includes Byes (nulls) if necessary?
-    // Actually, simple distribution:
-    // P1..PN.
-    // If N <= matchCountR1: Each player gets a match. Opponents are Byes.
-    // If N > matchCountR1: First (N - matchCountR1) matches have 2 players. Rest have 1.
-    // Wait, simpler: Just fill slots 1..bracketSize with players, then Byes.
-    // Then M1 = Slot 1 vs Slot 2. M2 = Slot 3 vs Slot 4.
-
     List<Wrestler> slots = new ArrayList<>(participants);
     while (slots.size() < bracketSize) {
       slots.add(null); // Bye
     }
 
+    int matchCountR1 = bracketSize / 2;
     for (int i = 0; i < matchCountR1; i++) {
       TournamentMatch match = new TournamentMatch();
       match.setId("R1-M" + (i + 1));
@@ -145,15 +134,7 @@ public class TournamentService {
 
       // Resolve Byes immediately
       if (w1 == null && w2 == null) {
-        // Double Bye - Advance Bye?
-        match.setWinnerId(-1L); // Special ID or just handle upstream?
-        // Actually, if Double Bye, next match gets a Bye.
-        // Let's set winnerId to null but name to "BYE" in next match logic?
-        // Simplest: w1 is null, w2 is null. Winner is null.
-        // But we need to mark it resolved.
-        // Let's assume w1 "wins" (Bye advances).
-        // But w1 is null.
-        // Let's say winnerId = 0L for Bye?
+        match.setWinnerId(-1L);
       } else if (w1 != null && w2 == null) {
         match.setWinnerId(w1.getId());
       } else if (w1 == null) {
@@ -193,13 +174,20 @@ public class TournamentService {
 
   public TournamentDTO getTournamentState(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
-    if (state.getTournamentState() == null) {
+    if (state.getFeatureData() == null) {
       return null;
     }
     try {
-      return objectMapper.readValue(state.getTournamentState(), TournamentDTO.class);
+      Map<String, Object> featureData =
+          objectMapper.readValue(
+              state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+      Object tournamentData = featureData.get(KEY_TOURNAMENT_STATE);
+      if (tournamentData == null) {
+        return null;
+      }
+      return objectMapper.convertValue(tournamentData, TournamentDTO.class);
     } catch (JsonProcessingException e) {
-      log.error("Failed to parse tournament state", e);
+      log.error("Failed to parse tournament state from feature data", e);
       return null;
     }
   }
@@ -299,7 +287,6 @@ public class TournamentService {
               .orElseThrow(() -> new IllegalStateException("One on One segment type not found"));
 
       // Create Segment
-      // show.getShowDate() is LocalDate. createSegment needs Instant.
       Instant date =
           show.getShowDate() != null
               ? show.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
@@ -307,10 +294,6 @@ public class TournamentService {
 
       Segment segment = segmentService.createSegment(show, type, date);
       segment.setNarration("Tournament Match: " + w1.getName() + " vs " + w2.getName());
-      // We set narration manually because createSegment(show, type, date) doesn't take narration.
-      // Or we can use updateSegment logic?
-      // SegmentService.createSegment returns saved segment.
-      // We can update it.
 
       // Add Participants
       segmentService.addParticipant(segment, w1);
@@ -320,13 +303,6 @@ public class TournamentService {
       Wrestler winner = winnerId.equals(w1.getId()) ? w1 : w2;
       segmentService.setWinner(segment, winner);
       segmentService.setAdjudicationStatus(segment, AdjudicationStatus.ADJUDICATED);
-
-      // Update Records? SegmentService.setWinner/adjudicate might not update stats automatically if
-      // not calling specific method?
-      // SegmentService usually handles stats in `adjudicateMatch`?
-      // Let's assume setWinner + ADJUDICATED is enough for history, or check SegmentService.
-      // Usually need to call a method to process stats.
-      // For now, this creates the record in history.
     }
   }
 
@@ -396,7 +372,16 @@ public class TournamentService {
 
   private void saveTournamentState(@NonNull CampaignState state, @NonNull TournamentDTO dto) {
     try {
-      state.setTournamentState(objectMapper.writeValueAsString(dto));
+      Map<String, Object> featureData = new HashMap<>();
+      if (state.getFeatureData() != null) {
+        featureData =
+            objectMapper.readValue(
+                state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+      }
+
+      featureData.put(KEY_TOURNAMENT_STATE, dto);
+      state.setFeatureData(objectMapper.writeValueAsString(featureData));
+
       campaignStateRepository.save(state);
     } catch (JsonProcessingException e) {
       log.error("Failed to save tournament state", e);

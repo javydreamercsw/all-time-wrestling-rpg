@@ -33,7 +33,9 @@ import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,9 +97,11 @@ class TournamentServiceTest {
     tournamentService.initializeTournament(campaign);
 
     verify(campaignStateRepository).save(state);
-    assertThat(state.getTournamentState()).isNotNull();
 
-    TournamentDTO dto = objectMapper.readValue(state.getTournamentState(), TournamentDTO.class);
+    // Check via service or feature data
+    TournamentDTO dto = tournamentService.getTournamentState(campaign);
+    assertThat(dto).isNotNull();
+
     // Bracket size 8 -> 3 Rounds
     assertThat(dto.getTotalRounds()).isEqualTo(3);
 
@@ -163,12 +167,19 @@ class TournamentServiceTest {
 
     tournamentService.initializeTournament(campaign);
 
-    TournamentDTO dto = objectMapper.readValue(state.getTournamentState(), TournamentDTO.class);
+    TournamentDTO dto = tournamentService.getTournamentState(campaign);
     // 16 participants -> Bracket Size 16. Rounds: 4.
     assertThat(dto.getTotalRounds()).isEqualTo(4);
 
     long r1Matches = dto.getMatches().stream().filter(m -> m.getRound() == 1).count();
     assertThat(r1Matches).isEqualTo(8);
+  }
+
+  private void setTournamentState(CampaignState state, TournamentDTO dto)
+      throws JsonProcessingException {
+    Map<String, Object> data = new HashMap<>();
+    data.put("tournamentState", dto);
+    state.setFeatureData(objectMapper.writeValueAsString(data));
   }
 
   @Test
@@ -206,11 +217,11 @@ class TournamentServiceTest {
     matches.add(m3);
     dto.setMatches(matches);
 
-    state.setTournamentState(objectMapper.writeValueAsString(dto));
+    setTournamentState(state, dto);
 
     tournamentService.advanceTournament(campaign, true, null); // Win
 
-    TournamentDTO result = objectMapper.readValue(state.getTournamentState(), TournamentDTO.class);
+    TournamentDTO result = tournamentService.getTournamentState(campaign);
 
     // Check Round advanced
     assertThat(result.getCurrentRound()).isEqualTo(2);
@@ -267,11 +278,11 @@ class TournamentServiceTest {
     matches.add(mBye);
     dto.setMatches(matches);
 
-    state.setTournamentState(objectMapper.writeValueAsString(dto));
+    setTournamentState(state, dto);
 
     tournamentService.advanceTournament(campaign, true, null);
 
-    TournamentDTO result = objectMapper.readValue(state.getTournamentState(), TournamentDTO.class);
+    TournamentDTO result = tournamentService.getTournamentState(campaign);
 
     // Bye match should be resolved with -1
     TournamentMatch resMBye =
@@ -297,12 +308,12 @@ class TournamentServiceTest {
     List<TournamentMatch> matches = new ArrayList<>();
     matches.add(finals);
     dto.setMatches(matches);
-    state.setTournamentState(objectMapper.writeValueAsString(dto));
+    setTournamentState(state, dto);
 
     assertThat(tournamentService.isPlayerChampion(campaign)).isTrue();
 
     finals.setWinnerId(2L); // Other winner
-    state.setTournamentState(objectMapper.writeValueAsString(dto));
+    setTournamentState(state, dto);
     assertThat(tournamentService.isPlayerChampion(campaign)).isFalse();
   }
 }

@@ -68,6 +68,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final com.github.javydreamercsw.management.service.campaign.TournamentService
       tournamentService;
+  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   private Campaign currentCampaign;
 
@@ -79,7 +80,8 @@ public class CampaignDashboardView extends VerticalLayout {
       CampaignAbilityCardRepository cardRepository,
       CampaignUpgradeService upgradeService,
       SecurityUtils securityUtils,
-      com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService) {
+      com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService,
+      com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -87,12 +89,26 @@ public class CampaignDashboardView extends VerticalLayout {
     this.upgradeService = upgradeService;
     this.securityUtils = securityUtils;
     this.tournamentService = tournamentService;
+    this.objectMapper = objectMapper;
 
     setSpacing(true);
     setPadding(true);
 
     loadCampaign();
     initUI();
+  }
+
+  private boolean getFeatureBoolean(CampaignState state, String key) {
+    if (state.getFeatureData() == null) return false;
+    try {
+      java.util.Map<String, Object> data =
+          objectMapper.readValue(
+              state.getFeatureData(), new com.fasterxml.jackson.core.type.TypeReference<>() {});
+      return Boolean.TRUE.equals(data.get(key));
+    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+      log.error("Error parsing feature data", e);
+      return false;
+    }
   }
 
   private void loadCampaign() {
@@ -572,14 +588,14 @@ public class CampaignDashboardView extends VerticalLayout {
             com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
         bracketContainer.add(playMatchButton);
       }
-    } else if (currentCampaign.getState().isTournamentWinner()) {
+    } else if (getFeatureBoolean(currentCampaign.getState(), "tournamentWinner")) {
       Span winnerMsg = new Span("🏆 You are the Tournament Champion!");
       winnerMsg.addClassNames(
           LumoUtility.TextColor.SUCCESS, LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.BOLD);
       bracketContainer.add(winnerMsg);
-    } else if (currentCampaign.getState().isFinalsPhase()
+    } else if (getFeatureBoolean(currentCampaign.getState(), "finalsPhase")
         && nextMatch == null
-        && !currentCampaign.getState().isTournamentWinner()) {
+        && !getFeatureBoolean(currentCampaign.getState(), "tournamentWinner")) {
       Span loserMsg = new Span("❌ You have been eliminated from the tournament.");
       loserMsg.addClassNames(LumoUtility.TextColor.ERROR, LumoUtility.FontWeight.BOLD);
       bracketContainer.add(loserMsg);

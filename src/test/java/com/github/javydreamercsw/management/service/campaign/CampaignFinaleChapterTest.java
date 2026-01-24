@@ -18,6 +18,9 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -39,6 +42,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Collections;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +61,7 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private SecurityUtils securityUtils;
+  @Autowired private ObjectMapper objectMapper;
 
   private Campaign campaign;
   private Wrestler player;
@@ -120,7 +125,7 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
   }
 
   @Test
-  public void testFinaleTriggerAndWin() {
+  public void testFinaleTriggerAndWin() throws JsonProcessingException {
     CampaignState state = campaign.getState();
 
     // 1. Earn VP to trigger Finale (Need 12)
@@ -144,8 +149,12 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
 
     state = campaign.getState();
 
-    assertThat(state.isFinalsPhase()).isTrue();
-    assertThat(state.isWonFinale()).isFalse();
+    // Parse feature data
+    Map<String, Object> featureData =
+        objectMapper.readValue(state.getFeatureData(), new TypeReference<>() {});
+
+    assertThat(featureData.get("finalsPhase")).isEqualTo(true);
+    assertThat(featureData.get("wonFinale")).isNull(); // or false depending on initialization
 
     // Complete Post Match
     campaignService.completePostMatch(campaign);
@@ -173,8 +182,10 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
     campaign = campaignRepository.findById(campaign.getId()).get();
     state = campaign.getState();
 
-    assertThat(state.isWonFinale()).isTrue();
-    assertThat(state.isFinalsPhase()).isFalse();
+    featureData = objectMapper.readValue(state.getFeatureData(), new TypeReference<>() {});
+
+    assertThat(featureData.get("wonFinale")).isEqualTo(true);
+    assertThat(featureData.get("finalsPhase")).isEqualTo(false);
 
     // Verify Chapter Complete
     boolean complete = campaignService.isChapterComplete(campaign);

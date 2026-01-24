@@ -18,11 +18,10 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -36,10 +35,9 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
-import java.util.Collections;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,61 +47,73 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
 
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
-  @Autowired private RoleRepository roleRepository;
+
+  @Autowired private WrestlerRepository wrestlerRepository;
+
   @Autowired private TeamRepository teamRepository;
+
   @Autowired private TitleRepository titleRepository;
-  @Autowired private TitleService titleService;
+  @Autowired private ObjectMapper objectMapper;
 
   private Campaign campaign;
 
-  @BeforeEach
-  public void setUp() {
-    Role bookerRole =
-        roleRepository
-            .findByName(RoleName.BOOKER)
-            .orElseGet(() -> roleRepository.save(new Role(RoleName.BOOKER, "Booker")));
-
-    // 1. Create Account & Wrestler
-    Account account = new Account();
-    account.setUsername("taguser");
-    account.setPassword("password");
-    account.setEmail("tag@test.com");
-    account.setRoles(Collections.singleton(bookerRole));
-    account = accountRepository.save(account);
-
-    Wrestler player =
-        Wrestler.builder().name("Tag Player").startingHealth(100).startingStamina(100).build();
-    player.setAccount(account);
-    player = wrestlerRepository.save(player);
-
-    // Create Team
-    Wrestler w1 = wrestlerRepository.save(Wrestler.builder().name("W1").build());
-    Wrestler w2 = wrestlerRepository.save(Wrestler.builder().name("W2").build());
-    Team team = new Team();
-    team.setName("Test Team");
-    team.setWrestler1(w1);
-    team.setWrestler2(w2);
-    team.setStatus(TeamStatus.ACTIVE);
-    teamRepository.save(team);
-
-    // Ensure Tag Title Exists
+  @org.junit.jupiter.api.BeforeEach
+  public void setup() {
+    // Ensure "ATW Tag Team" title exists
     if (titleRepository.findByName("ATW Tag Team").isEmpty()) {
-      titleService.createTitle(
-          "ATW Tag Team", "Tag", WrestlerTier.MIDCARDER, ChampionshipType.TEAM);
+      Title tagTitle = new Title();
+      tagTitle.setName("ATW Tag Team");
+      tagTitle.setTier(WrestlerTier.MIDCARDER);
+      tagTitle.setGender(Gender.MALE);
+      tagTitle.setChampionshipType(ChampionshipType.TEAM);
+      tagTitle.setIsActive(true);
+      titleRepository.save(tagTitle);
     }
 
-    // Login as user
-    login(account);
+    Wrestler player = wrestlerRepository.findAll().get(0); // Use first available wrestler
 
-    // 2. Start Campaign
+    // Ensure at least one other team exists for title awarding
+    if (wrestlerRepository.count() < 3) {
+      Wrestler w2 = new Wrestler();
+      w2.setName("Team Member 1");
+      w2.setGender(Gender.MALE);
+      w2.setTier(WrestlerTier.MIDCARDER);
+      wrestlerRepository.save(w2);
+
+      Wrestler w3 = new Wrestler();
+      w3.setName("Team Member 2");
+      w3.setGender(Gender.MALE);
+      w3.setTier(WrestlerTier.MIDCARDER);
+      wrestlerRepository.save(w3);
+
+      Team team = new Team();
+      team.setName("Test Team");
+      team.setWrestler1(w2);
+      team.setWrestler2(w3);
+      team.setStatus(TeamStatus.ACTIVE);
+      teamRepository.save(team);
+    } else {
+      // If wrestlers exist, ensure at least one team exists that doesn't have the player
+      if (teamRepository.count() == 0) {
+        List<Wrestler> others =
+            wrestlerRepository.findAll().stream().filter(w -> !w.equals(player)).toList();
+        if (others.size() >= 2) {
+          Team team = new Team();
+          team.setName("Test Team");
+          team.setWrestler1(others.get(0));
+          team.setWrestler2(others.get(1));
+          team.setStatus(TeamStatus.ACTIVE);
+          teamRepository.save(team);
+        }
+      }
+    }
+
     campaign = campaignService.startCampaign(player);
   }
 
   @Test
-  public void testFailChapter1AndEnterTagChapter() {
+  public void testFailChapter1AndEnterTagChapter() throws JsonProcessingException {
     CampaignState state = campaign.getState();
     // Simulate Chapter 1 Failure
     // Criteria: minMatchesPlayed: 5, maxVictoryPoints: 4
@@ -133,7 +143,9 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
     assertThat(tagTitle.getCurrentChampions()).isNotEmpty();
 
     // 2. Partner ID should be null (recruiting)
-    assertThat(state.getPartnerId()).isNull();
-    assertThat(state.isRecruitingPartner()).isTrue();
+    Map<String, Object> features =
+        objectMapper.readValue(state.getFeatureData(), new TypeReference<>() {});
+    assertThat(features.get("partnerId")).isNull();
+    assertThat(features.get("recruitingPartner")).isEqualTo(true);
   }
 }

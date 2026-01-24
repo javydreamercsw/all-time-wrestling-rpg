@@ -143,18 +143,36 @@ public class CampaignChapterService {
     }
 
     // Check Tournament Status
-    if (criteria.getTournamentWinner() != null
-        && state.isTournamentWinner() != criteria.getTournamentWinner()) {
-      return false;
+    java.util.Map<String, Object> featureData = java.util.Collections.emptyMap();
+    if (state.getFeatureData() != null) {
+      try {
+        featureData =
+            objectMapper.readValue(
+                state.getFeatureData(), new TypeReference<java.util.Map<String, Object>>() {});
+      } catch (IOException e) {
+        log.error("Error parsing feature data", e);
+      }
     }
 
-    if (criteria.getFailedToQualify() != null
-        && state.isFailedToQualify() != criteria.getFailedToQualify()) {
-      return false;
+    if (criteria.getTournamentWinner() != null) {
+      boolean isWinner = Boolean.TRUE.equals(featureData.get("tournamentWinner"));
+      if (isWinner != criteria.getTournamentWinner()) {
+        return false;
+      }
     }
 
-    if (criteria.getWonFinale() != null && state.isWonFinale() != criteria.getWonFinale()) {
-      return false;
+    if (criteria.getFailedToQualify() != null) {
+      boolean failed = Boolean.TRUE.equals(featureData.get("failedToQualify"));
+      if (failed != criteria.getFailedToQualify()) {
+        return false;
+      }
+    }
+
+    if (criteria.getWonFinale() != null) {
+      boolean wonFinale = Boolean.TRUE.equals(featureData.get("wonFinale"));
+      if (wonFinale != criteria.getWonFinale()) {
+        return false;
+      }
     }
 
     // Check Championship Status

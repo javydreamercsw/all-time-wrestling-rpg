@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
@@ -60,7 +63,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
@@ -96,8 +101,53 @@ public class CampaignService {
   private final TeamRepository teamRepository;
   private final TitleService titleService;
   private final SegmentAdjudicationService adjudicationService;
+  private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
+
+  private static final String KEY_FINALS_PHASE = "finalsPhase";
+  private static final String KEY_TOURNAMENT_WINNER = "tournamentWinner";
+  private static final String KEY_FAILED_TO_QUALIFY = "failedToQualify";
+  private static final String KEY_WON_FINALE = "wonFinale";
+  private static final String KEY_PARTNER_ID = "partnerId";
+  private static final String KEY_TOURNAMENT_STATE = "tournamentState";
+  private static final String KEY_RECRUITING_PARTNER = "recruitingPartner";
+
+  private Map<String, Object> getFeatureData(CampaignState state) {
+    if (state.getFeatureData() == null) {
+      return new HashMap<>();
+    }
+    try {
+      return objectMapper.readValue(
+          state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+    } catch (JsonProcessingException e) {
+      log.error("Error parsing feature data", e);
+      return new HashMap<>();
+    }
+  }
+
+  private void saveFeatureData(CampaignState state, Map<String, Object> data) {
+    try {
+      state.setFeatureData(objectMapper.writeValueAsString(data));
+    } catch (JsonProcessingException e) {
+      log.error("Error serializing feature data", e);
+    }
+  }
+
+  private <T> T getFeatureValue(CampaignState state, String key, Class<T> type, T defaultValue) {
+    Map<String, Object> data = getFeatureData(state);
+    Object value = data.get(key);
+    if (value == null) {
+      return defaultValue;
+    }
+    return objectMapper.convertValue(value, type);
+  }
+
+  private void setFeatureValue(CampaignState state, String key, Object value) {
+    Map<String, Object> data = getFeatureData(state);
+    data.put(key, value);
+    saveFeatureData(state, data);
+  }
 
   public Campaign startCampaign(@NonNull Wrestler wrestlerParam) {
     // Re-fetch to ensure attached and initialize lazy collections
@@ -190,7 +240,8 @@ public class CampaignService {
 
     // Finale Logic Override
     CampaignChapterDTO chapter = getCurrentChapter(campaign);
-    boolean isNarrativeFinale = state.isFinalsPhase() && !chapter.isTournament();
+    boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
+    boolean isNarrativeFinale = isFinalsPhase && !chapter.isTournament();
 
     String actualTypeName = segmentTypeName;
     List<String> actualRules =
@@ -251,10 +302,9 @@ public class CampaignService {
     // Tag Team Logic
     if ("Tag Team".equalsIgnoreCase(type.getName())) {
       // Player Partner
-      if (state.getPartnerId() != null) {
-        wrestlerRepository
-            .findById(state.getPartnerId())
-            .ifPresent(p -> addParticipant(segment, p));
+      Long partnerId = getFeatureValue(state, KEY_PARTNER_ID, Long.class, null);
+      if (partnerId != null) {
+        wrestlerRepository.findById(partnerId).ifPresent(p -> addParticipant(segment, p));
       } else {
         // Let's assign a random partner for now if missing.
         List<Wrestler> freeAgents = wrestlerRepository.findAll(); // Optimization needed in future
@@ -280,8 +330,10 @@ public class CampaignService {
         List<Wrestler> freeAgents = wrestlerRepository.findAll();
         freeAgents.remove(player);
         freeAgents.remove(opponent);
-        if (state.getPartnerId() != null)
-          freeAgents.removeIf(w -> w.getId().equals(state.getPartnerId()));
+        if (partnerId != null) {
+          Long finalPartnerId = partnerId;
+          freeAgents.removeIf(w -> w.getId().equals(finalPartnerId));
+        }
         // Filter out participants already added
         // Better: get all potential, remove existing participants.
 
@@ -437,9 +489,11 @@ public class CampaignService {
     // Check for chapter completion/tournament qualification
     CampaignChapterDTO currentChapter = getCurrentChapter(campaign);
     if (currentChapter.isTournament()) {
+      boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
+
       // Ensure tournament is initialized (handle legacy saves or missed init)
-      if (!state.isFinalsPhase() || state.getTournamentState() == null) {
-        state.setFinalsPhase(true);
+      if (!isFinalsPhase || tournamentService.getTournamentState(campaign) == null) {
+        setFeatureValue(state, KEY_FINALS_PHASE, true);
         tournamentService.initializeTournament(campaign);
       }
 
@@ -467,7 +521,7 @@ public class CampaignService {
       // Check for Champion (Player or NPC)
       if (tournamentService.isPlayerChampion(campaign)) {
         log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
-        state.setTournamentWinner(true);
+        setFeatureValue(state, KEY_TOURNAMENT_WINNER, true);
         awardTitleToWinner(wrestler.getId());
       } else {
         // Find NPC winner
@@ -488,16 +542,19 @@ public class CampaignService {
     } else if (currentChapter.getRules() != null
         && currentChapter.getRules().getFinaleTriggerVP() != null) {
       // Narrative Finale Logic
-      if (!state.isFinalsPhase()
-          && !state.isWonFinale()
+      boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
+      boolean hasWonFinale = getFeatureValue(state, KEY_WON_FINALE, Boolean.class, false);
+
+      if (!isFinalsPhase
+          && !hasWonFinale
           && state.getVictoryPoints() >= currentChapter.getRules().getFinaleTriggerVP()) {
         log.info("Triggering Finale Phase for chapter {}", currentChapter.getId());
-        state.setFinalsPhase(true);
-      } else if (state.isFinalsPhase()) {
+        setFeatureValue(state, KEY_FINALS_PHASE, true);
+      } else if (isFinalsPhase) {
         if (won) {
           log.info("Wrestler {} WON the chapter finale!", wrestler.getName());
-          state.setWonFinale(true);
-          state.setFinalsPhase(false); // Reset phase
+          setFeatureValue(state, KEY_WON_FINALE, true);
+          setFeatureValue(state, KEY_FINALS_PHASE, false); // Reset phase
         } else {
           log.info("Wrestler {} LOST the chapter finale. Retry needed.", wrestler.getName());
           // Optionally reduce VP to force re-trigger? Or just keep in finalsPhase?
@@ -660,10 +717,10 @@ public class CampaignService {
 
       // Initialize Tournament Opponents if entering a tournament chapter
       if (nextChapter.isTournament()) {
-        state.setFinalsPhase(true); // Skip qualifying, go straight to bracket
+        setFeatureValue(state, KEY_FINALS_PHASE, true); // Skip qualifying, go straight to bracket
         tournamentService.initializeTournament(campaign);
       } else {
-        state.setFinalsPhase(false);
+        setFeatureValue(state, KEY_FINALS_PHASE, false);
       }
 
       if (nextChapter.isTagTeam()) {
@@ -706,8 +763,8 @@ public class CampaignService {
             });
 
     // 2. Reset Partner ID (User needs to find one)
-    campaign.getState().setPartnerId(null);
-    campaign.getState().setRecruitingPartner(true);
+    setFeatureValue(campaign.getState(), KEY_PARTNER_ID, null);
+    setFeatureValue(campaign.getState(), KEY_RECRUITING_PARTNER, true);
   }
 
   public void completeCampaign(@NonNull Campaign campaign) {

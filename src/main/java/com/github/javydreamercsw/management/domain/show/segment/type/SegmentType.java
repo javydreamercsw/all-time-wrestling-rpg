@@ -33,24 +33,20 @@ import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "segment_type", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Getter
+@Setter
 public class SegmentType extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "segment_type_id")
   private Long id;
 
-  @Setter
-  @Getter
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
-  @Setter
-  @Getter
   @Column(name = "description")
   @Size(max = DESCRIPTION_MAX_LENGTH) private String description;
 
-  @Setter
-  @Getter
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
