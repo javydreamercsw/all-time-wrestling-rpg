@@ -556,7 +556,8 @@ public class CampaignDashboardView extends VerticalLayout {
                       currentCampaign,
                       opponentName,
                       "Tournament Match: " + opponentName,
-                      "One on One");
+                      "One on One",
+                      "Normal");
                   refreshUI();
                 });
         playMatchButton.addThemeVariants(

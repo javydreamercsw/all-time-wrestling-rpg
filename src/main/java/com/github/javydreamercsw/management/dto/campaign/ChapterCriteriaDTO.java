@@ -28,6 +28,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChapterCriteriaDTO {
   private Integer minVictoryPoints;
+  private Integer maxVictoryPoints;
   private Integer minMatchesPlayed;
   private Integer minWins;
   private Boolean tournamentWinner;

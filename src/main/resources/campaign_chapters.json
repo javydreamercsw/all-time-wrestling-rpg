@@ -5,6 +5,7 @@
   "introText": "You stand backstage, the roar of the crowd muting your thoughts. This is your moment. The path to the All Time Championship starts here. Will you be a hero, or a villain? Your actions today will define your legacy.",
   "aiSystemPrompt": "You are the Campaign Director for Chapter 1. Your goal is to introduce the player to the world of ATW and establish their initial reputation through backstage encounters.",
   "difficulty": "ENTRY",
+  "tagTeam": false,
   "entryPoints": [ {
     "name": "New Career",
     "criteria": [ ]
@@ -14,6 +15,12 @@
     "criteria": [ {
       "minMatchesPlayed": 3,
       "minVictoryPoints": 5
+    } ]
+  }, {
+    "name": "Sent to Development",
+    "criteria": [ {
+      "minMatchesPlayed": 5,
+      "maxVictoryPoints": 4
     } ]
   } ],
   "rules": {
@@ -36,10 +43,12 @@
   "aiSystemPrompt": "You are the Campaign Director for Chapter 2. Your goal is to test the player's moral alignment through choices while they navigate a tournament quest. Generate encounters that reflect their current Face/Heel standing.",
   "difficulty": "MEDIUM",
   "tournament": true,
+  "tagTeam": false,
   "entryPoints": [ {
     "name": "Tournament Invite",
     "criteria": [ {
-      "requiredCompletedChapterIds": [ "ch1_beginning" ]
+      "requiredCompletedChapterIds": [ "ch1_beginning" ],
+      "minVictoryPoints": 5
     } ]
   } ],
   "rules": {
@@ -73,4 +82,64 @@
       "isChampion": true
     } ]
   } ]
+}, {
+  "id": "ch2_tag_team",
+  "title": "Tag Team Redemption",
+  "shortDescription": "Find a partner and conquer the Tag Team division.",
+  "introText": "Singles competition proved too much too soon. Management has paired you with a partner to build confidence in the Tag Team division.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 2 (Tag Team). Your goal is to guide the player through finding a partner and competing in the tag team division.",
+  "difficulty": "EASY",
+  "tournament": false,
+  "tagTeam": true,
+  "entryPoints": [ {
+    "name": "Sent to Development",
+    "criteria": [ {
+      "requiredCompletedChapterIds": [ "ch1_beginning" ],
+      "maxVictoryPoints": 4
+    } ]
+  } ],
+  "rules": {
+    "qualifyingMatches": 0,
+    "minWinsToQualify": 0,
+    "victoryPointsWin": 2,
+    "victoryPointsLoss": -1,
+    "titleWinVP": 10,
+    "titleDefenseVP": 4
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  },
+  "exitPoints": [ {
+    "name": "Tag Team Champions",
+    "criteria": [ {
+      "isChampion": true
+    } ]
+  }, {
+    "name": "Betrayal",
+    "criteria": [ {
+      "minMatchesPlayed": 5,
+      "minWins": 0
+    } ]
+  } ]
+}, {
+  "id": "ch3_betrayal",
+  "title": "Betrayal",
+  "shortDescription": "Your partner has turned on you.",
+  "introText": "The team is dead. Your former partner has betrayed you. It's time for revenge.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter 3. Focus on the heated rivalry between the player and their former tag team partner.",
+  "difficulty": "HARD",
+  "tournament": false,
+  "tagTeam": false,
+  "entryPoints": [ {
+    "name": "Betrayed",
+    "criteria": [ {
+      "requiredCompletedChapterIds": [ "ch2_tag_team" ]
+    } ]
+  } ],
+  "rules": {
+    "victoryPointsWin": 4,
+    "victoryPointsLoss": -2
+  },
+  "exitPoints": [ ]
 } ]

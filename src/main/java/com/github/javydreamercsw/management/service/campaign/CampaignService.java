@@ -41,6 +41,8 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -51,13 +53,16 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +93,10 @@ public class CampaignService {
   private final TournamentService tournamentService;
   private final TitleRepository titleRepository;
   private final TitleReignRepository titleReignRepository;
+  private final TeamRepository teamRepository;
+  private final TitleService titleService;
+
+  private final Random random = new Random();
 
   public Campaign startCampaign(@NonNull Wrestler wrestler) {
     if (hasActiveCampaign(wrestler)) {
@@ -161,7 +170,8 @@ public class CampaignService {
       @NonNull Campaign campaign,
       @NonNull String opponentName,
       @NonNull String narration,
-      @NonNull String segmentTypeName) {
+      @NonNull String segmentTypeName,
+      String... segmentRules) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
@@ -183,7 +193,14 @@ public class CampaignService {
     segment.setNarration(narration);
 
     // Add "Normal" segment rule by default
-    segmentRuleRepository.findByName("Normal").ifPresent(segment::addSegmentRule);
+    if (segmentRules.length == 0) {
+      segmentRuleRepository.findByName("Normal").ifPresent(segment::addSegmentRule);
+    } else {
+      Arrays.stream(segmentRules)
+          .toList()
+          .forEach(
+              rule -> segmentRuleRepository.findByName(rule).ifPresent(segment::addSegmentRule));
+    }
     segmentRepository.save(segment);
 
     // 4. Assign Participants
@@ -193,7 +210,51 @@ public class CampaignService {
             .orElseThrow(() -> new IllegalArgumentException("Opponent not found: " + opponentName));
 
     addParticipant(segment, player);
-    addParticipant(segment, opponent);
+
+    // Tag Team Logic
+    if ("Tag Team".equalsIgnoreCase(type.getName())) {
+      // Player Partner
+      if (state.getPartnerId() != null) {
+        wrestlerRepository
+            .findById(state.getPartnerId())
+            .ifPresent(p -> addParticipant(segment, p));
+      } else {
+        // Let's assign a random partner for now if missing.
+        List<Wrestler> freeAgents = wrestlerRepository.findAll(); // Optimization needed in future
+        freeAgents.remove(player);
+        freeAgents.remove(opponent);
+        if (!freeAgents.isEmpty()) {
+          addParticipant(segment, freeAgents.get(random.nextInt(freeAgents.size())));
+        }
+      }
+
+      addParticipant(segment, opponent);
+
+      // Opponent Partner
+      Team oppTeam = teamRepository.findByWrestler(opponent).stream().findFirst().orElse(null);
+      if (oppTeam != null) {
+        Wrestler oppPartner =
+            oppTeam.getWrestler1().equals(opponent)
+                ? oppTeam.getWrestler2()
+                : oppTeam.getWrestler1();
+        addParticipant(segment, oppPartner);
+      } else {
+        // Random partner for opponent
+        List<Wrestler> freeAgents = wrestlerRepository.findAll();
+        freeAgents.remove(player);
+        freeAgents.remove(opponent);
+        if (state.getPartnerId() != null)
+          freeAgents.removeIf(w -> w.getId().equals(state.getPartnerId()));
+        // Filter out participants already added
+        // Better: get all potential, remove existing participants.
+
+        if (!freeAgents.isEmpty()) {
+          addParticipant(segment, freeAgents.get(random.nextInt(freeAgents.size())));
+        }
+      }
+    } else {
+      addParticipant(segment, opponent);
+    }
 
     state.setCurrentMatch(segment);
     state.setCurrentPhase(CampaignPhase.MATCH);
@@ -539,6 +600,10 @@ public class CampaignService {
         state.setFinalsPhase(false);
       }
 
+      if (nextChapter.isTagTeam()) {
+        initializeTagTeamChapter(campaign);
+      }
+
       campaignStateRepository.save(state);
       log.info("Advanced to chapter: {}", state.getCurrentChapterId());
       return Optional.of(newChapterId);
@@ -546,6 +611,37 @@ public class CampaignService {
       completeCampaign(campaign);
       return Optional.empty();
     }
+  }
+
+  private void initializeTagTeamChapter(@NonNull Campaign campaign) {
+    // 1. Ensure Tag Team Champions exist
+    titleRepository
+        .findByName("ATW Tag Team")
+        .ifPresent(
+            title -> {
+              if (title.isVacant()) {
+                List<Team> teams = teamRepository.findAll();
+                // Filter teams that do NOT include the player
+                teams.removeIf(
+                    t ->
+                        t.getWrestler1().equals(campaign.getWrestler())
+                            || t.getWrestler2().equals(campaign.getWrestler()));
+
+                if (!teams.isEmpty()) {
+                  Team newChamps = teams.get(random.nextInt(teams.size()));
+                  List<Wrestler> champs =
+                      List.of(newChamps.getWrestler1(), newChamps.getWrestler2());
+                  titleService.awardTitleTo(title, champs);
+                  log.info(
+                      "Initialized Tag Team Chapter: Awarded vacant title to {}",
+                      newChamps.getName());
+                }
+              }
+            });
+
+    // 2. Reset Partner ID (User needs to find one)
+    campaign.getState().setPartnerId(null);
+    campaign.getState().setRecruitingPartner(true);
   }
 
   public void completeCampaign(@NonNull Campaign campaign) {

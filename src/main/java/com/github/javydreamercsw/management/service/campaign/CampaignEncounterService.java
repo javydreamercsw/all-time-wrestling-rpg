@@ -24,7 +24,9 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -47,6 +49,8 @@ public class CampaignEncounterService {
   private final CampaignChapterService chapterService;
   private final CampaignService campaignService;
   private final WrestlerRepository wrestlerRepository;
+  private final TeamRepository teamRepository;
+  private final FactionRepository factionRepository;
   private final ObjectMapper objectMapper;
 
   @Transactional
@@ -128,6 +132,17 @@ public class CampaignEncounterService {
 
     if (campaign.getState().getRival() != null) {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
+    }
+
+    if (chapter.isTagTeam()) {
+      sb.append("- Tag Team Campaign: YES\n");
+      if (campaign.getState().getPartnerId() != null) {
+        wrestlerRepository
+            .findById(campaign.getState().getPartnerId())
+            .ifPresent(p -> sb.append("- Tag Partner: ").append(p.getName()).append("\n"));
+      } else {
+        sb.append("- Tag Partner: NONE (Player is looking for a partner)\n");
+      }
     }
 
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH
@@ -223,7 +238,20 @@ public class CampaignEncounterService {
             + " 'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',"
             + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match']. Defaults to 'One on One'.\n");
     sb.append(
-        "5. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
+        "5. If 'nextPhase' is MATCH, you may also provide a 'segmentRules' (list of strings) for"
+            + " special stipulations (e.g., ['No DQ', 'Cage Match', 'Submission Only']). Available"
+            + " rules: Normal, Hardcore, Submission, No DQ, Cage, Ladder, Table, Last Man Standing,"
+            + " Iron Man.\n");
+
+    if (chapter.isTagTeam() && campaign.getState().getPartnerId() == null) {
+      sb.append(
+          "6. The player is currently looking for a Tag Team partner. Generate narrative and"
+              + " choices that involve scouting, teaming up with, or impressing a potential partner"
+              + " from the ROSTER (who is not already in a team/faction).\n");
+    }
+
+    sb.append(
+        "7. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
             + " filler before or after the JSON.\n");
     sb.append("REQUIRED JSON STRUCTURE:\n");
     sb.append("{\n");
@@ -232,7 +260,8 @@ public class CampaignEncounterService {
     sb.append(
         "    { \"text\": \"Full choice description\", \"label\": \"Short button label\","
             + " \"alignmentShift\": 1, \"vpReward\": 5, \"nextPhase\": \"MATCH\","
-            + " \"forcedOpponentName\": null, \"matchType\": \"One on One\" }\n");
+            + " \"forcedOpponentName\": null, \"matchType\": \"One on One\", \"segmentRules\":"
+            + " [\"No DQ\"] }\n");
     sb.append("  ]\n");
     sb.append("}\n");
 

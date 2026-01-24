@@ -77,6 +77,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               5,
               null,
               "One on One",
+              null, // segmentRules
               "MATCH");
       var choice2 =
           new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
@@ -86,6 +87,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               0,
               null,
               null,
+              null, // segmentRules
               "BACKSTAGE");
 
       var response =

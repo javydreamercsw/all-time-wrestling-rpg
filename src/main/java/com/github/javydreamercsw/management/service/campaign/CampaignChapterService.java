@@ -126,6 +126,10 @@ public class CampaignChapterService {
         && state.getVictoryPoints() < criteria.getMinVictoryPoints()) {
       return false;
     }
+    if (criteria.getMaxVictoryPoints() != null
+        && state.getVictoryPoints() > criteria.getMaxVictoryPoints()) {
+      return false;
+    }
 
     // Check Matches Played
     if (criteria.getMinMatchesPlayed() != null

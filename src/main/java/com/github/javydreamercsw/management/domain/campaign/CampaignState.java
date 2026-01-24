@@ -188,6 +188,13 @@ public class CampaignState {
   @Lob
   private String tournamentState;
 
+  @Column(name = "partner_id")
+  private Long partnerId;
+
+  @Column(name = "recruiting_partner", nullable = false)
+  @Builder.Default
+  private boolean recruitingPartner = false;
+
   @com.fasterxml.jackson.annotation.JsonIgnore
   public int getCampaignStaminaBonus() {
     return (int) upgrades.stream().filter(u -> "STAMINA".equals(u.getType())).count() * 2;

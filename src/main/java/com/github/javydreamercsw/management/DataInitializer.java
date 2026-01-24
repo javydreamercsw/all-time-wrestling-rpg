@@ -61,6 +61,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -613,26 +614,34 @@ public class DataInitializer implements Initializable {
           // Award title if currentChampionName is provided
           if (dto.getCurrentChampionName() != null
               && !dto.getCurrentChampionName().trim().isEmpty()) {
-            Optional<Wrestler> championOpt =
-                wrestlerRepository.findByName(dto.getCurrentChampionName());
-            if (championOpt.isPresent()) {
-              // Check if the title is already held by this champion
-              if (title.getCurrentChampions().isEmpty()
-                  || !title.getCurrentChampions().contains(championOpt.get())) {
-                titleService.awardTitleTo(title, List.of(championOpt.get()));
+            String[] championNames = dto.getCurrentChampionName().split(",");
+            List<Wrestler> champions = new ArrayList<>();
+            for (String name : championNames) {
+              Optional<Wrestler> championOpt = wrestlerRepository.findByName(name.trim());
+              championOpt.ifPresent(champions::add);
+            }
+
+            if (!champions.isEmpty()) {
+              // Check if the title is already held by these champions
+              boolean matchesCurrent =
+                  title.getCurrentChampions().size() == champions.size()
+                      && title.getCurrentChampions().containsAll(champions);
+
+              if (!matchesCurrent) {
+                titleService.awardTitleTo(title, champions);
                 log.debug(
-                    "Awarded title {} to champion {}",
+                    "Awarded title {} to champions {}",
                     title.getName(),
                     dto.getCurrentChampionName());
               } else {
                 log.debug(
-                    "Title {} already held by champion {}",
+                    "Title {} already held by champions {}",
                     title.getName(),
                     dto.getCurrentChampionName());
               }
             } else {
               log.warn(
-                  "Champion '{}' not found for title '{}'. Title will remain vacant.",
+                  "No champions found for names '{}' for title '{}'. Title will remain vacant.",
                   dto.getCurrentChampionName(),
                   dto.getName());
             }

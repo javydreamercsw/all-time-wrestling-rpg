@@ -41,6 +41,7 @@ public class CampaignEncounterResponseDTO {
     private int vpReward;
     private String forcedOpponentName;
     private String matchType; // e.g., "One on One", "Triple Threat"
+    private List<String> segmentRules; // e.g., ["No DQ", "Cage Match"]
     private String nextPhase; // e.g., "MATCH", "POST_MATCH", "BACKSTAGE"
   }
 }

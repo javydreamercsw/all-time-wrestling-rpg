@@ -209,7 +209,7 @@ class CampaignServiceTest {
 
     Segment result =
         campaignService.createMatchForEncounter(
-            campaign, "Opponent", "Test Narration", "One on One");
+            campaign, "Opponent", "Test Narration", "One on One", "Normal");
 
     assertThat(result).isNotNull();
     assertThat(result.getId()).isEqualTo(100L);

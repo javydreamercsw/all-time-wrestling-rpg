@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
@@ -228,12 +229,18 @@ public class CampaignNarrativeView extends VerticalLayout {
 
     if ("MATCH".equals(choice.getNextPhase())) {
       try {
-        com.github.javydreamercsw.management.domain.show.segment.Segment match =
+        String[] rules =
+            choice.getSegmentRules() != null
+                ? choice.getSegmentRules().toArray(new String[0])
+                : new String[0];
+
+        Segment match =
             campaignService.createMatchForEncounter(
                 currentCampaign,
                 choice.getForcedOpponentName(),
                 response.getNarrative(),
-                choice.getMatchType());
+                choice.getMatchType(),
+                rules);
 
         Button startMatchBtn =
             new Button("Proceed to Match", e -> UI.getCurrent().navigate("match/" + match.getId()));
@@ -255,10 +262,8 @@ public class CampaignNarrativeView extends VerticalLayout {
     } else {
       // POST_MATCH or other narrative continuation
       // If it's not a match, the day should be over.
-      if (!"MATCH".equals(choice.getNextPhase())) {
-        log.info("Non-match choice made, completing post-match to reset actions.");
-        campaignService.completePostMatch(currentCampaign);
-      }
+      log.info("Non-match choice made, completing post-match to reset actions.");
+      campaignService.completePostMatch(currentCampaign);
       Button continueBtn = new Button("Continue Story", e -> generateNextEncounter());
       choicesContainer.add(continueBtn);
     }

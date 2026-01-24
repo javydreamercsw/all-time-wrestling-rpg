@@ -30,6 +30,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -53,6 +55,8 @@ class CampaignEncounterServiceTest {
   @Mock private CampaignChapterService chapterService;
   @Mock private CampaignService campaignService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TeamRepository teamRepository;
+  @Mock private FactionRepository factionRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignEncounterService encounterService;
@@ -70,6 +74,8 @@ class CampaignEncounterServiceTest {
             chapterService,
             campaignService,
             wrestlerRepository,
+            teamRepository,
+            factionRepository,
             objectMapper);
 
     Wrestler wrestler = new Wrestler();
