@@ -10,9 +10,9 @@
 
 - [x] Task: Implement Chapter Trigger Logic 09f37c7
 
-    - [x] Update `CampaignService` to evaluate player state (IsChampion, FactionMembership, Heat) against chapter criteria.
+  - [x] Update `CampaignService` to evaluate player state (IsChampion, FactionMembership, Heat) against chapter criteria.
 
-    - [x] Create unit tests for trigger evaluation logic.- [ ] Task: Conductor - User Manual Verification 'Core Systems & Triggers' (Protocol in workflow.md)
+  - [x] Create unit tests for trigger evaluation logic.- [ ] Task: Conductor - User Manual Verification 'Core Systems & Triggers' (Protocol in workflow.md)
 
 ## Phase 2: "The Fighting Champion" (Open Challenge)
 
