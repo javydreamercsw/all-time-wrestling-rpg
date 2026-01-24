@@ -40,6 +40,9 @@ CREATE TABLE campaign_state (
     tournament_state CLOB,
     current_game_date DATE,
     last_sync TIMESTAMP,
+    won_finale BOOLEAN DEFAULT FALSE NOT NULL,
+    partner_id BIGINT,
+    recruiting_partner BOOLEAN DEFAULT FALSE NOT NULL,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id),
     FOREIGN KEY (rival_id) REFERENCES npc(id),
     FOREIGN KEY (current_match_id) REFERENCES segment(segment_id)
