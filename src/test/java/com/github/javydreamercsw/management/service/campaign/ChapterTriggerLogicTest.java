@@ -24,9 +24,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,5 +67,56 @@ class ChapterTriggerLogicTest {
     // 4. Check again - should FIND Gang Warfare
     available = chapterService.findAvailableChapters(state);
     assertThat(available).extracting(CampaignChapterDTO::getId).contains("gang_warfare");
+  }
+
+  @Test
+  void testChampionTrigger() {
+    // 1. Setup Mock State
+    Wrestler wrestler = mock(Wrestler.class);
+    Campaign campaign = mock(Campaign.class);
+    when(campaign.getWrestler()).thenReturn(wrestler);
+
+    CampaignState state = new CampaignState();
+    state.setCampaign(campaign);
+    state.setCompletedChapterIds(new ArrayList<>());
+
+    // 2. Initial check - should NOT find Fighting Champion
+    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    assertThat(available).extracting(CampaignChapterDTO::getId).doesNotContain("fighting_champion");
+
+    // 3. Mock Champion Status
+    TitleReign reign = mock(TitleReign.class);
+    when(reign.isCurrentReign()).thenReturn(true);
+    when(wrestler.getReigns()).thenReturn(Collections.singletonList(reign));
+
+    // 4. Check again - should FIND Fighting Champion
+    available = chapterService.findAvailableChapters(state);
+    assertThat(available).extracting(CampaignChapterDTO::getId).contains("fighting_champion");
+  }
+
+  @Test
+  void testAuthorityTrigger() {
+    // 1. Setup Mock State
+    Wrestler wrestler = mock(Wrestler.class);
+    Campaign campaign = mock(Campaign.class);
+    when(campaign.getWrestler()).thenReturn(wrestler);
+
+    CampaignState state = new CampaignState();
+    state.setCampaign(campaign);
+    state.setCompletedChapterIds(new ArrayList<>());
+    state.setVictoryPoints(10); // Not enough for trigger (15)
+
+    // 2. Initial check - should NOT find Corporate Power Trip
+    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    assertThat(available)
+        .extracting(CampaignChapterDTO::getId)
+        .doesNotContain("corporate_power_trip");
+
+    // 3. Increase VP
+    state.setVictoryPoints(15);
+
+    // 4. Check again - should FIND Corporate Power Trip
+    available = chapterService.findAvailableChapters(state);
+    assertThat(available).extracting(CampaignChapterDTO::getId).contains("corporate_power_trip");
   }
 }

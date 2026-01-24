@@ -145,6 +145,21 @@ public class CampaignEncounterService {
       }
     }
 
+    if ("fighting_champion".equals(chapter.getId())) {
+      sb.append(
+          "- Chapter Context: OPEN CHALLENGE. The player is a champion and must defend"
+              + " their title against anyone who answers.\n");
+    } else if ("gang_warfare".equals(chapter.getId())) {
+      sb.append(
+          "- Chapter Context: FACTION WARFARE. The player is part of a faction and must"
+              + " battle rival groups. Narrative should involve tag team dynamics or faction"
+              + " beatdowns.\n");
+    } else if ("corporate_power_trip".equals(chapter.getId())) {
+      sb.append(
+          "- Chapter Context: AUTHORITY FEUD. A corrupt GM or authority figure is"
+              + " actively sabotaging the player. Matches should feel unfair or high-stakes.\n");
+    }
+
     if (campaign.getState().isFinalsPhase() && !chapter.isTournament()) {
       sb.append("\n*** CHAPTER FINALE PHASE ***\n");
       sb.append(
@@ -268,8 +283,14 @@ public class CampaignEncounterService {
               + " from the ROSTER (who is not already in a team/faction).\n");
     }
 
+    if ("fighting_champion".equals(chapter.getId())) {
+      sb.append(
+          "7. In this chapter (Open Challenge), when nextPhase is MATCH, you MUST select a random"
+              + " credible opponent from the ROSTER above as the one who answers the challenge.\n");
+    }
+
     sb.append(
-        "7. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
+        "8. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
             + " filler before or after the JSON.\n");
     sb.append("REQUIRED JSON STRUCTURE:\n");
     sb.append("{\n");
