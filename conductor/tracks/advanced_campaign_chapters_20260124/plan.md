@@ -14,22 +14,25 @@
 
 - [x] Task: Implement Open Challenge Logic 10ef0e9
 
-    - [x] Update `CampaignEncounterService` prompt logic to handle "The Fighting Champion" context.
+  - [x] Update `CampaignEncounterService` prompt logic to handle "The Fighting Champion" context.
 
-    - [x] Ensure AI is instructed to provide surprise opponents for Open Challenges.
+  - [x] Ensure AI is instructed to provide surprise opponents for Open Challenges.
 
 - [x] Task: Integrate with Match Engine 7f87846
 
-    - [x] Ensure Open Challenge matches correctly affect title history and fan calculations.
-
+  - [x] Ensure Open Challenge matches correctly affect title history and fan calculations.
 - [x] Task: Conductor - User Manual Verification 'The Fighting Champion' (Protocol in workflow.md)
 
 ## Phase 3: "Gang Warfare" (Faction Integration)
 
-- [ ] Task: Implement Faction Logic for Campaign
-  - [ ] Create service methods to retrieve and manipulate Faction data for campaign contexts.
-  - [ ] Implement "Recruitment" and "Betrayal" event logic.
+- [x] Task: Implement Faction Logic for Campaign ee4e8c7
+
+    - [x] Create service methods to retrieve and manipulate Faction data for campaign contexts.
+
+    - [x] Implement "Recruitment" and "Betrayal" event logic.
+
 - [ ] Task: Create Faction-based Segments
+
   - [ ] Implement specific segment types for Faction Warfare (e.g., "Faction Beatdown", "Group Promo").
 - [ ] Task: Conductor - User Manual Verification 'Gang Warfare' (Protocol in workflow.md)
 
