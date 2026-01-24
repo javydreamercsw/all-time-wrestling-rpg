@@ -26,4 +26,12 @@
   "name": "Faction Beatdown",
   "description": "A non-match segment where one or more wrestlers are attacked by a group",
   "playerAmount": -1
+}, {
+  "name": "GM Office Confrontation",
+  "description": "A backstage segment where the player confronts management",
+  "playerAmount": -1
+}, {
+  "name": "Performance Review",
+  "description": "A segment where management evaluates the player's status and results",
+  "playerAmount": -1
 } ]

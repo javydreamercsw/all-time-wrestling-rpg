@@ -269,8 +269,8 @@ public class CampaignEncounterService {
         "4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentName' (string) if"
             + " the story dictates a specific opponent from the ROSTER above. Also provide a"
             + " 'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',"
-            + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match', 'Faction Beatdown']. Defaults to"
-            + " 'One on One'.\n");
+            + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match', 'Faction Beatdown',"
+            + " 'GM Office Confrontation', 'Performance Review']. Defaults to 'One on One'.\n");
     sb.append(
         "5. If 'nextPhase' is MATCH, you may also provide a 'segmentRules' (list of strings) for"
             + " special stipulations (e.g., ['No DQ', 'Cage Match', 'Submission Only']). Available"
