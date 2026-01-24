@@ -181,10 +181,13 @@ class CampaignServiceTest {
     campaign.setWrestler(player);
 
     CampaignState state = new CampaignState();
+    state.setCurrentChapterId("test-chapter");
     campaign.setState(state);
 
     when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
     when(seasonRepository.findByName("Campaign Mode")).thenReturn(Optional.of(new Season()));
+    when(chapterService.getChapter("test-chapter"))
+        .thenReturn(Optional.of(CampaignChapterDTO.builder().id("test-chapter").build()));
 
     ShowType showType = org.mockito.Mockito.mock(ShowType.class);
     when(showType.getId()).thenReturn(2L);

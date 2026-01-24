@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -30,6 +31,13 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
@@ -41,12 +49,14 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 @Transactional
+@WithMockUser(username = "admin", roles = "ADMIN")
 class CampaignControllerTest extends AbstractIntegrationTest {
 
   private MockMvc mockMvc;
@@ -57,6 +67,9 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   @Autowired private CampaignEncounterService campaignEncounterService;
   @Autowired private CampaignUpgradeService upgradeService;
   @Autowired private WrestlerAlignmentRepository alignmentRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private TitleRepository titleRepository;
 
   @Autowired private WrestlerRepository wrestlerRepository;
 
@@ -65,6 +78,33 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   @BeforeEach
   void setupData() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+
+    // Ensure Weekly show type exists
+    if (showTypeRepository.findByName("Weekly").isEmpty()) {
+      ShowType weekly = new ShowType();
+      weekly.setName("Weekly");
+      weekly.setDescription("Weekly Show");
+      showTypeRepository.save(weekly);
+    }
+
+    // Ensure One on One segment type exists
+    if (segmentTypeRepository.findByName("One on One").isEmpty()) {
+      SegmentType oneOnOne = new SegmentType();
+      oneOnOne.setName("One on One");
+      oneOnOne.setDescription("One on One match");
+      segmentTypeRepository.save(oneOnOne);
+    }
+
+    // Ensure ATW World Championship exists
+    if (titleRepository.findByName("ATW World").isEmpty()) {
+      Title world = new Title();
+      world.setName("ATW World");
+      world.setDescription("World Championship");
+      world.setTier(WrestlerTier.MAIN_EVENTER);
+      world.setChampionshipType(ChampionshipType.SINGLE);
+      titleRepository.save(world);
+    }
+
     testWrestler =
         Wrestler.builder().name("API Tester").startingHealth(100).startingStamina(100).build();
     testWrestler = wrestlerRepository.save(testWrestler);

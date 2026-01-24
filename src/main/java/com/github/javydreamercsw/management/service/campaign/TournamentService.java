@@ -277,7 +277,7 @@ public class TournamentService {
 
     // Check if round complete
     boolean roundComplete = currentRoundMatches.stream().allMatch(m -> m.getWinnerId() != null);
-    if (roundComplete && currentRound < tournament.getTotalRounds()) {
+    if (roundComplete) {
       tournament.setCurrentRound(currentRound + 1);
     }
 

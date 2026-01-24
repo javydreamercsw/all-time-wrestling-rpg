@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
@@ -33,6 +34,9 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -63,6 +67,7 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
   @Autowired private CampaignUpgradeService upgradeService;
   @Autowired private SecurityUtils securityUtils;
   @Autowired private TournamentService tournamentService;
+  @Autowired private TitleRepository titleRepository;
   private Campaign campaign;
 
   @BeforeEach
@@ -81,6 +86,15 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
       st.setName("One on One");
       st.setDescription("Standard Match");
       segmentTypeRepository.save(st);
+    }
+
+    if (titleRepository.findByName("ATW World").isEmpty()) {
+      Title world = new Title();
+      world.setName("ATW World");
+      world.setDescription("World Championship");
+      world.setTier(WrestlerTier.MAIN_EVENTER);
+      world.setChampionshipType(ChampionshipType.SINGLE);
+      titleRepository.save(world);
     }
 
     Role bookerRole =
