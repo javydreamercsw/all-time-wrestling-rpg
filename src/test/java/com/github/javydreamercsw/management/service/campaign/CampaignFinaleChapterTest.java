@@ -37,7 +37,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-public class CampaignFinaleChapterTest extends AbstractViewTest {
+public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
@@ -64,8 +64,6 @@ public class CampaignFinaleChapterTest extends AbstractViewTest {
 
   @BeforeEach
   public void setUp() {
-    super.setupKaribu();
-
     // Populate Reference Data
     if (showTypeRepository.count() == 0) {
       ShowType st = new ShowType();

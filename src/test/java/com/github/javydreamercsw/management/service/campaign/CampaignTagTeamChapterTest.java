@@ -37,7 +37,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-public class CampaignTagTeamChapterTest extends AbstractViewTest {
+public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
@@ -61,8 +61,6 @@ public class CampaignTagTeamChapterTest extends AbstractViewTest {
 
   @BeforeEach
   public void setUp() {
-    super.setupKaribu();
-
     Role bookerRole =
         roleRepository
             .findByName(RoleName.BOOKER)
