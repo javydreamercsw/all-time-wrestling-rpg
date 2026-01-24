@@ -34,6 +34,7 @@ public class CampaignChapterDTO {
   private String introText;
   private String aiSystemPrompt;
   private Difficulty difficulty;
+  private boolean tournament;
   private List<ChapterPointDTO> entryPoints;
   private List<ChapterPointDTO> exitPoints;
   private ChapterRules rules;

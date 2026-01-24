@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
@@ -43,6 +42,7 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H4;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,7 +93,7 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
     account.setUsername("tournamentuser");
     account.setPassword("password");
     account.setEmail("tournament@test.com");
-    account.setRoles(java.util.Collections.singleton(bookerRole));
+    account.setRoles(Collections.singleton(bookerRole));
     account = accountRepository.save(account);
 
     Wrestler player =
@@ -131,8 +131,8 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
   }
 
   @Test
-  public void testTournamentFlow() {
-    // 1. Manually instantiate Dashboard (bypassing navigation instantiator issues)
+  public void testTournamentFullFlow() {
+    // 1. Manually instantiate Dashboard
     CampaignDashboardView dashboard =
         new CampaignDashboardView(
             campaignRepository,
@@ -145,63 +145,64 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
 
     UI.getCurrent().add(dashboard);
 
-    // Verify Tournament Bracket appears
-    H4 bracketTitle = _get(H4.class, spec -> spec.withText("Tournament Bracket (Round 1)"));
-    assertThat(bracketTitle).isNotNull();
+    // Initial State: Round 1
+    // 5 Opponents + 1 Player = 6 Total. Bracket Size 8.
+    // 3 Rounds (R1: 4 matches, R2: 2 matches, R3: 1 match).
+    int expectedRounds = 3;
 
-    // 2. Play Round 1 Match
+    for (int round = 1; round <= expectedRounds; round++) {
+      // Determine expected title
+      String expectedTitle = "Round " + round;
 
-    Button playButton =
+      // Verify Bracket Header
+      _get(H4.class, spec -> spec.withText("Tournament Bracket (" + expectedTitle + ")"));
+
+      // Play Match
+      Button playButton =
+          _get(
+              Button.class,
+              spec -> spec.withPredicate(b -> b.getText().startsWith("Play Tournament Match")));
+      playButton.click();
+
+      // Verify Continue Button exists (proving match created)
+      _get(
+          Button.class,
+          spec -> spec.withPredicate(b -> b.getText().startsWith("Continue Tournament Match")));
+
+      // Simulate Match Win (Bypass MatchView)
+      campaignService.processMatchResult(campaign, true);
+
+      // Reload Dashboard (simulating return from MatchView)
+      UI.getCurrent().removeAll();
+      dashboard =
+          new CampaignDashboardView(
+              campaignRepository,
+              campaignService,
+              wrestlerRepository,
+              cardRepository,
+              upgradeService,
+              securityUtils,
+              tournamentService);
+      UI.getCurrent().add(dashboard);
+
+      if (round < expectedRounds) {
+        // Verify "Advance to Next Day" button
+        Button advanceButton =
+            _get(Button.class, spec -> spec.withText("Match Complete - Advance to Next Day"));
+
+        // Click Advance (Clears match, advances day, refreshes UI)
+        advanceButton.click();
+      } else {
+        // Final Round (Champion)
+
+        // Verify Champion Message
         _get(
-            Button.class,
-            spec -> spec.withPredicate(b -> b.getText().startsWith("Play Tournament Match")));
+            com.vaadin.flow.component.html.Span.class,
+            spec -> spec.withText("🏆 You are the Tournament Champion!"));
 
-    playButton.click();
-
-    Button continueButton =
-        _get(
-            Button.class,
-            spec -> spec.withPredicate(b -> b.getText().startsWith("Continue Tournament Match")));
-
-    assertThat(continueButton).isNotNull();
-
-    // 3. Simulate Match Execution (Bypass MatchView navigation)
-    campaignService.processMatchResult(campaign, true);
-
-    // Refresh Dashboard manually (simulating coming back)
-    UI.getCurrent().removeAll();
-
-    dashboard =
-        new CampaignDashboardView(
-            campaignRepository,
-            campaignService,
-            wrestlerRepository,
-            cardRepository,
-            upgradeService,
-            securityUtils,
-            tournamentService);
-
-    UI.getCurrent().add(dashboard);
-
-    // 4. Verify Post-Match State
-    // Should see "Match Complete - Advance to Next Day"
-
-    Button advanceButton =
-        _get(Button.class, spec -> spec.withText("Match Complete - Advance to Next Day"));
-
-    // 5. Advance
-    // This button calls campaignService.completePostMatch and refreshUI.
-
-    advanceButton.click();
-
-    // 6. Verify Round 2
-    // Bracket title should be "Tournament Bracket (Round 2)"
-
-    _get(H4.class, spec -> spec.withText("Tournament Bracket (Round 2)"));
-    // Should see "Play Tournament Match" for next opponent
-
-    _get(
-        Button.class,
-        spec -> spec.withPredicate(b -> b.getText().startsWith("Play Tournament Match")));
+        // Verify Chapter Completion Button
+        _get(Button.class, spec -> spec.withText("Complete Chapter & Advance"));
+      }
+    }
   }
 }

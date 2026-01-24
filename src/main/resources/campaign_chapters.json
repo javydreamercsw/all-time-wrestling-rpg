@@ -12,7 +12,7 @@
   "exitPoints": [ {
     "name": "Ready for Prime Time",
     "criteria": [ {
-      "minMatchesPlayed": 1,
+      "minMatchesPlayed": 3,
       "minVictoryPoints": 5
     } ]
   } ],
@@ -35,6 +35,7 @@
   "introText": "The stakes have been raised. The All Time Wrestling Championship tournament is approaching, and you must prove you belong among the elite.",
   "aiSystemPrompt": "You are the Campaign Director for Chapter 2. Your goal is to test the player's moral alignment through choices while they navigate a tournament quest. Generate encounters that reflect their current Face/Heel standing.",
   "difficulty": "MEDIUM",
+  "tournament": true,
   "entryPoints": [ {
     "name": "Tournament Invite",
     "criteria": [ {

@@ -23,10 +23,12 @@ import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class CampaignDramaService {
 
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
+  private final CampaignChapterService chapterService;
   private final Random random;
 
   /**
@@ -48,16 +51,20 @@ public class CampaignDramaService {
    * @param campaign The campaign to check.
    * @return Optional triggered event.
    */
-  public Optional<DramaEvent> checkForStoryEvents(Campaign campaign) {
+  public Optional<DramaEvent> checkForStoryEvents(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
-    // Chapter 2: Rivalry
-    if ("ch2_tournament".equals(state.getCurrentChapterId())) {
+    CampaignChapterDTO chapter =
+        chapterService.getChapter(state.getCurrentChapterId()).orElse(null);
+    if (chapter == null) return Optional.empty();
+
+    // Tournament Chapter: Rivalry
+    if (chapter.isTournament()) {
       // Check if player has active rivalry.
       // For now, if no active rivalry, trigger one.
       if (player.getActiveRivalries().isEmpty()) {
-        log.info("Triggering Chapter 2 Rival Event for campaign {}", campaign.getId());
+        log.info("Triggering Tournament Rival Event for campaign {}", campaign.getId());
         return triggerRivalEvent(campaign);
       }
     }
@@ -85,7 +92,7 @@ public class CampaignDramaService {
    * @param campaign The campaign.
    * @return The created DramaEvent.
    */
-  public Optional<DramaEvent> triggerRivalEvent(Campaign campaign) {
+  public Optional<DramaEvent> triggerRivalEvent(@NonNull Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
     // Find a suitable rival
@@ -114,7 +121,7 @@ public class CampaignDramaService {
    * @param campaign The campaign.
    * @return The created DramaEvent.
    */
-  public Optional<DramaEvent> triggerOutsiderEvent(Campaign campaign) {
+  public Optional<DramaEvent> triggerOutsiderEvent(@NonNull Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
     // Find a suitable outsider (someone not in the same faction, or high tier?)
@@ -137,7 +144,7 @@ public class CampaignDramaService {
         description);
   }
 
-  private Wrestler findRival(Wrestler player) {
+  private Wrestler findRival(@NonNull Wrestler player) {
     List<Long> allIds = wrestlerRepository.findAllIds();
     // Filter out player
     List<Long> opponentIds = allIds.stream().filter(id -> !id.equals(player.getId())).toList();

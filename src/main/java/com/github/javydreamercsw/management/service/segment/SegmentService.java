@@ -484,4 +484,24 @@ public class SegmentService {
     Pageable pageable = PageRequest.of(0, limit);
     return segmentRepository.findUpcomingSegmentsForWrestler(wrestler, referenceDate, pageable);
   }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
+    segment.addParticipant(wrestler);
+    segmentRepository.save(segment);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void setWinner(@NonNull Segment segment, @NonNull Wrestler winner) {
+    segment.setWinners(List.of(winner));
+    segmentRepository.save(segment);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void setAdjudicationStatus(
+      @NonNull Segment segment,
+      @NonNull com.github.javydreamercsw.management.domain.AdjudicationStatus status) {
+    segment.setAdjudicationStatus(status);
+    segmentRepository.save(segment);
+  }
 }

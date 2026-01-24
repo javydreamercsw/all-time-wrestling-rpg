@@ -41,12 +41,20 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -78,8 +86,10 @@ public class CampaignService {
   private final ShowTemplateRepository showTemplateRepository;
   private final SegmentParticipantRepository participantRepository;
   private final TournamentService tournamentService;
+  private final TitleRepository titleRepository;
+  private final TitleReignRepository titleReignRepository;
 
-  public Campaign startCampaign(Wrestler wrestler) {
+  public Campaign startCampaign(@NonNull Wrestler wrestler) {
     if (hasActiveCampaign(wrestler)) {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
@@ -148,7 +158,10 @@ public class CampaignService {
    * @return The created Segment.
    */
   public Segment createMatchForEncounter(
-      Campaign campaign, String opponentName, String narration, String segmentTypeName) {
+      @NonNull Campaign campaign,
+      @NonNull String opponentName,
+      @NonNull String narration,
+      @NonNull String segmentTypeName) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
@@ -310,7 +323,7 @@ public class CampaignService {
     if (won) {
       state.setWins(state.getWins() + 1);
       state.setVictoryPoints(state.getVictoryPoints() + rules.getVictoryPointsWin());
-      log.info(
+      log.debug(
           "Match Won. VP Change: {} + {} = {}",
           previousVP,
           rules.getVictoryPointsWin(),
@@ -318,7 +331,7 @@ public class CampaignService {
     } else {
       state.setLosses(state.getLosses() + 1);
       state.setVictoryPoints(state.getVictoryPoints() + rules.getVictoryPointsLoss());
-      log.info(
+      log.debug(
           "Match Lost. VP Change: {} + {} = {}",
           previousVP,
           rules.getVictoryPointsLoss(),
@@ -326,7 +339,8 @@ public class CampaignService {
     }
 
     // Check for chapter completion/tournament qualification
-    if ("ch2_tournament".equals(state.getCurrentChapterId())) {
+    CampaignChapterDTO currentChapter = getCurrentChapter(campaign);
+    if (currentChapter.isTournament()) {
       // Ensure tournament is initialized (handle legacy saves or missed init)
       if (!state.isFinalsPhase() || state.getTournamentState() == null) {
         state.setFinalsPhase(true);
@@ -334,14 +348,46 @@ public class CampaignService {
       }
 
       // Finals Phase (Tournament Bracket)
-      tournamentService.advanceTournament(campaign, won);
+      Show currentShow = state.getCurrentMatch().getShow();
+      tournamentService.advanceTournament(campaign, won, currentShow);
+
       if (!won) {
         log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
-        // They lost in the finals, they didn't win the tournament
-        // We can use a flag or just let the matchesPlayed count determine where they failed
-      } else if (state.getWins() >= rules.getTotalFinalsMatches()) {
+
+        // Simulate rest of tournament
+        TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+        while (tournament != null && tournament.getCurrentRound() <= tournament.getTotalRounds()) {
+          log.info("Simulating round {}...", tournament.getCurrentRound());
+          // Player effectively lost/eliminated, so passing 'false' handles their match if any
+          // (redundant check but safe)
+          // For purely NPC rounds, 'won' param is ignored by advanceTournament logic for player
+          // match
+          tournamentService.advanceTournament(campaign, false, currentShow);
+          // Refresh state
+          tournament = tournamentService.getTournamentState(campaign);
+        }
+      }
+
+      // Check for Champion (Player or NPC)
+      if (tournamentService.isPlayerChampion(campaign)) {
         log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
         state.setTournamentWinner(true);
+        awardTitleToWinner(wrestler.getId());
+      } else {
+        // Find NPC winner
+        TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+        if (tournament != null) {
+          TournamentDTO.TournamentMatch finals =
+              tournament.getMatches().stream()
+                  .filter(m -> m.getRound() == tournament.getTotalRounds())
+                  .findFirst()
+                  .orElse(null);
+
+          if (finals != null && finals.getWinnerId() != null) {
+            log.info("Tournament won by wrestler ID: {}", finals.getWinnerId());
+            awardTitleToWinner(finals.getWinnerId());
+          }
+        }
       }
     }
 
@@ -356,11 +402,11 @@ public class CampaignService {
 
       if (alignment.getAlignmentType() == AlignmentType.FACE) {
         state.setPromoUnlocked(true);
-        log.info("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
+        log.debug("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
       } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
         state.setPromoUnlocked(true);
         state.setAttackUnlocked(true);
-        log.info(
+        log.debug(
             "Wrestler {} unlocked Promo and Attack actions (Heel alignment).", wrestler.getName());
       }
     }
@@ -399,9 +445,9 @@ public class CampaignService {
   public Show getOrCreateCampaignShow(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
-    java.time.LocalDate date = state.getCurrentGameDate();
+    LocalDate date = state.getCurrentGameDate();
     if (date == null) {
-      date = java.time.LocalDate.now();
+      date = LocalDate.now();
       state.setCurrentGameDate(date);
     }
 
@@ -413,20 +459,16 @@ public class CampaignService {
                 () -> {
                   Season s = new Season();
                   s.setName("Campaign Mode");
-                  s.setStartDate(
-                      java.time.LocalDate.now().atStartOfDay().toInstant(java.time.ZoneOffset.UTC));
+                  s.setStartDate(LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC));
                   s.setEndDate(
-                      java.time.LocalDate.now()
-                          .plusYears(1)
-                          .atStartOfDay()
-                          .toInstant(java.time.ZoneOffset.UTC));
+                      LocalDate.now().plusYears(1).atStartOfDay().toInstant(ZoneOffset.UTC));
                   return seasonRepository.save(s);
                 });
 
     // Determine show name and template
     String showName;
     Long templateId = null;
-    if (date.getDayOfWeek() == java.time.DayOfWeek.FRIDAY) {
+    if (date.getDayOfWeek() == DayOfWeek.FRIDAY) {
       showName = "Continuum";
       templateId =
           showTemplateRepository.findByName("Continuum").map(ShowTemplate::getId).orElse(null);
@@ -482,14 +524,15 @@ public class CampaignService {
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
     if (!available.isEmpty()) {
       // Pick next chapter - could be enhanced with choosing logic
-      String newChapterId = available.get(0).getId();
+      CampaignChapterDTO nextChapter = available.get(0);
+      String newChapterId = nextChapter.getId();
       state.setCurrentChapterId(newChapterId);
       state.setMatchesPlayed(0); // Reset chapter-specific counters
       state.setWins(0);
       state.setLosses(0);
 
-      // Initialize Tournament Opponents if entering Chapter 2
-      if ("ch2_tournament".equals(newChapterId)) {
+      // Initialize Tournament Opponents if entering a tournament chapter
+      if (nextChapter.isTournament()) {
         state.setFinalsPhase(true); // Skip qualifying, go straight to bracket
         tournamentService.initializeTournament(campaign);
       } else {
@@ -511,7 +554,17 @@ public class CampaignService {
     campaignRepository.save(campaign);
   }
 
-  public boolean isChapterComplete(@NonNull Campaign campaign) {
+  @Transactional(readOnly = true)
+  public boolean isChapterComplete(@NonNull Campaign campaignParam) {
+    // Reload to ensure attached entity and initialize lazy collections
+    Campaign campaign =
+        campaignRepository
+            .findById(campaignParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
+
+    // Initialize lazy collections accessed by criteria checks (e.g. isChampion checks reigns)
+    campaign.getWrestler().getReigns().size();
+
     return chapterService.isChapterComplete(campaign.getState());
   }
 
@@ -713,5 +766,35 @@ public class CampaignService {
       campaignStateRepository.save(state);
       log.info("Wrestler {} picked card: {}", campaign.getWrestler().getName(), card.getName());
     }
+  }
+
+  private void awardTitleToWinner(Long winnerId) {
+    Wrestler winner =
+        wrestlerRepository
+            .findById(winnerId)
+            .orElseThrow(() -> new IllegalStateException("Winner not found: " + winnerId));
+
+    Title title =
+        titleRepository
+            .findByName("ATW World")
+            .orElseThrow(() -> new IllegalStateException("ATW World Championship not found"));
+
+    // End current active reign if exists
+    titleReignRepository
+        .findByTitleAndEndDateIsNull(title)
+        .forEach(
+            reign -> {
+              reign.setEndDate(java.time.Instant.now());
+              titleReignRepository.save(reign);
+            });
+
+    // Create new reign
+    TitleReign newReign = new TitleReign();
+    newReign.setTitle(title);
+    newReign.getChampions().add(winner);
+    newReign.setStartDate(java.time.Instant.now());
+    titleReignRepository.save(newReign);
+
+    log.info("Awarded {} to {}", title.getName(), winner.getName());
   }
 }

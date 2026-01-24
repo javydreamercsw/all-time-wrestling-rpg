@@ -184,19 +184,19 @@ public class CampaignDashboardView extends VerticalLayout {
       add(new AlignmentTrackComponent(alignment));
     }
 
-    // 2. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
-    if ("ch2_tournament".equals(state.getCurrentChapterId())) {
+    // 2. Main Split Layout
+    HorizontalLayout mainLayout = new HorizontalLayout();
+    mainLayout.setWidthFull();
+    mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
+
+    // 3. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
+    if (campaignService.getCurrentChapter(currentCampaign).isTournament()) {
       VerticalLayout tournamentSection = new VerticalLayout();
       tournamentSection.setPadding(false);
       tournamentSection.setSpacing(true);
       addTournamentBracket(tournamentSection);
       add(tournamentSection);
     }
-
-    // 3. Main Split Layout
-    HorizontalLayout mainLayout = new HorizontalLayout();
-    mainLayout.setWidthFull();
-    mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
 
     // Show "Continue Match" if in a match and NOT adjudicated
     if (state.getCurrentMatch() != null

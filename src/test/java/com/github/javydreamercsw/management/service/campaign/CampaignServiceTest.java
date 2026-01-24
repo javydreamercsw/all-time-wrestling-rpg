@@ -249,6 +249,12 @@ class CampaignServiceTest {
     campaign.setWrestler(wrestler);
     CampaignState state = new CampaignState();
     state.setCurrentChapterId("ch2_tournament");
+
+    Segment match = new Segment();
+    Show show = new Show();
+    match.setShow(show);
+    state.setCurrentMatch(match);
+
     campaign.setState(state);
 
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
@@ -262,6 +268,7 @@ class CampaignServiceTest {
     CampaignChapterDTO chapter =
         CampaignChapterDTO.builder()
             .id("ch2_tournament")
+            .tournament(true)
             .rules(
                 CampaignChapterDTO.ChapterRules.builder()
                     .victoryPointsWin(3)
@@ -296,6 +303,7 @@ class CampaignServiceTest {
 
     CampaignChapterDTO ch2 = new CampaignChapterDTO();
     ch2.setId("ch2_tournament");
+    ch2.setTournament(true);
     when(chapterService.findAvailableChapters(any())).thenReturn(List.of(ch2));
 
     campaignService.advanceChapter(campaign);

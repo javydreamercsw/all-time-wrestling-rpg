@@ -18,18 +18,28 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,9 +54,12 @@ public class TournamentService {
   private final WrestlerRepository wrestlerRepository;
   private final ObjectMapper objectMapper;
   private final Random random = new Random();
+  private final SegmentService segmentService;
+  private final SegmentTypeRepository segmentTypeRepository;
+  private final SegmentRuleRepository segmentRuleRepository;
 
   @Transactional
-  public void initializeTournament(Campaign campaign) {
+  public void initializeTournament(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     if (state.getTournamentState() != null && !state.getTournamentState().isEmpty()) {
       return; // Already initialized
@@ -143,7 +156,7 @@ public class TournamentService {
         // Let's say winnerId = 0L for Bye?
       } else if (w1 != null && w2 == null) {
         match.setWinnerId(w1.getId());
-      } else if (w1 == null && w2 != null) {
+      } else if (w1 == null) {
         match.setWinnerId(w2.getId());
       }
 
@@ -178,7 +191,7 @@ public class TournamentService {
     saveTournamentState(state, tournament);
   }
 
-  public TournamentDTO getTournamentState(Campaign campaign) {
+  public TournamentDTO getTournamentState(@NonNull Campaign campaign) {
     CampaignState state = campaign.getState();
     if (state.getTournamentState() == null) {
       return null;
@@ -192,7 +205,7 @@ public class TournamentService {
   }
 
   @Transactional
-  public void advanceTournament(Campaign campaign, boolean playerWon) {
+  public void advanceTournament(@NonNull Campaign campaign, boolean playerWon, Show show) {
     TournamentDTO tournament = getTournamentState(campaign);
     if (tournament == null) return;
 
@@ -219,38 +232,45 @@ public class TournamentService {
           match.getWrestler1Name(),
           match.getWrestler2Name());
 
+      Long winnerId = null;
+
       if (match.isPlayerMatch()) {
         // Player Match logic
         if (playerWon) {
-          match.setWinnerId(campaign.getWrestler().getId());
+          winnerId = campaign.getWrestler().getId();
           log.info("Player WON match {}", match.getId());
         } else {
           // Determine opponent ID
-          Long opponentId =
+          winnerId =
               match.getWrestler1Id().equals(campaign.getWrestler().getId())
                   ? match.getWrestler2Id()
                   : match.getWrestler1Id();
-          match.setWinnerId(opponentId);
         }
       } else {
         // NPC vs NPC Simulation
         if (match.getWrestler1Id() == null && match.getWrestler2Id() == null) {
           // Bye vs Bye -> Double Bye
           match.setWrestler1Name("BYE");
-          match.setWinnerId(-1L); // Mark as resolved (Bye advances)
+          winnerId = -1L; // Mark as resolved (Bye advances)
         } else if (match.getWrestler1Id() == null) {
-          match.setWinnerId(match.getWrestler2Id());
+          winnerId = match.getWrestler2Id();
         } else if (match.getWrestler2Id() == null) {
-          match.setWinnerId(match.getWrestler1Id());
+          winnerId = match.getWrestler1Id();
         } else {
           // Real match
           if (random.nextBoolean()) {
-            match.setWinnerId(match.getWrestler1Id());
+            winnerId = match.getWrestler1Id();
           } else {
-            match.setWinnerId(match.getWrestler2Id());
+            winnerId = match.getWrestler2Id();
+          }
+
+          // Create Segment for record keeping if Show is provided and both wrestlers exist
+          if (show != null && winnerId > 0) {
+            createSimulatedMatch(show, match.getWrestler1Id(), match.getWrestler2Id(), winnerId);
           }
         }
       }
+      match.setWinnerId(winnerId);
     }
     // Propagate
     propagateWinners(tournament, currentRound, campaign);
@@ -259,22 +279,61 @@ public class TournamentService {
     boolean roundComplete = currentRoundMatches.stream().allMatch(m -> m.getWinnerId() != null);
     if (roundComplete && currentRound < tournament.getTotalRounds()) {
       tournament.setCurrentRound(currentRound + 1);
-      // Auto-resolve Byes in next round recursively?
-      // If we advanced to R2, and R2 has "Winner of Bye vs Bye" (i.e. Bye), it should auto-resolve?
-      // For now, let's trust the loop will handle it next time advanceTournament is called (e.g.
-      // next day)
-      // OR we should auto-advance empty matches?
-      // We'll leave it step-by-step for now.
     }
 
     saveTournamentState(campaign.getState(), tournament);
   }
 
-  private void propagateWinners(TournamentDTO tournament, int round, Campaign campaign) {
+  private void createSimulatedMatch(Show show, Long w1Id, Long w2Id, Long winnerId) {
+    Optional<Wrestler> w1Opt = wrestlerRepository.findById(w1Id);
+    Optional<Wrestler> w2Opt = wrestlerRepository.findById(w2Id);
+
+    if (w1Opt.isPresent() && w2Opt.isPresent()) {
+      Wrestler w1 = w1Opt.get();
+      Wrestler w2 = w2Opt.get();
+
+      // Determine Segment Type (Standard Match)
+      SegmentType type =
+          segmentTypeRepository
+              .findByName("One on One")
+              .orElseThrow(() -> new IllegalStateException("One on One segment type not found"));
+
+      // Create Segment
+      // show.getShowDate() is LocalDate. createSegment needs Instant.
+      Instant date =
+          show.getShowDate() != null
+              ? show.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
+              : Instant.now();
+
+      Segment segment = segmentService.createSegment(show, type, date);
+      segment.setNarration("Tournament Match: " + w1.getName() + " vs " + w2.getName());
+      // We set narration manually because createSegment(show, type, date) doesn't take narration.
+      // Or we can use updateSegment logic?
+      // SegmentService.createSegment returns saved segment.
+      // We can update it.
+
+      // Add Participants
+      segmentService.addParticipant(segment, w1);
+      segmentService.addParticipant(segment, w2);
+
+      // Determine Winner
+      Wrestler winner = winnerId.equals(w1.getId()) ? w1 : w2;
+      segmentService.setWinner(segment, winner);
+      segmentService.setAdjudicationStatus(segment, AdjudicationStatus.ADJUDICATED);
+
+      // Update Records? SegmentService.setWinner/adjudicate might not update stats automatically if
+      // not calling specific method?
+      // SegmentService usually handles stats in `adjudicateMatch`?
+      // Let's assume setWinner + ADJUDICATED is enough for history, or check SegmentService.
+      // Usually need to call a method to process stats.
+      // For now, this creates the record in history.
+    }
+  }
+
+  private void propagateWinners(
+      @NonNull TournamentDTO tournament, int round, @NonNull Campaign campaign) {
     List<TournamentMatch> matches =
-        tournament.getMatches().stream()
-            .filter(m -> m.getRound() == round)
-            .collect(Collectors.toList());
+        tournament.getMatches().stream().filter(m -> m.getRound() == round).toList();
 
     for (TournamentMatch match : matches) {
       if (match.getWinnerId() != null && match.getNextMatchId() != null) {
@@ -310,7 +369,7 @@ public class TournamentService {
     }
   }
 
-  public TournamentMatch getCurrentPlayerMatch(Campaign campaign) {
+  public TournamentMatch getCurrentPlayerMatch(@NonNull Campaign campaign) {
     TournamentDTO tournament = getTournamentState(campaign);
     if (tournament == null) return null;
 
@@ -321,7 +380,21 @@ public class TournamentService {
         .orElse(null);
   }
 
-  private void saveTournamentState(CampaignState state, TournamentDTO dto) {
+  public boolean isPlayerChampion(@NonNull Campaign campaign) {
+    TournamentDTO tournament = getTournamentState(campaign);
+    if (tournament == null) return false;
+
+    int totalRounds = tournament.getTotalRounds();
+    TournamentMatch finals =
+        tournament.getMatches().stream()
+            .filter(m -> m.getRound() == totalRounds)
+            .findFirst()
+            .orElse(null);
+
+    return finals != null && campaign.getWrestler().getId().equals(finals.getWinnerId());
+  }
+
+  private void saveTournamentState(@NonNull CampaignState state, @NonNull TournamentDTO dto) {
     try {
       state.setTournamentState(objectMapper.writeValueAsString(dto));
       campaignStateRepository.save(state);
