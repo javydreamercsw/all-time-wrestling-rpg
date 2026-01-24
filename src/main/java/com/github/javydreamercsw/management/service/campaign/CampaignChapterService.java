@@ -167,6 +167,14 @@ public class CampaignChapterService {
       }
     }
 
+    // Check Faction Membership
+    if (criteria.getHasFaction() != null) {
+      boolean inFaction = state.getCampaign().getWrestler().getFaction() != null;
+      if (inFaction != criteria.getHasFaction()) {
+        return false;
+      }
+    }
+
     // Check Alignment
     if (criteria.getRequiredAlignmentType() != null) {
       WrestlerAlignment alignment = state.getCampaign().getWrestler().getAlignment();
