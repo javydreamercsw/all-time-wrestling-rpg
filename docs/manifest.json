@@ -1,5 +1,61 @@
 {
   "features" : [ {
+    "id" : "entities-entity-teams",
+    "category" : "Entities",
+    "title" : "Tag Teams",
+    "description" : "Track formal tag team partnerships. Teams often have their own specific finishing moves and shared history in the Tag Team division.",
+    "imagePath" : "screenshots/entity-teams.png",
+    "order" : 0
+  }, {
+    "id" : "entities-entity-seasons",
+    "category" : "Entities",
+    "title" : "Seasons",
+    "description" : "Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.",
+    "imagePath" : "screenshots/entity-seasons.png",
+    "order" : 10
+  }, {
+    "id" : "entities-entity-titles",
+    "category" : "Entities",
+    "title" : "Championships",
+    "description" : "Manage the various titles across the promotion. From World Championships to regional belts, track current champions and the prestige of each title.",
+    "imagePath" : "screenshots/entity-titles.png",
+    "order" : 20
+  }, {
+    "id" : "entities-entity-factions",
+    "category" : "Entities",
+    "title" : "Factions",
+    "description" : "Manage powerful wrestling groups. Factions bring together multiple wrestlers under a single banner, creating complex storylines and alliance-based rivalries.",
+    "imagePath" : "screenshots/entity-factions.png",
+    "order" : 30
+  }, {
+    "id" : "dashboards-dashboard-calendar",
+    "category" : "Dashboards",
+    "title" : "Show Calendar",
+    "description" : "Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium Live Events at a glance.",
+    "imagePath" : "screenshots/dashboard-calendar.png",
+    "order" : 140
+  }, {
+    "id" : "game-mechanics-mechanic-cards",
+    "category" : "Game Mechanics",
+    "title" : "Cards",
+    "description" : "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.",
+    "imagePath" : "screenshots/mechanic-cards.png",
+    "order" : 150
+  }, {
+    "id" : "dashboards-dashboard-rankings",
+    "category" : "Dashboards",
+    "title" : "Wrestler Rankings",
+    "description" : "Track the momentum of every wrestler in the promotion. Rankings determine title eligibility and positioning on show cards.",
+    "imagePath" : "screenshots/dashboard-rankings.png",
+    "order" : 160
+  }, {
+    "id" : "game-mechanics-mechanic-decks",
+    "category" : "Game Mechanics",
+    "title" : "Decks",
+    "description" : "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with efficient setup moves and stamina-recovering taunts.",
+    "imagePath" : "screenshots/mechanic-decks.png",
+    "order" : 170
+  }, {
     "id" : "admin-admin-ai-settings",
     "category" : "Admin",
     "title" : "AI Configuration",

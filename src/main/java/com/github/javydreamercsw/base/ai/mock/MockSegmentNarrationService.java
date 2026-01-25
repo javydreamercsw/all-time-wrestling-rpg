@@ -64,7 +64,32 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
 
     log.info("Mock AI generating segment narration (simulated processing time)");
+    if (prompt.contains("Generate a compelling wrestling narration")) {
+      return generateMockTextNarration(prompt);
+    }
     return generateMockNarration(prompt);
+  }
+
+  private String generateMockTextNarration(String prompt) {
+    List<String> participants = extractParticipants(prompt);
+    String wrestler1 = participants.size() > 0 ? participants.get(0) : "Wrestler A";
+    String wrestler2 = participants.size() > 1 ? participants.get(1) : "Wrestler B";
+    String venue = extractVenue(prompt);
+    String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n\n");
+    if (type.equals("Match")) {
+      sb.append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
+      sb.append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n\n");
+      sb.append(generateClimaxAndFinish(wrestler1, wrestler2));
+    } else {
+      sb.append(wrestler1).append(" grabs the microphone and looks intensely at the crowd. ");
+      sb.append("\"I've waited a long time for this moment,\" he declares. ");
+      sb.append(wrestler2).append(" interrupts, walking down the ramp with a confident smirk. ");
+      sb.append("The tension is thick as they stand face-to-face in the middle of the ring.");
+    }
+    return sb.toString();
   }
 
   private String generateMockCampaignEncounter(String prompt) {

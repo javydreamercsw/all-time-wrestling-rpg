@@ -17,42 +17,96 @@
 package com.github.javydreamercsw.management.ui.view.booker;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class BookerDocsE2ETest extends AbstractE2ETest {
 
   @Autowired private ShowRepository showRepository;
-  @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private SegmentRepository segmentRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private ShowService showService;
 
   @Test
   void testCaptureShowPlanningView() {
-    // 1. Setup a show to plan
+    // 1. Setup wrestlers for the roster
+    if (wrestlerRepository.count() < 5) {
+      for (int i = 1; i <= 5; i++) {
+        Account wrestlerAccount = new Account();
+        String uniqueId = i + "_" + System.currentTimeMillis();
+        wrestlerAccount.setUsername("wrestler" + uniqueId);
+        wrestlerAccount.setEmail("wrestler" + uniqueId + "@example.com");
+        wrestlerAccount.setPassword("password");
+        wrestlerAccount = accountRepository.save(wrestlerAccount);
+
+        Wrestler w =
+            Wrestler.builder()
+                .name("Roster Wrestler " + i)
+                .startingHealth(100)
+                .startingStamina(100)
+                .account(wrestlerAccount)
+                .active(true)
+                .build();
+        wrestlerRepository.save(w);
+      }
+    }
+
+    // 2. Setup a show to plan
+    ShowType weekly =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setExpectedMatches(5);
+                  st.setExpectedPromos(2);
+                  return showTypeRepository.save(st);
+                });
+
     Show show = new Show();
     show.setName("Show to Plan");
     show.setShowDate(LocalDate.now().plusDays(7));
     show.setDescription("Planning Documentation Show");
-    show.setType(showTypeRepository.findByName("Weekly").get());
+    show.setType(weekly);
     show = showRepository.save(show);
 
-    // 2. Navigate to Show Planning
+    // 3. Navigate to Show Planning
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-planning");
     waitForVaadinClientToLoad();
 
-    // 3. Select the show
+    // 4. Select the show
     selectFromVaadinComboBox("select-show-combo-box", "Show to Plan");
+
+    // 5. Load Context
+    clickButtonByText("Load Context");
     waitForText("Show Planning Context");
+
+    // 6. Propose Segments (Triggers Mock AI)
+    clickButtonByText("Propose Segments");
+
+    // Wait for the grid to be populated (Mock AI has 1-3s delay)
+    waitForVaadinElement(driver, By.id("proposed-segments-grid"));
+    // Wait a bit more for AI simulation
+    try {
+      Thread.sleep(4000);
+    } catch (InterruptedException e) {
+    }
 
     documentFeature(
         "Booker",
@@ -80,7 +134,49 @@ class BookerDocsE2ETest extends AbstractE2ETest {
 
   @Test
   void testCaptureMatchNarrationView() {
-    // 1. Setup a dummy show and segment
+    // 1. Setup participants
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler w1 =
+        wrestlerRepository
+            .findByName("Roster Wrestler 1")
+            .orElseGet(
+                () -> {
+                  Account a = new Account();
+                  a.setUsername("w1_" + System.currentTimeMillis());
+                  a.setEmail("w1_" + System.currentTimeMillis() + "@example.com");
+                  a.setPassword("password");
+                  a = accountRepository.save(a);
+                  return wrestlerRepository.save(
+                      Wrestler.builder()
+                          .name("Roster Wrestler 1")
+                          .startingHealth(100)
+                          .startingStamina(100)
+                          .account(a)
+                          .active(true)
+                          .build());
+                });
+
+    Wrestler w2 =
+        wrestlerRepository
+            .findByName("Roster Wrestler 2")
+            .orElseGet(
+                () -> {
+                  Account a = new Account();
+                  a.setUsername("w2_" + System.currentTimeMillis());
+                  a.setEmail("w2_" + System.currentTimeMillis() + "@example.com");
+                  a.setPassword("password");
+                  a = accountRepository.save(a);
+                  return wrestlerRepository.save(
+                      Wrestler.builder()
+                          .name("Roster Wrestler 2")
+                          .startingHealth(100)
+                          .startingStamina(100)
+                          .account(a)
+                          .active(true)
+                          .build());
+                });
+
+    // 2. Setup a dummy show and segment
     Show show = new Show();
     show.setName("Docs Weekly Show");
     show.setShowDate(LocalDate.now());
@@ -91,13 +187,24 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
+    segment.addParticipant(w1);
+    segment.addParticipant(w2);
     segment = segmentRepository.save(segment);
 
-    // 2. Navigate to Match View
+    // 3. Navigate to Match View
     driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
     waitForVaadinClientToLoad();
 
-    // 3. Verify & Capture
+    // 4. Trigger AI Narration
+    clickButtonByText("AI Generate Narration");
+
+    // Wait for narration to appear (Mock AI has 1-3s delay)
+    try {
+      Thread.sleep(5000);
+    } catch (InterruptedException e) {
+    }
+
+    // 5. Verify & Capture
     waitForText("Match Details");
     waitForText("Match Narration");
 

@@ -356,6 +356,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
+  protected void clickButtonByText(@NonNull String text) {
+    WebElement element =
+        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='" + text + "']"));
+    clickElement(element);
+  }
+
   /**
    * Scrolls the given WebElement into view using JavaScript.
    *
