@@ -330,11 +330,14 @@ class CampaignServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setReigns(new ArrayList<>());
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     campaign.setWrestler(wrestler);
     CampaignState state = new CampaignState();
     state.setCurrentChapterId("ch1");
     state.setCampaign(campaign);
     campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
 
     CampaignChapterDTO ch2 = new CampaignChapterDTO();
     ch2.setId("ch2");
