@@ -16,10 +16,32 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-class EntityDocsE2ETest extends AbstractE2ETest {
+class EntityDocsE2ETest extends AbstractDocsE2ETest {
+
+  @Autowired private SeasonRepository seasonRepository;
+
+  @BeforeEach
+  void setup() {
+    // Clear only seasons to force fresh scheduling
+    seasonRepository.deleteAllInBatch();
+
+    if (seasonRepository.count() == 0) {
+      Season season = new Season();
+      season.setName("Season 1: The New Era");
+      season.setDescription("The inaugural season of All Time Wrestling RPG.");
+      season.setStartDate(Instant.now());
+      season.setIsActive(true);
+      season.setShowsPerPpv(5);
+      seasonRepository.save(season);
+    }
+  }
 
   @Test
   void testCaptureFactionListView() {

@@ -16,10 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.management.DataInitializer;
-import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -29,23 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class GameMechanicsDocsE2ETest extends AbstractE2ETest {
+class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
-  @Autowired private DataInitializer dataInitializer;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private DeckRepository deckRepository;
-  @Autowired private DeckCardRepository deckCardRepository;
 
   @BeforeEach
   void setup() {
-    // Clear existing data to force reload
-    deckCardRepository.deleteAllInBatch();
-    deckRepository.deleteAllInBatch();
-    showRepository.deleteAllInBatch();
-
-    dataInitializer.init();
-
     if (showRepository.count() == 0) {
       ShowType weekly = showTypeRepository.findByName("Weekly").get();
       ShowType ple = showTypeRepository.findByName("Premium Live Event (PLE)").get();

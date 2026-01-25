@@ -16,14 +16,12 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
-import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -31,43 +29,20 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class CampaignDocsE2ETest extends AbstractE2ETest {
+class CampaignDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
-  @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private TournamentService tournamentService;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleService titleService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @BeforeEach
-  void setup() {
-    // Clean up
-    wrestlerAlignmentRepository.deleteAllInBatch();
-    campaignStateRepository.deleteAllInBatch();
-    backstageActionHistoryRepository.deleteAllInBatch();
-    campaignEncounterRepository.deleteAllInBatch();
-    campaignRepository.deleteAllInBatch();
-  }
 
   @Test
   void testCaptureTournamentView() {

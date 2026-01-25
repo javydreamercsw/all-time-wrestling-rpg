@@ -201,15 +201,51 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    String rosterMarker = "Full Roster:";
-    int rosterStart = prompt.indexOf(rosterMarker);
-    if (rosterStart != -1) {
-      String rosterSection = prompt.substring(rosterStart + rosterMarker.length());
-      String[] lines = rosterSection.split("\\r?\\n");
-      for (String line : lines) {
-        if (line.trim().startsWith("- Name:")) {
-          String name = line.substring(line.indexOf(':') + 1, line.indexOf(',')).trim();
+
+    // Try extracting from JSON "wrestlers" array block
+    int wrestlersStart = prompt.indexOf("\"wrestlers\"");
+    if (wrestlersStart != -1) {
+      // Find the end of the wrestlers block (either next section or end of string)
+      int wrestlersEnd = prompt.length();
+      if (prompt.indexOf("\"venue\"", wrestlersStart) != -1)
+        wrestlersEnd = Math.min(wrestlersEnd, prompt.indexOf("\"venue\"", wrestlersStart));
+      if (prompt.indexOf("\"npcs\"", wrestlersStart) != -1)
+        wrestlersEnd = Math.min(wrestlersEnd, prompt.indexOf("\"npcs\"", wrestlersStart));
+
+      String wrestlersSection = prompt.substring(wrestlersStart, wrestlersEnd);
+
+      // In the wrestlers section, we want names that are NOT inside a "moves" or "moveSet" block
+      // But for a mock, let's just look for "name" : "..." that aren't preceded by "move" related
+      // keys nearby
+      Pattern namePattern = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
+      Matcher matcher = namePattern.matcher(wrestlersSection);
+
+      while (matcher.find()) {
+        String name = matcher.group(1);
+        // Basic heuristic: check if the name looks like a wrestler (not a move)
+        // Moves often appear inside "moveSet" or "finisher" blocks
+        int namePos = matcher.start();
+        String contextBefore = wrestlersSection.substring(Math.max(0, namePos - 50), namePos);
+        if (!contextBefore.contains("\"moves\"")
+            && !contextBefore.contains("\"finishers\"")
+            && !contextBefore.contains("\"trademarks\"")) {
           participants.add(name);
+        }
+      }
+    }
+
+    if (participants.isEmpty()) {
+      // Fallback to "Full Roster:" if present (used in some other parts of the app)
+      String rosterMarker = "Full Roster:";
+      int rosterStart = prompt.indexOf(rosterMarker);
+      if (rosterStart != -1) {
+        String rosterSection = prompt.substring(rosterStart + rosterMarker.length());
+        String[] lines = rosterSection.split("\\r?\\n");
+        for (String line : lines) {
+          if (line.trim().startsWith("- Name:")) {
+            String name = line.substring(line.indexOf(':') + 1, line.indexOf(',')).trim();
+            participants.add(name);
+          }
         }
       }
     }
