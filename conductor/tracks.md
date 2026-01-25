@@ -20,5 +20,6 @@
 
 ## Active Tracks
 
-(No active tracks)
+- [ ] **Track: Automated Game Guide Screenshots**
+  *Link: [./tracks/game_guide_screenshots_20260124/](./tracks/game_guide_screenshots_20260124/)*
 

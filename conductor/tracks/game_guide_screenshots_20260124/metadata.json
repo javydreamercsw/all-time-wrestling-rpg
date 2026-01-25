@@ -1,0 +1,8 @@
+{
+  "track_id": "game_guide_screenshots_20260124",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-24T21:55:00Z",
+  "updated_at": "2026-01-24T21:55:00Z",
+  "description": "Generate screenshots to create a game guide for players to document the features. We could use existing tests but take specific screenshots that are used in the documentation so it is always up to date."
+}
