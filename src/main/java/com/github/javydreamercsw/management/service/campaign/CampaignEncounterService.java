@@ -33,13 +33,11 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CampaignEncounterService {
 
@@ -52,6 +50,27 @@ public class CampaignEncounterService {
   private final TeamRepository teamRepository;
   private final FactionRepository factionRepository;
   private final ObjectMapper objectMapper;
+
+  public CampaignEncounterService(
+      SegmentNarrationServiceFactory aiFactory,
+      CampaignEncounterRepository encounterRepository,
+      CampaignStateRepository stateRepository,
+      CampaignChapterService chapterService,
+      @org.springframework.context.annotation.Lazy CampaignService campaignService,
+      WrestlerRepository wrestlerRepository,
+      TeamRepository teamRepository,
+      FactionRepository factionRepository,
+      ObjectMapper objectMapper) {
+    this.aiFactory = aiFactory;
+    this.encounterRepository = encounterRepository;
+    this.stateRepository = stateRepository;
+    this.chapterService = chapterService;
+    this.campaignService = campaignService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.teamRepository = teamRepository;
+    this.factionRepository = factionRepository;
+    this.objectMapper = objectMapper;
+  }
 
   @Transactional
   public CampaignEncounterResponseDTO generateEncounter(Campaign campaign) {

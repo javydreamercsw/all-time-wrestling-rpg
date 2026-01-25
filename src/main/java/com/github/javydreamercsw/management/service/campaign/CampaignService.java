@@ -143,7 +143,7 @@ public class CampaignService {
     return objectMapper.convertValue(value, type);
   }
 
-  private void setFeatureValue(CampaignState state, String key, Object value) {
+  public void setFeatureValue(CampaignState state, String key, Object value) {
     Map<String, Object> data = getFeatureData(state);
     data.put(key, value);
     saveFeatureData(state, data);

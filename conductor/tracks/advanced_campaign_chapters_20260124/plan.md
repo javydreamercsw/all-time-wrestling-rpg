@@ -51,11 +51,11 @@
 
 ## Phase 5: Testing & Integration
 
-- [~] Task: Integration Testing
+- [x] Task: Integration Testing
 
-  - [ ] Create E2E tests simulating a full run-through of each new chapter.
+  - [x] Create E2E tests simulating a full run-through of each new chapter.
 
-  - [ ] Verify state persistence between chapters.
+  - [x] Verify state persistence between chapters.
 
 - [ ] Task: Polish & Balancing
 
