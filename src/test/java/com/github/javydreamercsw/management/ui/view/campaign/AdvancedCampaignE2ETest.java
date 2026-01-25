@@ -21,8 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -36,6 +42,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,26 +55,12 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Autowired private FactionRepository factionRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
-      campaignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Autowired private CampaignRepository campaignRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private DataInitializer dataInitializer;
 
   private Wrestler player;
 
@@ -78,6 +71,8 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
+
+    dataInitializer.init();
 
     Account admin = accountRepository.findByUsername("admin").get();
 
@@ -119,7 +114,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     waitForText("The Fighting Champion");
-    assertTrue(driver.getPageSource().contains("The Fighting Champion"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("The Fighting Champion"));
   }
 
   @Test
@@ -148,7 +143,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     waitForText("Gang Warfare");
-    assertTrue(driver.getPageSource().contains("Gang Warfare"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Gang Warfare"));
   }
 
   @Test
