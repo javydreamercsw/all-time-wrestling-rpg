@@ -239,7 +239,23 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       String rosterMarker = "Full Roster:";
       int rosterStart = prompt.indexOf(rosterMarker);
       if (rosterStart != -1) {
-        String rosterSection = prompt.substring(rosterStart + rosterMarker.length());
+        int rosterEnd = prompt.length();
+        // Look for likely next sections to stop parsing
+        String[] nextSections = {
+          "\nFactions:",
+          "\nNext PLE",
+          "\n**Other considerations:**",
+          "\nAvailable Segment Types:",
+          "\nIMPORTANT:"
+        };
+        for (String nextSection : nextSections) {
+          int index = prompt.indexOf(nextSection, rosterStart);
+          if (index != -1 && index < rosterEnd) {
+            rosterEnd = index;
+          }
+        }
+
+        String rosterSection = prompt.substring(rosterStart + rosterMarker.length(), rosterEnd);
         String[] lines = rosterSection.split("\\r?\\n");
         for (String line : lines) {
           if (line.trim().startsWith("- Name:")) {
