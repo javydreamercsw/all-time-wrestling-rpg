@@ -23,31 +23,34 @@
 ## Phase 2: Backend Logic and Theme Support [checkpoint: 45bb4c7]
 
 - [x] Task: Write Tests for Theme Resolution Logic 5a092b5
-
-    - [x] Create `ThemeServiceTest` to verify preference hierarchy
-
+  - [x] Create `ThemeServiceTest` to verify preference hierarchy
 - [x] Task: Implement `ThemeService` 5a092b5
+  - [x] Create `ThemeService` to manage available theme definitions
 
-    - [x] Create `ThemeService` to manage available theme definitions
-
-    - [x] Implement logic to serve correct CSS classes/attributes based on user selection
+  - [x] Implement logic to serve correct CSS classes/attributes based on user selection
 
 - [x] Task: Integrate Theme Loading into Application Root 69ccfc2
 
-    - [x] Update the main layout or root component to apply the theme class to the document body/root element on initial load
-
+  - [x] Update the main layout or root component to apply the theme class to the document body/root element on initial load
 - [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) 45bb4c7
 
-## Phase 3: UI Implementation
+## Phase 3: UI Implementation [checkpoint: 7182edd]
 
-- [ ] Task: Write Tests for Profile Theme Selection
-  - [ ] Create a UI test to verify the presence of theme selection in the profile view
-- [ ] Task: Update User Profile View
-  - [ ] Add a `Select` or `RadioButtonGroup` component for theme selection in `UserProfileView`
-  - [ ] Implement the "Save" logic to update user preference and trigger `UI.getCurrent().getPage().reload()`
-- [ ] Task: Admin Configuration UI
-  - [ ] Update Admin Dashboard to allow setting the global default theme
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Write Tests for Profile Theme Selection 19cd301
+
+    - [x] Create a UI test to verify the presence of theme selection in the profile view
+
+- [x] Task: Update User Profile View 19cd301
+
+    - [x] Add a `Select` or `RadioButtonGroup` component for theme selection in `UserProfileView`
+
+    - [x] Implement the "Save" logic to update user preference and trigger `UI.getCurrent().getPage().reload()`
+
+- [x] Task: Admin Configuration UI bbf92cd
+
+    - [x] Update Admin Dashboard to allow setting the global default theme
+
+- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) 7182edd
 
 ## Phase 4: Verification and Polish
 
