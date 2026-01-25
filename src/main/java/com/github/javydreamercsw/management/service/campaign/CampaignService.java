@@ -741,7 +741,13 @@ public class CampaignService {
     segmentRepository.save(segment);
   }
 
-  public Optional<String> advanceChapter(@NonNull Campaign campaign) {
+  public Optional<String> advanceChapter(@NonNull Campaign campaignParam) {
+    // Reload to ensure attached entity and initialize lazy collections
+    Campaign campaign =
+        campaignRepository
+            .findById(campaignParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
+
     CampaignState state = campaign.getState();
     String oldId = state.getCurrentChapterId();
 
