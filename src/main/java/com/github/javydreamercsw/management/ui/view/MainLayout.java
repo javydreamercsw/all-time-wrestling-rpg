@@ -133,6 +133,9 @@ public class MainLayout extends AppLayout {
     SideNavItem item = new SideNavItem(menuItem.getTitle());
     item.setPrefixComponent(menuItem.getIcon().create());
     item.setPath(menuItem.getPath());
+    if (menuItem.isExternal()) {
+      item.getElement().setAttribute("target", "_blank");
+    }
     if (!menuItem.getChildren().isEmpty()) {
       menuItem.getChildren().forEach(child -> item.addItem(createSideNavItem(child)));
     }

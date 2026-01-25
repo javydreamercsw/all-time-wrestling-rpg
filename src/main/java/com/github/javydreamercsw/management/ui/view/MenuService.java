@@ -109,7 +109,7 @@ public class MenuService {
 
     // Help menu: accessible to everyone
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
-    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html"));
+    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html", true));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);
@@ -179,6 +179,7 @@ public class MenuService {
 
     if (shouldShow) {
       MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
+      filtered.setExternal(menuItem.isExternal());
       filtered.setRequiredRoles(menuItem.getRequiredRoles());
       filteredChildren.forEach(filtered::addChild);
       return filtered;
