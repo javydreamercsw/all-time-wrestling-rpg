@@ -497,11 +497,6 @@ public class CampaignService {
               });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segmentRepository.save(match);
-      // to avoid triggering global league events (Title changes, Feud updates) that might conflict.
-      // However, if we WANT title changes in Campaign (e.g. Fighting Champion), we need to handle
-      // that.
-      // For now, let's assume Campaign Title Logic is handled separately (like awardTitleToWinner
-      // below).
     }
 
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
