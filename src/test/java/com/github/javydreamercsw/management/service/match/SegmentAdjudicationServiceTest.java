@@ -56,6 +56,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
+  @Mock private MatchRewardService matchRewardService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -68,6 +69,7 @@ class SegmentAdjudicationServiceTest {
             feudResolutionService,
             feudService,
             titleService,
+            matchRewardService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
@@ -81,50 +83,13 @@ class SegmentAdjudicationServiceTest {
   }
 
   @Test
-  void testBumpAdditionWinners() {
+  void testProcessRewardsCalled() {
     SegmentRule rule = new SegmentRule();
     rule.setBumpAddition(BumpAddition.WINNERS);
     when(segment.getSegmentRules()).thenReturn(List.of(rule));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestlerService, times(1)).addBump(1L);
-    verify(wrestlerService, times(0)).addBump(2L);
-  }
-
-  @Test
-  void testBumpAdditionLosers() {
-    SegmentRule rule = new SegmentRule();
-    rule.setBumpAddition(BumpAddition.LOSERS);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
-
-    segmentAdjudicationService.adjudicateMatch(segment);
-
-    verify(wrestlerService, times(0)).addBump(1L);
-    verify(wrestlerService, times(1)).addBump(2L);
-  }
-
-  @Test
-  void testBumpAdditionAll() {
-    SegmentRule rule = new SegmentRule();
-    rule.setBumpAddition(BumpAddition.ALL);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
-
-    segmentAdjudicationService.adjudicateMatch(segment);
-
-    verify(wrestlerService, times(1)).addBump(1L);
-    verify(wrestlerService, times(1)).addBump(2L);
-  }
-
-  @Test
-  void testBumpAdditionNone() {
-    SegmentRule rule = new SegmentRule();
-    rule.setBumpAddition(BumpAddition.NONE);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
-
-    segmentAdjudicationService.adjudicateMatch(segment);
-
-    verify(wrestlerService, times(0)).addBump(1L);
-    verify(wrestlerService, times(0)).addBump(2L);
+    verify(matchRewardService, times(1)).processRewards(segment, 1.0);
   }
 }

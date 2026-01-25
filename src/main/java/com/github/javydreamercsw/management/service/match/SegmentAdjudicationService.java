@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.service.match;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
@@ -53,6 +52,7 @@ public class SegmentAdjudicationService {
   private final MultiWrestlerFeudService feudService;
   private final Random random;
   private final TitleService titleService;
+  private final MatchRewardService matchRewardService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -61,13 +61,15 @@ public class SegmentAdjudicationService {
       RivalryService rivalryService,
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
-      TitleService titleService) {
+      TitleService titleService,
+      MatchRewardService matchRewardService) {
     this(
         rivalryService,
         wrestlerService,
         feudResolutionService,
         feudService,
         titleService,
+        matchRewardService,
         new Random());
   }
 
@@ -77,76 +79,27 @@ public class SegmentAdjudicationService {
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
       TitleService titleService,
+      MatchRewardService matchRewardService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.feudResolutionService = feudResolutionService;
     this.feudService = feudService;
     this.titleService = titleService;
+    this.matchRewardService = matchRewardService;
     this.random = random;
   }
 
-  @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (isAuthenticated() and"
-          + " @segmentService.canUserUpdateSegment(#segment.id))")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment) {
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
 
-    DiceBag d20 = new DiceBag(random, new int[] {20});
-    int roll = d20.roll();
+    // Apply standard rewards (Multiplier 1.0 for normal league play)
+    matchRewardService.processRewards(segment, 1.0);
+
     if (!segment.getSegmentType().getName().equals("Promo")) {
-      int matchQualityBonus = 0;
-      if (11 <= roll && roll <= 15) {
-        matchQualityBonus += 1_000;
-      } else if (16 <= roll && roll <= 18) {
-        matchQualityBonus += 3_000;
-      } else if (roll == 19) {
-        matchQualityBonus += 5_000;
-      } else if (roll == 20) {
-        matchQualityBonus += 10_000;
-      }
-
-      // Deduct fan fees for challengers in title segments
-      if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
-        for (Title title : segment.getTitles()) {
-          List<Wrestler> currentChampions = title.getCurrentChampions();
-          Long contenderEntryFee = titleService.getContenderEntryFee(title);
-
-          for (Wrestler participant : segment.getWrestlers()) {
-            // If a participant is not a current champion for this title, they are a challenger
-            if (!currentChampions.contains(participant)) {
-              if (wrestlerService.awardFans(participant.getId(), -contenderEntryFee).isPresent()) {
-                log.info(
-                    "Wrestler {} paid {} fans for contending in title segment {}",
-                    participant.getName(),
-                    contenderEntryFee,
-                    segment.getId());
-              } else {
-                log.warn(
-                    "Wrestler {} could not afford {} fans for contending in title segment {}",
-                    participant.getName(),
-                    contenderEntryFee,
-                    segment.getId());
-              }
-            }
-          }
-        }
-      }
-
-      // Award fans to winners
-      for (Wrestler winner : winners) {
-        Long id = winner.getId();
-        if (id != null) {
-          DiceBag wdb = new DiceBag(random, new int[] {6, 6});
-          // for winners 2d6 + 3 + (quality bonus) fans
-          Long fanAward = (wdb.roll() + 3) * 1_000L + matchQualityBonus;
-          wrestlerService
-              .awardFans(id, fanAward)
-              .ifPresent(w -> log.debug("Awarded {} fans to wrestler {}", fanAward, w.getName()));
-        }
-      }
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
@@ -158,85 +111,6 @@ public class SegmentAdjudicationService {
             eventPublisher.publishEvent(
                 new ChampionshipChangeEvent(this, title, currentChampions, winners));
           }
-        }
-      }
-
-      // Award/deduct fans from losers
-      for (Wrestler loser : losers) {
-        Long id = loser.getId();
-        if (id != null) {
-          DiceBag ldb = new DiceBag(random, new int[] {6});
-          // for losers 1d6 - 4 + (quality bonus) fans. Can be negative
-          Long fanChange = (ldb.roll() - 4) * 1_000L + matchQualityBonus;
-          wrestlerService
-              .awardFans(loser.getId(), fanChange)
-              .ifPresent(
-                  w ->
-                      log.debug("Deducted/awarded {} fans to wrestler {}", fanChange, w.getName()));
-        }
-      }
-
-      // Assign bumps based on segment rules
-      for (SegmentRule rule : segment.getSegmentRules()) {
-        switch (rule.getBumpAddition()) {
-          case WINNERS:
-            for (Wrestler winner : segment.getWinners()) {
-              Long id = winner.getId();
-              if (id != null) {
-                wrestlerService
-                    .addBump(id)
-                    .ifPresent(w -> log.debug("Added bump to wrestler {}", w.getName()));
-              }
-            }
-            break;
-          case LOSERS:
-            for (Wrestler loser : segment.getLosers()) {
-              Long id = loser.getId();
-              if (id != null) {
-                wrestlerService
-                    .addBump(id)
-                    .ifPresent(w -> log.debug("Added bump to wrestler {}", w.getName()));
-              }
-            }
-            break;
-          case ALL:
-            for (Wrestler participant : segment.getWrestlers()) {
-              Long id = participant.getId();
-              if (id != null) {
-                wrestlerService
-                    .addBump(id)
-                    .ifPresent(w -> log.debug("Added bump to wrestler {}", w.getName()));
-              }
-            }
-            break;
-          case NONE:
-          default:
-            // Do nothing
-            break;
-        }
-      }
-    } else {
-      int promoQualityBonus = 0;
-      if (2 <= roll && roll <= 3) {
-        promoQualityBonus += new DiceBag(random, new int[] {3}).roll();
-      } else if (4 <= roll && roll <= 16) {
-        promoQualityBonus += new DiceBag(random, new int[] {6}).roll();
-      } else if (17 <= roll && roll <= 19) {
-        promoQualityBonus += new DiceBag(random, new int[] {6, 6}).roll();
-      } else if (roll == 20) {
-        promoQualityBonus += new DiceBag(random, new int[] {6, 6, 6}).roll();
-      }
-      // Assign bumps to all participants
-      for (Wrestler participant : segment.getWrestlers()) {
-        Long id = participant.getId();
-        if (id != null) {
-          Long fanAward = promoQualityBonus * 1_000L;
-          wrestlerService
-              .awardFans(id, fanAward)
-              .ifPresent(
-                  w ->
-                      log.debug(
-                          "Awarded {} fans to wrestler {} during promo", fanAward, w.getName()));
         }
       }
     }

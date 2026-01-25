@@ -426,48 +426,47 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     try {
       segmentService.updateSegment(segment);
 
-      // Perform full adjudication (Fans, Bumps, etc.)
-      segmentAdjudicationService.adjudicateMatch(segment);
-      segment.setAdjudicationStatus(
-          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
-      segmentService.updateSegment(segment);
+      // Check if this is a campaign match for any participant
+      boolean isCampaignMatch = false;
+      for (Wrestler w : segment.getWrestlers()) {
+        if (w == null) continue;
+        var campaignOpt = campaignRepository.findActiveByWrestler(w);
+        if (campaignOpt.isPresent()) {
+          var campaign = campaignOpt.get();
+          if (campaign.getState().getCurrentMatch() != null
+              && campaign.getState().getCurrentMatch().getId().equals(segment.getId())) {
+            log.info("Updating campaign {} for wrestler {}", campaign.getId(), w.getName());
+            boolean won = winners.contains(w);
+            campaignService.processMatchResult(campaign, won);
+            isCampaignMatch = true;
+          }
+        }
+      }
 
-      Notification.show("Match adjudicated successfully!")
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      if (isCampaignMatch) {
+        // For campaign matches, processMatchResult handles rewards.
+        // We set status to ADJUDICATED to mark it done.
+        segment.setAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+        segmentService.updateSegment(segment);
+        Notification n = Notification.show("Match adjudicated & Campaign Progress Updated!");
+        n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        UI.getCurrent().navigate("campaign");
+      } else {
+        // For standard matches, perform full adjudication (Booker/Admin only)
+        segmentAdjudicationService.adjudicateMatch(segment);
+        segment.setAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+        segmentService.updateSegment(segment);
+        Notification.show("Match adjudicated successfully!")
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        UI.getCurrent().navigate("show-list");
+      }
+
     } catch (Exception e) {
       log.error("Failed to adjudicate segment", e);
       Notification.show("Failed to adjudicate match: " + e.getMessage())
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
-      return;
-    }
-
-    // Campaign Integration
-    boolean campaignUpdated = false;
-    for (Wrestler w : segment.getWrestlers()) {
-      if (w == null) continue;
-
-      var campaignOpt = campaignRepository.findActiveByWrestler(w);
-      if (campaignOpt.isPresent()) {
-        var campaign = campaignOpt.get();
-        if (campaign.getState().getCurrentMatch() != null
-            && campaign.getState().getCurrentMatch().getId().equals(segment.getId())) {
-          log.info("Updating campaign {} for wrestler {}", campaign.getId(), w.getName());
-          boolean won = winners.contains(w);
-          campaignService.processMatchResult(campaign, won);
-          // Do not save campaign here; processMatchResult handles saving state transactionally
-          // Saving here would overwrite the updated state with the stale state held by 'campaign'
-          campaignUpdated = true;
-        }
-      }
-    }
-
-    if (campaignUpdated) {
-      Notification n = Notification.show("Campaign Progress Updated!");
-      n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-      UI.getCurrent().navigate("campaign");
-    } else {
-      // If not a campaign match, just go back to the show list or similar
-      UI.getCurrent().navigate("show-list");
     }
   }
 
