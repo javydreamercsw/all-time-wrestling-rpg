@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import java.util.Optional;
@@ -69,6 +70,17 @@ class ThemeServiceTest {
 
     String theme = themeService.getEffectiveTheme(account);
     assertEquals("light", theme); // Default fallback
+  }
+
+  @Test
+  void testGetAvailableThemes() {
+    java.util.List<String> available = themeService.getAvailableThemes();
+    assertEquals(5, available.size());
+    assert available.contains("light");
+    assert available.contains("dark");
+    assert available.contains("retro");
+    assert available.contains("high-contrast");
+    assert available.contains("neon");
   }
 
   @Test
