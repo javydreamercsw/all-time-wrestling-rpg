@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.campaign;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -485,11 +486,17 @@ public class CampaignService {
         }
       }
 
+      final double finalMultiplier = multiplier;
+      final Segment finalMatch = match;
       // Apply rewards directly for Campaign
-      matchRewardService.processRewards(match, multiplier);
+      GeneralSecurityUtils.runAsAdmin(
+          (java.util.function.Supplier<Void>)
+              () -> {
+                adjudicationService.adjudicateMatch(finalMatch, finalMultiplier);
+                return null;
+              });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segmentRepository.save(match);
-      // We do NOT call adjudicationService.adjudicateMatch(match) here anymore
       // to avoid triggering global league events (Title changes, Feud updates) that might conflict.
       // However, if we WANT title changes in Campaign (e.g. Fighting Champion), we need to handle
       // that.

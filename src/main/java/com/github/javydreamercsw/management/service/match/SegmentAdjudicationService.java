@@ -92,12 +92,17 @@ public class SegmentAdjudicationService {
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment) {
+    adjudicateMatch(segment, 1.0);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
-    matchRewardService.processRewards(segment, 1.0);
+    matchRewardService.processRewards(segment, multiplier);
 
     if (!segment.getSegmentType().getName().equals("Promo")) {
       if (segment.getIsTitleSegment()) {
