@@ -216,7 +216,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(signInButton);
     waitForAppToBeReady();
     try {
-      wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+      // Use a more robust check for successful login - presence of logout button or main layout
+      wait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
       takeSequencedScreenshot("after-successful-login");
     } catch (Exception e) {
       log.error("Login failed for user: {}", username);

@@ -18,6 +18,14 @@ As the Fighting Champion, you must defend your title against a series of challen
 
 ---
 
+## Backstage Actions
+
+Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.
+
+![Backstage Actions](/screenshots/campaign-backstage-actions.png)
+
+---
+
 ## Tournament Bracket
 
 The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.

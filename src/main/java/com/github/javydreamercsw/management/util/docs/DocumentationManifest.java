@@ -54,6 +54,21 @@ public class DocumentationManifest {
     return new ArrayList<>(ENTRIES);
   }
 
+  private static void loadExisting(Path path) {
+    if (Files.exists(path)) {
+      try {
+        ManifestWrapper wrapper = MAPPER.readValue(path.toFile(), ManifestWrapper.class);
+        if (wrapper != null && wrapper.getFeatures() != null) {
+          for (DocEntry entry : wrapper.getFeatures()) {
+            addEntry(entry);
+          }
+        }
+      } catch (IOException e) {
+        // Ignore load errors, start fresh
+      }
+    }
+  }
+
   /**
    * Write the manifest to a JSON file.
    *
@@ -64,6 +79,9 @@ public class DocumentationManifest {
     if (path.getParent() != null) {
       Files.createDirectories(path.getParent());
     }
+
+    // Load existing first to be cumulative
+    loadExisting(path);
 
     ManifestWrapper wrapper = new ManifestWrapper();
     wrapper.setFeatures(getEntries());

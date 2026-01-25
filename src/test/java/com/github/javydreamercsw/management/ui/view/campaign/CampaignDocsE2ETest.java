@@ -19,13 +19,19 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
+import com.github.javydreamercsw.management.service.title.TitleService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +44,8 @@ class CampaignDocsE2ETest extends AbstractE2ETest {
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private TournamentService tournamentService;
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private TitleService titleService;
 
   @Autowired
   private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
@@ -127,6 +135,54 @@ class CampaignDocsE2ETest extends AbstractE2ETest {
         "campaign-gang-warfare");
   }
 
+  @Test
+  void testCaptureBackstageActionsView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "fighting_champion"); // Any chapter works
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    waitForText("Backstage Area");
+    documentFeature(
+        "Campaign",
+        "Backstage Actions",
+        "Take daily actions to improve your stats, recover from injuries, or build hype for your"
+            + " next match. Choose wisely, as you have limited time each day.",
+        "campaign-backstage-actions");
+  }
+
+  @Test
+  void testCaptureWrestlerProfileView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+
+    // 2. Navigate
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + player.getId());
+    takeSequencedScreenshot("before-profile-load");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    waitForText("Wrestler Profile");
+    documentFeature(
+        "Wrestler",
+        "Wrestler Profile",
+        "View detailed information about any wrestler, including their core stats (Drive,"
+            + " Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship"
+            + " history.",
+        "wrestler-profile");
+  }
+
   private Wrestler getOrCreateWrestler(Account account) {
     return wrestlerRepository
         .findByAccount(account)
@@ -140,8 +196,36 @@ class CampaignDocsE2ETest extends AbstractE2ETest {
                       .account(account)
                       .isPlayer(true)
                       .active(true)
+                      .gender(Gender.MALE)
+                      .tier(WrestlerTier.MIDCARDER)
+                      .fans(5000L)
+                      .drive(3)
+                      .resilience(2)
+                      .charisma(4)
+                      .brawl(3)
+                      .description(
+                          "A rising star in the wrestling world, known for his technical prowess"
+                              + " and charismatic promos. He is determined to climb the ranks and"
+                              + " become a legend.")
                       .build();
-              return wrestlerRepository.save(w);
+              w = wrestlerRepository.save(w);
+
+              // Assign a title if available or create one
+              if (titleRepository.count() == 0) {
+                Title title = new Title();
+                title.setName("ATW TV Championship");
+                title.setIsActive(true);
+                title.setTier(WrestlerTier.MIDCARDER);
+                title.setChampionshipType(
+                    com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
+                title = titleRepository.save(title);
+                titleService.awardTitleTo(title, List.of(w));
+              } else {
+                Title title = titleRepository.findAll().get(0);
+                titleService.awardTitleTo(title, List.of(w));
+              }
+
+              return w;
             });
   }
 

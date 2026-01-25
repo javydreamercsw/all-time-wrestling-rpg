@@ -772,6 +772,7 @@
             <flexmark/>
             <excludes>
               <exclude>node_modules/**</exclude>
+              <exclude>docs/site/**</exclude>
             </excludes>
           </markdown>
           <json>
