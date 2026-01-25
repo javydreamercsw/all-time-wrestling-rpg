@@ -20,10 +20,11 @@
 
 *Link: [./conductor/archive/game_guide_screenshots_20260124/](./conductor/archive/game_guide_screenshots_20260124/)*
 
+### [x] Track: Docs-as-Code System
+
+*Link: [./conductor/archive/docs_as_code_system_20260124/](./conductor/archive/docs_as_code_system_20260124/)*
+
 ---
 
 ## Active Tracks
-
-- [ ] **Track: Docs-as-Code System**
-  *Link: [./tracks/docs_as_code_system_20260124/](./tracks/docs_as_code_system_20260124/)*
 
