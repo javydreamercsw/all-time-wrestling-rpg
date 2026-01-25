@@ -43,3 +43,4 @@
   - [ ] Run the full pipeline: Test -> Manifest -> Markdown -> Site Build.
   - [ ] Review the generated site.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+

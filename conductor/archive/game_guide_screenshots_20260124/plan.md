@@ -32,3 +32,4 @@
   - [x] Verify all expected PNG files exist in `docs/screenshots`.
   - [x] Run `mvn verify` (without profile) and ensure no new files are created.
 - [x] Task: Conductor - User Manual Verification 'Verification & Directory Management' (Protocol in workflow.md)
+
