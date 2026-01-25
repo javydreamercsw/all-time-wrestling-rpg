@@ -17,8 +17,11 @@
 package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Main;
@@ -36,7 +39,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class ProfileView extends Main {
 
   public ProfileView(
-      AccountService accountService, SecurityUtils securityUtils, PasswordEncoder passwordEncoder) {
+      AccountService accountService,
+      SecurityUtils securityUtils,
+      PasswordEncoder passwordEncoder,
+      ThemeService themeService) {
     add(new H1("Profile"));
 
     securityUtils
@@ -56,6 +62,11 @@ public class ProfileView extends Main {
                           EmailField emailField = new EmailField("Email");
                           emailField.setValue(account.getEmail());
 
+                          ComboBox<String> themeSelection = new ComboBox<>("Theme");
+                          themeSelection.setId("theme-selection");
+                          themeSelection.setItems(themeService.getAvailableThemes());
+                          themeSelection.setValue(themeService.getEffectiveTheme(account));
+
                           Button changePasswordButton =
                               new Button(
                                   "Change Password",
@@ -71,12 +82,18 @@ public class ProfileView extends Main {
                                   "Save",
                                   event -> {
                                     account.setEmail(emailField.getValue());
+                                    account.setThemePreference(themeSelection.getValue());
                                     accountService.update(account);
                                     Notification.show("Profile updated successfully!");
+                                    UI.getCurrent().getPage().reload();
                                   });
 
                           formLayout.add(
-                              usernameField, emailField, changePasswordButton, saveButton);
+                              usernameField,
+                              emailField,
+                              themeSelection,
+                              changePasswordButton,
+                              saveButton);
                           add(formLayout);
                         }));
   }
