@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,20 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.ui.view;
+package com.github.javydreamercsw.base.domain.account;
 
-import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.component.page.Push;
-import com.vaadin.flow.server.AppShellSettings;
-import com.vaadin.flow.theme.Theme;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-@Push
-@Theme("default")
-public class AppShell implements AppShellConfigurator {
-  @Override
-  public void configurePage(AppShellSettings settings) {
-    // settings.addInlineScript(
-    //    "const theme = localStorage.getItem('atw-rpg-theme');"
-    //        + "if (theme) { document.documentElement.setAttribute('theme', theme); }");
+import org.junit.jupiter.api.Test;
+
+class AccountThemeTest {
+
+  @Test
+  void testThemePreference() {
+    Account account = new Account();
+    assertNull(account.getThemePreference());
+
+    String theme = "dark";
+    account.setThemePreference(theme);
+    assertEquals(theme, account.getThemePreference());
   }
 }

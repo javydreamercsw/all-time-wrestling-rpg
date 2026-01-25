@@ -74,6 +74,9 @@ public class Account {
   @Column(nullable = false)
   private int failedLoginAttempts = 0;
 
+  @Column(length = 50)
+  private String themePreference;
+
   @Column private LocalDateTime lockedUntil;
 
   @Column private LocalDateTime lastLogin;

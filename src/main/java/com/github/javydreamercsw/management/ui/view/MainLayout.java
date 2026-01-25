@@ -173,10 +173,52 @@ public class MainLayout extends AppLayout {
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       logoutButton.addClickListener(e -> securityUtils.logout());
 
-      navbar.add(avatar, usernameLabel, profileLink, logoutButton);
+      navbar.add(createThemeToggleButton(), avatar, usernameLabel, profileLink, logoutButton);
     }
 
     return navbar;
+  }
+
+  private Button createThemeToggleButton() {
+    Icon icon = VaadinIcon.MOON.create();
+    Button toggleButton = new Button(icon);
+    toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+    toggleButton.setId("theme-toggle-button");
+
+    toggleButton.addClickListener(
+        e -> {
+          UI.getCurrent()
+              .getElement()
+              .executeJs(
+                  "const theme = document.documentElement.getAttribute('theme') === 'dark' ? '' :"
+                      + " 'dark';document.documentElement.setAttribute('theme',"
+                      + " theme);localStorage.setItem('atw-rpg-theme', theme);return theme;")
+              .then(
+                  String.class,
+                  theme -> {
+                    // if ("dark".equals(theme)) {
+                    //   toggleButton.setIcon(VaadinIcon.SUN.create());
+                    // } else {
+                    toggleButton.setIcon(VaadinIcon.MOON.create());
+                    // }
+                  });
+        });
+
+    // Initial icon state
+    UI.getCurrent()
+        .getElement()
+        .executeJs("return localStorage.getItem('atw-rpg-theme') || '';")
+        .then(
+            String.class,
+            theme -> {
+              // if ("dark".equals(theme)) {
+              //   toggleButton.setIcon(VaadinIcon.SUN.create());
+              // } else {
+              toggleButton.setIcon(VaadinIcon.MOON.create());
+              // }
+            });
+
+    return toggleButton;
   }
 
   @Override
