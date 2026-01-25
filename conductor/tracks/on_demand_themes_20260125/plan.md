@@ -4,32 +4,39 @@
 
 - [x] Task: Update User domain model to include theme preference 170455b
 
-    - [x] Create migration script to add `theme_preference` column to `users` table
+  - [x] Create migration script to add `theme_preference` column to `users` table
 
-    - [x] Update `User` entity class with `themePreference` field
+  - [x] Update `User` entity class with `themePreference` field
 
-    - [x] Update `UserRepository` and `UserService` to handle the new field
+  - [x] Update `UserRepository` and `UserService` to handle the new field
 
 - [x] Task: Implement Global Theme Configuration 491cf4d
 
-    - [x] Create/Update configuration entity for system-wide settings
+  - [x] Create/Update configuration entity for system-wide settings
 
-    - [x] Add `default_theme` setting to database
+  - [x] Add `default_theme` setting to database
 
-    - [x] Implement service logic to retrieve effective theme (User preference or System default)
+  - [x] Implement service logic to retrieve effective theme (User preference or System default)
 
 - [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) 472bda8
 
-## Phase 2: Backend Logic and Theme Support
+## Phase 2: Backend Logic and Theme Support [checkpoint: 45bb4c7]
 
-- [ ] Task: Write Tests for Theme Resolution Logic
-  - [ ] Create `ThemeServiceTest` to verify preference hierarchy
-- [ ] Task: Implement `ThemeService`
-  - [ ] Create `ThemeService` to manage available theme definitions
-  - [ ] Implement logic to serve correct CSS classes/attributes based on user selection
-- [ ] Task: Integrate Theme Loading into Application Root
-  - [ ] Update the main layout or root component to apply the theme class to the document body/root element on initial load
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Write Tests for Theme Resolution Logic 5a092b5
+
+    - [x] Create `ThemeServiceTest` to verify preference hierarchy
+
+- [x] Task: Implement `ThemeService` 5a092b5
+
+    - [x] Create `ThemeService` to manage available theme definitions
+
+    - [x] Implement logic to serve correct CSS classes/attributes based on user selection
+
+- [x] Task: Integrate Theme Loading into Application Root 69ccfc2
+
+    - [x] Update the main layout or root component to apply the theme class to the document body/root element on initial load
+
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) 45bb4c7
 
 ## Phase 3: UI Implementation
 
