@@ -212,11 +212,15 @@ class CampaignServiceTest {
   void testCreateMatchForEncounter() {
     Wrestler player = new Wrestler();
     player.setName("Player");
+    player.setReigns(new ArrayList<>());
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     campaign.setWrestler(player);
 
     CampaignState state = new CampaignState();
     campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
 
     Season season = new Season();
     season.setId(1L);
@@ -346,11 +350,14 @@ class CampaignServiceTest {
   @Test
   void testCompletePostMatch() {
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     CampaignState state = new CampaignState();
     state.setCurrentPhase(CampaignPhase.POST_MATCH);
     state.setActionsTaken(1);
 
     campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
 
     campaignService.completePostMatch(campaign);
 

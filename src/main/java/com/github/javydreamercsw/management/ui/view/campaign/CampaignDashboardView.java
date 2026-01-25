@@ -727,10 +727,14 @@ public class CampaignDashboardView extends VerticalLayout {
     Select<AlignmentType> alignSelect = new Select<>();
     alignSelect.setLabel("Alignment");
     alignSelect.setItems(AlignmentType.values());
-    alignSelect.setValue(currentCampaign.getWrestler().getAlignment().getAlignmentType());
+    if (currentCampaign.getWrestler().getAlignment() != null) {
+      alignSelect.setValue(currentCampaign.getWrestler().getAlignment().getAlignmentType());
+    }
 
     IntegerField alignLevel = new IntegerField("Level");
-    alignLevel.setValue(currentCampaign.getWrestler().getAlignment().getLevel());
+    if (currentCampaign.getWrestler().getAlignment() != null) {
+      alignLevel.setValue(currentCampaign.getWrestler().getAlignment().getLevel());
+    }
     alignLevel.setMin(0);
     alignLevel.setMax(5);
     alignLevel.setStepButtonsVisible(true);
