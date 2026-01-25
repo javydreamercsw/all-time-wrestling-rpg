@@ -87,6 +87,9 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected RoleRepository roleRepository;
   @Autowired protected PasswordEncoder passwordEncoder;
 
+  @Autowired(required = false)
+  protected org.springframework.cache.CacheManager cacheManager;
+
   protected Wrestler createTestWrestler(@NonNull String name) {
     return TestUtils.createWrestler(name);
   }

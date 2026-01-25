@@ -113,6 +113,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @BeforeEach
   public void setup(TestInfo testInfo) {
+    // Clear all caches
+    if (cacheManager != null) {
+      cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
+
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
@@ -534,8 +539,23 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void selectFromVaadinMultiSelectComboBox(
       @NonNull WebElement comboBox, @NonNull String itemText) {
     log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
-    // 1. Open the combo box using JavaScript
-    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+
+    // 1. Target the internal input element for typing to filter
+    WebElement input =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "return arguments[0].querySelector('input') ||"
+                        + " arguments[0].shadowRoot.querySelector('input');",
+                    comboBox);
+
+    if (input != null) {
+      input.click();
+      input.sendKeys(itemText);
+    } else {
+      // Fallback: just open it
+      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+    }
 
     // 2. Wait for the item to appear and click it via JS
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -545,11 +565,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             return (Boolean)
                 ((JavascriptExecutor) d)
                     .executeScript(
-                        "const text = arguments[0];const item ="
+                        "const text = arguments[0];const items ="
                             + " Array.from(document.querySelectorAll('vaadin-multi-select-combo-box-item,"
-                            + " vaadin-combo-box-item, vaadin-item')).find(item =>"
-                            + " item.textContent.trim() === text ||"
-                            + " item.textContent.trim().includes(text));if (item) { item.click();"
+                            + " vaadin-combo-box-item, vaadin-item'));const item = items.find(i =>"
+                            + " i.textContent.trim() === text ||"
+                            + " i.textContent.trim().includes(text));if (item) { item.click();"
                             + " return true; }return false;",
                         itemText);
           });
