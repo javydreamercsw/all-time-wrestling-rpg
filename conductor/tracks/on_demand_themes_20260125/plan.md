@@ -1,6 +1,6 @@
 # Implementation Plan - On-demand Theme Changes
 
-## Phase 1: Database and Domain Layer
+## Phase 1: Database and Domain Layer [checkpoint: 472bda8]
 
 - [x] Task: Update User domain model to include theme preference 170455b
 
@@ -9,11 +9,16 @@
     - [x] Update `User` entity class with `themePreference` field
 
     - [x] Update `UserRepository` and `UserService` to handle the new field
-- [ ] Task: Implement Global Theme Configuration
-  - [ ] Create/Update configuration entity for system-wide settings
-  - [ ] Add `default_theme` setting to database
-  - [ ] Implement service logic to retrieve effective theme (User preference or System default)
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+
+- [x] Task: Implement Global Theme Configuration 491cf4d
+
+    - [x] Create/Update configuration entity for system-wide settings
+
+    - [x] Add `default_theme` setting to database
+
+    - [x] Implement service logic to retrieve effective theme (User preference or System default)
+
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) 472bda8
 
 ## Phase 2: Backend Logic and Theme Support
 
