@@ -19,6 +19,9 @@ package com.github.javydreamercsw.management.service.campaign;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +35,7 @@ class CampaignChapterServiceTest {
   @BeforeEach
   void setUp() {
     chapterService = new CampaignChapterService(new ObjectMapper());
-    chapterService.init(); // Loads from campaign_chapters.json
+    chapterService.init();
   }
 
   @Test
@@ -62,8 +65,14 @@ class CampaignChapterServiceTest {
 
   @Test
   void testFindAvailableChapters() {
-    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
-        new com.github.javydreamercsw.management.domain.campaign.CampaignState();
+    CampaignState state = new CampaignState();
+
+    Campaign campaign = new Campaign();
+    Wrestler wrestler = new Wrestler();
+    // Initialize required collections
+    wrestler.setReigns(new java.util.ArrayList<>());
+    campaign.setWrestler(wrestler);
+    state.setCampaign(campaign);
 
     // Initially ch1 should be available (no criteria)
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
@@ -79,8 +88,7 @@ class CampaignChapterServiceTest {
 
   @Test
   void testIsChapterComplete() {
-    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
-        new com.github.javydreamercsw.management.domain.campaign.CampaignState();
+    CampaignState state = new CampaignState();
     state.setCurrentChapterId("beginning");
     state.setMatchesPlayed(0);
     state.setVictoryPoints(0);

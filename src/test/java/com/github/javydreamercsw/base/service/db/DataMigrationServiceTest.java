@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -63,6 +61,15 @@ class DataMigrationServiceTest {
     }
     Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
 
+    // Configure and run Flyway for H2 in-memory database
+    Flyway h2Flyway =
+        Flyway.configure()
+            .dataSource(H2_URL, H2_USER, H2_PASSWORD)
+            .locations("filesystem:src/main/resources/db/migration/h2")
+            .cleanDisabled(false)
+            .load();
+    h2Flyway.migrate(); // Migrate H2 schema
+
     Path protected_target = Paths.get("target/db/sample_protected.mv.db");
     if (!Files.exists(protected_target)) {
       Files.createDirectories(protected_target);
@@ -74,18 +81,15 @@ class DataMigrationServiceTest {
         Statement stmt = conn.createStatement()) {
       stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
     }
-  }
 
-  @BeforeEach
-  void setUp() {
-    // Configure and run Flyway for H2 in-memory database
-    Flyway h2Flyway =
+    // Configure and run Flyway for H2 protected database
+    Flyway h2ProtectedFlyway =
         Flyway.configure()
-            .dataSource(H2_URL, H2_USER, H2_PASSWORD)
+            .dataSource(H2_PROTECTED_URL, H2_USER, "secret")
             .locations("filesystem:src/main/resources/db/migration/h2")
             .cleanDisabled(false)
             .load();
-    h2Flyway.migrate(); // Migrate H2 schema
+    h2ProtectedFlyway.migrate(); // Migrate H2 schema
   }
 
   @Test
@@ -107,7 +111,7 @@ class DataMigrationServiceTest {
   }
 
   @Test
-  void testMigrateDataWithPassword() throws SQLException, IOException {
+  void testMigrateDataWithPassword() throws SQLException {
     // Run migration with password
     DataMigrationService migrationService = new DataMigrationService(null, null);
     migrationService.migrateData(

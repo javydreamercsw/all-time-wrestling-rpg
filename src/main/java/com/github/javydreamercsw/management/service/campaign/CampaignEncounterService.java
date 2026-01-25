@@ -33,13 +33,11 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CampaignEncounterService {
 
@@ -52,6 +50,27 @@ public class CampaignEncounterService {
   private final TeamRepository teamRepository;
   private final FactionRepository factionRepository;
   private final ObjectMapper objectMapper;
+
+  public CampaignEncounterService(
+      SegmentNarrationServiceFactory aiFactory,
+      CampaignEncounterRepository encounterRepository,
+      CampaignStateRepository stateRepository,
+      CampaignChapterService chapterService,
+      @org.springframework.context.annotation.Lazy CampaignService campaignService,
+      WrestlerRepository wrestlerRepository,
+      TeamRepository teamRepository,
+      FactionRepository factionRepository,
+      ObjectMapper objectMapper) {
+    this.aiFactory = aiFactory;
+    this.encounterRepository = encounterRepository;
+    this.stateRepository = stateRepository;
+    this.chapterService = chapterService;
+    this.campaignService = campaignService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.teamRepository = teamRepository;
+    this.factionRepository = factionRepository;
+    this.objectMapper = objectMapper;
+  }
 
   @Transactional
   public CampaignEncounterResponseDTO generateEncounter(Campaign campaign) {
@@ -134,33 +153,67 @@ public class CampaignEncounterService {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
     }
 
-    if (chapter.isTagTeam()) {
-      sb.append("- Tag Team Campaign: YES\n");
-      if (campaign.getState().getPartnerId() != null) {
-        wrestlerRepository
-            .findById(campaign.getState().getPartnerId())
-            .ifPresent(p -> sb.append("- Tag Partner: ").append(p.getName()).append("\n"));
-      } else {
-        sb.append("- Tag Partner: NONE (Player is looking for a partner)\n");
-      }
-    }
+    // Check for partner ID in feature data
+    try {
+      if (chapter.isTagTeam()) {
+        sb.append("- Tag Team Campaign: YES\n");
+        // We need to access feature data manually or via CampaignService helper if public.
+        // Since getFeatureValue is private in CampaignService, we assume direct access or
+        // refactor.
+        // However, we can read the JSON blob directly here since we have ObjectMapper.
+        String featureDataJson = campaign.getState().getFeatureData();
+        Long partnerId = null;
+        if (featureDataJson != null) {
+          java.util.Map<String, Object> data =
+              objectMapper.readValue(
+                  featureDataJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+          Object val = data.get("partnerId");
+          if (val instanceof Number) {
+            partnerId = ((Number) val).longValue();
+          }
+        }
 
-    if (campaign.getState().isFinalsPhase() && !chapter.isTournament()) {
-      sb.append("\n*** CHAPTER FINALE PHASE ***\n");
-      sb.append(
-          "The player has reached the climax of this chapter. The story must now lead to the final"
-              + " showdown.\n");
-      if (chapter.getRules().getFinalMatchType() != null) {
-        sb.append("The match type is mandated to be: ")
-            .append(chapter.getRules().getFinalMatchType())
-            .append(".\n");
+        if (partnerId != null) {
+          wrestlerRepository
+              .findById(partnerId)
+              .ifPresent(p -> sb.append("- Tag Partner: ").append(p.getName()).append("\n"));
+        } else {
+          sb.append("- Tag Partner: NONE (Player is looking for a partner)\n");
+        }
       }
-      if (chapter.getRules().getFinalMatchRules() != null
-          && !chapter.getRules().getFinalMatchRules().isEmpty()) {
-        sb.append("The match rules are mandated to be: ")
-            .append(String.join(", ", chapter.getRules().getFinalMatchRules()))
-            .append(".\n");
+
+      // Check for Finals Phase in feature data
+      boolean isFinalsPhase = false;
+      String featureDataJson = campaign.getState().getFeatureData();
+      if (featureDataJson != null) {
+        java.util.Map<String, Object> data =
+            objectMapper.readValue(
+                featureDataJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        Object val = data.get("finalsPhase");
+        if (val instanceof Boolean) {
+          isFinalsPhase = (Boolean) val;
+        }
       }
+
+      if (isFinalsPhase && !chapter.isTournament()) {
+        sb.append("\n*** CHAPTER FINALE PHASE ***\n");
+        sb.append(
+            "The player has reached the climax of this chapter. The story must now lead to the"
+                + " final showdown.\n");
+        if (chapter.getRules().getFinalMatchType() != null) {
+          sb.append("The match type is mandated to be: ")
+              .append(chapter.getRules().getFinalMatchType())
+              .append(".\n");
+        }
+        if (chapter.getRules().getFinalMatchRules() != null
+            && !chapter.getRules().getFinalMatchRules().isEmpty()) {
+          sb.append("The match rules are mandated to be: ")
+              .append(String.join(", ", chapter.getRules().getFinalMatchRules()))
+              .append(".\n");
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error parsing feature data in prompt builder", e);
     }
 
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH
@@ -254,22 +307,45 @@ public class CampaignEncounterService {
         "4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentName' (string) if"
             + " the story dictates a specific opponent from the ROSTER above. Also provide a"
             + " 'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',"
-            + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match']. Defaults to 'One on One'.\n");
+            + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match', 'Faction Beatdown',"
+            + " 'GM Office Confrontation', 'Performance Review']. Defaults to 'One on One'.\n");
     sb.append(
         "5. If 'nextPhase' is MATCH, you may also provide a 'segmentRules' (list of strings) for"
             + " special stipulations (e.g., ['No DQ', 'Cage Match', 'Submission Only']). Available"
             + " rules: Normal, Hardcore, Submission, No DQ, Cage, Ladder, Table, Last Man Standing,"
             + " Iron Man.\n");
 
-    if (chapter.isTagTeam() && campaign.getState().getPartnerId() == null) {
+    Long currentPartnerId = null;
+    try {
+      if (campaign.getState().getFeatureData() != null) {
+        java.util.Map<String, Object> data =
+            objectMapper.readValue(
+                campaign.getState().getFeatureData(),
+                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        Object val = data.get("partnerId");
+        if (val instanceof Number) {
+          currentPartnerId = ((Number) val).longValue();
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error reading partnerId from feature data", e);
+    }
+
+    if (chapter.isTagTeam() && currentPartnerId == null) {
       sb.append(
           "6. The player is currently looking for a Tag Team partner. Generate narrative and"
               + " choices that involve scouting, teaming up with, or impressing a potential partner"
               + " from the ROSTER (who is not already in a team/faction).\n");
     }
 
+    if ("fighting_champion".equals(chapter.getId())) {
+      sb.append(
+          "7. In this chapter (Open Challenge), when nextPhase is MATCH, you MUST select a random"
+              + " credible opponent from the ROSTER above as the one who answers the challenge.\n");
+    }
+
     sb.append(
-        "7. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
+        "8. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
             + " filler before or after the JSON.\n");
     sb.append("REQUIRED JSON STRUCTURE:\n");
     sb.append("{\n");

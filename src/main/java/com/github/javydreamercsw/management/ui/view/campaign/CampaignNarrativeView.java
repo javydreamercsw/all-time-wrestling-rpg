@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
@@ -44,6 +45,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.List;
+import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
@@ -234,10 +237,22 @@ public class CampaignNarrativeView extends VerticalLayout {
                 ? choice.getSegmentRules().toArray(new String[0])
                 : new String[0];
 
+        String opponentName = choice.getForcedOpponentName();
+        if (opponentName == null || opponentName.isBlank()) {
+          List<Wrestler> roster = wrestlerRepository.findAll();
+          roster.remove(currentCampaign.getWrestler());
+          if (!roster.isEmpty()) {
+            opponentName = roster.get(new Random().nextInt(roster.size())).getName();
+            log.info("AI did not provide an opponent. Randomly selected: {}", opponentName);
+          } else {
+            throw new IllegalStateException("No opponents available for match.");
+          }
+        }
+
         Segment match =
             campaignService.createMatchForEncounter(
                 currentCampaign,
-                choice.getForcedOpponentName(),
+                opponentName,
                 response.getNarrative(),
                 choice.getMatchType(),
                 rules);

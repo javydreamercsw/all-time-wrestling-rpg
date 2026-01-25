@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -59,6 +60,15 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock
   private com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
+      chapterService;
+
+  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
+  @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+
+  private ObjectMapper objectMapper = new ObjectMapper();
+
   private CustomUserDetails mockUser;
   private Account mockAccount;
   private Wrestler mockWrestler;
@@ -89,6 +99,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
         .thenReturn(Optional.of(mockCampaign));
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);
     when(campaignService.getCurrentChapter(any())).thenReturn(new CampaignChapterDTO());
+    when(titleRepository.findByName(any())).thenReturn(Optional.empty());
   }
 
   @Test
@@ -101,7 +112,11 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper,
+            chapterService,
+            titleService,
+            titleRepository);
 
     UI.getCurrent().add(view);
 
@@ -152,7 +167,11 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper,
+            chapterService,
+            titleService,
+            titleRepository);
 
     UI.getCurrent().add(view);
 
@@ -172,7 +191,11 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             cardRepository,
             upgradeService,
             securityUtils,
-            tournamentService);
+            tournamentService,
+            objectMapper,
+            chapterService,
+            titleService,
+            titleRepository);
 
     UI.getCurrent().add(view);
 

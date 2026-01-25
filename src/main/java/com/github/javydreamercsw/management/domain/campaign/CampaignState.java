@@ -166,38 +166,15 @@ public class CampaignState {
 
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "rival_id")
-  private com.github.javydreamercsw.management.domain.npc.Npc rival;
-
-  @Column(name = "finals_phase", nullable = false)
-  @Builder.Default
-  private boolean finalsPhase = false;
-
-  @Column(name = "tournament_winner", nullable = false)
-  @Builder.Default
-  private boolean tournamentWinner = false;
-
-  @Column(name = "failed_to_qualify", nullable = false)
-  @Builder.Default
-  private boolean failedToQualify = false;
-
-  @Column(name = "won_finale", nullable = false)
-  @Builder.Default
-  private boolean wonFinale = false;
+  private com.github.javydreamercsw.management.domain.wrestler.Wrestler rival;
 
   @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "current_match_id")
   private com.github.javydreamercsw.management.domain.show.segment.Segment currentMatch;
 
-  @Column(name = "tournament_state")
+  @Column(name = "feature_data")
   @Lob
-  private String tournamentState;
-
-  @Column(name = "partner_id")
-  private Long partnerId;
-
-  @Column(name = "recruiting_partner", nullable = false)
-  @Builder.Default
-  private boolean recruitingPartner = false;
+  private String featureData;
 
   @com.fasterxml.jackson.annotation.JsonIgnore
   public int getCampaignStaminaBonus() {

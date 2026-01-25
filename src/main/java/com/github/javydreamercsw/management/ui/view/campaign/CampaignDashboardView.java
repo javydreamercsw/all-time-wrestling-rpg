@@ -26,14 +26,19 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
 import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
@@ -41,8 +46,11 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinService;
@@ -68,6 +76,10 @@ public class CampaignDashboardView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final com.github.javydreamercsw.management.service.campaign.TournamentService
       tournamentService;
+  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+  private final CampaignChapterService chapterService;
+  private final TitleService titleService;
+  private final com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
 
   private Campaign currentCampaign;
 
@@ -79,7 +91,11 @@ public class CampaignDashboardView extends VerticalLayout {
       CampaignAbilityCardRepository cardRepository,
       CampaignUpgradeService upgradeService,
       SecurityUtils securityUtils,
-      com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService) {
+      com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService,
+      com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+      CampaignChapterService chapterService,
+      TitleService titleService,
+      com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -87,12 +103,29 @@ public class CampaignDashboardView extends VerticalLayout {
     this.upgradeService = upgradeService;
     this.securityUtils = securityUtils;
     this.tournamentService = tournamentService;
+    this.objectMapper = objectMapper;
+    this.chapterService = chapterService;
+    this.titleService = titleService;
+    this.titleRepository = titleRepository;
 
     setSpacing(true);
     setPadding(true);
 
     loadCampaign();
     initUI();
+  }
+
+  private boolean getFeatureBoolean(CampaignState state, String key) {
+    if (state.getFeatureData() == null) return false;
+    try {
+      java.util.Map<String, Object> data =
+          objectMapper.readValue(
+              state.getFeatureData(), new com.fasterxml.jackson.core.type.TypeReference<>() {});
+      return Boolean.TRUE.equals(data.get(key));
+    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+      log.error("Error parsing feature data", e);
+      return false;
+    }
   }
 
   private void loadCampaign() {
@@ -179,6 +212,13 @@ public class CampaignDashboardView extends VerticalLayout {
     add(new H2("Campaign: All or Nothing (Season 1)"));
     add(new H3("Wrestler: " + wrestler.getName()));
 
+    var chapter = campaignService.getCurrentChapter(currentCampaign);
+    Span chapterLabel = new Span("Chapter: " + chapter.getTitle());
+    chapterLabel.addClassNames(
+        LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.PRIMARY);
+    chapterLabel.setId("campaign-chapter-title");
+    add(chapterLabel);
+
     // 1. Alignment Track (Top, Full Width)
     if (alignment != null) {
       add(new AlignmentTrackComponent(alignment));
@@ -190,7 +230,7 @@ public class CampaignDashboardView extends VerticalLayout {
     mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
 
     // 3. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
-    if (campaignService.getCurrentChapter(currentCampaign).isTournament()) {
+    if (chapter.isTournament()) {
       VerticalLayout tournamentSection = new VerticalLayout();
       tournamentSection.setPadding(false);
       tournamentSection.setSpacing(true);
@@ -565,14 +605,14 @@ public class CampaignDashboardView extends VerticalLayout {
             com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
         bracketContainer.add(playMatchButton);
       }
-    } else if (currentCampaign.getState().isTournamentWinner()) {
+    } else if (getFeatureBoolean(currentCampaign.getState(), "tournamentWinner")) {
       Span winnerMsg = new Span("🏆 You are the Tournament Champion!");
       winnerMsg.addClassNames(
           LumoUtility.TextColor.SUCCESS, LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.BOLD);
       bracketContainer.add(winnerMsg);
-    } else if (currentCampaign.getState().isFinalsPhase()
+    } else if (getFeatureBoolean(currentCampaign.getState(), "finalsPhase")
         && nextMatch == null
-        && !currentCampaign.getState().isTournamentWinner()) {
+        && !getFeatureBoolean(currentCampaign.getState(), "tournamentWinner")) {
       Span loserMsg = new Span("❌ You have been eliminated from the tournament.");
       loserMsg.addClassNames(LumoUtility.TextColor.ERROR, LumoUtility.FontWeight.BOLD);
       bracketContainer.add(loserMsg);
@@ -633,6 +673,186 @@ public class CampaignDashboardView extends VerticalLayout {
     debugContent.setPadding(true);
     debugContent.setSpacing(true);
 
+    // --- Chapter Jumper ---
+    HorizontalLayout chapterLayout = new HorizontalLayout();
+    chapterLayout.setAlignItems(Alignment.BASELINE);
+
+    ComboBox<CampaignChapterDTO> chapterSelect = new ComboBox<>("Jump to Chapter");
+    chapterSelect.setItems(chapterService.getAllChapters());
+    chapterSelect.setItemLabelGenerator(CampaignChapterDTO::getTitle);
+    chapterSelect.setPlaceholder("Select Chapter...");
+    chapterSelect.setWidth("300px");
+
+    Button jumpButton =
+        new Button(
+            "Jump",
+            e -> {
+              CampaignChapterDTO selected = chapterSelect.getValue();
+              if (selected != null) {
+                CampaignState state = currentCampaign.getState();
+                state.setCurrentChapterId(selected.getId());
+                // Reset Counters
+                state.setMatchesPlayed(0);
+                state.setWins(0);
+                state.setLosses(0);
+                // Clear flags (Naive clear - might need more robust reset if flags get complex)
+                campaignService.setFeatureValue(state, "finalsPhase", false);
+                campaignService.setFeatureValue(state, "tournamentWinner", false);
+                campaignService.setFeatureValue(state, "wonFinale", false);
+                campaignService.setFeatureValue(state, "failedToQualify", false);
+
+                // Initialize specific logic if needed
+                if (selected.isTournament()) {
+                  campaignService.setFeatureValue(state, "finalsPhase", true);
+                  tournamentService.initializeTournament(currentCampaign);
+                }
+
+                campaignRepository.save(currentCampaign);
+                Notification.show("Jumped to chapter: " + selected.getTitle());
+                refreshUI();
+              }
+            });
+    chapterLayout.add(chapterSelect, jumpButton);
+    debugContent.add(chapterLayout);
+
+    // --- State & Flags (Entry Point Simulator) ---
+    H4 stateHeader = new H4("State & Flags");
+    stateHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM);
+    debugContent.add(stateHeader);
+
+    HorizontalLayout flagsLayout = new HorizontalLayout();
+    flagsLayout.setAlignItems(Alignment.BASELINE);
+
+    // Alignment
+    Select<AlignmentType> alignSelect = new Select<>();
+    alignSelect.setLabel("Alignment");
+    alignSelect.setItems(AlignmentType.values());
+    if (currentCampaign.getWrestler().getAlignment() != null) {
+      alignSelect.setValue(currentCampaign.getWrestler().getAlignment().getAlignmentType());
+    }
+
+    IntegerField alignLevel = new IntegerField("Level");
+    if (currentCampaign.getWrestler().getAlignment() != null) {
+      alignLevel.setValue(currentCampaign.getWrestler().getAlignment().getLevel());
+    }
+    alignLevel.setMin(0);
+    alignLevel.setMax(5);
+    alignLevel.setStepButtonsVisible(true);
+
+    Button setAlignButton =
+        new Button(
+            "Set",
+            e -> {
+              // We use shiftAlignment logic, or direct repo save?
+              // Direct save is safer for "Force Set".
+              WrestlerAlignment wa = currentCampaign.getWrestler().getAlignment();
+              wa.setAlignmentType(alignSelect.getValue());
+              wa.setLevel(alignLevel.getValue());
+              // Save happens via cascade or we need repo
+              // We didn't inject alignmentRepo here, but we can rely on persistence or existing
+              // service methods
+              // CampaignService has shiftAlignment but that's delta.
+              // Let's just assume modifying the entity and refreshing works if transaction commits,
+              // but we are in view.
+              // We need to save. We have wrestlerRepo.
+              wrestlerRepository.save(currentCampaign.getWrestler());
+              refreshUI();
+            });
+
+    // Championship
+    Button toggleTitleButton =
+        new Button(
+            "Toggle World Title",
+            e -> {
+              Wrestler w = currentCampaign.getWrestler();
+              titleRepository
+                  .findByName("ATW World")
+                  .ifPresent(
+                      title -> {
+                        boolean isChamp =
+                            title.getCurrentChampions().stream()
+                                .anyMatch(c -> c.getId().equals(w.getId()));
+                        if (isChamp) {
+                          // Strip
+                          titleService.vacateTitle(title.getId());
+                          Notification.show("Stripped World Title");
+                        } else {
+                          // Award
+                          titleService.awardTitleTo(title, List.of(w));
+                          Notification.show("Awarded World Title");
+                        }
+                        refreshUI();
+                      });
+            });
+
+    flagsLayout.add(alignSelect, alignLevel, setAlignButton, toggleTitleButton);
+    debugContent.add(flagsLayout);
+
+    HorizontalLayout checkLayout = new HorizontalLayout();
+    // Helper to add checkbox toggles for campaign state features
+    Checkbox finalsCheck =
+        new Checkbox(
+            "Finals Phase",
+            e -> {
+              campaignService.setFeatureValue(
+                  currentCampaign.getState(), "finalsPhase", e.getValue());
+            });
+    finalsCheck.setValue(getFeatureBoolean(currentCampaign.getState(), "finalsPhase"));
+
+    Checkbox winnerCheck =
+        new Checkbox(
+            "Tournament Winner",
+            e -> {
+              campaignService.setFeatureValue(
+                  currentCampaign.getState(), "tournamentWinner", e.getValue());
+            });
+    winnerCheck.setValue(getFeatureBoolean(currentCampaign.getState(), "tournamentWinner"));
+
+    checkLayout.add(finalsCheck, winnerCheck);
+    debugContent.add(checkLayout);
+
+    // --- Phase Control ---
+    H4 phaseHeader = new H4("Phase Control");
+    phaseHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM);
+    debugContent.add(phaseHeader);
+
+    HorizontalLayout phaseLayout = new HorizontalLayout();
+    phaseLayout.add(
+        new Button(
+            "Force Backstage",
+            e -> {
+              currentCampaign
+                  .getState()
+                  .setCurrentPhase(
+                      com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE);
+              currentCampaign.getState().setActionsTaken(0);
+              campaignRepository.save(currentCampaign);
+              refreshUI();
+            }));
+    phaseLayout.add(
+        new Button(
+            "Force Post-Match",
+            e -> {
+              currentCampaign
+                  .getState()
+                  .setCurrentPhase(
+                      com.github.javydreamercsw.management.domain.campaign.CampaignPhase
+                          .POST_MATCH);
+              campaignRepository.save(currentCampaign);
+              refreshUI();
+            }));
+    phaseLayout.add(
+        new Button(
+            "Force Complete Chapter",
+            e -> {
+              campaignService
+                  .advanceChapter(currentCampaign)
+                  .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+              refreshUI();
+            }));
+
+    debugContent.add(phaseLayout);
+
     // Resources
     HorizontalLayout resourcesLayout = new HorizontalLayout();
     resourcesLayout.add(
@@ -674,7 +894,6 @@ public class CampaignDashboardView extends VerticalLayout {
                   .forEach(
                       i -> {
                         i.heal();
-                        // Assuming cascade or manual save needed if not in service
                       });
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
@@ -700,32 +919,6 @@ public class CampaignDashboardView extends VerticalLayout {
     matchLayout.add(new Button("Sim. Loss", e -> simulateMatch(false)));
 
     debugContent.add(new Span("Match Simulation"), matchLayout);
-
-    // Phase & Chapter
-    HorizontalLayout phaseLayout = new HorizontalLayout();
-    phaseLayout.add(
-        new Button(
-            "Force Backstage",
-            e -> {
-              currentCampaign
-                  .getState()
-                  .setCurrentPhase(
-                      com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE);
-              currentCampaign.getState().setActionsTaken(0);
-              campaignRepository.save(currentCampaign);
-              refreshUI();
-            }));
-    phaseLayout.add(
-        new Button(
-            "Force Complete Chapter",
-            e -> {
-              campaignService
-                  .advanceChapter(currentCampaign)
-                  .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
-              refreshUI();
-            }));
-
-    debugContent.add(new Span("Phase & Chapter"), phaseLayout);
 
     Details debugDetails = new Details("🛠️ Debug / Dev Tools", debugContent);
     debugDetails.setOpened(false);

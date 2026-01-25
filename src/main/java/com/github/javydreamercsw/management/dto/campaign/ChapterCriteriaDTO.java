@@ -35,6 +35,7 @@ public class ChapterCriteriaDTO {
   private Boolean failedToQualify;
   private Boolean wonFinale;
   private Boolean isChampion;
+  private Boolean hasFaction;
   private String requiredAlignmentType; // FACE, HEEL, or NEUTRAL
   private Integer minAlignmentLevel;
   private List<String> requiredCompletedChapterIds;

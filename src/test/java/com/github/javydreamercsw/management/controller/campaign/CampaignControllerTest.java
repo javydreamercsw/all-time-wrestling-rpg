@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -46,6 +47,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -338,12 +340,15 @@ class CampaignControllerTest extends AbstractIntegrationTest {
             .getContentAsString();
 
     CampaignState finalState = objectMapper.readValue(responseJson, CampaignState.class);
+    Map<String, Object> features =
+        objectMapper.readValue(finalState.getFeatureData(), new TypeReference<>() {});
+
     // Should be in finals phase (bracket) but lost
-    assertThat(finalState.isFinalsPhase()).isTrue();
+    assertThat(features.get("finalsPhase")).isEqualTo(true);
     // Should not be marked as "failed to qualify" because qualifying phase is skipped
-    assertThat(finalState.isFailedToQualify()).isFalse();
+    assertThat(features.get("failedToQualify")).isNull();
     // Should not be winner
-    assertThat(finalState.isTournamentWinner()).isFalse();
+    assertThat(features.get("tournamentWinner")).isNull();
     // Should have 1 loss
     assertThat(finalState.getLosses()).isEqualTo(1);
   }
@@ -388,7 +393,10 @@ class CampaignControllerTest extends AbstractIntegrationTest {
             .getResponse()
             .getContentAsString();
     CampaignState finalState = objectMapper.readValue(finalStateJson, CampaignState.class);
-    assertThat(finalState.isFinalsPhase()).isTrue();
-    assertThat(finalState.isTournamentWinner()).isTrue();
+    Map<String, Object> features =
+        objectMapper.readValue(finalState.getFeatureData(), new TypeReference<>() {});
+
+    assertThat(features.get("finalsPhase")).isEqualTo(true);
+    assertThat(features.get("tournamentWinner")).isEqualTo(true);
   }
 }

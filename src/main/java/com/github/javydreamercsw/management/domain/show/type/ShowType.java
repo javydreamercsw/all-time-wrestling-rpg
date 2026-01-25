@@ -35,34 +35,26 @@ import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "show_type", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Getter
+@Setter
 public class ShowType extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "show_type_id")
   private Long id;
 
-  @Setter
-  @Getter
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
-  @Setter
-  @Getter
   @Column(name = "description", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String description;
 
-  @Setter
-  @Getter
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  @Setter
-  @Getter
   @Column(name = "expected_matches", nullable = false)
   private int expectedMatches;
 
-  @Setter
-  @Getter
   @Column(name = "expected_promos", nullable = false)
   private int expectedPromos;
 

@@ -32,19 +32,13 @@ CREATE TABLE campaign_state (
     wins INT DEFAULT 0 NOT NULL,
     losses INT DEFAULT 0 NOT NULL,
     rival_id BIGINT,
-    finals_phase BOOLEAN DEFAULT FALSE NOT NULL,
-    tournament_winner BOOLEAN DEFAULT FALSE NOT NULL,
-    failed_to_qualify BOOLEAN DEFAULT FALSE NOT NULL,
     current_match_id BIGINT,
     momentum_bonus INT DEFAULT 0 NOT NULL,
-    tournament_state CLOB,
     current_game_date DATE,
     last_sync TIMESTAMP,
-    won_finale BOOLEAN DEFAULT FALSE NOT NULL,
-    partner_id BIGINT,
-    recruiting_partner BOOLEAN DEFAULT FALSE NOT NULL,
+    feature_data CLOB,
     FOREIGN KEY (campaign_id) REFERENCES campaign(id),
-    FOREIGN KEY (rival_id) REFERENCES npc(id),
+    FOREIGN KEY (rival_id) REFERENCES wrestler(wrestler_id),
     FOREIGN KEY (current_match_id) REFERENCES segment(segment_id)
 );
 
