@@ -78,6 +78,12 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
   @Autowired private FactionRepository factionRepository;
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
+      chapterService;
+
+  @Autowired private com.github.javydreamercsw.management.service.title.TitleService titleService;
+
   private Campaign campaign;
   private Wrestler player;
 
@@ -144,7 +150,10 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
             upgradeService,
             securityUtils,
             tournamentService,
-            objectMapper);
+            objectMapper,
+            chapterService,
+            titleService,
+            titleRepository);
     UI.getCurrent().add(dashboard);
   }
 
