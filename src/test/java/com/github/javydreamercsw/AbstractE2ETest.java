@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.util.docs.DocEntry;
+import com.github.javydreamercsw.management.util.docs.DocumentationManifest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -79,6 +82,27 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   private int screenshotCounter = 0;
   protected Path testArtifactsDir;
 
+  private static final AtomicInteger docOrder = new AtomicInteger(0);
+
+  static {
+    // Shutdown hook to write documentation manifest
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  if (Boolean.getBoolean("generate.docs")) {
+                    try {
+                      Path manifestPath = Paths.get("docs", "manifest.json");
+                      log.info(
+                          "Writing documentation manifest to: {}", manifestPath.toAbsolutePath());
+                      DocumentationManifest.write(manifestPath);
+                    } catch (IOException e) {
+                      log.error("Failed to write documentation manifest", e);
+                    }
+                  }
+                }));
+  }
+
   protected String getUsername() {
     return "admin";
   }
@@ -119,7 +143,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--disable-gpu");
     if (Boolean.getBoolean("generate.docs")) {
       // Consistent size for documentation screenshots
-      options.addArguments("--window-size=1280,800");
+      options.addArguments("--window-size=1920,1080");
     } else {
       options.addArguments("--window-size=1920,1080");
     }
@@ -129,6 +153,29 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     driver = new ChromeDriver(options);
     login();
+  }
+
+  protected void documentFeature(
+      @NonNull String category,
+      @NonNull String title,
+      @NonNull String description,
+      @NonNull String screenshotName) {
+    if (Boolean.getBoolean("generate.docs")) {
+      takeDocScreenshot(screenshotName);
+      String id = category.toLowerCase().replace(" ", "-") + "-" + screenshotName;
+      String relativeImagePath =
+          "screenshots/"
+              + (screenshotName.endsWith(".png") ? screenshotName : screenshotName + ".png");
+
+      DocumentationManifest.addEntry(
+          new DocEntry(
+              id,
+              category,
+              title,
+              description,
+              relativeImagePath,
+              docOrder.getAndIncrement() * 10));
+    }
   }
 
   protected void takeDocScreenshot(@NonNull String fileName) {

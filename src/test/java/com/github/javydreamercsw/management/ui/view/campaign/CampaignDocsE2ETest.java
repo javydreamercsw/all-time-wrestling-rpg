@@ -77,7 +77,12 @@ class CampaignDocsE2ETest extends AbstractE2ETest {
 
     // 3. Verify & Capture
     waitForText("Tournament Bracket");
-    takeDocScreenshot("campaign-tournament-bracket");
+    documentFeature(
+        "Campaign",
+        "Tournament Bracket",
+        "The tournament chapter challenges you to climb the ranks in a single-elimination bracket."
+            + " Win your matches to advance to the finals and claim the trophy.",
+        "campaign-tournament-bracket");
   }
 
   @Test
@@ -93,7 +98,12 @@ class CampaignDocsE2ETest extends AbstractE2ETest {
 
     // 3. Verify & Capture
     waitForText("Chapter: The Fighting Champion");
-    takeDocScreenshot("campaign-fighting-champion");
+    documentFeature(
+        "Campaign",
+        "Fighting Champion",
+        "As the Fighting Champion, you must defend your title against a series of challengers. Each"
+            + " defense increases your prestige but tests your stamina.",
+        "campaign-fighting-champion");
   }
 
   @Test
@@ -109,7 +119,12 @@ class CampaignDocsE2ETest extends AbstractE2ETest {
 
     // 3. Verify & Capture
     waitForText("Chapter: Gang Warfare");
-    takeDocScreenshot("campaign-gang-warfare");
+    documentFeature(
+        "Campaign",
+        "Gang Warfare",
+        "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or"
+            + " crush rivals as you fight for control of the locker room.",
+        "campaign-gang-warfare");
   }
 
   private Wrestler getOrCreateWrestler(Account account) {

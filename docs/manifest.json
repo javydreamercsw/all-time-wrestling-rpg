@@ -1,0 +1,24 @@
+{
+  "features" : [ {
+    "id" : "campaign-campaign-gang-warfare",
+    "category" : "Campaign",
+    "title" : "Gang Warfare",
+    "description" : "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.",
+    "imagePath" : "screenshots/campaign-gang-warfare.png",
+    "order" : 0
+  }, {
+    "id" : "campaign-campaign-fighting-champion",
+    "category" : "Campaign",
+    "title" : "Fighting Champion",
+    "description" : "As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.",
+    "imagePath" : "screenshots/campaign-fighting-champion.png",
+    "order" : 10
+  }, {
+    "id" : "campaign-campaign-tournament-bracket",
+    "category" : "Campaign",
+    "title" : "Tournament Bracket",
+    "description" : "The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.",
+    "imagePath" : "screenshots/campaign-tournament-bracket.png",
+    "order" : 20
+  } ]
+}
