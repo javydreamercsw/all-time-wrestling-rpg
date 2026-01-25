@@ -54,6 +54,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
+import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -101,6 +102,7 @@ public class CampaignService {
   private final TeamRepository teamRepository;
   private final TitleService titleService;
   private final SegmentAdjudicationService adjudicationService;
+  private final MatchRewardService matchRewardService;
   private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
@@ -451,6 +453,7 @@ public class CampaignService {
     wrestler.getReigns().size();
 
     CampaignChapterDTO.ChapterRules rules = getCurrentChapter(campaign).getRules();
+    CampaignChapterDTO currentChapter = getCurrentChapter(campaign);
 
     // Update Segment if it exists
     if (state.getCurrentMatch() != null) {
@@ -463,7 +466,33 @@ public class CampaignService {
         match.getWrestlers().stream().filter(w -> !w.equals(wrestler)).forEach(winners::add);
       }
       match.setWinners(winners);
-      adjudicationService.adjudicateMatch(match);
+
+      // Determine difficulty multiplier
+      double multiplier = 1.0;
+      if (currentChapter.getDifficulty() != null) {
+        switch (currentChapter.getDifficulty()) {
+          case LEGENDARY:
+            multiplier = 2.0;
+            break;
+          case HARD:
+            multiplier = 1.5;
+            break;
+          case EASY:
+            multiplier = 0.8;
+            break;
+          default:
+            multiplier = 1.0;
+        }
+      }
+
+      // Apply rewards directly for Campaign
+      matchRewardService.processRewards(match, multiplier);
+      // We do NOT call adjudicationService.adjudicateMatch(match) here anymore
+      // to avoid triggering global league events (Title changes, Feud updates) that might conflict.
+      // However, if we WANT title changes in Campaign (e.g. Fighting Champion), we need to handle
+      // that.
+      // For now, let's assume Campaign Title Logic is handled separately (like awardTitleToWinner
+      // below).
     }
 
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
@@ -487,7 +516,6 @@ public class CampaignService {
     }
 
     // Check for chapter completion/tournament qualification
-    CampaignChapterDTO currentChapter = getCurrentChapter(campaign);
     if (currentChapter.isTournament()) {
       boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
 
