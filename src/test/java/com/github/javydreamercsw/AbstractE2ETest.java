@@ -117,13 +117,35 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--headless=new");
     }
     options.addArguments("--disable-gpu");
-    options.addArguments("--window-size=1920,1080");
+    if (Boolean.getBoolean("generate.docs")) {
+      // Consistent size for documentation screenshots
+      options.addArguments("--window-size=1280,800");
+    } else {
+      options.addArguments("--window-size=1920,1080");
+    }
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
     login();
+  }
+
+  protected void takeDocScreenshot(@NonNull String fileName) {
+    if (Boolean.getBoolean("generate.docs")) {
+      try {
+        Path docsDir = Paths.get("docs", "screenshots");
+        if (!Files.exists(docsDir)) {
+          Files.createDirectories(docsDir);
+        }
+        String screenshotName = fileName.endsWith(".png") ? fileName : fileName + ".png";
+        Path destFile = docsDir.resolve(screenshotName);
+        takeScreenshot(destFile.toString());
+        log.info("Documentation screenshot saved: {}", destFile);
+      } catch (IOException e) {
+        log.error("Failed to save documentation screenshot", e);
+      }
+    }
   }
 
   protected void login() {

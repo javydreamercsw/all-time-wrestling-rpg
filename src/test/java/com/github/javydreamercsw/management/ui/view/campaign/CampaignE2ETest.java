@@ -95,6 +95,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("campaign-dashboard-initial");
+    takeDocScreenshot("campaign-dashboard");
 
     // Verify dashboard loaded
     waitForText("Campaign: All or Nothing");
@@ -107,6 +108,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     clickElement(actionsButton);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("backstage-actions-view");
+    takeDocScreenshot("backstage-actions");
 
     // Verify we are on the backstage actions view
     waitForText("Backstage Actions");
