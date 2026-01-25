@@ -8,7 +8,9 @@
   "tagTeam": false,
   "entryPoints": [ {
     "name": "New Career",
-    "criteria": [ ]
+    "criteria": [ {
+      "maxVictoryPoints": 0
+    } ]
   } ],
   "exitPoints": [ {
     "name": "Ready for Prime Time",
