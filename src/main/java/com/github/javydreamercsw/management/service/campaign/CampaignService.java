@@ -231,13 +231,22 @@ public class CampaignService {
    * @return The created Segment.
    */
   public Segment createMatchForEncounter(
-      @NonNull Campaign campaign,
+      @NonNull Campaign campaignParam,
       @NonNull String opponentName,
       @NonNull String narration,
       @NonNull String segmentTypeName,
       String... segmentRules) {
+    // Reload campaign to ensure it's attached and we can fetch lazy collections
+    Campaign campaign =
+        campaignRepository
+            .findById(campaignParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
+
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
+
+    // Initialize lazy collections to prevent LazyInitializationException
+    player.getReigns().size();
 
     // 1. Find/Create Campaign Show
     Show show = getOrCreateCampaignShow(campaign);
