@@ -648,7 +648,13 @@ public class CampaignService {
    *
    * @param campaign The campaign to transition.
    */
-  public void completePostMatch(@NonNull Campaign campaign) {
+  public void completePostMatch(@NonNull Campaign campaignParam) {
+    // Reload campaign to ensure attached entity and fresh state
+    Campaign campaign =
+        campaignRepository
+            .findById(campaignParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
+
     CampaignState state = campaign.getState();
     state.setCurrentPhase(CampaignPhase.BACKSTAGE);
     state.setActionsTaken(0); // Reset actions for the next "turn"
