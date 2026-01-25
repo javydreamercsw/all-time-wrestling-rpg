@@ -23,11 +23,4 @@ import com.vaadin.flow.theme.Theme;
 
 @Push
 @Theme("default")
-public class AppShell implements AppShellConfigurator {
-  @Override
-  public void configurePage(AppShellSettings settings) {
-    // settings.addInlineScript(
-    //    "const theme = localStorage.getItem('atw-rpg-theme');"
-    //        + "if (theme) { document.documentElement.setAttribute('theme', theme); }");
-  }
-}
+public class AppShell implements AppShellConfigurator {}
