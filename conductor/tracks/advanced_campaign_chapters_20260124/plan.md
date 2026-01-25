@@ -57,8 +57,11 @@
 
   - [x] Verify state persistence between chapters.
 
-- [ ] Task: Polish & Balancing
+- [x] Task: Polish & Balancing
 
-  - [ ] Adjust difficulty curves and fan rewards for new chapters.
-- [ ] Task: Conductor - User Manual Verification 'Testing & Integration' (Protocol in workflow.md)
+  - [x] Adjust difficulty curves and fan rewards for new chapters.
+- [x] Task: Conductor - User Manual Verification 'Testing & Integration' (Protocol in workflow.md)
+
+## Conclusion
+Track completed on 2026-01-24. Core narrative chapters (Fighting Champion, Gang Warfare, Corporate Power Trip) are implemented, integrated with the match engine, and verified via E2E testing and manual debug tools. Logic is robust against detached entities and missing AI parameters.
 
