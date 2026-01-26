@@ -87,7 +87,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
@@ -778,7 +777,8 @@ public class ShowDetailView extends Main
                   rivalryService,
                   localAIStatusService,
                   localAIConfigProperties,
-                  segmentNarrationController); // Call refreshSegmentsGrid
+                  segmentNarrationController,
+                  segmentNarrationServiceFactory); // Pass the factory
           dialog.open();
         });
 
@@ -798,6 +798,16 @@ public class ShowDetailView extends Main
   }
 
   private void generateSummary(@NonNull Segment segment) {
+    if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
+      String reason = "No AI providers are currently enabled or reachable.";
+      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
+        reason = "LocalAI is still initializing: " + localAIStatusService.getMessage();
+      }
+      Notification.show(reason, 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
+
     try {
       String summary = segmentNarrationServiceFactory.summarizeNarration(segment.getNarration());
       segment.setSummary(summary);
@@ -818,6 +828,7 @@ public class ShowDetailView extends Main
     dialog.setHeaderTitle("Add Segment to " + show.getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
+    dialog.setId("add-segment-dialog");
 
     // Form layout
     FormLayout formLayout = new FormLayout();
@@ -972,6 +983,7 @@ public class ShowDetailView extends Main
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
+    dialogLayout.setId("add-segment-dialog-layout");
 
     dialog.add(dialogLayout);
     dialog.open();
@@ -982,6 +994,7 @@ public class ShowDetailView extends Main
     dialog.setHeaderTitle("Edit Segment for " + segment.getShow().getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
+    dialog.setId("edit-segment-dialog");
 
     // Form layout
     FormLayout formLayout = new FormLayout();
@@ -1133,6 +1146,7 @@ public class ShowDetailView extends Main
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
+    dialogLayout.setId("edit-segment-dialog-layout");
 
     dialog.add(dialogLayout);
     dialog.open();
@@ -1349,7 +1363,7 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void onApplicationEvent(@NotNull ApplicationEvent event) {
+  public void onApplicationEvent(@NonNull ApplicationEvent event) {
     if (event instanceof AdjudicationCompletedEvent adjudicationCompletedEvent) {
       // Check if the completed show is the one currently being viewed
       assert adjudicationCompletedEvent.getShow().getId() != null;

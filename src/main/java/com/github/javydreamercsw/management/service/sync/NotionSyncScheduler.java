@@ -134,7 +134,7 @@ public class NotionSyncScheduler {
    * @return SyncResult containing the outcome of the sync operation
    */
   @SneakyThrows
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public NotionSyncService.SyncResult syncEntity(
       @NonNull SyncEntityType entityType,
       @NonNull String operationId,
@@ -170,7 +170,7 @@ public class NotionSyncScheduler {
    * @param entityType The type of entity to sync
    * @return SyncResult containing the outcome of the sync operation
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public NotionSyncService.SyncResult syncEntity(
       @NonNull SyncEntityType entityType, @NonNull SyncDirection direction) {
     log.debug("Syncing entity: {}", entityType);
@@ -187,7 +187,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult containing the outcome of the sync operation
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public NotionSyncService.SyncResult syncEntity(
       @NonNull String entityName, @NonNull SyncDirection direction) {
     log.debug("Syncing entity by name: {}", entityName);
@@ -245,7 +245,7 @@ public class NotionSyncScheduler {
    *
    * @return List of sync results for all entities
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public List<NotionSyncService.SyncResult> triggerManualSync() {
     log.info("=== MANUAL NOTION SYNC TRIGGERED ===");
 
@@ -292,7 +292,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult for the specified entity
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public NotionSyncService.SyncResult triggerEntitySync(@NonNull String entityName) {
     log.info("=== MANUAL {} SYNC TRIGGERED ===", entityName.toUpperCase());
 
@@ -321,7 +321,7 @@ public class NotionSyncScheduler {
    *
    * @return String describing the current sync configuration
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public String getSyncStatus() {
     StringBuilder status = new StringBuilder();
     status.append("Notion Sync Status:\n");
@@ -360,7 +360,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity.
    * @return The last sync time, or null if it has never been synced.
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public LocalDateTime getLastSyncTime(String entityName) {
     return syncProperties.getLastSyncTime(entityName);
   }

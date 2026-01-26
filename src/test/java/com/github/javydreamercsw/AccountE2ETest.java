@@ -27,6 +27,7 @@ import dev.failsafe.RetryPolicy;
 import java.time.Duration;
 import java.util.Optional;
 import junit.framework.AssertionFailedError;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -39,6 +40,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 public class AccountE2ETest extends AbstractE2ETest {
   @Autowired
   @Qualifier("managementAccountService") private AccountService accountService;
+
+  @BeforeEach
+  public void cleanUpAccounts() {
+    accountService.findByUsername("delete_me").ifPresent(a -> accountService.delete(a.getId()));
+    accountService.findByUsername("new_account").ifPresent(a -> accountService.delete(a.getId()));
+  }
 
   @Test
   @WithMockUser(roles = "ADMIN")
@@ -69,8 +76,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to close
     new WebDriverWait(driver, Duration.ofSeconds(10))
-        .until(
-            ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+        .until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
@@ -116,7 +122,7 @@ public class AccountE2ETest extends AbstractE2ETest {
     // Confirm the deletion
     WebElement confirmButton =
         waitForVaadinElement(
-            driver, By.xpath("//vaadin-confirm-dialog-overlay//vaadin-button[text()='Delete']"));
+            driver, By.xpath("//vaadin-confirm-dialog//vaadin-button[text()='Delete']"));
     confirmButton.click();
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
@@ -160,8 +166,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to close
     new WebDriverWait(driver, Duration.ofSeconds(10))
-        .until(
-            ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+        .until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");

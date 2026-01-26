@@ -46,7 +46,7 @@ public class ShowPlanningAiService {
   private final SegmentRuleService segmentRuleService;
   private final HolidayService holidayService;
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
@@ -371,53 +371,16 @@ public class ShowPlanningAiService {
    * @return The extracted JSON array string, or null if not found.
    */
   private String extractJsonArray(String input) {
-    String jsonMarker = "```json";
-    int jsonStart = input.indexOf(jsonMarker);
-    if (jsonStart != -1) {
-      // Find the opening bracket after the marker
-      int startIndex = input.indexOf('[', jsonStart + jsonMarker.length());
-      if (startIndex != -1) {
-        // Find the corresponding closing bracket
-        int balance = 1;
-        int endIndex = -1;
-        for (int i = startIndex + 1; i < input.length(); i++) {
-          char c = input.charAt(i);
-          if (c == '[') {
-            balance++;
-          } else if (c == ']') {
-            balance--;
-          }
-          if (balance == 0) {
-            endIndex = i;
-            break;
-          }
-        }
-        if (endIndex != -1) {
-          return input.substring(startIndex, endIndex + 1);
-        }
-      }
+    if (input == null || input.trim().isEmpty()) {
+      return null;
     }
 
-    // Fallback for cases where the marker is not present or the extraction fails
+    // Search for the array start and end
     int startIndex = input.indexOf('[');
-    if (startIndex != -1) {
-      int balance = 1;
-      int endIndex = -1;
-      for (int i = startIndex + 1; i < input.length(); i++) {
-        char c = input.charAt(i);
-        if (c == '[') {
-          balance++;
-        } else if (c == ']') {
-          balance--;
-        }
-        if (balance == 0) {
-          endIndex = i;
-          break;
-        }
-      }
-      if (endIndex != -1) {
-        return input.substring(startIndex, endIndex + 1);
-      }
+    int endIndex = input.lastIndexOf(']');
+
+    if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+      return input.substring(startIndex, endIndex + 1);
     }
 
     return null;

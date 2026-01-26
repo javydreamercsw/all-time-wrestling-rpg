@@ -55,4 +55,7 @@ public interface WrestlerRepository
   Optional<Wrestler> findByAccountUsername(String username);
 
   Optional<Wrestler> findByAccountId(Long accountId);
+
+  @Query("SELECT w.id FROM Wrestler w")
+  List<Long> findAllIds();
 }

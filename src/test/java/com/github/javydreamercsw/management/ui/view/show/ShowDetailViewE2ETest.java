@@ -19,9 +19,10 @@ package com.github.javydreamercsw.management.ui.view.show;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
@@ -51,15 +52,28 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private SegmentRepository segmentRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository
+      showTemplateRepository;
+
+  @Autowired private DataInitializer dataInitializer;
 
   private Show testShow;
 
   @BeforeEach
   public void setupTestData() {
-    ShowType showType = new ShowType();
-    showType.setName("Weekly Show");
-    showType.setDescription("A weekly show");
-    showTypeRepository.save(showType);
+    segmentRepository.deleteAll();
+    showRepository.deleteAll();
+    showTemplateRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    showTypeRepository.deleteAll();
+    segmentTypeRepository.deleteAll();
+
+    dataInitializer.init();
+
+    ShowType showType = showTypeRepository.findByName("Weekly").get();
 
     testShow = new Show();
     testShow.setName("Test Show for Detail View");
@@ -67,13 +81,6 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     testShow.setShowDate(LocalDate.now());
     testShow.setDescription("Test Description");
     showRepository.save(testShow);
-
-    wrestlerRepository.save(createTestWrestler("Wrestler 1"));
-    wrestlerRepository.save(createTestWrestler("Wrestler 2"));
-
-    SegmentType segmentType = new SegmentType();
-    segmentType.setName("Singles Match");
-    segmentTypeRepository.save(segmentType);
   }
 
   @Test
@@ -95,7 +102,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     // Wait for the dialog to open
     WebElement dialog =
         wait.until(
-            ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+            ExpectedConditions.visibilityOfElementLocated(By.id("add-segment-dialog-layout")));
 
     // Fill in the form
     Assertions.assertNotNull(dialog);
@@ -111,11 +118,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.textToBePresentInElementValue(narrationArea, narrationText));
 
     WebElement segmentTypeComboBox = dialog.findElement(By.id("segment-type-combo-box"));
-    segmentTypeComboBox.sendKeys("Singles Match", Keys.TAB);
+    selectFromVaadinComboBox(segmentTypeComboBox, "One on One");
 
     WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Wrestler 1");
-    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Wrestler 2");
+    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "André the Giant");
+    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Brian Pillman");
 
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));

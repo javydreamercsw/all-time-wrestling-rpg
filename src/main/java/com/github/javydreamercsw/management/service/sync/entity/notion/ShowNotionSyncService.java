@@ -82,14 +82,7 @@ public class ShowNotionSyncService implements NotionSyncService {
                 Map<String, PageProperty> properties = new HashMap<>();
                 properties.put(
                     "Name", // Assuming Notion property is "Name"
-                    NotionPropertyBuilder.createRichTextProperty(entity.getName()));
-
-                // Map Description
-                if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                  properties.put(
-                      "Description",
-                      NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
-                }
+                    NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
                 // Map Show Type (Relation)
                 if (entity.getType() != null) {

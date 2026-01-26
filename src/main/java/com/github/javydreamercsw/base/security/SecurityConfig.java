@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.base.security;
 
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
-import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +50,8 @@ public class SecurityConfig {
     // Public access to static resources
     http.authorizeHttpRequests(
         auth ->
-            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
+            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**", "/docs/**")
+                .permitAll());
 
     // Disable CSRF for API endpoints
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
@@ -83,11 +83,8 @@ public class SecurityConfig {
     // Configure form login
     http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
 
-    // Enforce HTTPS in production unless disabled
-    if (!httpsEnforcementDisabled
-        && Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
-      http.requiresChannel(channel -> channel.anyRequest().requiresSecure());
-    }
+    // Enforce HTTPS in production is handled by the deployment environment (e.g. Load Balancer)
+    // and configured via server.forward-headers-strategy=native
 
     // Add security headers
     http.headers(

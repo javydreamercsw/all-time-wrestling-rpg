@@ -101,6 +101,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
 
     accountInitializer.init();
+    entityManager.flush();
+    entityManager.clear();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
   }
 
@@ -125,6 +127,13 @@ public class DatabaseCleaner implements DatabaseCleanup {
       // This might fail if the table doesn't exist yet on first run, which is fine.
       log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
     }
+    try {
+      entityManager.createNativeQuery("UPDATE wrestler SET account_id = NULL").executeUpdate();
+      log.debug("✅ Nullified wrestler.account_id");
+    } catch (Exception e) {
+      // This might fail if the table doesn't exist yet on first run, which is fine.
+      log.warn("Could not nullify wrestler.account_id: {}", e.getMessage());
+    }
   }
 
   /**
@@ -140,11 +149,13 @@ public class DatabaseCleaner implements DatabaseCleanup {
       for (Attribute<?, ?> attribute : entity.getAttributes()) {
         if (attribute.isCollection()) {
           Member member = attribute.getJavaMember();
-          if (member instanceof AnnotatedElement) {
-            AnnotatedElement annotatedElement = (AnnotatedElement) member;
+          if (member instanceof AnnotatedElement annotatedElement) {
             JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
             if (joinTable != null) {
-              joinTableNames.add(joinTable.name());
+              // Skip account_roles to prevent deleting user roles
+              if (!"account_roles".equalsIgnoreCase(joinTable.name())) {
+                joinTableNames.add(joinTable.name());
+              }
             }
           }
         }

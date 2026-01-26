@@ -35,3 +35,281 @@
     font-weight: var(--lumo-font-weight-semibold);
     margin-left: var(--lumo-space-s);
 }
+
+/* Player Campaign Card Styles */
+.player-card-container {
+    perspective: 1000px;
+    width: 320px;
+    height: 500px;
+    cursor: pointer;
+}
+
+.player-card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.player-card.flipped {
+    transform: rotateY(180deg);
+}
+
+.player-card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--lumo-base-color);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--lumo-contrast-20pct);
+}
+
+.player-card-front {
+    /* Default front styles */
+}
+
+.player-card-back {
+    transform: rotateY(180deg);
+    background-color: var(--lumo-base-color);
+}
+
+.player-card-header {
+    padding: var(--lumo-space-m);
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.player-card-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: var(--lumo-space-m);
+    overflow-y: auto;
+}
+
+.player-card-image-placeholder {
+    width: 100%;
+    height: auto;
+    min-height: 200px;
+    flex-grow: 1;
+    background-color: var(--lumo-contrast-5pct);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lumo-secondary-text-color);
+    font-style: italic;
+    margin-bottom: var(--lumo-space-m);
+    border: 1px solid var(--lumo-contrast-10pct);
+    background-size: cover;
+    background-position: top center;
+}
+
+.player-bio {
+    display: none; /* Hide bio as requested */
+}
+
+/* Status Bars */
+.status-bar-container {
+    margin-bottom: var(--lumo-space-s);
+    width: 100%;
+}
+
+.status-bar-label {
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    color: var(--lumo-secondary-text-color);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.status-bar-track {
+    width: 100%;
+    height: 14px; /* Increased height for readability */
+    background-color: var(--lumo-contrast-10pct);
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.3s ease-in-out;
+    position: relative;
+    z-index: 0;
+}
+
+.status-bar-fill.health {
+    background-color: var(--lumo-error-color);
+}
+
+.status-bar-fill.stamina {
+    background-color: #FFD700; /* Gold/Yellow */
+}
+
+.status-bar-limit-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: black;
+    opacity: 0.5;
+    z-index: 2;
+}
+
+.player-card.flipped .status-bar-limit-marker {
+    display: none;
+}
+
+.status-bar-scale {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 1;
+    padding: 0 2px;
+}
+
+.status-bar-tick {
+    width: 1px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.status-bar-tick.major {
+    background-color: rgba(0, 0, 0, 0.2);
+    width: 1px;
+}
+
+/* Back Side Elements */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--lumo-contrast-5pct);
+    font-size: var(--lumo-font-size-m);
+}
+
+.stat-label {
+    color: var(--lumo-secondary-text-color);
+}
+
+.stat-value {
+    font-weight: 600;
+}
+
+.icon-row {
+    display: flex;
+    gap: var(--lumo-space-xs);
+    align-items: center;
+}
+
+.bump-icon {
+    color: var(--lumo-secondary-text-color);
+    font-size: 1rem;
+}
+
+.injury-icon {
+    color: var(--lumo-error-color);
+    font-size: 1.2rem;
+}
+
+.skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--lumo-space-s);
+}
+
+.skill-tag {
+    background: var(--lumo-primary-color-10pct);
+    color: var(--lumo-primary-text-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: var(--lumo-font-size-s);
+    font-weight: 600;
+}
+
+.flip-hint {
+    position: absolute;
+    bottom: var(--lumo-space-s);
+    right: var(--lumo-space-s);
+    font-size: var(--lumo-font-size-xs);
+    color: var(--lumo-tertiary-text-color);
+    font-style: italic;
+    pointer-events: none;
+}
+
+/* Custom Themes */
+[theme~="retro"] {
+    --lumo-base-color: #f4ecd8;
+    --lumo-primary-color: #d35400;
+    --lumo-primary-text-color: #d35400;
+    --lumo-body-text-color: #2c3e50;
+    --lumo-header-text-color: #2c3e50;
+    --lumo-secondary-text-color: #7f8c8d;
+    --lumo-contrast-5pct: rgba(44, 62, 80, 0.05);
+    --lumo-contrast-10pct: rgba(44, 62, 80, 0.1);
+    --lumo-contrast-20pct: rgba(44, 62, 80, 0.2);
+}
+
+[theme~="neon"] {
+    --lumo-base-color: #0d0221;
+    --lumo-primary-color: #00ff41;
+    --lumo-primary-text-color: #00ff41;
+    --lumo-body-text-color: #00ff41;
+    --lumo-header-text-color: #00ff41;
+    --lumo-secondary-text-color: #008f11;
+    --lumo-contrast-5pct: rgba(0, 255, 65, 0.05);
+    --lumo-contrast-10pct: rgba(0, 255, 65, 0.1);
+    --lumo-contrast-20pct: rgba(0, 255, 65, 0.2);
+}
+
+[theme~="high-contrast"] {
+    --lumo-base-color: #ffffff;
+    --lumo-primary-color: #000000;
+    --lumo-primary-text-color: #000000;
+    --lumo-body-text-color: #000000;
+    --lumo-header-text-color: #000000;
+    --lumo-secondary-text-color: #000000;
+    --lumo-contrast-5pct: rgba(0, 0, 0, 0.1);
+    --lumo-contrast-10pct: rgba(0, 0, 0, 0.2);
+    --lumo-contrast-20pct: rgba(0, 0, 0, 0.4);
+}
+
+/* Profile Drawer */
+.profile-drawer::part(overlay) {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+    width: 400px;
+    max-width: 100vw;
+    border-radius: 0;
+    animation: slide-in-right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    margin: 0;
+}
+
+@keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}

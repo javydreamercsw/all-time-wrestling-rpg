@@ -180,12 +180,14 @@ public class Segment extends AbstractEntity<Long> {
 
   /** Get all wrestlers participating in the segment. */
   public List<Wrestler> getWrestlers() {
+    if (participants == null) return new ArrayList<>();
     return participants.stream()
         .map(SegmentParticipant::getWrestler)
         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getWinners() {
+    if (participants == null) return new ArrayList<>();
     return participants.stream()
         .filter(SegmentParticipant::getIsWinner)
         .map(SegmentParticipant::getWrestler)
@@ -193,13 +195,25 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   public List<Wrestler> getLosers() {
+    if (participants == null) return new ArrayList<>();
     return participants.stream()
         .filter(participant -> !participant.getIsWinner())
         .map(SegmentParticipant::getWrestler)
         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
+  public List<SegmentRule> getSegmentRules() {
+    if (segmentRules == null) segmentRules = new ArrayList<>();
+    return segmentRules;
+  }
+
+  public Set<Title> getTitles() {
+    if (titles == null) titles = new HashSet<>();
+    return titles;
+  }
+
   public void setWinners(List<Wrestler> winners) {
+    if (participants == null) participants = new ArrayList<>();
     if (winners == null || winners.isEmpty()) {
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(false);

@@ -52,7 +52,7 @@ public class InjuryService {
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new injury for a wrestler. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
@@ -72,6 +72,8 @@ public class InjuryService {
               injury.setDescription(description);
               injury.setSeverity(severity);
               injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
+              injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
+              injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
               injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
@@ -88,7 +90,7 @@ public class InjuryService {
    * Create injury from bump system (3 bumps = 1 injury). This method should only be called when an
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
@@ -107,6 +109,8 @@ public class InjuryService {
               injury.setDescription(description);
               injury.setSeverity(severity);
               injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
+              injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
+              injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
               injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
@@ -123,7 +127,7 @@ public class InjuryService {
   }
 
   /** Attempt to heal an injury. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
@@ -132,7 +136,7 @@ public class InjuryService {
   }
 
   /** Attempt to heal an injury. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
@@ -266,6 +270,34 @@ public class InjuryService {
     return injuryRepository.findWrestlersWithActiveInjuries();
   }
 
+  /**
+   * Heal an injury for free (e.g., via Backstage Action). Bypasses fan cost.
+   *
+   * @param injuryId The ID of the injury to heal.
+   * @return The result of the healing attempt.
+   */
+  public HealingResult healInjuryFree(@NonNull Long injuryId) {
+    Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
+    if (injuryOpt.isEmpty()) {
+      return new HealingResult(false, "Injury not found", null, 0, false);
+    }
+
+    Injury injury = injuryOpt.get();
+    if (!injury.canBeHealed()) {
+      return new HealingResult(
+          false, "Injury cannot be healed (already healed or inactive)", injury, 0, false);
+    }
+
+    // Heal without cost
+    injury.heal();
+    injuryRepository.save(injury);
+
+    // Publish event
+    eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
+
+    return new HealingResult(true, "Injury healed successfully (Free)", injury, 6, true);
+  }
+
   /** Get total health penalty for a wrestler. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -284,7 +316,7 @@ public class InjuryService {
   }
 
   /** Update injury information. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)

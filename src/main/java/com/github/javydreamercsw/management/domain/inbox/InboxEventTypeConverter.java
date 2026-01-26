@@ -19,33 +19,19 @@ package com.github.javydreamercsw.management.domain.inbox;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 @Converter(autoApply = true)
 @Slf4j
-public class InboxEventTypeConverter
-    implements AttributeConverter<InboxEventType, String>, ApplicationContextAware {
+public class InboxEventTypeConverter implements AttributeConverter<InboxEventType, String> {
 
-  private static ApplicationContext context;
+  private static InboxEventTypeRegistry registry;
 
-  @Override
-  public void setApplicationContext(@NonNull ApplicationContext applicationContext)
-      throws BeansException {
-    log.info("Setting application context in InboxEventTypeConverter");
-    context = applicationContext;
-  }
-
-  private InboxEventTypeRegistry getRegistry() {
-    if (context == null) {
-      log.error("Application context is null in InboxEventTypeConverter!");
-      throw new IllegalStateException("Application context not initialized");
-    }
-    return context.getBean(InboxEventTypeRegistry.class);
+  @Autowired
+  public void setRegistry(InboxEventTypeRegistry registry) {
+    InboxEventTypeConverter.registry = registry;
   }
 
   @Override
@@ -61,7 +47,11 @@ public class InboxEventTypeConverter
     if (eventType == null) {
       return null;
     }
-    return getRegistry().getEventTypes().stream()
+    if (registry == null) {
+      log.error("Registry is null in InboxEventTypeConverter!");
+      throw new IllegalStateException("InboxEventTypeRegistry not initialized");
+    }
+    return registry.getEventTypes().stream()
         .filter(type -> type.getName().equals(eventType))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("Unknown event type: " + eventType));

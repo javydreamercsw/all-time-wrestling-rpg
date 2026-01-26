@@ -43,7 +43,7 @@ public class TierRecalculationService implements RankingService {
   private final TierBoundaryService tierBoundaryService;
 
   @Override
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateRanking(List<WrestlerData> wrestlersData) {
     log.info("Starting tier recalculation...");
 
@@ -175,7 +175,7 @@ public class TierRecalculationService implements RankingService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateTier(Wrestler wrestler) {
     WrestlerTier newTier = calculateTier(wrestler.getFans(), wrestler.getGender());
     if (wrestler.getTier() != newTier) {

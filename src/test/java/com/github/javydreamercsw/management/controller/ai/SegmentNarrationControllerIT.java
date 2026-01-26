@@ -1,0 +1,200 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.controller.ai;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+
+/**
+ * Integration tests for MatchNarrationController. Tests the complete flow from REST endpoints to AI
+ * services using the mock provider.
+ */
+@DisplayName("Segment Narration Controller Integration Tests")
+@TestPropertySource(properties = "notion.sync.enabled=true")
+class SegmentNarrationControllerIT extends AbstractControllerTest {
+
+  @Test
+  @DisplayName("GET /api/segment-narration/limits should return provider information")
+  void shouldReturnProviderInformation() throws Exception {
+    mockMvc
+        .perform(get("/api/segment-narration/limits"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.available").value(true))
+        .andExpect(jsonPath("$.currentProvider").exists())
+        .andExpect(jsonPath("$.availableServices").isArray())
+        .andExpect(jsonPath("$.availableServices[?(@.providerName == 'Mock AI')]").exists())
+        .andExpect(jsonPath("$.currentConfig.maxOutputTokens").exists())
+        .andExpect(jsonPath("$.currentConfig.temperature").exists());
+  }
+
+  @Test
+  @DisplayName("POST /api/segment-narration/test/mock should generate sample segment narration")
+  void shouldGenerateSampleMatchNarration() throws Exception {
+    mockMvc
+        .perform(post("/api/segment-narration/test/mock"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.provider").exists())
+        .andExpect(jsonPath("$.narration").exists())
+        .andExpect(jsonPath("$.narration").isString())
+        .andExpect(jsonPath("$.testProvider").value("mock"))
+        .andExpect(jsonPath("$.estimatedCost").exists())
+        .andExpect(jsonPath("$.context.segmentType").value("Singles Match"))
+        .andExpect(jsonPath("$.context.wrestlers").isArray())
+        .andExpect(jsonPath("$.context.wrestlers[0]").value("Rob Van Dam"))
+        .andExpect(jsonPath("$.context.wrestlers[1]").value("Kurt Angle"))
+        .andExpect(jsonPath("$.context.outcome").exists());
+  }
+
+  @Test
+  @DisplayName("POST /api/segment-narration/test should use mock provider")
+  void shouldUseMockProvider() throws Exception {
+    mockMvc
+        .perform(post("/api/segment-narration/test/mock"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.provider").value("Mock AI"))
+        .andExpect(jsonPath("$.narration").exists())
+        .andExpect(jsonPath("$.testProvider").value("mock"))
+        .andExpect(jsonPath("$.estimatedCost").value(0.0));
+  }
+
+  @Test
+  @DisplayName("POST /api/segment-narration/test/mock should test specific mock provider")
+  void shouldTestSpecificMockProvider() throws Exception {
+    mockMvc
+        .perform(post("/api/segment-narration/test/mock"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.provider").value("Mock AI"))
+        .andExpect(jsonPath("$.testProvider").value("mock"))
+        .andExpect(jsonPath("$.narration").exists())
+        .andExpect(jsonPath("$.estimatedCost").value(0.0));
+  }
+
+  @Test
+  @DisplayName("POST /api/segment-narration/test/nonexistent should return error")
+  void shouldReturnErrorForNonexistentProvider() throws Exception {
+    mockMvc
+        .perform(post("/api/segment-narration/test/nonexistent"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("Provider 'nonexistent' not available or not found"));
+  }
+
+  @Test
+  @DisplayName("POST /api/segment-narration/narrate should accept custom segment context")
+  void shouldAcceptCustomSegmentContext() throws Exception {
+    // Given
+    SegmentNarrationContext customContext = super.createCustomSegmentContext();
+    String requestBody = objectMapper.writeValueAsString(customContext);
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/segment-narration/narrate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.provider").exists())
+        .andExpect(jsonPath("$.narration").exists())
+        .andExpect(jsonPath("$.segmentType").value("Hell in a Cell"))
+        .andExpect(jsonPath("$.wrestlers").isArray())
+        .andExpect(jsonPath("$.wrestlers[0]").value("The Undertaker"))
+        .andExpect(jsonPath("$.wrestlers[1]").value("Mankind"))
+        .andExpect(jsonPath("$.outcome").exists())
+        .andExpect(jsonPath("$.estimatedCost").exists());
+  }
+
+  @Test
+  @DisplayName("Should handle malformed JSON gracefully")
+  void shouldHandleMalformedJsonGracefully() throws Exception {
+    String malformedJson = "{ invalid json }";
+
+    mockMvc
+        .perform(
+            post("/api/segment-narration/narrate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(malformedJson))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should validate required fields in segment context")
+  void shouldValidateRequiredFieldsInMatchContext() throws Exception {
+    // Given - context missing required fields
+    SegmentNarrationContext incompleteContext = new SegmentNarrationContext();
+    String requestBody = objectMapper.writeValueAsString(incompleteContext);
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/segment-narration/narrate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should include cost estimates in limits response")
+  void shouldIncludeCostEstimatesInLimitsResponse() throws Exception {
+    mockMvc
+        .perform(get("/api/segment-narration/limits"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.availableServices[?(@.providerName == 'Mock AI')].costPer1KTokens")
+                .value(0.0))
+        .andExpect(
+            jsonPath("$.availableServices[?(@.providerName == 'Mock AI')].tier").value("FREE"))
+        .andExpect(
+            jsonPath("$.availableServices[?(@.providerName == 'Mock AI')].priority").value(10));
+  }
+
+  @Test
+  @DisplayName("Should return consistent response structure for sample endpoint")
+  void shouldReturnConsistentResponseStructureForSampleEndpoint() throws Exception {
+    mockMvc
+        .perform(post("/api/segment-narration/test/mock"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.provider").exists())
+        .andExpect(jsonPath("$.narration").exists())
+        .andExpect(jsonPath("$.estimatedCost").exists());
+  }
+
+  @Test
+  @DisplayName("Should return consistent response structure for specific provider endpoint")
+  void shouldReturnConsistentResponseStructureForSpecificProviderEndpoint() throws Exception {
+    mockMvc
+        .perform(post("/api/segment-narration/test/mock"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.provider").exists())
+        .andExpect(jsonPath("$.narration").exists())
+        .andExpect(jsonPath("$.estimatedCost").exists());
+  }
+}

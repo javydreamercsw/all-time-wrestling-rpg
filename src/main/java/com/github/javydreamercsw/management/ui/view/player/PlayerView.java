@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.campaign.CampaignDashboardView;
 import com.github.javydreamercsw.management.ui.view.match.MatchView;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerProfileView;
 import com.vaadin.flow.component.Component;
@@ -181,10 +182,18 @@ public class PlayerView extends VerticalLayout {
     profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     profileButton.setId("view-full-profile-link");
 
+    Button campaignButton =
+        new Button(
+            "Campaign Dashboard",
+            new Icon(VaadinIcon.GAMEPAD),
+            e -> getUI().ifPresent(ui -> ui.navigate(CampaignDashboardView.class)));
+    campaignButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    campaignButton.setId("view-campaign-dashboard-link");
+
     Div injuries = createInjuriesSummary();
 
     VerticalLayout infoLayout =
-        new VerticalLayout(nameAndTier, statsLayout, injuries, profileButton);
+        new VerticalLayout(nameAndTier, statsLayout, injuries, profileButton, campaignButton);
     infoLayout.setPadding(false);
     infoLayout.setSpacing(false);
     infoLayout.getStyle().set("gap", "0.5em");

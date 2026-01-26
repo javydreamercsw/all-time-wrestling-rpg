@@ -155,4 +155,16 @@ public class AccountService {
     existingAccount.setPassword(newEncodedPassword);
     accountRepository.save(existingAccount);
   }
+
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
+          + " authentication.principal.id)")
+  public Account updateThemePreference(Long accountId, String themePreference) {
+    Account account =
+        accountRepository
+            .findById(accountId)
+            .orElseThrow(() -> new IllegalArgumentException("Account not found."));
+    account.setThemePreference(themePreference);
+    return accountRepository.save(account);
+  }
 }

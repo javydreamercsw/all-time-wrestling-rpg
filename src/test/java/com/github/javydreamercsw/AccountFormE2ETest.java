@@ -57,7 +57,7 @@ public class AccountFormE2ETest extends AbstractE2ETest {
     // Confirm the deletion
     WebElement confirmButton =
         waitForVaadinElement(
-            driver, By.xpath("//vaadin-confirm-dialog-overlay//vaadin-button[text()='Delete']"));
+            driver, By.xpath("//vaadin-confirm-dialog//vaadin-button[text()='Delete']"));
     confirmButton.click();
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));

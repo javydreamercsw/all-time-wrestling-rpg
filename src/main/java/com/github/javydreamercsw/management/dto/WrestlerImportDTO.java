@@ -39,4 +39,8 @@ public class WrestlerImportDTO {
   private String manager;
   private String externalId;
   private String imageUrl;
+  private Integer drive;
+  private Integer resilience;
+  private Integer charisma;
+  private Integer brawl;
 }

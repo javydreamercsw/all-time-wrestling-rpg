@@ -36,9 +36,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DramaEventService dramaEventService;
@@ -49,6 +51,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
+  private Wrestler playerWrestler;
 
   @BeforeEach
   void setUp() {
@@ -57,6 +60,23 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
         roleRepository
             .findByName(RoleName.PLAYER)
             .orElseGet(() -> roleRepository.save(new Role(RoleName.PLAYER, "Player role")));
+
+    createTestAccount("viewer", RoleName.VIEWER);
+    createTestAccount("admin", RoleName.ADMIN);
+    createTestAccount("booker", RoleName.BOOKER);
+    Account dramaPlayerAccount = createTestAccount("player", RoleName.PLAYER);
+
+    // Ensure accounts are flushed to DB so PermissionService can find them
+    accountRepository.flush();
+
+    // Ensure no wrestler is associated with this account from previous tests
+    wrestlerRepository
+        .findByAccount(dramaPlayerAccount)
+        .ifPresent(
+            w -> {
+              wrestlerRepository.delete(w);
+              wrestlerRepository.flush();
+            });
 
     String uuid1 = UUID.randomUUID().toString();
     Account testAccount1 =
@@ -81,6 +101,11 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     testWrestler2.setName("Test Wrestler 2");
     testWrestler2.setAccount(testAccount2);
     wrestlerRepository.save(testWrestler2);
+
+    playerWrestler = new Wrestler();
+    playerWrestler.setName("Drama Player Wrestler");
+    playerWrestler.setAccount(dramaPlayerAccount);
+    wrestlerRepository.save(playerWrestler);
   }
 
   /*
@@ -127,7 +152,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotCreateDramaEvent() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             dramaEventService.createDramaEvent(
                 testWrestler1.getId(),
@@ -142,7 +167,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testViewerCannotCreateDramaEvent() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             dramaEventService.createDramaEvent(
                 testWrestler1.getId(),
@@ -166,7 +191,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotGenerateRandomDramaEvent() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () -> dramaEventService.generateRandomDramaEvent(testWrestler1.getId()));
   }
 
@@ -190,7 +215,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotProcessUnprocessedEvents() {
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> dramaEventService.processUnprocessedEvents());
+        AuthorizationDeniedException.class, () -> dramaEventService.processUnprocessedEvents());
   }
 
   @Test
@@ -216,13 +241,13 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotProcessEvent() {
     DramaEvent event = new DramaEvent();
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> dramaEventService.processEvent(event));
+        AuthorizationDeniedException.class, () -> dramaEventService.processEvent(event));
   }
 
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanGetEventsForWrestler() {
-    dramaEventService.getEventsForWrestler(testWrestler1.getId());
+    dramaEventService.getEventsForWrestler(playerWrestler.getId());
     // No exception means success
   }
 

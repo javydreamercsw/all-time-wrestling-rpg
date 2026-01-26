@@ -121,6 +121,16 @@ public class SecurityUtils {
   }
 
   /**
+   * Check if the current user is the owner of the specific target object.
+   *
+   * @param target the object to check ownership for
+   * @return true if the user is the owner
+   */
+  public boolean isOwner(Object target) {
+    return permissionService.isOwner(target);
+  }
+
+  /**
    * Check if the current user can edit content.
    *
    * @return true if the user can edit

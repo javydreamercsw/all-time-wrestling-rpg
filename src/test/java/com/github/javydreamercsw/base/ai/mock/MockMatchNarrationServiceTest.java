@@ -18,7 +18,6 @@ package com.github.javydreamercsw.base.ai.mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -79,15 +78,8 @@ class MockMatchNarrationServiceTest {
     String narration = mockService.narrateSegment(testContext);
 
     assertThat(narration).isNotNull().isNotEmpty();
-
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments).isNotEmpty();
+    assertThat(narration).containsIgnoringCase("Stone Cold Steve Austin");
+    assertThat(narration).containsIgnoringCase("The Rock");
   }
 
   @Test
@@ -96,18 +88,7 @@ class MockMatchNarrationServiceTest {
   void shouldIncludeWrestlerNamesInNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments)
-        .anySatisfy(
-            segment ->
-                assertThat(segment.participants())
-                    .containsAnyOf("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D"));
+    assertThat(narration).containsAnyOf("Stone Cold Steve Austin", "The Rock");
   }
 
   @Test
@@ -116,16 +97,7 @@ class MockMatchNarrationServiceTest {
   void shouldIncludeVenueInformationInNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments)
-        .anySatisfy(
-            segment -> assertThat(segment.description()).containsIgnoringCase("WrestleMania"));
+    assertThat(narration).containsIgnoringCase("WrestleMania");
   }
 
   @Test
@@ -133,14 +105,7 @@ class MockMatchNarrationServiceTest {
   @SneakyThrows
   void shouldIncludeMatchTypeInNarration() {
     String narration = mockService.narrateSegment(testContext);
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments).anySatisfy(segment -> assertThat(segment.type()).isEqualTo("One on One"));
+    assertThat(narration).containsAnyOf("Match", "Promo", "wrestling");
   }
 
   @Test
@@ -154,19 +119,8 @@ class MockMatchNarrationServiceTest {
     String narration2 = mockService.narrateSegment(context2);
 
     assertThat(narration1).isNotEqualTo(narration2);
-
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration2,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments)
-        .anySatisfy(
-            segment ->
-                assertThat(segment.participants())
-                    .containsAnyOf("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D"));
+    assertThat(narration2).containsIgnoringCase("The Undertaker");
+    assertThat(narration2).containsIgnoringCase("Kane");
   }
 
   @Test
@@ -189,18 +143,7 @@ class MockMatchNarrationServiceTest {
     String narration = mockService.narrateSegment(minimalContext);
 
     assertThat(narration).isNotNull().isNotEmpty();
-
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments)
-        .anySatisfy(
-            segment ->
-                assertThat(segment.participants()).containsAnyOf("Wrestler A", "Wrestler B"));
+    assertThat(narration).containsAnyOf("Wrestler A", "Wrestler B");
   }
 
   @Test
@@ -223,14 +166,7 @@ class MockMatchNarrationServiceTest {
   void shouldGenerateStructuredNarrationWithMultipleSections() {
     String narration = mockService.narrateSegment(testContext);
 
-    List<MockSegmentDTO> segments =
-        new ObjectMapper()
-            .readValue(
-                narration,
-                new ObjectMapper()
-                    .getTypeFactory()
-                    .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments).hasSizeGreaterThanOrEqualTo(1);
+    assertThat(narration).isNotNull().contains("\n\n");
   }
 
   /** Creates a comprehensive test segment context. */

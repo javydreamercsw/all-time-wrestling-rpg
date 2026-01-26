@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -55,6 +57,8 @@ public class SegmentService {
   private final TitleRepository titleRepository;
   private final WrestlerService wrestlerService;
   private final GameSettingService gameSettingService;
+  private final SecurityUtils securityUtils;
+  private final CampaignRepository campaignRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -63,11 +67,15 @@ public class SegmentService {
       SegmentRepository segmentRepository,
       TitleRepository titleRepository,
       @Lazy WrestlerService wrestlerService,
-      GameSettingService gameSettingService) {
+      GameSettingService gameSettingService,
+      SecurityUtils securityUtils,
+      CampaignRepository campaignRepository) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
     this.wrestlerService = wrestlerService;
     this.gameSettingService = gameSettingService;
+    this.securityUtils = securityUtils;
+    this.campaignRepository = campaignRepository;
   }
 
   /**
@@ -134,7 +142,7 @@ public class SegmentService {
    * @param matchDate The date/time of the match
    * @return The created Segment
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Segment createSegment(
       @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
     return createSegment(show, matchType, matchDate, new HashSet<>());
@@ -149,7 +157,7 @@ public class SegmentService {
    * @param titles The titles contested in this segment
    * @return The created Segment
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Segment createSegment(
       @NonNull Show show,
       @NonNull SegmentType matchType,
@@ -176,7 +184,9 @@ public class SegmentService {
    * @return The updated Segment.
    * @throws IllegalArgumentException if the segment with the given ID is not found.
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (isAuthenticated() and"
+          + " @segmentService.canUserUpdateSegment(#id))")
   public Segment updateSegment(@NonNull Long id, @NonNull SegmentDTO dto) {
     return segmentRepository
         .findById(id)
@@ -208,9 +218,55 @@ public class SegmentService {
    * @param segment The segment to update
    * @return The updated Segment
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (isAuthenticated() and"
+          + " @segmentService.canUserUpdateSegment(#segment.id))")
   public Segment updateSegment(@NonNull Segment segment) {
     return segmentRepository.save(segment);
+  }
+
+  /**
+   * Helper method for security checks. Checks if the current user is a participant in the segment
+   * and if the segment is part of an active campaign.
+   *
+   * @param segmentId The ID of the segment.
+   * @return true if the user is authorized to update the segment.
+   */
+  public boolean canUserUpdateSegment(Long segmentId) {
+    if (securityUtils.isAdmin() || securityUtils.isBooker()) {
+      return true;
+    }
+
+    return securityUtils
+        .getAuthenticatedUser()
+        .map(
+            user -> {
+              Wrestler wrestler = user.getWrestler();
+              if (wrestler == null) return false;
+
+              return segmentRepository
+                  .findById(segmentId)
+                  .map(
+                      segment -> {
+                        // Check if wrestler is a participant
+                        boolean isParticipant =
+                            segment.getParticipants().stream()
+                                .anyMatch(p -> p.getWrestler().equals(wrestler));
+
+                        // Check if it's a campaign match
+                        boolean isCampaignMatch =
+                            campaignRepository
+                                .findActiveByWrestler(wrestler)
+                                .map(
+                                    campaign ->
+                                        segment.equals(campaign.getState().getCurrentMatch()))
+                                .orElse(false);
+
+                        return isParticipant && isCampaignMatch;
+                      })
+                  .orElse(false);
+            })
+        .orElse(false);
   }
 
   /**
@@ -368,7 +424,7 @@ public class SegmentService {
    *
    * @param id The ID of the match to delete
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void deleteSegment(@NonNull Long id) {
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
@@ -427,5 +483,25 @@ public class SegmentService {
     LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Pageable pageable = PageRequest.of(0, limit);
     return segmentRepository.findUpcomingSegmentsForWrestler(wrestler, referenceDate, pageable);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
+    segment.addParticipant(wrestler);
+    segmentRepository.save(segment);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void setWinner(@NonNull Segment segment, @NonNull Wrestler winner) {
+    segment.setWinners(List.of(winner));
+    segmentRepository.save(segment);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void setAdjudicationStatus(
+      @NonNull Segment segment,
+      @NonNull com.github.javydreamercsw.management.domain.AdjudicationStatus status) {
+    segment.setAdjudicationStatus(status);
+    segmentRepository.save(segment);
   }
 }

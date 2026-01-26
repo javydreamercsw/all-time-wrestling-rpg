@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -36,11 +38,14 @@ import org.springframework.stereotype.Component;
 public class GameSettingsView extends VerticalLayout {
 
   private final GameSettingService gameSettingService;
+  private final ThemeService themeService;
   private DatePicker gameDatePicker;
+  private ComboBox<String> defaultThemeSelection;
 
   @Autowired
-  public GameSettingsView(GameSettingService gameSettingService) {
+  public GameSettingsView(GameSettingService gameSettingService, ThemeService themeService) {
     this.gameSettingService = gameSettingService;
+    this.themeService = themeService;
     init();
   }
 
@@ -54,7 +59,18 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    VerticalLayout layout = new VerticalLayout(gameDatePicker);
+    defaultThemeSelection = new ComboBox<>("Default Application Theme");
+    defaultThemeSelection.setId("default-theme-selection");
+    defaultThemeSelection.setItems(themeService.getAvailableThemes());
+    defaultThemeSelection.setValue(themeService.getGlobalDefaultTheme().orElse("light"));
+    defaultThemeSelection.addValueChangeListener(
+        event -> {
+          themeService.updateGlobalDefaultTheme(event.getValue());
+          Notification.show("Default theme updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout layout = new VerticalLayout(gameDatePicker, defaultThemeSelection);
     add(layout);
   }
 }

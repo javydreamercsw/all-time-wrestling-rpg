@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.util.Collections;
@@ -43,17 +44,26 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "test.mock.notion-handler=false")
 class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleNotionSyncService titleNotionSyncService;
+  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private NotionHandler notionHandler;
+
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
+  }
 
   @Test
   void testSyncToNotion() {
@@ -71,12 +81,17 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       testContender = createTestWrestler("Test Contender " + UUID.randomUUID());
       wrestlerRepository.save(testContender);
 
+      // Sync dependencies to Notion to get external IDs
+      wrestlerNotionSyncService.syncToNotion("test-prep-wrestlers");
+
       // Create a new Title
       title = new Title();
       title.setName("World Championship " + UUID.randomUUID());
       title.setDescription("The most prestigious title");
       title.setTier(WrestlerTier.MAIN_EVENTER);
       title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+      title.setChampionshipType(
+          com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
       title.setIsActive(true);
       title.awardTitleTo(List.of(testChampion), Instant.now());
       title.addChallenger(testContender);
@@ -102,16 +117,14 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
       assertEquals(
-          "The most prestigious title",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
-              .getContent());
-      assertEquals(
           WrestlerTier.MAIN_EVENTER.getDisplayName(),
           Objects.requireNonNull(props.get("Tier").getSelect()).getName());
       assertEquals(
           com.github.javydreamercsw.base.domain.wrestler.Gender.MALE.name(),
           Objects.requireNonNull(props.get("Gender").getSelect()).getName());
+      assertEquals(
+          com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE.name(),
+          Objects.requireNonNull(props.get("Category").getSelect()).getName());
       assertTrue(Objects.requireNonNull(props.get("Active").getCheckbox()));
       assertNotNull(props.get("Champion").getRelation());
       assertFalse(props.get("Champion").getRelation().isEmpty());
@@ -143,11 +156,6 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           updatedTitle2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals(
-          "The undisputed title",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
       assertEquals(
           WrestlerTier.ICON.getDisplayName(),

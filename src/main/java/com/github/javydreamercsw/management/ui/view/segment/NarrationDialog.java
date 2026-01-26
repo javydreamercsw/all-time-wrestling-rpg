@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -73,6 +74,7 @@ public class NarrationDialog extends Dialog {
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
   private final LocalAIConfigProperties localAIConfigProperties;
+  private final SegmentNarrationServiceFactory aiFactory;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -100,7 +102,8 @@ public class NarrationDialog extends Dialog {
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
       LocalAIConfigProperties localAIConfigProperties,
-      SegmentNarrationController segmentNarrationController) {
+      SegmentNarrationController segmentNarrationController,
+      SegmentNarrationServiceFactory aiFactory) {
     this.segment = segment;
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
@@ -111,6 +114,7 @@ public class NarrationDialog extends Dialog {
     this.localAIStatusService = localAIStatusService;
     this.localAIConfigProperties = localAIConfigProperties;
     this.segmentNarrationController = segmentNarrationController;
+    this.aiFactory = aiFactory;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -283,6 +287,16 @@ public class NarrationDialog extends Dialog {
   }
 
   private void generateNarration() {
+    if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
+      String reason = "No AI providers are currently enabled or reachable.";
+      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
+        reason = "LocalAI is still initializing: " + localAIStatusService.getMessage();
+      }
+      Notification.show(reason, 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
+
     boolean isLocalAi = isLocalAiConfigured();
     log.debug("Is LocalAI configured? {}", isLocalAi);
 

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -119,6 +120,23 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Column(name = "image_url")
   private String imageUrl;
 
+  // ==================== CAMPAIGN ATTRIBUTES ====================
+  @Column(name = "drive")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer drive = 1;
+
+  @Column(name = "resilience")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer resilience = 1;
+
+  @Column(name = "charisma")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer charisma = 1;
+
+  @Column(name = "brawl")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer brawl = 1;
+
   // ==================== ATW RPG RELATIONSHIPS ====================
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "manager_id")
@@ -129,12 +147,16 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JoinColumn(name = "account_id")
   private Account account;
 
+  @OneToOne(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+  @JsonIgnore
+  private WrestlerAlignment alignment;
+
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
   private List<TitleReign> reigns = new ArrayList<>();
 
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   @JsonIgnore
   @Builder.Default
   private List<Injury> injuries = new ArrayList<>();
@@ -177,8 +199,27 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @JsonIgnore
   public Integer getEffectiveStartingHealth() {
-    int effective = startingHealth - bumps - getTotalInjuryPenalty();
+    int bonus = 0;
+    int penalty = 0;
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      bonus = alignment.getCampaign().getState().getCampaignHealthBonus();
+      penalty = alignment.getCampaign().getState().getHealthPenalty();
+    }
+    int effective = startingHealth + bonus - penalty - bumps - getTotalInjuryPenalty();
     return Math.max(1, effective); // Never go below 1
+  }
+
+  @JsonIgnore
+  public Integer getEffectiveStartingStamina() {
+    int bonus =
+        (alignment != null
+                && alignment.getCampaign() != null
+                && alignment.getCampaign().getState() != null)
+            ? alignment.getCampaign().getState().getCampaignStaminaBonus()
+            : 0;
+    return startingStamina + bonus;
   }
 
   public void addFans(long fanGain) {

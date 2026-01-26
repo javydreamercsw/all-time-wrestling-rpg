@@ -1,0 +1,8 @@
+{
+  "track_id": "docs_as_code_system_20260124",
+  "type": "feature",
+  "status": "completed",
+  "created_at": "2026-01-24T23:35:00Z",
+  "updated_at": "2026-01-25T10:40:00Z",
+  "description": "Implement a Manifest-Driven 'Docs-as-Code' system. E2E tests emit a JSON manifest linking screenshots to descriptions, which is used to generate a VitePress static documentation site embedded directly in the application."
+}

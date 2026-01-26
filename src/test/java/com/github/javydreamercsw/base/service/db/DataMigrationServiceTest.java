@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,10 +25,11 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -46,13 +46,21 @@ class DataMigrationServiceTest {
           .withUsername("test")
           .withPassword("test");
 
-  private static final String H2_URL = "jdbc:h2:./src/test/resources/db/sample";
+  private static final String H2_URL = "jdbc:h2:./target/db/sample_test";
   private static final String H2_PROTECTED_URL = "jdbc:h2:./target/db/sample_protected";
   private static final String H2_USER = "sa";
   private static final String H2_PASSWORD = "";
 
-  @BeforeEach
-  void setUp() {
+  @BeforeAll
+  @SneakyThrows
+  public static void setDatabases() {
+    Path source = Paths.get("src/test/resources/db/sample.mv.db");
+    Path target = Paths.get("target/db/sample_test.mv.db");
+    if (!Files.exists(target)) {
+      Files.createDirectories(target);
+    }
+    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+
     // Configure and run Flyway for H2 in-memory database
     Flyway h2Flyway =
         Flyway.configure()
@@ -61,6 +69,27 @@ class DataMigrationServiceTest {
             .cleanDisabled(false)
             .load();
     h2Flyway.migrate(); // Migrate H2 schema
+
+    Path protected_target = Paths.get("target/db/sample_protected.mv.db");
+    if (!Files.exists(protected_target)) {
+      Files.createDirectories(protected_target);
+    }
+    Files.copy(source, protected_target, StandardCopyOption.REPLACE_EXISTING);
+
+    // Set password on the protected DB
+    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
+        Statement stmt = conn.createStatement()) {
+      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
+    }
+
+    // Configure and run Flyway for H2 protected database
+    Flyway h2ProtectedFlyway =
+        Flyway.configure()
+            .dataSource(H2_PROTECTED_URL, H2_USER, "secret")
+            .locations("filesystem:src/main/resources/db/migration/h2")
+            .cleanDisabled(false)
+            .load();
+    h2ProtectedFlyway.migrate(); // Migrate H2 schema
   }
 
   @Test
@@ -82,22 +111,8 @@ class DataMigrationServiceTest {
   }
 
   @Test
-  void testMigrateDataWithPassword() throws SQLException, IOException {
-    // 1. Copy sample DB to sample_protected
-    Path source = Paths.get("src/test/resources/db/sample.mv.db");
-    Path target = Paths.get("target/db/sample_protected.mv.db");
-    if (!Files.exists(target)) {
-      Files.createDirectories(target);
-    }
-    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-
-    // 2. Set password on the protected DB
-    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
-        Statement stmt = conn.createStatement()) {
-      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
-    }
-
-    // 3. Run migration with password
+  void testMigrateDataWithPassword() throws SQLException {
+    // Run migration with password
     DataMigrationService migrationService = new DataMigrationService(null, null);
     migrationService.migrateData(
         "H2_FILE",

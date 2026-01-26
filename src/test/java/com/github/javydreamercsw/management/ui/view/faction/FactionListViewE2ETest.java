@@ -57,7 +57,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     clickElement(createButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Find the name field and enter a new faction name
     WebElement nameField =
@@ -71,8 +71,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(saveButton);
     clickElement(saveButton);
 
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Verify that the new faction appears in the grid
     wait.until(
@@ -103,7 +102,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     clickElement(editButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Find the name field and change the value
     WebElement nameField =
@@ -154,8 +153,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
     WebElement confirmDialogOverlay =
         wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.tagName("vaadin-confirm-dialog-overlay")));
+            ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-confirm-dialog")));
 
     Assertions.assertNotNull(confirmDialogOverlay);
     WebElement dialogDeleteButton =
@@ -163,8 +161,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     clickElement(dialogDeleteButton);
 
     wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(
-            By.tagName("vaadin-confirm-dialog-overlay")));
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-confirm-dialog")));
 
     // Verify that the faction is removed from the grid
     wait.until(
@@ -191,7 +188,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     clickElement(membersButton);
 
     // Wait for the members dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Select the wrestler from the ComboBox
     WebElement wrestlerComboBox =
@@ -246,7 +243,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     clickElement(membersButton);
 
     // Wait for the members dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Find the "Remove" button for the wrestler and click it
     WebElement removeButton =

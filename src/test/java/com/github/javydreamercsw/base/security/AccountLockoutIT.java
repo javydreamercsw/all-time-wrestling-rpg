@@ -20,13 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.service.AccountService;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,13 +52,12 @@ public class AccountLockoutIT {
   @Autowired private CustomUserDetailsService userDetailsService;
   @Autowired private AccountService accountService;
   @Autowired private AccountRepository accountRepository;
-  @PersistenceContext private EntityManager entityManager;
 
   private Account testAccount;
 
   @BeforeEach
   void setUp() {
-    TestUtils.runAsAdmin(
+    GeneralSecurityUtils.runAsAdmin(
         () -> {
           testAccount =
               accountService.createAccount(

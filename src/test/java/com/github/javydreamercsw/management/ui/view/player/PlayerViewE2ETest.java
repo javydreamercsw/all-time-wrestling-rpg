@@ -72,9 +72,39 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowRepository showRepository;
   @Autowired private TitleRepository titleChampionRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.title.TitleReignRepository
+      titleReignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
   @BeforeEach
   public void setupTest() {
     // It's better to delete in order to avoid constraint violations.
+    wrestlerAlignmentRepository.deleteAllInBatch();
+    campaignStateRepository.deleteAllInBatch();
+    backstageActionHistoryRepository.deleteAllInBatch();
+    campaignEncounterRepository.deleteAllInBatch();
+    campaignRepository.deleteAllInBatch();
+    titleReignRepository.deleteAll();
     segmentRepository.deleteAll();
     rivalryRepository.deleteAll();
     inboxRepository.deleteAll();
@@ -265,11 +295,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     assertDoesNotThrow(
         () -> {
           waitForVaadinElement(driver, By.id("match-view-" + segment.getId()));
+          assertEquals(show.getName(), waitForVaadinElement(driver, By.id("show-name")).getText());
           assertEquals(
-              "Show: " + show.getName(),
-              waitForVaadinElement(driver, By.id("show-name")).getText());
-          assertEquals(
-              "Match Type: " + segment.getSegmentType().getName(),
+              segment.getSegmentType().getName(),
               waitForVaadinElement(driver, By.id("match-type")).getText());
         });
   }

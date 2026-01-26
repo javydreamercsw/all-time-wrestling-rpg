@@ -57,8 +57,74 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return "This is a mock summary.";
     }
 
+    if (prompt.contains(
+            "Generate a professional wrestling narrative segment appropriate for chapter")
+        || prompt.contains("Generate a 'Post-Match' narrative segment")) {
+      return generateMockCampaignEncounter(prompt);
+    }
+
     log.info("Mock AI generating segment narration (simulated processing time)");
+    if (prompt.contains("Generate a compelling wrestling narration")) {
+      return generateMockTextNarration(prompt);
+    }
     return generateMockNarration(prompt);
+  }
+
+  private String generateMockTextNarration(String prompt) {
+    List<String> participants = extractParticipants(prompt);
+    String wrestler1 = participants.size() > 0 ? participants.get(0) : "Wrestler A";
+    String wrestler2 = participants.size() > 1 ? participants.get(1) : "Wrestler B";
+    String venue = extractVenue(prompt);
+    String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n\n");
+    if (type.equals("Match")) {
+      sb.append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
+      sb.append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n\n");
+      sb.append(generateClimaxAndFinish(wrestler1, wrestler2));
+    } else {
+      sb.append(wrestler1).append(" grabs the microphone and looks intensely at the crowd. ");
+      sb.append("\"I've waited a long time for this moment,\" he declares. ");
+      sb.append(wrestler2).append(" interrupts, walking down the ramp with a confident smirk. ");
+      sb.append("The tension is thick as they stand face-to-face in the middle of the ring.");
+    }
+    return sb.toString();
+  }
+
+  private String generateMockCampaignEncounter(String prompt) {
+    try {
+      var choice1 =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
+              "Accept the challenge like a hero.",
+              "Accept Heroically",
+              1,
+              5,
+              null,
+              "One on One",
+              null, // segmentRules
+              "MATCH");
+      var choice2 =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
+              "Refuse the challenge and mock them.",
+              "Refuse & Mock",
+              -1,
+              0,
+              null,
+              null,
+              null, // segmentRules
+              "BACKSTAGE");
+
+      var response =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
+              "Mock narrative: You are confronted by a local legend who wants to test your mettle.",
+              List.of(choice1, choice2));
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock campaign encounter", e);
+      return "{}";
+    }
   }
 
   @Override
@@ -73,6 +139,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   @Override
   public String generateText(@NonNull String prompt) {
+    if (prompt.contains(
+            "Generate a professional wrestling narrative segment appropriate for chapter")
+        || prompt.contains("Generate a 'Post-Match' narrative segment")) {
+      return generateMockCampaignEncounter(prompt);
+    }
     return generateMockNarration(prompt);
   }
 
@@ -130,15 +201,67 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    String rosterMarker = "Full Roster:";
-    int rosterStart = prompt.indexOf(rosterMarker);
-    if (rosterStart != -1) {
-      String rosterSection = prompt.substring(rosterStart + rosterMarker.length());
-      String[] lines = rosterSection.split("\\r?\\n");
-      for (String line : lines) {
-        if (line.trim().startsWith("- Name:")) {
-          String name = line.substring(line.indexOf(':') + 1, line.indexOf(',')).trim();
+
+    // Try extracting from JSON "wrestlers" array block
+    int wrestlersStart = prompt.indexOf("\"wrestlers\"");
+    if (wrestlersStart != -1) {
+      // Find the end of the wrestlers block (either next section or end of string)
+      int wrestlersEnd = prompt.length();
+      if (prompt.indexOf("\"venue\"", wrestlersStart) != -1)
+        wrestlersEnd = Math.min(wrestlersEnd, prompt.indexOf("\"venue\"", wrestlersStart));
+      if (prompt.indexOf("\"npcs\"", wrestlersStart) != -1)
+        wrestlersEnd = Math.min(wrestlersEnd, prompt.indexOf("\"npcs\"", wrestlersStart));
+
+      String wrestlersSection = prompt.substring(wrestlersStart, wrestlersEnd);
+
+      // In the wrestlers section, we want names that are NOT inside a "moves" or "moveSet" block
+      // But for a mock, let's just look for "name" : "..." that aren't preceded by "move" related
+      // keys nearby
+      Pattern namePattern = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
+      Matcher matcher = namePattern.matcher(wrestlersSection);
+
+      while (matcher.find()) {
+        String name = matcher.group(1);
+        // Basic heuristic: check if the name looks like a wrestler (not a move)
+        // Moves often appear inside "moveSet" or "finisher" blocks
+        int namePos = matcher.start();
+        String contextBefore = wrestlersSection.substring(Math.max(0, namePos - 50), namePos);
+        if (!contextBefore.contains("\"moves\"")
+            && !contextBefore.contains("\"finishers\"")
+            && !contextBefore.contains("\"trademarks\"")) {
           participants.add(name);
+        }
+      }
+    }
+
+    if (participants.isEmpty()) {
+      // Fallback to "Full Roster:" if present (used in some other parts of the app)
+      String rosterMarker = "Full Roster:";
+      int rosterStart = prompt.indexOf(rosterMarker);
+      if (rosterStart != -1) {
+        int rosterEnd = prompt.length();
+        // Look for likely next sections to stop parsing
+        String[] nextSections = {
+          "\nFactions:",
+          "\nNext PLE",
+          "\n**Other considerations:**",
+          "\nAvailable Segment Types:",
+          "\nIMPORTANT:"
+        };
+        for (String nextSection : nextSections) {
+          int index = prompt.indexOf(nextSection, rosterStart);
+          if (index != -1 && index < rosterEnd) {
+            rosterEnd = index;
+          }
+        }
+
+        String rosterSection = prompt.substring(rosterStart + rosterMarker.length(), rosterEnd);
+        String[] lines = rosterSection.split("\\r?\\n");
+        for (String line : lines) {
+          if (line.trim().startsWith("- Name:")) {
+            String name = line.substring(line.indexOf(':') + 1, line.indexOf(',')).trim();
+            participants.add(name);
+          }
         }
       }
     }

@@ -23,18 +23,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GameSettingService {
 
   public static final String CURRENT_GAME_DATE_KEY = "current_game_date";
   private final GameSettingRepository repository;
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("permitAll()")
   public LocalDate getCurrentGameDate() {
     return repository
         .findById(CURRENT_GAME_DATE_KEY)
@@ -52,7 +54,7 @@ public class GameSettingService {
     repository.save(setting);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("permitAll()")
   public Optional<GameSetting> findById(String key) {
     return repository.findById(key);
   }
@@ -60,10 +62,23 @@ public class GameSettingService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public GameSetting save(GameSetting gameSetting) {
+    log.debug(
+        "Saving game setting: {} = {}",
+        gameSetting.getId(),
+        gameSetting.getId().contains("KEY") ? "********" : gameSetting.getValue());
     return repository.save(gameSetting);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyRole('ADMIN')")
+  @Transactional
+  public void save(String key, String value) {
+    GameSetting setting = repository.findById(key).orElseGet(GameSetting::new);
+    setting.setId(key);
+    setting.setValue(value);
+    save(setting);
+  }
+
+  @PreAuthorize("permitAll()")
   public List<GameSetting> findAll() {
     return repository.findAll();
   }

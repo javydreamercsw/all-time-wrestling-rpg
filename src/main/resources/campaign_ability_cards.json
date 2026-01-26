@@ -1,0 +1,116 @@
+[ {
+  "name": "Poke Eye",
+  "description": "Gain Initiative.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "gainInitiative()"
+}, {
+  "name": "Feigned Retreat",
+  "description": "Spend 1 Stamina to gain Initiative and 2 Momentum.",
+  "alignmentType": "HEEL",
+  "level": 2,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "spendStamina(1); gainInitiative(); gainMomentum(2)"
+}, {
+  "name": "Pull Tights",
+  "description": "Opponent suffers -1 dice roll on kickout attempt.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": false,
+  "timing": "OFFENSE",
+  "effectScript": "modifyOpponentRoll(-1)"
+}, {
+  "name": "Exposed Turnbuckle",
+  "description": "Deal 3 damage and gain 2 momentum.",
+  "alignmentType": "HEEL",
+  "level": 2,
+  "oneTimeUse": false,
+  "timing": "OFFENSE",
+  "effectScript": "damage(3); gainMomentum(2)"
+}, {
+  "name": "Low Blow",
+  "description": "Deal 2 damage and gain the initiative.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "damage(2); gainInitiative()"
+}, {
+  "name": "Ally",
+  "description": "Your ally helps you win by any means. Provides extra dice for backstage actions and a one-time offensive interference.",
+  "alignmentType": "HEEL",
+  "level": 5,
+  "oneTimeUse": false,
+  "timing": "BACKSTAGE",
+  "effectScript": "modifyBackstageDice(1)",
+  "secondaryEffectScript": "damage(2)",
+  "secondaryOneTimeUse": true,
+  "secondaryTiming": "OFFENSE"
+}, {
+  "name": "Valet",
+  "description": "Your valet distract your opponent.",
+  "alignmentType": "HEEL",
+  "level": 5,
+  "oneTimeUse": true,
+  "timing": "PINNED",
+  "effectScript": "modifyRoll(1)"
+}, {
+  "name": "Ally",
+  "description": "Your ally is coaching you.",
+  "alignmentType": "FACE",
+  "level": 5,
+  "oneTimeUse": false,
+  "timing": "OFFENSE",
+  "effectScript": "drawCard(1)"
+}, {
+  "name": "Valet",
+  "description": "Your valet rallies the crowd.",
+  "alignmentType": "FACE",
+  "level": 5,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "gainMomentum(2); gainHitPoints(1)"
+}, {
+  "name": "Ten Punches",
+  "description": "Gain momentum and draw a card.",
+  "alignmentType": "FACE",
+  "level": 1,
+  "oneTimeUse": false,
+  "timing": "OFFENSE",
+  "effectScript": "gainMomentum(1); damage(2)"
+}, {
+  "name": "Outwrestle",
+  "description": "Outwrestle your opponent.",
+  "alignmentType": "FACE",
+  "level": 1,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "spendStamina(1); gainMomentum(2)"
+}, {
+  "name": "Flash Pinfall",
+  "description": "Surprise your opponent with a quick pin.",
+  "alignmentType": "FACE",
+  "level": 2,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "spendStamina(2); gainMomentum(1); pin()"
+}, {
+  "name": "Crowd Pleaser",
+  "description": "Gain momentum and draw a card.",
+  "alignmentType": "FACE",
+  "level": 2,
+  "oneTimeUse": false,
+  "timing": "OFFENSE",
+  "effectScript": "gainMomentum(1); drawCard(1)"
+}, {
+  "name": "Comeback",
+  "description": "Gain momentum and draw a card.",
+  "alignmentType": "FACE",
+  "level": 3,
+  "oneTimeUse": false,
+  "timing": "DEFENSE",
+  "effectScript": "gainMomentum(2); drawCard(2); gainHitPoints(2); gainStamina(2)"
+} ]

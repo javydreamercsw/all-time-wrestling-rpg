@@ -34,7 +34,7 @@ public class AccountService {
   @Autowired private AccountRepository accountRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public List<Account> findAll() {
     return accountRepository.findAll();
   }
@@ -44,7 +44,7 @@ public class AccountService {
    *
    * @return A list of accounts not linked to any wrestler.
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public List<Account> findAllNonPlayerAccounts() {
     List<Account> allAccounts = accountRepository.findAll();
     List<Account> accountsWithWrestlers =

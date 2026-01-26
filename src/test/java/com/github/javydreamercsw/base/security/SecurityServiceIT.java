@@ -38,7 +38,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 class SecurityServiceIT extends ManagementIntegrationTest {
 
   @Autowired private AccountService accountService;
@@ -124,8 +126,16 @@ class SecurityServiceIT extends ManagementIntegrationTest {
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanUpdateAccount() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+    Assertions.assertNotNull(authentication, "Authentication should not be null");
+
+    Object principalObj = authentication.getPrincipal();
+    Assertions.assertTrue(
+        principalObj instanceof CustomUserDetails, "Principal should be CustomUserDetails");
+
+    CustomUserDetails principal = (CustomUserDetails) principalObj;
     Account account = principal.getAccount();
+    Assertions.assertNotNull(account, "Account should not be null");
+
     account.setEmail("new_admin_email@test.com");
     accountService.update(account);
     // No exception means success
@@ -137,8 +147,16 @@ class SecurityServiceIT extends ManagementIntegrationTest {
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanUpdateAccount() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+    Assertions.assertNotNull(authentication, "Authentication should not be null");
+
+    Object principalObj = authentication.getPrincipal();
+    Assertions.assertTrue(
+        principalObj instanceof CustomUserDetails, "Principal should be CustomUserDetails");
+
+    CustomUserDetails principal = (CustomUserDetails) principalObj;
     Account account = principal.getAccount();
+    Assertions.assertNotNull(account, "Account should not be null");
+
     account.setEmail("new_booker_email@test.com");
     account.setPassword("ValidPassword1!");
     accountService.update(account);
@@ -146,18 +164,26 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player_update", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCanUpdateOwnAccount() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+    Assertions.assertNotNull(authentication, "Authentication should not be null");
+
+    Object principalObj = authentication.getPrincipal();
+    Assertions.assertTrue(
+        principalObj instanceof CustomUserDetails, "Principal should be CustomUserDetails");
+
+    CustomUserDetails principal = (CustomUserDetails) principalObj;
     Account playerAccount = principal.getAccount();
+    Assertions.assertNotNull(playerAccount, "Account should not be null");
+
     playerAccount.setEmail("new_player_email@test.com");
     accountService.update(playerAccount);
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "player_update_other", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotUpdateOtherAccount() {
     // Create an account for another player directly (not acting as this player for creation)
     Account otherAccount =
@@ -174,8 +200,16 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testViewerCannotUpdateAccount() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+    Assertions.assertNotNull(authentication, "Authentication should not be null");
+
+    Object principalObj = authentication.getPrincipal();
+    Assertions.assertTrue(
+        principalObj instanceof CustomUserDetails, "Principal should be CustomUserDetails");
+
+    CustomUserDetails principal = (CustomUserDetails) principalObj;
     Account account = principal.getAccount();
+    Assertions.assertNotNull(account, "Account should not be null");
+
     account.setEmail("new_viewer_email@test.com");
     Assertions.assertThrows(AccessDeniedException.class, () -> accountService.update(account));
   }

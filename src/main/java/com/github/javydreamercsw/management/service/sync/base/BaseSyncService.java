@@ -225,8 +225,11 @@ public abstract class BaseSyncService {
         batchSize);
     List<R> allResults = new java.util.ArrayList<>();
 
-    // Capture the current security context to propagate to async threads
-    SecurityContext securityContext = SecurityContextHolder.getContext();
+    // Capture the current authentication to propagate to async threads
+    // We capture Authentication instead of SecurityContext to avoid issues with context clearing
+    // or thread-local storage differences in different environments.
+    org.springframework.security.core.Authentication authentication =
+        SecurityContextHolder.getContext().getAuthentication();
 
     for (int i = 0; i < items.size(); i += batchSize) {
       int endIndex = Math.min(i + batchSize, items.size());
@@ -241,25 +244,37 @@ public abstract class BaseSyncService {
                   item ->
                       CompletableFuture.supplyAsync(
                           () -> {
-                            // Set the security context in the async thread
-                            SecurityContextHolder.setContext(securityContext);
-                            try {
-                              syncServiceDependencies.getRateLimitService().acquirePermit();
-                              return processor.apply(item);
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              String msg = "Interrupted while processing item";
-                              log.error(msg);
-                              if (messageConsumer != null) messageConsumer.accept(msg);
-                              throw new RuntimeException("Processing interrupted", e);
-                            } catch (Exception e) {
-                              String msg = "Error processing item: " + e.getMessage();
-                              log.error(msg);
-                              if (messageConsumer != null) messageConsumer.accept(msg);
-                              throw new RuntimeException("Processing failed", e);
-                            } finally {
-                              // Clear the security context to prevent leaks
-                              SecurityContextHolder.clearContext();
+                            java.util.function.Supplier<R> task =
+                                () -> {
+                                  try {
+                                    syncServiceDependencies.getRateLimitService().acquirePermit();
+                                    return processor.apply(item);
+                                  } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    String msg = "Interrupted while processing item";
+                                    log.error(msg);
+                                    if (messageConsumer != null) messageConsumer.accept(msg);
+                                    throw new RuntimeException("Processing interrupted", e);
+                                  } catch (Exception e) {
+                                    String msg = "Error processing item: " + e.getMessage();
+                                    log.error(msg);
+                                    if (messageConsumer != null) messageConsumer.accept(msg);
+                                    throw new RuntimeException("Processing failed", e);
+                                  }
+                                };
+
+                            if (authentication != null) {
+                              SecurityContext context = SecurityContextHolder.createEmptyContext();
+                              context.setAuthentication(authentication);
+                              SecurityContextHolder.setContext(context);
+                              try {
+                                return task.get();
+                              } finally {
+                                SecurityContextHolder.clearContext();
+                              }
+                            } else {
+                              return com.github.javydreamercsw.base.security.GeneralSecurityUtils
+                                  .runAsAdmin(task);
                             }
                           },
                           notionApiExecutor.getSyncExecutorService()))

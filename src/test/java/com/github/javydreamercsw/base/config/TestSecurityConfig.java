@@ -18,11 +18,13 @@ package com.github.javydreamercsw.base.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
+import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -35,8 +37,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @TestConfiguration
-@EnableWebSecurity // Add this to enable web security for the test configuration
-@EnableMethodSecurity
+@EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Profile("test")
 @Import(InboxEventTypeConfig.class)
 public class TestSecurityConfig {
@@ -50,14 +52,21 @@ public class TestSecurityConfig {
   }
 
   @Bean
+  @Primary
   public TestCustomUserDetailsService testCustomUserDetailsService() {
     return new TestCustomUserDetailsService();
   }
 
   @Bean
+  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
+    return new WithCustomMockUserSecurityContextFactory();
+  }
+
+  @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable) // Disable CSRF for easier testing
-        .headers(AbstractHttpConfigurer::disable); // Disable security headers for easier testing
+    http.csrf(AbstractHttpConfigurer::disable)
+        .headers(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
 
     return http.build();
   }

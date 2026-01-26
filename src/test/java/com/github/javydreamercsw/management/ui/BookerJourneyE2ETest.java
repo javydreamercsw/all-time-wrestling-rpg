@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -52,7 +53,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 @Slf4j
@@ -70,17 +70,31 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Autowired private SegmentService segmentService;
   @Autowired private DataInitializer dataInitializer;
 
+  @Autowired private CampaignRepository campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
   @BeforeEach
   public void setupTestData() {
-    dataInitializer.init();
-    // Clear the cache to ensure we get fresh data
-    if (cacheManager != null) {
-      Cache wrestlersCache = cacheManager.getCache("wrestlers");
-      if (wrestlersCache != null) {
-        wrestlersCache.clear();
-      }
-    }
-
+    wrestlerAlignmentRepository.deleteAllInBatch();
+    campaignStateRepository.deleteAllInBatch();
+    backstageActionHistoryRepository.deleteAllInBatch();
+    campaignEncounterRepository.deleteAllInBatch();
+    campaignRepository.deleteAllInBatch();
     titleReignRepository.deleteAll();
     titleRepository
         .findAll()
@@ -168,7 +182,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 10; i++) {
-      wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
+      Wrestler w = TestUtils.createWrestler("Wrestler " + i);
+      wrestlerRepository.saveAndFlush(w);
     }
   }
 
@@ -311,8 +326,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
       // Wait for the dialog to appear
       log.info("Waiting for edit dialog");
-      wait.until(
-          ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
       // Edit the description
       log.info("Editing summary");
@@ -321,6 +335,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
       Assertions.assertNotNull(summaryField);
+      clearField(summaryField);
       summaryField.sendKeys(newDescription, Keys.TAB);
 
       // Click the save button
@@ -506,7 +521,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     clickElement(narrateButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
@@ -520,8 +535,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to disappear
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    longWait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement summaryButton =
         wait.until(

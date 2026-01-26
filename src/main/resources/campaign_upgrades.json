@@ -1,0 +1,33 @@
+[ {
+  "name": "Iron Man",
+  "description": "Increases your wrestler’s maximum stamina by 2.",
+  "type": "STAMINA"
+}, {
+  "name": "Unbreakable",
+  "description": "Increases your wrestler’s maximum health by 2.",
+  "type": "HEALTH"
+}, {
+  "name": "Lethal Strike",
+  "description": "All Strike attack cards deal +1 extra damage.",
+  "type": "DAMAGE",
+  "subType": "Strike"
+}, {
+  "name": "Lethal Grapple",
+  "description": "All Grapple attack cards deal +1 extra damage.",
+  "type": "DAMAGE",
+  "subType": "Grapple"
+}, {
+  "name": "Lethal Throw",
+  "description": "All Throw attack cards deal +1 extra damage.",
+  "type": "DAMAGE",
+  "subType": "Throw"
+}, {
+  "name": "Lethal Aerial",
+  "description": "All Aerial attack cards deal +1 extra damage.",
+  "type": "DAMAGE",
+  "subType": "Aerial"
+}, {
+  "name": "Rope-a-dope",
+  "description": "Gain both 1 stamina and 1 card every time you suffer a successful attack.",
+  "type": "DEFENSE"
+} ]

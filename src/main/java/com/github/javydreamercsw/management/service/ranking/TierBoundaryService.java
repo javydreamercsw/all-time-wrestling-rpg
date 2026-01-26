@@ -40,7 +40,7 @@ public class TierBoundaryService {
     return tierBoundaryRepository.findByTierAndGender(tier, gender);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public TierBoundary save(TierBoundary tierBoundary) {
     return tierBoundaryRepository.save(tierBoundary);
   }
@@ -71,7 +71,7 @@ public class TierBoundaryService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   public void resetTierBoundaries() {
     log.info("Current boundaries: {}", tierBoundaryRepository.count());
     tierBoundaryRepository.deleteAllInBatch();

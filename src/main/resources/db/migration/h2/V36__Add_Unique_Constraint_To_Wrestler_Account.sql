@@ -1,0 +1,1 @@
+ALTER TABLE wrestler ADD CONSTRAINT unique_wrestler_account UNIQUE (account_id);

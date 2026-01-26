@@ -19,8 +19,8 @@ package com.github.javydreamercsw.management;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
@@ -28,10 +28,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN"})
 class DataInitializerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private DataInitializer dataInitializer;
@@ -58,7 +60,7 @@ class DataInitializerIntegrationTest extends AbstractIntegrationTest {
     //    but we call it here explicitly to make sure it runs after our setup.
     //    The wrestlers.json in test resources should have a "Test Wrestler"
     //    without fans, bumps, and imageUrl.
-    TestUtils.runAsAdmin(() -> dataInitializer.init());
+    GeneralSecurityUtils.runAsAdmin(() -> dataInitializer.init());
 
     // 3. Verify the wrestler data is not lost and other data is updated.
     Wrestler updatedWrestler = wrestlerRepository.findByName(existingWrestler.getName()).get();

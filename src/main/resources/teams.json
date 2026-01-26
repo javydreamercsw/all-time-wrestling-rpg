@@ -3,4 +3,24 @@
   "description": "The legendary professional wrestling tag team of cousins Davey Boy Smith (The British Bulldog) and Dynamite Kid (Tom Billington), known for their high-impact style in the 1980s",
   "wrestler1": "The British Bulldog",
   "wrestler2": "Dynamite Kid"
+}, {
+  "name": "The Whole Fuckin' Show",
+  "description": "They blended RVD’s martial arts style with Sabu’s hardcore, table-breaking antics. They won the ECW World Tag Team Championship twice, blending aerial grace with extreme violence.",
+  "wrestler1": "Rob Van Dam",
+  "wrestler2": "Sabu"
+}, {
+  "name": "The Trailblazers",
+  "description": "High flying duo with amazing moves. With talent that transcends time.",
+  "wrestler1": "Jax Felix",
+  "wrestler2": "Rey Jaguar"
+}, {
+  "name": "Desolation Smile",
+  "description": "The Ugandan Giant Kamala and the insane Daemon are just a pairing made in hell.",
+  "wrestler1": "Kamala",
+  "wrestler2": "Daemon"
+}, {
+  "name": "The Mega Powers",
+  "description": "An unlikely but dominant pairing of the Macho Man and the 8th Wonder of the World.",
+  "wrestler1": "Randy Savage",
+  "wrestler2": "André the Giant"
 } ]

@@ -66,7 +66,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     clickElement(resetBoundariesButton);
 
     // Wait for dialog
-    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
 
     WebElement confirmButton =
@@ -107,7 +107,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     clickElement(recalibrateFansButton);
 
     // Wait for dialog
-    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
 
     WebElement confirmButton =
@@ -144,7 +144,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     clickElement(recalibrateFansButton);
 
     // Wait for dialog
-    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
 
     WebElement confirmButton =
@@ -180,7 +180,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     clickElement(recalibrateFansButton);
 
     // Wait for dialog
-    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
 
     WebElement confirmButton = waitForVaadinElement(driver, By.id("confirm-full-reset-button"));

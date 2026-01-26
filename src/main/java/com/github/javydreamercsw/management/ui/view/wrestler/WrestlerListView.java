@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -57,6 +58,7 @@ public class WrestlerListView extends Main {
   private final WrestlerRepository wrestlerRepository;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
+  private final CampaignService campaignService;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
@@ -65,13 +67,15 @@ public class WrestlerListView extends Main {
       @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull CampaignService campaignService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
+    this.campaignService = campaignService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -101,6 +105,12 @@ public class WrestlerListView extends Main {
                 injuryIcon.setColor("red");
                 injuryIcon.getStyle().set("margin-right", "5px");
                 nameLayout.add(injuryIcon);
+              }
+              if (wrestler.getAccount() != null) {
+                Icon userIcon = new Icon(VaadinIcon.USER);
+                userIcon.setColor("blue");
+                userIcon.getStyle().set("margin-right", "5px");
+                nameLayout.add(userIcon);
               }
               nameLayout.add(new Span(wrestler.getName()));
               return nameLayout;
@@ -132,6 +142,7 @@ public class WrestlerListView extends Main {
                       wrestlerService,
                       injuryService,
                       npcService,
+                      campaignService,
                       this::reloadGrid,
                       false,
                       securityUtils,

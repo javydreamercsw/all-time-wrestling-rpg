@@ -1,0 +1,289 @@
+/*
+* Copyright (C) 2026 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.service.campaign;
+
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistory;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionType;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.utils.DiceBag;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+@Slf4j
+public class BackstageActionService {
+
+  private final CampaignStateRepository campaignStateRepository;
+  private final BackstageActionHistoryRepository actionHistoryRepository;
+  private final InjuryService injuryService;
+  private final CampaignService campaignService;
+  private final SegmentRuleRepository segmentRuleRepository;
+  private final WrestlerService wrestlerService;
+
+  public BackstageActionService(
+      CampaignStateRepository campaignStateRepository,
+      BackstageActionHistoryRepository actionHistoryRepository,
+      InjuryService injuryService,
+      @Lazy CampaignService campaignService,
+      SegmentRuleRepository segmentRuleRepository,
+      WrestlerService wrestlerService) {
+    this.campaignStateRepository = campaignStateRepository;
+    this.actionHistoryRepository = actionHistoryRepository;
+    this.injuryService = injuryService;
+    this.campaignService = campaignService;
+    this.segmentRuleRepository = segmentRuleRepository;
+    this.wrestlerService = wrestlerService;
+  }
+
+  /**
+   * Perform a backstage action.
+   *
+   * @param campaign The campaign context.
+   * @param actionType The type of action.
+   * @param diceSides The value of the wrestler's attribute for this action.
+   * @return The result of the action.
+   */
+  public ActionOutcome performAction(
+      Campaign campaign, BackstageActionType actionType, int diceSides) {
+
+    CampaignState state = campaign.getState();
+
+    // 1. Phase Check
+    if (state.getCurrentPhase() != CampaignPhase.BACKSTAGE) {
+      return new ActionOutcome(0, "Actions can only be taken during Backstage phase.");
+    }
+
+    // 2. Action Limit Check (Default 2)
+    if (state.getActionsTaken() >= 2) {
+      return new ActionOutcome(0, "Action limit reached for this phase.");
+    }
+
+    // 3. Consecutive Action Check
+    if (state.getLastActionType() == actionType
+        && Boolean.TRUE.equals(state.getLastActionSuccess())) {
+      return new ActionOutcome(
+          0, "Cannot perform the same action twice in a row unless it failed.");
+    }
+
+    // 4. Unlock Check
+    if (actionType == BackstageActionType.PROMO && !state.isPromoUnlocked()) {
+      return new ActionOutcome(0, "Promo action is locked.");
+    }
+    if (actionType == BackstageActionType.ATTACK && !state.isAttackUnlocked()) {
+      return new ActionOutcome(0, "Attack action is locked.");
+    }
+
+    // 5. Alignment Check (Attack = Heel Only)
+    if (actionType == BackstageActionType.ATTACK) {
+      WrestlerAlignment alignment = campaign.getWrestler().getAlignment();
+      if (alignment == null || alignment.getAlignmentType() != AlignmentType.HEEL) {
+        return new ActionOutcome(0, "Attack action is restricted to Heels.");
+      }
+    }
+
+    java.util.List<Integer> rolls = rollDice(diceSides);
+    int successes = (int) rolls.stream().filter(r -> r >= 4).count();
+    String outcomeDescription = "";
+    boolean isSuccess = successes > 0;
+
+    switch (actionType) {
+      case TRAINING:
+        if (successes > 0) {
+          state.setSkillTokens(state.getSkillTokens() + successes);
+          outcomeDescription = "Training successful. Gained " + successes + " Skill Token(s).";
+        } else {
+          outcomeDescription = "Training failed. No tokens gained.";
+        }
+        break;
+      case RECOVERY:
+        var activeInjuries =
+            injuryService.getActiveInjuriesForWrestler(campaign.getWrestler().getId());
+        int currentBumps = campaign.getWrestler().getBumps();
+
+        if (successes >= 2) {
+          // Prioritize healing 1 injury over 2 bumps (Injury is more severe)
+          if (!activeInjuries.isEmpty()) {
+            var injuryToHeal = activeInjuries.get(0); // Heal the first one found
+            injuryService.healInjuryFree(injuryToHeal.getId());
+            outcomeDescription =
+                "Recovery successful. Healed injury: "
+                    + injuryToHeal.getSeverity().getDisplayName()
+                    + " (Successes: "
+                    + successes
+                    + ")";
+          } else if (currentBumps > 0) {
+            // No injuries, so heal up to 2 bumps
+            int bumpsRemoved = 0;
+            wrestlerService.healBump(campaign.getWrestler().getId());
+            bumpsRemoved++;
+            if (currentBumps > 1) {
+              wrestlerService.healBump(campaign.getWrestler().getId());
+              bumpsRemoved++;
+            }
+            // Update local state copy if needed, but entity is source of truth
+            // state.setBumps is removed as it's no longer in CampaignState
+            outcomeDescription =
+                "Recovery successful. Removed "
+                    + bumpsRemoved
+                    + " bumps. (Successes: "
+                    + successes
+                    + ")";
+          } else {
+            outcomeDescription =
+                "Recovery successful. Wrestler is fully healthy. (Successes: " + successes + ")";
+          }
+        } else if (successes == 1) {
+          if (currentBumps > 0) {
+            wrestlerService.healBump(campaign.getWrestler().getId());
+            // state.setBumps is removed
+            outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
+          } else if (!activeInjuries.isEmpty()) {
+            outcomeDescription =
+                "Recovery partially successful. Removed 0 injuries (Need 2+ successes). (Successes:"
+                    + " 1)";
+          } else {
+            outcomeDescription = "Recovery successful. Wrestler is fully healthy. (Successes: 1)";
+          }
+        } else {
+          outcomeDescription = "Recovery failed. (Successes: 0)";
+          isSuccess = false;
+        }
+        break;
+      case PROMO:
+        if (successes > 0) {
+          // Advance one space on chosen Face or Heel track
+          campaignService.shiftAlignment(campaign, 1);
+
+          // Gain +1 momentum per success for start of next match
+          state.setMomentumBonus(state.getMomentumBonus() + successes);
+
+          outcomeDescription =
+              "Promo successful! Gained +1 on alignment track and +"
+                  + successes
+                  + " momentum for your next match.";
+        } else {
+          outcomeDescription = "Promo failed. The crowd wasn't feeling it.";
+        }
+
+        // Create a Promo segment
+        createPromoSegment(campaign, isSuccess, outcomeDescription);
+        break;
+      case ATTACK:
+        if (successes > 0) {
+          campaignService.shiftAlignment(campaign, -1); // Heel progression
+          state.setOpponentHealthPenalty(state.getOpponentHealthPenalty() + successes);
+          outcomeDescription =
+              "Attack successful! Opponent starts with -"
+                  + successes
+                  + " health. Heel track advanced.";
+        } else {
+          outcomeDescription = "Attack failed. You missed your opportunity.";
+        }
+
+        // Self-inflicted penalty check (The "1" Rule)
+        if (rolls.contains(1)) {
+          state.setHealthPenalty(state.getHealthPenalty() + 1);
+          outcomeDescription += " Rolled a 1! You suffered -1 starting health.";
+        }
+        break;
+    }
+
+    state.setActionsTaken(state.getActionsTaken() + 1);
+    state.setLastActionType(actionType);
+    state.setLastActionSuccess(isSuccess);
+
+    campaignStateRepository.save(state);
+
+    BackstageActionHistory history =
+        BackstageActionHistory.builder()
+            .campaign(campaign)
+            .actionType(actionType)
+            .actionDate(LocalDateTime.now())
+            .diceRolled(diceSides)
+            .successes(successes)
+            .outcomeDescription(outcomeDescription)
+            .build();
+    actionHistoryRepository.save(history);
+
+    return new ActionOutcome(successes, outcomeDescription);
+  }
+
+  /**
+   * Roll dice and return the rolls.
+   *
+   * @param numberOfDice Number of dice to roll (based on attribute).
+   * @return List of roll results.
+   */
+  public java.util.List<Integer> rollDice(int numberOfDice) {
+    if (numberOfDice <= 0) return new ArrayList<>();
+    int[] diceConfig = new int[numberOfDice];
+    Arrays.fill(diceConfig, 6); // All d6s
+    DiceBag diceBag = new DiceBag(diceConfig);
+    diceBag.roll();
+    return Arrays.stream(diceBag.getLastRoll()).boxed().collect(Collectors.toList());
+  }
+
+  private void createPromoSegment(Campaign campaign, boolean success, String description) {
+    try {
+      // Use existing service to create a segment but forced to Promo
+      var show = campaignService.getOrCreateCampaignShow(campaign);
+      var promoType = campaignService.getPromoSegmentType();
+
+      var segment = new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      segment.setShow(show);
+      segment.setSegmentType(promoType);
+      segment.setSegmentDate(java.time.Instant.now());
+      segment.setNarration("Backstage Promo: " + description);
+      segment.setStatus(
+          com.github.javydreamercsw.management.domain.show.segment.SegmentStatus.COMPLETED);
+      segment.setAdjudicationStatus(
+          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+
+      // Add participants
+      segment.addParticipant(campaign.getWrestler());
+      if (success) {
+        segment.setWinners(java.util.List.of(campaign.getWrestler()));
+      }
+
+      // Add "Promo" rule
+      segmentRuleRepository.findByName("Promo").ifPresent(segment::addSegmentRule);
+
+      campaignService.saveSegment(segment);
+      log.info("Created promo segment for campaign {}", campaign.getId());
+    } catch (Exception e) {
+      log.error("Failed to create promo segment", e);
+    }
+  }
+
+  public record ActionOutcome(int successes, String description) {}
+}

@@ -159,8 +159,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     // The confirmation dialog should appear. Click "Delete".
     WebElement dialogOverlay =
         wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.tagName("vaadin-confirm-dialog-overlay")));
+            ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-confirm-dialog")));
 
     Assertions.assertNotNull(dialogOverlay);
     WebElement confirmDeleteButton =

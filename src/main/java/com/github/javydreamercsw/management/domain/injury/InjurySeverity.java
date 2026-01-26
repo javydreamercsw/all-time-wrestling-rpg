@@ -24,20 +24,24 @@ import java.util.Random;
  */
 public enum InjurySeverity {
   /** Minor injury - small health penalty, easy to heal */
-  MINOR("Minor", 1, 2, 5000L, "🟡"),
+  MINOR("Minor", 1, 2, 0, 0, 0, 0, 5000L, "🟡"),
 
   /** Moderate injury - medium health penalty, standard healing cost */
-  MODERATE("Moderate", 2, 3, 10000L, "🟠"),
+  MODERATE("Moderate", 2, 3, 0, 1, 0, 0, 10000L, "🟠"),
 
   /** Severe injury - high health penalty, expensive to heal */
-  SEVERE("Severe", 3, 5, 15000L, "🔴"),
+  SEVERE("Severe", 3, 5, 1, 2, 0, 1, 15000L, "🔴"),
 
   /** Critical injury - very high health penalty, very expensive to heal */
-  CRITICAL("Critical", 4, 7, 25000L, "💀");
+  CRITICAL("Critical", 4, 7, 2, 3, 1, 1, 25000L, "💀");
 
   private final String displayName;
   private final int minHealthPenalty;
   private final int maxHealthPenalty;
+  private final int minStaminaPenalty;
+  private final int maxStaminaPenalty;
+  private final int minHandSizePenalty;
+  private final int maxHandSizePenalty;
   private final Long baseHealingCost;
   private final String emoji;
 
@@ -45,11 +49,19 @@ public enum InjurySeverity {
       String displayName,
       int minHealthPenalty,
       int maxHealthPenalty,
+      int minStaminaPenalty,
+      int maxStaminaPenalty,
+      int minHandSizePenalty,
+      int maxHandSizePenalty,
       Long baseHealingCost,
       String emoji) {
     this.displayName = displayName;
     this.minHealthPenalty = minHealthPenalty;
     this.maxHealthPenalty = maxHealthPenalty;
+    this.minStaminaPenalty = minStaminaPenalty;
+    this.maxStaminaPenalty = maxStaminaPenalty;
+    this.minHandSizePenalty = minHandSizePenalty;
+    this.maxHandSizePenalty = maxHandSizePenalty;
     this.baseHealingCost = baseHealingCost;
     this.emoji = emoji;
   }
@@ -60,6 +72,22 @@ public enum InjurySeverity {
       return minHealthPenalty;
     }
     return minHealthPenalty + random.nextInt(maxHealthPenalty - minHealthPenalty + 1);
+  }
+
+  /** Get a random stamina penalty within the severity range. */
+  public int getRandomStaminaPenalty(Random random) {
+    if (minStaminaPenalty == maxStaminaPenalty) {
+      return minStaminaPenalty;
+    }
+    return minStaminaPenalty + random.nextInt(maxStaminaPenalty - minStaminaPenalty + 1);
+  }
+
+  /** Get a random hand size penalty within the severity range. */
+  public int getRandomHandSizePenalty(Random random) {
+    if (minHandSizePenalty == maxHandSizePenalty) {
+      return minHandSizePenalty;
+    }
+    return minHandSizePenalty + random.nextInt(maxHandSizePenalty - minHandSizePenalty + 1);
   }
 
   /** Get the healing success chance for this severity. Higher severity = lower success chance. */
@@ -94,6 +122,22 @@ public enum InjurySeverity {
 
   public int getMaxHealthPenalty() {
     return maxHealthPenalty;
+  }
+
+  public int getMinStaminaPenalty() {
+    return minStaminaPenalty;
+  }
+
+  public int getMaxStaminaPenalty() {
+    return maxStaminaPenalty;
+  }
+
+  public int getMinHandSizePenalty() {
+    return minHandSizePenalty;
+  }
+
+  public int getMaxHandSizePenalty() {
+    return maxHandSizePenalty;
   }
 
   public Long getBaseHealingCost() {

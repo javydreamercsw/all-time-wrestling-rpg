@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -39,7 +40,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
   @MockitoBean private NotionSyncService notionSyncService;
   @MockitoBean private NotionSyncScheduler notionSyncScheduler;
-  @MockitoBean private NotionSyncProperties syncProperties;
+  @Autowired private NotionSyncProperties syncProperties;
   @MockitoBean private EntityDependencyAnalyzer dependencyAnalyzer;
 
   @Test
@@ -62,8 +63,8 @@ class NotionSyncControllerTest extends AbstractControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.schedulerEnabled").value(true))
-        .andExpect(jsonPath("$.entities[0]").value(SyncEntityType.SHOWS.name()))
-        .andExpect(jsonPath("$.entities[1]").value(SyncEntityType.WRESTLERS.name()))
+        .andExpect(jsonPath("$.entities[0]").value(SyncEntityType.SHOWS.getKey()))
+        .andExpect(jsonPath("$.entities[1]").value(SyncEntityType.WRESTLERS.getKey()))
         .andExpect(jsonPath("$.backupEnabled").value(true));
   }
 

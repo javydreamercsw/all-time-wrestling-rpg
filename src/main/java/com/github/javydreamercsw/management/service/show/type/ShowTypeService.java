@@ -45,7 +45,7 @@ public class ShowTypeService {
     return showTypeRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)
@@ -62,7 +62,7 @@ public class ShowTypeService {
     return showTypeRepository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)
@@ -70,7 +70,7 @@ public class ShowTypeService {
     showTypeRepository.delete(showType);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)

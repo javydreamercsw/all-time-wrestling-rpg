@@ -73,6 +73,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
+    clearAllRepositories();
     tierBoundaryRepository.deleteAllInBatch();
     tierBoundaryService.resetTierBoundaries();
     dataInitializer.init();

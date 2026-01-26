@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management;
 
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
@@ -45,11 +48,24 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
+  private static final Logger log = LoggerFactory.getLogger(ManagementIntegrationTest.class);
+
+  static {
+    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+  }
+
+  @Autowired protected AccountRepository accountRepository;
+  @Autowired protected RoleRepository roleRepository;
   @Autowired protected FactionRivalryRepository factionRivalryRepository;
   @Autowired protected RivalryRepository rivalryRepository;
   @Autowired protected SegmentRepository segmentRepository;
@@ -87,14 +103,44 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   }
 
   @BeforeEach
+  public void prepareTestEnvironment() {
+    // Clean up database and re-initialize default accounts
+    databaseCleaner.clearRepositories();
+    // Refresh security context to ensure the principal has persistent entities
+    refreshSecurityContext();
+
+    // If no authentication was established (e.g. first run with empty DB), default to admin
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      log.info("No authentication found after cleanup. logging in as 'admin'.");
+      loginAs("admin");
+    }
+
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      log.error("Failed to establish authentication context even after fallback login!");
+    } else {
+      log.info(
+          "Security context established for: {}",
+          SecurityContextHolder.getContext().getAuthentication().getName());
+    }
+  }
+
+  @BeforeEach
   public void setupKaribu() {
     mocks = MockitoAnnotations.openMocks(this);
-    MockVaadin.setup(routes); // Set up Karibu with your discovered routes
+
+    // Only setup MockVaadin for UI view tests to avoid interfering with service-layer security
+    String packageName = this.getClass().getPackageName();
+    if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
+      MockVaadin.setup(routes);
+    }
   }
 
   @AfterEach
   public void tearDown() throws Exception {
-    MockVaadin.tearDown();
+    String packageName = this.getClass().getPackageName();
+    if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
+      MockVaadin.tearDown();
+    }
     if (mocks != null) {
       mocks.close();
     }
@@ -102,5 +148,38 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
 
   protected void clearAllRepositories() {
     databaseCleaner.clearRepositories();
+  }
+
+  protected void refreshSecurityContext() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null) {
+      auth = TestSecurityContextHolder.getContext().getAuthentication();
+    }
+
+    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
+      log.info("Refreshing security context for user: {}", details.getUsername());
+      accountRepository
+          .findByUsername(details.getUsername())
+          .ifPresent(
+              account -> {
+                log.info("Found persistent account for {}, logging in...", details.getUsername());
+                this.login(account);
+              });
+    } else if (auth != null
+        && auth.getPrincipal()
+            instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+      log.info(
+          "Refreshing security context for standard UserDetails: {}", userDetails.getUsername());
+      accountRepository.findByUsername(userDetails.getUsername()).ifPresent(this::login);
+    }
+  }
+
+  protected void loginAs(String username) {
+    var accountOpt = accountRepository.findByUsername(username);
+    if (accountOpt.isPresent()) {
+      this.login(accountOpt.get());
+    } else {
+      log.warn("loginAs: Account not found: {}", username);
+    }
   }
 }
