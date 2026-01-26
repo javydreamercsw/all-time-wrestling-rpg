@@ -28,3 +28,6 @@
 
 ## Active Tracks
 
+- [x] **Track: On-demand Theme Changes**
+  *Link: [./tracks/on_demand_themes_20260125/](./tracks/on_demand_themes_20260125/)*
+
