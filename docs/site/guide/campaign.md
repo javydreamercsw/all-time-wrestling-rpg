@@ -34,3 +34,35 @@ The tournament chapter challenges you to climb the ranks in a single-elimination
 
 ---
 
+## The Beginning
+
+Your journey starts here. Establish your reputation through backstage encounters and initial matches as you find your footing in All Time Wrestling.
+
+![The Beginning](/screenshots/campaign-beginning.png)
+
+---
+
+## Tag Team Redemption
+
+Experience the power of partnership. Find a compatible partner and dominate the tag team division while rebuilding your momentum.
+
+![Tag Team Redemption](/screenshots/campaign-tag-team.png)
+
+---
+
+## Betrayal
+
+Trust is a luxury you can no longer afford. Face the consequences of a broken alliance and seek retribution against your former partner.
+
+![Betrayal](/screenshots/campaign-betrayal.png)
+
+---
+
+## Corporate Power Trip
+
+The authorities are against you. Survive impossible odds and unfair stipulations as you challenge the corrupt management's control.
+
+![Corporate Power Trip](/screenshots/campaign-corporate-power-trip.png)
+
+---
+
