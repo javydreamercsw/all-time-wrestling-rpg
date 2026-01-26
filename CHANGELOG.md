@@ -1,5 +1,30 @@
 # Changelog
 
+## [v1.5.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.5.0) (2026-01-26)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.4...v1.5.0)
+
+**Implemented enhancements:**
+
+- Dynamic Theme [\#135](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/135) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Fixed bugs:**
+
+- Release 1.4.4 Bug Fix [\#126](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/126) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Build\(deps-dev\): Bump lodash from 4.17.21 to 4.17.23 in the npm\_and\_yarn group across 1 directory [\#136](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/136) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.seleniumhq.selenium:selenium-support from 4.39.0 to 4.40.0 [\#129](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/129) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v1.4.4](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.4) (2026-01-16)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.3...v1.4.4)
+
+**Fixed bugs:**
+
+- Release Bug FIx 1.4.3 [\#125](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/125) ([javydreamercsw](https://github.com/javydreamercsw))
+
 ## [v1.4.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.3) (2026-01-15)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.2...v1.4.3)
