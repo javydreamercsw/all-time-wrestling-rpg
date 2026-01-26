@@ -118,7 +118,7 @@ jobs:
           npm install
 
       - name: Generate screenshots and manifest
-        run: mvn spotless:apply failsafe:integration-test -Pgenerate-docs -Dit.test="*DocsE2ETest" -Dtest=none -Dheadless=true
+        run: mvn spotless:apply failsafe:integration-test -Pgenerate-docs -Dit.test="*DocsE2ETest" -Dtest=none -Dheadless=true -Dsurefire.failIfNoSpecifiedTests=false
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
