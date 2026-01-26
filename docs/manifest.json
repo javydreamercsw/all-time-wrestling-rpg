@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "user-settings-profile-drawer",
+    "category": "User Settings",
+    "title": "Profile Drawer",
+    "description": "Access your personal settings by clicking the Profile button in the top navigation bar. This opens a dedicated drawer on the right side of the screen, allowing you to manage your account without leaving your current context.",
+    "imagePath": "screenshots/profile-drawer.png",
+    "order": 0
+  }, {
     "id": "entities-entity-teams",
     "category": "Entities",
     "title": "Tag Teams",

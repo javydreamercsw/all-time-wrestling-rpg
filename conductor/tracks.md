@@ -24,6 +24,10 @@
 
 *Link: [./conductor/archive/docs_as_code_system_20260124/](./conductor/archive/docs_as_code_system_20260124/)*
 
+### [x] Track: On-demand Theme Changes
+
+*Link: [./conductor/archive/on_demand_themes_20260125/](./conductor/archive/on_demand_themes_20260125/)*
+
 ---
 
 ## Active Tracks

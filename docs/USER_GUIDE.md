@@ -27,17 +27,17 @@ To log out, click on your username in the top right corner of the application an
 
 ## Managing Your Profile
 
-All users can manage their own profile information. To access your profile:
+All users can manage their own profile information and personalize their experience. To access your profile:
 
-1. Click on your username in the top right corner of the application.
-2. Select "Profile" from the dropdown menu.
+1. Click on the **Profile** button in the top navigation bar.
+2. A drawer will slide out from the right side of the screen.
 
-From your profile page, you can:
+From the Profile Drawer, you can:
 
-- Update your email address.
-- Change your password.
-
-When changing your password, you will be required to enter your current password and then your new password twice.
+- **Update your email address.**
+- **Change your password:** Click "Change Password" to open a dialog where you must enter your current password and your new password twice.
+- **Select a Theme:** Choose your preferred visual theme (Light, Dark, Retro, Neon, High Contrast) from the dropdown. This setting is saved to your account and persists across sessions.
+- **Save Changes:** Click "Save Changes" to apply your updates. The application will reload to apply the new theme.
 
 ## Account Security
 
