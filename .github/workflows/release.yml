@@ -3,6 +3,8 @@ name: Create Release
 permissions:
   contents: write
   pull-requests: write
+  pages: write
+  id-token: write
 
 on:
   workflow_dispatch:
@@ -10,6 +12,10 @@ on:
       version:
         description: 'The release version (e.g., 1.2.0)'
         required: true
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   update_pom:
@@ -116,6 +122,8 @@ jobs:
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
+        env:
+          BASE_URL: /${{ github.event.repository.name }}/
 
       - name: Commit and push documentation changes
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -123,6 +131,11 @@ jobs:
           commit_message: "docs: Regenerate Game Guide for v${{ github.event.inputs.version }}"
           branch: release/${{ github.event.inputs.version }}
           file_pattern: "docs/manifest.json docs/screenshots/*.png src/main/resources/META-INF/resources/docs/*"
+
+      - name: Upload Docs Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site/.vitepress/dist
 
   build_and_release:
     needs: generate_docs
@@ -153,6 +166,18 @@ jobs:
           draft: false
           prerelease: false
           files: ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.war
+
+  deploy_pages:
+    needs: build_and_release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   build_and_publish_docker:
     needs: build_and_release
     runs-on: ubuntu-latest
