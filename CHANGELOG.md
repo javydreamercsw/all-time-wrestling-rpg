@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.4.4](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.4) (2026-01-16)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.3...v1.4.4)
+
+**Fixed bugs:**
+
+- Release Bug FIx 1.4.3 [\#125](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/125) ([javydreamercsw](https://github.com/javydreamercsw))
+
 ## [v1.4.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.3) (2026-01-15)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.2...v1.4.3)
