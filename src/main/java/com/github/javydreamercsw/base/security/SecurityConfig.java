@@ -50,7 +50,8 @@ public class SecurityConfig {
     // Public access to static resources
     http.authorizeHttpRequests(
         auth ->
-            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
+            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**", "/docs/**")
+                .permitAll());
 
     // Disable CSRF for API endpoints
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));

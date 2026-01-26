@@ -30,13 +30,19 @@ public class MenuItem {
   private String title;
   private VaadinIcon icon;
   private String path;
+  private boolean external;
   private List<MenuItem> children = new ArrayList<>();
   private List<RoleName> requiredRoles = new ArrayList<>();
 
   public MenuItem(String title, VaadinIcon icon, String path) {
+    this(title, icon, path, false);
+  }
+
+  public MenuItem(String title, VaadinIcon icon, String path, boolean external) {
     this.title = title;
     this.icon = icon;
     this.path = path;
+    this.external = external;
   }
 
   public MenuItem(String title, VaadinIcon icon, String path, RoleName... roles) {

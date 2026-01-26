@@ -53,7 +53,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 @Slf4j
@@ -91,15 +90,6 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTestData() {
-    dataInitializer.init();
-    // Clear the cache to ensure we get fresh data
-    if (cacheManager != null) {
-      Cache wrestlersCache = cacheManager.getCache("wrestlers");
-      if (wrestlersCache != null) {
-        wrestlersCache.clear();
-      }
-    }
-
     wrestlerAlignmentRepository.deleteAllInBatch();
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();
@@ -345,6 +335,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
       Assertions.assertNotNull(summaryField);
+      clearField(summaryField);
       summaryField.sendKeys(newDescription, Keys.TAB);
 
       // Click the save button

@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.util.docs.DocEntry;
+import com.github.javydreamercsw.management.util.docs.DocumentationManifest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -79,6 +82,27 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   private int screenshotCounter = 0;
   protected Path testArtifactsDir;
 
+  private static final AtomicInteger docOrder = new AtomicInteger(0);
+
+  static {
+    // Shutdown hook to write documentation manifest
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  if (Boolean.getBoolean("generate.docs")) {
+                    try {
+                      Path manifestPath = Paths.get("docs", "manifest.json");
+                      log.info(
+                          "Writing documentation manifest to: {}", manifestPath.toAbsolutePath());
+                      DocumentationManifest.write(manifestPath);
+                    } catch (IOException e) {
+                      log.error("Failed to write documentation manifest", e);
+                    }
+                  }
+                }));
+  }
+
   protected String getUsername() {
     return "admin";
   }
@@ -89,6 +113,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @BeforeEach
   public void setup(TestInfo testInfo) {
+    // Clear all caches
+    if (cacheManager != null) {
+      cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
+
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
@@ -117,13 +146,58 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--headless=new");
     }
     options.addArguments("--disable-gpu");
-    options.addArguments("--window-size=1920,1080");
+    if (Boolean.getBoolean("generate.docs")) {
+      // Consistent size for documentation screenshots
+      options.addArguments("--window-size=1920,1080");
+    } else {
+      options.addArguments("--window-size=1920,1080");
+    }
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
     login();
+  }
+
+  protected void documentFeature(
+      @NonNull String category,
+      @NonNull String title,
+      @NonNull String description,
+      @NonNull String screenshotName) {
+    if (Boolean.getBoolean("generate.docs")) {
+      takeDocScreenshot(screenshotName);
+      String id = category.toLowerCase().replace(" ", "-") + "-" + screenshotName;
+      String relativeImagePath =
+          "screenshots/"
+              + (screenshotName.endsWith(".png") ? screenshotName : screenshotName + ".png");
+
+      DocumentationManifest.addEntry(
+          new DocEntry(
+              id,
+              category,
+              title,
+              description,
+              relativeImagePath,
+              docOrder.getAndIncrement() * 10));
+    }
+  }
+
+  protected void takeDocScreenshot(@NonNull String fileName) {
+    if (Boolean.getBoolean("generate.docs")) {
+      try {
+        Path docsDir = Paths.get("docs", "screenshots");
+        if (!Files.exists(docsDir)) {
+          Files.createDirectories(docsDir);
+        }
+        String screenshotName = fileName.endsWith(".png") ? fileName : fileName + ".png";
+        Path destFile = docsDir.resolve(screenshotName);
+        takeScreenshot(destFile.toString());
+        log.info("Documentation screenshot saved: {}", destFile);
+      } catch (IOException e) {
+        log.error("Failed to save documentation screenshot", e);
+      }
+    }
   }
 
   protected void login() {
@@ -147,7 +221,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(signInButton);
     waitForAppToBeReady();
     try {
-      wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+      // Use a more robust check for successful login - presence of logout button or main layout
+      wait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
       takeSequencedScreenshot("after-successful-login");
     } catch (Exception e) {
       log.error("Login failed for user: {}", username);
@@ -284,6 +359,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           waitForVaadinElement(driver, By.xpath("//div[@role='tab'][text()='" + text + "']"));
       clickElement(element);
     }
+  }
+
+  protected void clickButtonByText(@NonNull String text) {
+    WebElement element =
+        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='" + text + "']"));
+    clickElement(element);
   }
 
   /**
@@ -458,8 +539,23 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void selectFromVaadinMultiSelectComboBox(
       @NonNull WebElement comboBox, @NonNull String itemText) {
     log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
-    // 1. Open the combo box using JavaScript
-    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+
+    // 1. Target the internal input element for typing to filter
+    WebElement input =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "return arguments[0].querySelector('input') ||"
+                        + " arguments[0].shadowRoot.querySelector('input');",
+                    comboBox);
+
+    if (input != null) {
+      input.click();
+      input.sendKeys(itemText);
+    } else {
+      // Fallback: just open it
+      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+    }
 
     // 2. Wait for the item to appear and click it via JS
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -469,11 +565,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             return (Boolean)
                 ((JavascriptExecutor) d)
                     .executeScript(
-                        "const text = arguments[0];const item ="
+                        "const text = arguments[0];const items ="
                             + " Array.from(document.querySelectorAll('vaadin-multi-select-combo-box-item,"
-                            + " vaadin-combo-box-item, vaadin-item')).find(item =>"
-                            + " item.textContent.trim() === text ||"
-                            + " item.textContent.trim().includes(text));if (item) { item.click();"
+                            + " vaadin-combo-box-item, vaadin-item'));const item = items.find(i =>"
+                            + " i.textContent.trim() === text ||"
+                            + " i.textContent.trim().includes(text));if (item) { item.click();"
                             + " return true; }return false;",
                         itemText);
           });

@@ -14,12 +14,17 @@
 
 ### [x] Track: Advanced Campaign Chapters (Fighting Champion, Gang Warfare, Authority Feud)
 
-*Link: [./tracks/advanced_campaign_chapters_20260124/](./tracks/advanced_campaign_chapters_20260124/)*
+*Link: [./conductor/archive/advanced_campaign_chapters_20260124/](./conductor/archive/advanced_campaign_chapters_20260124/)*
+
+### [x] Track: Automated Game Guide Screenshots
+
+*Link: [./conductor/archive/game_guide_screenshots_20260124/](./conductor/archive/game_guide_screenshots_20260124/)*
+
+### [x] Track: Docs-as-Code System
+
+*Link: [./conductor/archive/docs_as_code_system_20260124/](./conductor/archive/docs_as_code_system_20260124/)*
 
 ---
 
 ## Active Tracks
-
-- [ ] **Track: Automated Game Guide Screenshots**
-  *Link: [./tracks/game_guide_screenshots_20260124/](./tracks/game_guide_screenshots_20260124/)*
 

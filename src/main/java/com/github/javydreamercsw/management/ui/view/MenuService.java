@@ -107,6 +107,10 @@ public class MenuService {
         new MenuItem("Data Transfer", VaadinIcon.EXCHANGE, "data-transfer", RoleName.ADMIN));
     configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
 
+    // Help menu: accessible to everyone
+    MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
+    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html", true));
+
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);
     menuItems.add(playerDashboard);
@@ -115,6 +119,7 @@ public class MenuService {
     menuItems.add(contentGeneration);
     menuItems.add(cardGame);
     menuItems.add(configuration);
+    menuItems.add(help);
 
     // Filter menu items based on user roles
     List<MenuItem> filteredMenuItems = filterMenuItems(menuItems);
@@ -174,6 +179,7 @@ public class MenuService {
 
     if (shouldShow) {
       MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
+      filtered.setExternal(menuItem.isExternal());
       filtered.setRequiredRoles(menuItem.getRequiredRoles());
       filteredChildren.forEach(filtered::addChild);
       return filtered;

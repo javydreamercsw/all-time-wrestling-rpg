@@ -57,7 +57,8 @@ public class TestE2ESecurityConfig {
                     "/VAADIN/**",
                     "/line-awesome/**",
                     "/icons/**",
-                    "/frontend/**")
+                    "/frontend/**",
+                    "/docs/**")
                 .permitAll());
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
     http.csrf(AbstractHttpConfigurer::disable);
