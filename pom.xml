@@ -165,7 +165,7 @@
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
-      <version>7.0.0</version>
+      <version>7.0.1</version>
     </dependency>
     <!-- Persistence -->
     <dependency>
