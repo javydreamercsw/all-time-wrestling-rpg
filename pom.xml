@@ -895,7 +895,7 @@
         <version>3.5.1</version>
         <configuration>
           <from>
-            <image>eclipse-temurin:21-jre</image>
+            <image>eclipse-temurin:25-jre</image>
           </from>
           <to>
             <image>javydreamercsw/all-time-wrestling-rpg</image>
