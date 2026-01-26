@@ -294,3 +294,22 @@
     --lumo-contrast-10pct: rgba(0, 0, 0, 0.2);
     --lumo-contrast-20pct: rgba(0, 0, 0, 0.4);
 }
+
+/* Profile Drawer */
+.profile-drawer::part(overlay) {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+    width: 400px;
+    max-width: 100vw;
+    border-radius: 0;
+    animation: slide-in-right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    margin: 0;
+}
+
+@keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}

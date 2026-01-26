@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.account;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
@@ -47,7 +48,7 @@ public class ProfileDrawer extends Dialog {
       ThemeService themeService) {
 
     addClassName("profile-drawer");
-    setModal(true);
+    setModality(ModalityMode.STRICT);
     setDraggable(false);
     setResizable(false);
     setCloseOnEsc(true);
@@ -129,11 +130,24 @@ public class ProfileDrawer extends Dialog {
         new Button(
             "Save Changes",
             event -> {
+              String selectedTheme = themeSelection.getValue();
               account.setEmail(emailField.getValue());
-              account.setThemePreference(themeSelection.getValue());
+              account.setThemePreference(selectedTheme);
               accountService.update(account);
+
+              // Apply theme immediately
+              if ("light".equals(selectedTheme)) {
+                UI.getCurrent()
+                    .getPage()
+                    .executeJs("document.documentElement.removeAttribute('theme')");
+              } else {
+                UI.getCurrent()
+                    .getPage()
+                    .executeJs("document.documentElement.setAttribute('theme', $0)", selectedTheme);
+              }
+
               Notification.show("Profile updated successfully!");
-              UI.getCurrent().getPage().reload();
+              close();
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.setWidthFull();

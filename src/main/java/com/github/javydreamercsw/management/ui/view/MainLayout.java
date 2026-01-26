@@ -30,7 +30,10 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -55,6 +58,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
 @PermitAll // When security is enabled, allow all authenticated users
@@ -65,6 +69,9 @@ public class MainLayout extends AppLayout {
   private InboxUpdateBroadcaster inboxUpdateBroadcaster;
   private Registration inboxUpdateBroadcasterRegistration;
   private @Nullable SecurityUtils securityUtils;
+  private AccountService accountService;
+  private PasswordEncoder passwordEncoder;
+  private ThemeService themeService;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -74,11 +81,17 @@ public class MainLayout extends AppLayout {
       MenuService menuService,
       InboxUpdateBroadcaster inboxUpdateBroadcaster,
       Optional<BuildProperties> buildProperties,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      AccountService accountService,
+      PasswordEncoder passwordEncoder,
+      ThemeService themeService) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
     this.securityUtils = securityUtils;
+    this.accountService = accountService;
+    this.passwordEncoder = passwordEncoder;
+    this.themeService = themeService;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -164,8 +177,24 @@ public class MainLayout extends AppLayout {
       Span usernameLabel = new Span(username);
       usernameLabel.addClassNames(FontWeight.SEMIBOLD, FontSize.SMALL);
 
-      // Profile link
-      Anchor profileLink = new Anchor("profile", "Profile");
+      // Profile button (opens drawer)
+      Button profileButton = new Button("Profile", VaadinIcon.USER.create());
+      profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+      profileButton.addClickListener(
+          e -> {
+            securityUtils
+                .getAuthenticatedUser()
+                .ifPresent(
+                    user -> {
+                      accountService
+                          .findByUsername(user.getUsername())
+                          .ifPresent(
+                              account ->
+                                  new ProfileDrawer(
+                                          account, accountService, passwordEncoder, themeService)
+                                      .open());
+                    });
+          });
 
       // Logout button
       Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
@@ -173,7 +202,7 @@ public class MainLayout extends AppLayout {
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       logoutButton.addClickListener(e -> securityUtils.logout());
 
-      navbar.add(avatar, usernameLabel, profileLink, logoutButton);
+      navbar.add(avatar, usernameLabel, profileButton, logoutButton);
     }
 
     return navbar;

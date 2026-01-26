@@ -30,11 +30,12 @@ public class ThemePersistenceE2ETest extends AbstractE2ETest {
   public void testUserThemePersistence() {
     login("player", "player123");
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/profile");
+    // Open Profile Drawer
+    clickButtonByText("Profile");
     waitForVaadinClientToLoad();
 
     selectFromVaadinComboBox("theme-selection", "dark");
-    clickButtonByText("Save");
+    clickButtonByText("Save Changes");
 
     waitForAppToBeReady();
     waitForVaadinClientToLoad();
@@ -56,8 +57,12 @@ public class ThemePersistenceE2ETest extends AbstractE2ETest {
                 .executeScript("return document.documentElement.getAttribute('theme')");
     assertEquals("dark", theme, "Theme should be dark");
 
+    // Re-open drawer as page might have reloaded or drawer closed
+    clickButtonByText("Profile");
+    waitForVaadinClientToLoad();
+
     selectFromVaadinComboBox("theme-selection", "retro");
-    clickButtonByText("Save");
+    clickButtonByText("Save Changes");
 
     waitForAppToBeReady();
     waitForVaadinClientToLoad();
