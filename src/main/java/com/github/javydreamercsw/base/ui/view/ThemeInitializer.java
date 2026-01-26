@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.ui.view;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
+import com.github.javydreamercsw.management.service.AccountService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +29,7 @@ public class ThemeInitializer {
 
   @Bean
   public VaadinServiceInitListener themeServiceInitListener(
-      ThemeService themeService, SecurityUtils securityUtils) {
+      ThemeService themeService, SecurityUtils securityUtils, AccountService accountService) {
     return event ->
         event
             .getSource()
@@ -38,10 +39,11 @@ public class ThemeInitializer {
                   ui.addAfterNavigationListener(
                       afterNavigationEvent -> {
                         securityUtils
-                            .getAuthenticatedUser()
+                            .getCurrentAccountId()
+                            .flatMap(accountService::get)
                             .ifPresentOrElse(
-                                user -> {
-                                  String theme = themeService.getEffectiveTheme(user.getAccount());
+                                account -> {
+                                  String theme = themeService.getEffectiveTheme(account);
                                   applyTheme(ui, theme);
                                 },
                                 () -> {
@@ -55,9 +57,9 @@ public class ThemeInitializer {
 
   private void applyTheme(UI ui, String theme) {
     if ("light".equals(theme)) {
-      ui.getElement().setAttribute("theme", "");
+      ui.getPage().executeJs("document.documentElement.removeAttribute('theme')");
     } else {
-      ui.getElement().setAttribute("theme", theme);
+      ui.getPage().executeJs("document.documentElement.setAttribute('theme', $0)", theme);
     }
   }
 }

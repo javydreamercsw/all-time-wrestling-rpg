@@ -52,13 +52,12 @@
 
 - [x] Task: E2E Regression Testing 541b7e1
 
-    - [x] Run full E2E suite to ensure no UI regressions
+  - [x] Run full E2E suite to ensure no UI regressions
 
-    - [x] Verify theme persistence by logging in/out (Verified manually, E2E test disabled due to flakiness)
+  - [x] Verify theme persistence by logging in/out (Verified manually, E2E test disabled due to flakiness)
 
 - [x] Task: Final Build and Lint
 
-    - [x] Run `mvn spotless:apply clean install` to ensure code standards and successful compilation
-
+  - [x] Run `mvn spotless:apply clean install` to ensure code standards and successful compilation
 - [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md) 3c7e476
 

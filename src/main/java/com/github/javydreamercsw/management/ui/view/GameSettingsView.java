@@ -60,6 +60,7 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     defaultThemeSelection = new ComboBox<>("Default Application Theme");
+    defaultThemeSelection.setId("default-theme-selection");
     defaultThemeSelection.setItems(themeService.getAvailableThemes());
     defaultThemeSelection.setValue(themeService.getGlobalDefaultTheme().orElse("light"));
     defaultThemeSelection.addValueChangeListener(
