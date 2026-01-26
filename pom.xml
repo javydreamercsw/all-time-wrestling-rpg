@@ -30,6 +30,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
+    <selenium.version>4.40.0</selenium.version>
     <surefireArgLine/>
     <testcontainers.version>2.0.3</testcontainers.version>
     <vaadin.version>25.0.3</vaadin.version>
@@ -37,6 +38,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.seleniumhq.selenium</groupId>
+        <artifactId>selenium-bom</artifactId>
+        <version>${selenium.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>com.vaadin</groupId>
         <artifactId>vaadin-bom</artifactId>
