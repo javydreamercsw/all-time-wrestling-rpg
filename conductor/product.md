@@ -22,6 +22,7 @@ The core gameplay mechanics and features of All Time Wrestling RPG include:
 * **Multi-Database Support & Migration:** Support for multiple database engines (H2, MySQL) with a built-in data transfer wizard for seamless migration between environments.
 * **Title History & Lineal tracking:** Comprehensive visualization of championship histories and wrestler accomplishments through chronological timelines and detailed reign records.
 * **Solo Campaign Mode:** A persistent, narrative-driven single-player experience ("All or Nothing") featuring character progression, alignment tracking (Face/Heel), backstage actions, and AI-driven story branching.
+* **On-demand Theme Changes:** Users can customize their visual experience by selecting from various color themes (Light, Dark, Retro, High Contrast, Neon) directly from their user profile settings, with persistence across sessions. Administrators can also configure a global default theme.
 
 ## Technical Considerations
 

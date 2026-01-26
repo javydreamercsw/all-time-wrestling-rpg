@@ -22,7 +22,7 @@
   * **Lit:** 3.3.2
   * **TypeScript:** 5.9.3
 * **Build Tool:** Vite 7.3.1 (integrated with Vaadin)
-* **Styling:** Vaadin Lumo Theme
+* **Styling:** Vaadin Lumo Theme with Custom Dynamic Themes (Retro, Neon, High Contrast)
 * **Components:** Vaadin Components, FullCalendar
 
 ## Infrastructure & DevOps
