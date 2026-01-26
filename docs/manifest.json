@@ -1,5 +1,33 @@
 {
   "features": [ {
+    "id": "campaign-campaign-beginning",
+    "category": "Campaign",
+    "title": "The Beginning",
+    "description": "Your journey starts here. Establish your reputation through backstage encounters and initial matches as you find your footing in All Time Wrestling.",
+    "imagePath": "screenshots/campaign-beginning.png",
+    "order": 90
+  }, {
+    "id": "campaign-campaign-tag-team",
+    "category": "Campaign",
+    "title": "Tag Team Redemption",
+    "description": "Experience the power of partnership. Find a compatible partner and dominate the tag team division while rebuilding your momentum.",
+    "imagePath": "screenshots/campaign-tag-team.png",
+    "order": 110
+  }, {
+    "id": "campaign-campaign-betrayal",
+    "category": "Campaign",
+    "title": "Betrayal",
+    "description": "Trust is a luxury you can no longer afford. Face the consequences of a broken alliance and seek retribution against your former partner.",
+    "imagePath": "screenshots/campaign-betrayal.png",
+    "order": 120
+  }, {
+    "id": "campaign-campaign-corporate-power-trip",
+    "category": "Campaign",
+    "title": "Corporate Power Trip",
+    "description": "The authorities are against you. Survive impossible odds and unfair stipulations as you challenge the corrupt management's control.",
+    "imagePath": "screenshots/campaign-corporate-power-trip.png",
+    "order": 150
+  }, {
     "id": "user-settings-profile-drawer",
     "category": "User Settings",
     "title": "Profile Drawer",
