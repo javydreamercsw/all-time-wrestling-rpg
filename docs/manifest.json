@@ -1,157 +1,157 @@
 {
-  "features" : [ {
-    "id" : "user-settings-profile-drawer",
-    "category" : "User Settings",
-    "title" : "Profile Drawer",
-    "description" : "Access your personal settings by clicking the Profile button in the top navigation bar. This opens a dedicated drawer on the right side of the screen, allowing you to manage your account without leaving your current context.",
-    "imagePath" : "screenshots/profile-drawer.png",
-    "order" : 0
+  "features": [ {
+    "id": "user-settings-profile-drawer",
+    "category": "User Settings",
+    "title": "Profile Drawer",
+    "description": "Access your personal settings by clicking the Profile button in the top navigation bar. This opens a dedicated drawer on the right side of the screen, allowing you to manage your account without leaving your current context.",
+    "imagePath": "screenshots/profile-drawer.png",
+    "order": 0
   }, {
-    "id" : "entities-entity-teams",
-    "category" : "Entities",
-    "title" : "Tag Teams",
-    "description" : "Track formal tag team partnerships. Teams often have their own specific finishing moves and shared history in the Tag Team division.",
-    "imagePath" : "screenshots/entity-teams.png",
-    "order" : 0
+    "id": "entities-entity-teams",
+    "category": "Entities",
+    "title": "Tag Teams",
+    "description": "Track formal tag team partnerships. Teams often have their own specific finishing moves and shared history in the Tag Team division.",
+    "imagePath": "screenshots/entity-teams.png",
+    "order": 0
   }, {
-    "id" : "entities-entity-seasons",
-    "category" : "Entities",
-    "title" : "Seasons",
-    "description" : "Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.",
-    "imagePath" : "screenshots/entity-seasons.png",
-    "order" : 10
+    "id": "entities-entity-seasons",
+    "category": "Entities",
+    "title": "Seasons",
+    "description": "Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.",
+    "imagePath": "screenshots/entity-seasons.png",
+    "order": 10
   }, {
-    "id" : "entities-entity-titles",
-    "category" : "Entities",
-    "title" : "Championships",
-    "description" : "Manage the various titles across the promotion. From World Championships to regional belts, track current champions and the prestige of each title.",
-    "imagePath" : "screenshots/entity-titles.png",
-    "order" : 20
+    "id": "entities-entity-titles",
+    "category": "Entities",
+    "title": "Championships",
+    "description": "Manage the various titles across the promotion. From World Championships to regional belts, track current champions and the prestige of each title.",
+    "imagePath": "screenshots/entity-titles.png",
+    "order": 20
   }, {
-    "id" : "entities-entity-factions",
-    "category" : "Entities",
-    "title" : "Factions",
-    "description" : "Manage powerful wrestling groups. Factions bring together multiple wrestlers under a single banner, creating complex storylines and alliance-based rivalries.",
-    "imagePath" : "screenshots/entity-factions.png",
-    "order" : 30
+    "id": "entities-entity-factions",
+    "category": "Entities",
+    "title": "Factions",
+    "description": "Manage powerful wrestling groups. Factions bring together multiple wrestlers under a single banner, creating complex storylines and alliance-based rivalries.",
+    "imagePath": "screenshots/entity-factions.png",
+    "order": 30
   }, {
-    "id" : "dashboards-dashboard-calendar",
-    "category" : "Dashboards",
-    "title" : "Show Calendar",
-    "description" : "Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium Live Events at a glance.",
-    "imagePath" : "screenshots/dashboard-calendar.png",
-    "order" : 140
+    "id": "dashboards-dashboard-calendar",
+    "category": "Dashboards",
+    "title": "Show Calendar",
+    "description": "Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium Live Events at a glance.",
+    "imagePath": "screenshots/dashboard-calendar.png",
+    "order": 140
   }, {
-    "id" : "game-mechanics-mechanic-cards",
-    "category" : "Game Mechanics",
-    "title" : "Cards",
-    "description" : "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.",
-    "imagePath" : "screenshots/mechanic-cards.png",
-    "order" : 150
+    "id": "game-mechanics-mechanic-cards",
+    "category": "Game Mechanics",
+    "title": "Cards",
+    "description": "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.",
+    "imagePath": "screenshots/mechanic-cards.png",
+    "order": 150
   }, {
-    "id" : "dashboards-dashboard-rankings",
-    "category" : "Dashboards",
-    "title" : "Wrestler Rankings",
-    "description" : "Track the momentum of every wrestler in the promotion. Rankings determine title eligibility and positioning on show cards.",
-    "imagePath" : "screenshots/dashboard-rankings.png",
-    "order" : 160
+    "id": "dashboards-dashboard-rankings",
+    "category": "Dashboards",
+    "title": "Wrestler Rankings",
+    "description": "Track the momentum of every wrestler in the promotion. Rankings determine title eligibility and positioning on show cards.",
+    "imagePath": "screenshots/dashboard-rankings.png",
+    "order": 160
   }, {
-    "id" : "game-mechanics-mechanic-decks",
-    "category" : "Game Mechanics",
-    "title" : "Decks",
-    "description" : "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with efficient setup moves and stamina-recovering taunts.",
-    "imagePath" : "screenshots/mechanic-decks.png",
-    "order" : 170
+    "id": "game-mechanics-mechanic-decks",
+    "category": "Game Mechanics",
+    "title": "Decks",
+    "description": "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with efficient setup moves and stamina-recovering taunts.",
+    "imagePath": "screenshots/mechanic-decks.png",
+    "order": 170
   }, {
-    "id" : "admin-admin-ai-settings",
-    "category" : "Admin",
-    "title" : "AI Configuration",
-    "description" : "Configure the Artificial Intelligence providers used for match narration, image generation, and creative assistance. You can switch between different LLM providers (OpenAI, Anthropic, Gemini, LocalAI) and configure their specific settings.",
-    "imagePath" : "screenshots/admin-ai-settings.png",
-    "order" : 20
+    "id": "admin-admin-ai-settings",
+    "category": "Admin",
+    "title": "AI Configuration",
+    "description": "Configure the Artificial Intelligence providers used for match narration, image generation, and creative assistance. You can switch between different LLM providers (OpenAI, Anthropic, Gemini, LocalAI) and configure their specific settings.",
+    "imagePath": "screenshots/admin-ai-settings.png",
+    "order": 20
   }, {
-    "id" : "admin-admin-injury-types",
-    "category" : "Admin",
-    "title" : "Injury Management",
-    "description" : "Define different types of injuries, their severity, and recovery times. These are used to dynamically affect wrestler performance and availability in the campaign and booking modes.",
-    "imagePath" : "screenshots/admin-injury-types.png",
-    "order" : 30
+    "id": "admin-admin-injury-types",
+    "category": "Admin",
+    "title": "Injury Management",
+    "description": "Define different types of injuries, their severity, and recovery times. These are used to dynamically affect wrestler performance and availability in the campaign and booking modes.",
+    "imagePath": "screenshots/admin-injury-types.png",
+    "order": 30
   }, {
-    "id" : "wrestler-wrestler-profile",
-    "category" : "Wrestler",
-    "title" : "Wrestler Profile",
-    "description" : "View detailed information about any wrestler, including their core stats (Drive, Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship history.",
-    "imagePath" : "screenshots/wrestler-profile.png",
-    "order" : 90
+    "id": "wrestler-wrestler-profile",
+    "category": "Wrestler",
+    "title": "Wrestler Profile",
+    "description": "View detailed information about any wrestler, including their core stats (Drive, Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship history.",
+    "imagePath": "screenshots/wrestler-profile.png",
+    "order": 90
   }, {
-    "id" : "booker-booker-match-narration",
-    "category" : "Booker",
-    "title" : "Match Narration",
-    "description" : "Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action.",
-    "imagePath" : "screenshots/booker-match-narration.png",
-    "order" : 80
+    "id": "booker-booker-match-narration",
+    "category": "Booker",
+    "title": "Match Narration",
+    "description": "Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action.",
+    "imagePath": "screenshots/booker-match-narration.png",
+    "order": 80
   }, {
-    "id" : "admin-admin-tools",
-    "category" : "Admin",
-    "title" : "Admin Tools",
-    "description" : "Perform critical maintenance tasks such as manual tier recalculation and account management.",
-    "imagePath" : "screenshots/admin-tools.png",
-    "order" : 0
+    "id": "admin-admin-tools",
+    "category": "Admin",
+    "title": "Admin Tools",
+    "description": "Perform critical maintenance tasks such as manual tier recalculation and account management.",
+    "imagePath": "screenshots/admin-tools.png",
+    "order": 0
   }, {
-    "id" : "admin-admin-show-templates",
-    "category" : "Admin",
-    "title" : "Show Templates",
-    "description" : "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
-    "imagePath" : "screenshots/admin-show-templates.png",
-    "order" : 0
+    "id": "admin-admin-show-templates",
+    "category": "Admin",
+    "title": "Show Templates",
+    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
+    "imagePath": "screenshots/admin-show-templates.png",
+    "order": 0
   }, {
-    "id" : "admin-admin-wrestler-list",
-    "category" : "Admin",
-    "title" : "Wrestler Management",
-    "description" : "Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images, and manage contract details from this centralized view.",
-    "imagePath" : "screenshots/admin-wrestler-list.png",
-    "order" : 10
+    "id": "admin-admin-wrestler-list",
+    "category": "Admin",
+    "title": "Wrestler Management",
+    "description": "Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images, and manage contract details from this centralized view.",
+    "imagePath": "screenshots/admin-wrestler-list.png",
+    "order": 10
   }, {
-    "id" : "campaign-campaign-gang-warfare",
-    "category" : "Campaign",
-    "title" : "Gang Warfare",
-    "description" : "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.",
-    "imagePath" : "screenshots/campaign-gang-warfare.png",
-    "order" : 20
+    "id": "campaign-campaign-gang-warfare",
+    "category": "Campaign",
+    "title": "Gang Warfare",
+    "description": "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.",
+    "imagePath": "screenshots/campaign-gang-warfare.png",
+    "order": 20
   }, {
-    "id" : "campaign-campaign-fighting-champion",
-    "category" : "Campaign",
-    "title" : "Fighting Champion",
-    "description" : "As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.",
-    "imagePath" : "screenshots/campaign-fighting-champion.png",
-    "order" : 30
+    "id": "campaign-campaign-fighting-champion",
+    "category": "Campaign",
+    "title": "Fighting Champion",
+    "description": "As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.",
+    "imagePath": "screenshots/campaign-fighting-champion.png",
+    "order": 30
   }, {
-    "id" : "campaign-campaign-backstage-actions",
-    "category" : "Campaign",
-    "title" : "Backstage Actions",
-    "description" : "Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.",
-    "imagePath" : "screenshots/campaign-backstage-actions.png",
-    "order" : 40
+    "id": "campaign-campaign-backstage-actions",
+    "category": "Campaign",
+    "title": "Backstage Actions",
+    "description": "Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.",
+    "imagePath": "screenshots/campaign-backstage-actions.png",
+    "order": 40
   }, {
-    "id" : "campaign-campaign-tournament-bracket",
-    "category" : "Campaign",
-    "title" : "Tournament Bracket",
-    "description" : "The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.",
-    "imagePath" : "screenshots/campaign-tournament-bracket.png",
-    "order" : 50
+    "id": "campaign-campaign-tournament-bracket",
+    "category": "Campaign",
+    "title": "Tournament Bracket",
+    "description": "The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.",
+    "imagePath": "screenshots/campaign-tournament-bracket.png",
+    "order": 50
   }, {
-    "id" : "booker-booker-show-planning",
-    "category" : "Booker",
-    "title" : "Show Planning",
-    "description" : "The Show Planning interface allows you to book matches and segments for an upcoming show. Drag and drop wrestlers to create matches, set stipulations, and define segment types.",
-    "imagePath" : "screenshots/booker-show-planning.png",
-    "order" : 60
+    "id": "booker-booker-show-planning",
+    "category": "Booker",
+    "title": "Show Planning",
+    "description": "The Show Planning interface allows you to book matches and segments for an upcoming show. Drag and drop wrestlers to create matches, set stipulations, and define segment types.",
+    "imagePath": "screenshots/booker-show-planning.png",
+    "order": 60
   }, {
-    "id" : "booker-booker-show-history",
-    "category" : "Booker",
-    "title" : "Show History",
-    "description" : "View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.",
-    "imagePath" : "screenshots/booker-show-history.png",
-    "order" : 70
+    "id": "booker-booker-show-history",
+    "category": "Booker",
+    "title": "Show History",
+    "description": "View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.",
+    "imagePath": "screenshots/booker-show-history.png",
+    "order": 70
   } ]
 }
