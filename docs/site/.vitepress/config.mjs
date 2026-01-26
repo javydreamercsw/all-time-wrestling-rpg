@@ -14,6 +14,7 @@ export default defineConfig({
       {
         text: 'Game Guide',
         items: [
+          { text: 'User Settings', link: '/guide/user-settings' },
           { text: 'Admin Tools', link: '/guide/admin' },
           { text: 'Booker Guide', link: '/guide/booker' },
           { text: 'Campaign Mode', link: '/guide/campaign' },
