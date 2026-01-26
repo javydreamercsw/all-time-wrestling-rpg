@@ -80,10 +80,13 @@ try {
   process.exit(1);
 }
 
-// 5. Copy to App Static Resources
-console.log('Embedding docs in Spring Boot application...');
+// 5. Create .nojekyll for GitHub Pages
 const buildDistDir = path.join(rootDir, 'docs', 'site', '.vitepress', 'dist');
+fs.writeFileSync(path.join(buildDistDir, '.nojekyll'), '');
+console.log('Created .nojekyll file');
 
+// 6. Copy to App Static Resources
+console.log('Embedding docs in Spring Boot application...');
 if (!fs.existsSync(appStaticDocsDir)) {
   fs.mkdirSync(appStaticDocsDir, { recursive: true });
 }
