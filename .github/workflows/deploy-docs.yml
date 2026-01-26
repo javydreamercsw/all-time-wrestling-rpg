@@ -29,6 +29,15 @@ jobs:
         run: npm ci
         working-directory: docs/site
 
+      - name: Build Docs
+        run: npm run docs:build
+        working-directory: docs/site
+        env:
+          BASE_URL: /${{ github.event.repository.name }}/
+
+      - name: Create .nojekyll
+        run: touch docs/site/.vitepress/dist/.nojekyll
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/site/.vitepress/dist
