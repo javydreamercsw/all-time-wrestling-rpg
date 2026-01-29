@@ -265,7 +265,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   /** Waits for the application to be ready by polling the root URL. */
   protected void waitForAppToBeReady() {
-    int maxAttempts = 60;
+    int maxAttempts = 300; // Increased from 60 to handle slow production builds
     int attempt = 0;
     while (attempt < maxAttempts) {
       try {
@@ -304,8 +304,28 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
     takeSequencedScreenshot("before-wait-for-element");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120)); // Increased from 60
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
+  }
+
+  protected void waitForGridToPopulate(@NonNull String gridId) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    wait.until(
+        d -> {
+          try {
+            WebElement grid = d.findElement(By.id(gridId));
+            return getGridSize(grid) > 0;
+          } catch (Exception e) {
+            return false;
+          }
+        });
+  }
+
+  protected void waitForNotification(@NonNull String text) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(
+        ExpectedConditions.presenceOfElementLocated(
+            By.xpath("//vaadin-notification-card[contains(., '" + text + "')]")));
   }
 
   /** Waits for the Vaadin client-side application to fully load. */

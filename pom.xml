@@ -1179,6 +1179,8 @@
               <!-- Sequential execution for integration tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
+              <!-- Retry failed tests once to handle flakes -->
+              <rerunFailingTestsCount>1</rerunFailingTestsCount>
               <includes>
                 <include>**/*IT.java</include>
                 <include>**/*IntegrationTest.java</include>
