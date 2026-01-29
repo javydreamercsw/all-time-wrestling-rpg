@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -64,6 +65,10 @@ public class Show extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "season_id")
   private Season season;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "league_id")
+  private League league;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "template_id")

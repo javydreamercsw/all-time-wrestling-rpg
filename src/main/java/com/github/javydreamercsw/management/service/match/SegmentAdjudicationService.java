@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -53,6 +55,7 @@ public class SegmentAdjudicationService {
   private final Random random;
   private final TitleService titleService;
   private final MatchRewardService matchRewardService;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -62,7 +65,8 @@ public class SegmentAdjudicationService {
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
       TitleService titleService,
-      MatchRewardService matchRewardService) {
+      MatchRewardService matchRewardService,
+      MatchFulfillmentRepository matchFulfillmentRepository) {
     this(
         rivalryService,
         wrestlerService,
@@ -70,6 +74,7 @@ public class SegmentAdjudicationService {
         feudService,
         titleService,
         matchRewardService,
+        matchFulfillmentRepository,
         new Random());
   }
 
@@ -80,6 +85,7 @@ public class SegmentAdjudicationService {
       MultiWrestlerFeudService feudService,
       TitleService titleService,
       MatchRewardService matchRewardService,
+      MatchFulfillmentRepository matchFulfillmentRepository,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -87,6 +93,7 @@ public class SegmentAdjudicationService {
     this.feudService = feudService;
     this.titleService = titleService;
     this.matchRewardService = matchRewardService;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.random = random;
   }
 
@@ -97,6 +104,18 @@ public class SegmentAdjudicationService {
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
+    // Check for league fulfillment
+    matchFulfillmentRepository
+        .findBySegment(segment)
+        .ifPresent(
+            fulfillment -> {
+              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
+                segment.setWinners(List.of(fulfillment.getReportedWinner()));
+              }
+              fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
+              matchFulfillmentRepository.save(fulfillment);
+            });
+
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);

@@ -79,7 +79,10 @@
     "date-fns": "4.1.0",
     "lit": "3.3.2",
     "moment": "2.30.1",
-    "moment-timezone": "0.6.0"
+    "moment-timezone": "0.6.0",
+    "react-dom": "19.2.3",
+    "react": "19.2.3",
+    "react-router": "7.12.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -96,7 +99,9 @@
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vite-plugin-checker": "0.12.0",
-    "workbox-build": "7.4.0"
+    "workbox-build": "7.4.0",
+    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.7"
   },
   "overrides": {
     "@vaadin/cookie-consent": "24.9.7",
@@ -264,7 +269,10 @@
       "date-fns": "4.1.0",
       "lit": "3.3.2",
       "moment": "2.30.1",
-      "moment-timezone": "0.6.0"
+      "moment-timezone": "0.6.0",
+      "react-dom": "19.2.3",
+      "react": "19.2.3",
+      "react-router": "7.12.0"
     },
     "devDependencies": {
       "@babel/preset-react": "7.28.5",
@@ -281,7 +289,9 @@
       "typescript": "5.9.3",
       "vite": "7.3.1",
       "vite-plugin-checker": "0.12.0",
-      "workbox-build": "7.4.0"
+      "workbox-build": "7.4.0",
+      "@types/react-dom": "19.2.3",
+      "@types/react": "19.2.7"
     },
     "hash": "3780386266e17f68b4bfe25ddb43d730c8fdaea81589147c02070b3c044428fa"
   }

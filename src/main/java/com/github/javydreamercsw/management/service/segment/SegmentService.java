@@ -18,6 +18,10 @@ package com.github.javydreamercsw.management.service.segment;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -28,6 +32,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -40,6 +45,7 @@ import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +65,10 @@ public class SegmentService {
   private final GameSettingService gameSettingService;
   private final SecurityUtils securityUtils;
   private final CampaignRepository campaignRepository;
+  private final LeagueRosterRepository leagueRosterRepository;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final InboxService inboxService;
+  private final InboxEventType matchRequestEventType;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -69,13 +79,21 @@ public class SegmentService {
       @Lazy WrestlerService wrestlerService,
       GameSettingService gameSettingService,
       SecurityUtils securityUtils,
-      CampaignRepository campaignRepository) {
+      CampaignRepository campaignRepository,
+      LeagueRosterRepository leagueRosterRepository,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      InboxService inboxService,
+      @Qualifier("MATCH_REQUEST") InboxEventType matchRequestEventType) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
     this.wrestlerService = wrestlerService;
     this.gameSettingService = gameSettingService;
     this.securityUtils = securityUtils;
     this.campaignRepository = campaignRepository;
+    this.leagueRosterRepository = leagueRosterRepository;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.inboxService = inboxService;
+    this.matchRequestEventType = matchRequestEventType;
   }
 
   /**
@@ -489,6 +507,38 @@ public class SegmentService {
   public void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
     segment.addParticipant(wrestler);
     segmentRepository.save(segment);
+
+    Show show = segment.getShow();
+    if (show.getLeague() != null) {
+      leagueRosterRepository
+          .findByLeagueAndWrestler(show.getLeague(), wrestler)
+          .ifPresent(
+              roster -> {
+                // If wrestler is owned by a player (not commissioner), track fulfillment
+                if (!roster.getOwner().equals(show.getLeague().getCommissioner())) {
+                  MatchFulfillment fulfillment =
+                      matchFulfillmentRepository
+                          .findBySegment(segment)
+                          .orElse(new MatchFulfillment());
+
+                  if (fulfillment.getId() == null) {
+                    fulfillment.setSegment(segment);
+                    fulfillment.setLeague(show.getLeague());
+                    fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.PENDING_RESULTS);
+                    matchFulfillmentRepository.save(fulfillment);
+
+                    // Send Notification to the owner
+                    inboxService.createInboxItem(
+                        matchRequestEventType,
+                        "Pending match on show: "
+                            + show.getName()
+                            + " for wrestler: "
+                            + wrestler.getName(),
+                        roster.getOwner().getId().toString());
+                  }
+                }
+              });
+    }
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
