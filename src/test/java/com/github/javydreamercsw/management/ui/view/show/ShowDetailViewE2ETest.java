@@ -20,12 +20,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
@@ -53,10 +65,18 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRepository segmentRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository
-      showTemplateRepository;
+  @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private TeamRepository teamRepository;
+  @Autowired private NpcRepository npcRepository;
+  @Autowired private CampaignRepository campaignRepository;
+  @Autowired private CampaignAbilityCardRepository campaignAbilityCardRepository;
+  @Autowired private DeckRepository deckRepository;
+  @Autowired private CardRepository cardRepository;
+  @Autowired private CardSetRepository cardSetRepository;
 
   @Autowired private DataInitializer dataInitializer;
 
@@ -64,12 +84,24 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTestData() {
+    // Robust cleanup order to prevent foreign key violations
+    titleReignRepository.deleteAll();
+    campaignRepository.deleteAll();
+    factionRepository.deleteAll();
+    teamRepository.deleteAll();
     segmentRepository.deleteAll();
     showRepository.deleteAll();
     showTemplateRepository.deleteAll();
+    deckRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    showTypeRepository.deleteAll();
+    npcRepository.deleteAll();
+    titleRepository.deleteAll();
+    segmentRuleRepository.deleteAll();
     segmentTypeRepository.deleteAll();
+    showTypeRepository.deleteAll();
+    cardRepository.deleteAll();
+    cardSetRepository.deleteAll();
+    campaignAbilityCardRepository.deleteAll();
 
     dataInitializer.init();
 

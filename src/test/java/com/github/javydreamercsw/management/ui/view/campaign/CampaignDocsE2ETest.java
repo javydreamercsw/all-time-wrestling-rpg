@@ -31,9 +31,13 @@ import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.util.List;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CampaignDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -45,6 +49,29 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private TitleService titleService;
 
   @Test
+  @Order(1)
+  void testCaptureBeginningView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    waitForText("Chapter: The Beginning");
+    documentFeature(
+        "Campaign",
+        "The Beginning",
+        "Your journey starts here. Establish your reputation through backstage encounters and"
+            + " initial matches as you find your footing in All Time Wrestling.",
+        "campaign-beginning");
+  }
+
+  @Test
+  @Order(2)
   void testCaptureTournamentView() {
     // 1. Setup
     Account admin = accountRepository.findByUsername("admin").get();
@@ -69,6 +96,51 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(3)
+  void testCaptureTagTeamView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "tag_team");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    waitForText("Chapter: Tag Team Redemption");
+    documentFeature(
+        "Campaign",
+        "Tag Team Redemption",
+        "Experience the power of partnership. Find a compatible partner and dominate the tag team"
+            + " division while rebuilding your momentum.",
+        "campaign-tag-team");
+  }
+
+  @Test
+  @Order(4)
+  void testCaptureBetrayalView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "betrayal");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    waitForText("Chapter: Betrayal");
+    documentFeature(
+        "Campaign",
+        "Betrayal",
+        "Trust is a luxury you can no longer afford. Face the consequences of a broken alliance"
+            + " and seek retribution against your former partner.",
+        "campaign-betrayal");
+  }
+
+  @Test
+  @Order(5)
   void testCaptureFightingChampionView() {
     // 1. Setup
     Account admin = accountRepository.findByUsername("admin").get();
@@ -90,6 +162,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(6)
   void testCaptureGangWarfareView() {
     // 1. Setup
     Account admin = accountRepository.findByUsername("admin").get();
@@ -111,6 +184,29 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(7)
+  void testCaptureCorporatePowerTripView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "corporate_power_trip");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    waitForText("Chapter: Corporate Power Trip");
+    documentFeature(
+        "Campaign",
+        "Corporate Power Trip",
+        "The authorities are against you. Survive impossible odds and unfair stipulations as you"
+            + " challenge the corrupt management's control.",
+        "campaign-corporate-power-trip");
+  }
+
+  @Test
+  @Order(8)
   void testCaptureBackstageActionsView() {
     // 1. Setup
     Account admin = accountRepository.findByUsername("admin").get();

@@ -252,9 +252,31 @@ You can also deploy the application to a standalone Tomcat server.
 
 3.  **Configure Environment Variables**:
 
-	Create a `setenv.sh` (for Linux/macOS) or `setenv.bat` (for Windows) file in the `bin` directory of your Tomcat installation and add the required environment variables.
+	Create a `setenv.sh` (for Linux/macOS) or `setenv.bat` (for Windows) file to define the required environment variables.
 
-	**Example `setenv.sh`:**
+	**Important (Homebrew on macOS):** To prevent your settings from being overwritten during a `brew upgrade`, do not create the file directly in the Tomcat `bin` directory. Instead, create it in a persistent location and symlink it:
+
+	```bash
+	# 1. Create the persistent config file
+	sudo mkdir -p /opt/homebrew/etc/tomcat
+	cat <<EOF > /opt/homebrew/etc/tomcat/setenv.sh
+export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/atw"
+export SPRING_DATASOURCE_USERNAME="root"
+export SPRING_DATASOURCE_PASSWORD="your_password"
+export SPRING_FLYWAY_LOCATIONS="classpath:db/migration/mysql"
+export NOTION_TOKEN="your_notion_token"
+export SPRING_PROFILES_ACTIVE="mysql,prod"
+EOF
+	chmod +x /opt/homebrew/etc/tomcat/setenv.sh
+
+	# 2. Symlink it to Tomcat's bin directory
+	ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
+	```
+
+	**Note:** You will need to re-run the link command (step 2) after every Homebrew upgrade (`brew upgrade tomcat`), as Homebrew installs new versions into fresh directories. You can create a shell alias to make this easier:
+	`alias fix-tomcat='ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh && brew services restart tomcat'`
+
+	**Example `setenv.sh` (Standard Installation):**
 
 	```bash
 	#!/bin/bash
@@ -262,12 +284,16 @@ You can also deploy the application to a standalone Tomcat server.
 	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
 	export SPRING_DATASOURCE_USERNAME="sa"
 	export SPRING_DATASOURCE_PASSWORD=""
-	export SPRING_H2_CONSOLE_ENABLED="true"	```
+	export SPRING_H2_CONSOLE_ENABLED="true"
+	```
 	Replace the placeholder values with your actual Notion token and desired database path. AI settings can also be configured here via environment variables (e.g., `AI_GEMINI_API_KEY`).
 
 4.  **Start Tomcat**:
 
-	Run `startup.sh` or `startup.bat` from the `bin` directory of your Tomcat installation.
+	Run `startup.sh` or `startup.bat` from the `bin` directory of your Tomcat installation, or use Homebrew:
+	```bash
+	brew services restart tomcat
+	```
 
 The application will be accessible at `http://localhost:8080/atw-rpg` (assuming Tomcat is running on the default port 8080).
 

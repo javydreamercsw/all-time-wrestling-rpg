@@ -18,16 +18,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v3
+        with:
+          java-version: '25'
+          distribution: 'temurin'
       
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: docs/site/package-lock.json
-      
+
       - name: Install dependencies
         run: npm ci
         working-directory: docs/site
+
+      - name: Generate screenshots and manifest
+        run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true -DskipTests
+
+      - name: Generate Markdown Content
+        run: node scripts/generate-docs.cjs
+        env:
+          BASE_URL: /${{ github.event.repository.name }}/
+
+      - name: Create .nojekyll
+        run: touch docs/site/.vitepress/dist/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3
         with:
