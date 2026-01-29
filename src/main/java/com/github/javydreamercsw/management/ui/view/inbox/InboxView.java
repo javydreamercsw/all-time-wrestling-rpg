@@ -132,6 +132,7 @@ public class InboxView extends VerticalLayout {
     eventTypeFilter.setValue("All");
     eventTypeFilter.addValueChangeListener(e -> updateList());
 
+    selectAllCheckbox.setId("select-all-checkbox");
     selectAllCheckbox.addValueChangeListener(
         event -> {
           if (event.getValue()) {
@@ -221,6 +222,7 @@ public class InboxView extends VerticalLayout {
   }
 
   private void configureGrid() {
+    grid.setId("inbox-grid");
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
     grid.setColumns("eventType", "description", "eventTimestamp");

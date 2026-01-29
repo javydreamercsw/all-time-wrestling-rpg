@@ -32,3 +32,7 @@
 
 ## Active Tracks
 
+### [ ] Track: Stability & Quality Hardening
+
+*Link: [./conductor/tracks/stability_quality_hardening/](./conductor/tracks/stability_quality_hardening/)*
+

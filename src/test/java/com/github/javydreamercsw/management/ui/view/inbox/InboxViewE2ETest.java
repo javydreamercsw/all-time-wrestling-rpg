@@ -203,30 +203,25 @@ class InboxViewE2ETest extends AbstractE2ETest {
     inboxRepository.save(item2);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
-    waitForVaadinToLoad(driver); // Wait for Vaadin to load
+    waitForGridToPopulate("inbox-grid"); // Use the new helper method
+
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Verify initial items are loaded
-    wait.until(
-        ExpectedConditions.numberOfElementsToBe(
-            By.xpath(
-                "//vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark as Read') or"
-                    + " contains(text(), 'Mark as Unread')]"),
-            2));
-
-    // Select all
-    WebElement selectAllCheckbox =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.cssSelector("vaadin-checkbox[aria-label='Select All']")));
+    // Select all using the ID we added
+    WebElement selectAllCheckbox = waitForVaadinElement(driver, By.id("select-all-checkbox"));
     selectAllCheckbox.click();
 
     // Delete selected
-
     WebElement deleteSelectedButton =
-        driver.findElement(By.xpath("//vaadin-button[text()='Delete Selected']"));
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath("//vaadin-button[text()='Delete Selected']")));
 
-    deleteSelectedButton.click();
+    // Ensure no overlays are blocking (like notifications)
+    wait.until(
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification-card")));
+
+    clickElement(deleteSelectedButton);
 
     // Verify grid is empty
     wait.until(
