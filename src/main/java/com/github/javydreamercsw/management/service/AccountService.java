@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomPasswordValidator;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -107,6 +108,10 @@ public class AccountService {
 
   public Page<Account> list(Pageable pageable) {
     return accountRepository.findAll(pageable);
+  }
+
+  public List<Account> findAll() {
+    return accountRepository.findAll();
   }
 
   public int count() {

@@ -534,7 +534,8 @@ public class SegmentService {
                             + show.getName()
                             + " for wrestler: "
                             + wrestler.getName(),
-                        roster.getOwner().getId().toString());
+                        List.of(
+                            roster.getOwner().getId().toString(), fulfillment.getId().toString()));
                   }
                 }
               });
