@@ -19,14 +19,22 @@ package com.github.javydreamercsw.management.ui.view.league;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -41,15 +49,21 @@ public class LeagueListView extends Main {
   private final LeagueService leagueService;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
+  private final WrestlerRepository wrestlerRepository;
+  private final LeagueMembershipRepository leagueMembershipRepository;
   private final Grid<League> leagueGrid;
 
   public LeagueListView(
       @NonNull LeagueService leagueService,
       @NonNull AccountService accountService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull LeagueMembershipRepository leagueMembershipRepository) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
+    this.wrestlerRepository = wrestlerRepository;
+    this.leagueMembershipRepository = leagueMembershipRepository;
     this.leagueGrid = new Grid<>(League.class, false);
 
     configureGrid();
@@ -75,6 +89,9 @@ public class LeagueListView extends Main {
     leagueGrid
         .addComponentColumn(
             league -> {
+              HorizontalLayout actions = new HorizontalLayout();
+              actions.setSpacing(true);
+
               Button actionButton = new Button();
               if (league.getStatus() == League.LeagueStatus.DRAFTING
                   || league.getStatus() == League.LeagueStatus.PRE_DRAFT) {
@@ -88,11 +105,82 @@ public class LeagueListView extends Main {
                 // TODO navigate to league dashboard
               }
               actionButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-              return actionButton;
+              actions.add(actionButton);
+
+              // Commissioner actions
+              boolean isComm =
+                  securityUtils
+                      .getAuthenticatedUser()
+                      .map(u -> u.getAccount().equals(league.getCommissioner()))
+                      .orElse(false);
+
+              if (isComm || securityUtils.isAdmin()) {
+                Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
+                editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+                editBtn.setTooltipText("Edit League");
+                editBtn.addClickListener(e -> openEditDialog(league));
+
+                Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
+                deleteBtn.addThemeVariants(
+                    ButtonVariant.LUMO_SMALL,
+                    ButtonVariant.LUMO_TERTIARY,
+                    ButtonVariant.LUMO_ERROR);
+                deleteBtn.setTooltipText("Delete League");
+                deleteBtn.addClickListener(e -> openDeleteDialog(league));
+
+                actions.add(editBtn, deleteBtn);
+              }
+
+              return actions;
             })
-        .setHeader("Actions");
+        .setHeader("Actions")
+        .setFlexGrow(1);
 
     leagueGrid.setSizeFull();
+  }
+
+  private void openEditDialog(League league) {
+    leagueService
+        .getLeagueWithExcludedWrestlers(league.getId())
+        .ifPresent(
+            fullyLoaded -> {
+              new LeagueDialog(
+                      leagueService,
+                      accountService,
+                      securityUtils,
+                      wrestlerRepository,
+                      leagueMembershipRepository,
+                      fullyLoaded,
+                      this::reloadGrid)
+                  .open();
+            });
+  }
+
+  private void openDeleteDialog(League league) {
+    Dialog confirm = new Dialog();
+    confirm.setHeaderTitle("Delete League");
+    confirm.add(new Span("Are you sure you want to delete '" + league.getName() + "'?"));
+
+    Button delete =
+        new Button(
+            "Delete",
+            e -> {
+              try {
+                leagueService.deleteLeague(league.getId());
+                Notification.show("League deleted.", 3000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                reloadGrid();
+                confirm.close();
+              } catch (Exception ex) {
+                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    delete.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
+
+    Button cancel = new Button("Cancel", e -> confirm.close());
+    confirm.getFooter().add(delete, cancel);
+    confirm.open();
   }
 
   private Button createCreateLeagueButton() {
@@ -101,7 +189,14 @@ public class LeagueListView extends Main {
     button.setVisible(securityUtils.isBooker() || securityUtils.isAdmin());
     button.addClickListener(
         e -> {
-          new LeagueDialog(leagueService, accountService, securityUtils, this::reloadGrid).open();
+          new LeagueDialog(
+                  leagueService,
+                  accountService,
+                  securityUtils,
+                  wrestlerRepository,
+                  leagueMembershipRepository,
+                  this::reloadGrid)
+              .open();
         });
     return button;
   }

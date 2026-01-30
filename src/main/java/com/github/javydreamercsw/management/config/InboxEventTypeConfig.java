@@ -106,6 +106,13 @@ public class InboxEventTypeConfig {
 
   @Bean
   @Qualifier("MATCH_REQUEST") InboxEventType matchRequest() {
+
     return new InboxEventType("MATCH_REQUEST", "Match Request");
+  }
+
+  @Bean
+  @Qualifier("DRAFT_STARTED") InboxEventType draftStarted() {
+
+    return new InboxEventType("DRAFT_STARTED", "Draft Started");
   }
 }

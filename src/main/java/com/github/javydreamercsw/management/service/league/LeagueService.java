@@ -21,7 +21,11 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,25 +37,89 @@ public class LeagueService {
 
   private final LeagueRepository leagueRepository;
   private final LeagueMembershipRepository leagueMembershipRepository;
+  private final ShowRepository showRepository;
 
   @Transactional
-  public League createLeague(String name, Account commissioner) {
+  public League createLeague(
+      String name,
+      Account commissioner,
+      int maxPicks,
+      Set<Wrestler> excluded,
+      boolean commissionerPlays) {
     League league = new League();
     league.setName(name);
     league.setCommissioner(commissioner);
+    league.setMaxPicksPerPlayer(maxPicks);
+    league.setExcludedWrestlers(excluded);
     league.setStatus(League.LeagueStatus.PRE_DRAFT);
     league = leagueRepository.save(league);
 
-    // Add commissioner as a member with COMMISSIONER role
-    addMember(league, commissioner, LeagueMembership.LeagueRole.COMMISSIONER);
+    // Add commissioner
+    addMember(
+        league,
+        commissioner,
+        commissionerPlays
+            ? LeagueMembership.LeagueRole.COMMISSIONER_PLAYER
+            : LeagueMembership.LeagueRole.COMMISSIONER);
 
     return league;
   }
 
   @Transactional
+  public League updateLeague(
+      Long id, String name, int maxPicks, Set<Wrestler> excluded, boolean commissionerPlays) {
+    League league =
+        leagueRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("League not found: " + id));
+
+    league.setName(name);
+    league.setMaxPicksPerPlayer(maxPicks);
+    league.setExcludedWrestlers(excluded);
+
+    // Update commissioner role if needed
+    Optional<LeagueMembership> commMembership =
+        leagueMembershipRepository.findByLeagueAndMember(league, league.getCommissioner());
+
+    commMembership.ifPresent(
+        m -> {
+          m.setRole(
+              commissionerPlays
+                  ? LeagueMembership.LeagueRole.COMMISSIONER_PLAYER
+                  : LeagueMembership.LeagueRole.COMMISSIONER);
+          leagueMembershipRepository.save(m);
+        });
+
+    return leagueRepository.save(league);
+  }
+
+  @Transactional
+  public void deleteLeague(Long id) {
+    League league =
+        leagueRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("League not found: " + id));
+
+    if (showRepository.existsByLeague(league)) {
+      throw new IllegalStateException("Cannot delete league with associated shows.");
+    }
+
+    // Delete memberships first
+    List<LeagueMembership> memberships = leagueMembershipRepository.findByLeague(league);
+    leagueMembershipRepository.deleteAll(memberships);
+
+    // Delete league
+    leagueRepository.delete(league);
+  }
+
+  @Transactional
   public void addMember(League league, Account member, LeagueMembership.LeagueRole role) {
-    if (leagueMembershipRepository.findByLeagueAndMember(league, member).isPresent()) {
-      return; // Already a member
+    Optional<LeagueMembership> existing =
+        leagueMembershipRepository.findByLeagueAndMember(league, member);
+    if (existing.isPresent()) {
+      existing.get().setRole(role);
+      leagueMembershipRepository.save(existing.get());
+      return;
     }
 
     LeagueMembership membership = new LeagueMembership();
@@ -63,12 +131,43 @@ public class LeagueService {
 
   @Transactional
   public void addPlayer(League league, Account player) {
+    // Only add as PLAYER if they aren't already a COMMISSIONER or COMMISSIONER_PLAYER
+    Optional<LeagueMembership> existing =
+        leagueMembershipRepository.findByLeagueAndMember(league, player);
+    if (existing.isPresent()) {
+      if (existing.get().getRole() == LeagueMembership.LeagueRole.COMMISSIONER) {
+        existing.get().setRole(LeagueMembership.LeagueRole.COMMISSIONER_PLAYER);
+        leagueMembershipRepository.save(existing.get());
+      }
+      return;
+    }
     addMember(league, player, LeagueMembership.LeagueRole.PLAYER);
+  }
+
+  @Transactional
+  public void removeMember(League league, Account member) {
+    leagueMembershipRepository
+        .findByLeagueAndMember(league, member)
+        .ifPresent(
+            m -> {
+              if (m.getMember().equals(league.getCommissioner())) {
+                throw new IllegalStateException("Cannot remove commissioner from league.");
+              }
+              leagueMembershipRepository.delete(m);
+            });
   }
 
   public List<League> getLeaguesForUser(Account user) {
     return leagueMembershipRepository.findByMember(user).stream()
         .map(LeagueMembership::getLeague)
         .collect(Collectors.toList());
+  }
+
+  public Optional<League> getLeagueById(Long id) {
+    return leagueRepository.findById(id);
+  }
+
+  public Optional<League> getLeagueWithExcludedWrestlers(Long id) {
+    return leagueRepository.findByIdWithExcludedWrestlers(id);
   }
 }

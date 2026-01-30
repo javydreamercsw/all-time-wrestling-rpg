@@ -29,4 +29,7 @@ public interface LeagueMembershipRepository extends JpaRepository<LeagueMembersh
   List<LeagueMembership> findByLeague(League league);
 
   Optional<LeagueMembership> findByLeagueAndMember(League league, Account member);
+
+  List<LeagueMembership> findByLeagueAndRoleIn(
+      League league, List<LeagueMembership.LeagueRole> roles);
 }

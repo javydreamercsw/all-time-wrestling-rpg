@@ -189,6 +189,15 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
-    wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+    if (securityUtils.isAdmin() || securityUtils.isBooker()) {
+      wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+    } else {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                wrestlerGrid.setItems(wrestlerService.findAllByAccount(user.getAccount()));
+              });
+    }
   }
 }

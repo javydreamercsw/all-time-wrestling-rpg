@@ -19,17 +19,26 @@ package com.github.javydreamercsw.management.ui.view.league;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueMembership;
+import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.listbox.MultiSelectListBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 
 public class LeagueDialog extends Dialog {
@@ -37,52 +46,145 @@ public class LeagueDialog extends Dialog {
   private final LeagueService leagueService;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
+  private final WrestlerRepository wrestlerRepository;
+  private final LeagueMembershipRepository leagueMembershipRepository;
   private final Runnable onSave;
   private final Binder<League> binder = new Binder<>(League.class);
+  private final League league;
 
   public LeagueDialog(
       @NonNull LeagueService leagueService,
       @NonNull AccountService accountService,
       @NonNull SecurityUtils securityUtils,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull LeagueMembershipRepository leagueMembershipRepository,
+      @NonNull Runnable onSave) {
+    this(
+        leagueService,
+        accountService,
+        securityUtils,
+        wrestlerRepository,
+        leagueMembershipRepository,
+        null,
+        onSave);
+  }
+
+  public LeagueDialog(
+      @NonNull LeagueService leagueService,
+      @NonNull AccountService accountService,
+      @NonNull SecurityUtils securityUtils,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull LeagueMembershipRepository leagueMembershipRepository,
+      League league,
       @NonNull Runnable onSave) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
+    this.wrestlerRepository = wrestlerRepository;
+    this.leagueMembershipRepository = leagueMembershipRepository;
+    this.league = league;
     this.onSave = onSave;
 
-    setHeaderTitle("Create New League");
+    setHeaderTitle(league == null ? "Create New League" : "Edit League: " + league.getName());
 
     FormLayout formLayout = new FormLayout();
     TextField nameField = new TextField("League Name");
     nameField.setRequired(true);
 
+    NumberField maxPicksField = new NumberField("Wrestlers per Player");
+    maxPicksField.setMin(1);
+    maxPicksField.setValue(1.0);
+    maxPicksField.setStepButtonsVisible(true);
+
+    Checkbox commissionerPlays = new Checkbox("I want to participate as a player");
+
+    MultiSelectComboBox<Wrestler> excludedWrestlers =
+        new MultiSelectComboBox<>("Exclude Wrestlers");
+    excludedWrestlers.setItems(wrestlerRepository.findAll());
+    excludedWrestlers.setItemLabelGenerator(Wrestler::getName);
+
     MultiSelectListBox<Account> participantList = new MultiSelectListBox<>();
     participantList.setItems(accountService.findAll());
     participantList.setItemLabelGenerator(Account::getUsername);
 
-    formLayout.add(nameField);
+    formLayout.add(nameField, maxPicksField, commissionerPlays, excludedWrestlers);
     formLayout.add(participantList);
+    formLayout.setColspan(excludedWrestlers, 2);
     formLayout.setColspan(participantList, 2);
 
     binder.forField(nameField).bind(League::getName, League::setName);
 
+    if (league != null) {
+      nameField.setValue(league.getName());
+      maxPicksField.setValue((double) league.getMaxPicksPerPlayer());
+      excludedWrestlers.setValue(league.getExcludedWrestlers());
+
+      Optional<LeagueMembership> commM =
+          leagueMembershipRepository.findByLeagueAndMember(league, league.getCommissioner());
+      commissionerPlays.setValue(
+          commM
+              .map(m -> m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER)
+              .orElse(false));
+
+      Set<Account> players =
+          leagueMembershipRepository.findByLeague(league).stream()
+              .filter(
+                  m ->
+                      m.getRole() == LeagueMembership.LeagueRole.PLAYER
+                          || m.getRole() == LeagueMembership.LeagueRole.VIEWER)
+              .map(LeagueMembership::getMember)
+              .collect(Collectors.toSet());
+      participantList.setValue(players);
+    }
+
     Button saveButton =
         new Button(
-            "Create",
+            league == null ? "Create" : "Save",
             e -> {
               if (binder.validate().isOk()) {
                 securityUtils
                     .getAuthenticatedUser()
                     .ifPresent(
                         user -> {
-                          League created =
-                              leagueService.createLeague(nameField.getValue(), user.getAccount());
-                          Set<Account> participants = participantList.getSelectedItems();
-                          for (Account p : participants) {
-                            if (!p.equals(user.getAccount())) {
-                              leagueService.addPlayer(created, p);
+                          League targetLeague;
+                          if (league == null) {
+                            targetLeague =
+                                leagueService.createLeague(
+                                    nameField.getValue(),
+                                    user.getAccount(),
+                                    maxPicksField.getValue().intValue(),
+                                    excludedWrestlers.getSelectedItems(),
+                                    commissionerPlays.getValue());
+                          } else {
+                            targetLeague =
+                                leagueService.updateLeague(
+                                    league.getId(),
+                                    nameField.getValue(),
+                                    maxPicksField.getValue().intValue(),
+                                    excludedWrestlers.getSelectedItems(),
+                                    commissionerPlays.getValue());
+                          }
+
+                          // Sync participants
+                          Set<Account> selected = participantList.getSelectedItems();
+                          // For simplicity, just add as PLAYER for now.
+                          // Ideally we'd have a UI to distinguish PLAYER vs VIEWER.
+                          for (Account p : selected) {
+                            if (!p.equals(targetLeague.getCommissioner())) {
+                              leagueService.addPlayer(targetLeague, p);
                             }
                           }
+
+                          // Remove members not in selected list
+                          if (league != null) {
+                            leagueMembershipRepository.findByLeague(league).stream()
+                                .filter(
+                                    m ->
+                                        !m.getMember().equals(league.getCommissioner())
+                                            && !selected.contains(m.getMember()))
+                                .forEach(m -> leagueService.removeMember(league, m.getMember()));
+                          }
+
                           onSave.run();
                           close();
                         });

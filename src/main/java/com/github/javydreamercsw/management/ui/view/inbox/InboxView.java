@@ -19,11 +19,15 @@ package com.github.javydreamercsw.management.ui.view.inbox;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.league.MatchReportDialog;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
@@ -56,6 +60,8 @@ public class InboxView extends VerticalLayout {
   private final InboxService inboxService;
   private final InboxEventTypeRegistry eventTypeRegistry;
   private final WrestlerRepository wrestlerRepository;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final MatchFulfillmentService matchFulfillmentService;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final MultiSelectComboBox<Wrestler> targetFilter = new MultiSelectComboBox<>("Targets");
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
@@ -73,10 +79,14 @@ public class InboxView extends VerticalLayout {
       InboxService inboxService,
       InboxEventTypeRegistry eventTypeRegistry,
       WrestlerRepository wrestlerRepository,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      MatchFulfillmentService matchFulfillmentService,
       SecurityUtils securityUtils) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.matchFulfillmentService = matchFulfillmentService;
     this.securityUtils = securityUtils;
 
     addClassName("inbox-view");
@@ -227,7 +237,7 @@ public class InboxView extends VerticalLayout {
     grid.setSizeFull();
     grid.setColumns("eventType", "description", "eventTimestamp");
     grid.addColumn(this::getTargetNames).setHeader("Targets");
-    grid.addComponentColumn(this::createReadToggleButton).setHeader("Mark as Read/Unread");
+    grid.addComponentColumn(this::createActionComponent).setHeader("Actions");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
     grid.setSelectionMode(Grid.SelectionMode.MULTI);
 
@@ -240,6 +250,50 @@ public class InboxView extends VerticalLayout {
             });
 
     grid.addItemClickListener(event -> showDetails(event.getItem()));
+  }
+
+  private com.vaadin.flow.component.Component createActionComponent(InboxItem item) {
+    HorizontalLayout layout = new HorizontalLayout();
+    layout.setPadding(false);
+    layout.setSpacing(true);
+
+    if (item.getEventType().getName().equals("MATCH_REQUEST")) {
+      Button reportButton =
+          new Button(
+              "Report Result",
+              e -> {
+                // Find fulfillment ID from targets
+                item.getTargets().stream()
+                    .filter(
+                        t ->
+                            t.getTargetType()
+                                == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
+                                    .TargetType.MATCH_FULFILLMENT)
+                    .findFirst()
+                    .ifPresent(
+                        target -> {
+                          try {
+                            matchFulfillmentRepository
+                                .findById(Long.parseLong(target.getTargetId()))
+                                .ifPresent(
+                                    f ->
+                                        new MatchReportDialog(
+                                                matchFulfillmentService,
+                                                f,
+                                                securityUtils,
+                                                this::updateList)
+                                            .open());
+                          } catch (NumberFormatException ex) {
+                            // Ignore
+                          }
+                        });
+              });
+      reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+      layout.add(reportButton);
+    }
+
+    layout.add(createReadToggleButton(item));
+    return layout;
   }
 
   private String getTargetNames(InboxItem item) {
@@ -263,11 +317,30 @@ public class InboxView extends VerticalLayout {
     }
     return item.getTargets().stream()
         .map(
-            target ->
-                wrestlerRepository
-                    .findById(Long.parseLong(target.getTargetId()))
-                    .map(Wrestler::getName)
-                    .orElse("Unknown"))
+            target -> {
+              try {
+                Long id = Long.parseLong(target.getTargetId());
+                switch (target.getTargetType()) {
+                  case ACCOUNT:
+                    return inboxService
+                        .getAccountRepository()
+                        .findById(id)
+                        .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+                        .orElse("Unknown Account (" + id + ")");
+                  case WRESTLER:
+                    return wrestlerRepository
+                        .findById(id)
+                        .map(Wrestler::getName)
+                        .orElse("Unknown Wrestler (" + id + ")");
+                  case MATCH_FULFILLMENT:
+                    return "Match Fulfillment (" + id + ")";
+                  default:
+                    return "Unknown (" + id + ")";
+                }
+              } catch (NumberFormatException e) {
+                return target.getTargetId();
+              }
+            })
         .collect(Collectors.joining(", "));
   }
 

@@ -68,10 +68,15 @@ public class InboxItem extends AbstractEntity<Long> {
     }
   }
 
-  public void addTarget(String targetId) {
+  public void addTarget(String targetId, InboxItemTarget.TargetType type) {
     InboxItemTarget target = new InboxItemTarget();
     target.setInboxItem(this);
     target.setTargetId(targetId);
+    target.setTargetType(type);
     targets.add(target);
+  }
+
+  public void addTarget(String targetId) {
+    addTarget(targetId, InboxItemTarget.TargetType.ACCOUNT);
   }
 }

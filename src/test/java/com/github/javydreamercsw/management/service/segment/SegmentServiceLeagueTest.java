@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -99,6 +100,6 @@ class SegmentServiceLeagueTest {
     segmentService.addParticipant(segment, wrestler);
 
     verify(matchFulfillmentRepository).save(any(MatchFulfillment.class));
-    verify(inboxService).createInboxItem(any(InboxEventType.class), anyString(), anyString());
+    verify(inboxService).createInboxItem(any(InboxEventType.class), anyString(), anyList());
   }
 }

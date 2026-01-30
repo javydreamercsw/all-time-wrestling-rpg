@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -49,6 +51,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
+  private final LeagueRepository leagueRepository;
   private final Show show;
   private final Binder<Show> binder = new Binder<>(Show.class);
 
@@ -56,6 +59,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final ComboBox<ShowType> typeField = new ComboBox<>("Show Type");
   private final ComboBox<Season> seasonField = new ComboBox<>("Season");
   private final ComboBox<ShowTemplate> templateField = new ComboBox<>("Template");
+  private final ComboBox<League> leagueField = new ComboBox<>("League");
   private final DatePicker showDateField = new DatePicker("Show Date");
 
   public EditShowDetailsDialog(
@@ -63,11 +67,13 @@ public class EditShowDetailsDialog extends Dialog {
       @NonNull ShowTypeService showTypeService,
       @NonNull SeasonService seasonService,
       @NonNull ShowTemplateService showTemplateService,
+      @NonNull LeagueRepository leagueRepository,
       @NonNull Show show) {
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
+    this.leagueRepository = leagueRepository;
     this.show = show;
 
     setHeaderTitle("Edit Show Details");
@@ -107,6 +113,15 @@ public class EditShowDetailsDialog extends Dialog {
     templateField.setClearButtonVisible(true);
     templateField.setWidthFull();
 
+    leagueField.setItems(
+        leagueRepository.findAll().stream()
+            .sorted(Comparator.comparing(League::getName))
+            .collect(Collectors.toList()));
+    leagueField.setItemLabelGenerator(League::getName);
+    leagueField.setValue(show.getLeague());
+    leagueField.setClearButtonVisible(true);
+    leagueField.setWidthFull();
+
     showDateField.setValue(show.getShowDate());
     showDateField.setClearButtonVisible(true);
     showDateField.setWidthFull();
@@ -116,6 +131,7 @@ public class EditShowDetailsDialog extends Dialog {
     binder.bind(typeField, Show::getType, Show::setType);
     binder.bind(seasonField, Show::getSeason, Show::setSeason);
     binder.bind(templateField, Show::getTemplate, Show::setTemplate);
+    binder.bind(leagueField, Show::getLeague, Show::setLeague);
     binder.bind(showDateField, Show::getShowDate, Show::setShowDate);
 
     // Buttons
@@ -129,7 +145,8 @@ public class EditShowDetailsDialog extends Dialog {
     buttonLayout.setWidthFull();
 
     FormLayout formLayout =
-        new FormLayout(descriptionField, typeField, seasonField, templateField, showDateField);
+        new FormLayout(
+            descriptionField, typeField, seasonField, templateField, leagueField, showDateField);
     formLayout.setWidthFull();
 
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
@@ -150,7 +167,8 @@ public class EditShowDetailsDialog extends Dialog {
             typeField.getValue().getId(),
             showDateField.getValue(),
             seasonField.getValue() != null ? seasonField.getValue().getId() : null,
-            templateField.getValue() != null ? templateField.getValue().getId() : null);
+            templateField.getValue() != null ? templateField.getValue().getId() : null,
+            leagueField.getValue() != null ? leagueField.getValue().getId() : null);
         Notification.show(
                 "Show details updated successfully!", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

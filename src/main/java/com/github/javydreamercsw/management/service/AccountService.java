@@ -172,4 +172,16 @@ public class AccountService {
     account.setThemePreference(themePreference);
     return accountRepository.save(account);
   }
+
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
+          + " authentication.principal.id)")
+  public Account setActiveWrestlerId(Long accountId, Long wrestlerId) {
+    Account account =
+        accountRepository
+            .findById(accountId)
+            .orElseThrow(() -> new IllegalArgumentException("Account not found."));
+    account.setActiveWrestlerId(wrestlerId);
+    return accountRepository.save(account);
+  }
 }

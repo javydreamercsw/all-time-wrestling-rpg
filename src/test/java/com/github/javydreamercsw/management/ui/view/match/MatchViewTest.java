@@ -27,12 +27,14 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -64,6 +66,8 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private SegmentNarrationServiceFactory narrationServiceFactory;
   @Mock private NpcService npcService;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
+  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private LocalAIStatusService localAIStatus;
   private MatchView matchView;
 
@@ -79,6 +83,8 @@ class MatchViewTest extends AbstractViewTest {
             narrationServiceFactory,
             npcService,
             segmentAdjudicationService,
+            matchFulfillmentRepository,
+            matchFulfillmentService,
             localAIStatus);
   }
 

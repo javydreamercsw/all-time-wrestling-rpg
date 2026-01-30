@@ -140,6 +140,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName("Weekly").get().getId(),
             null,
             season.getId(),
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();

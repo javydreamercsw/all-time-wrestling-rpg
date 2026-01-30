@@ -30,6 +30,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -96,6 +97,7 @@ class ShowDetailViewTest {
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private ShowController showController;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
 
   @BeforeEach
   void setUp() {
@@ -161,6 +163,7 @@ class ShowDetailViewTest {
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
+              leagueRepository,
               env);
 
       ReflectionTestUtils.invokeMethod(
@@ -241,6 +244,7 @@ class ShowDetailViewTest {
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
+              leagueRepository,
               env);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);

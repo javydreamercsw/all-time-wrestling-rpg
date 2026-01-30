@@ -24,6 +24,8 @@ import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -124,6 +126,8 @@ public class ShowDetailView extends Main
   private final Environment env;
   private final SegmentNarrationController segmentNarrationController;
   private final ShowController showController;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final LeagueRepository leagueRepository;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -153,6 +157,8 @@ public class ShowDetailView extends Main
       WebClient.Builder webClientBuilder,
       SegmentNarrationController segmentNarrationController,
       ShowController showController,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      LeagueRepository leagueRepository,
       Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
@@ -175,6 +181,8 @@ public class ShowDetailView extends Main
     this.env = env;
     this.segmentNarrationController = segmentNarrationController;
     this.showController = showController;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.leagueRepository = leagueRepository;
     initializeComponents();
   }
 
@@ -440,7 +448,12 @@ public class ShowDetailView extends Main
         e -> {
           EditShowDetailsDialog dialog =
               new EditShowDetailsDialog(
-                  showService, showTypeService, seasonService, showTemplateService, show);
+                  showService,
+                  showTypeService,
+                  seasonService,
+                  showTemplateService,
+                  leagueRepository,
+                  show);
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
@@ -678,6 +691,16 @@ public class ShowDetailView extends Main
         .setHeader("Winner(s)")
         .setSortable(false)
         .setFlexGrow(2);
+
+    // League Status column
+    grid.addColumn(
+            segment ->
+                matchFulfillmentRepository
+                    .findBySegment(segment)
+                    .map(f -> f.getStatus().toString())
+                    .orElse("N/A"))
+        .setHeader("League Status")
+        .setFlexGrow(1);
 
     // Segment date column
     grid.addColumn(
@@ -1260,15 +1283,16 @@ public class ShowDetailView extends Main
       }
 
       // Save or update the segment
-      segmentRepository.save(segment);
-      log.info("Segment saved successfully: {}", segment.getId());
       if (segmentToUpdate != null) {
+        segmentService.updateSegment(segment);
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       } else {
+        segmentService.saveSegment(segment);
         Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
+      log.info("Segment saved successfully: {}", segment.getId());
       return true;
     } catch (Exception e) {
       log.error("Error saving segment: {}", e.getMessage(), e);

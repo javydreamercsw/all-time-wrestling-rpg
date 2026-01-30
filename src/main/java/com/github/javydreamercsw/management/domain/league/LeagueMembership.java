@@ -56,6 +56,8 @@ public class LeagueMembership {
 
   public enum LeagueRole {
     COMMISSIONER,
-    PLAYER
+    PLAYER,
+    COMMISSIONER_PLAYER,
+    VIEWER
   }
 }

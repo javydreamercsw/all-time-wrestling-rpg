@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,8 @@ class LeagueServiceTest {
               return l;
             });
 
-    League league = leagueService.createLeague("Test League", commissioner);
+    League league =
+        leagueService.createLeague("Test League", commissioner, 1, Collections.emptySet(), false);
 
     assertThat(league).isNotNull();
     assertThat(league.getName()).isEqualTo("Test League");

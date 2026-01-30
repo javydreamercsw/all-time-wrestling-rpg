@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.event.league.DraftBroadcaster;
 import com.github.javydreamercsw.management.service.league.DraftService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -40,6 +41,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
@@ -109,7 +111,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
 
   private void refreshData() {
     leagueRepository
-        .findById(leagueId)
+        .findByIdWithExcludedWrestlers(leagueId)
         .ifPresent(
             l -> {
               this.league = l;
@@ -118,7 +120,12 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
                   .ifPresentOrElse(
                       d -> this.draft = d,
                       () -> {
-                        if (securityUtils.isBooker() || securityUtils.isAdmin()) {
+                        boolean isOwner =
+                            securityUtils
+                                .getAuthenticatedUser()
+                                .map(u -> u.getAccount().equals(l.getCommissioner()))
+                                .orElse(false);
+                        if (securityUtils.isBooker() || securityUtils.isAdmin() || isOwner) {
                           this.draft = draftService.startDraft(l);
                         }
                       });
@@ -186,6 +193,13 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
 
   private void configureAvailableGrid() {
     availableWrestlersGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
+    availableWrestlersGrid.addColumn(w -> w.getTier().name()).setHeader("Tier").setSortable(true);
+    availableWrestlersGrid.addColumn(Wrestler::getStartingStamina).setHeader("Stamina");
+    availableWrestlersGrid.addColumn(Wrestler::getStartingHealth).setHeader("Health");
+
+    availableWrestlersGrid.setItemDetailsRenderer(
+        new ComponentRenderer<>(this::createWrestlerDetails));
+
     availableWrestlersGrid
         .addComponentColumn(
             wrestler -> {
@@ -217,6 +231,44 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
     availableWrestlersGrid.setSizeFull();
   }
 
+  private Component createWrestlerDetails(Wrestler wrestler) {
+    VerticalLayout layout = new VerticalLayout();
+    layout.setPadding(true);
+    layout.setSpacing(false);
+
+    layout.add(
+        new Span(
+            "Description: "
+                + (wrestler.getDescription() != null
+                    ? wrestler.getDescription()
+                    : "No description")));
+
+    if (!wrestler.getDecks().isEmpty()) {
+      layout.add(new H3("Deck Contents:"));
+      // List cards
+      wrestler
+          .getDecks()
+          .get(0)
+          .getCards()
+          .forEach(
+              dc -> {
+                layout.add(
+                    new Span(
+                        "- "
+                            + dc.getAmount()
+                            + "x "
+                            + dc.getCard().getName()
+                            + " ("
+                            + dc.getCard().getType()
+                            + ")"));
+              });
+    } else {
+      layout.add(new Span("No deck assigned."));
+    }
+
+    return layout;
+  }
+
   private void configureHistoryGrid() {
     pickHistoryGrid.addColumn(DraftPick::getPickNumber).setHeader("#").setWidth("50px");
     pickHistoryGrid.addColumn(p -> p.getUser().getUsername()).setHeader("User");
@@ -231,9 +283,13 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
             .map(r -> r.getWrestler().getId())
             .collect(Collectors.toSet());
 
+    Set<Long> excludedWrestlerIds =
+        league.getExcludedWrestlers().stream().map(Wrestler::getId).collect(Collectors.toSet());
+
     List<Wrestler> available =
         wrestlerRepository.findAll().stream()
             .filter(w -> !draftedWrestlerIds.contains(w.getId()))
+            .filter(w -> !excludedWrestlerIds.contains(w.getId()))
             .collect(Collectors.toList());
 
     availableWrestlersGrid.setItems(available);

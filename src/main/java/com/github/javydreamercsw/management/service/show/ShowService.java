@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -59,6 +61,7 @@ public class ShowService {
   private final ShowTypeRepository showTypeRepository;
   private final SeasonRepository seasonRepository;
   private final ShowTemplateRepository showTemplateRepository;
+  private final LeagueRepository leagueRepository;
   private final Clock clock;
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
@@ -73,6 +76,7 @@ public class ShowService {
       ShowTypeRepository showTypeRepository,
       SeasonRepository seasonRepository,
       ShowTemplateRepository showTemplateRepository,
+      LeagueRepository leagueRepository,
       Clock clock,
       SegmentAdjudicationService segmentAdjudicationService,
       SegmentRepository segmentRepository,
@@ -85,6 +89,7 @@ public class ShowService {
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
     this.showTemplateRepository = showTemplateRepository;
+    this.leagueRepository = leagueRepository;
     this.clock = clock;
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
@@ -277,7 +282,8 @@ public class ShowService {
       Long showTypeId,
       LocalDate showDate,
       Long seasonId,
-      Long templateId) {
+      Long templateId,
+      Long leagueId) {
 
     Show show = new Show();
     show.setName(name);
@@ -310,6 +316,15 @@ public class ShowService {
       show.setTemplate(template);
     }
 
+    // Set league (optional)
+    if (leagueId != null) {
+      League league =
+          leagueRepository
+              .findById(leagueId)
+              .orElseThrow(() -> new IllegalArgumentException("League not found: " + leagueId));
+      show.setLeague(league);
+    }
+
     return showRepository.saveAndFlush(show);
   }
 
@@ -323,6 +338,7 @@ public class ShowService {
    * @param showDate Show date (optional)
    * @param seasonId Season ID (optional)
    * @param templateId Template ID (optional)
+   * @param leagueId League ID (optional)
    * @return Updated show if found
    */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -339,7 +355,8 @@ public class ShowService {
       Long showTypeId,
       LocalDate showDate,
       Long seasonId,
-      Long templateId) {
+      Long templateId,
+      Long leagueId) {
 
     return showRepository
         .findById(id)
@@ -380,6 +397,17 @@ public class ShowService {
                 show.setTemplate(template);
               } else {
                 show.setTemplate(null);
+              }
+
+              if (leagueId != null) {
+                League league =
+                    leagueRepository
+                        .findById(leagueId)
+                        .orElseThrow(
+                            () -> new IllegalArgumentException("League not found: " + leagueId));
+                show.setLeague(league);
+              } else {
+                show.setLeague(null);
               }
 
               return showRepository.saveAndFlush(show);

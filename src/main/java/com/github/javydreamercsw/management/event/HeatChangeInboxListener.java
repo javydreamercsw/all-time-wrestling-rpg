@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -58,7 +59,11 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
             event.getReason());
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
-    inboxService.createInboxItem(rivalryHeatChange, message, event.getRivalryId().toString());
+    inboxService.createInboxItem(
+        rivalryHeatChange,
+        message,
+        event.getRivalryId().toString(),
+        InboxItemTarget.TargetType.RIVALRY);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

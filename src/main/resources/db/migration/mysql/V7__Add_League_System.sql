@@ -3,7 +3,16 @@ CREATE TABLE league (
     name VARCHAR(255) NOT NULL UNIQUE,
     commissioner_id BIGINT NOT NULL,
     status VARCHAR(50) NOT NULL,
+    max_picks_per_player INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT fk_league_commissioner FOREIGN KEY (commissioner_id) REFERENCES account(id)
+);
+
+CREATE TABLE league_excluded_wrestler (
+    league_id BIGINT NOT NULL,
+    wrestler_id BIGINT NOT NULL,
+    PRIMARY KEY (league_id, wrestler_id),
+    CONSTRAINT fk_excluded_league FOREIGN KEY (league_id) REFERENCES league(id) ON DELETE CASCADE,
+    CONSTRAINT fk_excluded_wrestler FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE
 );
 
 CREATE TABLE league_membership (
@@ -68,3 +77,7 @@ CREATE TABLE match_fulfillment (
 
 ALTER TABLE wrestling_show ADD COLUMN league_id BIGINT;
 ALTER TABLE wrestling_show ADD CONSTRAINT fk_show_league FOREIGN KEY (league_id) REFERENCES league(id);
+
+ALTER TABLE account ADD COLUMN active_wrestler_id BIGINT;
+
+ALTER TABLE inbox_item_target ADD COLUMN target_type VARCHAR(20) DEFAULT 'ACCOUNT' NOT NULL;

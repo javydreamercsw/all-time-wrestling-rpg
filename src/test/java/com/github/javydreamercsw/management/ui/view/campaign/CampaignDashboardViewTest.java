@@ -94,7 +94,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     mockCampaign = Campaign.builder().id(1L).wrestler(mockWrestler).state(mockState).build();
 
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(mockUser));
-    when(wrestlerRepository.findByAccount(mockAccount)).thenReturn(Optional.of(mockWrestler));
+    when(wrestlerRepository.findByAccount(mockAccount)).thenReturn(java.util.List.of(mockWrestler));
     when(campaignRepository.findActiveByWrestler(mockWrestler))
         .thenReturn(Optional.of(mockCampaign));
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);

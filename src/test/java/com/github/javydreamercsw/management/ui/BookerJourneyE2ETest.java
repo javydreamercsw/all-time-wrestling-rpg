@@ -385,7 +385,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName(SHOW_TYPE_NAME).get().getId(),
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
-            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId());
+            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null);
 
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -478,7 +479,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName(SHOW_TYPE_NAME).get().getId(),
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
-            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId());
+            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null);
 
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -568,7 +570,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName(SHOW_TYPE_NAME).get().getId(),
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
-            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId());
+            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null);
 
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
