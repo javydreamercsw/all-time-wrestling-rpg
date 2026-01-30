@@ -60,7 +60,7 @@ CREATE TABLE match_fulfillment (
     status VARCHAR(50) NOT NULL,
     winner_id BIGINT,
     submitted_by_id BIGINT,
-    CONSTRAINT fk_fulfillment_segment FOREIGN KEY (segment_id) REFERENCES segment(id),
+    CONSTRAINT fk_fulfillment_segment FOREIGN KEY (segment_id) REFERENCES segment(segment_id),
     CONSTRAINT fk_fulfillment_league FOREIGN KEY (league_id) REFERENCES league(id),
     CONSTRAINT fk_fulfillment_winner FOREIGN KEY (winner_id) REFERENCES wrestler(wrestler_id),
     CONSTRAINT fk_fulfillment_submitter FOREIGN KEY (submitted_by_id) REFERENCES account(id)
