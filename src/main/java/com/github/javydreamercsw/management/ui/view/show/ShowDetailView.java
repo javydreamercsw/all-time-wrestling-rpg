@@ -1259,18 +1259,29 @@ public class ShowDetailView extends Main
 
     try {
       Segment segment;
-      if (segmentToUpdate != null) {
+      if (segmentToUpdate != null && segmentToUpdate.getId() != null) {
         segment = segmentToUpdate;
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
         log.info("Updating existing segment: {}", segment.getId());
       } else {
-        segment = new Segment();
-        segment.setShow(show);
-        segment.setSegmentDate(java.time.Instant.now());
-        segment.setIsTitleSegment(false);
-        segment.setIsNpcGenerated(false);
+        // Use the passed object if present (for new segments with data), or create new
+        segment = (segmentToUpdate != null) ? segmentToUpdate : new Segment();
+
+        if (segment.getShow() == null) {
+          segment.setShow(show);
+        }
+        if (segment.getSegmentDate() == null) {
+          segment.setSegmentDate(java.time.Instant.now());
+        }
+        if (segment.getIsTitleSegment() == null) {
+          segment.setIsTitleSegment(false);
+        }
+        if (segment.getIsNpcGenerated() == null) {
+          segment.setIsNpcGenerated(false);
+        }
+
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         log.info("Creating new segment for show: {}", show.getName());
@@ -1283,7 +1294,7 @@ public class ShowDetailView extends Main
       }
 
       // Save or update the segment
-      if (segmentToUpdate != null) {
+      if (segment.getId() != null) {
         segmentService.updateSegment(segment);
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

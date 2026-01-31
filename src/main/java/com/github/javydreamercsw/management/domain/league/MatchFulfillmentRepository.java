@@ -19,9 +19,21 @@ package com.github.javydreamercsw.management.domain.league;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
 public interface MatchFulfillmentRepository extends JpaRepository<MatchFulfillment, Long> {
   Optional<MatchFulfillment> findBySegment(Segment segment);
+
+  @Query(
+      "SELECT m FROM MatchFulfillment m "
+          + "JOIN FETCH m.segment s "
+          + "JOIN FETCH s.show sh "
+          + "JOIN FETCH s.segmentType st "
+          + "LEFT JOIN FETCH s.participants p "
+          + "LEFT JOIN FETCH p.wrestler w "
+          + "WHERE m.id = :id")
+  Optional<MatchFulfillment> findByIdWithDetails(@Param("id") Long id);
 }

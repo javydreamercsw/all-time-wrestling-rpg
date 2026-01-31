@@ -100,7 +100,11 @@ public class InboxService {
 
   @PreAuthorize("isAuthenticated()")
   public List<InboxItem> search(
-      Set<Wrestler> targets, String readStatus, String eventType, Boolean hideRead) {
+      Set<Wrestler> targets,
+      String readStatus,
+      String eventType,
+      Boolean hideRead,
+      Long accountId) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -114,16 +118,29 @@ public class InboxService {
             predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
+          Predicate targetPredicate = null;
           if (targets != null && !targets.isEmpty()) {
-            Join<Object, Object> join = root.join("targets", JoinType.INNER);
-            predicate =
+            Join<InboxItem, InboxItemTarget> join = root.join("targets", JoinType.INNER);
+            targetPredicate =
+                join.get("targetId")
+                    .in(targets.stream().map(wrestler -> wrestler.getId().toString()).toList());
+          }
+
+          if (accountId != null) {
+            Join<InboxItem, InboxItemTarget> accountJoin = root.join("targets", JoinType.INNER);
+            Predicate accountPredicate =
                 cb.and(
-                    predicate,
-                    join.get("targetId")
-                        .in(
-                            targets.stream()
-                                .map(wrestler -> wrestler.getId().toString())
-                                .toList()));
+                    cb.equal(accountJoin.get("targetId"), accountId.toString()),
+                    cb.equal(accountJoin.get("targetType"), InboxItemTarget.TargetType.ACCOUNT));
+            if (targetPredicate != null) {
+              targetPredicate = cb.or(targetPredicate, accountPredicate);
+            } else {
+              targetPredicate = accountPredicate;
+            }
+          }
+
+          if (targetPredicate != null) {
+            predicate = cb.and(predicate, targetPredicate);
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {

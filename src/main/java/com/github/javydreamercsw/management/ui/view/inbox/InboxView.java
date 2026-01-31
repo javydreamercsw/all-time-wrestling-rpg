@@ -273,8 +273,8 @@ public class InboxView extends VerticalLayout {
                     .ifPresent(
                         target -> {
                           try {
-                            matchFulfillmentRepository
-                                .findById(Long.parseLong(target.getTargetId()))
+                            matchFulfillmentService
+                                .getFulfillmentWithDetails(Long.parseLong(target.getTargetId()))
                                 .ifPresent(
                                     f ->
                                         new MatchReportDialog(
@@ -364,11 +364,14 @@ public class InboxView extends VerticalLayout {
   }
 
   private void updateList() {
+    Long accountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
     grid.setItems(
         inboxService.search(
             targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
-            hideReadCheckbox.getValue()));
+            hideReadCheckbox.getValue(),
+            accountId));
   }
 }

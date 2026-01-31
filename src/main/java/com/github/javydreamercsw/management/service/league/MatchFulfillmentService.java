@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class MatchFulfillmentService {
 
   private final MatchFulfillmentRepository matchFulfillmentRepository;
+
+  @Transactional(readOnly = true)
+  public Optional<MatchFulfillment> getFulfillmentWithDetails(Long id) {
+    return matchFulfillmentRepository.findByIdWithDetails(id);
+  }
 
   @Transactional
   public MatchFulfillment submitResult(

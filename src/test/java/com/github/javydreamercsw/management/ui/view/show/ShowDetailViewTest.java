@@ -128,7 +128,7 @@ class ShowDetailViewTest {
       segment.setShow(show);
       segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segment.setSegmentType(segmentType);
-      when(segmentRepository.save(any(Segment.class))).thenReturn(segment);
+      when(segmentService.updateSegment(any(Segment.class))).thenReturn(segment);
 
       Wrestler wrestler1 = new Wrestler();
       wrestler1.setId(1L);

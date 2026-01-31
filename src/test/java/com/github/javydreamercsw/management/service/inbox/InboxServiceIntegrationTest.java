@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.inbox;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
@@ -63,8 +64,38 @@ class InboxServiceIntegrationTest extends ManagementIntegrationTest {
     inboxRepository.save(noTarget);
 
     // Search for the item with the target
-    List<InboxItem> results = inboxService.search(Set.of(wrestler), null, null, false);
+    List<InboxItem> results = inboxService.search(Set.of(wrestler), null, null, false, null);
     Assertions.assertEquals(1, results.size());
     Assertions.assertEquals("Filter Me Item", results.get(0).getDescription());
+  }
+
+  @Test
+  void testSearchByAccount() {
+    Wrestler wrestler = wrestlerService.findAll().get(0);
+    Account account = wrestler.getAccount();
+    if (account == null) {
+      // In case dataInitializer didn't link them
+      account =
+          inboxService
+              .getAccountRepository()
+              .findByUsername("admin")
+              .orElseGet(
+                  () -> {
+                    Account a = new Account("admin", "password", "admin@test.com");
+                    return inboxService.getAccountRepository().save(a);
+                  });
+    }
+
+    // Create an inbox item targeted at account
+    inboxService.createInboxItem(
+        eventTypeRegistry.getEventTypes().get(0),
+        "Account Target Item",
+        account.getId().toString(),
+        com.github.javydreamercsw.management.domain.inbox.InboxItemTarget.TargetType.ACCOUNT);
+
+    // Search for items for this account
+    List<InboxItem> results = inboxService.search(null, null, null, false, account.getId());
+    Assertions.assertTrue(
+        results.stream().anyMatch(item -> item.getDescription().equals("Account Target Item")));
   }
 }

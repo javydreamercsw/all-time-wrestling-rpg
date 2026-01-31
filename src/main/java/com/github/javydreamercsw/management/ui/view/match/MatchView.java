@@ -307,7 +307,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 : List.of()));
     winnersComboBox.setId("winners-combobox");
 
-    Button saveWinnersButton = new Button("Adjudicate Match", event -> saveWinners());
+    String saveButtonText = "Adjudicate Match";
+    if (securityUtils.isPlayer() && !securityUtils.isBooker() && !securityUtils.isAdmin()) {
+      saveButtonText = "Save Results";
+      // If league match, it might be "Report Result" conceptually, but "Save Results" is fine.
+    }
+
+    Button saveWinnersButton = new Button(saveButtonText, event -> saveWinners());
     saveWinnersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
@@ -516,14 +522,20 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         UI.getCurrent().navigate("campaign");
       } else {
-        // For standard matches, perform full adjudication (Booker/Admin only)
-        segmentAdjudicationService.adjudicateMatch(segment);
-        segment.setAdjudicationStatus(
-            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
-        segmentService.updateSegment(segment);
-        Notification.show("Match adjudicated successfully!")
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        UI.getCurrent().navigate("show-list");
+        if (securityUtils.isBooker() || securityUtils.isAdmin()) {
+          // For standard matches, perform full adjudication (Booker/Admin only)
+          segmentAdjudicationService.adjudicateMatch(segment);
+          segment.setAdjudicationStatus(
+              com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+          segmentService.updateSegment(segment);
+          Notification.show("Match adjudicated successfully!")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          UI.getCurrent().navigate("show-list");
+        } else {
+          // For players editing a match (e.g. proposed result), just save.
+          Notification.show("Match results saved.")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        }
       }
 
     } catch (Exception e) {
