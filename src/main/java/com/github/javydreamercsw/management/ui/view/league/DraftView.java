@@ -97,6 +97,10 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
     this.securityUtils = securityUtils;
     this.draftBroadcaster = draftBroadcaster;
 
+    setId("draft-view");
+    this.availableWrestlersGrid.setId("available-wrestlers-grid");
+    this.pickHistoryGrid.setId("pick-history-grid");
+
     setSizeFull();
     setPadding(true);
     setSpacing(true);

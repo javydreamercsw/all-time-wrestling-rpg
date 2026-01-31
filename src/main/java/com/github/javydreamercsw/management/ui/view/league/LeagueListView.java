@@ -65,6 +65,7 @@ public class LeagueListView extends Main {
     this.wrestlerRepository = wrestlerRepository;
     this.leagueMembershipRepository = leagueMembershipRepository;
     this.leagueGrid = new Grid<>(League.class, false);
+    this.leagueGrid.setId("league-grid");
 
     configureGrid();
     reloadGrid();

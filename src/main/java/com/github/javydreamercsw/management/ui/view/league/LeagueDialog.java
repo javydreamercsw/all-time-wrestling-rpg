@@ -85,10 +85,12 @@ public class LeagueDialog extends Dialog {
     this.league = league;
     this.onSave = onSave;
 
+    setId("league-dialog");
     setHeaderTitle(league == null ? "Create New League" : "Edit League: " + league.getName());
 
     FormLayout formLayout = new FormLayout();
     TextField nameField = new TextField("League Name");
+    nameField.setId("league-name-field");
     nameField.setRequired(true);
 
     NumberField maxPicksField = new NumberField("Wrestlers per Player");
@@ -103,7 +105,8 @@ public class LeagueDialog extends Dialog {
     excludedWrestlers.setItems(wrestlerRepository.findAll());
     excludedWrestlers.setItemLabelGenerator(Wrestler::getName);
 
-    MultiSelectListBox<Account> participantList = new MultiSelectListBox<>();
+    MultiSelectComboBox<Account> participantList = new MultiSelectComboBox<>("Participants");
+    participantList.setId("participants-combo");
     participantList.setItems(accountService.findAll());
     participantList.setItemLabelGenerator(Account::getUsername);
 
