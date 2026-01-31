@@ -98,6 +98,8 @@ public class LeagueListView extends Main {
                   || league.getStatus() == League.LeagueStatus.PRE_DRAFT) {
                 actionButton.setText("Draft Room");
                 actionButton.setIcon(VaadinIcon.LIST.create());
+                actionButton.addClassName("league-draft-room-btn");
+                actionButton.setId("league-draft-room-btn-" + league.getId());
                 actionButton.addClickListener(
                     e -> getUI().ifPresent(ui -> ui.navigate(DraftView.class, league.getId())));
               } else {
@@ -119,6 +121,7 @@ public class LeagueListView extends Main {
                 Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
                 editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
                 editBtn.setTooltipText("Edit League");
+                editBtn.setId("edit-league-" + league.getId());
                 editBtn.addClickListener(e -> openEditDialog(league));
 
                 Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
@@ -127,6 +130,7 @@ public class LeagueListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_ERROR);
                 deleteBtn.setTooltipText("Delete League");
+                deleteBtn.setId("delete-league-" + league.getId());
                 deleteBtn.addClickListener(e -> openDeleteDialog(league));
 
                 actions.add(editBtn, deleteBtn);
@@ -140,7 +144,7 @@ public class LeagueListView extends Main {
     leagueGrid.setSizeFull();
   }
 
-  private void openEditDialog(League league) {
+  private void openEditDialog(@NonNull League league) {
     leagueService
         .getLeagueWithExcludedWrestlers(league.getId())
         .ifPresent(
@@ -157,7 +161,7 @@ public class LeagueListView extends Main {
             });
   }
 
-  private void openDeleteDialog(League league) {
+  private void openDeleteDialog(@NonNull League league) {
     Dialog confirm = new Dialog();
     confirm.setHeaderTitle("Delete League");
     confirm.add(new Span("Are you sure you want to delete '" + league.getName() + "'?"));
@@ -186,6 +190,7 @@ public class LeagueListView extends Main {
 
   private Button createCreateLeagueButton() {
     Button button = new Button("New League", VaadinIcon.PLUS.create());
+    button.setId("create-league-btn");
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     button.setVisible(securityUtils.isBooker() || securityUtils.isAdmin());
     button.addClickListener(
@@ -205,9 +210,6 @@ public class LeagueListView extends Main {
   private void reloadGrid() {
     securityUtils
         .getAuthenticatedUser()
-        .ifPresent(
-            user -> {
-              leagueGrid.setItems(leagueService.getLeaguesForUser(user.getAccount()));
-            });
+        .ifPresent(user -> leagueGrid.setItems(leagueService.getLeaguesForUser(user.getAccount())));
   }
 }

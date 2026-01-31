@@ -218,6 +218,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
                                   draftService.makePick(draft, user.getAccount(), wrestler);
                                 });
                       });
+              pickButton.setId("draft-wrestler-btn-" + wrestler.getId());
               pickButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
 
               // Enable only if it's user's turn

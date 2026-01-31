@@ -54,11 +54,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
+@Slf4j
 public class DraftService {
 
   private final DraftRepository draftRepository;
@@ -175,15 +178,23 @@ public class DraftService {
     roster.setWrestler(wrestler);
     leagueRosterRepository.save(roster);
 
-    // Assign to account
-    wrestler.setAccount(user);
+    // Reload account to get fresh state including lazy collections and activeWrestlerId
+    Account reloadedUser =
+        accountRepository
+            .findById(user.getId())
+            .orElseThrow(() -> new IllegalArgumentException("User not found: " + user.getId()));
+
+    // Assign to account if user doesn't have one assigned (respecting unique constraint)
+    if (wrestlerRepository.findByAccount(reloadedUser).isEmpty()) {
+      wrestler.setAccount(reloadedUser);
+    }
     wrestler.setIsPlayer(true);
-    wrestlerRepository.save(wrestler);
+    wrestlerRepository.saveAndFlush(wrestler);
 
     // Set as active wrestler if none set
-    if (user.getActiveWrestlerId() == null) {
-      user.setActiveWrestlerId(wrestler.getId());
-      accountRepository.save(user);
+    if (reloadedUser.getActiveWrestlerId() == null) {
+      reloadedUser.setActiveWrestlerId(wrestler.getId());
+      accountRepository.saveAndFlush(reloadedUser);
     }
 
     // Advance Turn
@@ -204,14 +215,25 @@ public class DraftService {
                 LeagueMembership.LeagueRole.COMMISSIONER_PLAYER));
     players.sort(Comparator.comparing(m -> m.getMember().getId()));
 
+    long availableWrestlers = countAvailableWrestlers(league);
+
     // Check if draft is over (Total picks reached)
     int totalPicks = draft.getCurrentPickNumber();
     int maxTotalPicks = players.size() * league.getMaxPicksPerPlayer();
 
-    // Or no more wrestlers
-    long availableWrestlers = countAvailableWrestlers(league);
+    log.info(
+        "Checking draft progress: Pick {}/{}, Available Wrestlers: {}",
+        totalPicks,
+        maxTotalPicks,
+        availableWrestlers);
 
     if (totalPicks >= maxTotalPicks || availableWrestlers == 0) {
+      log.info(
+          "Draft completing. Reason: totalPicks ({}) >= maxTotalPicks ({}) OR availableWrestlers"
+              + " ({}) == 0",
+          totalPicks,
+          maxTotalPicks,
+          availableWrestlers);
       completeDraft(draft);
       return;
     }

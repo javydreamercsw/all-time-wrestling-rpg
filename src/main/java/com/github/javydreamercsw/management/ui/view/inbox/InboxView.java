@@ -288,6 +288,7 @@ public class InboxView extends VerticalLayout {
                           }
                         });
               });
+      reportButton.setId("report-result-btn-" + item.getId());
       reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
       layout.add(reportButton);
     }

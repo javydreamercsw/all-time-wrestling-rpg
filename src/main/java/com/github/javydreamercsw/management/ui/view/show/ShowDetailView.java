@@ -567,6 +567,7 @@ public class ShowDetailView extends Main
 
     Button adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    adjudicateButton.setId("adjudicate-show-btn");
     adjudicateButton.addClickListener(e -> adjudicateShow(show));
 
     // Check if there are any pending segments
@@ -580,6 +581,7 @@ public class ShowDetailView extends Main
 
     Button addSegmentBtn = new Button("Add Segment", new Icon(VaadinIcon.PLUS));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    addSegmentBtn.setId("add-segment-btn");
     addSegmentBtn.addClickListener(e -> openAddSegmentDialog(show));
 
     header.add(segmentsTitle, adjudicateButton, addSegmentBtn);

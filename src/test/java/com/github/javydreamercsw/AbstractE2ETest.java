@@ -211,10 +211,45 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
+
+    String os = System.getProperty("os.name").toLowerCase();
+
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-    usernameField.sendKeys(username);
+
+    WebElement usernameInput =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].querySelector('input');", usernameField);
+
+    if (usernameInput == null) usernameInput = usernameField;
+
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
+                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
+                + " bubbles: true }));",
+            usernameInput,
+            username);
+
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-    passwordField.sendKeys(password);
+
+    WebElement passwordInput =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].querySelector('input');", passwordField);
+
+    if (passwordInput == null) passwordInput = passwordField;
+
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
+                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
+                + " bubbles: true }));",
+            passwordInput,
+            password);
+
     takeSequencedScreenshot("after-filling-credentials");
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));

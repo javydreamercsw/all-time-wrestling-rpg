@@ -211,6 +211,7 @@ public class ShowListView extends Main {
         .addComponentColumn(
             show -> {
               Button nameButton = new Button(show.getName());
+              nameButton.setId("show-name-button-" + show.getId());
               nameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               nameButton.addClickListener(
                   e ->

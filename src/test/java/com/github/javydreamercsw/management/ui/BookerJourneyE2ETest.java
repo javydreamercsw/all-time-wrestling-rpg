@@ -18,8 +18,11 @@ package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
-import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -53,7 +56,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 
 @Slf4j
 public class BookerJourneyE2ETest extends AbstractE2ETest {
@@ -61,32 +63,17 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
 
-  @Autowired private CacheManager cacheManager;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentService segmentService;
-  @Autowired private DataInitializer dataInitializer;
-
   @Autowired private CampaignRepository campaignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   @BeforeEach
   public void setupTestData() {

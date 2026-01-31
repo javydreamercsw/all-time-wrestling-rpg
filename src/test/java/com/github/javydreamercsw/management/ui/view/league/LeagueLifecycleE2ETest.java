@@ -28,18 +28,33 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+@Slf4j
 public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
   @Autowired private AccountRepository accountRepository;
@@ -49,32 +64,80 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private LeagueRepository leagueRepository;
   @Autowired private LeagueMembershipRepository leagueMembershipRepository;
+  @Autowired private SeasonService seasonService;
+  @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private ShowTypeService showTypeService;
+
+  @BeforeEach
+  public void setupTest() {
+    // Prerequisites
+    ensurePlayerAccount();
+    ensureWrestlers();
+    ensureSeason();
+    ensureShowTemplate();
+  }
 
   @Test
   void testFullLeagueLifecycle() {
-    // Prerequisites: Ensure player1 exists
-    ensurePlayerAccount();
-    ensureWrestlers();
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+
+    // Admin is already logged in from setup()
+    navigateTo("leagues");
 
     // Step 1: League Creation (As Commissioner/Admin)
-    // ...
-    // (inside test method)
-    clickButtonByText("Create");
+    waitForVaadinElement(driver, By.id("create-league-btn"));
+    clickElement(By.id("create-league-btn"));
+
+    // Fill form
+    final String leagueName = "Hardening League " + new Date().getYear();
+    WebElement nameField = waitForVaadinElement(driver, By.id("league-name-field"));
+    nameField.sendKeys(leagueName);
+    nameField.sendKeys(Keys.TAB); // Trigger blur
+
+    // Set max picks to 2
+    WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = 2; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:"
+                + " true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true"
+                + " }));",
+            maxPicksField);
+    maxPicksField.sendKeys(Keys.TAB);
+
+    // Admin wants to play
+    clickElement(By.id("league-commissioner-plays-checkbox"));
+
+    // Select player1
+    WebElement participantsCombo = waitForVaadinElement(driver, By.id("participants-combo"));
+    selectFromVaadinMultiSelectComboBox(participantsCombo, "player1");
+
+    // Save
+    clickElement(By.id("league-save-btn"));
     waitForNotification("League saved successfully");
 
     // Verify league in grid
-    assertGridContains("league-grid", "Hardening League 2026");
+    waitForGridToPopulate("league-grid");
+    assertGridContains("league-grid", leagueName);
     assertGridContains("league-grid", "PRE_DRAFT");
 
+    // Verify league settings in DB
+    League league = leagueRepository.findByName(leagueName).orElseThrow();
+    org.junit.jupiter.api.Assertions.assertEquals(
+        2, league.getMaxPicksPerPlayer(), "Max picks per player not saved correctly!");
+
     // Verify player1 is a member (Debug check)
-    League league = leagueRepository.findByName("Hardening League 2026").orElseThrow();
     List<LeagueMembership> members = leagueMembershipRepository.findByLeague(league);
     boolean player1Joined =
         members.stream().anyMatch(m -> m.getMember().getUsername().equals("player1"));
     assertTrue(player1Joined, "Player1 did not join the league! Members: " + members.size());
+    boolean adminJoined =
+        members.stream().anyMatch(m -> m.getMember().getUsername().equals("admin"));
+    assertTrue(
+        adminJoined, "Admin did not join the league as a player! Members: " + members.size());
 
     // Step 2: The Snake Draft
-    clickButtonByText("Draft Room");
+    // Use the ID we added: league-draft-room-btn-<id>
+    clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
 
     // Verify draft header
@@ -82,15 +145,15 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForPageSourceToContain("Current Turn: admin");
 
     // Draft a wrestler as admin
-    // Find the first available 'Draft' button
+    // Find the first available 'Draft' button using the ID pattern
     WebElement availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
     List<WebElement> draftButtons =
-        availableWrestlersGrid.findElements(By.xpath(".//vaadin-button[text()='Draft']"));
+        availableWrestlersGrid.findElements(
+            By.cssSelector("vaadin-button[id^='draft-wrestler-btn-']"));
     assertFalse(draftButtons.isEmpty(), "No draft buttons found");
     clickElement(draftButtons.get(0));
 
-    // Verify turn change    // Since we can't easily wait for text change without a specific ID or
-    // polling, we poll
+    // Verify turn change
     waitForPageSourceToContain("Current Turn: player1");
 
     // Login as player1 to continue draft
@@ -98,16 +161,17 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     login("player1", "password123");
 
     navigateTo("leagues");
-    clickButtonByText("Draft Room");
+    clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
 
     // Verify player1 turn
-    assertTrue(driver.getPageSource().contains("Current Turn: player1"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Current Turn: player1"));
 
     // Draft a wrestler as player1
     availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
     draftButtons =
-        availableWrestlersGrid.findElements(By.xpath(".//vaadin-button[text()='Draft']"));
+        availableWrestlersGrid.findElements(
+            By.cssSelector("vaadin-button[id^='draft-wrestler-btn-']"));
     clickElement(draftButtons.get(0));
 
     // Snake draft: player1 gets another pick (Round 2)
@@ -118,11 +182,12 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Draft second wrestler as player1
     availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
     draftButtons =
-        availableWrestlersGrid.findElements(By.xpath(".//vaadin-button[text()='Draft']"));
+        availableWrestlersGrid.findElements(
+            By.cssSelector("vaadin-button[id^='draft-wrestler-btn-']"));
     clickElement(draftButtons.get(0));
 
     // Turn returns to admin
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(
             d ->
                 java.util.Objects.requireNonNull(d.getPageSource())
@@ -133,54 +198,62 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     login("admin", "admin123");
 
     navigateTo("show-list");
+
     waitForVaadinElement(driver, By.id("show-name"));
 
-    WebElement showNameField = driver.findElement(By.id("show-name"));
-    showNameField.sendKeys("League Night 1");
+    final String showName = "League Night 1";
 
-    selectFromVaadinComboBox("show-type", "Weekly");
-    selectFromVaadinComboBox("season", "2025"); // Assuming 2025 exists from DataInitializer
-    selectFromVaadinComboBox("league", "Hardening League 2026");
+    Objects.requireNonNull(
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
+        .sendKeys(showName);
 
-    clickButtonByText("Create");
+    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
+    WebElement showTypeComboBox = comboBoxes.get(0);
+    WebElement seasonComboBox = comboBoxes.get(1);
+    WebElement templateComboBox = comboBoxes.get(2);
+    WebElement leagueComboBox = comboBoxes.get(3);
+
+    showTypeComboBox.sendKeys("Weekly", Keys.TAB);
+
+    wait.until(driver -> templateComboBox.isEnabled());
+
+    seasonComboBox.sendKeys("2025", Keys.TAB);
+    templateComboBox.sendKeys("Continuum", Keys.TAB);
+    leagueComboBox.sendKeys(leagueName, Keys.TAB);
+
+    driver
+        .findElement(By.id("show-date"))
+        .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
+
+    clickElement(By.id("create-show-button"));
     waitForNotification("Show created.");
 
     // Navigate to Show Detail
-    // Click on the newly created show in the grid. Assuming it's the last one or sortable.
-    // For simplicity, let's filter or finding it. The grid might be empty except this one.
-    // Let's iterate rows to find "League Night 1"
-    WebElement showGrid = driver.findElement(By.id("show-grid"));
-    // Finding the row might be tricky without a specific ID logic in grid cells.
-    // Assuming standard grid structure.
-    // Let's assume it's visible.
-    click("span", "League Night 1"); // Try clicking the text span
+    // Find the newly created show in the grid using the ID pattern
+    List<Show> matchingShows = showService.findByName(showName);
+    Assertions.assertEquals(1, matchingShows.size());
+    Show show = matchingShows.get(0);
 
-    waitForVaadinElement(
-        driver, By.id("add-segment-dialog-layout")); // Wait? No, dialog not open yet.
+    // Click on the newly created show in the grid to navigate to its detail page
+    log.info("Navigating to show detail page");
+    WebElement viewShowDetails =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
+    Assertions.assertNotNull(viewShowDetails);
+    clickElement(viewShowDetails);
+
     waitForVaadinElement(driver, By.id("segments-grid-wrapper"));
 
     // Add Segment
-    clickButtonByText("Add Segment");
+    clickElement(By.id("add-segment-btn"));
     waitForVaadinElement(driver, By.id("add-segment-dialog"));
 
     selectFromVaadinComboBox("segment-type-combo-box", "Match");
 
-    // Select wrestler picked by player1.
-    // We don't know exactly WHO player1 picked unless we tracked it.
-    // But we know player1 picked 2 wrestlers.
-    // We can select ANY wrestler that is in the league.
-    // MultiSelect is tricky.
-    // Let's select the first two available in the combo.
     WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
-    // We need to type to filter or just open.
-    // Let's pick a known wrestler name if possible.
-    // Or just select items.
-    selectFromVaadinMultiSelectComboBox(
-        wrestlersCombo, "Hulk Hogan"); // Assuming he exists and was picked?
-    // Wait, step 2 said "Click Draft next to any wrestler (e.g. Hulk Hogan)".
-    // Admin picked first. Player1 picked second and third.
-    // We need to pick a wrestler owned by Player1.
-    // Let's retrieve Player1's wrestler name from DB helper
+
+    selectFromVaadinMultiSelectComboBox(wrestlersCombo, "Rob Van Dam");
+
     String p1WrestlerName = getPlayer1WrestlerName();
     selectFromVaadinMultiSelectComboBox(wrestlersCombo, p1WrestlerName);
 
@@ -189,7 +262,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     String adminWrestlerName = getAdminWrestlerName();
     selectFromVaadinMultiSelectComboBox(wrestlersCombo, adminWrestlerName);
 
-    clickButtonByText("Add Segment");
+    clickElement(By.id("add-segment-save-button"));
     waitForNotification("Segment added successfully!");
 
     // Step 4: Player Reporting (As Player)
@@ -203,55 +276,40 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Description contains "Pending match on show: League Night 1"
     assertGridContains("inbox-grid", "Pending match on show: League Night 1");
 
-    clickButtonByText("Report Result");
+    // Click Report Result using ID pattern
+    WebElement inboxGrid = driver.findElement(By.id("inbox-grid"));
+    WebElement reportButton =
+        inboxGrid.findElement(By.cssSelector("vaadin-button[id^='report-result-btn-']"));
+    clickElement(reportButton);
     waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
 
     // Select Winner
-    WebElement winnerSelect = driver.findElement(By.tagName("vaadin-select"));
-    // Select the first option (which should be one of the participants)
-    // Vaadin Select automation:
+    WebElement winnerSelect = driver.findElement(By.id("match-winner-select"));
+
     ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", winnerSelect);
-    // Find item and click
-    // Need to wait for overlay
-    // Simplified: just assuming p1WrestlerName is in the list
-    // Actually, report dialog logic: select a winner.
-    // Let's try to select p1WrestlerName
-    // ... logic for selecting from Select component ...
-    // Using a helper or JS
+
     ((JavascriptExecutor) driver)
         .executeScript("arguments[0].value = arguments[0].items[0];", winnerSelect);
 
-    clickButtonByText("Submit Result");
-    // Verify notification action changed or item updated.
-    // The view refreshes. The item should now ideally be marked read or Action button gone?
-    // The "Report Result" button only appears for MATCH_REQUEST.
-    // Once submitted, the fulfillment status changes.
-    // However, the inbox item itself persists until deleted/read.
-    // But the button logic in InboxView checks event type.
-    // The event type is still MATCH_REQUEST.
-    // But `createActionComponent` logic:
-    /*
-        Button reportButton = new Button("Report Result", e -> { ... });
-    */
-    // It doesn't check if already submitted in the view construction, effectively.
-    // But submitting again checks status in service.
+    clickElement(By.id("submit-match-result-btn"));
 
     // Step 5: Finalization (As Commissioner)
     logout();
     login("admin", "admin123");
 
     navigateTo("show-list");
-    click("span", "League Night 1");
+    waitForGridToPopulate("show-grid");
+    WebElement finalShowGrid = driver.findElement(By.id("show-grid"));
+    WebElement finalShowButton =
+        finalShowGrid.findElement(By.cssSelector("vaadin-button[id^='show-name-button-']"));
+    clickElement(finalShowButton);
     waitForVaadinElement(driver, By.id("segments-grid"));
 
-    // Verify League Status column
-    // This is the 6th column (index 5) based on creation order in ShowDetailView
-    // "League Status"
     // We can just check if "SUBMITTED" text is in the grid row.
     assertGridContains("segments-grid", "SUBMITTED");
 
     // Click Adjudicate Fans
-    clickButtonByText("Adjudicate Fans");
+    clickElement(By.id("adjudicate-show-btn"));
     waitForNotification("Fan adjudication completed!");
 
     // Verify FINALIZED
@@ -286,6 +344,24 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     }
   }
 
+  private void ensureSeason() {
+    if (seasonService.findByName("2025") == null) {
+      seasonService.createSeason("2025", "Season 2025", 5);
+    }
+  }
+
+  private void ensureShowTemplate() {
+    // Ensure Weekly show type exists
+    var weeklyType = showTypeService.findByName("Weekly");
+    if (weeklyType.isEmpty()) {
+      showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 5, 2);
+    }
+
+    if (showTemplateService.findByName("Continuum").isEmpty()) {
+      showTemplateService.createOrUpdateTemplate("Continuum", "Default Template", "Weekly", null);
+    }
+  }
+
   private String getPlayer1WrestlerName() {
     Account p1 = accountRepository.findByUsername("player1").orElseThrow();
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(p1);
@@ -301,7 +377,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   }
 
   private void waitForPageSourceToContain(String text) {
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

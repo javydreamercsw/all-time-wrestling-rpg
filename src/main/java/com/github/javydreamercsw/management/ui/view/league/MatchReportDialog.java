@@ -60,6 +60,7 @@ public class MatchReportDialog extends Dialog {
     winnerSelect.setLabel("Winner");
     winnerSelect.setItems(participants);
     winnerSelect.setItemLabelGenerator(Wrestler::getName);
+    winnerSelect.setId("match-winner-select");
 
     if (fulfillment.getReportedWinner() != null) {
       winnerSelect.setValue(fulfillment.getReportedWinner());
@@ -85,6 +86,7 @@ public class MatchReportDialog extends Dialog {
                         close();
                       });
             });
+    submitButton.setId("submit-match-result-btn");
     submitButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
     Button cancelButton = new Button("Cancel", e -> close());

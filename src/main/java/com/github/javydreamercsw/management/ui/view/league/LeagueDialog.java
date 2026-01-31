@@ -98,8 +98,10 @@ public class LeagueDialog extends Dialog {
     maxPicksField.setMin(1);
     maxPicksField.setValue(1.0);
     maxPicksField.setStepButtonsVisible(true);
+    maxPicksField.setId("league-max-picks-field");
 
     Checkbox commissionerPlays = new Checkbox("I want to participate as a player");
+    commissionerPlays.setId("league-commissioner-plays-checkbox");
 
     MultiSelectComboBox<Wrestler> excludedWrestlers =
         new MultiSelectComboBox<>("Exclude Wrestlers");
@@ -116,7 +118,10 @@ public class LeagueDialog extends Dialog {
     formLayout.setColspan(excludedWrestlers, 2);
     formLayout.setColspan(participantList, 2);
 
-    binder.forField(nameField).bind(League::getName, League::setName);
+    binder
+        .forField(nameField)
+        .asRequired("League name is required")
+        .bind(League::getName, League::setName);
 
     if (league != null) {
       nameField.setValue(league.getName());
@@ -199,6 +204,7 @@ public class LeagueDialog extends Dialog {
                         });
               }
             });
+    saveButton.setId("league-save-btn");
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
     Button cancelButton = new Button("Cancel", e -> close());

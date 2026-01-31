@@ -193,13 +193,14 @@ Before marking any task complete, verify:
 - Test authentication and authorization
 - Check form submissions
 
-### Mobile Testing
+### UI Testing
 
-- Test on actual iPhone when possible
-- Use Safari developer tools
-- Test touch interactions
-- Verify responsive layouts
-- Check performance on 3G/4G
+- Use custom IDs for UI elements to facilitate testing.
+- When E2E tests fail, an HTML snapshot of the DOM and a screenshot are saved in the test artifacts directory:
+  `target/test-failures/<TestClassName>/<testMethodName>/`
+  - Look for `failure-<methodName>__.html` for the DOM state.
+  - Screenshots are sequenced (e.g., `001-on-login-page.png`).
+- These artifacts are invaluable for debugging failing Vaadin/Selenium tests.
 
 ## Code Review Process
 
