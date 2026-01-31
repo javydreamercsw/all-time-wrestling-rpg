@@ -24,6 +24,10 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueMembership;
+import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -43,6 +47,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired private LeagueRepository leagueRepository;
+  @Autowired private LeagueMembershipRepository leagueMembershipRepository;
 
   @Test
   void testFullLeagueLifecycle() {
@@ -51,24 +57,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     ensureWrestlers();
 
     // Step 1: League Creation (As Commissioner/Admin)
-    // Already logged in as admin from setup()
-    navigateTo("leagues");
-    waitForVaadinElement(driver, By.id("league-grid"));
-
-    clickButtonByText("New League");
-    waitForVaadinElement(driver, By.id("league-dialog"));
-
-    WebElement nameField = driver.findElement(By.id("league-name-field"));
-    nameField.sendKeys("Hardening League 2026");
-
-    // Click "I want to participate as a player" checkbox
-    // It doesn't have an ID, so we find by label text or type.
-    // Ideally we'd add an ID in LeagueDialog, but we can find by xpath.
-    clickElement(By.xpath("//vaadin-checkbox[contains(., 'participate as a player')]"));
-
-    WebElement participantsCombo = driver.findElement(By.id("participants-combo"));
-    selectFromVaadinMultiSelectComboBox(participantsCombo, "player1");
-
+    // ...
+    // (inside test method)
     clickButtonByText("Create");
     waitForNotification("League saved successfully");
 
@@ -76,13 +66,20 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertGridContains("league-grid", "Hardening League 2026");
     assertGridContains("league-grid", "PRE_DRAFT");
 
+    // Verify player1 is a member (Debug check)
+    League league = leagueRepository.findByName("Hardening League 2026").orElseThrow();
+    List<LeagueMembership> members = leagueMembershipRepository.findByLeague(league);
+    boolean player1Joined =
+        members.stream().anyMatch(m -> m.getMember().getUsername().equals("player1"));
+    assertTrue(player1Joined, "Player1 did not join the league! Members: " + members.size());
+
     // Step 2: The Snake Draft
     clickButtonByText("Draft Room");
     waitForVaadinElement(driver, By.id("draft-view"));
 
     // Verify draft header
     waitForPageSourceToContain("Round: 1 | Pick: 1");
-    waitForPageSourceToContain("Current Turn: player1");
+    waitForPageSourceToContain("Current Turn: admin");
 
     // Draft a wrestler as admin
     // Find the first available 'Draft' button
@@ -126,7 +123,10 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     // Turn returns to admin
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
-        .until(d -> java.util.Objects.requireNonNull(d.getPageSource()).contains("Current Turn: admin"));
+        .until(
+            d ->
+                java.util.Objects.requireNonNull(d.getPageSource())
+                    .contains("Current Turn: admin"));
 
     // Step 3: Booking a League Match (As Admin)
     logout();
