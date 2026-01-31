@@ -31,7 +31,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -155,6 +157,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
     options.addArguments("--reduce-security-for-testing");
+    options.addArguments("--disable-notifications");
+    options.addArguments("--disable-save-password-bubble");
+    options.addArguments("--disable-infobars");
+    options.addArguments("--disable-extensions");
+
+    Map<String, Object> prefs = new HashMap<>();
+    prefs.put("credentials_enable_service", false);
+    prefs.put("profile.password_manager_enabled", false);
+    prefs.put("profile.password_manager_leak_detection", false);
+    options.setExperimentalOption("prefs", prefs);
+    options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
     driver = new ChromeDriver(options);
     login();
