@@ -31,7 +31,8 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.listbox.MultiSelectListBox;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -188,6 +189,11 @@ public class LeagueDialog extends Dialog {
                                 .forEach(m -> leagueService.removeMember(league, m.getMember()));
                           }
 
+                          Notification.show(
+                                  "League saved successfully",
+                                  3000,
+                                  Notification.Position.BOTTOM_START)
+                              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                           onSave.run();
                           close();
                         });

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.league;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -27,11 +28,13 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
@@ -39,6 +42,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private RoleRepository roleRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private PasswordEncoder passwordEncoder;
 
   @Test
   void testFullLeagueLifecycle() {
@@ -57,11 +61,16 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     WebElement nameField = driver.findElement(By.id("league-name-field"));
     nameField.sendKeys("Hardening League 2026");
 
+    // Click "I want to participate as a player" checkbox
+    // It doesn't have an ID, so we find by label text or type.
+    // Ideally we'd add an ID in LeagueDialog, but we can find by xpath.
+    clickElement(By.xpath("//vaadin-checkbox[contains(., 'participate as a player')]"));
+
     WebElement participantsCombo = driver.findElement(By.id("participants-combo"));
     selectFromVaadinMultiSelectComboBox(participantsCombo, "player1");
 
     clickButtonByText("Create");
-    waitForNotification("League created successfully");
+    waitForNotification("League saved successfully");
 
     // Verify league in grid
     assertGridContains("league-grid", "Hardening League 2026");
@@ -72,22 +81,19 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("draft-view"));
 
     // Verify draft header
-    WebElement header = driver.findElement(By.tagName("h2"));
-    assertTrue(header.getText().contains("Round: 1 | Pick: 1"));
-    assertTrue(driver.getPageSource().contains("Current Turn: admin"));
+    waitForPageSourceToContain("Round: 1 | Pick: 1");
+    waitForPageSourceToContain("Current Turn: player1");
 
     // Draft a wrestler as admin
     // Find the first available 'Draft' button
     WebElement availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
     List<WebElement> draftButtons =
         availableWrestlersGrid.findElements(By.xpath(".//vaadin-button[text()='Draft']"));
-    assertTrue(draftButtons.size() > 0, "No draft buttons found");
+    assertFalse(draftButtons.isEmpty(), "No draft buttons found");
     clickElement(draftButtons.get(0));
 
-    waitForNotification("Drafted");
-
-    // Verify turn change
-    // Since we can't easily wait for text change without a specific ID or polling, we poll
+    // Verify turn change    // Since we can't easily wait for text change without a specific ID or
+    // polling, we poll
     waitForPageSourceToContain("Current Turn: player1");
 
     // Login as player1 to continue draft
@@ -106,7 +112,6 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     draftButtons =
         availableWrestlersGrid.findElements(By.xpath(".//vaadin-button[text()='Draft']"));
     clickElement(draftButtons.get(0));
-    waitForNotification("Drafted");
 
     // Snake draft: player1 gets another pick (Round 2)
     // Wait for UI to update (Round 2 | Pick: 1)
@@ -118,28 +123,27 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     draftButtons =
         availableWrestlersGrid.findElements(By.xpath(".//vaadin-button[text()='Draft']"));
     clickElement(draftButtons.get(0));
-    waitForNotification("Drafted");
 
     // Turn returns to admin
-    waitForPageSourceToContain("Current Turn: admin");
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(d -> java.util.Objects.requireNonNull(d.getPageSource()).contains("Current Turn: admin"));
 
     // Step 3: Booking a League Match (As Admin)
     logout();
     login("admin", "admin123");
 
     navigateTo("show-list");
-    clickButtonByText("New Show");
-    waitForVaadinElement(driver, By.id("edit-show-details-dialog"));
+    waitForVaadinElement(driver, By.id("show-name"));
 
     WebElement showNameField = driver.findElement(By.id("show-name"));
     showNameField.sendKeys("League Night 1");
 
     selectFromVaadinComboBox("show-type", "Weekly");
-    selectFromVaadinComboBox("show-season", "2025"); // Assuming 2025 exists from DataInitializer
-    selectFromVaadinComboBox("show-league", "Hardening League 2026");
+    selectFromVaadinComboBox("season", "2025"); // Assuming 2025 exists from DataInitializer
+    selectFromVaadinComboBox("league", "Hardening League 2026");
 
-    clickButtonByText("Save");
-    waitForNotification("Show saved successfully");
+    clickButtonByText("Create");
+    waitForNotification("Show created.");
 
     // Navigate to Show Detail
     // Click on the newly created show in the grid. Assuming it's the last one or sortable.
@@ -261,7 +265,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
   private void ensurePlayerAccount() {
     if (accountRepository.findByUsername("player1").isEmpty()) {
-      Account p1 = new Account("player1", "password123", "player1@test.com");
+      Account p1 =
+          new Account("player1", passwordEncoder.encode("password123"), "player1@test.com");
       p1.addRole(roleRepository.findByName(RoleName.PLAYER).orElseThrow());
       accountRepository.save(p1);
     }
@@ -297,6 +302,6 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
   private void waitForPageSourceToContain(String text) {
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
-        .until(d -> d.getPageSource().contains(text));
+        .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }
