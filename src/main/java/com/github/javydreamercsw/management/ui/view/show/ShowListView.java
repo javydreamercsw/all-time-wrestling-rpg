@@ -192,10 +192,11 @@ public class ShowListView extends Main {
         new HorizontalLayout(
             name, newShowType, newSeason, newTemplate, newLeague, newShowDate, createBtn);
     formLayout.setSpacing(true);
-    formLayout.setAlignItems(FlexComponent.Alignment.BASELINE); // Align items nicely
+    formLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
 
     showGrid = new Grid<>(Show.class, false);
     showGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    showGrid.setId("show-grid");
 
     showGrid.setPartNameGenerator(
         show -> {

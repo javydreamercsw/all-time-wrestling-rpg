@@ -167,7 +167,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     prefs.put("profile.password_manager_enabled", false);
     prefs.put("profile.password_manager_leak_detection", false);
     options.setExperimentalOption("prefs", prefs);
-    options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+    options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
 
     driver = new ChromeDriver(options);
     login();
@@ -738,5 +738,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
     }
     return null; // Or throw an exception if the field is not invalid
+  }
+
+  protected void waitForPageSourceToContain(@NonNull String text) {
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

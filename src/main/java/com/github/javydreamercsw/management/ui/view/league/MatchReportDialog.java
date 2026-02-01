@@ -22,41 +22,33 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.select.Select;
 import java.util.List;
 import lombok.NonNull;
 
 public class MatchReportDialog extends Dialog {
-
-  private final MatchFulfillmentService fulfillmentService;
-  private final MatchFulfillment fulfillment;
-  private final SecurityUtils securityUtils;
-  private final Runnable onSave;
 
   public MatchReportDialog(
       @NonNull MatchFulfillmentService fulfillmentService,
       @NonNull MatchFulfillment fulfillment,
       @NonNull SecurityUtils securityUtils,
       @NonNull Runnable onSave) {
-    this.fulfillmentService = fulfillmentService;
-    this.fulfillment = fulfillment;
-    this.securityUtils = securityUtils;
-    this.onSave = onSave;
 
     setHeaderTitle("Report Match Result");
+    setId("match-report-dialog");
 
     VerticalLayout layout = new VerticalLayout();
     layout.add(new H3(fulfillment.getSegment().getShow().getName()));
     layout.add(new Span("Match: " + fulfillment.getSegment().getSegmentType().getName()));
 
     List<Wrestler> participants = fulfillment.getSegment().getWrestlers();
-    Select<Wrestler> winnerSelect = new Select<>();
+    ComboBox<Wrestler> winnerSelect = new ComboBox<>();
     winnerSelect.setLabel("Winner");
     winnerSelect.setItems(participants);
     winnerSelect.setItemLabelGenerator(Wrestler::getName);

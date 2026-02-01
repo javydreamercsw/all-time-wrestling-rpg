@@ -73,8 +73,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Prerequisites
     ensurePlayerAccount();
     ensureWrestlers();
-    ensureSeason();
-    ensureShowTemplate();
+    ensureSeasonExists();
+    ensureShowTemplateExists();
   }
 
   @Test
@@ -89,7 +89,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     clickElement(By.id("create-league-btn"));
 
     // Fill form
-    final String leagueName = "Hardening League " + new Date().getYear();
+    final String leagueName = "Hardening League " + new Date().getYear() + 1_900;
     WebElement nameField = waitForVaadinElement(driver, By.id("league-name-field"));
     nameField.sendKeys(leagueName);
     nameField.sendKeys(Keys.TAB); // Trigger blur
@@ -196,9 +196,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Step 3: Booking a League Match (As Admin)
     logout();
     login("admin", "admin123");
-
     navigateTo("show-list");
-
     waitForVaadinElement(driver, By.id("show-name"));
 
     final String showName = "League Night 1";
@@ -217,7 +215,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     wait.until(driver -> templateComboBox.isEnabled());
 
-    seasonComboBox.sendKeys("2025", Keys.TAB);
+    seasonComboBox.sendKeys("" + new Date().getYear() + 1_900, Keys.TAB);
     templateComboBox.sendKeys("Continuum", Keys.TAB);
     leagueComboBox.sendKeys(leagueName, Keys.TAB);
 
@@ -248,7 +246,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     clickElement(By.id("add-segment-btn"));
     waitForVaadinElement(driver, By.id("add-segment-dialog"));
 
-    selectFromVaadinComboBox("segment-type-combo-box", "Match");
+    selectFromVaadinComboBox("segment-type-combo-box", "One on One");
 
     WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
 
@@ -276,22 +274,21 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Description contains "Pending match on show: League Night 1"
     assertGridContains("inbox-grid", "Pending match on show: League Night 1");
 
-    // Click Report Result using ID pattern
     WebElement inboxGrid = driver.findElement(By.id("inbox-grid"));
     WebElement reportButton =
         inboxGrid.findElement(By.cssSelector("vaadin-button[id^='report-result-btn-']"));
     clickElement(reportButton);
-    waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+
+    waitForVaadinElement(driver, By.id("match-report-dialog"));
+    waitForVaadinElement(driver, By.id("match-winner-select"));
 
     // Select Winner
-    WebElement winnerSelect = driver.findElement(By.id("match-winner-select"));
-
-    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", winnerSelect);
-
-    ((JavascriptExecutor) driver)
-        .executeScript("arguments[0].value = arguments[0].items[0];", winnerSelect);
+    WebElement winnerCombo = driver.findElement(By.id("match-winner-select"));
+    selectFromVaadinComboBox(winnerCombo, p1WrestlerName);
 
     clickElement(By.id("submit-match-result-btn"));
+
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("match-report-dialog")));
 
     // Step 5: Finalization (As Commissioner)
     logout();
@@ -301,7 +298,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForGridToPopulate("show-grid");
     WebElement finalShowGrid = driver.findElement(By.id("show-grid"));
     WebElement finalShowButton =
-        finalShowGrid.findElement(By.cssSelector("vaadin-button[id^='show-name-button-']"));
+        finalShowGrid.findElement(By.id("show-name-button-" + show.getId()));
     clickElement(finalShowButton);
     waitForVaadinElement(driver, By.id("segments-grid"));
 
@@ -344,13 +341,14 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     }
   }
 
-  private void ensureSeason() {
-    if (seasonService.findByName("2025") == null) {
-      seasonService.createSeason("2025", "Season 2025", 5);
+  private void ensureSeasonExists() {
+    if (seasonService.findByName("" + new Date().getYear() + 1_900) == null) {
+      seasonService.createSeason(
+          "" + new Date().getYear() + 1_900, "Season " + new Date().getYear() + 1_900, 5);
     }
   }
 
-  private void ensureShowTemplate() {
+  private void ensureShowTemplateExists() {
     // Ensure Weekly show type exists
     var weeklyType = showTypeService.findByName("Weekly");
     if (weeklyType.isEmpty()) {
@@ -374,10 +372,5 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
     if (wrestlers.isEmpty()) return "Wrestler 0"; // Fallback
     return wrestlers.get(0).getName();
-  }
-
-  private void waitForPageSourceToContain(String text) {
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
-        .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }
