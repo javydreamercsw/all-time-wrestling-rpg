@@ -368,8 +368,16 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       }
     }
 
+    boolean isLeagueMatch = false;
+    if (playerWrestler != null) {
+      Optional<MatchFulfillment> fulfillment = matchFulfillmentRepository.findBySegment(segment);
+      if (fulfillment.isPresent() && segment.getWrestlers().contains(playerWrestler)) {
+        isLeagueMatch = true;
+      }
+    }
+
     boolean showGenerateButton =
-        securityUtils.isBooker() || securityUtils.isAdmin() || isCampaignMatch;
+        securityUtils.isBooker() || securityUtils.isAdmin() || isCampaignMatch || isLeagueMatch;
 
     if (showGenerateButton) {
       narrationButtons.add(aiGenerateButton);
