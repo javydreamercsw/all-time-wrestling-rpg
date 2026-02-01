@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view.league;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -41,6 +40,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -145,13 +145,10 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForPageSourceToContain("Current Turn: admin");
 
     // Draft a wrestler as admin
-    // Find the first available 'Draft' button using the ID pattern
-    WebElement availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
-    List<WebElement> draftButtons =
-        availableWrestlersGrid.findElements(
-            By.cssSelector("vaadin-button[id^='draft-wrestler-btn-']"));
-    assertFalse(draftButtons.isEmpty(), "No draft buttons found");
-    clickElement(draftButtons.get(0));
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+    Random random = new Random();
+    Wrestler w1 = wrestlers.get(random.nextInt(wrestlers.size()));
+    clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
 
     // Verify turn change
     waitForPageSourceToContain("Current Turn: player1");
@@ -168,11 +165,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Current Turn: player1"));
 
     // Draft a wrestler as player1
-    availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
-    draftButtons =
-        availableWrestlersGrid.findElements(
-            By.cssSelector("vaadin-button[id^='draft-wrestler-btn-']"));
-    clickElement(draftButtons.get(0));
+    Wrestler w2 = wrestlers.get(random.nextInt(wrestlers.size()));
+    clickElement(By.id("draft-wrestler-btn-" + w2.getId()));
 
     // Snake draft: player1 gets another pick (Round 2)
     // Wait for UI to update (Round 2 | Pick: 1)
@@ -180,11 +174,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains("Current Turn: player1"));
 
     // Draft second wrestler as player1
-    availableWrestlersGrid = driver.findElement(By.id("available-wrestlers-grid"));
-    draftButtons =
-        availableWrestlersGrid.findElements(
-            By.cssSelector("vaadin-button[id^='draft-wrestler-btn-']"));
-    clickElement(draftButtons.get(0));
+    Wrestler w3 = wrestlers.get(random.nextInt(wrestlers.size()));
+    clickElement(By.id("draft-wrestler-btn-" + w3.getId()));
 
     // Turn returns to admin
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
@@ -192,6 +183,20 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
             d ->
                 java.util.Objects.requireNonNull(d.getPageSource())
                     .contains("Current Turn: admin"));
+
+    // Login as admin to finish draft
+    logout();
+    login("admin", "admin123");
+    navigateTo("leagues");
+    clickElement(By.id("league-draft-room-btn-" + league.getId()));
+    waitForVaadinElement(driver, By.id("draft-view"));
+
+    // Make final pick
+    Wrestler w4 = wrestlers.get(random.nextInt(wrestlers.size()));
+    clickElement(By.id("draft-wrestler-btn-" + w4.getId()));
+
+    // Verify Draft Completed
+    waitForPageSourceToContain("Draft Completed");
 
     // Step 3: Booking a League Match (As Admin)
     logout();

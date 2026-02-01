@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
@@ -93,9 +94,19 @@ class LeagueRosterIT extends ManagementIntegrationTest {
     loserRoster.setWrestler(loser);
     leagueRosterRepository.save(loserRoster);
 
+    SegmentType oneOnOne =
+        segmentTypeRepository
+            .findByName("One on One")
+            .orElseGet(
+                () -> {
+                  SegmentType type1 = new SegmentType();
+                  type1.setName("One on One");
+                  return segmentTypeRepository.save(type1);
+                });
+
     Segment segment = new Segment();
     segment.setShow(show);
-    segment.setSegmentType(segmentTypeRepository.findByName("One on One").orElseThrow());
+    segment.setSegmentType(oneOnOne);
     segment.addParticipant(winner);
     segment.addParticipant(loser);
     segment.setWinners(List.of(winner));
