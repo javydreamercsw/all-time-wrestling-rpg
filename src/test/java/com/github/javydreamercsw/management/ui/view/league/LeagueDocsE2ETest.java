@@ -22,7 +22,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.domain.league.League;
-import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -58,7 +57,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private LeagueRepository leagueRepository;
-    @Autowired private SeasonService seasonService;
+  @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private ShowTypeService showTypeService;
 
