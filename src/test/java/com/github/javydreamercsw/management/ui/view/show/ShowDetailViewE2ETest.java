@@ -85,6 +85,13 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
   @BeforeEach
   public void setupTestData() {
     // Robust cleanup order to prevent foreign key violations
+    titleReignRepository
+        .findAll()
+        .forEach(
+            reign -> {
+              reign.setWonAtSegment(null);
+              titleReignRepository.save(reign);
+            });
     titleReignRepository.deleteAll();
     campaignRepository.deleteAll();
     factionRepository.deleteAll();

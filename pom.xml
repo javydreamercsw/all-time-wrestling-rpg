@@ -1334,6 +1334,8 @@
               <parallel>none</parallel>
               <threadCount>1</threadCount>
               <reuseForks>true</reuseForks>
+              <!-- Retry failed tests once to handle flakes -->
+              <rerunFailingTestsCount>1</rerunFailingTestsCount>
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>

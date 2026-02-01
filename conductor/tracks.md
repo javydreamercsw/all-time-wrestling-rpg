@@ -32,7 +32,13 @@
 
 *Link: [./conductor/archive/multiplayer_league_features_20260131/](./conductor/archive/multiplayer_league_features_20260131/)*
 
+### [x] Track: Stability & Quality Hardening
+
+*Link: [./conductor/archive/stability_quality_hardening_20260201/](./conductor/archive/stability_quality_hardening_20260201/)*
+
 ---
 
 ## Active Tracks
+
+*(No active tracks)*
 

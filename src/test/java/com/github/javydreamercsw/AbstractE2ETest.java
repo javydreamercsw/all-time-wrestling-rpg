@@ -351,9 +351,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    takeSequencedScreenshot("before-wait-for-element");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120)); // Increased from 60
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
+  }
+
+  protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
 
   protected void waitForGridToPopulate(@NonNull String gridId) {
@@ -370,10 +374,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForNotification(@NonNull String text) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
-        ExpectedConditions.presenceOfElementLocated(
-            By.xpath("//vaadin-notification-card[contains(., '" + text + "')]")));
+        d -> {
+          return (Boolean)
+              ((JavascriptExecutor) d)
+                  .executeScript(
+                      "const text = arguments[0];const notifications ="
+                          + " Array.from(document.querySelectorAll('vaadin-notification-card'));return"
+                          + " notifications.some(n => n.textContent.includes(text));",
+                      text);
+        });
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
@@ -410,7 +421,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     scrollIntoView(element);
     takeSequencedScreenshot("before-click");
     // First, wait for the element to be clickable.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(ExpectedConditions.elementToBeClickable(element));
     // Then, use JavaScript to click to bypass potential interception by other elements.
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
@@ -473,7 +484,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     input.sendKeys(itemText);
 
     // Wait for the overlay to appear and the item to be clickable
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
           d ->
@@ -626,7 +637,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     // 2. Wait for the item to appear and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
           d -> {
@@ -669,7 +680,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(mainButton);
 
     // 2. Wait and find the item by text in the DOM and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
           d -> {

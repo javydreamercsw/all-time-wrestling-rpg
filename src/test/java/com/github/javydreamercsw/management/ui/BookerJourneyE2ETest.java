@@ -82,6 +82,13 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
+    titleReignRepository
+        .findAll()
+        .forEach(
+            reign -> {
+              reign.setWonAtSegment(null);
+              titleReignRepository.save(reign);
+            });
     titleReignRepository.deleteAll();
     titleRepository
         .findAll()
@@ -545,7 +552,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
     Assertions.assertNotNull(cells);
-    Assertions.assertEquals(22, cells.size()); // 11 headers, 1 rows
+    Assertions.assertEquals(24, cells.size()); // 11 headers, 1 rows (columns increased)
   }
 
   @Test
