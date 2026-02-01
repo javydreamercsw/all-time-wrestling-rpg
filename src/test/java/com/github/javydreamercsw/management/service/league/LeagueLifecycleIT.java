@@ -26,7 +26,9 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.league.Draft;
+import com.github.javydreamercsw.management.domain.league.DraftRepository;
 import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -55,6 +57,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
 
   @Autowired private LeagueService leagueService;
   @Autowired private DraftService draftService;
+  @Autowired private DraftRepository draftRepository;
   @Autowired private ShowService showService;
   @Autowired private SegmentService segmentService;
   @Autowired private WrestlerService wrestlerService;
@@ -111,22 +114,34 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
 
     // Simulate picks based on whoever's turn it is
     int safetyCounter = 0;
+    Set<Wrestler> locallyDrafted = new java.util.HashSet<>();
+    final League finalLeague = league;
+    final Draft finalDraft = draft;
     while (draft.getStatus() == Draft.DraftStatus.ACTIVE && safetyCounter < 10) {
       Account current = draft.getCurrentTurnUser();
       List<Wrestler> allWrestlers = wrestlerRepository.findAll();
       Wrestler nextAvailable =
           allWrestlers.stream()
               .filter(w -> w.getAccount() == null)
-              .filter(w -> !league.getExcludedWrestlers().contains(w))
+              .filter(w -> !finalLeague.getExcludedWrestlers().contains(w))
+              .filter(w -> !locallyDrafted.contains(w))
               .findFirst()
               .orElseThrow(
                   () ->
                       new AssertionError(
-                          "No wrestlers available for pick " + draft.getCurrentPickNumber()));
+                          "No wrestlers available for pick " + finalDraft.getCurrentPickNumber()));
 
       draftService.makePick(draft, current, nextAvailable);
+      locallyDrafted.add(nextAvailable);
       safetyCounter++;
     }
+
+    entityManager.flush();
+    entityManager.clear();
+
+    // Reload objects after clear
+    league = leagueService.getLeagueById(league.getId()).orElseThrow();
+    draft = draftRepository.findByLeague(league).orElseThrow();
 
     // Draft should complete
     assertThat(draft.getStatus()).isEqualTo(Draft.DraftStatus.COMPLETED);
@@ -136,12 +151,12 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
     commish = accountRepository.findById(commish.getId()).get();
     player1 = accountRepository.findById(player1.getId()).get();
 
-    java.util.List<Wrestler> commishWrestlers = wrestlerRepository.findByAccount(commish);
-    assertThat(commishWrestlers).hasSize(2);
+    List<LeagueRoster> commishRoster = leagueRosterRepository.findByLeagueAndOwner(league, commish);
+    assertThat(commishRoster).hasSize(2);
     assertThat(commish.getActiveWrestlerId()).isNotNull();
 
-    java.util.List<Wrestler> player1Wrestlers = wrestlerRepository.findByAccount(player1);
-    assertThat(player1Wrestlers).hasSize(2);
+    List<LeagueRoster> player1Roster = leagueRosterRepository.findByLeagueAndOwner(league, player1);
+    assertThat(player1Roster).hasSize(2);
     assertThat(player1.getActiveWrestlerId()).isNotNull();
 
     // 5. Booking League Match (Step 3)
@@ -212,6 +227,12 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
     // 6. Player Reporting (Step 4)
     // Player1 reports that their wrestler won
     matchFulfillmentService.submitResult(fulfillment, p1Wrestler, player1);
+
+    matchFulfillmentRepository.flush();
+    entityManager.clear();
+
+    fulfillment = matchFulfillmentRepository.findById(fulfillment.getId()).orElseThrow();
+
     assertThat(fulfillment.getStatus()).isEqualTo(MatchFulfillment.FulfillmentStatus.SUBMITTED);
     assertThat(fulfillment.getReportedWinner()).isEqualTo(p1Wrestler);
 
