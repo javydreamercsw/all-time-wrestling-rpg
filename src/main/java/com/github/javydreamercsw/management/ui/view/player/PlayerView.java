@@ -44,6 +44,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
@@ -105,7 +106,6 @@ public class PlayerView extends VerticalLayout {
     setPadding(false);
     setSpacing(false);
 
-    add(new ViewToolbar("Player Dashboard"));
     init();
   }
 
@@ -113,10 +113,27 @@ public class PlayerView extends VerticalLayout {
     Optional<CustomUserDetails> maybeUserDetails = securityUtils.getAuthenticatedUser();
     if (maybeUserDetails.isPresent()) {
       Account account = maybeUserDetails.get().getAccount();
-      Optional<Wrestler> maybeWrestler = wrestlerService.findByAccount(account);
+      // Reload account to get latest activeWrestlerId
+      account = accountService.get(account.getId()).get();
 
-      if (maybeWrestler.isPresent()) {
-        playerWrestler = wrestlerService.findByIdWithInjuries(maybeWrestler.get().getId()).get();
+      Wrestler active = null;
+      if (account.getActiveWrestlerId() != null) {
+        active = wrestlerService.findById(account.getActiveWrestlerId()).orElse(null);
+      }
+
+      if (active == null) {
+        java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
+        if (!owned.isEmpty()) {
+          active = owned.get(0);
+          accountService.setActiveWrestlerId(account.getId(), active.getId());
+        }
+      }
+
+      removeAll();
+      add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account)));
+
+      if (active != null) {
+        playerWrestler = wrestlerService.findByIdWithInjuries(active.getId()).get();
         buildDashboard();
       } else {
         add(new H2("No wrestler assigned to your account."));
@@ -124,6 +141,26 @@ public class PlayerView extends VerticalLayout {
     } else {
       add(new H2("You must be logged in to see this page."));
     }
+  }
+
+  private Component createWrestlerSwitcher(Account account) {
+    ComboBox<Wrestler> switcher = new ComboBox<>("Active Wrestler");
+    java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
+    switcher.setItems(owned);
+    switcher.setItemLabelGenerator(Wrestler::getName);
+    if (playerWrestler != null) {
+      switcher.setValue(playerWrestler);
+    }
+    switcher.addValueChangeListener(
+        event -> {
+          if (event.getValue() != null
+              && (playerWrestler == null || !event.getValue().equals(playerWrestler))) {
+            accountService.setActiveWrestlerId(account.getId(), event.getValue().getId());
+            // Refresh the view
+            init();
+          }
+        });
+    return switcher;
   }
 
   private void buildDashboard() {

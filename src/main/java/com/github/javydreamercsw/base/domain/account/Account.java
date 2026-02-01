@@ -77,6 +77,8 @@ public class Account {
   @Column(length = 50)
   private String themePreference;
 
+  @Column private Long activeWrestlerId;
+
   @Column private LocalDateTime lockedUntil;
 
   @Column private LocalDateTime lastLogin;

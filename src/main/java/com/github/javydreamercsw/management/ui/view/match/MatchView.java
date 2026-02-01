@@ -25,10 +25,13 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -83,10 +86,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final SegmentNarrationServiceFactory narrationServiceFactory;
   private final NpcService npcService;
   private final SegmentAdjudicationService segmentAdjudicationService;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final MatchFulfillmentService matchFulfillmentService;
   private final LocalAIStatusService localAIStatus;
 
   private Segment segment;
   private TextArea narrationArea;
+  private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
 
   @Autowired
@@ -99,6 +105,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       SegmentNarrationServiceFactory narrationServiceFactory,
       NpcService npcService,
       SegmentAdjudicationService segmentAdjudicationService,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      MatchFulfillmentService matchFulfillmentService,
       LocalAIStatusService localAIStatus) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
@@ -108,6 +116,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.narrationServiceFactory = narrationServiceFactory;
     this.npcService = npcService;
     this.segmentAdjudicationService = segmentAdjudicationService;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.matchFulfillmentService = matchFulfillmentService;
     this.localAIStatus = localAIStatus;
   }
 
@@ -297,7 +307,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 : List.of()));
     winnersComboBox.setId("winners-combobox");
 
-    Button saveWinnersButton = new Button("Adjudicate Match", event -> saveWinners());
+    String saveButtonText = "Adjudicate Match";
+    if (securityUtils.isPlayer() && !securityUtils.isBooker() && !securityUtils.isAdmin()) {
+      saveButtonText = "Save Results";
+      // If league match, it might be "Report Result" conceptually, but "Save Results" is fine.
+    }
+
+    Button saveWinnersButton = new Button(saveButtonText, event -> saveWinners());
     saveWinnersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
@@ -314,17 +330,24 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     VerticalLayout narrationContent = new VerticalLayout();
     narrationContent.setPadding(false);
 
-    narrationArea = new TextArea();
+    narrationArea = new TextArea("Match Story");
     narrationArea.setWidthFull();
     narrationArea.setMinHeight("200px");
-    narrationArea.setPlaceholder("Enter the story of the match here...");
+    narrationArea.setPlaceholder("The story of the match will appear here...");
     narrationArea.setValue(segment.getNarration() == null ? "" : segment.getNarration());
     narrationArea.setId("narration-area");
+
+    feedbackArea = new TextArea("Generation Feedback");
+    feedbackArea.setWidthFull();
+    feedbackArea.setPlaceholder(
+        "Provide specific details about the match (key spots, interference, etc.) to guide the"
+            + " AI...");
+    feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();
     narrationButtons.setWidthFull();
 
-    Button aiGenerateButton = new Button("AI Generate Narration", event -> generateAiNarration());
+    Button aiGenerateButton = new Button("Generate with Feedback", event -> generateAiNarration());
     aiGenerateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     aiGenerateButton.setId("ai-generate-narration-button");
 
@@ -332,9 +355,34 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.setId("save-narration-button");
 
-    narrationButtons.add(aiGenerateButton, saveButton);
-    narrationContent.add(narrationArea, narrationButtons);
-    narrationCard.add(narrationContent); // ADD THIS LINE
+    boolean isCampaignMatch = false;
+    if (playerWrestler != null) {
+      var campaignOpt = campaignRepository.findActiveByWrestler(playerWrestler);
+      if (campaignOpt.isPresent()) {
+        var campaign = campaignOpt.get();
+        if (campaign.getState() != null
+            && campaign.getState().getCurrentMatch() != null
+            && campaign.getState().getCurrentMatch().getId().equals(segment.getId())) {
+          isCampaignMatch = true;
+        }
+      }
+    }
+
+    boolean showGenerateButton =
+        securityUtils.isBooker() || securityUtils.isAdmin() || isCampaignMatch;
+
+    if (showGenerateButton) {
+      narrationButtons.add(aiGenerateButton);
+    }
+    narrationButtons.add(saveButton);
+
+    if (showGenerateButton) {
+      narrationContent.add(feedbackArea, narrationArea, narrationButtons);
+    } else {
+      narrationContent.add(narrationArea, narrationButtons);
+    }
+
+    narrationCard.add(narrationContent);
     add(narrationCard);
   }
 
@@ -392,13 +440,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                   })
               .toList());
 
-      // Set strict instructions
-
-      context.setInstructions(
+      String feedback = feedbackArea.getValue();
+      String instructions =
           "Narrate a compelling wrestling match based on the provided wrestlers and rules. "
               + "IMPORTANT: You MUST ONLY use the wrestlers and NPCs provided in the context. "
               + "Do NOT invent new characters, announcers, or managers. "
-              + "Stick strictly to the All Time Wrestling roster provided.");
+              + "Stick strictly to the All Time Wrestling roster provided.";
+
+      if (feedback != null && !feedback.isBlank()) {
+        instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
+      }
+
+      context.setInstructions(instructions);
 
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
 
@@ -425,6 +478,22 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     segment.setWinners(winners);
     try {
       segmentService.updateSegment(segment);
+
+      // Check for league match reporting first
+      Optional<MatchFulfillment> fulfillmentOpt = matchFulfillmentRepository.findBySegment(segment);
+      if (fulfillmentOpt.isPresent()
+          && securityUtils.isPlayer()
+          && !securityUtils.isAdmin()
+          && !securityUtils.isBooker()) {
+        matchFulfillmentService.submitResult(
+            fulfillmentOpt.get(),
+            winners.isEmpty() ? null : winners.get(0),
+            securityUtils.getAuthenticatedUser().get().getAccount());
+        Notification.show("Match result reported to league commissioner.")
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        UI.getCurrent().navigate("player");
+        return;
+      }
 
       // Check if this is a campaign match for any participant
       boolean isCampaignMatch = false;
@@ -453,14 +522,20 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         UI.getCurrent().navigate("campaign");
       } else {
-        // For standard matches, perform full adjudication (Booker/Admin only)
-        segmentAdjudicationService.adjudicateMatch(segment);
-        segment.setAdjudicationStatus(
-            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
-        segmentService.updateSegment(segment);
-        Notification.show("Match adjudicated successfully!")
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        UI.getCurrent().navigate("show-list");
+        if (securityUtils.isBooker() || securityUtils.isAdmin()) {
+          // For standard matches, perform full adjudication (Booker/Admin only)
+          segmentAdjudicationService.adjudicateMatch(segment);
+          segment.setAdjudicationStatus(
+              com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+          segmentService.updateSegment(segment);
+          Notification.show("Match adjudicated successfully!")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          UI.getCurrent().navigate("show-list");
+        } else {
+          // For players editing a match (e.g. proposed result), just save.
+          Notification.show("Match results saved.")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        }
       }
 
     } catch (Exception e) {

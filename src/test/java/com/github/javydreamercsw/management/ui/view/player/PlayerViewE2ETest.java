@@ -104,6 +104,13 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
+    titleReignRepository
+        .findAll()
+        .forEach(
+            reign -> {
+              reign.setWonAtSegment(null);
+              titleReignRepository.save(reign);
+            });
     titleReignRepository.deleteAll();
     segmentRepository.deleteAll();
     rivalryRepository.deleteAll();

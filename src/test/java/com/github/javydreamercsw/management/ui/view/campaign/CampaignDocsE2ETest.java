@@ -19,10 +19,8 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -30,7 +28,6 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
-import java.util.List;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -255,49 +252,22 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private Wrestler getOrCreateWrestler(Account account) {
-    return wrestlerRepository
-        .findByAccount(account)
-        .orElseGet(
-            () -> {
-              Wrestler w =
-                  Wrestler.builder()
-                      .name("Docs Wrestler")
-                      .startingHealth(100)
-                      .startingStamina(100)
-                      .account(account)
-                      .isPlayer(true)
-                      .active(true)
-                      .gender(Gender.MALE)
-                      .tier(WrestlerTier.MIDCARDER)
-                      .fans(5000L)
-                      .drive(3)
-                      .resilience(2)
-                      .charisma(4)
-                      .brawl(3)
-                      .description(
-                          "A rising star in the wrestling world, known for his technical prowess"
-                              + " and charismatic promos. He is determined to climb the ranks and"
-                              + " become a legend.")
-                      .build();
-              w = wrestlerRepository.save(w);
+    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    if (!wrestlers.isEmpty()) {
+      return wrestlers.get(0);
+    }
 
-              // Assign a title if available or create one
-              if (titleRepository.count() == 0) {
-                Title title = new Title();
-                title.setName("ATW TV Championship");
-                title.setIsActive(true);
-                title.setTier(WrestlerTier.MIDCARDER);
-                title.setChampionshipType(
-                    com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
-                title = titleRepository.save(title);
-                titleService.awardTitleTo(title, List.of(w));
-              } else {
-                Title title = titleRepository.findAll().get(0);
-                titleService.awardTitleTo(title, List.of(w));
-              }
-
-              return w;
-            });
+    Wrestler w =
+        Wrestler.builder()
+            .name("Docs Wrestler")
+            .startingHealth(100)
+            .startingStamina(100)
+            .account(account)
+            .isPlayer(true)
+            .active(true)
+            .gender(Gender.MALE)
+            .build();
+    return wrestlerRepository.saveAndFlush(w);
   }
 
   private Campaign createCampaignInChapter(Wrestler player, String chapterId) {

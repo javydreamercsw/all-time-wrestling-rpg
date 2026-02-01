@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class TitleNotionSyncService implements NotionSyncService {
+public class TitleNotionSyncService implements NotionEntitySyncService {
 
   private final TitleRepository titleRepository;
   private final NotionHandler notionHandler;

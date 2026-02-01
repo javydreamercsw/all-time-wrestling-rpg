@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.RivalryCompletedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -52,7 +53,8 @@ public class RivalryCompletedInboxListener implements ApplicationListener<Rivalr
     inboxService.createInboxItem(
         rivalryCompleted,
         String.format("Rivalry '%s' has been completed.", event.getRivalry().getDisplayName()),
-        event.getRivalry().getId().toString());
+        event.getRivalry().getId().toString(),
+        InboxItemTarget.TargetType.RIVALRY);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

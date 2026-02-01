@@ -23,7 +23,6 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -63,49 +62,35 @@ public class PermissionService {
 
     log.info("isOwner: Checking ownership for user: {}", userDetails.getUsername());
 
-    // Fetch the wrestler directly using the username from the security context
-    Optional<Wrestler> userWrestlerOpt =
+    // Fetch all wrestlers associated with the account
+    java.util.List<Wrestler> userWrestlers =
         accountRepository
             .findByUsername(userDetails.getUsername())
-            .flatMap(wrestlerRepository::findByAccount);
+            .map(wrestlerRepository::findByAccount)
+            .orElse(java.util.Collections.emptyList());
 
-    if (userWrestlerOpt.isEmpty()) {
-      log.warn("isOwner: No wrestler found for user: {}", userDetails.getUsername());
-      return false; // User does not have a wrestler assigned
+    if (userWrestlers.isEmpty()) {
+      log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
+      return false; // User does not have any wrestlers assigned
     }
-    Wrestler userWrestler = userWrestlerOpt.get();
-    log.info(
-        "isOwner: User {} has wrestler: {} (ID: {})",
-        userDetails.getUsername(),
-        userWrestler.getName(),
-        userWrestler.getId());
+
+    java.util.Set<Long> ownedWrestlerIds =
+        userWrestlers.stream().map(Wrestler::getId).collect(java.util.stream.Collectors.toSet());
 
     if (targetDomainObject instanceof Wrestler targetWrestler) {
-      boolean match = userWrestler.getId().equals(targetWrestler.getId());
-      if (!match)
-        log.warn(
-            "isOwner: Wrestler mismatch. User wrestler ID: {}, Target wrestler ID: {}",
-            userWrestler.getId(),
-            targetWrestler.getId());
-      return match;
+      return ownedWrestlerIds.contains(targetWrestler.getId());
     } else if (targetDomainObject instanceof Deck deck) {
       Wrestler deckWrestler = deck.getWrestler();
-      boolean match = deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
-      if (!match)
-        log.warn(
-            "isOwner: Deck wrestler mismatch. User wrestler ID: {}, Deck wrestler: {}",
-            userWrestler.getId(),
-            deckWrestler != null ? deckWrestler.getId() : "null");
-      return match;
+      return deckWrestler != null && ownedWrestlerIds.contains(deckWrestler.getId());
     } else if (targetDomainObject instanceof DeckCard deckCard) {
       Deck deck = deckCard.getDeck();
       if (deck != null) {
         Wrestler deckWrestler = deck.getWrestler();
-        return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
+        return deckWrestler != null && ownedWrestlerIds.contains(deckWrestler.getId());
       }
     } else if (targetDomainObject instanceof InboxItem inboxItem) {
       return inboxItem.getTargets().stream()
-          .anyMatch(target -> target.getTargetId().equals(userWrestler.getId().toString()));
+          .anyMatch(target -> ownedWrestlerIds.contains(Long.valueOf(target.getTargetId())));
     } else if (targetDomainObject instanceof Collection<?> collection) {
       if (collection.isEmpty()) {
         return true;

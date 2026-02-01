@@ -31,7 +31,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -155,6 +157,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
     options.addArguments("--reduce-security-for-testing");
+    options.addArguments("--disable-notifications");
+    options.addArguments("--disable-save-password-bubble");
+    options.addArguments("--disable-infobars");
+    options.addArguments("--disable-extensions");
+
+    Map<String, Object> prefs = new HashMap<>();
+    prefs.put("credentials_enable_service", false);
+    prefs.put("profile.password_manager_enabled", false);
+    prefs.put("profile.password_manager_leak_detection", false);
+    options.setExperimentalOption("prefs", prefs);
+    options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
 
     driver = new ChromeDriver(options);
     login();
@@ -211,10 +224,45 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
+
+    String os = System.getProperty("os.name").toLowerCase();
+
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-    usernameField.sendKeys(username);
+
+    WebElement usernameInput =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].querySelector('input');", usernameField);
+
+    if (usernameInput == null) usernameInput = usernameField;
+
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
+                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
+                + " bubbles: true }));",
+            usernameInput,
+            username);
+
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-    passwordField.sendKeys(password);
+
+    WebElement passwordInput =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].querySelector('input');", passwordField);
+
+    if (passwordInput == null) passwordInput = passwordField;
+
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
+                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
+                + " bubbles: true }));",
+            passwordInput,
+            password);
+
     takeSequencedScreenshot("after-filling-credentials");
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
@@ -303,9 +351,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    takeSequencedScreenshot("before-wait-for-element");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120)); // Increased from 60
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
+  }
+
+  protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
 
   protected void waitForGridToPopulate(@NonNull String gridId) {
@@ -322,10 +374,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForNotification(@NonNull String text) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
-        ExpectedConditions.presenceOfElementLocated(
-            By.xpath("//vaadin-notification-card[contains(., '" + text + "')]")));
+        d -> {
+          return (Boolean)
+              ((JavascriptExecutor) d)
+                  .executeScript(
+                      "const text = arguments[0];const notifications ="
+                          + " Array.from(document.querySelectorAll('vaadin-notification-card'));return"
+                          + " notifications.some(n => n.textContent.includes(text));",
+                      text);
+        });
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
@@ -362,7 +421,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     scrollIntoView(element);
     takeSequencedScreenshot("before-click");
     // First, wait for the element to be clickable.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(ExpectedConditions.elementToBeClickable(element));
     // Then, use JavaScript to click to bypass potential interception by other elements.
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
@@ -425,7 +484,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     input.sendKeys(itemText);
 
     // Wait for the overlay to appear and the item to be clickable
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
           d ->
@@ -578,7 +637,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     // 2. Wait for the item to appear and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
           d -> {
@@ -621,7 +680,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(mainButton);
 
     // 2. Wait and find the item by text in the DOM and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
           d -> {
@@ -690,5 +749,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
     }
     return null; // Or throw an exception if the field is not invalid
+  }
+
+  protected void waitForPageSourceToContain(@NonNull String text) {
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

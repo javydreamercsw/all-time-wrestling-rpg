@@ -196,7 +196,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     // 4. Trigger AI Narration
-    clickButtonByText("AI Generate Narration");
+    clickButtonByText("Generate with Feedback");
 
     // Wait for narration to appear (Mock AI has 1-3s delay)
     try {

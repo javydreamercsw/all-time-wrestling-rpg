@@ -22,8 +22,12 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.league.MatchReportDialog;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
@@ -46,6 +50,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.data.domain.Sort;
 
 @Route(value = "inbox", layout = MainLayout.class)
@@ -56,6 +61,7 @@ public class InboxView extends VerticalLayout {
   private final InboxService inboxService;
   private final InboxEventTypeRegistry eventTypeRegistry;
   private final WrestlerRepository wrestlerRepository;
+  private final MatchFulfillmentService matchFulfillmentService;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final MultiSelectComboBox<Wrestler> targetFilter = new MultiSelectComboBox<>("Targets");
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
@@ -73,10 +79,12 @@ public class InboxView extends VerticalLayout {
       InboxService inboxService,
       InboxEventTypeRegistry eventTypeRegistry,
       WrestlerRepository wrestlerRepository,
+      MatchFulfillmentService matchFulfillmentService,
       SecurityUtils securityUtils) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
+    this.matchFulfillmentService = matchFulfillmentService;
     this.securityUtils = securityUtils;
 
     addClassName("inbox-view");
@@ -130,6 +138,7 @@ public class InboxView extends VerticalLayout {
     eventTypeFilter.setItems(eventTypes);
     eventTypeFilter.setPlaceholder("All");
     eventTypeFilter.setValue("All");
+    eventTypeFilter.setId("event-type-filter");
     eventTypeFilter.addValueChangeListener(e -> updateList());
 
     selectAllCheckbox.setId("select-all-checkbox");
@@ -222,12 +231,19 @@ public class InboxView extends VerticalLayout {
   }
 
   private void configureGrid() {
+    grid.removeAllColumns();
     grid.setId("inbox-grid");
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
-    grid.setColumns("eventType", "description", "eventTimestamp");
-    grid.addColumn(this::getTargetNames).setHeader("Targets");
-    grid.addComponentColumn(this::createReadToggleButton).setHeader("Mark as Read/Unread");
+    grid.addColumn(InboxItem::getEventType).setHeader("Event Type").setId("event-type-column");
+    grid.addColumn(InboxItem::getDescription).setHeader("Description").setId("description-column");
+    grid.addColumn(InboxItem::getEventTimestamp)
+        .setHeader("Event Timestamp")
+        .setId("timestamp-column");
+    grid.addColumn(this::getTargetNames).setHeader("Targets").setId("targets-column");
+    grid.addComponentColumn(this::createActionComponent)
+        .setHeader("Actions")
+        .setId("actions-column");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
     grid.setSelectionMode(Grid.SelectionMode.MULTI);
 
@@ -242,7 +258,52 @@ public class InboxView extends VerticalLayout {
     grid.addItemClickListener(event -> showDetails(event.getItem()));
   }
 
-  private String getTargetNames(InboxItem item) {
+  private Component createActionComponent(@NonNull InboxItem item) {
+    HorizontalLayout layout = new HorizontalLayout();
+    layout.setPadding(false);
+    layout.setSpacing(true);
+
+    if (item.getEventType().getName().equals("MATCH_REQUEST")) {
+      Button reportButton =
+          new Button(
+              "Report Result",
+              e -> {
+                // Find fulfillment ID from targets
+                item.getTargets().stream()
+                    .filter(
+                        t ->
+                            t.getTargetType()
+                                == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
+                                    .TargetType.MATCH_FULFILLMENT)
+                    .findFirst()
+                    .ifPresent(
+                        target -> {
+                          try {
+                            matchFulfillmentService
+                                .getFulfillmentWithDetails(Long.parseLong(target.getTargetId()))
+                                .ifPresent(
+                                    f ->
+                                        new MatchReportDialog(
+                                                matchFulfillmentService,
+                                                f,
+                                                securityUtils,
+                                                this::updateList)
+                                            .open());
+                          } catch (NumberFormatException ex) {
+                            // Ignore
+                          }
+                        });
+              });
+      reportButton.setId("report-result-btn-" + item.getId());
+      reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+      layout.add(reportButton);
+    }
+
+    layout.add(createReadToggleButton(item));
+    return layout;
+  }
+
+  private String getTargetNames(@NonNull InboxItem item) {
     if (item.getTargets() == null || item.getTargets().isEmpty()) {
       // This is for backward compatibility with old data that had the target in the
       // description.
@@ -263,11 +324,30 @@ public class InboxView extends VerticalLayout {
     }
     return item.getTargets().stream()
         .map(
-            target ->
-                wrestlerRepository
-                    .findById(Long.parseLong(target.getTargetId()))
-                    .map(Wrestler::getName)
-                    .orElse("Unknown"))
+            target -> {
+              try {
+                Long id = Long.parseLong(target.getTargetId());
+                switch (target.getTargetType()) {
+                  case ACCOUNT:
+                    return inboxService
+                        .getAccountRepository()
+                        .findById(id)
+                        .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+                        .orElse("Unknown Account (" + id + ")");
+                  case WRESTLER:
+                    return wrestlerRepository
+                        .findById(id)
+                        .map(Wrestler::getName)
+                        .orElse("Unknown Wrestler (" + id + ")");
+                  case MATCH_FULFILLMENT:
+                    return "Match Fulfillment (" + id + ")";
+                  default:
+                    return "Unknown (" + id + ")";
+                }
+              } catch (NumberFormatException e) {
+                return target.getTargetId();
+              }
+            })
         .collect(Collectors.joining(", "));
   }
 
@@ -279,7 +359,7 @@ public class InboxView extends VerticalLayout {
     }
   }
 
-  private Button createReadToggleButton(InboxItem item) {
+  private Button createReadToggleButton(@NonNull InboxItem item) {
     Button button = new Button(item.isRead() ? "Mark as Unread" : "Mark as Read");
     button.addClickListener(
         click -> {
@@ -291,11 +371,14 @@ public class InboxView extends VerticalLayout {
   }
 
   private void updateList() {
+    Long accountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
     grid.setItems(
         inboxService.search(
             targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
-            hideReadCheckbox.getValue()));
+            hideReadCheckbox.getValue(),
+            accountId));
   }
 }

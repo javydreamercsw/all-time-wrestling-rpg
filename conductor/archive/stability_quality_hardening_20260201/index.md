@@ -11,7 +11,7 @@ This track focuses on eliminating technical debt related to testing flakiness, i
 
 ## Status
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Main Issue:** [all-time-wrestling-rpg-cyz](../../../.beads/issues.jsonl) (Stability & Quality Hardening)
 - **Branch:** `track/stability-hardening`
 
@@ -19,9 +19,9 @@ This track focuses on eliminating technical debt related to testing flakiness, i
 
 - [x] Investigate & Fix DataIntegrityViolation in ShowDetailViewE2ETest
 
-- [x] Optimize Selenium Wait Strategies
+- [x] Optimize Selenium Wait Strategies & UI Test Stability (Fixed InboxView timeouts & LeagueLifecycle flakiness)
 
-- [x] Add Unit Tests for Campaign Logic
+- [x] Add Unit Tests for Campaign Logic (Tournament & Campaign Services)
 
 - [x] Configure Test Retries
 

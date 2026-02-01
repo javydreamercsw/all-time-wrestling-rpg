@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import lombok.NonNull;
 
-public interface NotionSyncService {
+public interface NotionEntitySyncService {
 
   /**
    * Sync entities to Notion

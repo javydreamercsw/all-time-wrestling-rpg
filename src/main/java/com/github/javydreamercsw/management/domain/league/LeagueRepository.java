@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,17 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.sync.entity.notion;
+package com.github.javydreamercsw.management.domain.league;
 
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import lombok.NonNull;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
-public interface INotionSyncService {
+@RepositoryRestResource
+public interface LeagueRepository extends JpaRepository<League, Long> {
+  Optional<League> findByName(String name);
 
-  /**
-   * Sync entities to Notion
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return Result of the sync.
-   */
-  SyncResult syncToNotion(@NonNull String operationId);
+  @Query("SELECT l FROM League l LEFT JOIN FETCH l.excludedWrestlers WHERE l.id = :id")
+  Optional<League> findByIdWithExcludedWrestlers(Long id);
 }
