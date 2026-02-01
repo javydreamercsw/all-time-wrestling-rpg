@@ -86,7 +86,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     when(mockUser.getUsername()).thenReturn("testuser");
     when(mockUser.getAccount()).thenReturn(mockAccount);
 
-    mockWrestler = Wrestler.builder().name("Test Wrestler").account(mockAccount).build();
+    mockWrestler = Wrestler.builder().id(1L).name("Test Wrestler").account(mockAccount).build();
 
     mockState =
         CampaignState.builder().activeCards(new ArrayList<>()).upgrades(new ArrayList<>()).build();

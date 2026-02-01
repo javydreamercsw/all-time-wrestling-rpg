@@ -18,11 +18,14 @@ package com.github.javydreamercsw.management.service.league;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.league.Draft;
 import com.github.javydreamercsw.management.domain.league.DraftPick;
 import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
@@ -30,9 +33,13 @@ import com.github.javydreamercsw.management.domain.league.DraftRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.league.DraftBroadcaster;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +56,12 @@ class DraftServiceTest {
   @Mock private DraftPickRepository draftPickRepository;
   @Mock private LeagueMembershipRepository leagueMembershipRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
+  @Mock private AccountRepository accountRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private LeagueRepository leagueRepository;
+  @Mock private DraftBroadcaster draftBroadcaster;
+  @Mock private InboxService inboxService;
+  @Mock private InboxEventType draftStartedEventType;
 
   @InjectMocks private DraftService draftService;
 
@@ -66,8 +79,13 @@ class DraftServiceTest {
     m2.setMember(p2);
 
     when(draftRepository.findByLeague(league)).thenReturn(Optional.empty());
+    // Fix: Mock findByLeagueAndRoleIn
+    when(leagueMembershipRepository.findByLeagueAndRoleIn(eq(league), any()))
+        .thenReturn(new ArrayList<>(List.of(m2, m1)));
+    // Also mock findByLeague for notifications
     when(leagueMembershipRepository.findByLeague(league))
-        .thenReturn(new ArrayList<>(List.of(m2, m1))); // Unordered
+        .thenReturn(new ArrayList<>(List.of(m2, m1)));
+
     when(draftRepository.save(any(Draft.class))).thenAnswer(i -> i.getArgument(0));
 
     Draft draft = draftService.startDraft(league);
@@ -79,6 +97,8 @@ class DraftServiceTest {
   @Test
   void testMakePick_SnakeDraftLogic() {
     League league = new League();
+    league.setId(100L);
+    league.setMaxPicksPerPlayer(10);
     Account p1 = new Account();
     p1.setId(1L);
     p1.setUsername("P1");
@@ -99,14 +119,24 @@ class DraftServiceTest {
     draft.setCurrentRound(1);
     draft.setCurrentPickNumber(1);
 
-    when(leagueMembershipRepository.findByLeague(league))
+    // Fix: Mock findByLeagueAndRoleIn
+    when(leagueMembershipRepository.findByLeagueAndRoleIn(eq(league), any()))
         .thenReturn(new ArrayList<>(List.of(m1, m2)));
+
+    // Mock countAvailableWrestlers dependencies
+    when(leagueRepository.findByIdWithExcludedWrestlers(league.getId()))
+        .thenReturn(Optional.of(league));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(new Wrestler(), new Wrestler()));
+
     when(draftRepository.save(any(Draft.class))).thenAnswer(i -> i.getArgument(0));
+    when(accountRepository.findById(any())).thenReturn(Optional.of(p1)); // simplified
 
     // Pick 1: P1
     draftService.makePick(draft, p1, new Wrestler());
     assertThat(draft.getCurrentTurnUser()).isEqualTo(p2);
     assertThat(draft.getCurrentRound()).isEqualTo(1);
+
+    when(accountRepository.findById(any())).thenReturn(Optional.of(p2)); // simplified
 
     // Pick 2: P2 (End of Round 1, Snake back)
     draftService.makePick(draft, p2, new Wrestler());
@@ -118,6 +148,8 @@ class DraftServiceTest {
     draftService.makePick(draft, p2, new Wrestler());
     assertThat(draft.getCurrentTurnUser()).isEqualTo(p1);
     assertThat(draft.getCurrentRound()).isEqualTo(2);
+
+    when(accountRepository.findById(any())).thenReturn(Optional.of(p1)); // simplified
 
     // Pick 4: P1 (End of Round 2, Snake forward)
     draftService.makePick(draft, p1, new Wrestler());

@@ -85,6 +85,7 @@ class SegmentServiceLeagueTest {
     segment.setShow(show);
 
     Wrestler wrestler = new Wrestler();
+    wrestler.setId(10L);
     wrestler.setName("The Rock");
 
     LeagueRoster roster = new LeagueRoster();
@@ -96,6 +97,13 @@ class SegmentServiceLeagueTest {
         .thenReturn(Optional.of(roster));
 
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    when(matchFulfillmentRepository.save(any(MatchFulfillment.class)))
+        .thenAnswer(
+            i -> {
+              MatchFulfillment mf = i.getArgument(0);
+              mf.setId(100L);
+              return mf;
+            });
 
     segmentService.addParticipant(segment, wrestler);
 
