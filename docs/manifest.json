@@ -1,5 +1,47 @@
 {
   "features": [ {
+    "id": "leagues-league-creation",
+    "category": "Leagues",
+    "title": "Creating a League",
+    "description": "Commissioners can create new leagues, setting the maximum picks per player and inviting other players.",
+    "imagePath": "screenshots/league-creation.png",
+    "order": 0
+  }, {
+    "id": "leagues-league-draft-room",
+    "category": "Leagues",
+    "title": "The Draft Room",
+    "description": "Players participate in a snake draft to build their rosters. The UI shows the current turn and available wrestlers.",
+    "imagePath": "screenshots/league-draft-room.png",
+    "order": 10
+  }, {
+    "id": "leagues-league-match-report",
+    "category": "Leagues",
+    "title": "Match Reporting",
+    "description": "When a league match is booked, players receive a notification to report the results of their matches.",
+    "imagePath": "screenshots/league-match-report.png",
+    "order": 20
+  }, {
+    "id": "leagues-league-standings",
+    "category": "Leagues",
+    "title": "League Standings",
+    "description": "The league dashboard displays the current standings, including wins, losses, and draws for each wrestler.",
+    "imagePath": "screenshots/league-standings.png",
+    "order": 30
+  }, {
+    "id": "leagues-league-rosters-tab",
+    "category": "Leagues",
+    "title": "League Rosters",
+    "description": "View the complete rosters for all players in the league.",
+    "imagePath": "screenshots/league-rosters-tab.png",
+    "order": 40
+  }, {
+    "id": "leagues-league-history-tab",
+    "category": "Leagues",
+    "title": "League History",
+    "description": "Keep track of all shows and match results that occurred within the league.",
+    "imagePath": "screenshots/league-history-tab.png",
+    "order": 50
+  }, {
     "id": "campaign-campaign-beginning",
     "category": "Campaign",
     "title": "The Beginning",
