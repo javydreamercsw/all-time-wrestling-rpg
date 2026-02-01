@@ -475,4 +475,9 @@ public class ShowService {
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
   }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Show> getShowsByLeague(@NonNull League league) {
+    return showRepository.findByLeague(league);
+  }
 }

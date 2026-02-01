@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class InjuryTypeNotionSyncService implements INotionSyncService {
+public class InjuryTypeNotionSyncService implements NotionEntitySyncService {
   @Autowired private InjuryTypeRepository injuryTypeRepository;
 
   private final NotionHandler notionHandler;

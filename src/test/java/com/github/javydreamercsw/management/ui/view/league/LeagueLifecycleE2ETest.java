@@ -89,7 +89,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     clickElement(By.id("create-league-btn"));
 
     // Fill form
-    final String leagueName = "Hardening League " + new Date().getYear() + 1_900;
+    final String leagueName = "League " + System.currentTimeMillis();
     WebElement nameField = waitForVaadinElement(driver, By.id("league-name-field"));
     nameField.sendKeys(leagueName);
     nameField.sendKeys(Keys.TAB); // Trigger blur
@@ -199,7 +199,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     navigateTo("show-list");
     waitForVaadinElement(driver, By.id("show-name"));
 
-    final String showName = "League Night 1";
+    final String showName = "League Night " + System.currentTimeMillis();
 
     Objects.requireNonNull(
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
@@ -215,7 +215,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     wait.until(driver -> templateComboBox.isEnabled());
 
-    seasonComboBox.sendKeys("" + new Date().getYear() + 1_900, Keys.TAB);
+    seasonComboBox.sendKeys("" + (new Date().getYear() + 1_900), Keys.TAB);
     templateComboBox.sendKeys("Continuum", Keys.TAB);
     leagueComboBox.sendKeys(leagueName, Keys.TAB);
 
@@ -224,7 +224,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
         .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
 
     clickElement(By.id("create-show-button"));
-    waitForNotification("Show created.");
+    waitForPageSourceToContain("Show created.");
 
     // Navigate to Show Detail
     // Find the newly created show in the grid using the ID pattern
@@ -311,6 +311,28 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     // Verify FINALIZED
     assertGridContains("segments-grid", "FINALIZED");
+
+    // Step 6: League Dashboard Verification
+    navigateTo("leagues");
+    waitForGridToPopulate("league-grid");
+
+    // Click Dashboard button
+    WebElement dashboardBtn = driver.findElement(By.xpath("//vaadin-button[text()='Dashboard']"));
+    clickElement(dashboardBtn);
+
+    waitForVaadinElement(driver, By.tagName("vaadin-tabs"));
+    assertTrue(driver.getPageSource().contains("League Standings"));
+    assertTrue(driver.getPageSource().contains("1 - 0 - 0"));
+
+    // Check Rosters Tab
+    click("vaadin-tab", "Rosters");
+    waitForPageSourceToContain("League Rosters");
+    assertTrue(driver.getPageSource().contains(p1WrestlerName));
+
+    // Check History Tab
+    click("vaadin-tab", "Show History");
+    waitForPageSourceToContain("Show History");
+    assertTrue(driver.getPageSource().contains(showName));
   }
 
   private void navigateTo(String route) {

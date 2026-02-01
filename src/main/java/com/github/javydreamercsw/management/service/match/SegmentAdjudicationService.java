@@ -56,6 +56,8 @@ public class SegmentAdjudicationService {
   private final TitleService titleService;
   private final MatchRewardService matchRewardService;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+      leagueRosterRepository;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -66,7 +68,9 @@ public class SegmentAdjudicationService {
       MultiWrestlerFeudService feudService,
       TitleService titleService,
       MatchRewardService matchRewardService,
-      MatchFulfillmentRepository matchFulfillmentRepository) {
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+          leagueRosterRepository) {
     this(
         rivalryService,
         wrestlerService,
@@ -75,6 +79,7 @@ public class SegmentAdjudicationService {
         titleService,
         matchRewardService,
         matchFulfillmentRepository,
+        leagueRosterRepository,
         new Random());
   }
 
@@ -86,6 +91,8 @@ public class SegmentAdjudicationService {
       TitleService titleService,
       MatchRewardService matchRewardService,
       MatchFulfillmentRepository matchFulfillmentRepository,
+      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+          leagueRosterRepository,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -94,6 +101,7 @@ public class SegmentAdjudicationService {
     this.titleService = titleService;
     this.matchRewardService = matchRewardService;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.leagueRosterRepository = leagueRosterRepository;
     this.random = random;
   }
 
@@ -119,6 +127,43 @@ public class SegmentAdjudicationService {
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
+
+    // Update League Stats if applicable
+    if (segment.getShow().getLeague() != null) {
+      com.github.javydreamercsw.management.domain.league.League league =
+          segment.getShow().getLeague();
+      if (winners.isEmpty()) {
+        // Draw
+        for (Wrestler w : segment.getWrestlers()) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setDraws(roster.getDraws() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+      } else {
+        for (Wrestler w : winners) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setWins(roster.getWins() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+        for (Wrestler w : losers) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setLosses(roster.getLosses() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+      }
+    }
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);

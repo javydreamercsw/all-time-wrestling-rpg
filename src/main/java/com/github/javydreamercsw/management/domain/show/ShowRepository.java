@@ -40,6 +40,8 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   boolean existsByLeague(League league);
 
+  List<Show> findByLeague(League league);
+
   // ==================== CALENDAR-SPECIFIC QUERIES ====================
 
   /**

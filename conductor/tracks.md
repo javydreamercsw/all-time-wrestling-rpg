@@ -28,11 +28,11 @@
 
 *Link: [./conductor/archive/on_demand_themes_20260125/](./conductor/archive/on_demand_themes_20260125/)*
 
+### [x] Track: Multiplayer & League Features
+
+*Link: [./conductor/tracks/multiplayer_league_features/](./conductor/tracks/multiplayer_league_features/)*
+
 ---
 
 ## Active Tracks
-
-### [ ] Track: Multiplayer & League Features
-
-*Link: [./conductor/tracks/multiplayer_league_features/](./conductor/tracks/multiplayer_league_features/)*
 

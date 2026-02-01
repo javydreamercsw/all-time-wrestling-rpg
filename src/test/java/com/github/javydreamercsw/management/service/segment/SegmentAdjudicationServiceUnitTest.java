@@ -57,6 +57,10 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
 
+  @Mock
+  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+      leagueRosterRepository;
+
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
   private Segment promoSegment;
@@ -75,6 +79,7 @@ class SegmentAdjudicationServiceUnitTest {
             titleService,
             matchRewardService,
             matchFulfillmentRepository,
+            leagueRosterRepository,
             random);
 
     wrestler1 = Wrestler.builder().build();

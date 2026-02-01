@@ -61,6 +61,10 @@ class SegmentAdjudicationServiceTest {
   @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
 
+  @Mock
+  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+      leagueRosterRepository;
+
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
@@ -74,6 +78,7 @@ class SegmentAdjudicationServiceTest {
             titleService,
             matchRewardService,
             matchFulfillmentRepository,
+            leagueRosterRepository,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));

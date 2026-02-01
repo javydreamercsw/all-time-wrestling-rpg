@@ -105,7 +105,12 @@ public class LeagueListView extends Main {
               } else {
                 actionButton.setText("Dashboard");
                 actionButton.setIcon(VaadinIcon.DASHBOARD.create());
-                // TODO navigate to league dashboard
+                actionButton.setId("league-dashboard-btn-" + league.getId());
+                actionButton.addClickListener(
+                    e ->
+                        getUI()
+                            .ifPresent(
+                                ui -> ui.navigate(LeagueDashboardView.class, league.getId())));
               }
               actionButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
               actions.add(actionButton);

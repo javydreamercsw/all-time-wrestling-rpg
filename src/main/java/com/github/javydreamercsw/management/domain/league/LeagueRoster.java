@@ -60,4 +60,8 @@ public class LeagueRoster {
   @NotNull @ManyToOne
   @JoinColumn(name = "wrestler_id")
   private Wrestler wrestler;
+
+  private int wins = 0;
+  private int losses = 0;
+  private int draws = 0;
 }
