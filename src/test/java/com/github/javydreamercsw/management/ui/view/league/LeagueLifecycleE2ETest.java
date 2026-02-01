@@ -255,8 +255,6 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
 
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, "Rob Van Dam");
-
     String p1WrestlerName = getPlayer1WrestlerName();
     selectFromVaadinMultiSelectComboBox(wrestlersCombo, p1WrestlerName);
 
