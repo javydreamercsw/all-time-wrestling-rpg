@@ -64,9 +64,8 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
   @BeforeEach
   public void setupData() throws IOException {
     // Clean up
-    matchFulfillmentRepository.deleteAll();
+    cleanupLeagues();
     segmentRepository.deleteAll();
-    leagueRepository.deleteAll();
     showRepository.deleteAll();
 
     // Create Player & Account
@@ -77,9 +76,15 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
       Account playerAccount = new Account();
       playerAccount.setUsername("player1");
       playerAccount.setEmail("player1@example.com");
-      playerAccount.setPassword(passwordEncoder.encode("password"));
+      playerAccount.setPassword(passwordEncoder.encode("password123"));
       playerAccount.setActiveWrestlerId(playerWrestler.getId());
       playerAccount.setRoles(Set.of(roleRepository.findByName(RoleName.PLAYER).orElseThrow()));
+      accountRepository.saveAndFlush(playerAccount);
+    } else {
+      // Update existing account to ensure known state
+      Account playerAccount = accountRepository.findByUsername("player1").get();
+      playerAccount.setPassword(passwordEncoder.encode("password123"));
+      playerAccount.setActiveWrestlerId(playerWrestler.getId());
       accountRepository.saveAndFlush(playerAccount);
     }
 
@@ -142,7 +147,7 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
   void testPlayerCanSeeFeedbackInLeagueMatch() {
     // Logout admin (default) and login as player
     logout();
-    login("player1", "password");
+    login("player1", "password123");
 
     driver.get(
         "http://localhost:" + serverPort + getContextPath() + "/match/" + matchSegment.getId());

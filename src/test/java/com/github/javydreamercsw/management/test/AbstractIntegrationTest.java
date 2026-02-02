@@ -99,6 +99,10 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected DraftPickRepository draftPickRepository;
   @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
 
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
+      titleReignRepository;
+
   @Autowired(required = false)
   protected org.springframework.cache.CacheManager cacheManager;
 
@@ -174,6 +178,7 @@ public abstract class AbstractIntegrationTest {
 
   protected void cleanupLeagues() {
     log.info("Cleaning up Leagues and related data...");
+    titleReignRepository.deleteAll();
     matchFulfillmentRepository.deleteAll();
     draftPickRepository.deleteAll();
     draftRepository.deleteAll();
