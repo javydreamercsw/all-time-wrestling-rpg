@@ -82,6 +82,13 @@ public class AiSettingsService {
         .orElse(1000);
   }
 
+  public String getOpenAIImageModel() {
+    return gameSettingService
+        .findById("AI_OPENAI_IMAGE_MODEL")
+        .map(GameSetting::getValue)
+        .orElse("dall-e-3");
+  }
+
   public float getOpenAITemperature() {
     return gameSettingService
         .findById("AI_OPENAI_TEMPERATURE")
@@ -169,6 +176,13 @@ public class AiSettingsService {
         .findById("AI_LOCALAI_MODEL")
         .map(GameSetting::getValue)
         .orElse("llama-3.2-1b-instruct:q4_k_m");
+  }
+
+  public String getLocalAIImageModel() {
+    return gameSettingService
+        .findById("AI_LOCALAI_IMAGE_MODEL")
+        .map(GameSetting::getValue)
+        .orElse("stablediffusion");
   }
 
   public String getLocalAIModelUrl() {

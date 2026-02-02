@@ -1,9 +1,9 @@
 # Implementation Plan - Image Generation
 
-- [ ] **Backend**
-  - [ ] Create `ImageGenerationService`.
-  - [ ] Implement provider interfaces (LocalAI/OpenAI).
-  - [ ] Implement image storage logic.
+- [x] **Backend**
+  - [x] Create `ImageGenerationService`.
+  - [x] Implement provider interfaces (LocalAI/OpenAI).
+  - [x] Implement image storage logic.
 - [ ] **Frontend**
   - [ ] Add Image Gen controls to `WrestlerView`.
   - [ ] Implement preview dialog.

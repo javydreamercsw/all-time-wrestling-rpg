@@ -177,6 +177,7 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_OPENAI_API_KEY", null);
     syncSetting("AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo");
     syncSetting("AI_OPENAI_PREMIUM_MODEL", "gpt-4");
+    syncSetting("AI_OPENAI_IMAGE_MODEL", "dall-e-3");
     syncSetting("AI_OPENAI_MAX_TOKENS", "1000");
     syncSetting("AI_OPENAI_TEMPERATURE", "0.7");
 
@@ -197,6 +198,7 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_LOCALAI_BASE_URL", "http://localhost:8088");
     syncSetting("AI_LOCALAI_MODEL", "llama-3.2-1b-instruct:q4_k_m");
     syncSetting("AI_LOCALAI_MODEL_URL", null);
+    syncSetting("AI_LOCALAI_IMAGE_MODEL", "stablediffusion");
 
     boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");
     boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
