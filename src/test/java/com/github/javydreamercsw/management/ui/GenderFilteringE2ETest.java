@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,18 +78,18 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Transactional
   public void setupTestData() {
+    cleanupLeagues();
+    if (cacheManager != null) {
+      cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
 
     wrestlerAlignmentRepository.deleteAllInBatch();
-
     campaignStateRepository.deleteAllInBatch();
-
     backstageActionHistoryRepository.deleteAllInBatch();
-
     campaignEncounterRepository.deleteAllInBatch();
-
     campaignRepository.deleteAllInBatch();
-
     titleRepository.deleteAll();
+    wrestlerRepository.deleteAll();
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");
@@ -139,12 +140,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify both wrestlers are displayed initially
       log.info("Verifying both wrestlers are displayed");
-      wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), maleWrestler.getName()));
-      wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), femaleWrestler.getName()));
+      waitForGridToPopulate("wrestler-rankings-grid");
+      assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
+      assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
 
       // Select "FEMALE" from the gender ComboBox
       log.info("Filtering by FEMALE");
@@ -155,12 +153,14 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify only the female wrestler is displayed
       log.info("Verifying only female wrestler is displayed");
+      waitForGridToPopulate("wrestler-rankings-grid");
+      assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
+
       wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), femaleWrestler.getName()));
-      wait.until(
-          ExpectedConditions.invisibilityOfElementWithText(
-              By.tagName("vaadin-grid-cell-content"), maleWrestler.getName()));
+          d -> {
+            List<WebElement> rows = getGridRows("wrestler-rankings-grid");
+            return rows.stream().noneMatch(row -> row.getText().contains(maleWrestler.getName()));
+          });
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -178,12 +178,8 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify both wrestlers are displayed initially
       log.info("Verifying both wrestlers are displayed");
-      wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), maleWrestler.getName()));
-      wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), femaleWrestler.getName()));
+      assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
+      assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
 
       // Select "MALE" from the gender ComboBox
       log.info("Filtering by MALE");
@@ -194,12 +190,14 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify only the male wrestler is displayed
       log.info("Verifying only male wrestler is displayed");
+      waitForGridToPopulate("wrestler-rankings-grid");
+      assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
+
       wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), maleWrestler.getName()));
-      wait.until(
-          ExpectedConditions.invisibilityOfElementWithText(
-              By.tagName("vaadin-grid-cell-content"), femaleWrestler.getName()));
+          d -> {
+            List<WebElement> rows = getGridRows("wrestler-rankings-grid");
+            return rows.stream().noneMatch(row -> row.getText().contains(femaleWrestler.getName()));
+          });
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -225,9 +223,8 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify the female wrestler is in the contenders list
       log.info("Verifying female wrestler is a contender");
-      wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("vaadin-grid"), femaleWrestler.getName()));
+      waitForGridToPopulate("wrestler-contenders-grid");
+      assertGridContains("wrestler-contenders-grid", femaleWrestler.getName());
 
       // Open the "Tier Boundaries" dialog
       log.info("Opening tier boundaries dialog");
@@ -243,14 +240,13 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Select "FEMALE" in the dialog's gender ComboBox
       log.info("Filtering tier boundaries by FEMALE");
       WebElement dialogGenderComboBox =
-          driver.findElement(By.cssSelector("vaadin-dialog vaadin-combo-box"));
+          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("tier-gender-selection")));
       selectFromVaadinComboBox(dialogGenderComboBox, "FEMALE");
 
       // Verify that the female tier boundaries are displayed in the dialog's grid
       log.info("Verifying female tier boundaries");
-      wait.until(
-          ExpectedConditions.textToBePresentInElementLocated(
-              By.cssSelector("vaadin-dialog vaadin-grid"), "Midcarder"));
+      waitForGridToPopulate("tier-boundaries-grid");
+      assertGridContains("tier-boundaries-grid", "Midcarder");
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);

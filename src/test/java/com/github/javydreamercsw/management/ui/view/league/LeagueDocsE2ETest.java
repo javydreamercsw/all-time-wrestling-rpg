@@ -63,6 +63,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTest() {
+    cleanupLeagues();
     ensurePlayerAccount();
     ensureWrestlers();
     ensureSeasonExists();
@@ -124,7 +125,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     // Complete Draft to show other features
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
     Random random = new Random();
-    Wrestler w1 = wrestlers.get(random.nextInt(wrestlers.size()));
+    Wrestler w1 = wrestlers.get(0);
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
 
     logout();
@@ -132,7 +133,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     navigateTo("leagues");
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
-    Wrestler w2 = wrestlers.get(random.nextInt(wrestlers.size()));
+    Wrestler w2 = wrestlers.get(1);
     clickElement(By.id("draft-wrestler-btn-" + w2.getId()));
 
     // Verify Draft Completed
@@ -145,7 +146,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     final String showName = "Docs Show " + System.currentTimeMillis();
     createLeagueShow(leagueName, showName);
     Show show = showService.findByName(showName).get(0);
-    addSegmentToShow(show, w2.getName()); // player1's wrestler
+    addSegmentToShow(show, w1.getName(), w2.getName()); // admin's pick vs player1's wrestler
 
     // Login as player to report
     logout();
@@ -271,7 +272,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     waitForPageSourceToContain("Show created.");
   }
 
-  private void addSegmentToShow(Show show, String wrestlerName) {
+  private void addSegmentToShow(Show show, String wrestlerName1, String wrestlerName2) {
     WebElement viewShowDetails =
         new WebDriverWait(driver, Duration.ofSeconds(10))
             .until(
@@ -285,8 +286,8 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
 
     selectFromVaadinComboBox("segment-type-combo-box", "One on One");
     WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, "Rob Van Dam");
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName);
+    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName1);
+    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName2);
 
     clickElement(By.id("add-segment-save-button"));
     waitForNotification("Segment added successfully!");

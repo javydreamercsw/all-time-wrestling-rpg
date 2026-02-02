@@ -46,5 +46,7 @@
 
 ## Active Tracks
 
-*(No active tracks)*
+### [ ] Track: E2E CI Hardening
+
+*Link: [./conductor/tracks/e2e_ci_hardening/index.md](./conductor/tracks/e2e_ci_hardening/index.md)*
 
