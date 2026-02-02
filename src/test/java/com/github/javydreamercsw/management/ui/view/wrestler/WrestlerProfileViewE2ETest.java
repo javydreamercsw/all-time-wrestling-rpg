@@ -72,6 +72,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @BeforeEach
   void setUp() {
     // Clear all relevant repositories to ensure a clean state for each test
+    cleanupLeagues();
     titleReignRepository
         .findAll()
         .forEach(

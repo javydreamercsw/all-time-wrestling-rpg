@@ -74,7 +74,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   void setUp() {
-
+    cleanupLeagues();
     if (cacheManager != null) {
 
       cacheManager

@@ -98,6 +98,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTest() {
+    cleanupLeagues();
     // It's better to delete in order to avoid constraint violations.
     wrestlerAlignmentRepository.deleteAllInBatch();
     campaignStateRepository.deleteAllInBatch();

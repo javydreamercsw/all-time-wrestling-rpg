@@ -77,6 +77,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTestData() {
+    cleanupLeagues();
     wrestlerAlignmentRepository.deleteAllInBatch();
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();

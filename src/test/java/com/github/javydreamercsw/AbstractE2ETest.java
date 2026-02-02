@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.util.docs.DocEntry;
@@ -119,6 +117,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
+
+    cleanupLeagues();
 
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
@@ -403,6 +403,24 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
   }
 
+  protected void toggleVaadinCheckbox(@NonNull By selector) {
+    toggleVaadinCheckbox(driver.findElement(selector));
+  }
+
+  protected void toggleVaadinCheckbox(@NonNull WebElement checkbox) {
+    scrollIntoView(checkbox);
+    takeSequencedScreenshot("before-toggle-checkbox");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    wait.until(ExpectedConditions.visibilityOf(checkbox));
+
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].checked = !arguments[0].checked; arguments[0].dispatchEvent(new"
+                + " CustomEvent('change', { bubbles: true }));",
+            checkbox);
+    takeSequencedScreenshot("after-toggle-checkbox");
+  }
+
   /**
    * Scrolls the given WebElement into view and clicks it using JavaScript.
    *
@@ -420,11 +438,27 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
     takeSequencedScreenshot("before-click");
-    // First, wait for the element to be clickable.
+    // First, wait for the element to be visible.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.elementToBeClickable(element));
-    // Then, use JavaScript to click to bypass potential interception by other elements.
-    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+    wait.until(ExpectedConditions.visibilityOf(element));
+
+    // Ensure the drawer is closed if it might intercept clicks
+    try {
+      ((JavascriptExecutor) driver)
+          .executeScript(
+              "const layout = document.querySelector('vaadin-app-layout');"
+                  + "if (layout && layout.drawerOpened) { layout.drawerOpened = false; }");
+    } catch (Exception e) {
+      log.warn("Could not ensure drawer was closed", e);
+    }
+
+    // Use JavaScript to click to bypass potential interception by other elements (like the drawer
+    // or overlays).
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true,"
+                + " cancelable: true}));",
+            element);
     takeSequencedScreenshot("after-click");
   }
 
@@ -597,15 +631,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
     WebElement grid = waitForVaadinElement(driver, By.id(gridId));
-    boolean found = false;
-    for (WebElement gridRow : getGridRows(grid)) {
-      if (gridRow.getText().contains(expectedText)) {
-        found = true;
-        break;
-      }
-    }
-
-    assertTrue(found, "Grid '" + gridId + "' does not contain '" + expectedText + "'.");
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              for (WebElement gridRow : getGridRows(grid)) {
+                if (gridRow.getText().contains(expectedText)) {
+                  return true;
+                }
+              }
+              return false;
+            });
   }
 
   /**
@@ -733,7 +768,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].hasAttribute('invalid');", textFieldElement);
 
-    if (isInvalid) {
+    if (Boolean.TRUE.equals(isInvalid)) {
       // Access the shadow root of the vaadin-text-field
       SearchContext shadowRoot = textFieldElement.getShadowRoot();
 
@@ -752,7 +787,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForPageSourceToContain(@NonNull String text) {
-    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(60))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

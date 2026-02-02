@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTest() {
+    cleanupLeagues();
     // Prerequisites
     ensurePlayerAccount();
     ensureWrestlers();
@@ -92,7 +94,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     final String leagueName = "League " + System.currentTimeMillis();
     WebElement nameField = waitForVaadinElement(driver, By.id("league-name-field"));
     nameField.sendKeys(leagueName);
-    nameField.sendKeys(Keys.TAB); // Trigger blur
+    nameField.sendKeys(Keys.TAB);
 
     // Set max picks to 2
     WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
@@ -105,7 +107,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     maxPicksField.sendKeys(Keys.TAB);
 
     // Admin wants to play
-    clickElement(By.id("league-commissioner-plays-checkbox"));
+    toggleVaadinCheckbox(By.id("league-commissioner-plays-checkbox"));
 
     // Select player1
     WebElement participantsCombo = waitForVaadinElement(driver, By.id("participants-combo"));
@@ -178,11 +180,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     clickElement(By.id("draft-wrestler-btn-" + w3.getId()));
 
     // Turn returns to admin
-    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
-        .until(
-            d ->
-                java.util.Objects.requireNonNull(d.getPageSource())
-                    .contains("Current Turn: admin"));
+    waitForTurnChange("admin");
 
     // Login as admin to finish draft
     logout();
@@ -274,8 +272,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForGridToPopulate("inbox-grid");
 
     // Find notification
-    // Description contains "Pending match on show: League Night 1"
-    assertGridContains("inbox-grid", "Pending match on show: League Night 1");
+    // Description contains "Pending match on show: [showName]"
+    assertGridContains("inbox-grid", "Pending match on show: " + showName);
 
     WebElement inboxGrid = driver.findElement(By.id("inbox-grid"));
     WebElement reportButton =
@@ -341,6 +339,13 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   private void navigateTo(String route) {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
     waitForVaadinClientToLoad();
+  }
+
+  private void waitForTurnChange(@NonNull String username) {
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(
+            ExpectedConditions.textToBePresentInElementLocated(
+                By.id("draft-turn-label"), "Current Turn: " + username));
   }
 
   private void ensurePlayerAccount() {

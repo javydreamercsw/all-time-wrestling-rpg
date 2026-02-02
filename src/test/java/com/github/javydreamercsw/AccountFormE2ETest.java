@@ -38,10 +38,11 @@ public class AccountFormE2ETest extends AbstractE2ETest {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void testDeleteAccount() {
-    // Create an account to delete
+    // Create an account to delete with a unique name
+    String username = "delete_me_" + System.currentTimeMillis();
     Account account =
         accountService.createAccount(
-            "delete_me", "ValidPassword1!", "delete_me@atw.com", RoleName.VIEWER);
+            username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
@@ -52,13 +53,13 @@ public class AccountFormE2ETest extends AbstractE2ETest {
     // Find the delete button for the new account
     WebElement deleteButton =
         waitForVaadinElement(driver, By.id("delete-button-" + account.getId()));
-    deleteButton.click();
+    clickElement(deleteButton);
 
     // Confirm the deletion
     WebElement confirmButton =
         waitForVaadinElement(
             driver, By.xpath("//vaadin-confirm-dialog//vaadin-button[text()='Delete']"));
-    confirmButton.click();
+    clickElement(confirmButton);
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
