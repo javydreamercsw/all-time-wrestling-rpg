@@ -790,6 +790,7 @@
             </includes>
             <excludes>
               <exclude>target/**</exclude>
+              <exclude>data/**</exclude>
               <exclude>node_modules/**</exclude>
               <exclude>tsconfig.json</exclude>
               <exclude>**/tsconfig.json</exclude>

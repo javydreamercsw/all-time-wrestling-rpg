@@ -42,17 +42,21 @@
 *Status: Completed*
 *Date: 2026-02-01*
 
----
-
-## Active Tracks
-
 ### [x] Track: Interactive Promos
 
-*Link: [./conductor/tracks/interactive_promos_20260201/index.md](./conductor/tracks/interactive_promos_20260201/index.md)*
+*Link: [./conductor/archive/interactive_promos_20260201/](./conductor/archive/interactive_promos_20260201/)*
+*Status: Completed*
+*Date: 2026-02-02*
 
 ### [x] Track: Image Generation
 
-*Link: [./conductor/tracks/image_generation_20260201/index.md](./conductor/tracks/image_generation_20260201/index.md)*
+*Link: [./conductor/archive/image_generation_20260201/](./conductor/archive/image_generation_20260201/)*
+*Status: Completed*
+*Date: 2026-02-02*
+
+---
+
+## Active Tracks
 
 ### [ ] Track: E2E CI Hardening
 

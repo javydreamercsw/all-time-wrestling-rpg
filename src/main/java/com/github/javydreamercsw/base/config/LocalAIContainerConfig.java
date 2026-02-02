@@ -87,9 +87,14 @@ public class LocalAIContainerConfig {
       statusService.setStatus(LocalAIStatusService.Status.STARTING);
       statusService.setMessage("LocalAI container is starting...");
 
-      File modelsDir = new File("models");
+      File modelsDir = new File("data", "models");
       if (!modelsDir.exists()) {
         modelsDir.mkdirs();
+      }
+
+      File backendsDir = new File("data", "backends");
+      if (!backendsDir.exists()) {
+        backendsDir.mkdirs();
       }
 
       String[] command;
@@ -104,12 +109,16 @@ public class LocalAIContainerConfig {
         command = new String[] {"run", imageModelName};
       }
 
-      // Using the official LocalAI image
+      // Using the official LocalAI image but installing diffusers from source
       localAiContainer =
-          new GenericContainer<>("localai/localai:latest")
+          new GenericContainer<>("localai/localai:latest-aio-cpu")
               .withExposedPorts(8080)
               .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
+              .withFileSystemBind(
+                  backendsDir.getAbsolutePath(), "/build/backends", BindMode.READ_WRITE)
               .withEnv("MODELS_PATH", "/build/models")
+              .withEnv("BACKENDS_PATH", "/build/backends")
+              .withEnv("INSTALL_BACKENDS", "stablediffusion-ggml")
               .withCommand(command)
               .waitingFor(
                   new WaitAllStrategy()
