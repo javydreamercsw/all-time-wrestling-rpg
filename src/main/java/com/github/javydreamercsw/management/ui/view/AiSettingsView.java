@@ -124,8 +124,7 @@ public class AiSettingsView extends VerticalLayout {
         new TextField("Premium Model", aiSettingsService.getOpenAIPremiumModel(), "");
     openAIPremiumModel.addValueChangeListener(
         event -> saveSetting("AI_OPENAI_PREMIUM_MODEL", event.getValue()));
-    openAIImageModel =
-        new TextField("Image Model", aiSettingsService.getOpenAIImageModel(), "");
+    openAIImageModel = new TextField("Image Model", aiSettingsService.getOpenAIImageModel(), "");
     openAIImageModel.addValueChangeListener(
         event -> saveSetting("AI_OPENAI_IMAGE_MODEL", event.getValue()));
     openAIMaxTokens = new NumberField("Max Tokens");
@@ -203,11 +202,13 @@ public class AiSettingsView extends VerticalLayout {
     localAIModel = new TextField("Model", aiSettingsService.getLocalAIModel(), "");
     localAIModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_MODEL", event.getValue()));
     localAIImageModel = new TextField("Image Model", aiSettingsService.getLocalAIImageModel(), "");
-    localAIImageModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue()));
+    localAIImageModel.addValueChangeListener(
+        event -> saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue()));
     localAIModelUrl = new TextField("Model URL", aiSettingsService.getLocalAIModelUrl(), "");
     localAIModelUrl.addValueChangeListener(
         event -> saveSetting("AI_LOCALAI_MODEL_URL", event.getValue()));
-    localAISettingsLayout.add(localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
+    localAISettingsLayout.add(
+        localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
     add(localAISettingsLayout);
   }
 

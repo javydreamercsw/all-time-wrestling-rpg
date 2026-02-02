@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -29,6 +30,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,9 +41,11 @@ public class ImageGenerationDialog extends Dialog {
   private final WrestlerService wrestlerService;
   private final ImageGenerationServiceFactory imageFactory;
   private final ImageStorageService storageService;
+  private final AiSettingsService aiSettingsService;
   private final Runnable onSave;
 
   private final TextArea promptArea;
+  private final TextField modelField;
   private final Image previewImage;
   private final Button saveButton;
   private String currentImageData;
@@ -52,11 +56,13 @@ public class ImageGenerationDialog extends Dialog {
       WrestlerService wrestlerService,
       ImageGenerationServiceFactory imageFactory,
       ImageStorageService storageService,
+      AiSettingsService aiSettingsService,
       Runnable onSave) {
     this.wrestler = wrestler;
     this.wrestlerService = wrestlerService;
     this.imageFactory = imageFactory;
     this.storageService = storageService;
+    this.aiSettingsService = aiSettingsService;
     this.onSave = onSave;
 
     setHeaderTitle("Generate Wrestler Image");
@@ -70,6 +76,20 @@ public class ImageGenerationDialog extends Dialog {
     promptArea.setWidthFull();
     promptArea.setMinHeight("100px");
     promptArea.setValue(buildDefaultPrompt());
+
+    modelField = new TextField("Model");
+    modelField.setWidthFull();
+    modelField.setPlaceholder("Leave empty to use default");
+
+    // Pre-fill model based on available service
+    ImageGenerationService service = imageFactory.getBestAvailableService();
+    if (service != null) {
+      if ("LocalAI".equals(service.getProviderName())) {
+        modelField.setValue(aiSettingsService.getLocalAIImageModel());
+      } else if ("OpenAI".equals(service.getProviderName())) {
+        modelField.setValue(aiSettingsService.getOpenAIImageModel());
+      }
+    }
 
     previewImage = new Image();
     previewImage.setMaxWidth("100%");
@@ -86,7 +106,7 @@ public class ImageGenerationDialog extends Dialog {
 
     Button cancelButton = new Button("Cancel", e -> close());
 
-    layout.add(promptArea, generateButton, previewImage);
+    layout.add(promptArea, modelField, generateButton, previewImage);
     add(layout);
     getFooter().add(cancelButton, saveButton);
   }
@@ -122,10 +142,16 @@ public class ImageGenerationDialog extends Dialog {
         format = "b64_json"; // Test base64 path
       }
 
+      String model = modelField.getValue();
+      if (model != null && model.trim().isEmpty()) {
+        model = null;
+      }
+
       ImageGenerationService.ImageRequest request =
           ImageGenerationService.ImageRequest.builder()
               .prompt(promptArea.getValue())
               .responseFormat(format)
+              .model(model)
               .build();
 
       currentImageData = service.generateImage(request);

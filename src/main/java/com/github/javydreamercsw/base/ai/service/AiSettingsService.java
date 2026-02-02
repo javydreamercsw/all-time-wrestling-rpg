@@ -168,14 +168,10 @@ public class AiSettingsService {
   }
 
   public String getLocalAIModel() {
-    String sysProp = System.getProperty("ai.localai.model");
-    if (sysProp != null && !sysProp.isEmpty()) {
-      return sysProp;
-    }
     return gameSettingService
         .findById("AI_LOCALAI_MODEL")
         .map(GameSetting::getValue)
-        .orElse("llama-3.2-1b-instruct:q4_k_m");
+        .orElse("gpt-4");
   }
 
   public String getLocalAIImageModel() {

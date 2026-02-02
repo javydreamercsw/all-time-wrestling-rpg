@@ -23,7 +23,6 @@ import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -94,7 +93,10 @@ public class LocalAIContainerConfig {
       }
 
       String[] command;
-      if (modelName != null && !modelName.isEmpty() && imageModelName != null && !imageModelName.isEmpty()) {
+      if (modelName != null
+          && !modelName.isEmpty()
+          && imageModelName != null
+          && !imageModelName.isEmpty()) {
         command = new String[] {"run", modelName, imageModelName};
       } else if (modelName != null && !modelName.isEmpty()) {
         command = new String[] {"run", modelName};
@@ -117,7 +119,8 @@ public class LocalAIContainerConfig {
       log.info(
           "Starting LocalAI container. This may take a while for the initial model download...");
       statusService.setStatus(LocalAIStatusService.Status.DOWNLOADING_MODEL);
-      statusService.setMessage("Downloading/installing AI model(s). This can take several minutes...");
+      statusService.setMessage(
+          "Downloading/installing AI model(s). This can take several minutes...");
 
       localAiContainer.start();
 
