@@ -273,7 +273,13 @@ public class SegmentService {
                                         w.getAccount() != null
                                             && w.getAccount().getId().equals(user.getId()));
 
-                        if (!isOwner) return false;
+                        if (!isOwner) {
+                          log.debug(
+                              "User {} is not an owner of any participant in segment {}",
+                              user.getUsername(),
+                              segmentId);
+                          return false;
+                        }
 
                         // Check if it's a campaign match (we still need a wrestler for this check,
                         // try to find one owned by user)
@@ -299,7 +305,11 @@ public class SegmentService {
                         }
 
                         // Check if it's a league match
-                        boolean isLeagueMatch = segment.getShow().getLeague() != null;
+                        boolean isLeagueMatch =
+                            segment.getShow().getLeague() != null
+                                || (segment.getSegmentType() != null
+                                    && "Promo"
+                                        .equalsIgnoreCase(segment.getSegmentType().getName()));
 
                         return isCampaignMatch || isLeagueMatch;
                       })
