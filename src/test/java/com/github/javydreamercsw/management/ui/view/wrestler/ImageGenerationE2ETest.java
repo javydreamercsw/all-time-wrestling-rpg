@@ -127,12 +127,28 @@ public class ImageGenerationE2ETest extends AbstractE2ETest {
           return updated.getImageUrl() != null && !updated.getImageUrl().isEmpty();
         });
 
-    assert wrestler.getId() != null;
     Wrestler updated = wrestlerRepository.findById(wrestler.getId()).orElseThrow();
     Assertions.assertNotNull(updated.getImageUrl());
     Assertions.assertTrue(
         updated.getImageUrl().contains("generated")
             || updated.getImageUrl().contains("placeholder")
             || updated.getImageUrl().contains("png"));
+
+    // 7. Reload page to ensure persistence and UI update
+    driver.navigate().refresh();
+    waitForVaadinElement(driver, By.id("wrestler-image"));
+
+    // 8. Verify UI shows updated image
+    WebElement profileImage = driver.findElement(By.id("wrestler-image"));
+    String newSrc = profileImage.getAttribute("src");
+    Assertions.assertNotNull(newSrc);
+    Assertions.assertFalse(
+        newSrc.contains("via.placeholder.com"),
+        "Image should not be the placeholder after generation");
+    Assertions.assertTrue(
+        newSrc.contains("generated")
+            || newSrc.contains("placeholder.com")
+            || newSrc.contains("png"),
+        "Image src should contain generation path or filename");
   }
 }

@@ -50,7 +50,7 @@
 
 *Link: [./conductor/tracks/interactive_promos_20260201/index.md](./conductor/tracks/interactive_promos_20260201/index.md)*
 
-### [ ] Track: Image Generation
+### [x] Track: Image Generation
 
 *Link: [./conductor/tracks/image_generation_20260201/index.md](./conductor/tracks/image_generation_20260201/index.md)*
 

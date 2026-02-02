@@ -68,13 +68,6 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull ImageStorageService imageStorageService) {
     this.accountService = accountService;
 
-    log.info(
-        "WrestlerActionMenu init. User: {}, Roles: {}, isAdmin: {}, canEdit: {}",
-        securityUtils.getCurrentUsername(),
-        securityUtils.getAuthenticatedUser().map(u -> u.getAuthorities().toString()).orElse("None"),
-        securityUtils.isAdmin(),
-        securityUtils.canEdit(wrestler));
-
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
     SubMenu subMenu = menuItem.getSubMenu();
