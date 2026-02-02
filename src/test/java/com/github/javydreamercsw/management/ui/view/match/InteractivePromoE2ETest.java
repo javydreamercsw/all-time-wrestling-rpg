@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +64,6 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private PasswordEncoder passwordEncoder;
 
-  private Wrestler playerWrestler;
   private Segment promoSegment;
 
   @BeforeEach
@@ -73,7 +73,7 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
     showRepository.deleteAll();
 
     // Create Player & Account
-    playerWrestler = createTestWrestler("Promo King");
+    Wrestler playerWrestler = createTestWrestler("Promo King");
     wrestlerService.save(playerWrestler);
 
     if (accountRepository.findByUsername("player1").isEmpty()) {
@@ -199,17 +199,18 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
                   .executeScript(
                       "return arguments[0].shadowRoot.querySelector('vaadin-button')",
                       messageInput);
+      assert sendButton != null;
       clickElement(sendButton);
     }
 
     // 4. Verify Player Message appears
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(d -> d.getPageSource().contains(promoText));
+    wait.until(d -> Objects.requireNonNull(d.getPageSource()).contains(promoText));
 
     // 5. Verify AI Retort appears (The Silent One)
     // This depends on LocalAI generation speed. Giving it ample time.
     WebDriverWait aiWait = new WebDriverWait(driver, Duration.ofSeconds(60));
-    aiWait.until(d -> d.getPageSource().contains("The Silent One"));
+    aiWait.until(d -> Objects.requireNonNull(d.getPageSource()).contains("The Silent One"));
 
     // 6. Verify Transcript Saved (Backend check)
     // We can check the text area value or query the DB
@@ -222,9 +223,11 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
         });
 
     String finalTranscript = narrationArea.getAttribute("value");
+    assert finalTranscript != null;
     Assertions.assertTrue(finalTranscript.contains(promoText));
 
     // Verify DB persistence
+    assert promoSegment.getId() != null;
     Segment updatedSegment = segmentRepository.findById(promoSegment.getId()).orElseThrow();
     Assertions.assertTrue(updatedSegment.getNarration().contains(promoText));
   }
