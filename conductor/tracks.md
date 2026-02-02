@@ -46,7 +46,7 @@
 
 ## Active Tracks
 
-### [ ] Track: Interactive Promos
+### [x] Track: Interactive Promos
 
 *Link: [./conductor/tracks/interactive_promos_20260201/index.md](./conductor/tracks/interactive_promos_20260201/index.md)*
 
