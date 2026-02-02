@@ -12,7 +12,7 @@
 - [x] **Integration**
   - [x] Connect UI to `PromoService`.
   - [x] Save transcript to `Segment` entity.
-- [x] **Testing**
+- [x] **Testing** [2de3427]
   - [x] Unit tests for `PromoService`.
   - [x] E2E test for the interactive flow.
 
