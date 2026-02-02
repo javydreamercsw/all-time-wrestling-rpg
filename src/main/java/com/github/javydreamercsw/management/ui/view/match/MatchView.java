@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
@@ -45,6 +46,9 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.messages.MessageInput;
+import com.vaadin.flow.component.messages.MessageList;
+import com.vaadin.flow.component.messages.MessageListItem;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -89,6 +93,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final MatchFulfillmentService matchFulfillmentService;
   private final LocalAIStatusService localAIStatus;
+  private final PromoService promoService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -107,7 +112,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       SegmentAdjudicationService segmentAdjudicationService,
       MatchFulfillmentRepository matchFulfillmentRepository,
       MatchFulfillmentService matchFulfillmentService,
-      LocalAIStatusService localAIStatus) {
+      LocalAIStatusService localAIStatus,
+      PromoService promoService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -119,6 +125,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.matchFulfillmentService = matchFulfillmentService;
     this.localAIStatus = localAIStatus;
+    this.promoService = promoService;
   }
 
   @Override
@@ -157,6 +164,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     Optional<CustomUserDetails> userDetails = securityUtils.getAuthenticatedUser();
     Wrestler playerWrestler = userDetails.map(CustomUserDetails::getWrestler).orElse(null);
 
+    buildHeader(playerWrestler);
+
+    // Initialize narrationArea
+    narrationArea = new TextArea("Match Story");
+    narrationArea.setWidthFull();
+    narrationArea.setMinHeight("200px");
+    narrationArea.setPlaceholder("The story of the match will appear here...");
+    narrationArea.setValue(segment.getNarration() == null ? "" : segment.getNarration());
+    narrationArea.setId("narration-area");
+
+    if (segment.getSegmentType() != null
+        && "Promo".equalsIgnoreCase(segment.getSegmentType().getName())) {
+      buildPromoInterface(playerWrestler);
+    } else {
+      buildMatchInterface(playerWrestler);
+    }
+  }
+
+  private void buildHeader(Wrestler playerWrestler) {
     // Header Section
     VerticalLayout header = new VerticalLayout();
     header.setPadding(false);
@@ -207,7 +233,88 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 }
               });
     }
+  }
 
+  private void buildPromoInterface(Wrestler playerWrestler) {
+    DashboardCard promoCard = new DashboardCard("Interactive Promo");
+    VerticalLayout promoLayout = new VerticalLayout();
+    promoLayout.setPadding(false);
+    promoLayout.setSpacing(true);
+    promoLayout.setSizeFull();
+
+    // Chat History
+    MessageList messageList = new MessageList();
+    messageList.setWidthFull();
+
+    // Populate existing narration if any
+    if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+      // Simple parsing: assuming lines are separated by newlines
+      // In a real scenario, we might want structured data
+      String[] lines = segment.getNarration().split("\n");
+      List<MessageListItem> items = new ArrayList<>();
+      for (String line : lines) {
+        if (!line.isBlank()) {
+          // Determine user based on prefix if possible, else default
+          items.add(new MessageListItem(line, java.time.Instant.now(), "History"));
+        }
+      }
+      messageList.setItems(items);
+    }
+
+    // Input Area
+    MessageInput messageInput = new MessageInput();
+    messageInput.setWidthFull();
+    messageInput.addSubmitListener(
+        e -> {
+          String text = e.getValue();
+          // Add player message
+          MessageListItem playerItem = new MessageListItem(text, java.time.Instant.now(), "You");
+          playerItem.setUserColorIndex(1);
+          List<MessageListItem> items = new ArrayList<>(messageList.getItems());
+          items.add(playerItem);
+          messageList.setItems(items);
+
+          // Generate Retort
+          // Find opponent (anyone not the player)
+          Wrestler opponent =
+              segment.getWrestlers().stream()
+                  .filter(w -> !w.equals(playerWrestler))
+                  .findFirst()
+                  .orElse(null);
+
+          if (opponent != null) {
+            String retort = promoService.generateRetort(text, segment, opponent);
+            MessageListItem opponentItem =
+                new MessageListItem(retort, java.time.Instant.now(), opponent.getName());
+            opponentItem.setUserColorIndex(2);
+            items.add(opponentItem);
+            messageList.setItems(items);
+
+            // Save to narration
+            String currentNarration = narrationArea.getValue();
+            if (currentNarration == null) currentNarration = "";
+            currentNarration += "\n\nYou: " + text + "\n" + opponent.getName() + ": " + retort;
+            narrationArea.setValue(currentNarration.trim());
+
+            segment.setNarration(narrationArea.getValue());
+            segmentService.updateSegment(segment);
+          }
+        });
+
+    promoLayout.add(messageList, messageInput);
+    promoCard.add(promoLayout);
+    add(promoCard);
+
+    // Also add the Save Transcript button for manual saves/viewing
+    DashboardCard transcriptCard = new DashboardCard("Transcript");
+    transcriptCard.add(narrationArea);
+    Button saveButton = new Button("Save Transcript", event -> saveNarration());
+    saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+    transcriptCard.add(saveButton);
+    add(transcriptCard);
+  }
+
+  private void buildMatchInterface(Wrestler playerWrestler) {
     // Main Content Grid
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setWidthFull();
@@ -329,13 +436,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     narrationCard.setMaxWidth("1200px");
     VerticalLayout narrationContent = new VerticalLayout();
     narrationContent.setPadding(false);
-
-    narrationArea = new TextArea("Match Story");
-    narrationArea.setWidthFull();
-    narrationArea.setMinHeight("200px");
-    narrationArea.setPlaceholder("The story of the match will appear here...");
-    narrationArea.setValue(segment.getNarration() == null ? "" : segment.getNarration());
-    narrationArea.setId("narration-area");
 
     feedbackArea = new TextArea("Generation Feedback");
     feedbackArea.setWidthFull();

@@ -46,6 +46,14 @@
 
 ## Active Tracks
 
+### [ ] Track: Interactive Promos
+
+*Link: [./conductor/tracks/interactive_promos_20260201/index.md](./conductor/tracks/interactive_promos_20260201/index.md)*
+
+### [ ] Track: Image Generation
+
+*Link: [./conductor/tracks/image_generation_20260201/index.md](./conductor/tracks/image_generation_20260201/index.md)*
+
 ### [ ] Track: E2E CI Hardening
 
 *Link: [./conductor/tracks/e2e_ci_hardening/index.md](./conductor/tracks/e2e_ci_hardening/index.md)*
