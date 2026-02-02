@@ -56,6 +56,7 @@ public class AiSettingsView extends VerticalLayout {
   private PasswordField openAIApiKey;
   private TextField openAIDefaultModel;
   private TextField openAIPremiumModel;
+  private TextField openAIImageModel;
   private NumberField openAIMaxTokens;
   private NumberField openAITemperature;
 
@@ -75,6 +76,7 @@ public class AiSettingsView extends VerticalLayout {
   private Checkbox localAIEnabled;
   private TextField localAIBaseUrl;
   private TextField localAIModel;
+  private TextField localAIImageModel;
   private TextField localAIModelUrl;
 
   @Autowired
@@ -122,6 +124,10 @@ public class AiSettingsView extends VerticalLayout {
         new TextField("Premium Model", aiSettingsService.getOpenAIPremiumModel(), "");
     openAIPremiumModel.addValueChangeListener(
         event -> saveSetting("AI_OPENAI_PREMIUM_MODEL", event.getValue()));
+    openAIImageModel =
+        new TextField("Image Model", aiSettingsService.getOpenAIImageModel(), "");
+    openAIImageModel.addValueChangeListener(
+        event -> saveSetting("AI_OPENAI_IMAGE_MODEL", event.getValue()));
     openAIMaxTokens = new NumberField("Max Tokens");
     openAIMaxTokens.setValue((double) aiSettingsService.getOpenAIMaxTokens());
     openAIMaxTokens.addValueChangeListener(
@@ -136,6 +142,7 @@ public class AiSettingsView extends VerticalLayout {
         openAIApiKey,
         openAIDefaultModel,
         openAIPremiumModel,
+        openAIImageModel,
         openAIMaxTokens,
         openAITemperature);
     add(openAISettingsLayout);
@@ -195,10 +202,12 @@ public class AiSettingsView extends VerticalLayout {
         event -> saveSetting("AI_LOCALAI_BASE_URL", event.getValue()));
     localAIModel = new TextField("Model", aiSettingsService.getLocalAIModel(), "");
     localAIModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_MODEL", event.getValue()));
+    localAIImageModel = new TextField("Image Model", aiSettingsService.getLocalAIImageModel(), "");
+    localAIImageModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue()));
     localAIModelUrl = new TextField("Model URL", aiSettingsService.getLocalAIModelUrl(), "");
     localAIModelUrl.addValueChangeListener(
         event -> saveSetting("AI_LOCALAI_MODEL_URL", event.getValue()));
-    localAISettingsLayout.add(localAIEnabled, localAIBaseUrl, localAIModel, localAIModelUrl);
+    localAISettingsLayout.add(localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
     add(localAISettingsLayout);
   }
 
