@@ -210,6 +210,23 @@ public class AiSettingsView extends VerticalLayout {
     localAISettingsLayout.add(
         localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
     add(localAISettingsLayout);
+
+    add(new H3("Pollinations Settings"));
+    FormLayout pollinationsSettingsLayout = new FormLayout();
+
+    Checkbox pollinationsEnabled =
+        new Checkbox("Enabled", aiSettingsService.isPollinationsEnabled());
+    pollinationsEnabled.addValueChangeListener(
+        event -> saveSetting("AI_POLLINATIONS_ENABLED", String.valueOf(event.getValue())));
+
+    PasswordField pollinationsApiKey =
+        new PasswordField(
+            "API Key",
+            aiSettingsService.getPollinationsApiKey(),
+            event -> saveSetting("AI_POLLINATIONS_API_KEY", event.getValue()));
+
+    pollinationsSettingsLayout.add(pollinationsEnabled, pollinationsApiKey);
+    add(pollinationsSettingsLayout);
   }
 
   private void saveSetting(String key, String value) {

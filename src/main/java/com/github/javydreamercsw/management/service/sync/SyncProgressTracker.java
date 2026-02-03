@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -81,7 +82,8 @@ public class SyncProgressTracker {
    * @param currentStep Current step number
    * @param stepDescription Description of current step
    */
-  public void updateProgress(String operationId, int currentStep, String stepDescription) {
+  public void updateProgress(
+      @NonNull String operationId, int currentStep, @NonNull String stepDescription) {
     activeOperations.stream()
         .filter(op -> op.getOperationId().equals(operationId))
         .findFirst()

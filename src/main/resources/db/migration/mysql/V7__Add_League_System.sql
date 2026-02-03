@@ -80,7 +80,5 @@ CREATE TABLE match_fulfillment (
 
 ALTER TABLE wrestling_show ADD COLUMN league_id BIGINT;
 ALTER TABLE wrestling_show ADD CONSTRAINT fk_show_league FOREIGN KEY (league_id) REFERENCES league(id);
-
 ALTER TABLE account ADD COLUMN active_wrestler_id BIGINT;
-
 ALTER TABLE inbox_item_target ADD COLUMN target_type VARCHAR(20) DEFAULT 'ACCOUNT' NOT NULL;

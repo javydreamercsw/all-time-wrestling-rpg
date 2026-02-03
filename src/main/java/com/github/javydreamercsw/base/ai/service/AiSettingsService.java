@@ -157,10 +157,6 @@ public class AiSettingsService {
   }
 
   public String getLocalAIBaseUrl() {
-    String sysProp = System.getProperty("ai.localai.base-url");
-    if (sysProp != null && !sysProp.isEmpty()) {
-      return sysProp;
-    }
     return gameSettingService
         .findById("AI_LOCALAI_BASE_URL")
         .map(GameSetting::getValue)
@@ -184,6 +180,21 @@ public class AiSettingsService {
   public String getLocalAIModelUrl() {
     return gameSettingService
         .findById("AI_LOCALAI_MODEL_URL")
+        .map(GameSetting::getValue)
+        .orElse("");
+  }
+
+  // Pollinations settings
+  public boolean isPollinationsEnabled() {
+    return gameSettingService
+        .findById("AI_POLLINATIONS_ENABLED")
+        .map(gs -> Boolean.parseBoolean(gs.getValue()))
+        .orElse(false);
+  }
+
+  public String getPollinationsApiKey() {
+    return gameSettingService
+        .findById("AI_POLLINATIONS_API_KEY")
         .map(GameSetting::getValue)
         .orElse("");
   }

@@ -19,9 +19,11 @@ package com.github.javydreamercsw.base.ai.image;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,9 +69,34 @@ public class ImageStorageService {
   }
 
   private void downloadImage(String url, Path destination) throws IOException {
+    if (url == null || url.isBlank()) {
+      throw new IOException("Image URL must not be null or blank");
+    }
+
+    // Pollinations (when using an API key) returns a Data URI (data:<mime>;base64,<payload>).
+    // Java's HttpClient doesn't support the "data" scheme, so we decode it locally.
+    if (url.startsWith("data:")) {
+      Files.write(destination, decodeDataUriToBytes(url));
+      return;
+    }
+
+    URI uri;
     try {
+      uri = URI.create(url);
+    } catch (IllegalArgumentException e) {
+      throw new IOException("Invalid image URL: " + url, e);
+    }
+
+    String scheme = uri.getScheme();
+    if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+      throw new IOException("Unsupported image URI scheme: " + scheme);
+    }
+
+    try {
+      // HttpClient is long-lived and doesn't need to be closed.
+      @SuppressWarnings("resource")
       HttpClient client = HttpClient.newHttpClient();
-      HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
+      HttpRequest request = HttpRequest.newBuilder().uri(uri).build();
 
       HttpResponse<InputStream> response =
           client.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -89,6 +116,42 @@ public class ImageStorageService {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IOException("Download interrupted", e);
+    }
+  }
+
+  /**
+   * Decodes a base64-encoded Data URI string and returns the byte array.
+   *
+   * <p>Format: {@code data:[<mediatype>][;base64],<data>}
+   */
+  public static byte[] decodeDataUriToBytes(String dataUri) throws IOException {
+    if (dataUri == null || !dataUri.startsWith("data:")) {
+      throw new IOException("Invalid data URI: must start with 'data:'");
+    }
+
+    int commaIndex = dataUri.indexOf(',');
+    if (commaIndex < 0) {
+      throw new IOException("Invalid data URI: missing ',' separator");
+    }
+
+    String header = dataUri.substring(5, commaIndex); // after "data:"
+    String payload = dataUri.substring(commaIndex + 1);
+
+    if (!header.contains(";base64")) {
+      throw new IOException("Unsupported data URI encoding (expected base64)");
+    }
+
+    // Some encoders may URL-encode '+' as '%2B' etc. Try base64 first, then URL-decode and retry.
+    try {
+      return Base64.getDecoder().decode(payload);
+    } catch (IllegalArgumentException e) {
+      try {
+        String decodedPayload = URLDecoder.decode(payload, StandardCharsets.UTF_8);
+        return Base64.getDecoder().decode(decodedPayload);
+      } catch (IllegalArgumentException e2) {
+        e2.addSuppressed(e);
+        throw new IOException("Invalid base64 payload in data URI", e2);
+      }
     }
   }
 }
