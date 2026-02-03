@@ -22,11 +22,8 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.vaadin.flow.component.dialog.Dialog;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-public class NpcImageGenerationDialog extends Dialog {
+public class NpcImageGenerationDialog extends GenericImageGenerationDialog {
 
   public NpcImageGenerationDialog(
       Npc npc,
@@ -35,9 +32,7 @@ public class NpcImageGenerationDialog extends Dialog {
       ImageStorageService storageService,
       AiSettingsService aiSettingsService,
       Runnable onSave) {
-
-    // Supplier for the default prompt
-    Supplier<String> promptSupplier =
+    super(
         () -> {
           StringBuilder sb = new StringBuilder();
           sb.append("A portrait of an NPC named ").append(npc.getName());
@@ -47,18 +42,14 @@ public class NpcImageGenerationDialog extends Dialog {
           }
           sb.append(" High quality, photorealistic, 8k resolution, dramatic lighting.");
           return sb.toString();
-        };
-
-    // Consumer to save the image URL to the NPC
-    Consumer<String> imageSaver =
+        },
         (imageUrl) -> {
           npc.setImageUrl(imageUrl);
           npcService.save(npc);
-        };
-
-    GenericImageGenerationDialog dialog =
-        new GenericImageGenerationDialog(
-            promptSupplier, imageSaver, imageFactory, storageService, aiSettingsService, onSave);
-    dialog.open();
+        },
+        imageFactory,
+        storageService,
+        aiSettingsService,
+        onSave);
   }
 }

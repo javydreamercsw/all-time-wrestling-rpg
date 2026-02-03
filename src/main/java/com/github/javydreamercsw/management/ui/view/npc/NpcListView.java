@@ -52,9 +52,6 @@ import lombok.NonNull;
 public class NpcListView extends Main {
 
   private final NpcService npcService;
-  private final ImageGenerationServiceFactory imageFactory;
-  private final ImageStorageService storageService;
-  private final AiSettingsService aiSettingsService;
 
   final TextField name;
   final ComboBox<NpcType> npcType;
@@ -68,9 +65,6 @@ public class NpcListView extends Main {
       @NonNull ImageStorageService storageService,
       @NonNull AiSettingsService aiSettingsService) {
     this.npcService = npcService;
-    this.imageFactory = imageFactory;
-    this.storageService = storageService;
-    this.aiSettingsService = aiSettingsService;
 
     name = new TextField();
     name.setPlaceholder("NPC Name");
@@ -129,6 +123,7 @@ public class NpcListView extends Main {
               buttons.add(editButton);
 
               Button generateImageButton = new Button("Generate Image");
+              generateImageButton.setId("generate-image-btn-" + npc.getId());
               generateImageButton.addClickListener(
                   e -> {
                     new NpcImageGenerationDialog(
