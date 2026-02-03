@@ -18,6 +18,9 @@ package com.github.javydreamercsw.management.ui.view.npc;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -49,14 +52,25 @@ import lombok.NonNull;
 public class NpcListView extends Main {
 
   private final NpcService npcService;
+  private final ImageGenerationServiceFactory imageFactory;
+  private final ImageStorageService storageService;
+  private final AiSettingsService aiSettingsService;
 
   final TextField name;
   final ComboBox<NpcType> npcType;
   final Button createBtn;
   final Grid<Npc> npcGrid;
 
-  public NpcListView(@NonNull NpcService npcService, @NonNull SecurityUtils securityUtils) {
+  public NpcListView(
+      @NonNull NpcService npcService,
+      @NonNull SecurityUtils securityUtils,
+      @NonNull ImageGenerationServiceFactory imageFactory,
+      @NonNull ImageStorageService storageService,
+      @NonNull AiSettingsService aiSettingsService) {
     this.npcService = npcService;
+    this.imageFactory = imageFactory;
+    this.storageService = storageService;
+    this.aiSettingsService = aiSettingsService;
 
     name = new TextField();
     name.setPlaceholder("NPC Name");
@@ -97,14 +111,39 @@ public class NpcListView extends Main {
         .setHeader("Type")
         .setEditorComponent(npcTypeField)
         .setSortable(true);
+    TextField imageUrlField = new TextField();
+    npcGrid
+        .addColumn(Npc::getImageUrl)
+        .setHeader("Image URL")
+        .setEditorComponent(imageUrlField)
+        .setSortable(true);
 
     npcGrid
         .addComponentColumn(
             npc -> {
+              HorizontalLayout buttons = new HorizontalLayout();
+
               Button editButton = new Button("Edit");
               editButton.addClickListener(e -> npcGrid.getEditor().editItem(npc));
               editButton.setVisible(securityUtils.canEdit());
-              return editButton;
+              buttons.add(editButton);
+
+              Button generateImageButton = new Button("Generate Image");
+              generateImageButton.addClickListener(
+                  e -> {
+                    new NpcImageGenerationDialog(
+                            npc,
+                            npcService,
+                            imageFactory,
+                            storageService,
+                            aiSettingsService,
+                            () -> npcGrid.getDataProvider().refreshAll())
+                        .open();
+                  });
+              generateImageButton.setVisible(securityUtils.canEdit());
+              buttons.add(generateImageButton);
+
+              return buttons;
             })
         .setHeader("Actions");
 
@@ -129,6 +168,7 @@ public class NpcListView extends Main {
 
     binder.forField(nameField).bind("name");
     binder.forField(npcTypeField).bind("npcType");
+    binder.forField(imageUrlField).bind("imageUrl");
 
     editor.addSaveListener(
         event -> {

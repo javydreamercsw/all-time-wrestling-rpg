@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.injury.InjuryDialog;
-import com.github.javydreamercsw.management.ui.view.wrestler.ImageGenerationDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerListView;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerProfileView;
@@ -115,24 +114,6 @@ public class WrestlerActionMenu extends MenuBar {
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
     editItem.setId("edit-" + wrestler.getId());
     editItem.setVisible(securityUtils.canEdit(wrestler));
-
-    MenuItem generateImageItem =
-        subMenu.addItem(
-            "Generate Image",
-            e -> {
-              ImageGenerationDialog dialog =
-                  new ImageGenerationDialog(
-                      wrestler,
-                      wrestlerService,
-                      imageGenerationServiceFactory,
-                      imageStorageService,
-                      aiSettingsService,
-                      refreshProvider);
-              dialog.open();
-            });
-    generateImageItem.addComponentAsFirst(new Icon(VaadinIcon.PICTURE));
-    generateImageItem.setId("generate-image-" + wrestler.getId());
-    generateImageItem.setVisible(securityUtils.canEdit(wrestler));
 
     MenuItem deleteItem =
         subMenu.addItem(
