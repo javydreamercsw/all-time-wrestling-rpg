@@ -74,6 +74,16 @@ public class ShowPlanningService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
+    if (show.getShowDate() == null) {
+      throw new IllegalStateException(
+          "Show '"
+              + show.getName()
+              + "' (id="
+              + show.getId()
+              + ") has no showDate set. "
+              + "Set a scheduled date before opening Show Planning.");
+    }
+
     ShowPlanningContext context = new ShowPlanningContext();
 
     // Get segments from the last 7 days
@@ -175,6 +185,16 @@ public class ShowPlanningService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
+    if (show.getShowDate() == null) {
+      throw new IllegalStateException(
+          "Cannot approve segments for show '"
+              + show.getName()
+              + "' (id="
+              + show.getId()
+              + ") "
+              + "because showDate is not set.");
+    }
+
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
     for (int i = 0; i < proposedSegments.size(); i++) {

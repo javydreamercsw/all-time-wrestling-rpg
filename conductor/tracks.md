@@ -42,6 +42,18 @@
 *Status: Completed*
 *Date: 2026-02-01*
 
+### [x] Track: Interactive Promos
+
+*Link: [./conductor/archive/interactive_promos_20260201/](./conductor/archive/interactive_promos_20260201/)*
+*Status: Completed*
+*Date: 2026-02-02*
+
+### [x] Track: Image Generation
+
+*Link: [./conductor/archive/image_generation_20260201/](./conductor/archive/image_generation_20260201/)*
+*Status: Completed*
+*Date: 2026-02-02*
+
 ---
 
 ## Active Tracks

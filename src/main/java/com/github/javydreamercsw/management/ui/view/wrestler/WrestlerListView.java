@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -59,6 +62,9 @@ public class WrestlerListView extends Main {
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
+  private final ImageGenerationServiceFactory imageGenerationServiceFactory;
+  private final ImageStorageService imageStorageService;
+  private final AiSettingsService aiSettingsService;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
@@ -68,7 +74,10 @@ public class WrestlerListView extends Main {
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils,
-      @NonNull CampaignService campaignService) {
+      @NonNull CampaignService campaignService,
+      @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
+      @NonNull ImageStorageService imageStorageService,
+      @NonNull AiSettingsService aiSettingsService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
@@ -76,6 +85,9 @@ public class WrestlerListView extends Main {
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
+    this.imageGenerationServiceFactory = imageGenerationServiceFactory;
+    this.imageStorageService = imageStorageService;
+    this.aiSettingsService = aiSettingsService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -146,7 +158,10 @@ public class WrestlerListView extends Main {
                       this::reloadGrid,
                       false,
                       securityUtils,
-                      accountService);
+                      accountService,
+                      imageGenerationServiceFactory,
+                      imageStorageService,
+                      aiSettingsService);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })

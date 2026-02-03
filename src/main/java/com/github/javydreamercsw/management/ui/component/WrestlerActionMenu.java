@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.component;
 
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -24,6 +27,7 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.injury.InjuryDialog;
+import com.github.javydreamercsw.management.ui.view.wrestler.ImageGenerationDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerListView;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerProfileView;
@@ -44,8 +48,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.RouteParameters;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+@Slf4j
 public class WrestlerActionMenu extends MenuBar {
   private final AccountService accountService;
 
@@ -58,8 +64,12 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull Runnable refreshProvider,
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService) {
+      @NonNull @Qualifier("baseAccountService") AccountService accountService,
+      @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
+      @NonNull ImageStorageService imageStorageService,
+      @NonNull AiSettingsService aiSettingsService) {
     this.accountService = accountService;
+
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
     SubMenu subMenu = menuItem.getSubMenu();
@@ -105,6 +115,24 @@ public class WrestlerActionMenu extends MenuBar {
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
     editItem.setId("edit-" + wrestler.getId());
     editItem.setVisible(securityUtils.canEdit(wrestler));
+
+    MenuItem generateImageItem =
+        subMenu.addItem(
+            "Generate Image",
+            e -> {
+              ImageGenerationDialog dialog =
+                  new ImageGenerationDialog(
+                      wrestler,
+                      wrestlerService,
+                      imageGenerationServiceFactory,
+                      imageStorageService,
+                      aiSettingsService,
+                      refreshProvider);
+              dialog.open();
+            });
+    generateImageItem.addComponentAsFirst(new Icon(VaadinIcon.PICTURE));
+    generateImageItem.setId("generate-image-" + wrestler.getId());
+    generateImageItem.setVisible(securityUtils.canEdit(wrestler));
 
     MenuItem deleteItem =
         subMenu.addItem(

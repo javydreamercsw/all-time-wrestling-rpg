@@ -19,7 +19,11 @@ package com.github.javydreamercsw.management.ui;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -39,7 +43,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 public class GenderFilteringE2ETest extends AbstractE2ETest {
@@ -47,36 +50,17 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TitleRepository titleRepository;
-  @Autowired private SegmentRepository segmentRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
-      campaignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Autowired private CampaignRepository campaignRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   private Wrestler maleWrestler;
-
   private Wrestler femaleWrestler;
-
   private Title womensTitle;
 
   @BeforeEach
-  @Transactional
   public void setupTestData() {
     cleanupLeagues();
     if (cacheManager != null) {

@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
@@ -92,6 +95,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final AccountService accountService;
   private final NpcService npcService;
   private final CampaignService campaignService;
+  private final ImageGenerationServiceFactory imageGenerationServiceFactory;
+  private final ImageStorageService imageStorageService;
+  private final AiSettingsService aiSettingsService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -124,7 +130,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       InjuryService injuryService,
       NpcService npcService,
       @Qualifier("baseAccountService") AccountService accountService,
-      CampaignService campaignService) {
+      CampaignService campaignService,
+      ImageGenerationServiceFactory imageGenerationServiceFactory,
+      ImageStorageService imageStorageService,
+      AiSettingsService aiSettingsService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -136,10 +145,14 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.npcService = npcService;
     this.accountService = accountService;
     this.campaignService = campaignService;
+    this.imageGenerationServiceFactory = imageGenerationServiceFactory;
+    this.imageStorageService = imageStorageService;
+    this.aiSettingsService = aiSettingsService;
 
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setSrc("https://via.placeholder.com/150");
     wrestlerImage.setAlt("Wrestler Image");
+    wrestlerImage.setId("wrestler-image");
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -248,7 +261,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               this::updateView,
               true,
               securityUtils,
-              accountService));
+              accountService,
+              imageGenerationServiceFactory,
+              imageStorageService,
+              aiSettingsService));
       wrestlerName.setText(wrestler.getName());
       wrestlerDetails.setText(
           String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));

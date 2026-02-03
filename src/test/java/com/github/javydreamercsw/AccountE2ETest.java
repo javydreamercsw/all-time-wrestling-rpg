@@ -43,8 +43,13 @@ public class AccountE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void cleanUpAccounts() {
-    accountService.findByUsername("delete_me").ifPresent(a -> accountService.delete(a.getId()));
-    accountService.findByUsername("new_account").ifPresent(a -> accountService.delete(a.getId()));
+    accountService.findAll().stream()
+        .filter(
+            a ->
+                a.getUsername().startsWith("delete_me")
+                    || a.getUsername().startsWith("new_account")
+                    || a.getUsername().startsWith("edit_me"))
+        .forEach(a -> accountService.delete(a.getId()));
   }
 
   @Test

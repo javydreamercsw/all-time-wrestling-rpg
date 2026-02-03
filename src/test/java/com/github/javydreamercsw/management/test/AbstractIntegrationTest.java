@@ -178,12 +178,12 @@ public abstract class AbstractIntegrationTest {
 
   protected void cleanupLeagues() {
     log.info("Cleaning up Leagues and related data...");
-    titleReignRepository.deleteAll();
-    matchFulfillmentRepository.deleteAll();
-    draftPickRepository.deleteAll();
-    draftRepository.deleteAll();
-    leagueRosterRepository.deleteAll();
-    leagueMembershipRepository.deleteAll();
+    titleReignRepository.deleteAllInBatch();
+    matchFulfillmentRepository.deleteAllInBatch();
+    draftPickRepository.deleteAllInBatch();
+    draftRepository.deleteAllInBatch();
+    leagueRosterRepository.deleteAllInBatch();
+    leagueMembershipRepository.deleteAllInBatch();
 
     // Clear league references from shows first or delete them
     showRepository
@@ -196,7 +196,7 @@ public abstract class AbstractIntegrationTest {
               }
             });
 
-    leagueRepository.deleteAll();
+    leagueRepository.deleteAllInBatch();
     log.info("League cleanup complete.");
   }
 }
