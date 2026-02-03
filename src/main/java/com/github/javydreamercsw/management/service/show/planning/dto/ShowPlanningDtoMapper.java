@@ -82,10 +82,8 @@ public class ShowPlanningDtoMapper {
     dto.setId(segment.getId());
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setShowName(segment.getShow().getName());
-    if (segment.getShow().getShowDate() != null) {
-      dto.setShowDate(
-          segment.getShow().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
-    }
+    dto.setShowDate(
+        segment.getShow().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
     dto.setParticipants(
         segment.getParticipants().stream()
             .map(p -> p.getWrestler().getName())
@@ -158,9 +156,7 @@ public class ShowPlanningDtoMapper {
   public ShowPlanningPleDTO toDto(@NonNull ShowPlanningPle ple) {
     ShowPlanningPleDTO dto = new ShowPlanningPleDTO();
     dto.setPleName(ple.getPle().getName());
-    if (ple.getPle().getShowDate() != null) {
-      dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
-    }
+    dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
     dto.setSummary(ple.getPle().getDescription());
     dto.setMatches(
         showService.getSegments(ple.getPle()).stream()

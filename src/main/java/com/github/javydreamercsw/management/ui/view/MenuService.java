@@ -111,32 +111,10 @@ public class MenuService {
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
     help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html", true));
 
-    MenuItem configurations = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
-    // ... (rest of configuration)
-
-    // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
-    MenuItem multiplayer =
-        new MenuItem(
-            "Multiplayer",
-            VaadinIcon.USERS,
-            null,
-            RoleName.ADMIN,
-            RoleName.BOOKER,
-            RoleName.PLAYER);
-    multiplayer.addChild(
-        new MenuItem(
-            "My Leagues",
-            VaadinIcon.LIST,
-            "leagues",
-            RoleName.ADMIN,
-            RoleName.BOOKER,
-            RoleName.PLAYER));
-
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);
     menuItems.add(playerDashboard);
     menuItems.add(campaignMenu);
-    menuItems.add(multiplayer);
     menuItems.add(entities);
     menuItems.add(contentGeneration);
     menuItems.add(cardGame);

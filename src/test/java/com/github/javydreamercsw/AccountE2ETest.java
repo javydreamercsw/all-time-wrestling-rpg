@@ -43,23 +43,15 @@ public class AccountE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void cleanUpAccounts() {
-    accountService.findAll().stream()
-        .filter(
-            a ->
-                a.getUsername().startsWith("delete_me")
-                    || a.getUsername().startsWith("new_account")
-                    || a.getUsername().startsWith("edit_me"))
-        .forEach(a -> accountService.delete(a.getId()));
+    accountService.findByUsername("delete_me").ifPresent(a -> accountService.delete(a.getId()));
+    accountService.findByUsername("new_account").ifPresent(a -> accountService.delete(a.getId()));
   }
 
   @Test
   @WithMockUser(roles = "ADMIN")
   public void testEditAccount() {
-    String username = "edit_me_" + System.currentTimeMillis();
-    Account testAccount =
-        accountService.createAccount(
-            username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
-    Long accountId = testAccount.getId();
+    Optional<Account> accountOptional = accountService.get(2L);
+    assertTrue(accountOptional.isPresent());
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
@@ -67,9 +59,9 @@ public class AccountE2ETest extends AbstractE2ETest {
     // Wait for the grid to load
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
 
-    // Find the edit button for the test account
-    WebElement editButton = waitForVaadinElement(driver, By.id("edit-button-" + accountId));
-    clickElement(editButton);
+    // Find the edit button for the admin accountOptional (ID 1)
+    WebElement editButton = driver.findElement(By.id("edit-button-2"));
+    editButton.click();
 
     // Edit the fields
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
@@ -80,7 +72,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Save the changes
     WebElement saveButton = waitForVaadinElement(driver, By.id("save-button"));
-    clickElement(saveButton);
+    saveButton.click();
 
     // Wait for the dialog to close
     new WebDriverWait(driver, Duration.ofSeconds(10))
@@ -89,12 +81,14 @@ public class AccountE2ETest extends AbstractE2ETest {
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
 
-    Optional<Account> accountOptional = accountService.get(accountId);
+    accountOptional = accountService.get(2L);
     assertTrue(accountOptional.isPresent());
     Account account = accountOptional.get();
 
     // Verify the changes
-    editButton = waitForVaadinElement(driver, By.id("edit-button-" + accountId));
+    // It's tricky to verify the change in the grid directly without more IDs.
+    // So, let's navigate back to the edit form and check the values.
+    editButton = waitForVaadinElement(driver, By.id("edit-button-2"));
     editButton.click();
 
     waitForVaadinElement(driver, By.id("username-field"));
@@ -110,10 +104,9 @@ public class AccountE2ETest extends AbstractE2ETest {
   @WithMockUser(roles = {"ADMIN"})
   public void testDeleteAccount() {
     // Create an account to delete
-    String username = "delete_me_" + System.currentTimeMillis();
     Account account =
         accountService.createAccount(
-            username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
+            "delete_me", "ValidPassword1!", "delete_me@atw.com", RoleName.VIEWER);
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
@@ -124,13 +117,13 @@ public class AccountE2ETest extends AbstractE2ETest {
     // Find the delete button for the new account
     WebElement deleteButton =
         waitForVaadinElement(driver, By.id("delete-button-" + account.getId()));
-    clickElement(deleteButton);
+    deleteButton.click();
 
     // Confirm the deletion
     WebElement confirmButton =
         waitForVaadinElement(
             driver, By.xpath("//vaadin-confirm-dialog//vaadin-button[text()='Delete']"));
-    clickElement(confirmButton);
+    confirmButton.click();
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
@@ -143,7 +136,6 @@ public class AccountE2ETest extends AbstractE2ETest {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void testCreateAccount() {
-    String username = "new_account_" + System.currentTimeMillis();
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
 
@@ -152,15 +144,15 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Click the new account button
     WebElement newAccountButton = waitForVaadinElement(driver, By.id("new-account-button"));
-    clickElement(newAccountButton);
+    newAccountButton.click();
 
     // Edit the fields
     WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
     // Check that we are on the correct page
-    usernameField.sendKeys(username);
+    usernameField.sendKeys("new_account");
 
     WebElement emailField = waitForVaadinElement(driver, By.id("email-field"));
-    emailField.sendKeys(username + "@atw.com");
+    emailField.sendKeys("new_account@atw.com");
 
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
     passwordField.sendKeys("ValidPassword1!");
@@ -170,7 +162,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Save the changes
     WebElement saveButton = waitForVaadinElement(driver, By.id("save-button"));
-    clickElement(saveButton);
+    saveButton.click();
 
     // Wait for the dialog to close
     new WebDriverWait(driver, Duration.ofSeconds(10))
@@ -189,7 +181,7 @@ public class AccountE2ETest extends AbstractE2ETest {
                 .build())
         .run(
             () -> {
-              Optional<Account> accountOptional = accountService.findByUsername(username);
+              Optional<Account> accountOptional = accountService.findByUsername("new_account");
               assertTrue(accountOptional.isPresent());
             });
   }

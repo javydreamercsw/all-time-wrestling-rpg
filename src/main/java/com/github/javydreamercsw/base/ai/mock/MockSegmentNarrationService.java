@@ -63,24 +63,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockCampaignEncounter(prompt);
     }
 
-    if (prompt.contains("Respond directly to them with a short, impactful retort")) {
-      return "You think you can just step into my ring and talk like that? I've retired legends"
-          + " while you were still learning to tie your boots. When the bell rings, the"
-          + " talking stops and the pain begins!";
-    }
-
     log.info("Mock AI generating segment narration (simulated processing time)");
     if (prompt.contains("Generate a compelling wrestling narration")) {
       return generateMockTextNarration(prompt);
     }
-
-    if (prompt.contains("professional wrestling show planner")
-        || prompt.contains("JSON array of segments")) {
-      return generateMockNarration(prompt);
-    }
-
-    return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
-        + " walking away.";
+    return generateMockNarration(prompt);
   }
 
   private String generateMockTextNarration(String prompt) {
@@ -148,6 +135,16 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   @Override
   public boolean isAvailable() {
     return true; // Always available for testing
+  }
+
+  @Override
+  public String generateText(@NonNull String prompt) {
+    if (prompt.contains(
+            "Generate a professional wrestling narrative segment appropriate for chapter")
+        || prompt.contains("Generate a 'Post-Match' narrative segment")) {
+      return generateMockCampaignEncounter(prompt);
+    }
+    return generateMockNarration(prompt);
   }
 
   /** Generates a realistic mock wrestling segment narration. */

@@ -28,37 +28,7 @@
 
 *Link: [./conductor/archive/on_demand_themes_20260125/](./conductor/archive/on_demand_themes_20260125/)*
 
-### [x] Track: Multiplayer & League Features
-
-*Link: [./conductor/archive/multiplayer_league_features_20260131/](./conductor/archive/multiplayer_league_features_20260131/)*
-
-### [x] Track: Stability & Quality Hardening
-
-*Link: [./conductor/archive/stability_quality_hardening_20260201/](./conductor/archive/stability_quality_hardening_20260201/)*
-
-### [x] Track: Match Narration Feedback
-
-*Link: [./conductor/archive/match_narration_feedback_20260201/](./conductor/archive/match_narration_feedback_20260201/)*
-*Status: Completed*
-*Date: 2026-02-01*
-
-### [x] Track: Interactive Promos
-
-*Link: [./conductor/archive/interactive_promos_20260201/](./conductor/archive/interactive_promos_20260201/)*
-*Status: Completed*
-*Date: 2026-02-02*
-
-### [x] Track: Image Generation
-
-*Link: [./conductor/archive/image_generation_20260201/](./conductor/archive/image_generation_20260201/)*
-*Status: Completed*
-*Date: 2026-02-02*
-
 ---
 
 ## Active Tracks
-
-### [ ] Track: E2E CI Hardening
-
-*Link: [./conductor/tracks/e2e_ci_hardening/index.md](./conductor/tracks/e2e_ci_hardening/index.md)*
 

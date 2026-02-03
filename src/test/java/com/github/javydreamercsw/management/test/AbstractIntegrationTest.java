@@ -28,12 +28,6 @@ import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
-import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
-import com.github.javydreamercsw.management.domain.league.DraftRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
-import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -92,16 +86,6 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected AccountRepository accountRepository;
   @Autowired protected RoleRepository roleRepository;
   @Autowired protected PasswordEncoder passwordEncoder;
-  @Autowired protected LeagueRepository leagueRepository;
-  @Autowired protected LeagueRosterRepository leagueRosterRepository;
-  @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
-  @Autowired protected DraftRepository draftRepository;
-  @Autowired protected DraftPickRepository draftPickRepository;
-  @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
-      titleReignRepository;
 
   @Autowired(required = false)
   protected org.springframework.cache.CacheManager cacheManager;
@@ -174,29 +158,5 @@ public abstract class AbstractIntegrationTest {
         "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
 
     return context;
-  }
-
-  protected void cleanupLeagues() {
-    log.info("Cleaning up Leagues and related data...");
-    titleReignRepository.deleteAllInBatch();
-    matchFulfillmentRepository.deleteAllInBatch();
-    draftPickRepository.deleteAllInBatch();
-    draftRepository.deleteAllInBatch();
-    leagueRosterRepository.deleteAllInBatch();
-    leagueMembershipRepository.deleteAllInBatch();
-
-    // Clear league references from shows first or delete them
-    showRepository
-        .findAll()
-        .forEach(
-            show -> {
-              if (show.getLeague() != null) {
-                show.setLeague(null);
-                showRepository.save(show);
-              }
-            });
-
-    leagueRepository.deleteAllInBatch();
-    log.info("League cleanup complete.");
   }
 }

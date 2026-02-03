@@ -82,21 +82,12 @@ public class BackstageActionView extends VerticalLayout {
   private void loadCampaign() {
     securityUtils
         .getAuthenticatedUser()
-        .ifPresent(
-            user -> {
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-              java.util.List<com.github.javydreamercsw.management.domain.wrestler.Wrestler>
-                  wrestlers = wrestlerRepository.findByAccount(account);
-              com.github.javydreamercsw.management.domain.wrestler.Wrestler active =
-                  wrestlers.stream()
-                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
-                      .findFirst()
-                      .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
-
-              if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
-              }
-            });
+        .flatMap(
+            user ->
+                wrestlerRepository
+                    .findByAccount(user.getAccount())
+                    .flatMap(campaignRepository::findActiveByWrestler))
+        .ifPresent(campaign -> currentCampaign = campaign);
   }
 
   private void initUI() {

@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.FeudResolvedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -53,8 +52,7 @@ public class FeudResolvedInboxListener implements ApplicationListener<FeudResolv
     inboxService.createInboxItem(
         feudResolved,
         String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
-        event.getFeud().getId().toString(),
-        InboxItemTarget.TargetType.FEUD);
+        event.getFeud().getId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

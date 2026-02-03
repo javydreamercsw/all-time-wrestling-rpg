@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -62,10 +61,7 @@ public class FactionHeatChangeInboxListener implements ApplicationListener<Facti
             event.getReason());
 
     inboxService.createInboxItem(
-        factionHeatChange,
-        message,
-        event.getFactionRivalryId().toString(),
-        InboxItemTarget.TargetType.FACTION);
+        factionHeatChange, message, event.getFactionRivalryId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -23,8 +23,9 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,20 +34,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service("permissionService")
 @Transactional(readOnly = true)
-@Slf4j
 public class PermissionService {
+  private static final Logger log = LoggerFactory.getLogger(PermissionService.class);
 
   private final WrestlerRepository wrestlerRepository;
   private final AccountRepository accountRepository;
 
   public PermissionService(
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull AccountRepository accountRepository) {
+      WrestlerRepository wrestlerRepository, AccountRepository accountRepository) {
     this.wrestlerRepository = wrestlerRepository;
     this.accountRepository = accountRepository;
   }
 
-  public boolean isOwner(@NonNull Object targetDomainObject) {
+  public boolean isOwner(Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
       log.warn("isOwner: Authentication is null");
@@ -58,62 +58,68 @@ public class PermissionService {
       log.warn(
           "isOwner: Principal is not UserDetails: {}",
           principal != null ? principal.getClass().getName() : "null");
-      return false;
+      return false; // Or handle anonymous user differently
     }
 
-    log.debug("isOwner: Checking ownership for user: {}", userDetails.getUsername());
+    log.info("isOwner: Checking ownership for user: {}", userDetails.getUsername());
 
-    // Fetch all wrestlers associated with the account
-    java.util.List<Wrestler> userWrestlers =
+    // Fetch the wrestler directly using the username from the security context
+    Optional<Wrestler> userWrestlerOpt =
         accountRepository
             .findByUsername(userDetails.getUsername())
-            .map(wrestlerRepository::findByAccount)
-            .orElse(java.util.Collections.emptyList());
+            .flatMap(wrestlerRepository::findByAccount);
 
-    if (userWrestlers.isEmpty()) {
-      log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
-      return false; // User does not have any wrestlers assigned
+    if (userWrestlerOpt.isEmpty()) {
+      log.warn("isOwner: No wrestler found for user: {}", userDetails.getUsername());
+      return false; // User does not have a wrestler assigned
     }
+    Wrestler userWrestler = userWrestlerOpt.get();
+    log.info(
+        "isOwner: User {} has wrestler: {} (ID: {})",
+        userDetails.getUsername(),
+        userWrestler.getName(),
+        userWrestler.getId());
 
-    java.util.Set<Long> ownedWrestlerIds =
-        userWrestlers.stream().map(Wrestler::getId).collect(java.util.stream.Collectors.toSet());
-
-    switch (targetDomainObject) {
-      case Wrestler targetWrestler -> {
-        return ownedWrestlerIds.contains(targetWrestler.getId());
-      }
-      case Deck deck -> {
+    if (targetDomainObject instanceof Wrestler targetWrestler) {
+      boolean match = userWrestler.getId().equals(targetWrestler.getId());
+      if (!match)
+        log.warn(
+            "isOwner: Wrestler mismatch. User wrestler ID: {}, Target wrestler ID: {}",
+            userWrestler.getId(),
+            targetWrestler.getId());
+      return match;
+    } else if (targetDomainObject instanceof Deck deck) {
+      Wrestler deckWrestler = deck.getWrestler();
+      boolean match = deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
+      if (!match)
+        log.warn(
+            "isOwner: Deck wrestler mismatch. User wrestler ID: {}, Deck wrestler: {}",
+            userWrestler.getId(),
+            deckWrestler != null ? deckWrestler.getId() : "null");
+      return match;
+    } else if (targetDomainObject instanceof DeckCard deckCard) {
+      Deck deck = deckCard.getDeck();
+      if (deck != null) {
         Wrestler deckWrestler = deck.getWrestler();
-        return deckWrestler != null && ownedWrestlerIds.contains(deckWrestler.getId());
+        return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
       }
-      case DeckCard deckCard -> {
-        Deck deck = deckCard.getDeck();
-        if (deck != null) {
-          Wrestler deckWrestler = deck.getWrestler();
-          return deckWrestler != null && ownedWrestlerIds.contains(deckWrestler.getId());
-        }
+    } else if (targetDomainObject instanceof InboxItem inboxItem) {
+      return inboxItem.getTargets().stream()
+          .anyMatch(target -> target.getTargetId().equals(userWrestler.getId().toString()));
+    } else if (targetDomainObject instanceof Collection<?> collection) {
+      if (collection.isEmpty()) {
+        return true;
       }
-      case InboxItem inboxItem -> {
-        return inboxItem.getTargets().stream()
-            .anyMatch(target -> ownedWrestlerIds.contains(Long.valueOf(target.getTargetId())));
-      }
-      case Collection<?> collection -> {
-        if (collection.isEmpty()) {
-          return true;
-        }
-        // Create a copy to avoid ConcurrentModificationException if the collection is being
-        // modified
-        // elsewhere
-        java.util.List<?> copy = new java.util.ArrayList<>(collection);
-        // Check if all items in the collection are owned by the user
-        return copy.stream().allMatch(this::isOwner);
-        // Check if all items in the collection are owned by the user
-      }
-      default -> {}
+      // Create a copy to avoid ConcurrentModificationException if the collection is being modified
+      // elsewhere
+      java.util.List<?> copy = new java.util.ArrayList<>(collection);
+      // Check if all items in the collection are owned by the user
+      return copy.stream().allMatch(this::isOwner);
     }
 
     log.warn(
-        "isOwner: Unsupported target domain object: {}", targetDomainObject.getClass().getName());
+        "isOwner: Unsupported target domain object: {}",
+        targetDomainObject != null ? targetDomainObject.getClass().getName() : "null");
     return false;
   }
 
