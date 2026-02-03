@@ -16,11 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.inbox;
 
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.criteria.Join;
@@ -28,7 +26,6 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.util.List;
 import java.util.Set;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -45,30 +42,24 @@ public class InboxService {
 
   private final InboxRepository inboxRepository;
   private final InboxEventTypeRegistry eventTypeRegistry;
-  @Getter private final AccountRepository accountRepository;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InboxItem createInboxItem(
-      @NonNull InboxEventType eventType,
-      @NonNull String message,
-      @NonNull String referenceId,
-      @NonNull InboxItemTarget.TargetType type) {
-    return createInboxItem(eventType, message, List.of(new TargetInfo(referenceId, type)));
+      @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
+    return createInboxItem(eventType, message, List.of(referenceId));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType,
       @NonNull String message,
-      @NonNull List<TargetInfo> targets) {
+      @NonNull List<String> referenceIds) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
     inboxItem.setEventType(eventType);
-    targets.forEach(t -> inboxItem.addTarget(t.targetId(), t.type()));
+    referenceIds.forEach(inboxItem::addTarget);
     return inboxRepository.save(inboxItem);
   }
-
-  public record TargetInfo(String targetId, InboxItemTarget.TargetType type) {}
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void markSelectedAsRead(@NonNull Set<InboxItem> inboxItems) {
@@ -100,11 +91,7 @@ public class InboxService {
 
   @PreAuthorize("isAuthenticated()")
   public List<InboxItem> search(
-      Set<Wrestler> targets,
-      String readStatus,
-      String eventType,
-      Boolean hideRead,
-      Long accountId) {
+      Set<Wrestler> targets, String readStatus, String eventType, Boolean hideRead) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -118,29 +105,16 @@ public class InboxService {
             predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
-          Predicate targetPredicate = null;
           if (targets != null && !targets.isEmpty()) {
-            Join<InboxItem, InboxItemTarget> join = root.join("targets", JoinType.INNER);
-            targetPredicate =
-                join.get("targetId")
-                    .in(targets.stream().map(wrestler -> wrestler.getId().toString()).toList());
-          }
-
-          if (accountId != null) {
-            Join<InboxItem, InboxItemTarget> accountJoin = root.join("targets", JoinType.INNER);
-            Predicate accountPredicate =
+            Join<Object, Object> join = root.join("targets", JoinType.INNER);
+            predicate =
                 cb.and(
-                    cb.equal(accountJoin.get("targetId"), accountId.toString()),
-                    cb.equal(accountJoin.get("targetType"), InboxItemTarget.TargetType.ACCOUNT));
-            if (targetPredicate != null) {
-              targetPredicate = cb.or(targetPredicate, accountPredicate);
-            } else {
-              targetPredicate = accountPredicate;
-            }
-          }
-
-          if (targetPredicate != null) {
-            predicate = cb.and(predicate, targetPredicate);
+                    predicate,
+                    join.get("targetId")
+                        .in(
+                            targets.stream()
+                                .map(wrestler -> wrestler.getId().toString())
+                                .toList()));
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {
@@ -194,7 +168,6 @@ public class InboxService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InboxItem addInboxItem(@NonNull Wrestler wrestler, @NonNull String message) {
     InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
-    return createInboxItem(
-        eventType, message, wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER);
+    return createInboxItem(eventType, message, List.of(wrestler.getId().toString()));
   }
 }

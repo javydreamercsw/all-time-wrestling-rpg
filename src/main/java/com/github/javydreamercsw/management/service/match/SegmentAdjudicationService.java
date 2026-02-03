@@ -17,8 +17,6 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
-import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
-import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -55,9 +53,6 @@ public class SegmentAdjudicationService {
   private final Random random;
   private final TitleService titleService;
   private final MatchRewardService matchRewardService;
-  private final MatchFulfillmentRepository matchFulfillmentRepository;
-  private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -67,10 +62,7 @@ public class SegmentAdjudicationService {
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
       TitleService titleService,
-      MatchRewardService matchRewardService,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-          leagueRosterRepository) {
+      MatchRewardService matchRewardService) {
     this(
         rivalryService,
         wrestlerService,
@@ -78,8 +70,6 @@ public class SegmentAdjudicationService {
         feudService,
         titleService,
         matchRewardService,
-        matchFulfillmentRepository,
-        leagueRosterRepository,
         new Random());
   }
 
@@ -90,9 +80,6 @@ public class SegmentAdjudicationService {
       MultiWrestlerFeudService feudService,
       TitleService titleService,
       MatchRewardService matchRewardService,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-          leagueRosterRepository,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -100,8 +87,6 @@ public class SegmentAdjudicationService {
     this.feudService = feudService;
     this.titleService = titleService;
     this.matchRewardService = matchRewardService;
-    this.matchFulfillmentRepository = matchFulfillmentRepository;
-    this.leagueRosterRepository = leagueRosterRepository;
     this.random = random;
   }
 
@@ -112,58 +97,9 @@ public class SegmentAdjudicationService {
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
-    // Check for league fulfillment
-    matchFulfillmentRepository
-        .findBySegment(segment)
-        .ifPresent(
-            fulfillment -> {
-              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
-                segment.setWinners(List.of(fulfillment.getReportedWinner()));
-              }
-              fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
-              matchFulfillmentRepository.save(fulfillment);
-            });
-
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
-
-    // Update League Stats if applicable
-    if (segment.getShow().getLeague() != null) {
-      com.github.javydreamercsw.management.domain.league.League league =
-          segment.getShow().getLeague();
-      if (winners.isEmpty()) {
-        // Draw
-        for (Wrestler w : segment.getWrestlers()) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setDraws(roster.getDraws() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
-        }
-      } else {
-        for (Wrestler w : winners) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setWins(roster.getWins() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
-        }
-        for (Wrestler w : losers) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setLosses(roster.getLosses() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
-        }
-      }
-    }
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);

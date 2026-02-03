@@ -74,7 +74,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   void setUp() {
-    cleanupLeagues();
+
     if (cacheManager != null) {
 
       cacheManager
@@ -140,7 +140,6 @@ class RankingViewE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName("Weekly").get().getId(),
             null,
             season.getId(),
-            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();

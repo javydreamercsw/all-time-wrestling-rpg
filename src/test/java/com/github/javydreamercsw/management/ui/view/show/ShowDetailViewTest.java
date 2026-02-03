@@ -30,8 +30,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -96,8 +94,6 @@ class ShowDetailViewTest {
   @Mock private LocalAIConfigProperties localAIConfigProperties;
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private ShowController showController;
-  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
-  @Mock private LeagueRepository leagueRepository;
 
   @BeforeEach
   void setUp() {
@@ -128,7 +124,7 @@ class ShowDetailViewTest {
       segment.setShow(show);
       segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segment.setSegmentType(segmentType);
-      when(segmentService.updateSegment(any(Segment.class))).thenReturn(segment);
+      when(segmentRepository.save(any(Segment.class))).thenReturn(segment);
 
       Wrestler wrestler1 = new Wrestler();
       wrestler1.setId(1L);
@@ -162,8 +158,6 @@ class ShowDetailViewTest {
               mock(WebClient.Builder.class),
               segmentNarrationController,
               showController,
-              matchFulfillmentRepository,
-              leagueRepository,
               env);
 
       ReflectionTestUtils.invokeMethod(
@@ -243,8 +237,6 @@ class ShowDetailViewTest {
               mock(WebClient.Builder.class),
               segmentNarrationController,
               showController,
-              matchFulfillmentRepository,
-              leagueRepository,
               env);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);

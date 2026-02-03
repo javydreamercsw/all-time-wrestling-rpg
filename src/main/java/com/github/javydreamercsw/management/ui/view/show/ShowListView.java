@@ -18,8 +18,6 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.league.League;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -75,13 +73,11 @@ public class ShowListView extends Main {
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
-  private final LeagueRepository leagueRepository;
   private final SecurityUtils securityUtils;
   private final Clock clock; // Add this field
 
   private final ComboBox<Season> newSeason; // New field
   private final ComboBox<ShowTemplate> newTemplate; // New field
-  private final ComboBox<League> newLeague; // New field
 
   private Dialog editDialog;
   private TextField editName;
@@ -89,7 +85,6 @@ public class ShowListView extends Main {
   private ComboBox<ShowType> editType;
   private ComboBox<Season> editSeason;
   private ComboBox<ShowTemplate> editTemplate;
-  private ComboBox<League> editLeague;
   private DatePicker editShowDate;
   private Show editingShow;
 
@@ -104,14 +99,12 @@ public class ShowListView extends Main {
       @NonNull ShowTypeService showTypeService,
       @NonNull SeasonService seasonService,
       @NonNull ShowTemplateService showTemplateService,
-      @NonNull LeagueRepository leagueRepository,
       @NonNull SecurityUtils securityUtils,
       Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
-    this.leagueRepository = leagueRepository;
     this.securityUtils = securityUtils;
     this.clock =
         (clock != null) ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
@@ -153,16 +146,6 @@ public class ShowListView extends Main {
     newTemplate.setId("show-template");
     newTemplate.setEnabled(false);
 
-    newLeague = new ComboBox<>("League");
-    newLeague.setItems(
-        leagueRepository.findAll().stream()
-            .sorted(Comparator.comparing(League::getName))
-            .collect(Collectors.toList()));
-    newLeague.setItemLabelGenerator(League::getName);
-    newLeague.setClearButtonVisible(true);
-    newLeague.setPlaceholder("Select a league (optional)");
-    newLeague.setId("league");
-
     newShowType.addValueChangeListener(
         event -> {
           ShowType selectedShowType = event.getValue();
@@ -189,14 +172,12 @@ public class ShowListView extends Main {
     createBtn.setVisible(securityUtils.canCreate());
 
     HorizontalLayout formLayout =
-        new HorizontalLayout(
-            name, newShowType, newSeason, newTemplate, newLeague, newShowDate, createBtn);
+        new HorizontalLayout(name, newShowType, newSeason, newTemplate, newShowDate, createBtn);
     formLayout.setSpacing(true);
-    formLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
+    formLayout.setAlignItems(FlexComponent.Alignment.BASELINE); // Align items nicely
 
     showGrid = new Grid<>(Show.class, false);
     showGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-    showGrid.setId("show-grid");
 
     showGrid.setPartNameGenerator(
         show -> {
@@ -212,7 +193,6 @@ public class ShowListView extends Main {
         .addComponentColumn(
             show -> {
               Button nameButton = new Button(show.getName());
-              nameButton.setId("show-name-button-" + show.getId());
               nameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               nameButton.addClickListener(
                   e ->
@@ -282,13 +262,6 @@ public class ShowListView extends Main {
         .addColumn(
             show -> show.getTemplate() != null ? show.getTemplate().getName() : "No Template")
         .setHeader("Template")
-        .setSortable(true)
-        .setFlexGrow(1);
-
-    // League column
-    showGrid
-        .addColumn(show -> show.getLeague() != null ? show.getLeague().getName() : "No League")
-        .setHeader("League")
         .setSortable(true)
         .setFlexGrow(1);
 
@@ -411,13 +384,11 @@ public class ShowListView extends Main {
         newShowType.getValue().getId(),
         selectedDate,
         newSeason.getValue() != null ? newSeason.getValue().getId() : null,
-        newTemplate.getValue() != null ? newTemplate.getValue().getId() : null,
-        newLeague.getValue() != null ? newLeague.getValue().getId() : null);
+        newTemplate.getValue() != null ? newTemplate.getValue().getId() : null);
     name.clear();
     newShowType.clear();
     newSeason.clear();
     newTemplate.clear();
-    newLeague.clear();
     newShowDate.setValue(LocalDate.now(this.clock)); // Reset to today
     refreshGrid();
     Notification.show("Show created.", 3_000, Notification.Position.BOTTOM_START)
@@ -470,16 +441,6 @@ public class ShowListView extends Main {
     editTemplate.setClearButtonVisible(true);
     editTemplate.setId("edit-show-template");
 
-    editLeague = new ComboBox<>("League");
-    editLeague.setItems(
-        leagueRepository.findAll().stream()
-            .sorted(Comparator.comparing(League::getName))
-            .collect(Collectors.toList()));
-    editLeague.setItemLabelGenerator(League::getName);
-    editLeague.setWidthFull();
-    editLeague.setClearButtonVisible(true);
-    editLeague.setId("edit-league");
-
     editType.addValueChangeListener(
         event -> {
           ShowType selectedShowType = event.getValue();
@@ -515,13 +476,7 @@ public class ShowListView extends Main {
 
     VerticalLayout formLayout =
         new VerticalLayout(
-            editName,
-            editDescription,
-            editType,
-            editSeason,
-            editTemplate,
-            editLeague,
-            editShowDate);
+            editName, editDescription, editType, editSeason, editTemplate, editShowDate);
     formLayout.setWidthFull();
     formLayout.setSpacing(true);
 
@@ -540,7 +495,6 @@ public class ShowListView extends Main {
     editType.setValue(show.getType());
     editSeason.setValue(show.getSeason());
     editTemplate.setValue(show.getTemplate());
-    editLeague.setValue(show.getLeague());
     editShowDate.setValue(show.getShowDate());
     editDialog.open();
   }
@@ -551,7 +505,6 @@ public class ShowListView extends Main {
     editingShow.setType(editType.getValue());
     editingShow.setSeason(editSeason.getValue());
     editingShow.setTemplate(editTemplate.getValue());
-    editingShow.setLeague(editLeague.getValue());
     editingShow.setShowDate(editShowDate.getValue());
     showService.save(editingShow);
     editDialog.close();

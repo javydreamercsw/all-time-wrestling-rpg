@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.ArrayList;
@@ -55,24 +54,18 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
     DramaEvent dramaEvent = event.getDramaEvent();
     log.info("Received DramaEventCreatedEvent: {}", dramaEvent.getTitle());
 
-    List<InboxService.TargetInfo> targets = new ArrayList<>();
+    List<String> targetIds = new ArrayList<>();
     if (dramaEvent.getPrimaryWrestler() != null) {
-      targets.add(
-          new InboxService.TargetInfo(
-              dramaEvent.getPrimaryWrestler().getId().toString(),
-              InboxItemTarget.TargetType.WRESTLER));
+      targetIds.add(dramaEvent.getPrimaryWrestler().getId().toString());
     }
     if (dramaEvent.getSecondaryWrestler() != null) {
-      targets.add(
-          new InboxService.TargetInfo(
-              dramaEvent.getSecondaryWrestler().getId().toString(),
-              InboxItemTarget.TargetType.WRESTLER));
+      targetIds.add(dramaEvent.getSecondaryWrestler().getId().toString());
     }
 
     inboxService.createInboxItem(
         dramaEventCreated,
         String.format("%s: %s", dramaEvent.getTitle(), dramaEvent.getDescription()),
-        targets);
+        targetIds);
 
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));

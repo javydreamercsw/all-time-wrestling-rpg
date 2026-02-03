@@ -47,7 +47,6 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   void setUp() {
-    cleanupLeagues();
     injuryRepository.deleteAll();
     segmentRepository.deleteAll();
     wrestlerRepository.deleteAll();

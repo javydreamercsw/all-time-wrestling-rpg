@@ -169,31 +169,6 @@ class MockMatchNarrationServiceTest {
     assertThat(narration).isNotNull().contains("\n\n");
   }
 
-  @Test
-  @DisplayName("Should generate retort for interactive promo")
-  void shouldGenerateRetort() {
-    String prompt =
-        "The player just said: \"I am the best!\"\n"
-            + "Respond directly to them with a short, impactful retort (2-3 sentences).";
-    String result = mockService.generateText(prompt);
-
-    assertThat(result).isNotNull().isNotEmpty();
-    assertThat(result).containsIgnoringCase("retired legends");
-    assertThat(result).containsIgnoringCase("boots");
-    assertThat(result).containsIgnoringCase("pain begins");
-  }
-
-  @Test
-  @DisplayName("Should generate JSON array for show planning")
-  void shouldGenerateJsonArrayForShowPlanning() {
-    String prompt =
-        "You are a professional wrestling show planner. Generate a JSON array of segments.";
-    String result = mockService.generateText(prompt);
-
-    assertThat(result).isNotNull().startsWith("[");
-    assertThat(result).contains("segmentId", "type", "description");
-  }
-
   /** Creates a comprehensive test segment context. */
   private SegmentNarrationContext createTestMatchContext() {
     SegmentNarrationContext context = new SegmentNarrationContext();

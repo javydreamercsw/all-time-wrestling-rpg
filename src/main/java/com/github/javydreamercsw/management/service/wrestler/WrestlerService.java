@@ -156,6 +156,20 @@ public class WrestlerService {
                                     "Account not found with ID: " + accountId));
               }
 
+              // Check if the account is already assigned to another wrestler
+              if (account != null) {
+                Optional<Wrestler> existingPlayerWrestler =
+                    wrestlerRepository.findByAccount(account);
+                if (existingPlayerWrestler.isPresent()
+                    && !existingPlayerWrestler.get().getId().equals(wrestlerId)) {
+                  throw new IllegalArgumentException(
+                      "Account "
+                          + account.getUsername()
+                          + " is already assigned to another wrestler: "
+                          + existingPlayerWrestler.get().getName());
+                }
+              }
+
               wrestler.setAccount(account);
               wrestler.setIsPlayer(account != null); // Set isPlayer based on account presence
               return wrestlerRepository.saveAndFlush(wrestler);
@@ -232,13 +246,8 @@ public class WrestlerService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findByAccount(@NonNull Account account) {
+  public Optional<Wrestler> findByAccount(@NonNull Account account) {
     return wrestlerRepository.findByAccount(account);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findAllByAccount(@NonNull Account account) {
-    return wrestlerRepository.findAllByAccount(account);
   }
 
   @PreAuthorize("isAuthenticated()")

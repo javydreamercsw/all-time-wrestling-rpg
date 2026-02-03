@@ -20,14 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 class CampaignNarrationPromptTest {
 
   private static class TestSegmentNarrationService extends AbstractSegmentNarrationService {
     @Override
-    protected String callAIProvider(@NonNull String prompt) {
+    protected String callAIProvider(String prompt) {
       return "Mock Response";
     }
 
@@ -42,7 +41,7 @@ class CampaignNarrationPromptTest {
     }
 
     @Override
-    public String generateText(@NonNull String prompt) {
+    public String generateText(String prompt) {
       return "Mock Text";
     }
 

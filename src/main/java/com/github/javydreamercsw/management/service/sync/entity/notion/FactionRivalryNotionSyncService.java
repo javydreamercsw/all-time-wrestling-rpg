@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class FactionRivalryNotionSyncService implements NotionEntitySyncService {
+public class FactionRivalryNotionSyncService implements NotionSyncService {
 
   private final FactionRivalryRepository factionRivalryRepository;
   private final NotionHandler notionHandler;

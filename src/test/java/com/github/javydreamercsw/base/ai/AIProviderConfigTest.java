@@ -76,6 +76,6 @@ class AIProviderConfigTest {
   void testLocalAIConfig() {
     assertNotNull(localAIConfigProperties);
     assertEquals("http://localhost:8088", localAIConfigProperties.getBaseUrl());
-    assertEquals("gpt-4", localAIConfigProperties.getModel());
+    assertEquals("llama-3.2-1b-instruct:q4_k_m", localAIConfigProperties.getModel());
   }
 }

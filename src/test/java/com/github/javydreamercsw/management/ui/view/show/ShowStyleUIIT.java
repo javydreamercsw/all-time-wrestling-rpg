@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -125,16 +124,9 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(securityUtils.canEdit()).thenReturn(true); // Default to true for tests
     when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
 
-    LeagueRepository leagueRepository = mock(LeagueRepository.class);
     ShowListView showListView =
         new ShowListView(
-            showService,
-            showTypeService,
-            seasonService,
-            showTemplateService,
-            leagueRepository,
-            securityUtils,
-            clock);
+            showService, showTypeService, seasonService, showTemplateService, securityUtils, clock);
     Grid<Show> grid = showListView.showGrid;
 
     // Test the part name generator

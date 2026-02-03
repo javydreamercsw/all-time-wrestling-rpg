@@ -69,7 +69,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -178,7 +177,6 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_OPENAI_API_KEY", null);
     syncSetting("AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo");
     syncSetting("AI_OPENAI_PREMIUM_MODEL", "gpt-4");
-    syncSetting("AI_OPENAI_IMAGE_MODEL", "dall-e-3");
     syncSetting("AI_OPENAI_MAX_TOKENS", "1000");
     syncSetting("AI_OPENAI_TEMPERATURE", "0.7");
 
@@ -197,9 +195,8 @@ public class DataInitializer implements Initializable {
     // LocalAI
     syncSetting("AI_LOCALAI_ENABLED", "false");
     syncSetting("AI_LOCALAI_BASE_URL", "http://localhost:8088");
-    syncSetting("AI_LOCALAI_MODEL", "gpt-4");
+    syncSetting("AI_LOCALAI_MODEL", "llama-3.2-1b-instruct:q4_k_m");
     syncSetting("AI_LOCALAI_MODEL_URL", null);
-    syncSetting("AI_LOCALAI_IMAGE_MODEL", "stablediffusion");
 
     boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");
     boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
@@ -208,73 +205,22 @@ public class DataInitializer implements Initializable {
 
     if (!openAiEnabled && !claudeEnabled && !geminiEnabled && !localAiEnabled) {
       log.info("All AI providers are disabled. Enabling LocalAI.");
-      // Only set if missing so we don't flip a user's explicit DB config.
-      saveIfMissing("AI_LOCALAI_ENABLED", "true");
+      gameSettingService.save("AI_LOCALAI_ENABLED", "true");
     }
 
     log.info("AI settings synchronization complete.");
   }
 
-  private void syncSetting(@NonNull String key, String defaultValue) {
+  private void syncSetting(String key, String defaultValue) {
     String envValue = env.getProperty(key);
-    boolean forceOverride =
-        Boolean.parseBoolean(env.getProperty("data.initializer.aiSettings.forceOverride", "false"));
-
-    // Prefer NOT overwriting DB values unless explicitly forced.
     if (envValue != null) {
-      if (forceOverride) {
-        log.debug(
-            "AI setting sync: overriding '{}' from environment (forceOverride=true): {}",
-            key,
-            maskIfSecret(key, envValue));
-        gameSettingService.save(key, envValue);
-      } else {
-        if (gameSettingService.findById(key).isPresent()) {
-          log.debug(
-              "AI setting sync: skipping '{}' from environment because DB already has a value: {}",
-              key,
-              maskIfSecret(key, envValue));
-        } else {
-          log.debug(
-              "AI setting sync: saving missing '{}' from environment: {}",
-              key,
-              maskIfSecret(key, envValue));
-          saveIfMissing(key, envValue);
-        }
-      }
-      return;
-    }
-
-    // No env value: seed defaults only if missing.
-    if (defaultValue != null) {
-      if (gameSettingService.findById(key).isPresent()) {
-        log.debug("AI setting sync: '{}' already present in DB; default not applied.", key);
-      } else {
-        log.debug(
-            "AI setting sync: seeding missing '{}' with default: {}",
-            key,
-            maskIfSecret(key, defaultValue));
-        saveIfMissing(key, defaultValue);
-      }
-    } else {
-      log.debug("AI setting sync: '{}' has no env value and no default; leaving as-is.", key);
+      gameSettingService.save(key, envValue);
+    } else if (gameSettingService.findById(key).isEmpty() && defaultValue != null) {
+      gameSettingService.save(key, defaultValue);
     }
   }
 
-  private String maskIfSecret(String key, String value) {
-    if (key != null && key.toUpperCase().contains("KEY")) {
-      return "********";
-    }
-    return value;
-  }
-
-  private void saveIfMissing(@NonNull String key, @NonNull String value) {
-    if (gameSettingService.findById(key).isEmpty()) {
-      gameSettingService.save(key, value);
-    }
-  }
-
-  private boolean isSettingEnabled(@NonNull String key) {
+  private boolean isSettingEnabled(String key) {
     return gameSettingService
         .findById(key)
         .map(gs -> Boolean.parseBoolean(gs.getValue()))
@@ -664,7 +610,7 @@ public class DataInitializer implements Initializable {
               // Check if the title is already held by these champions
               boolean matchesCurrent =
                   title.getCurrentChampions().size() == champions.size()
-                      && new HashSet<>(title.getCurrentChampions()).containsAll(champions);
+                      && title.getCurrentChampions().containsAll(champions);
 
               if (!matchesCurrent) {
                 titleService.awardTitleTo(title, champions);

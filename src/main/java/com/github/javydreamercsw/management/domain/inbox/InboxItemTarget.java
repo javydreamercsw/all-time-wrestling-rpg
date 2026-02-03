@@ -39,24 +39,8 @@ public class InboxItemTarget extends AbstractEntity<Long> {
   @Column(name = "target_id", nullable = false)
   private String targetId;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "target_type", nullable = false)
-  private TargetType targetType = TargetType.ACCOUNT;
-
   @Override
   public Long getId() {
     return id;
-  }
-
-  public enum TargetType {
-    ACCOUNT,
-    WRESTLER,
-    MATCH_FULFILLMENT,
-    RIVALRY,
-    SHOW,
-    TITLE,
-    FACTION,
-    FEUD,
-    OTHER
   }
 }

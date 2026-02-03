@@ -723,8 +723,7 @@ public class CampaignService {
                   weekly.getId(),
                   finalDate,
                   season.getId(),
-                  finalTemplateId,
-                  null);
+                  finalTemplateId);
             });
   }
 
