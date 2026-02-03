@@ -76,22 +76,21 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
 
     Account admin = accountRepository.findByUsername("admin").get();
 
-    player =
-        wrestlerRepository
-            .findByAccount(admin)
-            .orElseGet(
-                () -> {
-                  Wrestler w =
-                      Wrestler.builder()
-                          .name("Test E2E Veteran")
-                          .startingHealth(100)
-                          .startingStamina(100)
-                          .account(admin)
-                          .isPlayer(true)
-                          .active(true)
-                          .build();
-                  return wrestlerRepository.saveAndFlush(w);
-                });
+    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
+    player = wrestlers.isEmpty() ? null : wrestlers.get(0);
+
+    if (player == null) {
+      Wrestler w =
+          Wrestler.builder()
+              .name("Test E2E Veteran")
+              .startingHealth(100)
+              .startingStamina(100)
+              .account(admin)
+              .isPlayer(true)
+              .active(true)
+              .build();
+      player = wrestlerRepository.saveAndFlush(w);
+    }
   }
 
   @Test

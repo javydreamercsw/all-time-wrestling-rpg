@@ -23,7 +23,6 @@ import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -71,8 +70,10 @@ public class LocalAIContainerConfig {
 
       if (aiSettingsService.isLocalAIEnabled()) {
         String modelName = aiSettingsService.getLocalAIModel();
-        if (modelName != null && !modelName.isEmpty()) {
-          new Thread(() -> initializeAndStartContainer(modelName)).start();
+        String imageModelName = aiSettingsService.getLocalAIImageModel();
+        if ((modelName != null && !modelName.isEmpty())
+            || (imageModelName != null && !imageModelName.isEmpty())) {
+          new Thread(() -> initializeAndStartContainer(modelName, imageModelName)).start();
         }
         started = true;
       }
@@ -81,27 +82,44 @@ public class LocalAIContainerConfig {
     }
   }
 
-  private void initializeAndStartContainer(@NonNull String modelName) {
+  private void initializeAndStartContainer(String modelName, String imageModelName) {
     try {
       statusService.setStatus(LocalAIStatusService.Status.STARTING);
       statusService.setMessage("LocalAI container is starting...");
 
-      File modelsDir = new File("models");
+      File modelsDir = new File("data", "models");
       if (!modelsDir.exists()) {
         modelsDir.mkdirs();
       }
 
-      // This tells the container to load the specified model config file at startup.
-      String preloadModelsJson =
-          String.format("[{\"path\": \"/build/models/%s.yaml\"}]", modelName);
+      File backendsDir = new File("data", "backends");
+      if (!backendsDir.exists()) {
+        backendsDir.mkdirs();
+      }
 
-      // Using the official LocalAI image
+      String[] command;
+      if (modelName != null
+          && !modelName.isEmpty()
+          && imageModelName != null
+          && !imageModelName.isEmpty()) {
+        command = new String[] {"run", modelName, imageModelName};
+      } else if (modelName != null && !modelName.isEmpty()) {
+        command = new String[] {"run", modelName};
+      } else {
+        command = new String[] {"run", imageModelName};
+      }
+
+      // Using the official LocalAI image but installing diffusers from source
       localAiContainer =
-          new GenericContainer<>("localai/localai:latest")
+          new GenericContainer<>("localai/localai:latest-aio-cpu")
               .withExposedPorts(8080)
               .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
+              .withFileSystemBind(
+                  backendsDir.getAbsolutePath(), "/build/backends", BindMode.READ_WRITE)
               .withEnv("MODELS_PATH", "/build/models")
-              .withCommand("run", modelName)
+              .withEnv("BACKENDS_PATH", "/build/backends")
+              .withEnv("INSTALL_BACKENDS", "stablediffusion-ggml")
+              .withCommand(command)
               .waitingFor(
                   new WaitAllStrategy()
                       .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
@@ -110,7 +128,8 @@ public class LocalAIContainerConfig {
       log.info(
           "Starting LocalAI container. This may take a while for the initial model download...");
       statusService.setStatus(LocalAIStatusService.Status.DOWNLOADING_MODEL);
-      statusService.setMessage("Downloading/installing AI model. This can take several minutes...");
+      statusService.setMessage(
+          "Downloading/installing AI model(s). This can take several minutes...");
 
       localAiContainer.start();
 
@@ -118,12 +137,18 @@ public class LocalAIContainerConfig {
           String.format(
               "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
       System.setProperty("ai.localai.base-url", baseUrl);
-      System.setProperty("ai.localai.model", modelName);
+      if (modelName != null) {
+        System.setProperty("ai.localai.model", modelName);
+      }
+      if (imageModelName != null) {
+        System.setProperty("ai.localai.image-model", imageModelName);
+      }
 
       statusService.setStatus(LocalAIStatusService.Status.READY);
       statusService.setMessage("LocalAI is ready at " + baseUrl);
       log.info("LocalAI Container started at: {}", baseUrl);
-      log.info("Model '{}' is ready.", modelName);
+      if (modelName != null) log.info("Model '{}' is ready.", modelName);
+      if (imageModelName != null) log.info("Image Model '{}' is ready.", imageModelName);
 
     } catch (Exception e) {
       log.error("Failed to start LocalAI container", e);

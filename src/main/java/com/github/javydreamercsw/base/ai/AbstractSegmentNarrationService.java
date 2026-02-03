@@ -81,6 +81,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     return prompt.toString();
   }
 
+  @Override
+  public String generateText(@NonNull String prompt) {
+    return callAIProvider(prompt);
+  }
+
   /**
    * Abstract method that each provider must implement to call their specific AI service.
    *

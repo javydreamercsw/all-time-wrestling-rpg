@@ -67,22 +67,21 @@ class CampaignE2ETest extends AbstractE2ETest {
     // Manually setup a wrestler for the admin account to avoid brittle UI steps
     Account admin = accountRepository.findByUsername("admin").get();
 
-    Wrestler player =
-        wrestlerRepository
-            .findByAccount(admin)
-            .orElseGet(
-                () -> {
-                  Wrestler w =
-                      Wrestler.builder()
-                          .name("Test E2E Wrestler")
-                          .startingHealth(100)
-                          .startingStamina(100)
-                          .account(admin)
-                          .isPlayer(true)
-                          .active(true)
-                          .build();
-                  return wrestlerRepository.save(w);
-                });
+    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
+    Wrestler player = wrestlers.isEmpty() ? null : wrestlers.get(0);
+
+    if (player == null) {
+      Wrestler w =
+          Wrestler.builder()
+              .name("Test E2E Wrestler")
+              .startingHealth(100)
+              .startingStamina(100)
+              .account(admin)
+              .isPlayer(true)
+              .active(true)
+              .build();
+      player = wrestlerRepository.save(w);
+    }
 
     if (!campaignService.hasActiveCampaign(player)) {
       campaignService.startCampaign(player);
@@ -133,7 +132,7 @@ class CampaignE2ETest extends AbstractE2ETest {
   void testCampaignUpgrades() {
     // 1. Grant tokens directly in DB before starting test
     Account admin = accountRepository.findByUsername("admin").get();
-    Wrestler player = wrestlerRepository.findByAccount(admin).get();
+    Wrestler player = wrestlerRepository.findByAccount(admin).get(0);
     com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
         campaignRepository.findActiveByWrestler(player).get();
     campaign.getState().setSkillTokens(8);

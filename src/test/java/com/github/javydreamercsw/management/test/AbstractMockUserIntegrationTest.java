@@ -51,7 +51,8 @@ public abstract class AbstractMockUserIntegrationTest extends AbstractIntegratio
   }
 
   protected void login(Account account) {
-    Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
+    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
 
     List<SimpleGrantedAuthority> authorities = new ArrayList<>();

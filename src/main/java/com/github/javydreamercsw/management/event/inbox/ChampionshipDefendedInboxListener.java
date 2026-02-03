@@ -17,9 +17,12 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -64,10 +67,26 @@ public class ChampionshipDefendedInboxListener
             "Champion(s) %s successfully defended the %s title against %s!",
             champions, event.getTitleName(), challengers);
 
-    inboxService.createInboxItem(
-        championshipDefended,
-        message,
-        event.getChallengers().stream().map(w -> w.getId().toString()).toList());
+    List<InboxService.TargetInfo> targets = new ArrayList<>();
+    targets.add(
+        new InboxService.TargetInfo(
+            event.getTitleId().toString(), InboxItemTarget.TargetType.TITLE));
+    event
+        .getChampions()
+        .forEach(
+            w ->
+                targets.add(
+                    new InboxService.TargetInfo(
+                        w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
+    event
+        .getChallengers()
+        .forEach(
+            w ->
+                targets.add(
+                    new InboxService.TargetInfo(
+                        w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
+
+    inboxService.createInboxItem(championshipDefended, message, targets);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

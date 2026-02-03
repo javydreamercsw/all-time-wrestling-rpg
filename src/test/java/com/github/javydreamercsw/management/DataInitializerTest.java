@@ -25,11 +25,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -392,5 +394,21 @@ class DataInitializerTest {
     assertNotNull(savedWrestler);
     assertEquals(100, (long) savedWrestler.getFans());
     assertEquals(100, (int) savedWrestler.getBumps());
+  }
+
+  @Test
+  void syncAiSettingsFromEnvironment_doesNotOverwriteExistingDbValueByDefault() {
+    // Simulate an environment variable being set
+    when(env.getProperty("AI_OPENAI_ENABLED")).thenReturn("true");
+
+    // But the DB already has a value (e.g., user explicitly disabled it)
+    GameSetting existingSetting = mock(GameSetting.class);
+    when(existingSetting.getValue()).thenReturn("false");
+    when(gameSettingService.findById("AI_OPENAI_ENABLED")).thenReturn(Optional.of(existingSetting));
+
+    dataInitializer.init();
+
+    // Should NOT overwrite existing DB value unless forceOverride is enabled
+    verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
   }
 }

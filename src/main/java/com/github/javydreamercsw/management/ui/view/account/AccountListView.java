@@ -75,7 +75,12 @@ public class AccountListView extends Main {
   private void setupGrid() {
     grid.addColumn(Account::getUsername).setHeader("Username").setSortable(true);
     grid.addColumn(Account::getEmail).setHeader("Email").setSortable(true);
-    grid.addColumn(account -> account.getRoles().iterator().next().getName())
+    grid.addColumn(
+            account ->
+                account.getRoles().stream()
+                    .findFirst()
+                    .map(role -> role.getName().name())
+                    .orElse("N/A"))
         .setHeader("Role")
         .setSortable(true);
     grid.setId("account-grid");

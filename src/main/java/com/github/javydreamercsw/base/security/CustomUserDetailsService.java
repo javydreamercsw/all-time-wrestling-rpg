@@ -56,7 +56,19 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     // Find the wrestler associated with the account
-    Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
+    Wrestler wrestler = null;
+    if (account.getActiveWrestlerId() != null) {
+      wrestler = wrestlerRepository.findById(account.getActiveWrestlerId()).orElse(null);
+    }
+
+    if (wrestler == null) {
+      java.util.List<Wrestler> wrestlers = wrestlerRepository.findAllByAccount(account);
+      if (!wrestlers.isEmpty()) {
+        wrestler = wrestlers.get(0);
+        account.setActiveWrestlerId(wrestler.getId());
+        accountRepository.save(account);
+      }
+    }
 
     return new CustomUserDetails(account, wrestler); // Pass reloaded account to constructor
   }

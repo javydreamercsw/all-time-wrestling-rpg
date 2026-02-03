@@ -178,6 +178,7 @@ public class RankingView extends Main {
     dialog.setWidth("40em");
 
     Grid<TierBoundary> tierGrid = new Grid<>(TierBoundary.class, false);
+    tierGrid.setId("tier-boundaries-grid");
     tierGrid.addColumn(tb -> tb.getTier().getDisplayWithEmoji()).setHeader("Tier");
     tierGrid
         .addColumn(tb -> String.format("%,d - %,d", tb.getMinFans(), tb.getMaxFans()))
@@ -191,7 +192,7 @@ public class RankingView extends Main {
 
     ComboBox<Gender> genderComboBox = new ComboBox<>("Gender");
     genderComboBox.setItems(Gender.values());
-    genderComboBox.setId("gender-selection");
+    genderComboBox.setId("tier-gender-selection");
     genderComboBox.setItemLabelGenerator(Gender::name);
     genderComboBox.setValue(Gender.MALE); // Default to male
 

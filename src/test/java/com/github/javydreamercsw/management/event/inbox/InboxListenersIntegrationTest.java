@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -173,10 +174,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(fanAdjudication, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -186,6 +192,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.WRESTLER, typeCaptor.getValue());
   }
 
   @Test
@@ -205,10 +212,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(rivalryHeatChange, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -222,6 +234,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(rivalry.getId());
     assertEquals(rivalry.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.RIVALRY, typeCaptor.getValue());
   }
 
   @Test
@@ -232,16 +245,22 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(adjudicationCompleted, eventTypeCaptor.getValue());
     String expectedMessage = String.format("Adjudication completed for show: %s", show.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(show.getId());
     assertEquals(show.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.SHOW, typeCaptor.getValue());
   }
 
   @Test
@@ -253,10 +272,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(championshipChange, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -266,8 +290,10 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(title.getId());
     assertEquals(title.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.TITLE, typeCaptor.getValue());
   }
 
+  @Test
   void testChampionshipDefendedEventCreatesInboxItem() {
     ChampionshipDefendedEvent event =
         new ChampionshipDefendedEvent(this, title, List.of(wrestler1), List.of(wrestler2));
@@ -275,11 +301,12 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<List<String>> referenceIdsCaptor = ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<InboxService.TargetInfo>> targetsCaptor =
+        ArgumentCaptor.forClass(List.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdsCaptor.capture());
+            eventTypeCaptor.capture(), messageCaptor.capture(), targetsCaptor.capture());
 
     assertEquals(championshipDefended, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -287,8 +314,9 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
             "Champion(s) %s successfully defended the %s title against %s!",
             wrestler1.getName(), title.getName(), wrestler2.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
-    Assertions.assertNotNull(wrestler2.getId());
-    assertEquals(List.of(wrestler2.getId().toString()), referenceIdsCaptor.getValue());
+    assertEquals(3, targetsCaptor.getValue().size());
+    assertEquals(title.getId().toString(), targetsCaptor.getValue().get(0).targetId());
+    assertEquals(InboxItemTarget.TargetType.TITLE, targetsCaptor.getValue().get(0).type());
   }
 
   @Test
@@ -304,10 +332,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(factionHeatChange, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -317,6 +350,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(factionRivalry.getId());
     assertEquals(factionRivalry.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.FACTION, typeCaptor.getValue());
   }
 
   @Test
@@ -331,10 +365,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(feudHeatChange, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -349,6 +388,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(feud.getId());
     assertEquals(feud.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.FEUD, typeCaptor.getValue());
   }
 
   @Test
@@ -359,16 +399,22 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(feudResolved, eventTypeCaptor.getValue());
     String expectedMessage = String.format("Feud '%s' has been resolved.", feud.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(feud.getId());
     assertEquals(feud.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.FEUD, typeCaptor.getValue());
   }
 
   @Test
@@ -379,10 +425,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(rivalryCompleted, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -390,6 +441,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(rivalry.getId());
     assertEquals(rivalry.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.RIVALRY, typeCaptor.getValue());
   }
 
   @Test
@@ -400,16 +452,22 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(rivalryContinues, eventTypeCaptor.getValue());
     String expectedMessage = String.format("Rivalry '%s' continues.", rivalry.getDisplayName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(rivalry.getId());
     assertEquals(rivalry.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.RIVALRY, typeCaptor.getValue());
   }
 
   @Test
@@ -420,16 +478,22 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(segmentsApproved, eventTypeCaptor.getValue());
     String expectedMessage = String.format("Segments approved for show: %s", show.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(show.getId());
     assertEquals(show.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.SHOW, typeCaptor.getValue());
   }
 
   @Test
@@ -441,10 +505,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(wrestlerBump, eventTypeCaptor.getValue());
 
@@ -456,6 +525,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.WRESTLER, typeCaptor.getValue());
   }
 
   @Test
@@ -467,10 +537,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(wrestlerBumpHealed, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -480,6 +555,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.WRESTLER, typeCaptor.getValue());
   }
 
   @Test
@@ -490,10 +566,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(wrestlerInjuryObtained, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -502,6 +583,7 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.WRESTLER, typeCaptor.getValue());
   }
 
   @Test
@@ -514,10 +596,15 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
+        ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(),
+            messageCaptor.capture(),
+            referenceIdCaptor.capture(),
+            typeCaptor.capture());
 
     assertEquals(wrestlerInjuryHealed, eventTypeCaptor.getValue());
     String expectedMessage =
@@ -527,5 +614,6 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(InboxItemTarget.TargetType.WRESTLER, typeCaptor.getValue());
   }
 }

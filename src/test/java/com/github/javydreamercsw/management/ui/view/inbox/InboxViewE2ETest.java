@@ -17,13 +17,13 @@
 package com.github.javydreamercsw.management.ui.view.inbox;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.Duration;
@@ -47,13 +47,13 @@ class InboxViewE2ETest extends AbstractE2ETest {
 
   @Autowired private InboxEventType fanAdjudication;
   @Autowired private InboxEventType rivalryHeatChange;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired protected TitleRepository titleRepository;
+  @Autowired private AccountRepository accountRepository;
 
   private Wrestler w1;
   private Wrestler w2;
+  private Account admin;
 
   @BeforeEach
   public void setUp() throws IOException {
@@ -63,6 +63,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     wrestlerService.save(w1);
     w2 = createTestWrestler("Test Wrestler 2");
     wrestlerService.save(w2);
+    admin = accountRepository.findByUsername("admin").orElseThrow();
   }
 
   @Test
@@ -70,7 +71,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
     waitForVaadinToLoad(driver); // Wait for Vaadin to load
 
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement grid =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
     // Assert that the grid is displayed
@@ -87,38 +88,33 @@ class InboxViewE2ETest extends AbstractE2ETest {
     item1.setDescription("Filter Me Item");
     item1.setEventType(fanAdjudication);
     item1.setRead(false);
-    InboxItemTarget target1 = new InboxItemTarget();
-    target1.setTargetId(w1.getId().toString());
-    target1.setInboxItem(item1);
-    item1.setTargets(List.of(target1));
-    inboxRepository.save(item1);
-    inboxItemTargetRepository.save(target1);
+    item1.addTarget(w1.getId().toString(), InboxItemTarget.TargetType.WRESTLER);
+    item1.addTarget(admin.getId().toString(), InboxItemTarget.TargetType.ACCOUNT);
+    inboxRepository.saveAndFlush(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("Do Not Filter");
     item2.setEventType(rivalryHeatChange);
     item2.setRead(false);
-    inboxRepository.save(item2);
+    item2.addTarget(admin.getId().toString(), InboxItemTarget.TargetType.ACCOUNT);
+    inboxRepository.saveAndFlush(item2);
 
     InboxItem item3 = new InboxItem();
     item3.setDescription("Filter Me Too");
     item3.setEventType(fanAdjudication);
     item3.setRead(true);
-    InboxItemTarget target3 = new InboxItemTarget();
-    target3.setTargetId(w1.getId().toString());
-    target3.setInboxItem(item3);
-    item3.setTargets(List.of(target3));
-    inboxRepository.save(item3);
-    inboxItemTargetRepository.save(target3);
+    item3.addTarget(w1.getId().toString(), InboxItemTarget.TargetType.WRESTLER);
+    item3.addTarget(admin.getId().toString(), InboxItemTarget.TargetType.ACCOUNT);
+    inboxRepository.saveAndFlush(item3);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
 
     waitForVaadinToLoad(driver); // Wait for Vaadin to load
+    waitForGridToPopulate("inbox-grid"); // Use helper to ensure grid is ready
 
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
-    // Wait for one of the item descriptions to be visible in the grid
-
+    // Wait for one of the item descriptions to be visible in the grid using the new ID column
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
             By.tagName("vaadin-grid"), "Filter Me Item"));
@@ -131,6 +127,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
 
+    // 5 headers + 3 rows * 5 columns + 1 selection column = 24 cells
     Assertions.assertEquals(24, cells.size());
 
     // Explicitly set "Read Status" to "All" (this should already be the default, but we'll keep it
@@ -143,12 +140,13 @@ class InboxViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.numberOfElementsToBeMoreThan(
             By.cssSelector(".toolbar vaadin-combo-box"), 1));
 
+    assert toolbar != null;
     WebElement readStatusComboBox =
         toolbar.findElement(By.cssSelector("vaadin-combo-box:nth-of-type(2)"));
 
     selectFromVaadinComboBox(readStatusComboBox, "All");
 
-    waitForVaadinToLoad(driver); // Wait for Vaadin to load after combo box selection
+    waitForVaadinToLoad(driver);
 
     // Verify items after setting filter to "All" (should still be 3)
     wait.until(
@@ -164,7 +162,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     filterField.click();
     filterField.sendKeys(w1.getName(), Keys.TAB);
 
-    waitForVaadinToLoad(driver); // Wait for Vaadin to load after applying text filter
+    waitForVaadinToLoad(driver);
     // Verify filtered item appears
     List<WebElement> filteredDescriptionCells =
         wait.until(
@@ -172,6 +170,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
                 By.xpath(
                     "//vaadin-grid-cell-content[contains(text(), 'Filter Me Item') or"
                         + " contains(text(), 'Filter Me Too')]")));
+    assert filteredDescriptionCells != null;
     Assertions.assertEquals(2, filteredDescriptionCells.size());
     boolean foundItem1 = false;
     boolean foundItem3 = false;
@@ -195,12 +194,14 @@ class InboxViewE2ETest extends AbstractE2ETest {
     InboxItem item1 = new InboxItem();
     item1.setDescription("Item 1");
     item1.setEventType(fanAdjudication);
-    inboxRepository.save(item1);
+    item1.addTarget(admin.getId().toString(), InboxItemTarget.TargetType.ACCOUNT);
+    inboxRepository.saveAndFlush(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("Item 2");
     item2.setEventType(fanAdjudication);
-    inboxRepository.save(item2);
+    item2.addTarget(admin.getId().toString(), InboxItemTarget.TargetType.ACCOUNT);
+    inboxRepository.saveAndFlush(item2);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
     waitForGridToPopulate("inbox-grid"); // Use the new helper method
@@ -239,10 +240,12 @@ class InboxViewE2ETest extends AbstractE2ETest {
     unreadItem.setDescription("Unread Item");
     unreadItem.setEventType(fanAdjudication);
     unreadItem.setRead(false);
-    inboxRepository.save(unreadItem);
+    unreadItem.addTarget(admin.getId().toString(), InboxItemTarget.TargetType.ACCOUNT);
+    inboxRepository.saveAndFlush(unreadItem);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
     waitForVaadinToLoad(driver); // Wait for Vaadin to load
+    waitForGridToPopulate("inbox-grid"); // Use helper to ensure grid is ready
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Verify initial item is loaded

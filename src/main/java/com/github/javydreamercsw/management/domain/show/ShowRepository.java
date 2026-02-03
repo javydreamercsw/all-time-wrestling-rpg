@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show;
 
+import com.github.javydreamercsw.management.domain.league.League;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,10 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   Optional<Show> findByExternalId(String externalId);
 
   Optional<Show> findByNameAndShowDate(String name, LocalDate showDate);
+
+  boolean existsByLeague(League league);
+
+  List<Show> findByLeague(League league);
 
   // ==================== CALENDAR-SPECIFIC QUERIES ====================
 
