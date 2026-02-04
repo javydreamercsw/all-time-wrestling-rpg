@@ -38,6 +38,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -52,6 +53,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -79,6 +81,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final Button viewDetailsButton;
   private final TextArea contextArea;
   private final Grid<ProposedSegment> proposedSegmentsGrid;
+  private final Image templateImage;
   private final Button approveButton;
   private final Button proposeSegmentsButton;
   private final Editor<ProposedSegment> editor;
@@ -103,6 +106,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.aiFactory = aiFactory;
     this.localAIStatus = localAIStatus;
 
+    templateImage = new Image();
+
+    templateImage.setHeight("150px");
+
+    templateImage.setWidth("150px");
+
+    templateImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
+
+    templateImage.setVisible(false);
+
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setId("select-show-combo-box");
     showComboBox.setItems(
@@ -123,6 +136,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         event -> {
           loadContextButton.setEnabled(event.getValue() != null);
           viewDetailsButton.setEnabled(event.getValue() != null);
+          updateTemplateImage(event.getValue());
         });
 
     contextArea = new TextArea("Show Planning Context");
@@ -198,6 +212,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     VerticalLayout layout =
         new VerticalLayout(
+            templateImage,
             showComboBox,
             loadContextButton,
             viewDetailsButton, // Added here
@@ -206,6 +221,18 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             proposedSegmentsGrid,
             approveButton);
     add(layout);
+  }
+
+  private void updateTemplateImage(Show show) {
+    if (show != null
+        && show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
+      templateImage.setVisible(true);
+    } else {
+      templateImage.setVisible(false);
+    }
   }
 
   private void navigateToShowDetails() {
@@ -307,6 +334,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           .ifPresent(
               show -> {
                 showComboBox.setValue(show);
+                updateTemplateImage(show);
                 loadContext();
               });
     }

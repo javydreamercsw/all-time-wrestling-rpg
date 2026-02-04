@@ -61,6 +61,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
@@ -341,7 +342,23 @@ public class ShowDetailView extends Main
           LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
     }
 
-    HorizontalLayout titleLayout = new HorizontalLayout(title, editNameButton, typeBadge);
+    Image templateImage = new Image();
+    if (show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
+    } else {
+      templateImage.setSrc("https://via.placeholder.com/150");
+    }
+    templateImage.setHeight("100px");
+    templateImage.setWidth("100px");
+    templateImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Right.MEDIUM);
+
+    VerticalLayout titleInfo = new VerticalLayout(title, typeBadge);
+    titleInfo.setSpacing(false);
+    titleInfo.setPadding(false);
+
+    HorizontalLayout titleLayout = new HorizontalLayout(templateImage, titleInfo, editNameButton);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
 

@@ -36,6 +36,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.editor.Editor;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -206,6 +207,27 @@ public class ShowListView extends Main {
             return null;
           }
         });
+
+    // Art column
+    showGrid
+        .addComponentColumn(
+            show -> {
+              Image image = new Image();
+              if (show.getTemplate() != null
+                  && show.getTemplate().getImageUrl() != null
+                  && !show.getTemplate().getImageUrl().isEmpty()) {
+                image.setSrc(show.getTemplate().getImageUrl());
+              } else {
+                image.setSrc("https://via.placeholder.com/50");
+              }
+              image.setHeight("50px");
+              image.setWidth("50px");
+              image.addClassName(LumoUtility.BorderRadius.SMALL);
+              return image;
+            })
+        .setHeader("Art")
+        .setFlexGrow(0)
+        .setWidth("70px");
 
     // Name column with link to detail view
     showGrid
