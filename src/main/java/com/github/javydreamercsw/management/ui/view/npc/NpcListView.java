@@ -40,6 +40,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.stream.Stream;
@@ -116,6 +117,19 @@ public class NpcListView extends Main {
         .addComponentColumn(
             npc -> {
               HorizontalLayout buttons = new HorizontalLayout();
+
+              Button viewProfileButton = new Button("View Profile");
+              viewProfileButton.addClickListener(
+                  e -> {
+                    getUI()
+                        .ifPresent(
+                            ui ->
+                                ui.navigate(
+                                    NpcProfileView.class,
+                                    new RouteParameters("npcId", String.valueOf(npc.getId()))));
+                  });
+              viewProfileButton.setId("view-profile-btn-" + npc.getId());
+              buttons.add(viewProfileButton);
 
               Button editButton = new Button("Edit");
               editButton.addClickListener(e -> npcGrid.getEditor().editItem(npc));

@@ -72,27 +72,19 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-list");
     waitForGridToPopulate("npc-grid");
 
-    // 1. Click "Generate Image" button in grid
-    // We added IDs to the buttons: generate-image-btn-<id>
-    String buttonId = "generate-image-btn-" + npc.getId();
+    // 1. Navigate to Profile
+    String viewProfileId = "view-profile-btn-" + npc.getId();
+    WebElement viewProfileButton = waitForVaadinElement(driver, By.id(viewProfileId));
+    clickElement(viewProfileButton);
 
-    // Wait for button to be present (it's inside a grid cell)
-    // Grid scrolling might be needed if many NPCs exist, but we have few in test data.
-    // However, AbstractE2ETest.clickElement handles scrolling.
+    // 2. Wait for Profile View
+    waitForVaadinElement(driver, By.id("npc-name"));
+    Assertions.assertEquals(npc.getName(), driver.findElement(By.id("npc-name")).getText());
 
-    // We need to find the button. Since it's in a grid, we might need to rely on the grid rendering
-    // it.
-    // Let's try to find it directly first.
+    // 3. Click "Generate Image" button in profile
+    clickElement(By.id("generate-image-button"));
 
-    // Grid cells are in shadow DOM or light DOM depending on rendering.
-    // Vaadin 14+ grids render content in light DOM slots usually, but complex renderers might
-    // differ.
-    // Our NpcListView uses addComponentColumn, so the components are in the light DOM.
-
-    WebElement generateButton = waitForVaadinElement(driver, By.id(buttonId));
-    clickElement(generateButton);
-
-    // 2. Wait for Dialog
+    // 4. Wait for Dialog
     // Wait for the dialog to open by checking for its title
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     try {
@@ -103,14 +95,11 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
       waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
     }
 
-    // 3. Click Generate
-    // The dialog content is inside the overlay.
-    // Use JS to find the button in the overlay because it might be in shadow DOM or overlay
-    // structure
+    // 5. Click Generate
     WebElement generateButtonInDialog = waitForVaadinElement(driver, By.id("generate-image"));
     clickElement(generateButtonInDialog);
 
-    // 4. Wait for Preview (Image should appear)
+    // 6. Wait for Preview (Image should appear)
     // The image has a src attribute that changes.
     wait.until(
         d ->
@@ -124,13 +113,13 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
                               || src.contains("generated"));
                     }));
 
-    // 5. Click Save
+    // 7. Click Save
     WebElement saveButton = waitForVaadinElement(driver, By.id("save-image"));
     // Ensure enabled
     wait.until(d -> saveButton.getAttribute("disabled") == null);
     clickElement(saveButton);
 
-    // 6. Verify NPC Updated
+    // 8. Verify NPC Updated
     wait.until(
         d -> {
           // Reload from DB to check
@@ -139,7 +128,6 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
           return updated.getImageUrl() != null && !updated.getImageUrl().isEmpty();
         });
 
-    assert npc.getId() != null;
     Npc updated = npcRepository.findById(npc.getId()).orElseThrow();
     Assertions.assertNotNull(updated.getImageUrl());
     Assertions.assertTrue(
@@ -147,12 +135,13 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
             || updated.getImageUrl().contains("placeholder")
             || updated.getImageUrl().contains("png"));
 
-    // 7. Verify Grid UI Updated
-    // We should check if the grid now shows the image URL or if the NPC object in grid has it.
-    // The grid has an "Image URL" column.
-    // Let's reload the page or check the grid content.
-    // Simple verification: The dialog closed.
+    // 9. Verify Grid UI Updated
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("save-image")));
+
+    // 10. Verify Image updated in Profile View
+    WebElement npcImage = driver.findElement(By.id("npc-image"));
+    String imageSrc = npcImage.getAttribute("src");
+    Assertions.assertTrue(imageSrc.contains(updated.getImageUrl()));
   }
 
   protected void waitForGridToPopulate(@NonNull String gridId) {
