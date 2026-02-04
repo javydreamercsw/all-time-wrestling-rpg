@@ -44,3 +44,4 @@ replay_pid*
 /data-backup/
 /.run/
 /models/
+src/main/resources/META-INF/resources/images/generated/
