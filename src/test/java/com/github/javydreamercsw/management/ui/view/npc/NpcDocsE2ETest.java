@@ -20,15 +20,13 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.time.Duration;
 
 class NpcDocsE2ETest extends AbstractDocsE2ETest {
 
@@ -41,14 +39,17 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
   public void setupData() {
     cleanupLeagues();
 
-    npc = npcRepository.findByName("Docs Gen NPC")
-        .orElseGet(() -> {
-          Npc n = new Npc();
-          n.setName("Docs Gen NPC");
-          n.setNpcType("Manager");
-          n.setDescription("A highly professional wrestling manager in a sharp suit.");
-          return npcService.save(n);
-        });
+    npc =
+        npcRepository
+            .findByName("Docs Gen NPC")
+            .orElseGet(
+                () -> {
+                  Npc n = new Npc();
+                  n.setName("Docs Gen NPC");
+                  n.setNpcType("Manager");
+                  n.setDescription("A highly professional wrestling manager in a sharp suit.");
+                  return npcService.save(n);
+                });
   }
 
   @Test
@@ -60,7 +61,8 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "NPC",
         "NPC List",
-        "View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers. You can create new NPCs, edit existing ones, and navigate to their profiles.",
+        "View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers."
+            + " You can create new NPCs, edit existing ones, and navigate to their profiles.",
         "npc-list");
   }
 
@@ -73,7 +75,8 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "NPC",
         "NPC Profile",
-        "Detailed view of an NPC, displaying their image, type, biography, and stats. From here, you can generate a custom image using AI.",
+        "Detailed view of an NPC, displaying their image, type, biography, and stats. From here,"
+            + " you can generate a custom image using AI.",
         "npc-profile");
   }
 
@@ -89,18 +92,20 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     // Wait for Dialog
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     try {
-      wait.until(ExpectedConditions.textToBePresentInElementLocated(By.tagName("body"), "Generate Image"));
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(By.tagName("body"), "Generate Image"));
     } catch (Exception e) {
       waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
     }
-    
+
     // Ensure dialog content is visible
     waitForVaadinElement(driver, By.id("generate-image"));
 
     documentFeature(
         "NPC",
         "Generate NPC Image",
-        "Use the integrated AI tools to generate a unique portrait for your NPC based on their description and type. You can regenerate until you find the perfect look.",
+        "Use the integrated AI tools to generate a unique portrait for your NPC based on their"
+            + " description and type. You can regenerate until you find the perfect look.",
         "npc-image-generation-dialog");
   }
 

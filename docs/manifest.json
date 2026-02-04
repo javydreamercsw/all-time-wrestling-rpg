@@ -1,5 +1,19 @@
 {
   "features": [ {
+    "id": "npc-npc-profile",
+    "category": "NPC",
+    "title": "NPC Profile",
+    "description": "Detailed view of an NPC, displaying their image, type, biography, and stats. From here, you can generate a custom image using AI.",
+    "imagePath": "screenshots/npc-profile.png",
+    "order": 0
+  }, {
+    "id": "npc-npc-image-generation-dialog",
+    "category": "NPC",
+    "title": "Generate NPC Image",
+    "description": "Use the integrated AI tools to generate a unique portrait for your NPC based on their description and type. You can regenerate until you find the perfect look.",
+    "imagePath": "screenshots/npc-image-generation-dialog.png",
+    "order": 10
+  }, {
     "id": "leagues-league-creation",
     "category": "Leagues",
     "title": "Creating a League",
