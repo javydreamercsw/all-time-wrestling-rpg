@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.admin;
 
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
+import com.github.javydreamercsw.base.ai.image.ImageCleanupService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -55,10 +56,15 @@ public class AdminView extends VerticalLayout {
 
   private final RankingService rankingService;
   private final WrestlerRepository wrestlerRepository;
+  private final ImageCleanupService imageCleanupService;
 
-  public AdminView(RankingService rankingService, WrestlerRepository wrestlerRepository) {
+  public AdminView(
+      RankingService rankingService,
+      WrestlerRepository wrestlerRepository,
+      ImageCleanupService imageCleanupService) {
     this.rankingService = rankingService;
     this.wrestlerRepository = wrestlerRepository;
+    this.imageCleanupService = imageCleanupService;
     initializeUI();
   }
 
@@ -172,7 +178,28 @@ public class AdminView extends VerticalLayout {
     manageAccountsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate("/account-list"));
 
-    content.add(recalculateTiersButton, manageAccountsButton);
+    Button cleanupImagesButton = new Button("Cleanup Unused Images");
+    cleanupImagesButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    cleanupImagesButton.addClickListener(
+        event -> {
+          try {
+            int deletedCount = imageCleanupService.cleanupUnusedImages();
+            Notification.show(
+                    String.format("Cleanup complete. Deleted %d unused images.", deletedCount),
+                    3000,
+                    Notification.Position.TOP_END)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } catch (Exception e) {
+            Notification.show(
+                    "Error during image cleanup: " + e.getMessage(),
+                    5000,
+                    Notification.Position.TOP_END)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            log.error("Error during image cleanup", e);
+          }
+        });
+
+    content.add(recalculateTiersButton, manageAccountsButton, cleanupImagesButton);
     return content;
   }
 }

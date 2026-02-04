@@ -14,14 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.wrestler;
+package com.github.javydreamercsw.base.ai.image.ui;
 
 import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -32,13 +30,15 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ImageGenerationDialog extends Dialog {
+public class GenericImageGenerationDialog extends Dialog {
 
-  private final Wrestler wrestler;
-  private final WrestlerService wrestlerService;
+  private final Supplier<String> promptSupplier;
+  private final Consumer<String> imageSaver;
   private final ImageGenerationServiceFactory imageFactory;
   private final ImageStorageService storageService;
   private final AiSettingsService aiSettingsService;
@@ -51,21 +51,21 @@ public class ImageGenerationDialog extends Dialog {
   private String currentImageData;
   private boolean isBase64;
 
-  public ImageGenerationDialog(
-      Wrestler wrestler,
-      WrestlerService wrestlerService,
+  public GenericImageGenerationDialog(
+      Supplier<String> promptSupplier,
+      Consumer<String> imageSaver,
       ImageGenerationServiceFactory imageFactory,
       ImageStorageService storageService,
       AiSettingsService aiSettingsService,
       Runnable onSave) {
-    this.wrestler = wrestler;
-    this.wrestlerService = wrestlerService;
+    this.promptSupplier = promptSupplier;
+    this.imageSaver = imageSaver;
     this.imageFactory = imageFactory;
     this.storageService = storageService;
     this.aiSettingsService = aiSettingsService;
     this.onSave = onSave;
 
-    setHeaderTitle("Generate Wrestler Image");
+    setHeaderTitle("Generate Image");
 
     VerticalLayout layout = new VerticalLayout();
     layout.setPadding(false);
@@ -75,7 +75,7 @@ public class ImageGenerationDialog extends Dialog {
     promptArea = new TextArea("Prompt");
     promptArea.setWidthFull();
     promptArea.setMinHeight("100px");
-    promptArea.setValue(buildDefaultPrompt());
+    promptArea.setValue(this.promptSupplier.get());
 
     modelField = new TextField("Model");
     modelField.setWidthFull();
@@ -109,17 +109,6 @@ public class ImageGenerationDialog extends Dialog {
     layout.add(promptArea, modelField, generateButton, previewImage);
     add(layout);
     getFooter().add(cancelButton, saveButton);
-  }
-
-  private String buildDefaultPrompt() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("A professional wrestling portrait of ").append(wrestler.getName());
-    sb.append(". ");
-    if (wrestler.getDescription() != null) {
-      sb.append(wrestler.getDescription());
-    }
-    sb.append(" High quality, photorealistic, 8k resolution, dramatic lighting.");
-    return sb.toString();
   }
 
   private void generateImage() {
@@ -177,8 +166,7 @@ public class ImageGenerationDialog extends Dialog {
 
     try {
       String savedPath = storageService.saveImage(currentImageData, isBase64);
-      wrestler.setImageUrl(savedPath);
-      wrestlerService.save(wrestler);
+      imageSaver.accept(savedPath);
 
       Notification.show("Image saved successfully!")
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
