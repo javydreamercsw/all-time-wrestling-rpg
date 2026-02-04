@@ -62,6 +62,15 @@ public class ShowTemplate extends AbstractEntity<Long> {
   @Column(name = "notion_url")
   @Size(max = 500) private String notionUrl;
 
+  @Column(name = "image_url")
+  @Size(max = 512) private String imageUrl;
+
+  @Column(name = "expected_matches")
+  private Integer expectedMatches;
+
+  @Column(name = "expected_promos")
+  private Integer expectedPromos;
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

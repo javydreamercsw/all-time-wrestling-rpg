@@ -18,6 +18,8 @@ package com.github.javydreamercsw.base.ai.image;
 
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.io.IOException;
@@ -46,22 +48,31 @@ public class ImageCleanupService {
 
   private final WrestlerRepository wrestlerRepository;
   private final NpcRepository npcRepository;
+  private final ShowTemplateRepository showTemplateRepository;
   private final String imageDir;
 
   @Autowired
-  public ImageCleanupService(WrestlerRepository wrestlerRepository, NpcRepository npcRepository) {
-    this(wrestlerRepository, npcRepository, DEFAULT_IMAGE_DIR);
+  public ImageCleanupService(
+      WrestlerRepository wrestlerRepository,
+      NpcRepository npcRepository,
+      ShowTemplateRepository showTemplateRepository) {
+    this(wrestlerRepository, npcRepository, showTemplateRepository, DEFAULT_IMAGE_DIR);
   }
 
   public ImageCleanupService(
-      WrestlerRepository wrestlerRepository, NpcRepository npcRepository, String imageDir) {
+      WrestlerRepository wrestlerRepository,
+      NpcRepository npcRepository,
+      ShowTemplateRepository showTemplateRepository,
+      String imageDir) {
     this.wrestlerRepository = wrestlerRepository;
     this.npcRepository = npcRepository;
+    this.showTemplateRepository = showTemplateRepository;
     this.imageDir = imageDir;
   }
 
   /**
-   * Identifies and deletes generated images that are no longer referenced by any Wrestler or NPC.
+   * Identifies and deletes generated images that are no longer referenced by any Wrestler, NPC or
+   * Show Template.
    *
    * @return The number of deleted images.
    * @throws IOException If file operations fail.
@@ -88,6 +99,13 @@ public class ImageCleanupService {
     for (Npc n : npcs) {
       if (n.getImageUrl() != null && n.getImageUrl().startsWith(PUBLIC_PATH_PREFIX)) {
         referencedImages.add(n.getImageUrl().substring(PUBLIC_PATH_PREFIX.length()));
+      }
+    }
+
+    List<ShowTemplate> showTemplates = showTemplateRepository.findAll();
+    for (ShowTemplate st : showTemplates) {
+      if (st.getImageUrl() != null && st.getImageUrl().startsWith(PUBLIC_PATH_PREFIX)) {
+        referencedImages.add(st.getImageUrl().substring(PUBLIC_PATH_PREFIX.length()));
       }
     }
 

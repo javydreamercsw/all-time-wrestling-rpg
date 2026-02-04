@@ -206,7 +206,13 @@ public class ShowTemplateService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
-      @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
+      @NonNull String name,
+      String description,
+      @NonNull String showTypeName,
+      String notionUrl,
+      String imageUrl,
+      Integer expectedMatches,
+      Integer expectedPromos) {
 
     // Find or create show type
     Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -232,8 +238,21 @@ public class ShowTemplateService {
     template.setDescription(description);
     template.setShowType(showType);
     template.setNotionUrl(notionUrl);
+    template.setImageUrl(imageUrl);
+    template.setExpectedMatches(expectedMatches);
+    template.setExpectedPromos(expectedPromos);
 
     return showTemplateRepository.save(template);
+  }
+
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
+  public ShowTemplate createOrUpdateTemplate(
+      @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
+    return createOrUpdateTemplate(name, description, showTypeName, notionUrl, null, null, null);
   }
 
   /**
@@ -289,7 +308,10 @@ public class ShowTemplateService {
       @NonNull String name,
       String description,
       @NonNull String showTypeName,
-      String notionUrl) {
+      String notionUrl,
+      String imageUrl,
+      Integer expectedMatches,
+      Integer expectedPromos) {
 
     Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
     if (templateOpt.isEmpty()) {
@@ -309,10 +331,46 @@ public class ShowTemplateService {
     template.setDescription(description);
     template.setShowType(showTypeOpt.get());
     template.setNotionUrl(notionUrl);
+    template.setImageUrl(imageUrl);
+    template.setExpectedMatches(expectedMatches);
+    template.setExpectedPromos(expectedPromos);
 
     ShowTemplate savedTemplate = showTemplateRepository.save(template);
     log.info("Updated show template: {}", name);
     return Optional.of(savedTemplate);
+  }
+
+  /**
+   * Update an existing show template.
+   *
+   * @param id The ID of the show template to update
+   * @param name New name for the show template
+   * @param description New description for the show template
+   * @param showTypeName New show type name
+   * @param notionUrl New Notion URL
+   * @return Optional containing the updated show template if found
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
+  public Optional<ShowTemplate> updateTemplate(
+      @NonNull Long id,
+      @NonNull String name,
+      String description,
+      @NonNull String showTypeName,
+      String notionUrl) {
+    ShowTemplate st = showTemplateRepository.findById(id).orElseThrow();
+    return updateTemplate(
+        id,
+        name,
+        description,
+        showTypeName,
+        notionUrl,
+        st.getImageUrl(),
+        st.getExpectedMatches(),
+        st.getExpectedPromos());
   }
 
   /**
