@@ -23,19 +23,25 @@ import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
 
+@ExtendWith(MockitoExtension.class)
 class ImageGenerationTest {
 
   private ImageGenerationServiceFactory factory;
   private ImageStorageService storageService;
   private MockImageGenerationService mockService;
+  @Mock private Environment environment;
 
   @BeforeEach
   void setUp() {
     mockService = new MockImageGenerationService();
     factory = new ImageGenerationServiceFactory(List.of(mockService));
-    storageService = new ImageStorageService();
+    storageService = new ImageStorageService("src/test/resources/images/generated", environment);
   }
 
   @Test

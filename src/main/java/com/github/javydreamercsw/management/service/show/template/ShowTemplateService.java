@@ -77,7 +77,10 @@ public class ShowTemplateService {
    */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public ShowTemplate save(@NonNull ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
@@ -203,7 +206,10 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
       @NonNull String name,
@@ -248,7 +254,10 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
       @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
@@ -301,7 +310,10 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
       @NonNull Long id,
@@ -353,7 +365,10 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
       @NonNull Long id,

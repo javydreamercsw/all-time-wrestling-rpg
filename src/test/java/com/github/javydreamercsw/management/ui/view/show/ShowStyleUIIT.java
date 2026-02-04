@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -126,6 +129,11 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
 
     LeagueRepository leagueRepository = mock(LeagueRepository.class);
+    ImageGenerationServiceFactory imageGenerationServiceFactory =
+        mock(ImageGenerationServiceFactory.class);
+    ImageStorageService imageStorageService = mock(ImageStorageService.class);
+    AiSettingsService aiSettingsService = mock(AiSettingsService.class);
+
     ShowListView showListView =
         new ShowListView(
             showService,
@@ -134,6 +142,9 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             showTemplateService,
             leagueRepository,
             securityUtils,
+            imageGenerationServiceFactory,
+            imageStorageService,
+            aiSettingsService,
             clock);
     Grid<Show> grid = showListView.showGrid;
 

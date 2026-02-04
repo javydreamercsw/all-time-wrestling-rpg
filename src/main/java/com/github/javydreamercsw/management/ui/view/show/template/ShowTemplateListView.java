@@ -332,6 +332,17 @@ public class ShowTemplateListView extends Main {
     Button saveBtn = new Button("Save", e -> saveTemplate());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveBtn.setVisible(securityUtils.canEdit());
+
+    Button generateArtDialogBtn = new Button("Generate Art", new Icon(VaadinIcon.PICTURE));
+    generateArtDialogBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    generateArtDialogBtn.addClickListener(
+        e -> {
+          if (editingTemplate != null) {
+            openGenerateArtDialog(editingTemplate);
+          }
+        });
+    generateArtDialogBtn.setVisible(securityUtils.canEdit());
+
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 
     FormLayout formLayout = new FormLayout();
@@ -346,7 +357,7 @@ public class ShowTemplateListView extends Main {
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
 
-    HorizontalLayout buttonLayout = new HorizontalLayout(saveBtn, cancelBtn);
+    HorizontalLayout buttonLayout = new HorizontalLayout(generateArtDialogBtn, saveBtn, cancelBtn);
     buttonLayout.setWidthFull();
     buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 

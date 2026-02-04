@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ImageCleanupService {
 
-  private static final String DEFAULT_IMAGE_DIR =
-      "src/main/resources/META-INF/resources/images/generated";
   private static final String PUBLIC_PATH_PREFIX = "images/generated/";
 
   private final WrestlerRepository wrestlerRepository;
@@ -55,15 +54,9 @@ public class ImageCleanupService {
   public ImageCleanupService(
       WrestlerRepository wrestlerRepository,
       NpcRepository npcRepository,
-      ShowTemplateRepository showTemplateRepository) {
-    this(wrestlerRepository, npcRepository, showTemplateRepository, DEFAULT_IMAGE_DIR);
-  }
-
-  public ImageCleanupService(
-      WrestlerRepository wrestlerRepository,
-      NpcRepository npcRepository,
       ShowTemplateRepository showTemplateRepository,
-      String imageDir) {
+      @Value("${image.storage.directory:src/main/resources/META-INF/resources/images/generated}")
+          String imageDir) {
     this.wrestlerRepository = wrestlerRepository;
     this.npcRepository = npcRepository;
     this.showTemplateRepository = showTemplateRepository;
