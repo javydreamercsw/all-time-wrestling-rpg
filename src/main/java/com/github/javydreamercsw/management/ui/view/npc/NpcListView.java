@@ -84,6 +84,7 @@ public class NpcListView extends Main {
     createBtn.setVisible(securityUtils.canCreate());
 
     npcGrid = new Grid<>();
+    npcGrid.setId("npc-grid");
     Editor<Npc> editor = npcGrid.getEditor();
     editor.setBuffered(true);
     Binder<Npc> binder = new Binder<>(Npc.class);
