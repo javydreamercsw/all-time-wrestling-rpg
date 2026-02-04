@@ -18,6 +18,8 @@ package com.github.javydreamercsw.base.ai.image;
 
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,28 +43,29 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ImageCleanupService {
 
-  private static final String DEFAULT_IMAGE_DIR =
-      "src/main/resources/META-INF/resources/images/generated";
   private static final String PUBLIC_PATH_PREFIX = "images/generated/";
 
   private final WrestlerRepository wrestlerRepository;
   private final NpcRepository npcRepository;
+  private final ShowTemplateRepository showTemplateRepository;
   private final String imageDir;
 
   @Autowired
-  public ImageCleanupService(WrestlerRepository wrestlerRepository, NpcRepository npcRepository) {
-    this(wrestlerRepository, npcRepository, DEFAULT_IMAGE_DIR);
-  }
-
   public ImageCleanupService(
-      WrestlerRepository wrestlerRepository, NpcRepository npcRepository, String imageDir) {
+      WrestlerRepository wrestlerRepository,
+      NpcRepository npcRepository,
+      ShowTemplateRepository showTemplateRepository,
+      @Value("${image.storage.directory:src/main/resources/META-INF/resources/images/generated}")
+          String imageDir) {
     this.wrestlerRepository = wrestlerRepository;
     this.npcRepository = npcRepository;
+    this.showTemplateRepository = showTemplateRepository;
     this.imageDir = imageDir;
   }
 
   /**
-   * Identifies and deletes generated images that are no longer referenced by any Wrestler or NPC.
+   * Identifies and deletes generated images that are no longer referenced by any Wrestler, NPC or
+   * Show Template.
    *
    * @return The number of deleted images.
    * @throws IOException If file operations fail.
@@ -88,6 +92,13 @@ public class ImageCleanupService {
     for (Npc n : npcs) {
       if (n.getImageUrl() != null && n.getImageUrl().startsWith(PUBLIC_PATH_PREFIX)) {
         referencedImages.add(n.getImageUrl().substring(PUBLIC_PATH_PREFIX.length()));
+      }
+    }
+
+    List<ShowTemplate> showTemplates = showTemplateRepository.findAll();
+    for (ShowTemplate st : showTemplates) {
+      if (st.getImageUrl() != null && st.getImageUrl().startsWith(PUBLIC_PATH_PREFIX)) {
+        referencedImages.add(st.getImageUrl().substring(PUBLIC_PATH_PREFIX.length()));
       }
     }
 

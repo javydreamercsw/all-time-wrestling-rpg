@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -416,9 +417,15 @@ public class DataInitializer implements Initializable {
         var templatesFromFile = mapper.readValue(is, new TypeReference<List<ShowTemplateDTO>>() {});
 
         for (ShowTemplateDTO dto : templatesFromFile) {
-          var template =
+          ShowTemplate template =
               showTemplateService.createOrUpdateTemplate(
-                  dto.getName(), dto.getDescription(), dto.getShowTypeName(), dto.getNotionUrl());
+                  dto.getName(),
+                  dto.getDescription(),
+                  dto.getShowTypeName(),
+                  dto.getNotionUrl(),
+                  null,
+                  dto.getExpectedMatches(),
+                  dto.getExpectedPromos());
           if (template != null) {
             log.debug(
                 "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());

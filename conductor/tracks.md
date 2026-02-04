@@ -70,3 +70,9 @@
 
 *Link: [./conductor/tracks/e2e_ci_hardening/index.md](./conductor/tracks/e2e_ci_hardening/index.md)*
 
+### [x] Track: Show Template Image Generation
+
+*Link: [./conductor/tracks/show_template_image_generation_20260203/index.md](./conductor/tracks/show_template_image_generation_20260203/index.md)*
+*Status: Completed*
+*Date: 2026-02-04*
+

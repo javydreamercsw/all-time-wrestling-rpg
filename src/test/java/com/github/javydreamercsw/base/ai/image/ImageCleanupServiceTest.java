@@ -21,6 +21,8 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.io.IOException;
@@ -41,6 +43,7 @@ class ImageCleanupServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcRepository npcRepository;
+  @Mock private ShowTemplateRepository showTemplateRepository;
 
   private ImageCleanupService imageCleanupService;
 
@@ -49,7 +52,8 @@ class ImageCleanupServiceTest {
   @BeforeEach
   void setUp() throws IOException {
     imageCleanupService =
-        new ImageCleanupService(wrestlerRepository, npcRepository, tempDir.toString());
+        new ImageCleanupService(
+            wrestlerRepository, npcRepository, showTemplateRepository, tempDir.toString());
   }
 
   @Test
@@ -57,10 +61,12 @@ class ImageCleanupServiceTest {
     // Create some test files
     String referenced1 = UUID.randomUUID() + ".png";
     String referenced2 = UUID.randomUUID() + ".png";
+    String referenced3 = UUID.randomUUID() + ".png";
     String unused = UUID.randomUUID() + ".png";
 
     Files.createFile(tempDir.resolve(referenced1));
     Files.createFile(tempDir.resolve(referenced2));
+    Files.createFile(tempDir.resolve(referenced3));
     Files.createFile(tempDir.resolve(unused));
 
     List<Wrestler> wrestlers = new ArrayList<>();
@@ -75,11 +81,18 @@ class ImageCleanupServiceTest {
     npcs.add(n);
     when(npcRepository.findAll()).thenReturn(npcs);
 
+    List<ShowTemplate> showTemplates = new ArrayList<>();
+    ShowTemplate st = new ShowTemplate();
+    st.setImageUrl("images/generated/" + referenced3);
+    showTemplates.add(st);
+    when(showTemplateRepository.findAll()).thenReturn(showTemplates);
+
     int deletedCount = imageCleanupService.cleanupUnusedImages();
 
     assertEquals(1, deletedCount);
     assertEquals(true, Files.exists(tempDir.resolve(referenced1)));
     assertEquals(true, Files.exists(tempDir.resolve(referenced2)));
+    assertEquals(true, Files.exists(tempDir.resolve(referenced3)));
     assertEquals(false, Files.exists(tempDir.resolve(unused)));
   }
 }

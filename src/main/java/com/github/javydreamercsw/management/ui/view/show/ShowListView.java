@@ -16,6 +16,10 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.league.League;
@@ -36,6 +40,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.editor.Editor;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -77,9 +82,12 @@ public class ShowListView extends Main {
   private final ShowTemplateService showTemplateService;
   private final LeagueRepository leagueRepository;
   private final SecurityUtils securityUtils;
-  private final Clock clock; // Add this field
+  private final Clock clock;
+  private final ImageGenerationServiceFactory imageGenerationServiceFactory;
+  private final ImageStorageService imageStorageService;
+  private final AiSettingsService aiSettingsService;
 
-  private final ComboBox<Season> newSeason; // New field
+  private final ComboBox<Season> newSeason;
   private final ComboBox<ShowTemplate> newTemplate; // New field
   private final ComboBox<League> newLeague; // New field
 
@@ -106,6 +114,9 @@ public class ShowListView extends Main {
       @NonNull ShowTemplateService showTemplateService,
       @NonNull LeagueRepository leagueRepository,
       @NonNull SecurityUtils securityUtils,
+      @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
+      @NonNull ImageStorageService imageStorageService,
+      @NonNull AiSettingsService aiSettingsService,
       Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -113,6 +124,9 @@ public class ShowListView extends Main {
     this.showTemplateService = showTemplateService;
     this.leagueRepository = leagueRepository;
     this.securityUtils = securityUtils;
+    this.imageGenerationServiceFactory = imageGenerationServiceFactory;
+    this.imageStorageService = imageStorageService;
+    this.aiSettingsService = aiSettingsService;
     this.clock =
         (clock != null) ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
 
@@ -206,6 +220,27 @@ public class ShowListView extends Main {
             return null;
           }
         });
+
+    // Art column
+    showGrid
+        .addComponentColumn(
+            show -> {
+              Image image = new Image();
+              if (show.getTemplate() != null
+                  && show.getTemplate().getImageUrl() != null
+                  && !show.getTemplate().getImageUrl().isEmpty()) {
+                image.setSrc(show.getTemplate().getImageUrl());
+              } else {
+                image.setSrc("https://via.placeholder.com/50");
+              }
+              image.setHeight("50px");
+              image.setWidth("50px");
+              image.addClassName(LumoUtility.BorderRadius.SMALL);
+              return image;
+            })
+        .setHeader("Art")
+        .setFlexGrow(0)
+        .setWidth("70px");
 
     // Name column with link to detail view
     showGrid
@@ -322,6 +357,14 @@ public class ShowListView extends Main {
               editBtn.addClickListener(e -> openEditDialog(show));
               editBtn.setVisible(securityUtils.canEdit());
 
+              // Branding button
+              Button generateArtBtn = new Button(new Icon(VaadinIcon.PICTURE));
+              generateArtBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+              generateArtBtn.setTooltipText("Generate Template Art");
+              generateArtBtn.setId("generate-template-art-button-" + show.getId());
+              generateArtBtn.addClickListener(e -> openGenerateArtDialog(show.getTemplate()));
+              generateArtBtn.setVisible(securityUtils.canEdit() && show.getTemplate() != null);
+
               // Delete button
               Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
               deleteBtn.addThemeVariants(
@@ -352,7 +395,7 @@ public class ShowListView extends Main {
                 actions.add(calendarBtn);
               }
 
-              actions.add(viewBtn, editBtn, deleteBtn);
+              actions.add(viewBtn, editBtn, generateArtBtn, deleteBtn);
               return actions;
             })
         .setHeader("Actions")
@@ -427,6 +470,44 @@ public class ShowListView extends Main {
   private void refreshGrid() {
     List<Show> shows = showService.findAllWithRelationships();
     showGrid.setItems(shows);
+  }
+
+  private void openGenerateArtDialog(ShowTemplate template) {
+    if (template == null) return;
+
+    java.util.function.Supplier<String> promptSupplier =
+        () -> {
+          StringBuilder sb = new StringBuilder();
+          sb.append("A professional wrestling show logo or poster for '")
+              .append(template.getName())
+              .append("'. ");
+          if (template.getShowType() != null) {
+            sb.append("This is a ").append(template.getShowType().getName()).append(" show. ");
+          }
+          if (template.getDescription() != null && !template.getDescription().isEmpty()) {
+            sb.append(template.getDescription()).append(". ");
+          }
+          sb.append(
+              "High quality, bold typography, dramatic lighting, exciting atmosphere, sports"
+                  + " entertainment style.");
+          return sb.toString();
+        };
+
+    java.util.function.Consumer<String> imageSaver =
+        (imageUrl) -> {
+          template.setImageUrl(imageUrl);
+          showTemplateService.save(template);
+          refreshGrid();
+        };
+
+    new GenericImageGenerationDialog(
+            promptSupplier,
+            imageSaver,
+            imageGenerationServiceFactory,
+            imageStorageService,
+            aiSettingsService,
+            this::refreshGrid)
+        .open();
   }
 
   private void setupEditDialog() {

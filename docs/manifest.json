@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "admin-admin-show-template-art-generation",
+    "category": "Admin",
+    "title": "Generate Template Art",
+    "description": "Create unique branding for your show templates using AI. This art will be used in the booking interface and calendar.",
+    "imagePath": "screenshots/admin-show-template-art-generation.png",
+    "order": 10
+  }, {
     "id": "npc-npc-list",
     "category": "NPC",
     "title": "NPC List",

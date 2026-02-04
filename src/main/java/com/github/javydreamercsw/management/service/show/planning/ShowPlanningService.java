@@ -129,12 +129,23 @@ public class ShowPlanningService {
     log.debug("Found {} promos in the last month", lastWeekPromos.size());
     context.setRecentPromos(lastWeekPromos);
 
-    // Get show template (hardcoded for now)
+    // Get show template
     ShowTemplate template = new ShowTemplate();
     template.setShowName(show.getName());
     template.setDescription(show.getDescription());
-    template.setExpectedMatches(show.getType().getExpectedMatches());
-    template.setExpectedPromos(show.getType().getExpectedPromos());
+
+    // Use template's expected values if set, otherwise fallback to show type defaults
+    if (show.getTemplate() != null && show.getTemplate().getExpectedMatches() != null) {
+      template.setExpectedMatches(show.getTemplate().getExpectedMatches());
+    } else {
+      template.setExpectedMatches(show.getType().getExpectedMatches());
+    }
+
+    if (show.getTemplate() != null && show.getTemplate().getExpectedPromos() != null) {
+      template.setExpectedPromos(show.getTemplate().getExpectedPromos());
+    } else {
+      template.setExpectedPromos(show.getType().getExpectedPromos());
+    }
     context.setShowTemplate(template);
 
     // Get championships
