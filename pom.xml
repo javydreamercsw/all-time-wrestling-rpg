@@ -33,7 +33,7 @@
     <selenium.version>4.40.0</selenium.version>
     <surefireArgLine/>
     <testcontainers.version>2.0.3</testcontainers.version>
-    <vaadin.version>25.0.3</vaadin.version>
+    <vaadin.version>25.0.4</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -92,6 +92,72 @@
         <version>2.0.3</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <!-- Keep Vaadin's Spring integration artifacts aligned with the Vaadin BOM version -->
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>vaadin-spring</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+
+      <!-- Keep Vaadin dev-server aligned; mismatched dev-server is a common cause of broken dev bundle/rendering -->
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>vaadin-dev-server</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+
+      <!-- Ensure Flow core aligns with Vaadin version (prevents mixed Flow 25.0.5 with Vaadin 25.0.4) -->
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-server</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-client</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-data</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-push</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-react</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-dnd</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-html-components</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-lit-template</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>signals</artifactId>
+        <version>${vaadin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vaadin</groupId>
+        <artifactId>flow-build-tools</artifactId>
+        <version>${vaadin.version}</version>
+        <classifier>shaded</classifier>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -441,6 +507,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+      <version>1.5.26</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.5.26</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -539,6 +611,15 @@
     <dependency>
       <groupId>org.apache.groovy</groupId>
       <artifactId>groovy</artifactId>
+    </dependency>
+    <!-- Ensure these are resolved at the project level (and therefore strictly controlled by dependencyManagement) -->
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-spring</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-dev-server</artifactId>
     </dependency>
   </dependencies>
 
@@ -852,6 +933,7 @@
             <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-spring-boot-starter</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev-server</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>com.github.oshi:oshi-core</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-tomcat</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa</ignoredUnusedDeclaredDependency>
@@ -933,10 +1015,81 @@
           </dependency>
         </dependencies>
       </plugin>
+      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.version} before Vaadin plugin runs -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <id>sync-vaadin-frontend-versions</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <executable>node</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>
+                <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
+                <argument>${vaadin.version}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
   <profiles>
+    <profile>
+      <id>vaadin-upgrade</id>
+      <properties>
+        <!-- Force a clean frontend regeneration to avoid stale Vite/Vaadin artifacts after version bumps -->
+        <vaadin.clean-frontend>true</vaadin.clean-frontend>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-maven-plugin</artifactId>
+            <version>${vaadin.version}</version>
+            <executions>
+              <execution>
+                <id>vaadin-prepare-frontend-upgrade</id>
+                <goals>
+                  <goal>prepare-frontend</goal>
+                </goals>
+                <phase>generate-resources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.5.1</version>
+            <executions>
+              <execution>
+                <id>sync-vaadin-npm-overrides</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <executable>node</executable>
+                  <workingDirectory>${project.basedir}</workingDirectory>
+                  <arguments>
+                    <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
+                    <argument>${vaadin.version}</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>production</id>
       <dependencies>
@@ -964,595 +1117,6 @@
                   <goal>build-frontend</goal>
                 </goals>
                 <phase>compile</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>coverage</id>
-      <build>
-        <plugins>
-          <!-- JaCoCo Code Coverage Plugin -->
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <configuration>
-              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
-              <fileSets>
-                <fileSet>
-                  <directory>${project.build.directory}</directory>
-                  <includes>
-                    <include>jacoco.exec</include>
-                    <include>jacoco-it.exec</include>
-                    <include>jacoco-e2e.exec</include>
-                    <include>jacoco-notion-it.exec</include>
-                    <include>jacoco-notion-e2e.exec</include>
-                  </includes>
-                </fileSet>
-              </fileSets>
-              <excludes>
-                <!-- Exclude generated code -->
-                <exclude>**/generated/**</exclude>
-                <exclude>**/target/generated-sources/**</exclude>
-
-                <!-- Exclude configuration and startup classes -->
-                <exclude>**/Application.class</exclude>
-                <exclude>**/config/**</exclude>
-                <exclude>**/configuration/**</exclude>
-
-                <!-- Exclude DTOs and simple data classes -->
-                <exclude>**/*DTO.class</exclude>
-                <exclude>**/*Request.class</exclude>
-                <exclude>**/*Response.class</exclude>
-                <exclude>**/*Properties.class</exclude>
-
-                <!-- Exclude Vaadin UI components (hard to test) -->
-                <exclude>**/ui/view/**</exclude>
-                <exclude>**/ui/component/**</exclude>
-                <!-- Exclude frontend and bundle resources -->
-                <exclude>**/frontend/**</exclude>
-                <exclude>**/bundles/**</exclude>
-
-                <!-- Exclude test utilities -->
-                <exclude>**/TestcontainersConfiguration.class</exclude>
-
-                <!-- Exclude Lombok generated methods -->
-                <exclude>**/*$Builder.class</exclude>
-
-                <!-- Exclude Mockito generated classes -->
-                <exclude>**/*$MockitoMock$*</exclude>
-                <exclude>**/*$MockitoMock$*$auxiliary$*</exclude>
-                <exclude>**/*EnhancerByMockitoWithCGLIB*</exclude>
-
-                <!-- Exclude JaCoCo runtime -->
-                <exclude>**/org/jacoco/agent/rt/**</exclude>
-                <!-- Exclude Mock AI service -->
-                <exclude>**/mock/MockSegmentNarrationService.class</exclude>
-              </excludes>
-            </configuration>
-            <executions>
-              <!-- Prepare agent for unit tests -->
-              <execution>
-                <id>prepare-agent</id>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-                <configuration>
-                  <propertyName>surefireArgLine</propertyName>
-                  <destFile>${project.build.directory}/jacoco.exec</destFile>
-                </configuration>
-              </execution>
-
-              <!-- Generate unit test coverage report -->
-              <execution>
-                <id>report</id>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-                <phase>test</phase>
-              </execution>
-
-              <!-- Coverage verification -->
-              <execution>
-                <id>check</id>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
-                  <rules>
-                    <rule>
-                      <element>BUNDLE</element>
-                      <limits>
-                        <limit>
-                          <counter>INSTRUCTION</counter>
-                          <value>COVEREDRATIO</value>
-                          <minimum>${jacoco.coverage.minimum}</minimum>
-                        </limit>
-                        <limit>
-                          <counter>BRANCH</counter>
-                          <value>COVEREDRATIO</value>
-                          <minimum>${jacoco.coverage.minimum}</minimum>
-                        </limit>
-                      </limits>
-                    </rule>
-                    <rule>
-                      <element>CLASS</element>
-                      <limits>
-                        <limit>
-                          <counter>INSTRUCTION</counter>
-                          <value>COVEREDRATIO</value>
-                          <minimum>0.80</minimum>
-                        </limit>
-                      </limits>
-                    </rule>
-                  </rules>
-                </configuration>
-              </execution>
-
-              <!-- Merge unit and integration test coverage -->
-              <execution>
-                <id>merge-results</id>
-                <goals>
-                  <goal>merge</goal>
-                </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <fileSets>
-                    <fileSet>
-                      <directory>${project.build.directory}</directory>
-                      <includes>
-                        <include>jacoco.exec</include>
-                        <include>jacoco-it.exec</include>
-                        <include>jacoco-e2e.exec</include>
-                        <include>jacoco-notion-it.exec</include>
-                        <include>jacoco-notion-e2e.exec</include>
-                      </includes>
-                    </fileSet>
-                  </fileSets>
-                  <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
-                </configuration>
-              </execution>
-
-              <!-- Generate merged coverage report -->
-              <execution>
-                <id>report-merged</id>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-merged</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>integration-test</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <!-- Prepare agent for integration tests -->
-              <execution>
-                <id>prepare-agent-integration</id>
-                <goals>
-                  <goal>prepare-agent-integration</goal>
-                </goals>
-                <configuration>
-                  <propertyName>failsafeArgLine</propertyName>
-                  <destFile>${project.build.directory}/jacoco-it.exec</destFile>
-                </configuration>
-              </execution>
-              <!-- Generate integration test coverage report -->
-              <execution>
-                <id>report-integration</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <phase>post-integration-test</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
-              <trimStackTrace>false</trimStackTrace>
-              <enableAssertions>true</enableAssertions>
-              <!-- Sequential execution for integration tests -->
-              <parallel>none</parallel>
-              <threadCount>1</threadCount>
-              <!-- Retry failed tests once to handle flakes -->
-              <rerunFailingTestsCount>1</rerunFailingTestsCount>
-              <includes>
-                <include>**/*IT.java</include>
-                <include>**/*IntegrationTest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*E2ETest.java</exclude>
-                <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
-                <exclude>**/DockerPackageIT.java</exclude>
-                <exclude>**/Notion*IT.java</exclude>
-                <exclude>**/*SyncIT.java</exclude>
-                <exclude>**/*SyncIntegrationTest.java</exclude>
-              </excludes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>notion-integration-test</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <!-- Prepare agent for integration tests -->
-              <execution>
-                <id>prepare-agent-integration</id>
-                <goals>
-                  <goal>prepare-agent-integration</goal>
-                </goals>
-                <configuration>
-                  <propertyName>failsafeArgLine</propertyName>
-                  <destFile>${project.build.directory}/jacoco-notion-it.exec</destFile>
-                </configuration>
-              </execution>
-              <!-- Generate integration test coverage report -->
-              <execution>
-                <id>report-integration</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <phase>post-integration-test</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
-              <trimStackTrace>false</trimStackTrace>
-              <enableAssertions>true</enableAssertions>
-              <!-- Sequential execution for integration tests -->
-              <parallel>none</parallel>
-              <threadCount>1</threadCount>
-              <includes>
-                <include>**/Notion*IT.java</include>
-                <include>**/*SyncIT.java</include>
-                <include>**/*SyncIntegrationTest.java</include>
-                <include>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</include>
-              </includes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>release</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <properties>
-        <jib.to.tags>${project.version},latest</jib.to.tags>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.owasp</groupId>
-            <artifactId>dependency-check-maven</artifactId>
-            <version>12.1.9</version>
-            <configuration>
-              <failBuildOnCVSS>7</failBuildOnCVSS>
-              <skipTestScope>true</skipTestScope>
-              <skipProvidedScope>true</skipProvidedScope>
-              <suppressionFiles>
-                <suppressionFile>${project.basedir}/owasp-dependency-check-suppressions.xml</suppressionFile>
-              </suppressionFiles>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>verify</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>e2e</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>prepare-agent-e2e</id>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-                <configuration>
-                  <propertyName>failsafeArgLine</propertyName>
-                  <destFile>${project.build.directory}/jacoco-e2e.exec</destFile>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <argLine>@{failsafeArgLine}</argLine>
-              <!-- Sequential execution for e2e tests -->
-              <parallel>none</parallel>
-              <threadCount>1</threadCount>
-              <reuseForks>true</reuseForks>
-              <!-- Retry failed tests once to handle flakes -->
-              <rerunFailingTestsCount>1</rerunFailingTestsCount>
-              <includes>
-                <include>**/*E2ETest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/Notion*E2ETest.java</exclude>
-              </excludes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>notion-e2e-test</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>prepare-agent-e2e</id>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-                <configuration>
-                  <propertyName>failsafeArgLine</propertyName>
-                  <destFile>${project.build.directory}/jacoco-notion-e2e.exec</destFile>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <argLine>@{failsafeArgLine}</argLine>
-              <!-- Sequential execution for e2e tests -->
-              <parallel>none</parallel>
-              <threadCount>1</threadCount>
-              <reuseForks>true</reuseForks>
-              <includes>
-                <include>**/Notion*E2ETest.java</include>
-              </includes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>generate-docs</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <argLine>@{failsafeArgLine} -Dgenerate.docs=true</argLine>
-              <includes>
-                <include>**/*DocsE2ETest.java</include>
-              </includes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>remote-deploy</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven3-plugin</artifactId>
-            <version>1.10.26</version>
-            <configuration>
-              <container>
-                <containerId>tomcat11x</containerId>
-                <type>remote</type>
-              </container>
-              <configuration>
-                <type>runtime</type>
-                <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/html</cargo.tomcat.manager.url>
-                  <!-- Reference the server ID from settings.xml -->
-                  <cargo.remote.username>${tomcat.username}</cargo.remote.username>
-                  <cargo.remote.password>${tomcat.password}</cargo.remote.password>
-                </properties>
-              </configuration>
-              <deployer>
-                <type>remote</type>
-              </deployer>
-            </configuration>
-            <executions>
-              <execution>
-                <id>cargo-deploy</id>
-                <goals>
-                  <goal>redeploy</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>embedded-tomcat</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
-              <mainClass>com.github.javydreamercsw.Application</mainClass>
-              <jvmArguments>-Dserver.port=9090 -Dspring.profiles.active=test -Dspring.datasource.url=jdbc:h2:mem:e2edb</jvmArguments>
-            </configuration>
-            <executions>
-              <execution>
-                <id>run-embedded</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>docker-it</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-invoker-plugin</artifactId>
-            <version>3.9.1</version>
-            <configuration>
-              <projectsDirectory>./</projectsDirectory>
-              <pomIncludes>
-                <pomInclude>pom.xml</pomInclude>
-              </pomIncludes>
-              <goals>
-                <goal>package</goal>
-              </goals>
-              <profiles>
-                <profile>production</profile>
-              </profiles>
-            </configuration>
-            <executions>
-              <execution>
-                <id>build-prod</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/DockerPackageIT.java</include>
-              </includes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
               </execution>
             </executions>
           </plugin>
