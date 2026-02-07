@@ -54,7 +54,7 @@ jobs:
         cache: maven
 
     - name: Run unit tests with coverage
-      run: mvn -B verify -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
+      run: mvn -B test -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v4

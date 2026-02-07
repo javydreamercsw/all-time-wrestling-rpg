@@ -18,6 +18,13 @@
 
   <properties>
     <archunit.version>1.4.1</archunit.version>
+
+    <!--
+      Hard gate for E2E tests:
+      - Default is true so `mvn verify` (and CI jobs that run verify) won't ever execute *E2ETest.
+      - The `e2e` profile sets this to false.
+    -->
+    <e2e.skipITs>true</e2e.skipITs>
     <failsafeArgLine/>
     <headless>true</headless>
     <!-- JaCoCo Coverage Properties -->
@@ -35,6 +42,7 @@
     <surefireArgLine/>
     <testcontainers.version>2.0.3</testcontainers.version>
     <vaadin.version>25.0.4</vaadin.version>
+    <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
 
@@ -750,6 +758,9 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
+          <!-- Skip by default unless explicitly enabled. -->
+          <skipITs>${e2e.skipITs}</skipITs>
+
           <!-- Enable parallel execution -->
           <parallel>classes</parallel>
           <threadCount>4</threadCount>
@@ -758,10 +769,12 @@
           <!-- Optimize for faster execution -->
           <forkCount>1</forkCount>
           <reuseForks>true</reuseForks>
-          <!-- Include E2E tests -->
-          <includes>
-            <include>**/*E2ETest.java</include>
-          </includes>
+
+          <!-- Default failsafe config should NOT pick up E2E tests. -->
+          <excludes>
+            <exclude>**/*E2ETest.java</exclude>
+          </excludes>
+
           <!-- JVM arguments for better performance and JaCoCo coverage -->
           <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
           <systemPropertyVariables>
@@ -1150,27 +1163,20 @@
     </profile>
     <profile>
       <id>e2e</id>
+      <properties>
+        <!-- Explicitly enable E2E in this profile. -->
+        <e2e.skipITs>false</e2e.skipITs>
+      </properties>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <exclude>**/*Test.java</exclude>
-                <exclude>**/*Tests.java</exclude>
-                <exclude>**/*TestCase.java</exclude>
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-                <exclude>**/*E2ETest.java</exclude>
-                <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
+          <!-- ...existing code... -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
+              <!-- Ensure E2E is not skipped in this profile. -->
+              <skipITs>false</skipITs>
+
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
