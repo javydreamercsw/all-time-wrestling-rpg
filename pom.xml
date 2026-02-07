@@ -19,6 +19,7 @@
   <properties>
     <archunit.version>1.4.1</archunit.version>
     <failsafeArgLine/>
+    <headless>true</headless>
     <!-- JaCoCo Coverage Properties -->
     <jacoco.coverage.minimum>0.90</jacoco.coverage.minimum>
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
@@ -34,6 +35,7 @@
     <surefireArgLine/>
     <testcontainers.version>2.0.3</testcontainers.version>
     <vaadin.version>25.0.4</vaadin.version>
+    <webdriver.chrome.whitelistedIps/>
   </properties>
 
   <dependencyManagement>
@@ -515,6 +517,12 @@
       <version>1.5.26</version>
     </dependency>
     <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.5.26</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test-autoconfigure</artifactId>
       <scope>test</scope>
@@ -744,13 +752,35 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.5.4</version>
+        <configuration>
+          <!-- Enable parallel execution -->
+          <parallel>classes</parallel>
+          <threadCount>4</threadCount>
+          <perCoreThreadCount>true</perCoreThreadCount>
+          <useUnlimitedThreads>false</useUnlimitedThreads>
+          <!-- Optimize for faster execution -->
+          <forkCount>1</forkCount>
+          <reuseForks>true</reuseForks>
+          <!-- Include E2E tests -->
+          <includes>
+            <include>**/*E2ETest.java</include>
+          </includes>
+          <!-- JVM arguments for better performance and JaCoCo coverage -->
+          <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <systemPropertyVariables>
+            <webdriver.chrome.whitelistedIps/>
+            <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
+          </systemPropertyVariables>
+        </configuration>
+        <!-- Use the same version as surefire for consistency -->
         <executions>
           <execution>
             <goals>
-              <goal>repackage</goal>
-              <goal>build-info</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
             </goals>
           </execution>
         </executions>
@@ -958,6 +988,7 @@
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-web</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-validation</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-core</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>
@@ -1117,6 +1148,51 @@
                   <goal>build-frontend</goal>
                 </goals>
                 <phase>compile</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>e2e</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>**/*Test.java</exclude>
+                <exclude>**/*Tests.java</exclude>
+                <exclude>**/*TestCase.java</exclude>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+                <exclude>**/*E2ETest.java</exclude>
+                <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*E2ETest.java</include>
+              </includes>
+              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+              <systemPropertyVariables>
+                <webdriver.chrome.whitelistedIps/>
+                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
+                <headless>${headless}</headless>
+              </systemPropertyVariables>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>

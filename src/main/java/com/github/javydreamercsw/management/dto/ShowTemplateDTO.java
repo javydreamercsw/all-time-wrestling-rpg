@@ -27,4 +27,10 @@ public class ShowTemplateDTO {
   private String externalId;
   private Integer expectedMatches;
   private Integer expectedPromos;
+  private Integer durationDays;
+  private String recurrenceType;
+  private String dayOfWeek;
+  private Integer dayOfMonth;
+  private Integer weekOfMonth;
+  private String month;
 }

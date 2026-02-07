@@ -39,6 +39,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -163,6 +164,29 @@ public class ShowPlanningService {
       if (numberOneContenders != null && !numberOneContenders.isEmpty()) {
         championship.getContenders().addAll(numberOneContenders);
       }
+
+      // Calculate days since last defense
+      Instant lastDefense =
+          title
+              .getCurrentReign()
+              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getStartDate)
+              .orElse(null);
+
+      // Check if there are any title matches after the start of the reign
+      Optional<Instant> lastMatch =
+          title.getSegments().stream()
+              .filter(s -> s.getIsTitleSegment() != null && s.getIsTitleSegment())
+              .map(com.github.javydreamercsw.management.domain.show.segment.Segment::getSegmentDate)
+              .max(Comparator.naturalOrder());
+
+      if (lastMatch.isPresent() && (lastDefense == null || lastMatch.get().isAfter(lastDefense))) {
+        lastDefense = lastMatch.get();
+      }
+
+      if (lastDefense != null) {
+        championship.setDaysSinceLastDefense(ChronoUnit.DAYS.between(lastDefense, showDate));
+      }
+
       championships.add(championship);
     }
     context.setChampionships(championships);

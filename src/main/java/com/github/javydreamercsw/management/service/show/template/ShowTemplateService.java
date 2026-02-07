@@ -218,7 +218,13 @@ public class ShowTemplateService {
       String notionUrl,
       String imageUrl,
       Integer expectedMatches,
-      Integer expectedPromos) {
+      Integer expectedPromos,
+      Integer durationDays,
+      com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
+      java.time.DayOfWeek dayOfWeek,
+      Integer dayOfMonth,
+      Integer weekOfMonth,
+      java.time.Month month) {
 
     // Find or create show type
     Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -247,6 +253,15 @@ public class ShowTemplateService {
     template.setImageUrl(imageUrl);
     template.setExpectedMatches(expectedMatches);
     template.setExpectedPromos(expectedPromos);
+    template.setDurationDays(durationDays != null ? durationDays : 1);
+    template.setRecurrenceType(
+        recurrenceType != null
+            ? recurrenceType
+            : com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE);
+    template.setDayOfWeek(dayOfWeek);
+    template.setDayOfMonth(dayOfMonth);
+    template.setWeekOfMonth(weekOfMonth);
+    template.setMonth(month);
 
     return showTemplateRepository.save(template);
   }
@@ -261,7 +276,20 @@ public class ShowTemplateService {
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
       @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
-    return createOrUpdateTemplate(name, description, showTypeName, notionUrl, null, null, null);
+    return createOrUpdateTemplate(
+        name,
+        description,
+        showTypeName,
+        notionUrl,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   /**
@@ -323,7 +351,13 @@ public class ShowTemplateService {
       String notionUrl,
       String imageUrl,
       Integer expectedMatches,
-      Integer expectedPromos) {
+      Integer expectedPromos,
+      Integer durationDays,
+      com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
+      java.time.DayOfWeek dayOfWeek,
+      Integer dayOfMonth,
+      Integer weekOfMonth,
+      java.time.Month month) {
 
     Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
     if (templateOpt.isEmpty()) {
@@ -346,6 +380,15 @@ public class ShowTemplateService {
     template.setImageUrl(imageUrl);
     template.setExpectedMatches(expectedMatches);
     template.setExpectedPromos(expectedPromos);
+    template.setDurationDays(durationDays != null ? durationDays : 1);
+    template.setRecurrenceType(
+        recurrenceType != null
+            ? recurrenceType
+            : com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE);
+    template.setDayOfWeek(dayOfWeek);
+    template.setDayOfMonth(dayOfMonth);
+    template.setWeekOfMonth(weekOfMonth);
+    template.setMonth(month);
 
     ShowTemplate savedTemplate = showTemplateRepository.save(template);
     log.info("Updated show template: {}", name);
@@ -385,7 +428,13 @@ public class ShowTemplateService {
         notionUrl,
         st.getImageUrl(),
         st.getExpectedMatches(),
-        st.getExpectedPromos());
+        st.getExpectedPromos(),
+        st.getDurationDays(),
+        st.getRecurrenceType(),
+        st.getDayOfWeek(),
+        st.getDayOfMonth(),
+        st.getWeekOfMonth(),
+        st.getMonth());
   }
 
   /**

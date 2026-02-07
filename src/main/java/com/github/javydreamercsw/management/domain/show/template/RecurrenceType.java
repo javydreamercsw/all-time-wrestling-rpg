@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,15 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.show.planning.dto;
+package com.github.javydreamercsw.management.domain.show.template;
 
-import lombok.Data;
-
-@Data
-public class ShowPlanningChampionshipDTO {
-  private String championshipName;
-  private String championName;
-  private String contenderName;
-  private Integer defenseFrequency;
-  private Long daysSinceLastDefense;
+/** Enum representing the recurrence type for a show template. */
+public enum RecurrenceType {
+  NONE,
+  WEEKLY,
+  MONTHLY,
+  ANNUAL
 }

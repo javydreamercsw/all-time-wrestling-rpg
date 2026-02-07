@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -53,6 +54,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.time.DayOfWeek;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -85,6 +88,12 @@ public class ShowTemplateListView extends Main {
   private TextField editNotionUrl;
   private IntegerField editExpectedMatches;
   private IntegerField editExpectedPromos;
+  private IntegerField editDurationDays;
+  private ComboBox<RecurrenceType> editRecurrenceType;
+  private ComboBox<DayOfWeek> editDayOfWeek;
+  private IntegerField editDayOfMonth;
+  private ComboBox<Integer> editWeekOfMonth;
+  private ComboBox<Month> editMonth;
   private ShowTemplate editingTemplate;
   private Binder<ShowTemplate> binder;
 
@@ -329,6 +338,64 @@ public class ShowTemplateListView extends Main {
     editExpectedPromos.setPlaceholder("Use show type default");
     editExpectedPromos.setClearButtonVisible(true);
 
+    editDurationDays = new IntegerField("Duration (Days)");
+    editDurationDays.setWidthFull();
+    editDurationDays.setMin(1);
+    editDurationDays.setValue(1);
+
+    editRecurrenceType = new ComboBox<>("Recurrence Type");
+    editRecurrenceType.setItems(RecurrenceType.values());
+    editRecurrenceType.setItemLabelGenerator(RecurrenceType::name);
+    editRecurrenceType.setWidthFull();
+
+    editDayOfWeek = new ComboBox<>("Day of Week");
+    editDayOfWeek.setItems(DayOfWeek.values());
+    editDayOfWeek.setItemLabelGenerator(DayOfWeek::name);
+    editDayOfWeek.setWidthFull();
+    editDayOfWeek.setVisible(false);
+
+    editDayOfMonth = new IntegerField("Day of Month");
+    editDayOfMonth.setWidthFull();
+    editDayOfMonth.setMin(1);
+    editDayOfMonth.setMax(31);
+    editDayOfMonth.setVisible(false);
+
+    editWeekOfMonth = new ComboBox<>("Week of Month");
+    editWeekOfMonth.setItems(1, 2, 3, 4, -1);
+    editWeekOfMonth.setItemLabelGenerator(
+        i -> {
+          if (i == -1) return "Last";
+          return switch (i) {
+            case 1 -> "First";
+            case 2 -> "Second";
+            case 3 -> "Third";
+            case 4 -> "Fourth";
+            default -> String.valueOf(i);
+          };
+        });
+    editWeekOfMonth.setWidthFull();
+    editWeekOfMonth.setVisible(false);
+
+    editMonth = new ComboBox<>("Month");
+    editMonth.setItems(Month.values());
+    editMonth.setItemLabelGenerator(Month::name);
+    editMonth.setWidthFull();
+    editMonth.setVisible(false);
+
+    editRecurrenceType.addValueChangeListener(
+        e -> {
+          RecurrenceType type = e.getValue();
+          editDayOfWeek.setVisible(
+              type == RecurrenceType.WEEKLY
+                  || type == RecurrenceType.MONTHLY
+                  || type == RecurrenceType.ANNUAL);
+          editDayOfMonth.setVisible(
+              type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL);
+          editWeekOfMonth.setVisible(
+              type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL);
+          editMonth.setVisible(type == RecurrenceType.ANNUAL);
+        });
+
     Button saveBtn = new Button("Save", e -> saveTemplate());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveBtn.setVisible(securityUtils.canEdit());
@@ -352,7 +419,13 @@ public class ShowTemplateListView extends Main {
         editShowType,
         editNotionUrl,
         editExpectedMatches,
-        editExpectedPromos);
+        editExpectedPromos,
+        editDurationDays,
+        editRecurrenceType,
+        editDayOfWeek,
+        editDayOfMonth,
+        editWeekOfMonth,
+        editMonth);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
@@ -387,6 +460,56 @@ public class ShowTemplateListView extends Main {
     binder
         .forField(editExpectedPromos)
         .bind(ShowTemplate::getExpectedPromos, ShowTemplate::setExpectedPromos);
+    binder
+        .forField(editDurationDays)
+        .bind(ShowTemplate::getDurationDays, ShowTemplate::setDurationDays);
+    binder
+        .forField(editRecurrenceType)
+        .bind(ShowTemplate::getRecurrenceType, ShowTemplate::setRecurrenceType);
+    binder
+        .forField(editDayOfWeek)
+        .withValidator(
+            (value, context) -> {
+              RecurrenceType type = editRecurrenceType.getValue();
+              if (type == RecurrenceType.WEEKLY && value == null) {
+                return com.vaadin.flow.data.binder.ValidationResult.error(
+                    "Day of Week is required for weekly recurrence");
+              }
+              if ((type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL)
+                  && editDayOfMonth.getValue() == null
+                  && value == null) {
+                return com.vaadin.flow.data.binder.ValidationResult.error(
+                    "Either Day of Month or Day of Week is required");
+              }
+              return com.vaadin.flow.data.binder.ValidationResult.ok();
+            })
+        .bind(ShowTemplate::getDayOfWeek, ShowTemplate::setDayOfWeek);
+    binder.forField(editDayOfMonth).bind(ShowTemplate::getDayOfMonth, ShowTemplate::setDayOfMonth);
+    binder
+        .forField(editWeekOfMonth)
+        .withValidator(
+            (value, context) -> {
+              RecurrenceType type = editRecurrenceType.getValue();
+              if ((type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL)
+                  && editDayOfWeek.getValue() != null
+                  && value == null) {
+                return com.vaadin.flow.data.binder.ValidationResult.error(
+                    "Week of Month is required when using Day of Week");
+              }
+              return com.vaadin.flow.data.binder.ValidationResult.ok();
+            })
+        .bind(ShowTemplate::getWeekOfMonth, ShowTemplate::setWeekOfMonth);
+    binder
+        .forField(editMonth)
+        .withValidator(
+            (value, context) -> {
+              if (editRecurrenceType.getValue() == RecurrenceType.ANNUAL && value == null) {
+                return com.vaadin.flow.data.binder.ValidationResult.error(
+                    "Month is required for annual recurrence");
+              }
+              return com.vaadin.flow.data.binder.ValidationResult.ok();
+            })
+        .bind(ShowTemplate::getMonth, ShowTemplate::setMonth);
   }
 
   private void openCreateDialog() {
@@ -417,7 +540,13 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getNotionUrl(),
                 null,
                 editingTemplate.getExpectedMatches(),
-                editingTemplate.getExpectedPromos());
+                editingTemplate.getExpectedPromos(),
+                editingTemplate.getDurationDays(),
+                editingTemplate.getRecurrenceType(),
+                editingTemplate.getDayOfWeek(),
+                editingTemplate.getDayOfMonth(),
+                editingTemplate.getWeekOfMonth(),
+                editingTemplate.getMonth());
 
         if (savedTemplate != null) {
           Notification.show("Template created successfully", 3000, Notification.Position.BOTTOM_END)
@@ -437,7 +566,13 @@ public class ShowTemplateListView extends Main {
             editingTemplate.getNotionUrl(),
             editingTemplate.getImageUrl(),
             editingTemplate.getExpectedMatches(),
-            editingTemplate.getExpectedPromos());
+            editingTemplate.getExpectedPromos(),
+            editingTemplate.getDurationDays(),
+            editingTemplate.getRecurrenceType(),
+            editingTemplate.getDayOfWeek(),
+            editingTemplate.getDayOfMonth(),
+            editingTemplate.getWeekOfMonth(),
+            editingTemplate.getMonth());
 
         Notification.show("Template updated successfully", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
