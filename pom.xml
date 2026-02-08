@@ -25,6 +25,7 @@
       - The `e2e` profile sets this to false.
     -->
     <e2e.skipITs>true</e2e.skipITs>
+    <failsafe.exclude>**/*E2ETest.java</failsafe.exclude>
     <failsafeArgLine/>
     <headless>true</headless>
     <!-- JaCoCo Coverage Properties -->
@@ -800,7 +801,7 @@
 
           <!-- Default failsafe config should NOT pick up E2E tests. -->
           <excludes>
-            <exclude>**/*E2ETest.java</exclude>
+            <exclude>${failsafe.exclude}</exclude>
           </excludes>
 
           <!-- JVM arguments for better performance and JaCoCo coverage -->
@@ -1253,6 +1254,7 @@
       <properties>
         <!-- Explicitly enable E2E in this profile. -->
         <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
         <jacoco.it.destFile>${project.build.directory}/jacoco-e2e.exec</jacoco.it.destFile>
       </properties>
       <build>
