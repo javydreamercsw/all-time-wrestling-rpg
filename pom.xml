@@ -1243,7 +1243,6 @@
       </properties>
       <build>
         <plugins>
-          <!-- ...existing code... -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
@@ -1459,6 +1458,9 @@
     </profile>
     <profile>
       <id>docker-it</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+      </properties>
       <build>
         <plugins>
           <plugin>
