@@ -38,13 +38,12 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.Year;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,7 +220,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     showTypeComboBox.sendKeys("Weekly", Keys.TAB);
 
-    wait.until(d -> templateComboBox.isEnabled());
+    wait.until(ignored -> templateComboBox.isEnabled());
 
     seasonComboBox.sendKeys(String.valueOf(Year.now().getValue()), Keys.TAB);
     templateComboBox.sendKeys("Continuum", Keys.TAB);
@@ -298,7 +297,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
                               row.findElements(
                                   By.cssSelector("vaadin-button[id^='report-result-btn-']"));
                           if (!buttons.isEmpty()) {
-                            return buttons.get(0);
+                            return buttons.getFirst();
                           }
                         }
                       } catch (StaleElementReferenceException ignored) {
@@ -439,14 +438,14 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   private String getPlayer1WrestlerName() {
     Account p1 = accountRepository.findByUsername("player1").orElseThrow();
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(p1);
-    if (wrestlers.isEmpty()) return "Wrestler 1"; // Fallback
+    if (wrestlers.isEmpty()) return "Wrestler 1";
     return wrestlers.getFirst().getName();
   }
 
   private String getAdminWrestlerName() {
     Account admin = accountRepository.findByUsername("admin").orElseThrow();
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    if (wrestlers.isEmpty()) return "Wrestler 0"; // Fallback
+    if (wrestlers.isEmpty()) return "Wrestler 0";
     return wrestlers.getFirst().getName();
   }
 }
