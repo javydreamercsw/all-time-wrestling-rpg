@@ -1203,6 +1203,7 @@
               </includes>
               <excludes>
                 <exclude>**/*E2ETest.java</exclude>
+                <exclude>**/DockerPackageIT.java</exclude>
               </excludes>
             </configuration>
           </plugin>
