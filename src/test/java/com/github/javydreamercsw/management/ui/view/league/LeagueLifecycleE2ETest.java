@@ -39,8 +39,8 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.Year;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -184,7 +185,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     clickElement(By.id("draft-wrestler-btn-" + w3.getId()));
 
     // Turn returns to admin
-    waitForTurnChange("admin");
+    waitForTurnChangeToAdmin();
 
     // Login as admin to finish draft
     logout();
@@ -220,9 +221,9 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     showTypeComboBox.sendKeys("Weekly", Keys.TAB);
 
-    wait.until(driver -> templateComboBox.isEnabled());
+    wait.until(d -> templateComboBox.isEnabled());
 
-    seasonComboBox.sendKeys("" + (new Date().getYear() + 1_900), Keys.TAB);
+    seasonComboBox.sendKeys(String.valueOf(Year.now().getValue()), Keys.TAB);
     templateComboBox.sendKeys("Continuum", Keys.TAB);
     leagueComboBox.sendKeys(leagueName, Keys.TAB);
 
@@ -240,7 +241,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Find the newly created show in the grid using the ID pattern
     List<Show> matchingShows = showService.findByName(showName);
     Assertions.assertEquals(1, matchingShows.size());
-    Show show = matchingShows.get(0);
+    Show show = matchingShows.getFirst();
 
     // Click on the newly created show in the grid to navigate to its detail page
     log.info("Navigating to show detail page");
@@ -282,9 +283,37 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Description contains "Pending match on show: [showName]"
     assertGridContains("inbox-grid", "Pending match on show: " + showName);
 
-    WebElement inboxGrid = driver.findElement(By.id("inbox-grid"));
+    // Click the report button from the row that matches our expected notification.
+    waitForGridToSettle("inbox-grid", Duration.ofSeconds(30));
     WebElement reportButton =
-        inboxGrid.findElement(By.cssSelector("vaadin-button[id^='report-result-btn-']"));
+        new WebDriverWait(driver, Duration.ofSeconds(30))
+            .until(
+                d -> {
+                  try {
+                    WebElement inboxGrid = d.findElement(By.id("inbox-grid"));
+                    for (WebElement row : getGridRows(inboxGrid)) {
+                      try {
+                        if (row.getText().contains("Pending match on show: " + showName)) {
+                          List<WebElement> buttons =
+                              row.findElements(
+                                  By.cssSelector("vaadin-button[id^='report-result-btn-']"));
+                          if (!buttons.isEmpty()) {
+                            return buttons.get(0);
+                          }
+                        }
+                      } catch (StaleElementReferenceException ignored) {
+                        return null;
+                      }
+                    }
+                  } catch (Exception ignored) {
+                  }
+                  return null;
+                });
+    if (reportButton == null) {
+      throw new AssertionError(
+          "Could not find report-result button for inbox row containing: Pending match on show: "
+              + showName);
+    }
     clickElement(reportButton);
 
     waitForVaadinElement(driver, By.id("match-report-dialog"));
@@ -348,11 +377,11 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
   }
 
-  private void waitForTurnChange(@NonNull String username) {
+  private void waitForTurnChangeToAdmin() {
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(
             ExpectedConditions.textToBePresentInElementLocated(
-                By.id("draft-turn-label"), "Current Turn: " + username));
+                By.id("draft-turn-label"), "Current Turn: admin"));
   }
 
   private void ensurePlayerAccount() {
@@ -411,13 +440,13 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     Account p1 = accountRepository.findByUsername("player1").orElseThrow();
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(p1);
     if (wrestlers.isEmpty()) return "Wrestler 1"; // Fallback
-    return wrestlers.get(0).getName();
+    return wrestlers.getFirst().getName();
   }
 
   private String getAdminWrestlerName() {
     Account admin = accountRepository.findByUsername("admin").orElseThrow();
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
     if (wrestlers.isEmpty()) return "Wrestler 0"; // Fallback
-    return wrestlers.get(0).getName();
+    return wrestlers.getFirst().getName();
   }
 }

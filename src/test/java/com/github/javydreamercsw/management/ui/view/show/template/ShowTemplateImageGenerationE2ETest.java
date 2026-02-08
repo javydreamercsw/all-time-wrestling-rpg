@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import java.time.Duration;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,7 +121,7 @@ public class ShowTemplateImageGenerationE2ETest extends AbstractE2ETest {
     wait.until(d -> grid.getText().contains("E2E Test Template"));
   }
 
-  protected void waitForGridToPopulate(String gridId) {
+  protected void waitForGridToPopulate(@NonNull String gridId) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {

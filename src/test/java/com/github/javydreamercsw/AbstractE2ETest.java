@@ -48,6 +48,7 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -361,6 +362,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForGridToPopulate(@NonNull String gridId) {
+    // Delegate to the more robust 'settled' wait.
+    waitForGridToSettle(gridId, Duration.ofSeconds(30));
+
+    // Keep the previous semantics: we expect at least one row.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {
@@ -371,6 +376,97 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             return false;
           }
         });
+  }
+
+  /**
+   * Waits for a Vaadin Grid to finish its (client-side) loading cycle and for its rendered DOM rows
+   * to become stable. This reduces flakiness with virtualized grids and async data-provider
+   * refreshes.
+   */
+  protected void waitForGridToSettle(@NonNull String gridId, @NonNull Duration timeout) {
+    WebDriverWait wait = new WebDriverWait(driver, timeout);
+
+    // 1) Wait until the element is present.
+    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
+
+    // 2) Wait until the grid is not in a 'loading' state (best-effort; property exists on Vaadin
+    // Grid).
+    wait.until(
+        d -> {
+          try {
+            Object loading =
+                ((JavascriptExecutor) d)
+                    .executeScript(
+                        "const g = arguments[0];"
+                            + "try { return !!g.loading; } catch(e) { return false; }",
+                        grid);
+            return loading instanceof Boolean && !((Boolean) loading);
+          } catch (Exception e) {
+            return true; // If we can't read the property, don't block.
+          }
+        });
+
+    // 3) Wait for the rendered rows DOM to stop changing for a short window.
+    wait.until(
+        d -> {
+          try {
+            String snap1 =
+                (String)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "const g = arguments[0];const items = g.shadowRoot &&"
+                                + " g.shadowRoot.getElementById('items');if (!items) return"
+                                + " '';return Array.from(items.children).map(e => (e.textContent ||"
+                                + " '').trim()).join('\n"
+                                + "');",
+                            grid);
+            // Small sleep to detect stability. (WebDriverWait polling is 500ms by default; we still
+            // want an immediate back-to-back snapshot.)
+            try {
+              Thread.sleep(200);
+            } catch (InterruptedException ignored) {
+            }
+            String snap2 =
+                (String)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "const g = arguments[0];const items = g.shadowRoot &&"
+                                + " g.shadowRoot.getElementById('items');if (!items) return"
+                                + " '';return Array.from(items.children).map(e => (e.textContent ||"
+                                + " '').trim()).join('\n"
+                                + "');",
+                            grid);
+            return Objects.equals(snap1, snap2);
+          } catch (Exception e) {
+            return false;
+          }
+        });
+  }
+
+  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
+    // Ensure the grid has finished refreshing before we scan it.
+    waitForGridToSettle(gridId, Duration.ofSeconds(30));
+
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              try {
+                WebElement grid = d.findElement(By.id(gridId));
+                for (WebElement gridRow : getGridRows(grid)) {
+                  try {
+                    if (gridRow.getText().contains(expectedText)) {
+                      return true;
+                    }
+                  } catch (StaleElementReferenceException ignored) {
+                    // Grid re-rendered mid-scan; retry on next poll.
+                    return false;
+                  }
+                }
+              } catch (Exception ignored) {
+                // Allow retry.
+              }
+              return false;
+            });
   }
 
   protected void waitForNotification(@NonNull String text) {
@@ -627,20 +723,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     } catch (IOException e) {
       log.error("Failed to save page source to: {}", filePath, e);
     }
-  }
-
-  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
-    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d -> {
-              for (WebElement gridRow : getGridRows(grid)) {
-                if (gridRow.getText().contains(expectedText)) {
-                  return true;
-                }
-              }
-              return false;
-            });
   }
 
   /**
