@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -406,7 +405,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           }
         });
 
-    // 3) Wait for the rendered rows DOM to stop changing for a short window.
+    // 3) Wait for the rendered content to stop changing for a short window.
+    // Using light-DOM vaadin-grid-cell-content is more robust across Vaadin versions.
     wait.until(
         d -> {
           try {
@@ -414,10 +414,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 (String)
                     ((JavascriptExecutor) d)
                         .executeScript(
-                            "const g = arguments[0];const items = g.shadowRoot &&"
-                                + " g.shadowRoot.getElementById('items');if (!items) return"
-                                + " '';return Array.from(items.children).map(e => (e.textContent ||"
-                                + " '').trim()).join('\n"
+                            "const g = arguments[0];return"
+                                + " Array.from(g.querySelectorAll('vaadin-grid-cell-content')).map(e"
+                                + " => (e.textContent || '').trim()).join('\\n"
                                 + "');",
                             grid);
             // Small sleep to detect stability. (WebDriverWait polling is 500ms by default; we still
@@ -430,10 +429,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 (String)
                     ((JavascriptExecutor) d)
                         .executeScript(
-                            "const g = arguments[0];const items = g.shadowRoot &&"
-                                + " g.shadowRoot.getElementById('items');if (!items) return"
-                                + " '';return Array.from(items.children).map(e => (e.textContent ||"
-                                + " '').trim()).join('\n"
+                            "const g = arguments[0];return"
+                                + " Array.from(g.querySelectorAll('vaadin-grid-cell-content')).map(e"
+                                + " => (e.textContent || '').trim()).join('\\n"
                                 + "');",
                             grid);
             return Objects.equals(snap1, snap2);
@@ -452,9 +450,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             d -> {
               try {
                 WebElement grid = d.findElement(By.id(gridId));
-                for (WebElement gridRow : getGridRows(grid)) {
+                // In Vaadin 24/25, cell content is in the light DOM.
+                List<WebElement> cells = grid.findElements(By.tagName("vaadin-grid-cell-content"));
+                for (WebElement cell : cells) {
                   try {
-                    if (gridRow.getText().contains(expectedText)) {
+                    if (cell.getText().contains(expectedText)) {
                       return true;
                     }
                   } catch (StaleElementReferenceException ignored) {
@@ -648,13 +648,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @return List of Strings representing the data in the specified column
    */
   protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
-    return getGridRows(grid).stream()
-        .map(
-            row -> {
-              List<WebElement> cells = row.findElements(By.cssSelector("[part~='cell']"));
-              return cells.size() > columnIndex ? cells.get(columnIndex).getText() : "";
-            })
-        .collect(Collectors.toList());
+    // This is more complex in Vaadin 24/25 because cells are in the light DOM
+    // and rows are managed via slots.
+    // We can try to group cell-content by their slot index or use the _index property if available.
+    return (List<String>)
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "const grid = arguments[0];"
+                    + "const colIndex = arguments[1];"
+                    + "const cols = Array.from(grid.querySelectorAll('vaadin-grid-column'));"
+                    + "if (colIndex >= cols.length) return [];"
+                    + "const targetCol = cols[colIndex];"
+                    + "return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))"
+                    + ".filter(c => c._column === targetCol)"
+                    + ".map(c => c.textContent.trim());",
+                grid,
+                columnIndex);
   }
 
   /**
@@ -664,7 +673,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @return the number of items
    */
   protected int getGridSize(@NonNull WebElement grid) {
-    return getGridRows(grid).size();
+    Object size =
+        ((JavascriptExecutor) driver).executeScript("return arguments[0].size || 0;", grid);
+    if (size instanceof Long) return ((Long) size).intValue();
+    if (size instanceof Integer) return (Integer) size;
+    return 0;
   }
 
   /**
@@ -677,14 +690,83 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return (List<WebElement>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "var items = arguments[0].shadowRoot.getElementById('items');"
-                    + " return items ? items.children : [];",
+                "const g = arguments[0];const items = g.shadowRoot.querySelector('#items') ||      "
+                    + "        g.shadowRoot.querySelector('tbody') ||             "
+                    + " g.shadowRoot.querySelector('[part~=\"items-container\"]');return items ?"
+                    + " Array.from(items.querySelectorAll('tr[part~=\"row\"], vaadin-grid-row')) :"
+                    + " [];",
                 grid);
   }
 
   protected List<WebElement> getGridRows(@NonNull String gridId) {
     WebElement grid = waitForVaadinElement(driver, By.id(gridId));
     return getGridRows(grid);
+  }
+
+  /**
+   * Finds a button within a specific grid row that matches the given text.
+   *
+   * @param gridId The ID of the vaadin-grid
+   * @param rowMatchText The text to identify the row
+   * @param buttonSelector The selector for the button within the row's cell content
+   * @return The found WebElement for the button
+   */
+  protected WebElement findButtonInGridRow(
+      @NonNull String gridId, @NonNull String rowMatchText, @NonNull By buttonSelector) {
+    waitForGridToSettle(gridId, Duration.ofSeconds(30));
+
+    // Convert button selector to a CSS selector string if possible, or use a known one.
+    // In this project, we mostly use id^= or similar.
+    String cssSelector = buttonSelector.toString().replace("By.cssSelector: ", "");
+
+    return new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              Object result =
+                  ((JavascriptExecutor) d)
+                      .executeScript(
+                          "const grid = document.getElementById(arguments[0]);const rowText ="
+                              + " arguments[1];const btnSelector = arguments[2];const log = [];if"
+                              + " (!grid) return { found: false, log: 'Grid not found: ' +"
+                              + " arguments[0] };const sr = grid.shadowRoot;if (!sr) return {"
+                              + " found: false, log: 'No shadow root' };const items ="
+                              + " sr.querySelector('#items');if (!items) return { found: false,"
+                              + " log: 'No #items container in shadow DOM' };const rows ="
+                              + " Array.from(items.children).filter(el =>"
+                              + " !el.hidden);log.push('Visible rows in shadow DOM: ' +"
+                              + " rows.length);for (let i = 0; i < rows.length; i++) {  const row ="
+                              + " rows[i];  const cells = Array.from(row.children);  const"
+                              + " lightCells = [];  cells.forEach(c => {    const slot ="
+                              + " c.querySelector('slot');    if (slot) {      const name ="
+                              + " slot.getAttribute('name');      const lightCell ="
+                              + " grid.querySelector(`[slot=\"${name}\"]`);      if (lightCell)"
+                              + " lightCells.push(lightCell);    }  });  const match ="
+                              + " lightCells.some(lc => lc.textContent.includes(rowText));  if"
+                              + " (match) {    log.push('Match found in row ' + i);    for (const"
+                              + " lc of lightCells) {      const btn ="
+                              + " lc.querySelector(btnSelector);      if (btn) return { found:"
+                              + " true, element: btn };    }    log.push('Row matched but button"
+                              + " not found. Cells: ' + lightCells.length);   "
+                              + " lightCells.forEach(lc => log.push('Cell HTML: ' + lc.innerHTML));"
+                              + "  }}return { found: false, log: log.join('; ') };",
+                          gridId,
+                          rowMatchText,
+                          cssSelector);
+
+              if (result instanceof Map) {
+                Map<?, ?> map = (Map<?, ?>) result;
+                if (Boolean.TRUE.equals(map.get("found"))) {
+                  return (WebElement) map.get("element");
+                } else {
+                  String logMsg = (String) map.get("log");
+                  // Only log occasionally or on last attempt?
+                  // For now log every failure to debug
+                  System.out.println("findButtonInGridRow retry: " + logMsg);
+                  return null;
+                }
+              }
+              return null;
+            });
   }
 
   protected void takeSequencedScreenshot(@NonNull String context) {

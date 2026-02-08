@@ -51,7 +51,6 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -283,36 +282,11 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertGridContains("inbox-grid", "Pending match on show: " + showName);
 
     // Click the report button from the row that matches our expected notification.
-    waitForGridToSettle("inbox-grid", Duration.ofSeconds(30));
     WebElement reportButton =
-        new WebDriverWait(driver, Duration.ofSeconds(30))
-            .until(
-                d -> {
-                  try {
-                    WebElement inboxGrid = d.findElement(By.id("inbox-grid"));
-                    for (WebElement row : getGridRows(inboxGrid)) {
-                      try {
-                        if (row.getText().contains("Pending match on show: " + showName)) {
-                          List<WebElement> buttons =
-                              row.findElements(
-                                  By.cssSelector("vaadin-button[id^='report-result-btn-']"));
-                          if (!buttons.isEmpty()) {
-                            return buttons.getFirst();
-                          }
-                        }
-                      } catch (StaleElementReferenceException ignored) {
-                        return null;
-                      }
-                    }
-                  } catch (Exception ignored) {
-                  }
-                  return null;
-                });
-    if (reportButton == null) {
-      throw new AssertionError(
-          "Could not find report-result button for inbox row containing: Pending match on show: "
-              + showName);
-    }
+        findButtonInGridRow(
+            "inbox-grid",
+            "Pending match on show: " + showName,
+            By.cssSelector("vaadin-button[id^='report-result-btn-']"));
     clickElement(reportButton);
 
     waitForVaadinElement(driver, By.id("match-report-dialog"));
