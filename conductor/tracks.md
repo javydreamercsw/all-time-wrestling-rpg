@@ -60,11 +60,11 @@
 *Status: Completed*
 *Date: 2026-02-04*
 
-### [x] Track: E2E CI Hardening
+### [x] Track: Technical: System Observability Dashboard
 
-*Link: [./conductor/archive/e2e_ci_hardening_20260205/index.md](./conductor/archive/e2e_ci_hardening_20260205/index.md)*
+*Link: [./conductor/archive/system_observability_dashboard_20260209/index.md](./conductor/archive/system_observability_dashboard_20260209/index.md)*
 *Status: Completed*
-*Date: 2026-02-05*
+*Date: 2026-02-09*
 
 ---
 
@@ -83,9 +83,4 @@
 ### [ ] Track: Wrestler Career Legacy & Hall of Fame
 
 *Link: [./conductor/tracks/wrestler_career_legacy/index.md](./conductor/tracks/wrestler_career_legacy/index.md)*
-*Status: Proposed*
-
-### [ ] Track: Technical: System Observability Dashboard
-
-*Link: [./conductor/tracks/system_observability_dashboard/index.md](./conductor/tracks/system_observability_dashboard/index.md)*
 *Status: Proposed*

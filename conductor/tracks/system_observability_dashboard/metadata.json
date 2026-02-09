@@ -1,8 +1,0 @@
-{
-  "id": "system_observability_dashboard",
-  "title": "Technical: System Observability Dashboard",
-  "description": "Dedicated UI for Admins to monitor AI performance, cache health, and system status.",
-  "status": "proposed",
-  "category": "Technical",
-  "date_created": "2026-02-09"
-}
