@@ -8,7 +8,7 @@
 ## Phase 2: Observability UI
 
 - [ ] Create `SystemObservabilityView` (Admin only).
-- [ ] Integrate a charting library (e.g., ApexCharts or Vaadin Charts) for performance trends.
+- [ ] Integrate a free open-source charting library (e.g., ApexCharts or Chart.js) for performance trends.
 - [ ] Build the "System Pulse" component for service health.
 
 ## Phase 3: Administrative Actions

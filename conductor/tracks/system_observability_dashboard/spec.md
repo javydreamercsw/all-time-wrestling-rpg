@@ -9,6 +9,7 @@ Expose existing backend performance and health metrics through a user-friendly U
 1. **Performance Visualization:**
    - Display real-time charts for AI response times (per provider).
    - Show token usage trends to monitor costs/limits.
+   - **Constraint:** Use only MIT-licensed or free open-source charting libraries (e.g., ApexCharts, Chart.js). No paid commercial licenses.
 2. **Cache Management:**
    - UI to view hit/miss rates for all Hibernate and custom caches.
    - Action to "Purge" specific caches without restarting the app.
