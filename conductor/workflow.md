@@ -151,30 +151,42 @@ Before marking any task complete, verify:
 
 ## Development Commands
 
-**AI AGENT INSTRUCTION: This section should be adapted to the project's specific language, framework, and build tools.**
-
-### Setup
-
-```bash
-# Example: Commands to set up the development environment (e.g., install dependencies, configure database)
-# e.g., for a Node.js project: npm install
-# e.g., for a Go project: go mod tidy
-```
-
 ### Daily Development
 
 ```bash
-# Example: Commands for common daily tasks (e.g., start dev server, run tests, lint, format)
-# e.g., for a Node.js project: npm run dev, npm test, npm run lint
-# e.g., for a Go project: go run main.go, go test ./..., go fmt ./...
+# Run the application in development mode
+./mvnw spring-boot:run
+
+# Apply code formatting (Spotless)
+./mvnw spotless:apply
+
+# Build the project (skipping tests)
+./mvnw clean install -DskipTests
 ```
 
-### Before Committing
+### Testing
 
 ```bash
-# Example: Commands to run all pre-commit checks (e.g., format, lint, type check, run tests)
-# e.g., for a Node.js project: npm run check
-# e.g., for a Go project: make check (if a Makefile exists)
+# Run all unit tests
+./mvnw test
+
+# Run all integration tests
+./mvnw verify -Pintegration-test
+
+# Run a SPECIFIC integration test (efficiently)
+./mvnw failsafe:integration-test -Pintegration-test -Dskip.surefire.tests=true -Dit.test=TestClassName
+
+# Run all E2E tests (headless)
+./mvnw verify -Pe2e -Dheadless=true
+
+# Run a SPECIFIC E2E test (headless, efficiently)
+./mvnw failsafe:integration-test -Pe2e -Dheadless=true -Dskip.surefire.tests=true -Dit.test=TestClassName
+```
+
+### Production Build
+
+```bash
+./mvnw -Pproduction package
 ```
 
 ## Testing Requirements
@@ -185,22 +197,26 @@ Before marking any task complete, verify:
 - Use appropriate test setup/teardown mechanisms (e.g., fixtures, beforeEach/afterEach).
 - Mock external dependencies.
 - Test both success and failure cases.
+- Command: `./mvnw test`
 
 ### Integration Testing
 
-- Test complete user flows
-- Verify database transactions
-- Test authentication and authorization
-- Check form submissions
+- Test complete user flows.
+- Verify database transactions.
+- Test authentication and authorization.
+- Check form submissions.
+- Command: `./mvnw verify -Pintegration-test`
+- Specific Test: `./mvnw failsafe:integration-test -Pintegration-test -Dskip.surefire.tests=true -Dit.test=TestClassName`
 
-### UI Testing
+### E2E Testing (UI)
 
 - Use custom IDs for UI elements to facilitate testing.
 - When E2E tests fail, an HTML snapshot of the DOM and a screenshot are saved in the test artifacts directory:
   `target/test-failures/<TestClassName>/<testMethodName>/`
   - Look for `failure-<methodName>__.html` for the DOM state.
   - Screenshots are sequenced (e.g., `001-on-login-page.png`).
-- These artifacts are invaluable for debugging failing Vaadin/Selenium tests.
+- Command: `./mvnw verify -Pe2e -Dheadless=true`
+- Specific Test: `./mvnw failsafe:integration-test -Pe2e -Dheadless=true -Dskip.surefire.tests=true -Dit.test=TestClassName`
 
 ## Code Review Process
 

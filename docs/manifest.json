@@ -1,5 +1,33 @@
 {
   "features": [ {
+    "id": "admin-admin-observability-performance",
+    "category": "Admin",
+    "title": "System Performance",
+    "description": "Monitor AI response times and resource usage.",
+    "imagePath": "screenshots/admin-observability-performance.png",
+    "order": 60
+  }, {
+    "id": "admin-admin-observability-cache",
+    "category": "Admin",
+    "title": "Cache Management",
+    "description": "Monitor and manage application caches.",
+    "imagePath": "screenshots/admin-observability-cache.png",
+    "order": 70
+  }, {
+    "id": "admin-admin-observability-database",
+    "category": "Admin",
+    "title": "Database Management",
+    "description": "Monitor database statistics and optimize performance.",
+    "imagePath": "screenshots/admin-observability-database.png",
+    "order": 80
+  }, {
+    "id": "admin-admin-observability-pulse",
+    "category": "Admin",
+    "title": "System Pulse",
+    "description": "Real-time health status of the application.",
+    "imagePath": "screenshots/admin-observability-pulse.png",
+    "order": 90
+  }, {
     "id": "admin-admin-show-template-art-generation",
     "category": "Admin",
     "title": "Generate Template Art",
