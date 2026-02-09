@@ -178,6 +178,12 @@ public class AdminView extends VerticalLayout {
     manageAccountsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate("/account-list"));
 
+    Button observabilityButton = new Button("System Observability");
+    observabilityButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    observabilityButton.addClickListener(
+        event -> UI.getCurrent().navigate(SystemObservabilityView.class));
+    observabilityButton.setId("observability-dashboard");
+
     Button cleanupImagesButton = new Button("Cleanup Unused Images");
     cleanupImagesButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     cleanupImagesButton.addClickListener(
@@ -199,7 +205,8 @@ public class AdminView extends VerticalLayout {
           }
         });
 
-    content.add(recalculateTiersButton, manageAccountsButton, cleanupImagesButton);
+    content.add(
+        recalculateTiersButton, manageAccountsButton, observabilityButton, cleanupImagesButton);
     return content;
   }
 }

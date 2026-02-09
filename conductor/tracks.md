@@ -70,3 +70,22 @@
 
 ## Active Tracks
 
+### [ ] Track: Dynamic Commentator Personas (AI)
+
+*Link: [./conductor/tracks/dynamic_commentator_personas/index.md](./conductor/tracks/dynamic_commentator_personas/index.md)*
+*Status: Proposed*
+
+### [ ] Track: AI-Driven News & Rumor Feed
+
+*Link: [./conductor/tracks/news_and_rumor_feed/index.md](./conductor/tracks/news_and_rumor_feed/index.md)*
+*Status: Proposed*
+
+### [ ] Track: Wrestler Career Legacy & Hall of Fame
+
+*Link: [./conductor/tracks/wrestler_career_legacy/index.md](./conductor/tracks/wrestler_career_legacy/index.md)*
+*Status: Proposed*
+
+### [ ] Track: Technical: System Observability Dashboard
+
+*Link: [./conductor/tracks/system_observability_dashboard/index.md](./conductor/tracks/system_observability_dashboard/index.md)*
+*Status: Proposed*

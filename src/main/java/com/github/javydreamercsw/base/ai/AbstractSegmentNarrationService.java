@@ -18,18 +18,27 @@ package com.github.javydreamercsw.base.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.service.performance.PerformanceMonitoringService;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 public abstract class AbstractSegmentNarrationService implements SegmentNarrationService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private HttpClient httpClient;
+
+  @Autowired(required = false)
+  @Setter
+  @Getter
+  private PerformanceMonitoringService performanceMonitoringService;
 
   protected String getSystemMessage(@NonNull String prompt) {
     if (prompt.contains("Summarize the following segment narration")) {
@@ -184,26 +193,37 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     List<RetryPolicyConfig> policies = getRetryPolicies();
     Exception lastException = null;
 
-    for (RetryPolicyConfig policy : policies) {
-      try {
-        return callAIProviderWithRetry(prompt, policy);
-      } catch (AIServiceException e) {
-        lastException = e;
-        if (!isRetryableException(e)) {
-          throw e; // Re-throw non-retryable AI exceptions directly
+    String operationName = "AI.Narration." + getProviderName();
+    if (performanceMonitoringService != null) {
+      performanceMonitoringService.startOperation(operationName);
+    }
+
+    try {
+      for (RetryPolicyConfig policy : policies) {
+        try {
+          return callAIProviderWithRetry(prompt, policy);
+        } catch (AIServiceException e) {
+          lastException = e;
+          if (!isRetryableException(e)) {
+            throw e; // Re-throw non-retryable AI exceptions directly
+          }
+          log.warn(
+              "Retryable AI error for {}: {} - {}",
+              getProviderName(),
+              e.getStatusCode(),
+              e.getMessage());
+        } catch (Exception e) {
+          lastException = e;
+          log.warn(
+              "Retry policy '{}' failed for {}: {}",
+              policy.getDescription(),
+              getProviderName(),
+              e.getMessage());
         }
-        log.warn(
-            "Retryable AI error for {}: {} - {}",
-            getProviderName(),
-            e.getStatusCode(),
-            e.getMessage());
-      } catch (Exception e) {
-        lastException = e;
-        log.warn(
-            "Retry policy '{}' failed for {}: {}",
-            policy.getDescription(),
-            getProviderName(),
-            e.getMessage());
+      }
+    } finally {
+      if (performanceMonitoringService != null) {
+        performanceMonitoringService.endOperation(operationName);
       }
     }
 

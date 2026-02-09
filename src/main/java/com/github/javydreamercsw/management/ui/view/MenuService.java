@@ -111,9 +111,6 @@ public class MenuService {
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
     help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html", true));
 
-    MenuItem configurations = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
-    // ... (rest of configuration)
-
     // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
     MenuItem multiplayer =
         new MenuItem(
@@ -188,27 +185,11 @@ public class MenuService {
             .filter(child -> child != null)
             .toList();
 
-    // For parent menus (no path), only show if they have accessible children
-    // For leaf items (with path), show if user has access
-    boolean shouldShow = false;
-    if (menuItem.getPath() == null) {
-      // Parent menu - show only if it has accessible children
-      shouldShow = !filteredChildren.isEmpty();
-    } else {
-      // Leaf item - show if user has access (which we already verified)
-      shouldShow = true;
-    }
-
-    if (shouldShow) {
-      MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
-      filtered.setExternal(menuItem.isExternal());
-      filtered.setRequiredRoles(menuItem.getRequiredRoles());
-      filteredChildren.forEach(filtered::addChild);
-      return filtered;
-    }
-
-    // No accessible children for parent menu
-    return null;
+    MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
+    filtered.setExternal(menuItem.isExternal());
+    filtered.setRequiredRoles(menuItem.getRequiredRoles());
+    filteredChildren.forEach(filtered::addChild);
+    return filtered;
   }
 
   private void sortSubMenus(MenuItem menuItem) {

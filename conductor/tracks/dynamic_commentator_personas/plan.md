@@ -1,0 +1,25 @@
+# Plan: Dynamic Commentator Personas (AI)
+
+## Phase 1: Data Model & Personas
+
+- [ ] Create `Commentator` entity and repository.
+- [ ] Populate database with initial "Commentary Teams" (Pairs of Commentators).
+- [ ] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`.
+
+## Phase 2: AI Prompt Engineering
+
+- [ ] Refactor `SegmentNarrationService` to include commentator profiles in the AI prompt context.
+- [ ] Update AI system instructions to enforce dialogue-style output with specific tags.
+- [ ] Implement a parser to split the AI response into a list of `NarrationLine` objects.
+
+## Phase 3: UI Enhancement
+
+- [ ] Create a `CommentaryComponent` for `MatchView`.
+- [ ] Style dialogue lines based on the commentator's alignment (e.g., blue for Face, red for Heel).
+- [ ] Update `MatchView` to iterate through parsed dialogue lines.
+
+## Phase 4: Verification
+
+- [ ] Unit tests for dialogue parsing logic.
+- [ ] E2E tests verifying that narration displays with multiple personas.
+
