@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,15 +46,6 @@ public class PerformanceMonitoringService {
 
   private final CacheMonitor cacheMonitor;
 
-  public PerformanceMonitoringService(CacheMonitor cacheMonitor) {
-    this.cacheMonitor = cacheMonitor;
-    // Record a dummy AI call to ensure charts have baseline data
-    recordTimer("operations.duration.AI.Narration.System", 100);
-    incrementCounter("operations.completed.AI.Narration.System");
-    recordTokenUsage("System", 10, 10);
-    captureSnapshot();
-  }
-
   // Performance metrics storage
   private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
   private final Map<String, AtomicLong> timers = new ConcurrentHashMap<>();
@@ -61,11 +53,21 @@ public class PerformanceMonitoringService {
 
   // Historical data for charting
   private static final int MAX_HISTORY_POINTS = 100;
-  private final List<PerformanceSnapshot> history = new ArrayList<>();
+  private final java.util.List<PerformanceSnapshot> history =
+      java.util.Collections.synchronizedList(new ArrayList<>());
 
   // JVM monitoring beans
   private final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
   private final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+
+  public PerformanceMonitoringService(@NonNull CacheMonitor cacheMonitor) {
+    this.cacheMonitor = cacheMonitor;
+    // Record a dummy AI call to ensure charts have baseline data
+    recordTimer("operations.duration.AI.Narration.System", 100);
+    incrementCounter("operations.completed.AI.Narration.System");
+    recordTokenUsage("System", 10, 10);
+    captureSnapshot();
+  }
 
   @Getter
   @Builder
@@ -79,13 +81,13 @@ public class PerformanceMonitoringService {
   }
 
   /** Records the start of a performance-critical operation. */
-  public void startOperation(String operationName) {
+  public void startOperation(@NonNull String operationName) {
     operationStartTimes.put(operationName, Instant.now());
     incrementCounter("operations.started." + operationName);
   }
 
   /** Records the end of a performance-critical operation and calculates duration. */
-  public void endOperation(String operationName) {
+  public void endOperation(@NonNull String operationName) {
     Instant startTime = operationStartTimes.remove(operationName);
     if (startTime != null) {
       long durationMs = Duration.between(startTime, Instant.now()).toMillis();
@@ -108,7 +110,7 @@ public class PerformanceMonitoringService {
    * @param inputTokens Number of input tokens
    * @param outputTokens Number of output tokens
    */
-  public void recordTokenUsage(String provider, int inputTokens, int outputTokens) {
+  public void recordTokenUsage(@NonNull String provider, int inputTokens, int outputTokens) {
     incrementCounter("ai.tokens.input." + provider, inputTokens);
     incrementCounter("ai.tokens.output." + provider, outputTokens);
     incrementCounter("ai.requests." + provider);
@@ -125,25 +127,23 @@ public class PerformanceMonitoringService {
    * @param counterName The name of the counter
    * @param value The value to add
    */
-  public void incrementCounter(String counterName, long value) {
+  public void incrementCounter(@NonNull String counterName, long value) {
     counters.computeIfAbsent(counterName, k -> new AtomicLong(0)).addAndGet(value);
   }
 
   /** Records a timer metric. */
-  public void recordTimer(String timerName, long durationMs) {
+  public void recordTimer(@NonNull String timerName, long durationMs) {
     timers.computeIfAbsent(timerName, k -> new AtomicLong(0)).addAndGet(durationMs);
   }
 
   /** Gets the current value of a counter. */
-  @PreAuthorize("hasRole('ADMIN')")
-  public long getCounter(String counterName) {
+  public long getCounter(@NonNull String counterName) {
     AtomicLong counter = counters.get(counterName);
     return counter != null ? counter.get() : 0;
   }
 
   /** Gets the current value of a timer. */
-  @PreAuthorize("hasRole('ADMIN')")
-  public long getTimer(String timerName) {
+  public long getTimer(@NonNull String timerName) {
     AtomicLong timer = timers.get(timerName);
     return timer != null ? timer.get() : 0;
   }
@@ -269,7 +269,7 @@ public class PerformanceMonitoringService {
   }
 
   /** Captures a point-in-time snapshot of system performance. */
-  public synchronized void captureSnapshot() {
+  public void captureSnapshot() {
     var heapMemory = memoryBean.getHeapMemoryUsage();
     double memoryUsagePercent = (double) heapMemory.getUsed() / heapMemory.getMax() * 100;
 
@@ -304,13 +304,11 @@ public class PerformanceMonitoringService {
   }
 
   /** Gets the historical performance snapshots. */
-  @PreAuthorize("hasRole('ADMIN')")
-  public synchronized List<PerformanceSnapshot> getHistory() {
+  public List<PerformanceSnapshot> getHistory() {
     return new ArrayList<>(history);
   }
 
   /** Gets health status information as a map. */
-  @PreAuthorize("hasRole('ADMIN')")
   public Map<String, Object> getHealthStatus() {
     var heapMemory = memoryBean.getHeapMemoryUsage();
     double memoryUsagePercent = (double) heapMemory.getUsed() / heapMemory.getMax() * 100;
@@ -338,7 +336,6 @@ public class PerformanceMonitoringService {
   }
 
   /** Gets performance recommendations based on current metrics. */
-  @PreAuthorize("hasRole('ADMIN')")
   public Map<String, String> getPerformanceRecommendations() {
     Map<String, String> recommendations = new HashMap<>();
 

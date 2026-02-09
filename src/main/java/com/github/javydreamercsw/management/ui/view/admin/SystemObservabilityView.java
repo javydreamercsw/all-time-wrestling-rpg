@@ -22,6 +22,7 @@ import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
 import com.github.appreciated.apexcharts.config.builder.ChartBuilder;
 import com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder;
+import com.github.appreciated.apexcharts.config.builder.MarkersBuilder;
 import com.github.appreciated.apexcharts.config.builder.StrokeBuilder;
 import com.github.appreciated.apexcharts.config.builder.XAxisBuilder;
 import com.github.appreciated.apexcharts.config.chart.Type;
@@ -136,58 +137,42 @@ public class SystemObservabilityView extends VerticalLayout {
   }
 
   private Component createPerformancePage() {
-
     VerticalLayout layout = new VerticalLayout();
-
     layout.setWidthFull();
-
     layout.setPadding(true);
-
     layout.setSpacing(true);
 
     Button refreshBtn = new Button("Refresh Data", new Icon(VaadinIcon.REFRESH));
-
     refreshBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
-
     refreshBtn.addClickListener(
         e -> {
           performanceService.captureSnapshot();
-
           updateContent(tabs.getSelectedTab());
-
           Notification.show("Performance snapshot captured");
         });
 
     List<PerformanceSnapshot> history = performanceService.getHistory();
-
     log.info("Creating performance page with {} history points", history.size());
 
     if (history.isEmpty()) {
-
       layout.add(
           refreshBtn,
           new Span("No performance data collected yet. High-frequency capture runs every minute."));
-
       return layout;
     }
 
     // Add a summary span for quick verification
-
     PerformanceSnapshot latest = history.get(history.size() - 1);
-
     Span summary =
         new Span(
             String.format(
                 "Latest Stats: %.1f%% Memory, %d Threads (%d points in history)",
                 latest.getHeapUsagePercent(), latest.getThreadCount(), history.size()));
-
     summary.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
-
     layout.add(refreshBtn, summary);
 
     Double[] memoryData =
         history.stream().map(PerformanceSnapshot::getHeapUsagePercent).toArray(Double[]::new);
-
     String[] labels =
         history.stream()
             .map(
@@ -198,59 +183,31 @@ public class SystemObservabilityView extends VerticalLayout {
             .toArray(String[]::new);
 
     ApexCharts memoryChart = createAreaChart("Memory Usage (%)", memoryData, labels, "#2ecc71");
-
     memoryChart.setId("memory-chart");
-
-    memoryChart.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
-
-    memoryChart.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
 
     Double[] threadData =
         history.stream().map(s -> (double) s.getThreadCount()).toArray(Double[]::new);
-
     ApexCharts threadChart = createAreaChart("Active Threads", threadData, labels, "#3498db");
-
     threadChart.setId("thread-chart");
-
-    threadChart.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
-
-    threadChart.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
 
     layout.add(memoryChart, threadChart);
 
     // AI Performance Section
-
     layout.add(new H3("AI Performance"));
 
     // AI Response Time Chart
-
     ApexCharts aiResponseChart = createAiResponseTimeChart(history);
-
     aiResponseChart.setId("ai-response-chart");
-
-    aiResponseChart.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
-
-    aiResponseChart.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
-
     layout.add(aiResponseChart);
 
     // AI Token Usage Chart
-
     ApexCharts aiTokenChart = createAiTokenUsageChart(history);
-
     aiTokenChart.setId("ai-token-chart");
-
-    aiTokenChart.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
-
-    aiTokenChart.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
-
     layout.add(aiTokenChart);
 
     com.vaadin.flow.component.orderedlayout.Scroller scroller =
         new com.vaadin.flow.component.orderedlayout.Scroller(layout);
-
     scroller.setSizeFull();
-
     return scroller;
   }
 
@@ -264,6 +221,7 @@ public class SystemObservabilityView extends VerticalLayout {
                     .withWidth("100%")
                     .build())
             .withStroke(StrokeBuilder.get().withCurve(Curve.SMOOTH).build())
+            .withMarkers(MarkersBuilder.get().withSize(4.0, 4.0).build())
             .withTitle(
                 com.github.appreciated.apexcharts.config.builder.TitleSubtitleBuilder.get()
                     .withText("AI Response Times (ms)")
@@ -300,7 +258,10 @@ public class SystemObservabilityView extends VerticalLayout {
       }
     }
 
-    return builder.build();
+    ApexCharts chart = builder.build();
+    chart.getElement().getStyle().set("height", "300px");
+    chart.getElement().getStyle().set("width", "100%");
+    return chart;
   }
 
   private ApexCharts createAiTokenUsageChart(List<PerformanceSnapshot> history) {
@@ -342,7 +303,10 @@ public class SystemObservabilityView extends VerticalLayout {
       }
     }
 
-    return builder.build();
+    ApexCharts chart = builder.build();
+    chart.getElement().getStyle().set("height", "300px");
+    chart.getElement().getStyle().set("width", "100%");
+    return chart;
   }
 
   private ApexCharts createAreaChart(
@@ -359,6 +323,7 @@ public class SystemObservabilityView extends VerticalLayout {
                     .withWidth("100%")
                     .build())
             .withStroke(StrokeBuilder.get().withCurve(Curve.SMOOTH).build())
+            .withMarkers(MarkersBuilder.get().withSize(4.0, 4.0).build())
             .withDataLabels(DataLabelsBuilder.get().withEnabled(false).build())
             .withSeries(new Series<>(title, data))
             .withColors(color)
