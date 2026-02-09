@@ -251,5 +251,33 @@
     "description": "View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.",
     "imagePath": "screenshots/booker-show-history.png",
     "order": 70
+  }, {
+    "id": "booker-automatic-show-management",
+    "category": "Booker",
+    "title": "Automatic Show Management",
+    "description": "Automatically generate full show cards based on your templates. The AI booker will schedule matches, assign segments, and advance storylines logically.",
+    "imagePath": "screenshots/booker-show-planning.png",
+    "order": 75
+  }, {
+    "id": "campaign-interactive-promos",
+    "category": "Campaign",
+    "title": "Interactive Promos",
+    "description": "Cut promos against your rivals. Choose your words carefully to sway the crowd, intimidate your opponent, or build your own popularity. Your choices affect your alignment and feud heat.",
+    "imagePath": "screenshots/campaign-backstage-actions.png",
+    "order": 160
+  }, {
+    "id": "booker-match-narration-feedback",
+    "category": "Booker",
+    "title": "Narration Feedback",
+    "description": "Provide feedback on AI-generated match narration. Rate the quality and provide corrections to help the AI learn your preferred style and improve future play-by-play commentary.",
+    "imagePath": "screenshots/booker-match-narration.png",
+    "order": 85
+  }, {
+    "id": "user-settings-theme-switching",
+    "category": "User Settings",
+    "title": "Theme Switching",
+    "description": "Customize your visual experience by toggling between Light and Dark modes, or choose from other available color themes to suit your preference.",
+    "imagePath": "screenshots/profile-drawer.png",
+    "order": 10
   } ]
 }

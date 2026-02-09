@@ -18,6 +18,14 @@ Define reusable templates for your shows. Set up standard segments, match orders
 
 ---
 
+## Generate Template Art
+
+Create unique branding for your show templates using AI. This art will be used in the booking interface and calendar.
+
+![Generate Template Art](/screenshots/admin-show-template-art-generation.png)
+
+---
+
 ## Wrestler Management
 
 Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images, and manage contract details from this centralized view.
