@@ -19,12 +19,15 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import java.time.DayOfWeek;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
@@ -229,6 +232,32 @@ public class ShowTemplateSyncService extends BaseSyncService {
             .extractShowTypeFromNotionPage(templatePage);
     dto.setShowType(showType);
     dto.setExternalId(templatePage.getId());
+
+    dto.setDurationDays(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractDurationDaysFromNotionPage(templatePage));
+    dto.setRecurrenceType(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRecurrenceTypeFromNotionPage(templatePage));
+    dto.setDayOfWeek(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractDayOfWeekFromNotionPage(templatePage));
+    dto.setDayOfMonth(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractDayOfMonthFromNotionPage(templatePage));
+    dto.setWeekOfMonth(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractWeekOfMonthFromNotionPage(templatePage));
+    dto.setMonth(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractMonthFromNotionPage(templatePage));
+
     return dto;
   }
 
@@ -279,6 +308,30 @@ public class ShowTemplateSyncService extends BaseSyncService {
         template.setShowType(showTypeOpt.get());
         template.setExternalId(dto.getExternalId());
 
+        template.setDurationDays(dto.getDurationDays() != null ? dto.getDurationDays() : 1);
+        if (dto.getRecurrenceType() != null) {
+          try {
+            template.setRecurrenceType(
+                RecurrenceType.valueOf(dto.getRecurrenceType().toUpperCase()));
+          } catch (IllegalArgumentException e) {
+            template.setRecurrenceType(RecurrenceType.NONE);
+          }
+        }
+        if (dto.getDayOfWeek() != null) {
+          try {
+            template.setDayOfWeek(DayOfWeek.valueOf(dto.getDayOfWeek().toUpperCase()));
+          } catch (IllegalArgumentException ignored) {
+          }
+        }
+        template.setDayOfMonth(dto.getDayOfMonth());
+        template.setWeekOfMonth(dto.getWeekOfMonth());
+        if (dto.getMonth() != null) {
+          try {
+            template.setMonth(Month.valueOf(dto.getMonth().toUpperCase()));
+          } catch (IllegalArgumentException ignored) {
+          }
+        }
+
         showTemplateService.save(template);
 
         if (isNew) {
@@ -309,5 +362,11 @@ public class ShowTemplateSyncService extends BaseSyncService {
     private String description;
     private String showType;
     private String externalId; // Notion page ID
+    private Integer durationDays;
+    private String recurrenceType;
+    private String dayOfWeek;
+    private Integer dayOfMonth;
+    private Integer weekOfMonth;
+    private String month;
   }
 }

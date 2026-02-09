@@ -27,4 +27,5 @@ public class ShowPlanningChampionship {
   private Title title;
   private List<Wrestler> champions = new ArrayList<>();
   private List<Wrestler> contenders = new ArrayList<>();
+  private Long daysSinceLastDefense;
 }

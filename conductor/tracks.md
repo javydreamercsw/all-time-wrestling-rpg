@@ -54,25 +54,19 @@
 *Status: Completed*
 *Date: 2026-02-02*
 
+### [x] Track: Show Template Image Generation
+
+*Link: [./conductor/archive/show_template_image_generation_20260203/index.md](./conductor/archive/show_template_image_generation_20260203/index.md)*
+*Status: Completed*
+*Date: 2026-02-04*
+
+### [x] Track: E2E CI Hardening
+
+*Link: [./conductor/archive/e2e_ci_hardening_20260205/index.md](./conductor/archive/e2e_ci_hardening_20260205/index.md)*
+*Status: Completed*
+*Date: 2026-02-05*
+
 ---
 
 ## Active Tracks
-
-### [x] Track: Interactive Promos
-
-*Link: [./conductor/tracks/interactive_promos_20260201/index.md](./conductor/tracks/interactive_promos_20260201/index.md)*
-
-### [ ] Track: Image Generation
-
-*Link: [./conductor/tracks/image_generation_20260201/index.md](./conductor/tracks/image_generation_20260201/index.md)*
-
-### [ ] Track: E2E CI Hardening
-
-*Link: [./conductor/tracks/e2e_ci_hardening/index.md](./conductor/tracks/e2e_ci_hardening/index.md)*
-
-### [x] Track: Show Template Image Generation
-
-*Link: [./conductor/tracks/show_template_image_generation_20260203/index.md](./conductor/tracks/show_template_image_generation_20260203/index.md)*
-*Status: Completed*
-*Date: 2026-02-04*
 

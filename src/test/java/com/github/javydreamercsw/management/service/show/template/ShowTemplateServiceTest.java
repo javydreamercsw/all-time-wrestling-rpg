@@ -59,7 +59,19 @@ class ShowTemplateServiceTest {
 
     ShowTemplate result =
         showTemplateService.createOrUpdateTemplate(
-            "Test", "Desc", "Weekly", "http://notion", "http://image", null, null);
+            "Test",
+            "Desc",
+            "Weekly",
+            "http://notion",
+            "http://image",
+            null,
+            null,
+            1,
+            com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE,
+            null,
+            null,
+            null,
+            null);
 
     assertNotNull(result);
     assertEquals("http://image", result.getImageUrl());
@@ -79,7 +91,20 @@ class ShowTemplateServiceTest {
 
     Optional<ShowTemplate> result =
         showTemplateService.updateTemplate(
-            1L, "Test New", "Desc New", "Weekly", "http://notion", "http://image", null, null);
+            1L,
+            "Test New",
+            "Desc New",
+            "Weekly",
+            "http://notion",
+            "http://image",
+            null,
+            null,
+            1,
+            com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE,
+            null,
+            null,
+            null,
+            null);
 
     assertEquals(true, result.isPresent());
     assertEquals("http://image", result.get().getImageUrl());

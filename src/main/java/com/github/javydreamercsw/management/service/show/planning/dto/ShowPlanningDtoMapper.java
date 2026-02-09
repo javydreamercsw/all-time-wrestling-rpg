@@ -134,6 +134,7 @@ public class ShowPlanningDtoMapper {
     dto.setParticipants(
         Arrays.asList(rivalry.getWrestler1().getName(), rivalry.getWrestler2().getName()));
     dto.setHeat(rivalry.getHeat());
+    dto.setPriority(rivalry.getPriority());
     return dto;
   }
 
@@ -152,6 +153,8 @@ public class ShowPlanningDtoMapper {
               .map(Wrestler::getName)
               .collect(Collectors.joining(" & ")));
     }
+    dto.setDefenseFrequency(championship.getTitle().getDefenseFrequency());
+    dto.setDaysSinceLastDefense(championship.getDaysSinceLastDefense());
     return dto;
   }
 

@@ -196,4 +196,52 @@ public class NotionPageDataExtractor {
     }
     return null;
   }
+
+  public Integer extractDurationDaysFromNotionPage(@NonNull NotionPage page) {
+    String val = extractPropertyAsString(page.getRawProperties(), "Duration");
+    if (val == null) val = extractPropertyAsString(page.getRawProperties(), "Duration Days");
+    try {
+      return val != null ? Integer.parseInt(val) : 1;
+    } catch (NumberFormatException e) {
+      return 1;
+    }
+  }
+
+  public String extractRecurrenceTypeFromNotionPage(@NonNull NotionPage page) {
+    return extractPropertyAsString(page.getRawProperties(), "Recurrence Type");
+  }
+
+  public String extractDayOfWeekFromNotionPage(@NonNull NotionPage page) {
+    return extractPropertyAsString(page.getRawProperties(), "Day of Week");
+  }
+
+  public Integer extractDayOfMonthFromNotionPage(@NonNull NotionPage page) {
+    String val = extractPropertyAsString(page.getRawProperties(), "Day of Month");
+    try {
+      return val != null ? Integer.parseInt(val) : null;
+    } catch (NumberFormatException e) {
+      return null;
+    }
+  }
+
+  public Integer extractWeekOfMonthFromNotionPage(@NonNull NotionPage page) {
+    String val = extractPropertyAsString(page.getRawProperties(), "Week of Month");
+    if (val != null) {
+      if (val.equalsIgnoreCase("Last")) return -1;
+      if (val.equalsIgnoreCase("First")) return 1;
+      if (val.equalsIgnoreCase("Second")) return 2;
+      if (val.equalsIgnoreCase("Third")) return 3;
+      if (val.equalsIgnoreCase("Fourth")) return 4;
+      try {
+        return Integer.parseInt(val);
+      } catch (NumberFormatException e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  public String extractMonthFromNotionPage(@NonNull NotionPage page) {
+    return extractPropertyAsString(page.getRawProperties(), "Month");
+  }
 }

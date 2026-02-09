@@ -23,17 +23,19 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +50,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+// Static import needed
+
 @Slf4j
 public class LeagueDocsE2ETest extends AbstractE2ETest {
 
@@ -60,6 +64,9 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private ShowTypeService showTypeService;
+  @Autowired private GameSettingService gameSettingService; // Corrected injection
+
+  private String seasonName; // Corrected placement
 
   @BeforeEach
   public void setupTest() {
@@ -145,6 +152,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     login("admin", "admin123");
     final String showName = "Docs Show " + System.currentTimeMillis();
     createLeagueShow(leagueName, showName);
+    // showService.findByName now returns a List, so get the first element
     Show show = showService.findByName(showName).get(0);
     addSegmentToShow(show, w1.getName(), w2.getName()); // admin's pick vs player1's wrestler
 
@@ -236,9 +244,19 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
   }
 
   private void ensureSeasonExists() {
-    if (seasonService.findByName("" + new Date().getYear() + 1_900) == null) {
-      seasonService.createSeason(
-          "" + new Date().getYear() + 1_900, "Season " + new Date().getYear() + 1_900, 5);
+    LocalDate gameDate = gameSettingService.getCurrentGameDate();
+    seasonName = "Docs Season " + gameDate.getYear() + "_" + System.currentTimeMillis();
+    Season existingSeason = seasonService.findByName(seasonName);
+
+    if (existingSeason == null) {
+      Season season = new Season();
+      season.setName(seasonName);
+      season.setDescription("Season for documentation tests");
+      season.setStartDate(gameDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+      season.setEndDate(gameDate.plusYears(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+      season.setShowsPerPpv(5);
+      season.setIsActive(true);
+      seasonService.save(season);
     }
   }
 
@@ -260,13 +278,16 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
     comboBoxes.get(0).sendKeys("Weekly", Keys.TAB);
     new WebDriverWait(driver, Duration.ofSeconds(10)).until(d -> comboBoxes.get(2).isEnabled());
-    comboBoxes.get(1).sendKeys("" + (new Date().getYear() + 1_900), Keys.TAB);
+    comboBoxes.get(1).sendKeys(seasonName, Keys.TAB);
     comboBoxes.get(2).sendKeys("Continuum", Keys.TAB);
     comboBoxes.get(3).sendKeys(leagueName, Keys.TAB);
 
     driver
         .findElement(By.id("show-date"))
-        .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
+        .sendKeys(
+            gameSettingService
+                .getCurrentGameDate()
+                .format(DateTimeFormatter.ofPattern("M/d/yyyy"))); // Corrected to use game date
 
     clickElement(By.id("create-show-button"));
     waitForPageSourceToContain("Show created.");

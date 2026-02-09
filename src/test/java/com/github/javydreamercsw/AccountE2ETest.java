@@ -95,7 +95,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Verify the changes
     editButton = waitForVaadinElement(driver, By.id("edit-button-" + accountId));
-    editButton.click();
+    clickElement(editButton);
 
     waitForVaadinElement(driver, By.id("username-field"));
 

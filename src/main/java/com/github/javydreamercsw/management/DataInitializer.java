@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -61,7 +62,9 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -425,7 +428,15 @@ public class DataInitializer implements Initializable {
                   dto.getNotionUrl(),
                   null,
                   dto.getExpectedMatches(),
-                  dto.getExpectedPromos());
+                  dto.getExpectedPromos(),
+                  dto.getDurationDays(),
+                  dto.getRecurrenceType() != null
+                      ? RecurrenceType.valueOf(dto.getRecurrenceType())
+                      : null,
+                  dto.getDayOfWeek() != null ? DayOfWeek.valueOf(dto.getDayOfWeek()) : null,
+                  dto.getDayOfMonth(),
+                  dto.getWeekOfMonth(),
+                  dto.getMonth() != null ? Month.valueOf(dto.getMonth()) : null);
           if (template != null) {
             log.debug(
                 "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());

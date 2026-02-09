@@ -34,7 +34,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -66,7 +65,6 @@ public class ShowService {
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
   private final ApplicationEventPublisher eventPublisher;
-  private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
@@ -81,7 +79,6 @@ public class ShowService {
       SegmentAdjudicationService segmentAdjudicationService,
       SegmentRepository segmentRepository,
       ApplicationEventPublisher eventPublisher,
-      RivalryService rivalryService,
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       GameSettingService gameSettingService) {
@@ -94,7 +91,6 @@ public class ShowService {
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
     this.eventPublisher = eventPublisher;
-    this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.gameSettingService = gameSettingService;

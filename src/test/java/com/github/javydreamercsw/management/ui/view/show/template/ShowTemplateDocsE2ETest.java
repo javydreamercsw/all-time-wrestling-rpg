@@ -52,7 +52,13 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
                       null,
                       null,
                       5,
-                      3);
+                      3,
+                      1,
+                      com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE,
+                      null,
+                      null,
+                      null,
+                      null);
                 });
   }
 

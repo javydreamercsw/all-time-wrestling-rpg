@@ -110,7 +110,7 @@ public class InboxView extends VerticalLayout {
               user -> {
                 Wrestler wrestler = user.getWrestler();
                 if (wrestler != null) {
-                  targetFilter.setValue(wrestler);
+                  targetFilter.setValue(java.util.Set.of(wrestler));
                   targetFilter.setReadOnly(true);
                 }
               });

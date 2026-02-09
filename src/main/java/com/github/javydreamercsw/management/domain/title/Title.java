@@ -71,6 +71,9 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
+  @Column(name = "defense_frequency")
+  private Integer defenseFrequency;
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

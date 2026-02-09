@@ -20,6 +20,8 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,7 +31,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.Month;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -70,6 +74,27 @@ public class ShowTemplate extends AbstractEntity<Long> {
 
   @Column(name = "expected_promos")
   private Integer expectedPromos;
+
+  @Column(name = "duration_days")
+  private Integer durationDays = 1;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence_type")
+  private RecurrenceType recurrenceType = RecurrenceType.NONE;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence_day_of_week")
+  private DayOfWeek dayOfWeek;
+
+  @Column(name = "recurrence_day_of_month")
+  private Integer dayOfMonth;
+
+  @Column(name = "recurrence_week_of_month")
+  private Integer weekOfMonth;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence_month")
+  private Month month;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
