@@ -44,7 +44,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,8 +152,10 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     // Draft a wrestler as admin
     List<Wrestler> wrestlers = new java.util.ArrayList<>(wrestlerRepository.findAll());
-    Random random = new Random();
-    Wrestler w1 = wrestlers.remove(random.nextInt(wrestlers.size()));
+    // Sort by ID to match default repository order and likely grid order
+    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getId));
+
+    Wrestler w1 = wrestlers.removeFirst();
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
 
     // Verify turn change
@@ -172,7 +173,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Current Turn: player1"));
 
     // Draft a wrestler as player1
-    Wrestler w2 = wrestlers.remove(random.nextInt(wrestlers.size()));
+    Wrestler w2 = wrestlers.removeFirst();
     clickElement(By.id("draft-wrestler-btn-" + w2.getId()));
 
     // Snake draft: player1 gets another pick (Round 2)
@@ -181,7 +182,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains("Current Turn: player1"));
 
     // Draft second wrestler as player1
-    Wrestler w3 = wrestlers.remove(random.nextInt(wrestlers.size()));
+    Wrestler w3 = wrestlers.removeFirst();
     clickElement(By.id("draft-wrestler-btn-" + w3.getId()));
 
     // Turn returns to admin
@@ -195,7 +196,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("draft-view"));
 
     // Make final pick
-    Wrestler w4 = wrestlers.remove(random.nextInt(wrestlers.size()));
+    Wrestler w4 = wrestlers.removeFirst();
     clickElement(By.id("draft-wrestler-btn-" + w4.getId()));
 
     // Verify Draft Completed

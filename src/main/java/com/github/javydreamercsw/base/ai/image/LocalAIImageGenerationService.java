@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.github.javydreamercsw.management.service.performance.PerformanceMonitoringService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -31,6 +32,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -46,11 +48,19 @@ public class LocalAIImageGenerationService implements ImageGenerationService {
   private final AiSettingsService aiSettings;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  @Autowired(required = false)
+  private PerformanceMonitoringService performanceMonitoringService;
+
   @Override
   public String generateImage(@NonNull ImageRequest request) {
     if (!isAvailable()) {
       throw new AIServiceException(
           503, "Service Unavailable", getProviderName(), "LocalAI image service is not available.");
+    }
+
+    String operationName = "AI.ImageGeneration." + getProviderName();
+    if (performanceMonitoringService != null) {
+      performanceMonitoringService.startOperation(operationName);
     }
 
     try {
@@ -100,6 +110,10 @@ public class LocalAIImageGenerationService implements ImageGenerationService {
       log.error("Error generating image with LocalAI", e);
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), "Error during image generation", e);
+    } finally {
+      if (performanceMonitoringService != null) {
+        performanceMonitoringService.endOperation(operationName);
+      }
     }
   }
 
