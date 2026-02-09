@@ -74,7 +74,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.9.Final</version>
+        <version>4.2.10.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -234,7 +234,7 @@
     <dependency>
       <groupId>com.github.appreciated</groupId>
       <artifactId>apexcharts</artifactId>
-      <version>24.0.0</version>
+      <version>24.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -525,12 +525,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.26</version>
+      <version>1.5.28</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.26</version>
+      <version>1.5.28</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
