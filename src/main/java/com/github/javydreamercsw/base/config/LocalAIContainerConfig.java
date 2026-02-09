@@ -56,10 +56,32 @@ public class LocalAIContainerConfig {
     startLocalAiContainer();
   }
 
-  public void startLocalAiContainer() {
+  public synchronized void startLocalAiContainer() {
     if (started) {
       return;
     }
+    started = true;
+    new Thread(this::runLocalAiContainer).start();
+  }
+
+  @PreDestroy
+  public synchronized void stopLocalAiContainer() {
+    if (localAiContainer != null) {
+      log.info("Stopping LocalAI container...");
+      localAiContainer.stop();
+      localAiContainer = null;
+    }
+    started = false;
+    statusService.setStatus(LocalAIStatusService.Status.NOT_STARTED);
+    statusService.setMessage("LocalAI is not initialized.");
+  }
+
+  public synchronized void forceRestartLocalAiContainer() {
+    stopLocalAiContainer();
+    startLocalAiContainer();
+  }
+
+  private void runLocalAiContainer() {
     // Temporarily grant system-level privileges to fetch the model name
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
     try {
@@ -73,9 +95,8 @@ public class LocalAIContainerConfig {
         String imageModelName = aiSettingsService.getLocalAIImageModel();
         if ((modelName != null && !modelName.isEmpty())
             || (imageModelName != null && !imageModelName.isEmpty())) {
-          new Thread(() -> initializeAndStartContainer(modelName, imageModelName)).start();
+          initializeAndStartContainer(modelName, imageModelName);
         }
-        started = true;
       }
     } finally {
       SecurityContextHolder.getContext().setAuthentication(originalAuth);
@@ -154,13 +175,6 @@ public class LocalAIContainerConfig {
       log.error("Failed to start LocalAI container", e);
       statusService.setStatus(LocalAIStatusService.Status.FAILED);
       statusService.setMessage("LocalAI failed to start: " + e.getMessage());
-    }
-  }
-
-  @PreDestroy
-  public void stopLocalAiContainer() {
-    if (localAiContainer != null) {
-      localAiContainer.stop();
     }
   }
 }

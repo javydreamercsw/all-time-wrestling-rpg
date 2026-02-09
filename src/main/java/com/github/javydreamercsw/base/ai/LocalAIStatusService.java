@@ -23,20 +23,26 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class LocalAIStatusService {
 
   private final LocalAIConfigProperties config;
-  private final HttpClient httpClient =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+  private final HttpClient httpClient;
+
+  public LocalAIStatusService(LocalAIConfigProperties config) {
+    this(config, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build());
+  }
+
+  public LocalAIStatusService(LocalAIConfigProperties config, HttpClient httpClient) {
+    this.config = config;
+    this.httpClient = httpClient;
+  }
 
   @Getter @Setter private Status status = Status.NOT_STARTED;
   @Getter @Setter private String message = "LocalAI is not initialized.";
@@ -55,25 +61,25 @@ public class LocalAIStatusService {
     return status == Status.READY;
   }
 
-  @Scheduled(fixedDelay = 10_000) // Check every 10 seconds
-  public void checkStatus() {
+  /**
+   * Performs an immediate health check of the LocalAI service.
+   *
+   * @return The updated status.
+   */
+  public Status checkHealth() {
     if (!config.isEnabled()) {
       status = Status.NOT_STARTED;
       message = "LocalAI is disabled in configuration.";
-      return;
-    }
-
-    // If already ready, only check once every 2 minutes to reduce noise
-    if (status == Status.READY && (System.currentTimeMillis() % 120_000 > 10_000)) {
-      return;
+      return status;
     }
 
     String baseUrl = config.getBaseUrl();
     if (baseUrl == null || baseUrl.isEmpty()) {
       status = Status.FAILED;
       message = "LocalAI Base URL is not configured.";
-      return;
+      return status;
     }
+
     URI uri = URI.create(baseUrl + "/readyz");
     log.debug("Checking LocalAI health at: {}", uri);
 
@@ -106,5 +112,22 @@ public class LocalAIStatusService {
           "LocalAI health check failed at " + baseUrl + " (failure count: " + failureCount + ")",
           e);
     }
+    return status;
+  }
+
+  @Scheduled(fixedDelay = 10_000) // Check every 10 seconds
+  public void checkStatus() {
+    if (!config.isEnabled()) {
+      status = Status.NOT_STARTED;
+      message = "LocalAI is disabled in configuration.";
+      return;
+    }
+
+    // If already ready, only check once every 2 minutes to reduce noise
+    if (status == Status.READY && (System.currentTimeMillis() % 120_000 > 10_000)) {
+      return;
+    }
+
+    checkHealth();
   }
 }

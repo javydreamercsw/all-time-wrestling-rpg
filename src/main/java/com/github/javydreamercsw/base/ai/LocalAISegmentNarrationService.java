@@ -25,7 +25,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Profile;
@@ -33,14 +32,20 @@ import org.springframework.stereotype.Service;
 
 /** Segment narration service using a local AI provider. */
 @Service
-@RequiredArgsConstructor
 @Slf4j
-@Profile("(!test & !e2e) or local-ai-it")
+@Profile({"!test", "local-ai-it"})
 public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   private final LocalAIConfigProperties config;
   private final LocalAIStatusService statusService;
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  public LocalAISegmentNarrationService(
+      @NonNull LocalAIConfigProperties config, @NonNull LocalAIStatusService statusService) {
+    log.info("Creating LocalAISegmentNarrationService...");
+    this.config = config;
+    this.statusService = statusService;
+  }
 
   @Override
   public String getProviderName() {
@@ -98,48 +103,49 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
       log.debug("Generating text with LocalAI. Prompt length: {}", prompt.length());
       log.debug("Full Prompt: {}", prompt);
 
-      HttpClient client = HttpClient.newHttpClient();
+      try (HttpClient client = HttpClient.newHttpClient()) {
 
-      Map<String, Object> systemMessage = Map.of("role", "system", "content", getSystemMessage());
-      Map<String, Object> userMessage = Map.of("role", "user", "content", prompt);
+        Map<String, Object> systemMessage = Map.of("role", "system", "content", getSystemMessage());
+        Map<String, Object> userMessage = Map.of("role", "user", "content", prompt);
 
-      Map<String, Object> requestBodyMap =
-          Map.of(
-              "model",
-              config.getModel(),
-              "messages",
-              List.of(systemMessage, userMessage),
-              "temperature",
-              0.7,
-              "response_format",
-              Map.of("type", "json_object"));
+        Map<String, Object> requestBodyMap =
+            Map.of(
+                "model",
+                config.getModel(),
+                "messages",
+                List.of(systemMessage, userMessage),
+                "temperature",
+                0.7,
+                "response_format",
+                Map.of("type", "json_object"));
 
-      String requestBody = objectMapper.writeValueAsString(requestBodyMap);
+        String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
-      String baseUrl = getBaseUrl();
-      log.debug("Using LocalAI Base URL: {}", baseUrl);
+        String baseUrl = getBaseUrl();
+        log.debug("Using LocalAI Base URL: {}", baseUrl);
 
-      HttpRequest request =
-          HttpRequest.newBuilder()
-              .uri(URI.create(baseUrl + "/v1/chat/completions"))
-              .header("Content-Type", "application/json")
-              .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-              .build();
+        HttpRequest request =
+            HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + "/v1/chat/completions"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
 
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-      log.debug("LocalAI response status code: {}", response.statusCode());
-      log.debug("LocalAI response body: {}", response.body());
+        log.debug("LocalAI response status code: {}", response.statusCode());
+        log.debug("LocalAI response body: {}", response.body());
 
-      if (response.statusCode() == 200) {
-        return extractContentFromResponse(response.body());
+        if (response.statusCode() == 200) {
+          return extractContentFromResponse(response.body());
+        }
+        throw new AIServiceException(
+            response.statusCode(),
+            "API Error",
+            getProviderName(),
+            "Failed to get a valid response from LocalAI. Response: " + response.body(),
+            null);
       }
-      throw new AIServiceException(
-          response.statusCode(),
-          "API Error",
-          getProviderName(),
-          "Failed to get a valid response from LocalAI. Response: " + response.body(),
-          null);
     } catch (Exception e) {
       log.error("Error communicating with LocalAI service", e);
       throw new AIServiceException(
@@ -171,7 +177,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
     Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
     List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
     if (choices != null && !choices.isEmpty()) {
-      Map<String, Object> firstChoice = choices.get(0);
+      Map<String, Object> firstChoice = choices.getFirst();
       Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
       if (message != null && message.containsKey("content")) {
         String content = (String) message.get("content");

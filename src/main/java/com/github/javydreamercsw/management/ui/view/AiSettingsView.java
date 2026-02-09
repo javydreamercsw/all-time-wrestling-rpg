@@ -16,21 +16,31 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -46,6 +56,7 @@ public class AiSettingsView extends VerticalLayout {
   private final AiSettingsService aiSettingsService;
   private final GameSettingService gameSettingService;
   private final LocalAIContainerConfig localAIContainerConfig;
+  private final LocalAIStatusService localAIStatusService;
 
   private Checkbox aiProviderAuto;
   private NumberField aiTimeout;
@@ -78,15 +89,34 @@ public class AiSettingsView extends VerticalLayout {
   private TextField localAIModel;
   private TextField localAIImageModel;
   private TextField localAIModelUrl;
+  private Span localAIStatusLabel;
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    // Poll every 5 seconds to update status
+    attachEvent.getUI().setPollInterval(5000);
+    attachEvent.getUI().addPollListener(event -> updateLocalAIStatus());
+  }
+
+  @Override
+  protected void onDetach(DetachEvent detachEvent) {
+    super.onDetach(detachEvent);
+    if (detachEvent.getUI() != null) {
+      detachEvent.getUI().setPollInterval(-1);
+    }
+  }
 
   @Autowired
   public AiSettingsView(
       AiSettingsService aiSettingsService,
       GameSettingService gameSettingService,
-      LocalAIContainerConfig localAIContainerConfig) {
+      LocalAIContainerConfig localAIContainerConfig,
+      LocalAIStatusService localAIStatusService) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
     this.localAIContainerConfig = localAIContainerConfig;
+    this.localAIStatusService = localAIStatusService;
     init();
   }
 
@@ -185,15 +215,20 @@ public class AiSettingsView extends VerticalLayout {
     add(geminiSettingsLayout);
 
     add(new H3("LocalAI Settings"));
+    localAIStatusLabel = new Span();
+    updateLocalAIStatus();
+    add(localAIStatusLabel);
+
     FormLayout localAISettingsLayout = new FormLayout();
     localAIEnabled = new Checkbox("Enabled", aiSettingsService.isLocalAIEnabled());
     localAIEnabled.addValueChangeListener(
         event -> {
           saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
           if (event.getValue()) {
-            localAIContainerConfig.startLocalAiContainer();
+            performLocalAIHealthCheckAndEnable();
           } else {
             localAIContainerConfig.stopLocalAiContainer();
+            updateLocalAIStatus();
           }
         });
     localAIBaseUrl = new TextField("Base URL", aiSettingsService.getLocalAIBaseUrl(), "");
@@ -211,6 +246,44 @@ public class AiSettingsView extends VerticalLayout {
         localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
     add(localAISettingsLayout);
 
+    HorizontalLayout localAiControls = new HorizontalLayout();
+    Button startBtn = new Button("Start Container", new Icon(VaadinIcon.PLAY));
+    startBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+    startBtn.addClickListener(
+        e -> {
+          localAIContainerConfig.startLocalAiContainer();
+          Notification.show("Starting LocalAI container...");
+          updateLocalAIStatus();
+        });
+
+    Button stopBtn = new Button("Stop Container", new Icon(VaadinIcon.STOP));
+    stopBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    stopBtn.addClickListener(
+        e -> {
+          localAIContainerConfig.stopLocalAiContainer();
+          Notification.show("Stopping LocalAI container...");
+          updateLocalAIStatus();
+        });
+
+    Button restartBtn = new Button("Restart Container", new Icon(VaadinIcon.REFRESH));
+    restartBtn.addClickListener(
+        e -> {
+          localAIContainerConfig.forceRestartLocalAiContainer();
+          Notification.show("Restarting LocalAI container...");
+          updateLocalAIStatus();
+        });
+
+    Button checkHealthBtn = new Button("Check Health", new Icon(VaadinIcon.DOCTOR));
+    checkHealthBtn.addClickListener(
+        e -> {
+          localAIStatusService.checkHealth();
+          updateLocalAIStatus();
+          Notification.show("LocalAI Status: " + localAIStatusService.getMessage());
+        });
+
+    localAiControls.add(startBtn, stopBtn, restartBtn, checkHealthBtn);
+    add(localAiControls);
+
     add(new H3("Pollinations Settings"));
     FormLayout pollinationsSettingsLayout = new FormLayout();
 
@@ -227,6 +300,40 @@ public class AiSettingsView extends VerticalLayout {
 
     pollinationsSettingsLayout.add(pollinationsEnabled, pollinationsApiKey);
     add(pollinationsSettingsLayout);
+  }
+
+  private void updateLocalAIStatus() {
+    localAIStatusLabel.setText("LocalAI Status: " + localAIStatusService.getMessage());
+    localAIStatusLabel.getStyle().set("font-weight", "bold");
+    switch (localAIStatusService.getStatus()) {
+      case READY -> localAIStatusLabel.addClassNames(LumoUtility.TextColor.SUCCESS);
+      case FAILED -> localAIStatusLabel.addClassNames(LumoUtility.TextColor.ERROR);
+      case STARTING, DOWNLOADING_MODEL ->
+          localAIStatusLabel.addClassNames(LumoUtility.TextColor.PRIMARY);
+      default -> localAIStatusLabel.addClassNames(LumoUtility.TextColor.SECONDARY);
+    }
+  }
+
+  private void performLocalAIHealthCheckAndEnable() {
+    localAIStatusService.checkHealth();
+    if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
+      // Revert if not ready and not already starting
+      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.STARTING
+          && localAIStatusService.getStatus() != LocalAIStatusService.Status.DOWNLOADING_MODEL) {
+        Notification.show(
+                "LocalAI is not reachable. Reverting toggle.", 5000, Notification.Position.MIDDLE)
+            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        localAIEnabled.setValue(false);
+        saveSetting("AI_LOCALAI_ENABLED", "false");
+      } else {
+        Notification.show("LocalAI is starting/downloading. Keeping enabled.")
+            .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
+      }
+    } else {
+      Notification.show("LocalAI is ready and enabled!")
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+    updateLocalAIStatus();
   }
 
   private void saveSetting(String key, String value) {
