@@ -47,7 +47,6 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.SearchContext;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -445,28 +444,43 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     // Ensure the grid has finished refreshing before we scan it.
     waitForGridToSettle(gridId, Duration.ofSeconds(30));
 
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d -> {
-              try {
-                WebElement grid = d.findElement(By.id(gridId));
-                // In Vaadin 24/25, cell content is in the light DOM.
-                List<WebElement> cells = grid.findElements(By.tagName("vaadin-grid-cell-content"));
-                for (WebElement cell : cells) {
-                  try {
-                    if (cell.getText().contains(expectedText)) {
-                      return true;
-                    }
-                  } catch (StaleElementReferenceException ignored) {
-                    // Grid re-rendered mid-scan; retry on next poll.
-                    return false;
-                  }
+    try {
+      new WebDriverWait(driver, Duration.ofSeconds(30))
+          .until(
+              d -> {
+                try {
+                  Boolean found =
+                      (Boolean)
+                          ((JavascriptExecutor) d)
+                              .executeScript(
+                                  "const grid = document.getElementById(arguments[0]);const text ="
+                                      + " arguments[1];if (!grid) return false;const cells ="
+                                      + " Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));return"
+                                      + " cells.some(c => c.textContent.includes(text));",
+                                  gridId,
+                                  expectedText);
+                  return Boolean.TRUE.equals(found);
+                } catch (Exception ignored) {
+                  // Allow retry.
                 }
-              } catch (Exception ignored) {
-                // Allow retry.
-              }
-              return false;
-            });
+                return false;
+              });
+    } catch (org.openqa.selenium.TimeoutException e) {
+      // On failure, log what was actually found in the grid to help debugging.
+      String gridContent =
+          (String)
+              ((JavascriptExecutor) driver)
+                  .executeScript(
+                      "const grid = document.getElementById(arguments[0]);if (!grid) return 'Grid"
+                          + " not found';return"
+                          + " Array.from(grid.querySelectorAll('vaadin-grid-cell-content')).map(c"
+                          + " => c.textContent.trim()).join('|');",
+                      gridId);
+      log.error(
+          "Grid '{}' did not contain '{}'. Current content: {}", gridId, expectedText, gridContent);
+      takeSequencedScreenshot("assert-grid-contains-failed-" + gridId);
+      throw e;
+    }
   }
 
   protected void waitForNotification(@NonNull String text) {

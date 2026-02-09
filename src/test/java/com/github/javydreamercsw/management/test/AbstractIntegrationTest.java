@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
 import com.github.javydreamercsw.management.domain.league.DraftRepository;
@@ -71,6 +72,7 @@ import org.springframework.test.context.ActiveProfiles;
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
+  @Autowired protected InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired protected WrestlerRepository wrestlerRepository;
   @Autowired protected MultiWrestlerFeudService multiWrestlerFeudService;
   @Autowired protected SeasonRepository seasonRepository;
@@ -178,6 +180,8 @@ public abstract class AbstractIntegrationTest {
 
   protected void cleanupLeagues() {
     log.info("Cleaning up Leagues and related data...");
+    inboxItemTargetRepository.deleteAllInBatch();
+    inboxRepository.deleteAllInBatch();
     titleReignRepository.deleteAllInBatch();
     matchFulfillmentRepository.deleteAllInBatch();
     draftPickRepository.deleteAllInBatch();
@@ -193,6 +197,17 @@ public abstract class AbstractIntegrationTest {
               if (show.getLeague() != null) {
                 show.setLeague(null);
                 showRepository.save(show);
+              }
+            });
+
+    // Reset activeWrestlerId for all accounts to ensure test isolation
+    accountRepository
+        .findAll()
+        .forEach(
+            account -> {
+              if (account.getActiveWrestlerId() != null) {
+                account.setActiveWrestlerId(null);
+                accountRepository.save(account);
               }
             });
 

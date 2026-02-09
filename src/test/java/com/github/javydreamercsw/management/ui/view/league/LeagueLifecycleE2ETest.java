@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -67,6 +68,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private LeagueRepository leagueRepository;
   @Autowired private LeagueMembershipRepository leagueMembershipRepository;
+  @Autowired private LeagueRosterRepository leagueRosterRepository;
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private ShowTypeService showTypeService;
@@ -217,13 +219,13 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     WebElement templateComboBox = comboBoxes.get(2);
     WebElement leagueComboBox = comboBoxes.get(3);
 
-    showTypeComboBox.sendKeys("Weekly", Keys.TAB);
+    selectFromVaadinComboBox(showTypeComboBox, "Weekly");
 
     wait.until(ignored -> templateComboBox.isEnabled());
 
-    seasonComboBox.sendKeys(String.valueOf(Year.now().getValue()), Keys.TAB);
-    templateComboBox.sendKeys("Continuum", Keys.TAB);
-    leagueComboBox.sendKeys(leagueName, Keys.TAB);
+    selectFromVaadinComboBox(seasonComboBox, String.valueOf(Year.now().getValue()));
+    selectFromVaadinComboBox(templateComboBox, "Continuum");
+    selectFromVaadinComboBox(leagueComboBox, leagueName);
 
     driver
         .findElement(By.id("show-date"))
@@ -240,6 +242,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     List<Show> matchingShows = showService.findByName(showName);
     Assertions.assertEquals(1, matchingShows.size());
     Show show = matchingShows.getFirst();
+    Assertions.assertNotNull(show.getLeague(), "Show league should be set");
 
     // Click on the newly created show in the grid to navigate to its detail page
     log.info("Navigating to show detail page");
@@ -259,12 +262,12 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
 
-    String p1WrestlerName = getPlayer1WrestlerName();
+    String p1WrestlerName = getPlayer1WrestlerName(league);
     selectFromVaadinMultiSelectComboBox(wrestlersCombo, p1WrestlerName);
 
     // Add another wrestler (can be admin's or anyone)
     // We need at least 2
-    String adminWrestlerName = getAdminWrestlerName();
+    String adminWrestlerName = getAdminWrestlerName(league);
     selectFromVaadinMultiSelectComboBox(wrestlersCombo, adminWrestlerName);
 
     clickElement(By.id("add-segment-save-button"));
@@ -409,17 +412,21 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     }
   }
 
-  private String getPlayer1WrestlerName() {
+  private String getPlayer1WrestlerName(League league) {
     Account p1 = accountRepository.findByUsername("player1").orElseThrow();
-    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(p1);
-    if (wrestlers.isEmpty()) return "Wrestler 1";
-    return wrestlers.getFirst().getName();
+    return leagueRosterRepository.findByLeague(league).stream()
+        .filter(r -> r.getOwner().equals(p1))
+        .map(r -> r.getWrestler().getName())
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Player 1 has no wrestler in this league"));
   }
 
-  private String getAdminWrestlerName() {
+  private String getAdminWrestlerName(League league) {
     Account admin = accountRepository.findByUsername("admin").orElseThrow();
-    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    if (wrestlers.isEmpty()) return "Wrestler 0";
-    return wrestlers.getFirst().getName();
+    return leagueRosterRepository.findByLeague(league).stream()
+        .filter(r -> r.getOwner().equals(admin))
+        .map(r -> r.getWrestler().getName())
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Admin has no wrestler in this league"));
   }
 }
