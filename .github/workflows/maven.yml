@@ -45,7 +45,7 @@ jobs:
               - 'tsconfig.json'
               - 'vite.config.ts'
               - 'scripts/sync-vaadin-overrides.cjs'
-              - '.github/workflows/maven.yml'
+              - '!docs/**'
             notion_changed:
               - 'src/main/java/com/github/javydreamercsw/management/service/sync/**'
 
