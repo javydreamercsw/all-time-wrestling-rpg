@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -41,8 +42,7 @@ class LocalAIHotEnablingIT extends AbstractIntegrationTest {
   @MockitoBean private LocalAIStatusService localAIStatusService;
   @MockitoBean private AiSettingsService aiSettingsService;
 
-  @MockitoBean
-  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @MockitoBean private GameSettingService gameSettingService;
 
   @Test
   void testLocalAIPriorityWhenEnabled() {

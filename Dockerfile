@@ -23,7 +23,7 @@ ENV AI_GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/
 ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 ENV AI_LOCALAI_ENABLED=false
 ENV AI_LOCALAI_BASE_URL=http://localhost:8088
-ENV AI_LOCALAI_MODEL=llama-3.2-1b-instruct
+ENV AI_LOCALAI_MODEL=llama-3.2-1b-instruct:q4_k_m
 ENV AI_LOCALAI_MODEL_URL=
 
 # Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN 

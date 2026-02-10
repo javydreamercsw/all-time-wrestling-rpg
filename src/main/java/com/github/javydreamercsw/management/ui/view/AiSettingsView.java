@@ -246,6 +246,7 @@ public class AiSettingsView extends VerticalLayout {
     localAIModel = new ComboBox<>("Model");
 
     localAIModel.setItems(
+        "llama-3.2-1b-instruct:q4_k_m",
         "llama-3.2-1b-instruct",
         "llama-3-8b-instruct",
         "gpt-4",

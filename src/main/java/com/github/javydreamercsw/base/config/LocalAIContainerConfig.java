@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.config;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.time.Duration;
@@ -48,7 +49,7 @@ public class LocalAIContainerConfig {
 
   private final AiSettingsService aiSettingsService;
   private final LocalAIStatusService statusService;
-  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private final GameSettingService gameSettingService;
 
   @Getter
   @lombok.Setter(lombok.AccessLevel.PACKAGE)

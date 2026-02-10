@@ -61,7 +61,7 @@ class LocalAISegmentNarrationServiceIT {
   @BeforeEach
   void setUp() {
     when(aiSettingsService.isLocalAIEnabled()).thenReturn(true);
-    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct");
+    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct:q4_k_m");
     containerConfig.startLocalAiContainer();
     // Wait for the container to be ready
     long startTime = System.currentTimeMillis();
