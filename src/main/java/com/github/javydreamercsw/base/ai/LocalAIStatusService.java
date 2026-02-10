@@ -22,6 +22,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +53,41 @@ public class LocalAIStatusService {
   @Getter @Setter private String message = "LocalAI is not initialized.";
   private int failureCount = 0;
   private static final int MAX_FAILURES = 3;
+  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+      new com.fasterxml.jackson.databind.ObjectMapper();
+
+  public List<String> fetchAvailableModels() {
+    List<String> models = new ArrayList<>();
+    if (status != Status.READY) {
+      return models;
+    }
+
+    try {
+      String baseUrl = config.getBaseUrl();
+      URI uri = URI.create(baseUrl + "/v1/models");
+      HttpRequest request =
+          HttpRequest.newBuilder().uri(uri).timeout(Duration.ofSeconds(10)).GET().build();
+
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+        List<Map<String, Object>> data = (List<Map<String, Object>>) responseMap.get("data");
+        if (data != null) {
+          for (Map<String, Object> model : data) {
+            String id = (String) model.get("id");
+            if (id != null) {
+              models.add(id);
+            }
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Failed to fetch models from LocalAI: {}", e.getMessage());
+    }
+    return models;
+  }
 
   public enum Status {
     NOT_STARTED,

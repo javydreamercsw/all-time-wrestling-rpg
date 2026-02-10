@@ -128,25 +128,18 @@ public class LocalAIContainerConfig {
         backendsDir.mkdirs();
       }
 
-      String[] command;
-      if (modelName != null
-          && !modelName.isEmpty()
-          && imageModelName != null
-          && !imageModelName.isEmpty()) {
-        command = new String[] {"run", modelName, imageModelName};
-      } else if (modelName != null && !modelName.isEmpty()) {
-        command = new String[] {"run", modelName};
-      } else {
-        command = new String[] {"run", imageModelName};
-      }
+      // Using the official LocalAI image with environment variables for model management
 
-      // Using the official LocalAI image but installing diffusers from source
       localAiContainer =
           new GenericContainer<>("localai/localai:latest-aio-cpu")
               .withExposedPorts(8080)
-              .withFileSystemBind(modelsDir.getAbsolutePath(), "/models", BindMode.READ_WRITE)
-              .withFileSystemBind(backendsDir.getAbsolutePath(), "/backends", BindMode.READ_WRITE)
-              .withCommand(command)
+              .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
+              .withFileSystemBind(
+                  backendsDir.getAbsolutePath(), "/build/backends", BindMode.READ_WRITE)
+              .withEnv("MODELS_PATH", "/build/models")
+              .withEnv("BACKENDS_PATH", "/build/backends")
+              .withEnv("MODEL_NAME", modelName != null ? modelName : "")
+              .withEnv("IMAGE_MODEL", imageModelName != null ? imageModelName : "")
               .waitingFor(
                   new WaitAllStrategy()
                       .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))

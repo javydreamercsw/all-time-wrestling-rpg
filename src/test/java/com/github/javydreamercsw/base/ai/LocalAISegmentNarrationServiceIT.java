@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
+import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,8 @@ import org.testcontainers.containers.GenericContainer;
       LocalAIContainerConfig.class,
       AiBaseProperties.class,
       LocalAIConfigProperties.class,
-      LocalAIStatusService.class
+      LocalAIStatusService.class,
+      AiSettingsService.class
     })
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
 @Slf4j
@@ -51,7 +53,7 @@ import org.testcontainers.containers.GenericContainer;
 class LocalAISegmentNarrationServiceIT {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
-  @MockitoBean private AiSettingsService aiSettingsService;
+  @Autowired private AiSettingsService aiSettingsService;
 
   @MockitoBean private GameSettingService gameSettingService;
 
@@ -60,9 +62,21 @@ class LocalAISegmentNarrationServiceIT {
 
   @BeforeEach
   void setUp() {
-    when(aiSettingsService.isLocalAIEnabled()).thenReturn(true);
-    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct:q4_k_m");
-    containerConfig.startLocalAiContainer();
+    // Mock the settings to return what we expect from the DB (gpt-4)
+    GameSetting enabledSetting = new GameSetting();
+    enabledSetting.setId("AI_LOCALAI_ENABLED");
+    enabledSetting.setValue("true");
+
+    GameSetting modelSetting = new GameSetting();
+    modelSetting.setId("AI_LOCALAI_MODEL");
+    modelSetting.setValue("gpt-oss-120b");
+
+    when(gameSettingService.findById("AI_LOCALAI_ENABLED"))
+        .thenReturn(java.util.Optional.of(enabledSetting));
+    when(gameSettingService.findById("AI_LOCALAI_MODEL"))
+        .thenReturn(java.util.Optional.of(modelSetting));
+
+    containerConfig.startLocalAiContainer(true);
     // Wait for the container to be ready
     long startTime = System.currentTimeMillis();
     long timeout = Duration.ofMinutes(30).toMillis(); // Match container startup timeout
@@ -94,7 +108,11 @@ class LocalAISegmentNarrationServiceIT {
         String.format(
             "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
 
-    when(aiSettingsService.getLocalAIBaseUrl()).thenReturn(baseUrl);
+    GameSetting baseUrlSetting = new GameSetting();
+    baseUrlSetting.setId("AI_LOCALAI_BASE_URL");
+    baseUrlSetting.setValue(baseUrl);
+    when(gameSettingService.findById("AI_LOCALAI_BASE_URL"))
+        .thenReturn(java.util.Optional.of(baseUrlSetting));
   }
 
   @Test

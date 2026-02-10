@@ -246,14 +246,14 @@ public class AiSettingsView extends VerticalLayout {
     localAIModel = new ComboBox<>("Model");
 
     localAIModel.setItems(
+        "phi-2",
         "llama-3.2-1b-instruct:q4_k_m",
         "llama-3.2-1b-instruct",
         "llama-3-8b-instruct",
         "gpt-4",
         "gpt-oss-120b",
         "cerbero",
-        "mistral",
-        "phi-2");
+        "mistral");
     localAIModel.setAllowCustomValue(true);
     localAIModel.addCustomValueSetListener(
         e -> {
@@ -316,6 +316,13 @@ public class AiSettingsView extends VerticalLayout {
           Notification.show("LocalAI Status: " + localAIStatusService.getMessage());
         });
 
+    Button refreshModelsBtn = new Button("Refresh Models", new Icon(VaadinIcon.REFRESH));
+    refreshModelsBtn.addClickListener(
+        e -> {
+          updateLocalAIStatus();
+          Notification.show("Model list updated from LocalAI.");
+        });
+
     openLocalAiUiBtn = new Button("Open LocalAI UI", new Icon(VaadinIcon.EXTERNAL_LINK));
     openLocalAiUiBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     openLocalAiUiBtn.addClickListener(
@@ -324,7 +331,8 @@ public class AiSettingsView extends VerticalLayout {
           UI.getCurrent().getPage().open(url, "_blank");
         });
 
-    localAiControls.add(startBtn, stopBtn, restartBtn, checkHealthBtn, openLocalAiUiBtn);
+    localAiControls.add(
+        startBtn, stopBtn, restartBtn, checkHealthBtn, refreshModelsBtn, openLocalAiUiBtn);
     add(localAiControls);
 
     add(new H3("Pollinations Settings"));
@@ -357,6 +365,18 @@ public class AiSettingsView extends VerticalLayout {
     if (openLocalAiUiBtn != null) {
       openLocalAiUiBtn.setEnabled(
           localAIStatusService.getStatus() == LocalAIStatusService.Status.READY);
+    }
+
+    if (localAIStatusService.getStatus() == LocalAIStatusService.Status.READY
+        && localAIModel != null) {
+      List<String> models = localAIStatusService.fetchAvailableModels();
+      if (!models.isEmpty()) {
+        String current = localAIModel.getValue();
+        localAIModel.setItems(models);
+        if (current != null && models.contains(current)) {
+          localAIModel.setValue(current);
+        }
+      }
     }
 
     switch (localAIStatusService.getStatus()) {

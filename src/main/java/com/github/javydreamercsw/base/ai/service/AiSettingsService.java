@@ -167,7 +167,7 @@ public class AiSettingsService {
     return gameSettingService
         .findById("AI_LOCALAI_MODEL")
         .map(GameSetting::getValue)
-        .orElse("gpt-4");
+        .orElse("phi-2");
   }
 
   public String getLocalAIImageModel() {

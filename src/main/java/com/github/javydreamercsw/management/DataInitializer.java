@@ -201,7 +201,7 @@ public class DataInitializer implements Initializable {
     // LocalAI
     syncSetting("AI_LOCALAI_ENABLED", "false");
     syncSetting("AI_LOCALAI_BASE_URL", "http://localhost:8088");
-    syncSetting("AI_LOCALAI_MODEL", "gpt-4");
+    syncSetting("AI_LOCALAI_MODEL", "phi-2");
     syncSetting("AI_LOCALAI_MODEL_URL", null);
     syncSetting("AI_LOCALAI_IMAGE_MODEL", "stablediffusion");
 
