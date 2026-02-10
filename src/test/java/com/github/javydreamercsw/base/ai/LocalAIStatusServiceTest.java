@@ -85,4 +85,23 @@ class LocalAIStatusServiceTest {
     assertEquals(LocalAIStatusService.Status.FAILED, statusService.getStatus());
     assertTrue(statusService.getMessage().contains("Connection refused"));
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void testCheckHealthStartingState() throws IOException, InterruptedException {
+    when(config.isEnabled()).thenReturn(true);
+    when(config.getBaseUrl()).thenReturn("http://localhost:8080");
+
+    // Simulate a few failures to see if it moves to STARTING (based on MAX_FAILURES=3)
+    HttpResponse<String> errorResponse = mock(HttpResponse.class);
+    when(errorResponse.statusCode()).thenReturn(503);
+    when(httpClient.<String>send(any(), any())).thenReturn(errorResponse);
+
+    statusService.checkHealth(); // 1
+    statusService.checkHealth(); // 2
+    LocalAIStatusService.Status result = statusService.checkHealth(); // 3
+
+    assertEquals(LocalAIStatusService.Status.STARTING, result);
+    assertTrue(statusService.getMessage().contains("starting up"));
+  }
 }

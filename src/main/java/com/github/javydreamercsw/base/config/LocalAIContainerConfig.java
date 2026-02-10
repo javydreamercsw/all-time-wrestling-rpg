@@ -48,7 +48,12 @@ public class LocalAIContainerConfig {
 
   private final AiSettingsService aiSettingsService;
   private final LocalAIStatusService statusService;
-  @Getter private GenericContainer<?> localAiContainer;
+  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+
+  @Getter
+  @lombok.Setter(lombok.AccessLevel.PACKAGE)
+  private GenericContainer<?> localAiContainer;
+
   private boolean started = false;
 
   @EventListener(ApplicationReadyEvent.class)
@@ -57,11 +62,15 @@ public class LocalAIContainerConfig {
   }
 
   public synchronized void startLocalAiContainer() {
-    if (started) {
+    startLocalAiContainer(false);
+  }
+
+  public synchronized void startLocalAiContainer(boolean force) {
+    if (started && !force) {
       return;
     }
     started = true;
-    new Thread(this::runLocalAiContainer).start();
+    new Thread(() -> runLocalAiContainer(force)).start();
   }
 
   @PreDestroy
@@ -78,10 +87,10 @@ public class LocalAIContainerConfig {
 
   public synchronized void forceRestartLocalAiContainer() {
     stopLocalAiContainer();
-    startLocalAiContainer();
+    startLocalAiContainer(true);
   }
 
-  private void runLocalAiContainer() {
+  private void runLocalAiContainer(boolean force) {
     // Temporarily grant system-level privileges to fetch the model name
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
     try {
@@ -90,7 +99,7 @@ public class LocalAIContainerConfig {
               "system", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
       SecurityContextHolder.getContext().setAuthentication(systemAuth);
 
-      if (aiSettingsService.isLocalAIEnabled()) {
+      if (force || aiSettingsService.isLocalAIEnabled()) {
         String modelName = aiSettingsService.getLocalAIModel();
         String imageModelName = aiSettingsService.getLocalAIImageModel();
         if ((modelName != null && !modelName.isEmpty())
@@ -153,21 +162,11 @@ public class LocalAIContainerConfig {
           "Downloading/installing AI model(s). This can take several minutes...");
 
       localAiContainer.start();
-
-      String baseUrl =
-          String.format(
-              "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
-      System.setProperty("ai.localai.base-url", baseUrl);
-      if (modelName != null) {
-        System.setProperty("ai.localai.model", modelName);
-      }
-      if (imageModelName != null) {
-        System.setProperty("ai.localai.image-model", imageModelName);
-      }
+      updateConfigurationFromContainer(modelName, imageModelName);
 
       statusService.setStatus(LocalAIStatusService.Status.READY);
-      statusService.setMessage("LocalAI is ready at " + baseUrl);
-      log.info("LocalAI Container started at: {}", baseUrl);
+      statusService.setMessage("LocalAI is ready at " + System.getProperty("ai.localai.base-url"));
+      log.info("LocalAI Container started at: {}", System.getProperty("ai.localai.base-url"));
       if (modelName != null) log.info("Model '{}' is ready.", modelName);
       if (imageModelName != null) log.info("Image Model '{}' is ready.", imageModelName);
 
@@ -176,5 +175,23 @@ public class LocalAIContainerConfig {
       statusService.setStatus(LocalAIStatusService.Status.FAILED);
       statusService.setMessage("LocalAI failed to start: " + e.getMessage());
     }
+  }
+
+  protected void updateConfigurationFromContainer(String modelName, String imageModelName) {
+    String baseUrl =
+        String.format(
+            "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
+
+    // Update system properties for immediate availability in this thread
+    System.setProperty("ai.localai.base-url", baseUrl);
+    if (modelName != null) {
+      System.setProperty("ai.localai.model", modelName);
+    }
+    if (imageModelName != null) {
+      System.setProperty("ai.localai.image-model", imageModelName);
+    }
+
+    // Update database settings so other services (like health check) see the correct URL
+    gameSettingService.save("AI_LOCALAI_BASE_URL", baseUrl);
   }
 }

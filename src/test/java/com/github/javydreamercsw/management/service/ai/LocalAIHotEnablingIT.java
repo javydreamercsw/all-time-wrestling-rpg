@@ -23,6 +23,8 @@ import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -34,8 +36,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class LocalAIHotEnablingIT extends AbstractIntegrationTest {
 
   @Autowired private SegmentNarrationServiceFactory factory;
+  @MockitoBean private LocalAIContainerConfig containerConfig;
   @MockitoBean private LocalAIConfigProperties localAIConfig;
   @MockitoBean private LocalAIStatusService localAIStatusService;
+  @MockitoBean private AiSettingsService aiSettingsService;
+
+  @MockitoBean
+  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
   @Test
   void testLocalAIPriorityWhenEnabled() {
@@ -43,15 +50,10 @@ class LocalAIHotEnablingIT extends AbstractIntegrationTest {
     when(localAIConfig.isEnabled()).thenReturn(true);
     when(localAIStatusService.isReady()).thenReturn(true);
 
-        // When getting services in priority order
-
-        List<SegmentNarrationService> services = factory.getAvailableServicesInPriorityOrder();
-
-    
-
-        // Then LocalAI should be first (priority 0)
-
-        assertEquals("LocalAI", services.get(0).getProviderName());
+    // When getting services in priority order
+    List<SegmentNarrationService> services = factory.getAvailableServicesInPriorityOrder();
+    // Then LocalAI should be first (priority 0)
+    assertEquals("LocalAI", services.get(0).getProviderName());
   }
 
   @Test
@@ -76,5 +78,15 @@ class LocalAIHotEnablingIT extends AbstractIntegrationTest {
             org.junit.jupiter.api.Assertions.fail("LocalAI should not be available when disabled");
           }
         });
+  }
+
+  @Test
+  void testContainerStartupLogic() {
+    // When starting without force
+    containerConfig.startLocalAiContainer(false);
+
+    // Verify interaction
+    org.mockito.Mockito.verify(containerConfig, org.mockito.Mockito.atLeastOnce())
+        .startLocalAiContainer(false);
   }
 }

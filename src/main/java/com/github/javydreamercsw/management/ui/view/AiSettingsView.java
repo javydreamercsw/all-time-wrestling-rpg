@@ -225,11 +225,15 @@ public class AiSettingsView extends VerticalLayout {
         event -> {
           saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
           if (event.getValue()) {
-            performLocalAIHealthCheckAndEnable();
+            localAIContainerConfig.startLocalAiContainer();
+            Notification.show("LocalAI enabled. Starting container if necessary...")
+                .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
           } else {
             localAIContainerConfig.stopLocalAiContainer();
-            updateLocalAIStatus();
+            Notification.show("LocalAI disabled and container stopped.")
+                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
           }
+          updateLocalAIStatus();
         });
     localAIBaseUrl = new TextField("Base URL", aiSettingsService.getLocalAIBaseUrl(), "");
     localAIBaseUrl.addValueChangeListener(
@@ -251,7 +255,12 @@ public class AiSettingsView extends VerticalLayout {
     startBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     startBtn.addClickListener(
         e -> {
-          localAIContainerConfig.startLocalAiContainer();
+          // Ensure enabled
+          if (!localAIEnabled.getValue()) {
+            localAIEnabled.setValue(true);
+          }
+          // Force start container even if already "enabled" (but maybe stopped)
+          localAIContainerConfig.startLocalAiContainer(true);
           Notification.show("Starting LocalAI container...");
           updateLocalAIStatus();
         });
@@ -260,14 +269,17 @@ public class AiSettingsView extends VerticalLayout {
     stopBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
     stopBtn.addClickListener(
         e -> {
-          localAIContainerConfig.stopLocalAiContainer();
-          Notification.show("Stopping LocalAI container...");
+          // Disabling the toggle triggers the listener which stops the container
+          localAIEnabled.setValue(false);
           updateLocalAIStatus();
         });
 
     Button restartBtn = new Button("Restart Container", new Icon(VaadinIcon.REFRESH));
     restartBtn.addClickListener(
         e -> {
+          if (!localAIEnabled.getValue()) {
+            localAIEnabled.setValue(true);
+          }
           localAIContainerConfig.forceRestartLocalAiContainer();
           Notification.show("Restarting LocalAI container...");
           updateLocalAIStatus();
@@ -305,35 +317,30 @@ public class AiSettingsView extends VerticalLayout {
   private void updateLocalAIStatus() {
     localAIStatusLabel.setText("LocalAI Status: " + localAIStatusService.getMessage());
     localAIStatusLabel.getStyle().set("font-weight", "bold");
-    switch (localAIStatusService.getStatus()) {
-      case READY -> localAIStatusLabel.addClassNames(LumoUtility.TextColor.SUCCESS);
-      case FAILED -> localAIStatusLabel.addClassNames(LumoUtility.TextColor.ERROR);
-      case STARTING, DOWNLOADING_MODEL ->
-          localAIStatusLabel.addClassNames(LumoUtility.TextColor.PRIMARY);
-      default -> localAIStatusLabel.addClassNames(LumoUtility.TextColor.SECONDARY);
-    }
-  }
 
-  private void performLocalAIHealthCheckAndEnable() {
-    localAIStatusService.checkHealth();
-    if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
-      // Revert if not ready and not already starting
-      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.STARTING
-          && localAIStatusService.getStatus() != LocalAIStatusService.Status.DOWNLOADING_MODEL) {
-        Notification.show(
-                "LocalAI is not reachable. Reverting toggle.", 5000, Notification.Position.MIDDLE)
-            .addThemeVariants(NotificationVariant.LUMO_ERROR);
-        localAIEnabled.setValue(false);
-        saveSetting("AI_LOCALAI_ENABLED", "false");
-      } else {
-        Notification.show("LocalAI is starting/downloading. Keeping enabled.")
-            .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
-      }
-    } else {
-      Notification.show("LocalAI is ready and enabled!")
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    // Refresh Base URL field to show dynamic port
+    if (localAIBaseUrl != null) {
+      localAIBaseUrl.setValue(aiSettingsService.getLocalAIBaseUrl());
     }
-    updateLocalAIStatus();
+
+    switch (localAIStatusService.getStatus()) {
+      case READY -> {
+        localAIStatusLabel.getElement().getThemeList().clear();
+        localAIStatusLabel.addClassNames(LumoUtility.TextColor.SUCCESS);
+      }
+      case FAILED -> {
+        localAIStatusLabel.getElement().getThemeList().clear();
+        localAIStatusLabel.addClassNames(LumoUtility.TextColor.ERROR);
+      }
+      case STARTING, DOWNLOADING_MODEL -> {
+        localAIStatusLabel.getElement().getThemeList().clear();
+        localAIStatusLabel.addClassNames(LumoUtility.TextColor.PRIMARY);
+      }
+      default -> {
+        localAIStatusLabel.getElement().getThemeList().clear();
+        localAIStatusLabel.addClassNames(LumoUtility.TextColor.SECONDARY);
+      }
+    }
   }
 
   private void saveSetting(String key, String value) {
