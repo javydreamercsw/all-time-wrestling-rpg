@@ -90,6 +90,7 @@ public class AiSettingsView extends VerticalLayout {
   private TextField localAIImageModel;
   private TextField localAIModelUrl;
   private Span localAIStatusLabel;
+  private Button openLocalAiUiBtn;
 
   @Override
   protected void onAttach(AttachEvent attachEvent) {
@@ -293,7 +294,15 @@ public class AiSettingsView extends VerticalLayout {
           Notification.show("LocalAI Status: " + localAIStatusService.getMessage());
         });
 
-    localAiControls.add(startBtn, stopBtn, restartBtn, checkHealthBtn);
+    openLocalAiUiBtn = new Button("Open LocalAI UI", new Icon(VaadinIcon.EXTERNAL_LINK));
+    openLocalAiUiBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    openLocalAiUiBtn.addClickListener(
+        e -> {
+          String url = aiSettingsService.getLocalAIBaseUrl();
+          UI.getCurrent().getPage().open(url, "_blank");
+        });
+
+    localAiControls.add(startBtn, stopBtn, restartBtn, checkHealthBtn, openLocalAiUiBtn);
     add(localAiControls);
 
     add(new H3("Pollinations Settings"));
@@ -321,6 +330,11 @@ public class AiSettingsView extends VerticalLayout {
     // Refresh Base URL field to show dynamic port
     if (localAIBaseUrl != null) {
       localAIBaseUrl.setValue(aiSettingsService.getLocalAIBaseUrl());
+    }
+
+    if (openLocalAiUiBtn != null) {
+      openLocalAiUiBtn.setEnabled(
+          localAIStatusService.getStatus() == LocalAIStatusService.Status.READY);
     }
 
     switch (localAIStatusService.getStatus()) {
