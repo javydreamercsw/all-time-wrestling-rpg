@@ -144,12 +144,8 @@ public class LocalAIContainerConfig {
       localAiContainer =
           new GenericContainer<>("localai/localai:latest-aio-cpu")
               .withExposedPorts(8080)
-              .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
-              .withFileSystemBind(
-                  backendsDir.getAbsolutePath(), "/build/backends", BindMode.READ_WRITE)
-              .withEnv("MODELS_PATH", "/build/models")
-              .withEnv("BACKENDS_PATH", "/build/backends")
-              .withEnv("INSTALL_BACKENDS", "stablediffusion-ggml")
+              .withFileSystemBind(modelsDir.getAbsolutePath(), "/models", BindMode.READ_WRITE)
+              .withFileSystemBind(backendsDir.getAbsolutePath(), "/backends", BindMode.READ_WRITE)
               .withCommand(command)
               .waitingFor(
                   new WaitAllStrategy()
