@@ -23,9 +23,11 @@ import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -86,7 +88,7 @@ public class AiSettingsView extends VerticalLayout {
   // LocalAI fields
   private Checkbox localAIEnabled;
   private TextField localAIBaseUrl;
-  private TextField localAIModel;
+  private ComboBox<String> localAIModel;
   private TextField localAIImageModel;
   private TextField localAIModelUrl;
   private Span localAIStatusLabel;
@@ -239,8 +241,18 @@ public class AiSettingsView extends VerticalLayout {
     localAIBaseUrl = new TextField("Base URL", aiSettingsService.getLocalAIBaseUrl(), "");
     localAIBaseUrl.addValueChangeListener(
         event -> saveSetting("AI_LOCALAI_BASE_URL", event.getValue()));
-    localAIModel = new TextField("Model", aiSettingsService.getLocalAIModel(), "");
+
+    localAIModel = new ComboBox<>("Model");
+    localAIModel.setItems(
+        "llama-3.2-1b-instruct:q4_k_m", "gpt-4", "gpt-oss-120b", "mistral", "phi-2");
+    localAIModel.setAllowCustomValue(true);
+    localAIModel.addCustomValueSetListener(
+        e -> {
+          localAIModel.setValue(e.getDetail());
+        });
+    localAIModel.setValue(aiSettingsService.getLocalAIModel());
     localAIModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_MODEL", event.getValue()));
+
     localAIImageModel = new TextField("Image Model", aiSettingsService.getLocalAIImageModel(), "");
     localAIImageModel.addValueChangeListener(
         event -> saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue()));
