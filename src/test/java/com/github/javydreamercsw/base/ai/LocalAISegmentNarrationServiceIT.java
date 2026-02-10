@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,13 +52,16 @@ class LocalAISegmentNarrationServiceIT {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
   @MockitoBean private AiSettingsService aiSettingsService;
+
+  @MockitoBean private GameSettingService gameSettingService;
+
   @Autowired private LocalAIContainerConfig containerConfig;
   @Autowired private LocalAIStatusService statusService;
 
   @BeforeEach
   void setUp() {
     when(aiSettingsService.isLocalAIEnabled()).thenReturn(true);
-    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct:q4_k_m");
+    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct");
     containerConfig.startLocalAiContainer();
     // Wait for the container to be ready
     long startTime = System.currentTimeMillis();
