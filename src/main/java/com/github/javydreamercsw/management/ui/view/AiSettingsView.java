@@ -228,7 +228,8 @@ public class AiSettingsView extends VerticalLayout {
         event -> {
           saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
           if (event.getValue()) {
-            localAIContainerConfig.startLocalAiContainer();
+            // Force start to bypass potential DB read delay/caching
+            localAIContainerConfig.startLocalAiContainer(true);
             Notification.show("LocalAI enabled. Starting container if necessary...")
                 .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
           } else {
@@ -249,6 +250,7 @@ public class AiSettingsView extends VerticalLayout {
         "llama-3-8b-instruct",
         "gpt-4",
         "gpt-oss-120b",
+        "cerbero",
         "mistral",
         "phi-2");
     localAIModel.setAllowCustomValue(true);
