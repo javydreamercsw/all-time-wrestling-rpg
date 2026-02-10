@@ -105,14 +105,12 @@ public class LocalAIStatusService {
       }
     } catch (Exception e) {
       failureCount++;
+      String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
       if (failureCount >= MAX_FAILURES || status != Status.READY) {
         status = Status.FAILED;
-        String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
         message = "Cannot connect to LocalAI at " + baseUrl + "/readyz: " + errorMsg;
       }
-      log.debug(
-          "LocalAI health check failed at " + baseUrl + " (failure count: " + failureCount + ")",
-          e);
+      log.warn("LocalAI health check failed at {}/readyz: {}", baseUrl, errorMsg);
     }
     return status;
   }

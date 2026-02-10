@@ -243,13 +243,20 @@ public class AiSettingsView extends VerticalLayout {
         event -> saveSetting("AI_LOCALAI_BASE_URL", event.getValue()));
 
     localAIModel = new ComboBox<>("Model");
+
     localAIModel.setItems(
-        "llama-3.2-1b-instruct:q4_k_m", "gpt-4", "gpt-oss-120b", "mistral", "phi-2");
+        "llama-3.2-1b-instruct",
+        "llama-3-8b-instruct",
+        "gpt-4",
+        "gpt-oss-120b",
+        "mistral",
+        "phi-2");
     localAIModel.setAllowCustomValue(true);
     localAIModel.addCustomValueSetListener(
         e -> {
           localAIModel.setValue(e.getDetail());
         });
+
     localAIModel.setValue(aiSettingsService.getLocalAIModel());
     localAIModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_MODEL", event.getValue()));
 
