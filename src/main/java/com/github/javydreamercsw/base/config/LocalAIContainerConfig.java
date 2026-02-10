@@ -129,21 +129,37 @@ public class LocalAIContainerConfig {
       }
 
       // Using the official LocalAI image with environment variables for model management
-
-      localAiContainer =
+      String modelUrl = aiSettingsService.getLocalAIModelUrl();
+      GenericContainer<?> container =
           new GenericContainer<>("localai/localai:latest-aio-cpu")
               .withExposedPorts(8080)
               .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
               .withFileSystemBind(
                   backendsDir.getAbsolutePath(), "/build/backends", BindMode.READ_WRITE)
               .withEnv("MODELS_PATH", "/build/models")
-              .withEnv("BACKENDS_PATH", "/build/backends")
-              .withEnv("MODEL_NAME", modelName != null ? modelName : "")
-              .withEnv("IMAGE_MODEL", imageModelName != null ? imageModelName : "")
-              .waitingFor(
-                  new WaitAllStrategy()
-                      .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
-                      .withStartupTimeout(Duration.ofMinutes(30)));
+              .withEnv("BACKENDS_PATH", "/build/backends");
+
+      // Set model name for the API to recognize
+      if (modelName != null && !modelName.isEmpty()) {
+        container.withEnv("MODEL_NAME", modelName);
+      }
+
+      // Trigger download if model is specified by name or URL
+      if (modelUrl != null && !modelUrl.isEmpty()) {
+        container.withEnv("MODELS", modelUrl);
+      } else if (modelName != null && !modelName.isEmpty()) {
+        container.withEnv("MODELS", modelName);
+      }
+
+      if (imageModelName != null && !imageModelName.isEmpty()) {
+        container.withEnv("IMAGE_MODEL", imageModelName);
+      }
+
+      localAiContainer =
+          container.waitingFor(
+              new WaitAllStrategy()
+                  .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
+                  .withStartupTimeout(Duration.ofMinutes(30)));
 
       log.info(
           "Starting LocalAI container. This may take a while for the initial model download...");
