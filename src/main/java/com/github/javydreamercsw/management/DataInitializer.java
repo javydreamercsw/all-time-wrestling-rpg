@@ -201,8 +201,10 @@ public class DataInitializer implements Initializable {
     // LocalAI
     syncSetting("AI_LOCALAI_ENABLED", "false");
     syncSetting("AI_LOCALAI_BASE_URL", "http://localhost:8088");
-    syncSetting("AI_LOCALAI_MODEL", "phi-2");
-    syncSetting("AI_LOCALAI_MODEL_URL", null);
+    syncSetting("AI_LOCALAI_MODEL", "llama-3.1-8b");
+    syncSetting(
+        "AI_LOCALAI_MODEL_URL",
+        "https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf");
     syncSetting("AI_LOCALAI_IMAGE_MODEL", "stablediffusion");
 
     boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");

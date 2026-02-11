@@ -167,7 +167,7 @@ public class AiSettingsService {
     return gameSettingService
         .findById("AI_LOCALAI_MODEL")
         .map(GameSetting::getValue)
-        .orElse("phi-2");
+        .orElse("llama-3.1-8b");
   }
 
   public String getLocalAIImageModel() {
@@ -181,7 +181,8 @@ public class AiSettingsService {
     return gameSettingService
         .findById("AI_LOCALAI_MODEL_URL")
         .map(GameSetting::getValue)
-        .orElse("");
+        .orElse(
+            "https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf");
   }
 
   // Pollinations settings
