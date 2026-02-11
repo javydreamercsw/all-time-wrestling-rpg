@@ -172,7 +172,35 @@ public class DataInitializer implements Initializable {
       syncFactionsFromFile();
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();
+      syncCommentatorsFromFile();
       syncCommentaryTeamsFromFile();
+    }
+  }
+
+  private void syncCommentatorsFromFile() {
+    ClassPathResource resource = new ClassPathResource("commentators.json");
+    if (resource.exists()) {
+      log.info("Loading commentators from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<CommentatorImportDTO>>() {});
+        for (CommentatorImportDTO cDto : dtos) {
+          commentaryService.createOrUpdateCommentator(
+              cDto.getNpcName(),
+              cDto.getGender(),
+              cDto.getAlignment(),
+              cDto.getDescription(),
+              cDto.getStyle(),
+              cDto.getCatchphrase(),
+              cDto.getPersonaDescription());
+          log.debug("Loaded commentator: {}", cDto.getNpcName());
+        }
+        log.info("Commentator loading completed - {} commentators loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading commentators from file", e);
+      }
+    } else {
+      log.warn("Commentators file not found: {}", resource.getPath());
     }
   }
 
@@ -184,19 +212,7 @@ public class DataInitializer implements Initializable {
       try (var is = resource.getInputStream()) {
         var dtos = mapper.readValue(is, new TypeReference<List<CommentaryTeamImportDTO>>() {});
         for (CommentaryTeamImportDTO teamDto : dtos) {
-          List<String> memberNames = new ArrayList<>();
-          for (CommentatorImportDTO cDto : teamDto.getMembers()) {
-            commentaryService.createOrUpdateCommentator(
-                cDto.getNpcName(),
-                cDto.getGender(),
-                cDto.getAlignment(),
-                cDto.getDescription(),
-                cDto.getStyle(),
-                cDto.getCatchphrase(),
-                cDto.getPersonaDescription());
-            memberNames.add(cDto.getNpcName());
-          }
-          commentaryService.createOrUpdateTeam(teamDto.getTeamName(), memberNames);
+          commentaryService.createOrUpdateTeam(teamDto.getTeamName(), teamDto.getMemberNames());
           log.debug("Loaded commentary team: {}", teamDto.getTeamName());
         }
         log.info("Commentary team loading completed - {} teams loaded", dtos.size());

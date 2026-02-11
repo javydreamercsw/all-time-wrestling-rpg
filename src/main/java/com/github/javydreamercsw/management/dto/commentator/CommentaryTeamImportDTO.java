@@ -22,5 +22,5 @@ import lombok.Data;
 @Data
 public class CommentaryTeamImportDTO {
   private String teamName;
-  private List<CommentatorImportDTO> members;
+  private List<String> memberNames;
 }

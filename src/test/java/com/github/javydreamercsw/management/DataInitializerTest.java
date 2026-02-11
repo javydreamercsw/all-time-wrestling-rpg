@@ -225,6 +225,20 @@ class DataInitializerTest {
   }
 
   @Test
+  void validateCommentatorsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("commentators.json").getInputStream(),
+                  new TypeReference<
+                      List<
+                          com.github.javydreamercsw.management.dto.commentator
+                              .CommentatorImportDTO>>() {});
+        });
+  }
+
+  @Test
   void validateCommentaryTeamsJson() {
     assertDoesNotThrow(
         () -> {
