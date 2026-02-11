@@ -14,7 +14,7 @@
 We use **Beads (`bd`)** for long-term memory, cross-track dependencies, and managing the backlog.
 
 * **Context Recovery:** At the start of a session or after a context loss, run `bd prime` to re-orient yourself.
-* **Backlog Management:** Use `bd create`, `bd list`, and `bd update` to manage high-level tasks and cross-cutting concerns that span multiple Conductor tracks.
+* **Backlog Management:** Use `bd create`, `bd list`, and `bd update` to manage high-level tasks and cross-cutting concerns that span multiple Conductor tracks. **IMPORTANT: Always provide a detailed description using `--description` to ensure proper context for future work.**
 * **Track Linkage:** When starting a Conductor track, consider creating a corresponding Bead if the work is substantial, and link them via comments or descriptions.
 
 ## Task Workflow

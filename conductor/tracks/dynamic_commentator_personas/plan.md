@@ -2,7 +2,7 @@
 
 ## Phase 1: Data Model & Personas
 
-- [ ] Create `Commentator` entity and repository.
+- [~] Create `Commentator` entity and repository.
 - [ ] Populate database with initial "Commentary Teams" (Pairs of Commentators).
 - [ ] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`.
 
