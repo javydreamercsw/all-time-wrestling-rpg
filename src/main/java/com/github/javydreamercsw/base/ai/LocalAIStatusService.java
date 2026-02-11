@@ -89,6 +89,43 @@ public class LocalAIStatusService {
     return models;
   }
 
+  /**
+   * Triggers model installation in the LocalAI container via the API.
+   *
+   * @param modelId The ID to assign to the model.
+   * @param url The download URL (supports huggingface://, http://, etc.)
+   * @return true if the request was accepted.
+   */
+  public boolean installModel(String modelId, String url) {
+    if (status != Status.READY) {
+      return false;
+    }
+
+    try {
+      String baseUrl = config.getBaseUrl();
+      URI uri = URI.create(baseUrl + "/models/apply");
+
+      Map<String, String> body = Map.of("id", modelId, "url", url);
+      String requestBody = objectMapper.writeValueAsString(body);
+
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(uri)
+              .header("Content-Type", "application/json")
+              .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+              .build();
+
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+      log.info("Install model request for {} returned status: {}", modelId, response.statusCode());
+      return response.statusCode() == 200;
+    } catch (Exception e) {
+      log.error("Failed to trigger model installation: {}", e.getMessage());
+      return false;
+    }
+  }
+
   public enum Status {
     NOT_STARTED,
     STARTING,

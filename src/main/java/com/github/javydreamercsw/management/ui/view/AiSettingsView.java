@@ -354,8 +354,52 @@ public class AiSettingsView extends VerticalLayout {
             saveSetting("AI_LOCALAI_MODEL_URL", event.getValue());
           }
         });
+    localAIModelUrl.setPlaceholder(
+        "e.g. huggingface://bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/...");
+    localAIModelUrl.setTooltipText("A direct URL or Hugging Face URI to download a model.");
+
+    Button installModelBtn = new Button("Install Model", new Icon(VaadinIcon.DOWNLOAD));
+    installModelBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    installModelBtn.addClickListener(
+        e -> {
+          String url = localAIModelUrl.getValue();
+          String name = localAIModel.getValue();
+          if (url == null || url.isEmpty()) {
+            Notification.show(
+                    "Please provide a Model URL first.", 3000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+          }
+          if (name == null || name.isEmpty()) {
+            Notification.show(
+                    "Please specify a Model name to assign.", 3000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+          }
+
+          boolean success = localAIStatusService.installModel(name, url);
+          if (success) {
+            Notification.show(
+                    "Installation triggered! Model will download in the background.",
+                    5000,
+                    Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } else {
+            Notification.show(
+                    "Failed to trigger installation. Is LocalAI ready?",
+                    5000,
+                    Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+
+    HorizontalLayout modelUrlLayout = new HorizontalLayout(localAIModelUrl, installModelBtn);
+    modelUrlLayout.setVerticalComponentAlignment(Alignment.END, installModelBtn);
+    modelUrlLayout.setWidthFull();
+    localAIModelUrl.setFlexGrow(1);
+
     localAISettingsLayout.add(
-        localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
+        localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, modelUrlLayout);
     add(localAISettingsLayout);
 
     HorizontalLayout localAiControls = new HorizontalLayout();
