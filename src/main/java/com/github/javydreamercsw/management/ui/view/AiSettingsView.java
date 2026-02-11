@@ -45,6 +45,7 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -409,7 +410,7 @@ public class AiSettingsView extends VerticalLayout {
     HorizontalLayout modelUrlLayout = new HorizontalLayout(localAIModelUrl, installModelBtn);
     modelUrlLayout.setVerticalComponentAlignment(Alignment.END, installModelBtn);
     modelUrlLayout.setWidthFull();
-    localAIModelUrl.setFlexGrow(1);
+    modelUrlLayout.setFlexGrow(1, localAIModelUrl);
 
     localAISettingsLayout.add(
         localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, modelUrlLayout);
