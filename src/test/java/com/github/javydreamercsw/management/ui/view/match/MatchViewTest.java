@@ -27,7 +27,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -74,7 +73,6 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private MatchFulfillmentService matchFulfillmentService;
-  @Mock private LocalAIStatusService localAIStatus;
   @Mock private PromoService promoService;
   private MatchView matchView;
 
@@ -92,7 +90,6 @@ class MatchViewTest extends AbstractViewTest {
             segmentAdjudicationService,
             matchFulfillmentRepository,
             matchFulfillmentService,
-            localAIStatus,
             promoService);
   }
 

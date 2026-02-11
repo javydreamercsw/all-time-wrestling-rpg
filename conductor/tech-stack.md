@@ -38,6 +38,5 @@
   * Gemini
   * Claude
   * OpenAI
-  * LocalAI (Self-hosted model support)
 * **Productivity:** Notion (via Notion SDK JVM)
 

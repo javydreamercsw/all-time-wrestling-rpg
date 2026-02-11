@@ -84,9 +84,7 @@ public class GenericImageGenerationDialog extends Dialog {
     // Pre-fill model based on available service
     ImageGenerationService service = imageFactory.getBestAvailableService();
     if (service != null) {
-      if ("LocalAI".equals(service.getProviderName())) {
-        modelField.setValue(aiSettingsService.getLocalAIImageModel());
-      } else if ("OpenAI".equals(service.getProviderName())) {
+      if ("OpenAI".equals(service.getProviderName())) {
         modelField.setValue(aiSettingsService.getOpenAIImageModel());
       }
     }

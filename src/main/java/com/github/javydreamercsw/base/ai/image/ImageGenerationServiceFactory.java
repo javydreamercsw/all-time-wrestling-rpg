@@ -74,7 +74,7 @@ public class ImageGenerationServiceFactory {
    * @return Sorted list of available services.
    */
   public List<ImageGenerationService> getAvailableServicesInPriorityOrder() {
-    String[] priorityOrder = {"OpenAI", "Pollinations", "LocalAI", "Mock"};
+    String[] priorityOrder = {"OpenAI", "Pollinations", "Mock"};
     List<ImageGenerationService> sortedServices = new java.util.ArrayList<>();
 
     for (String provider : priorityOrder) {
