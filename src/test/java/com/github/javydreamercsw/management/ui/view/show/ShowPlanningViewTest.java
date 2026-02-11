@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -64,7 +63,6 @@ class ShowPlanningViewTest {
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private ObjectMapper objectMapper;
-  @Mock private LocalAIStatusService localAIStatus;
   private SegmentNarrationServiceFactory aiFactory;
 
   @BeforeEach
@@ -81,8 +79,7 @@ class ShowPlanningViewTest {
             segmentTypeRepository,
             segmentRuleRepository,
             objectMapper,
-            aiFactory,
-            localAIStatus);
+            aiFactory);
     // Mock the UI since we are not in a Vaadin environment
     UI ui = mock(UI.class);
     UI.setCurrent(ui);

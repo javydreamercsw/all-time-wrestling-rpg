@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.performance;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import java.util.HashMap;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Service;
 public class SystemPulseService {
 
   private final List<SegmentNarrationService> aiServices;
-  private final LocalAIStatusService localAIStatus;
   private final Optional<SyncHealthMonitor> syncHealthMonitor;
 
   public Map<String, ServiceStatus> getPulse() {
@@ -48,9 +46,6 @@ public class SystemPulseService {
                   ? "Service configured and available."
                   : "Not configured or disabled."));
     }
-
-    pulse.put(
-        "LocalAI", new ServiceStatus(localAIStatus.getStatus().name(), localAIStatus.getMessage()));
 
     syncHealthMonitor.ifPresent(
         monitor -> {

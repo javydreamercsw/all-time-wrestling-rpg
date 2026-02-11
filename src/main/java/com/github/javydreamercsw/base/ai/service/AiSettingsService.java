@@ -148,42 +148,6 @@ public class AiSettingsService {
         .orElse("gemini-2.5-flash");
   }
 
-  // LocalAI settings
-  public boolean isLocalAIEnabled() {
-    return gameSettingService
-        .findById("AI_LOCALAI_ENABLED")
-        .map(gs -> Boolean.parseBoolean(gs.getValue()))
-        .orElse(false);
-  }
-
-  public String getLocalAIBaseUrl() {
-    return gameSettingService
-        .findById("AI_LOCALAI_BASE_URL")
-        .map(GameSetting::getValue)
-        .orElse("http://localhost:8088");
-  }
-
-  public String getLocalAIModel() {
-    return gameSettingService
-        .findById("AI_LOCALAI_MODEL")
-        .map(GameSetting::getValue)
-        .orElse("gpt-4");
-  }
-
-  public String getLocalAIImageModel() {
-    return gameSettingService
-        .findById("AI_LOCALAI_IMAGE_MODEL")
-        .map(GameSetting::getValue)
-        .orElse("stablediffusion");
-  }
-
-  public String getLocalAIModelUrl() {
-    return gameSettingService
-        .findById("AI_LOCALAI_MODEL_URL")
-        .map(GameSetting::getValue)
-        .orElse("");
-  }
-
   // Pollinations settings
   public boolean isPollinationsEnabled() {
     return gameSettingService

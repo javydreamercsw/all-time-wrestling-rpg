@@ -198,22 +198,14 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_GEMINI_API_KEY", null);
     syncSetting("AI_GEMINI_MODEL_NAME", "gemini-2.5-flash");
 
-    // LocalAI
-    syncSetting("AI_LOCALAI_ENABLED", "false");
-    syncSetting("AI_LOCALAI_BASE_URL", "http://localhost:8088");
-    syncSetting("AI_LOCALAI_MODEL", "gpt-4");
-    syncSetting("AI_LOCALAI_MODEL_URL", null);
-    syncSetting("AI_LOCALAI_IMAGE_MODEL", "stablediffusion");
-
     boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");
     boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
     boolean geminiEnabled = isSettingEnabled("AI_GEMINI_ENABLED");
-    boolean localAiEnabled = isSettingEnabled("AI_LOCALAI_ENABLED");
 
-    if (!openAiEnabled && !claudeEnabled && !geminiEnabled && !localAiEnabled) {
-      log.info("All AI providers are disabled. Enabling LocalAI.");
+    if (!openAiEnabled && !claudeEnabled && !geminiEnabled) {
+      log.info("All AI providers are disabled. Enabling Gemini.");
       // Only set if missing so we don't flip a user's explicit DB config.
-      saveIfMissing("AI_LOCALAI_ENABLED", "true");
+      saveIfMissing("AI_GEMINI_ENABLED", "true");
     }
 
     log.info("AI settings synchronization complete.");
