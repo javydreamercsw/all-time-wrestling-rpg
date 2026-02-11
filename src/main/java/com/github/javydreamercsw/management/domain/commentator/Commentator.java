@@ -17,12 +17,9 @@
 package com.github.javydreamercsw.management.domain.commentator;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -48,15 +45,14 @@ public class Commentator extends AbstractEntity<Long> {
   @JoinColumn(name = "npc_id", nullable = false, unique = true)
   private Npc npc;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "alignment", nullable = false)
-  private AlignmentType alignment = AlignmentType.NEUTRAL;
-
   @Column(name = "style")
-  private String style;
+  private String style; // e.g., "Play-by-play", "Color", "Analyst"
+
+  @Column(name = "catchphrase")
+  private String catchphrase;
 
   @Column(name = "persona_description", length = 4000)
-  private String personaDescription;
+  private String personaDescription; // Extra AI persona details
 
   @Override
   public @Nullable Long getId() {

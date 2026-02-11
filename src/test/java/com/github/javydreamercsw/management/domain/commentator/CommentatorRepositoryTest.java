@@ -39,18 +39,20 @@ class CommentatorRepositoryTest extends AbstractJpaTest {
     Npc npc = new Npc();
     npc.setName("Test NPC");
     npc.setNpcType("Commentator");
+    npc.setAlignment(AlignmentType.FACE);
     npc = npcRepository.save(npc);
 
     Commentator commentator = new Commentator();
     commentator.setNpc(npc);
-    commentator.setAlignment(AlignmentType.FACE);
     commentator.setStyle("Play-by-play");
+    commentator.setCatchphrase("Wait for it!");
     commentator.setPersonaDescription("Energetic and supportive.");
     commentator = commentatorRepository.save(commentator);
 
     assertThat(commentator.getId()).isNotNull();
     assertThat(commentator.getNpc().getName()).isEqualTo("Test NPC");
-    assertThat(commentator.getAlignment()).isEqualTo(AlignmentType.FACE);
+    assertThat(commentator.getNpc().getAlignment()).isEqualTo(AlignmentType.FACE);
+    assertThat(commentator.getCatchphrase()).isEqualTo("Wait for it!");
   }
 
   @Test
@@ -58,21 +60,21 @@ class CommentatorRepositoryTest extends AbstractJpaTest {
     Npc npc1 = new Npc();
     npc1.setName("Face Commentator");
     npc1.setNpcType("Commentator");
+    npc1.setAlignment(AlignmentType.FACE);
     npc1 = npcRepository.save(npc1);
 
     Commentator face = new Commentator();
     face.setNpc(npc1);
-    face.setAlignment(AlignmentType.FACE);
     face = commentatorRepository.save(face);
 
     Npc npc2 = new Npc();
     npc2.setName("Heel Commentator");
     npc2.setNpcType("Commentator");
+    npc2.setAlignment(AlignmentType.HEEL);
     npc2 = npcRepository.save(npc2);
 
     Commentator heel = new Commentator();
     heel.setNpc(npc2);
-    heel.setAlignment(AlignmentType.HEEL);
     heel = commentatorRepository.save(heel);
 
     CommentaryTeam team = new CommentaryTeam();

@@ -1,0 +1,20 @@
+[ {
+  "teamName": "All-Time Broadcast Team",
+  "members": [ {
+    "npcName": "Dara Hoshiko",
+    "gender": "FEMALE",
+    "alignment": "FACE",
+    "description": "A futuristic cyber-gladiatrix with bright neon armor plating, silver hair in a braided mohawk, and a cybernetic eye that streams stats live during commentary. Born in Neo-Kyoto, 2437 AD. Former top-ranked hyper-grappler in the Lunar Combat Circuit before a major orbital accident ended her career. Now a broadcast icon renowned for her optimistic storytelling and encyclopedic knowledge of combat sports across time. Passionate, insightful, and always giving credit where it's due. Often praises underdogs and gives heartfelt analysis of each wrestler's arc. Wears a rotating display of championship pins from different centuries on her collar. Her cyber-eye flashes fan-favorite emojis based on crowd reactions.",
+    "style": "Play-by-play / Analytical",
+    "catchphrase": "Victory is timeless — and tonight, it belongs to the brave!",
+    "personaDescription": "Signature style: 'This isn't just a match, this is a moment written across the centuries — and folks, I think we're witnessing history!'"
+  }, {
+    "npcName": "Lord Bastian Von Crowe",
+    "gender": "MALE",
+    "alignment": "HEEL",
+    "description": "An exiled Victorian occultist in black velvet robes and a brass monocle, with an eerie ageless look and a crow feather cravat. Born in London, 1851 AD — but reportedly dabbled in forbidden chronomancy. Banished from the Royal Chrono Society after summoning an intertemporal demon in a debate. Has commentated for gladiator arenas in Ancient Rome, 80s Tokyo, and an undead federation from the year 6666. Snarky, verbose, and dripping with theatrical disdain. Constantly undermines fan favorites, praises rule-breakers, and references obscure moments from lost timelines. Carries a cursed timepiece that allegedly lets him 'peek' a few seconds into the future.",
+    "style": "Color / Theatrical",
+    "catchphrase": "Champions rise… but villains endure.",
+    "personaDescription": "Style: 'Oh please, that suplex was as clumsy as a Viking in ballet slippers. I’ve seen more grace at a medieval bloodletting!'"
+  } ]
+} ]

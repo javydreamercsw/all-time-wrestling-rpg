@@ -47,10 +47,13 @@ import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
+import com.github.javydreamercsw.management.dto.commentator.CommentaryTeamImportDTO;
+import com.github.javydreamercsw.management.dto.commentator.CommentatorImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
+import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -105,6 +108,7 @@ public class DataInitializer implements Initializable {
   private final TeamService teamService;
   private final TeamRepository teamRepository;
   private final CampaignAbilityCardService campaignAbilityCardService;
+  private final CommentaryService commentaryService;
   private final Environment env;
 
   @Autowired
@@ -126,6 +130,7 @@ public class DataInitializer implements Initializable {
       TeamService teamService,
       TeamRepository teamRepository,
       CampaignAbilityCardService campaignAbilityCardService,
+      CommentaryService commentaryService,
       Environment env) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
@@ -144,6 +149,7 @@ public class DataInitializer implements Initializable {
     this.teamService = teamService;
     this.teamRepository = teamRepository;
     this.campaignAbilityCardService = campaignAbilityCardService;
+    this.commentaryService = commentaryService;
     this.env = env;
   }
 
@@ -166,6 +172,39 @@ public class DataInitializer implements Initializable {
       syncFactionsFromFile();
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();
+      syncCommentaryTeamsFromFile();
+    }
+  }
+
+  private void syncCommentaryTeamsFromFile() {
+    ClassPathResource resource = new ClassPathResource("commentary_teams.json");
+    if (resource.exists()) {
+      log.info("Loading commentary teams from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<CommentaryTeamImportDTO>>() {});
+        for (CommentaryTeamImportDTO teamDto : dtos) {
+          List<String> memberNames = new ArrayList<>();
+          for (CommentatorImportDTO cDto : teamDto.getMembers()) {
+            commentaryService.createOrUpdateCommentator(
+                cDto.getNpcName(),
+                cDto.getGender(),
+                cDto.getAlignment(),
+                cDto.getDescription(),
+                cDto.getStyle(),
+                cDto.getCatchphrase(),
+                cDto.getPersonaDescription());
+            memberNames.add(cDto.getNpcName());
+          }
+          commentaryService.createOrUpdateTeam(teamDto.getTeamName(), memberNames);
+          log.debug("Loaded commentary team: {}", teamDto.getTeamName());
+        }
+        log.info("Commentary team loading completed - {} teams loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading commentary teams from file", e);
+      }
+    } else {
+      log.warn("Commentary teams file not found: {}", resource.getPath());
     }
   }
 

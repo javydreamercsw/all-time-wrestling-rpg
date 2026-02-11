@@ -56,6 +56,7 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
+import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -99,6 +100,7 @@ class DataInitializerTest {
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
+  @Mock private CommentaryService commentaryService;
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
@@ -126,6 +128,7 @@ class DataInitializerTest {
             teamService,
             teamRepository,
             campaignAbilityCardService,
+            commentaryService,
             env);
 
     // Mock count methods to prevent issues during init()
@@ -219,6 +222,20 @@ class DataInitializerTest {
     long initialDeckCount = deckService.count();
     dataInitializer.init();
     assertEquals(initialDeckCount, deckService.count());
+  }
+
+  @Test
+  void validateCommentaryTeamsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("commentary_teams.json").getInputStream(),
+                  new TypeReference<
+                      List<
+                          com.github.javydreamercsw.management.dto.commentator
+                              .CommentaryTeamImportDTO>>() {});
+        });
   }
 
   @Test
