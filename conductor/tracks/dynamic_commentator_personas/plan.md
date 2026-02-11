@@ -4,11 +4,11 @@
 
 - [x] Create `Commentator` entity and repository. fcaf78ce
 - [x] Populate database with initial "Commentary Teams" (Pairs of Commentators). 94c7776a
-- [~] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`.
+- [x] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`. 0c90774c
 
 ## Phase 2: AI Prompt Engineering
 
-- [ ] Refactor `SegmentNarrationService` to include commentator profiles in the AI prompt context.
+- [~] Refactor `SegmentNarrationService` to include commentator profiles in the AI prompt context.
 - [ ] Update AI system instructions to enforce dialogue-style output with specific tags.
 - [ ] Implement a parser to split the AI response into a list of `NarrationLine` objects.
 
