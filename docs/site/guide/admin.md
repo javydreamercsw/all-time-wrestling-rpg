@@ -36,7 +36,7 @@ Manage the entire roster of wrestlers. Add new talent, edit existing stats, assi
 
 ## AI Configuration
 
-Configure the Artificial Intelligence providers used for match narration, image generation, and creative assistance. You can switch between different LLM providers (OpenAI, Anthropic, Gemini, LocalAI) and configure their specific settings.
+Configure the Artificial Intelligence providers used for match narration, image generation, and creative assistance. You can switch between different LLM providers (OpenAI, Anthropic, Gemini) and configure their specific settings.
 
 ![AI Configuration](/screenshots/admin-ai-settings.png)
 

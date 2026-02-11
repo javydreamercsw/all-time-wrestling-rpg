@@ -231,7 +231,6 @@ The following environment variables can be used to configure AI services:
 - `AI_CLAUDE_API_KEY`: Your Claude API key.
 - `AI_GEMINI_ENABLED`: Enable Gemini (default: false).
 - `AI_GEMINI_API_KEY`: Your Gemini API key.
-- `AI_LOCALAI_ENABLED`: Enable LocalAI (default: false).
 
 See the [Startup Guide](./docs/STARTUP_GUIDE.md) for a full list of available environment variables.
 

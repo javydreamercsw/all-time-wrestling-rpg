@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view.match;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
@@ -92,7 +91,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final MatchFulfillmentService matchFulfillmentService;
-  private final LocalAIStatusService localAIStatus;
   private final PromoService promoService;
 
   private Segment segment;
@@ -112,7 +110,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       SegmentAdjudicationService segmentAdjudicationService,
       MatchFulfillmentRepository matchFulfillmentRepository,
       MatchFulfillmentService matchFulfillmentService,
-      LocalAIStatusService localAIStatus,
       PromoService promoService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
@@ -124,7 +121,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.matchFulfillmentService = matchFulfillmentService;
-    this.localAIStatus = localAIStatus;
     this.promoService = promoService;
   }
 
@@ -497,9 +493,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void generateAiNarration() {
     if (narrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      if (localAIStatus.getStatus() != LocalAIStatusService.Status.READY) {
-        reason = "LocalAI is still initializing: " + localAIStatus.getMessage();
-      }
       Notification.show(reason).addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;
     }

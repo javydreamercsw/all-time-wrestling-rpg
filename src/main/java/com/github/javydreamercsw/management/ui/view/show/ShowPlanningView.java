@@ -20,7 +20,6 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -74,7 +73,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowPlanningAiService showPlanningAiService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final LocalAIStatusService localAIStatus;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -96,15 +94,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
       ObjectMapper objectMapper,
-      SegmentNarrationServiceFactory aiFactory,
-      LocalAIStatusService localAIStatus) {
+      SegmentNarrationServiceFactory aiFactory) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
-    this.localAIStatus = localAIStatus;
 
     templateImage = new Image();
 
@@ -260,9 +256,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private void proposeSegments() {
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      if (localAIStatus.getStatus() != LocalAIStatusService.Status.READY) {
-        reason = "LocalAI is still initializing: " + localAIStatus.getMessage();
-      }
       Notification.show(reason, 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;

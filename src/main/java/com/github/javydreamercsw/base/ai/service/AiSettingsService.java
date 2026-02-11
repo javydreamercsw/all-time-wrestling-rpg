@@ -148,47 +148,6 @@ public class AiSettingsService {
         .orElse("gemini-2.5-flash");
   }
 
-  // LocalAI settings
-  public boolean isLocalAIEnabled() {
-    return gameSettingService
-        .findById("AI_LOCALAI_ENABLED")
-        .map(gs -> Boolean.parseBoolean(gs.getValue()))
-        .orElse(false);
-  }
-
-  public String getLocalAIBaseUrl() {
-    String systemProp = System.getProperty("ai.localai.base-url");
-    if (systemProp != null && !systemProp.isEmpty()) {
-      return systemProp;
-    }
-    return gameSettingService
-        .findById("AI_LOCALAI_BASE_URL")
-        .map(GameSetting::getValue)
-        .orElse("http://localhost:8088");
-  }
-
-  public String getLocalAIModel() {
-    return gameSettingService
-        .findById("AI_LOCALAI_MODEL")
-        .map(GameSetting::getValue)
-        .orElse("llama-3.1-8b");
-  }
-
-  public String getLocalAIImageModel() {
-    return gameSettingService
-        .findById("AI_LOCALAI_IMAGE_MODEL")
-        .map(GameSetting::getValue)
-        .orElse("stablediffusion");
-  }
-
-  public String getLocalAIModelUrl() {
-    return gameSettingService
-        .findById("AI_LOCALAI_MODEL_URL")
-        .map(GameSetting::getValue)
-        .orElse(
-            "https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf");
-  }
-
   // Pollinations settings
   public boolean isPollinationsEnabled() {
     return gameSettingService

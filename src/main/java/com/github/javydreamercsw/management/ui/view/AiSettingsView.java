@@ -16,36 +16,21 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
-import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
-import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -59,8 +44,6 @@ public class AiSettingsView extends VerticalLayout {
 
   private final AiSettingsService aiSettingsService;
   private final GameSettingService gameSettingService;
-  private final LocalAIContainerConfig localAIContainerConfig;
-  private final LocalAIStatusService localAIStatusService;
 
   private Checkbox aiProviderAuto;
   private NumberField aiTimeout;
@@ -87,44 +70,11 @@ public class AiSettingsView extends VerticalLayout {
   private PasswordField geminiApiKey;
   private TextField geminiModelName;
 
-  // LocalAI fields
-  private Checkbox localAIEnabled;
-  private TextField localAIBaseUrl;
-  private ComboBox<String> localAIModel;
-  private TextField localAIImageModel;
-  private TextField localAIModelUrl;
-  private Span localAIStatusLabel;
-  private Span localAIInstallationStatus;
-  private com.vaadin.flow.component.progressbar.ProgressBar localAIProgressBar;
-  private Button openLocalAiUiBtn;
-  private Button refreshModelsBtn;
-
-  @Override
-  protected void onAttach(AttachEvent attachEvent) {
-    super.onAttach(attachEvent);
-    // Poll every 5 seconds to update status
-    attachEvent.getUI().setPollInterval(5000);
-    attachEvent.getUI().addPollListener(event -> updateLocalAIStatus());
-  }
-
-  @Override
-  protected void onDetach(DetachEvent detachEvent) {
-    super.onDetach(detachEvent);
-    if (detachEvent.getUI() != null) {
-      detachEvent.getUI().setPollInterval(-1);
-    }
-  }
-
   @Autowired
   public AiSettingsView(
-      AiSettingsService aiSettingsService,
-      GameSettingService gameSettingService,
-      LocalAIContainerConfig localAIContainerConfig,
-      LocalAIStatusService localAIStatusService) {
+      AiSettingsService aiSettingsService, GameSettingService gameSettingService) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
-    this.localAIContainerConfig = localAIContainerConfig;
-    this.localAIStatusService = localAIStatusService;
     init();
   }
 
@@ -294,191 +244,6 @@ public class AiSettingsView extends VerticalLayout {
     geminiSettingsLayout.add(geminiEnabled, geminiApiUrl, geminiApiKey, geminiModelName);
     add(geminiSettingsLayout);
 
-    add(new H3("LocalAI Settings"));
-    localAIStatusLabel = new Span();
-    updateLocalAIStatus();
-    add(localAIStatusLabel);
-
-    localAIInstallationStatus = new Span();
-    localAIInstallationStatus.setVisible(false);
-    localAIInstallationStatus.getStyle().set("font-size", "0.9em");
-    localAIInstallationStatus.getStyle().set("font-style", "italic");
-    add(localAIInstallationStatus);
-
-    localAIProgressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
-    localAIProgressBar.setVisible(false);
-    localAIProgressBar.setIndeterminate(true);
-    add(localAIProgressBar);
-
-    FormLayout localAISettingsLayout = new FormLayout();
-    localAIEnabled = new Checkbox("Enabled", aiSettingsService.isLocalAIEnabled());
-    localAIEnabled.addValueChangeListener(
-        event -> {
-          if (event.isFromClient()) {
-            saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
-            if (event.getValue()) {
-              // Force start to bypass potential DB read delay/caching
-              localAIContainerConfig.startLocalAiContainer(true);
-              Notification.show("LocalAI enabled. Starting container if necessary...")
-                  .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
-            } else {
-              localAIContainerConfig.stopLocalAiContainer();
-              Notification.show("LocalAI disabled and container stopped.")
-                  .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
-            }
-            updateLocalAIStatus();
-          }
-        });
-    localAIBaseUrl = new TextField("Base URL", aiSettingsService.getLocalAIBaseUrl(), "");
-    localAIBaseUrl.addValueChangeListener(
-        event -> {
-          if (event.isFromClient()) {
-            saveSetting("AI_LOCALAI_BASE_URL", event.getValue());
-          }
-        });
-
-    localAIModel = new ComboBox<>("Model");
-
-    localAIModel.setItems("phi-2", aiSettingsService.getLocalAIModel());
-    localAIModel.setAllowCustomValue(true);
-    localAIModel.addCustomValueSetListener(
-        e -> {
-          localAIModel.setValue(e.getDetail());
-        });
-
-    localAIModel.setValue(aiSettingsService.getLocalAIModel());
-    localAIModel.addValueChangeListener(
-        event -> {
-          if (event.isFromClient() && !event.getValue().isEmpty()) {
-            saveSetting("AI_LOCALAI_MODEL", event.getValue());
-          }
-        });
-
-    localAIImageModel = new TextField("Image Model", aiSettingsService.getLocalAIImageModel(), "");
-    localAIImageModel.addValueChangeListener(
-        event -> {
-          if (event.isFromClient()) {
-            saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue());
-          }
-        });
-    localAIModelUrl = new TextField("Model URL", aiSettingsService.getLocalAIModelUrl(), "");
-    localAIModelUrl.addValueChangeListener(
-        event -> {
-          if (event.isFromClient()) {
-            saveSetting("AI_LOCALAI_MODEL_URL", event.getValue());
-          }
-        });
-    localAIModelUrl.setPlaceholder(
-        "e.g. huggingface://bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/...");
-    localAIModelUrl.setTooltipText("A direct URL or Hugging Face URI to download a model.");
-
-    Button installModelBtn = new Button("Install Model", new Icon(VaadinIcon.DOWNLOAD));
-    installModelBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    installModelBtn.addClickListener(
-        e -> {
-          String url = localAIModelUrl.getValue();
-          String name = localAIModel.getValue();
-          if (url == null || url.isEmpty()) {
-            Notification.show(
-                    "Please provide a Model URL first.", 3000, Notification.Position.MIDDLE)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-          }
-          if (name == null || name.isEmpty()) {
-            Notification.show(
-                    "Please specify a Model name to assign.", 3000, Notification.Position.MIDDLE)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-          }
-
-          boolean success = localAIStatusService.installModel(name, url);
-          if (success) {
-            Notification.show(
-                    "Installation triggered! Model will download in the background.",
-                    5000,
-                    Notification.Position.MIDDLE)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          } else {
-            Notification.show(
-                    "Failed to trigger installation. Is LocalAI ready?",
-                    5000,
-                    Notification.Position.MIDDLE)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-          }
-        });
-
-    HorizontalLayout modelUrlLayout = new HorizontalLayout(localAIModelUrl, installModelBtn);
-    modelUrlLayout.setVerticalComponentAlignment(Alignment.END, installModelBtn);
-    modelUrlLayout.setWidthFull();
-    modelUrlLayout.setFlexGrow(1, localAIModelUrl);
-
-    localAISettingsLayout.add(
-        localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, modelUrlLayout);
-    add(localAISettingsLayout);
-
-    HorizontalLayout localAiControls = new HorizontalLayout();
-    Button startBtn = new Button("Start Container", new Icon(VaadinIcon.PLAY));
-    startBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-    startBtn.addClickListener(
-        e -> {
-          // Ensure enabled
-          if (!localAIEnabled.getValue()) {
-            localAIEnabled.setValue(true);
-          }
-          // Force start container even if already "enabled" (but maybe stopped)
-          localAIContainerConfig.startLocalAiContainer(true);
-          Notification.show("Starting LocalAI container...");
-          updateLocalAIStatus();
-        });
-
-    Button stopBtn = new Button("Stop Container", new Icon(VaadinIcon.STOP));
-    stopBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
-    stopBtn.addClickListener(
-        e -> {
-          // Disabling the toggle triggers the listener which stops the container
-          localAIEnabled.setValue(false);
-          updateLocalAIStatus();
-        });
-
-    Button restartBtn = new Button("Restart Container", new Icon(VaadinIcon.REFRESH));
-    restartBtn.addClickListener(
-        e -> {
-          if (!localAIEnabled.getValue()) {
-            localAIEnabled.setValue(true);
-          }
-          localAIContainerConfig.forceRestartLocalAiContainer();
-          Notification.show("Restarting LocalAI container...");
-          updateLocalAIStatus();
-        });
-
-    Button checkHealthBtn = new Button("Check Health", new Icon(VaadinIcon.DOCTOR));
-    checkHealthBtn.addClickListener(
-        e -> {
-          localAIStatusService.checkHealth();
-          updateLocalAIStatus();
-          Notification.show("LocalAI Status: " + localAIStatusService.getMessage());
-        });
-
-    refreshModelsBtn = new Button("Refresh Models", new Icon(VaadinIcon.REFRESH));
-    refreshModelsBtn.setEnabled(false);
-    refreshModelsBtn.addClickListener(
-        e -> {
-          updateLocalAIStatus();
-          Notification.show("Model list updated from LocalAI.");
-        });
-
-    openLocalAiUiBtn = new Button("Open LocalAI UI", new Icon(VaadinIcon.EXTERNAL_LINK));
-    openLocalAiUiBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-    openLocalAiUiBtn.addClickListener(
-        e -> {
-          String url = aiSettingsService.getLocalAIBaseUrl();
-          UI.getCurrent().getPage().open(url, "_blank");
-        });
-
-    localAiControls.add(
-        startBtn, stopBtn, restartBtn, checkHealthBtn, refreshModelsBtn, openLocalAiUiBtn);
-    add(localAiControls);
-
     add(new H3("Pollinations Settings"));
     FormLayout pollinationsSettingsLayout = new FormLayout();
 
@@ -505,82 +270,15 @@ public class AiSettingsView extends VerticalLayout {
     add(pollinationsSettingsLayout);
   }
 
-  private void updateLocalAIStatus() {
-    localAIStatusLabel.setText("LocalAI Status: " + localAIStatusService.getMessage());
-    localAIStatusLabel.getStyle().set("font-weight", "bold");
-
-    // Refresh Base URL field to show dynamic port
-    if (localAIBaseUrl != null) {
-      localAIBaseUrl.setValue(aiSettingsService.getLocalAIBaseUrl());
-    }
-
-    if (openLocalAiUiBtn != null) {
-      openLocalAiUiBtn.setEnabled(
-          localAIStatusService.getStatus() == LocalAIStatusService.Status.READY);
-    }
-
-    if (refreshModelsBtn != null) {
-      refreshModelsBtn.setEnabled(
-          localAIStatusService.getStatus() == LocalAIStatusService.Status.READY);
-    }
-
-    if (localAIStatusService.getStatus() == LocalAIStatusService.Status.READY
-        && localAIModel != null) {
-      // Check for active installation jobs
-      List<Map<String, Object>> jobs = localAIStatusService.fetchInstallationJobs();
-      if (!jobs.isEmpty()) {
-        localAIInstallationStatus.setVisible(true);
-        localAIProgressBar.setVisible(true);
-        StringBuilder sb = new StringBuilder();
-        for (Map<String, Object> job : jobs) {
-          String fileName = (String) job.get("file_name");
-          Object progressObj = job.get("progress");
-          double progress =
-              progressObj instanceof Number ? ((Number) progressObj).doubleValue() : 0;
-          sb.append(String.format("Installing %s: %.1f%%. ", fileName, progress));
-        }
-        localAIInstallationStatus.setText(sb.toString());
-      } else {
-        localAIInstallationStatus.setVisible(false);
-        localAIProgressBar.setVisible(false);
-      }
-
-      List<String> models = localAIStatusService.fetchAvailableModels();
-      if (!models.isEmpty()) {
-        String current = localAIModel.getValue();
-        localAIModel.setItems(models);
-        if (current != null && models.contains(current)) {
-          localAIModel.setValue(current);
-        }
-      }
-    }
-
-    switch (localAIStatusService.getStatus()) {
-      case READY -> {
-        localAIStatusLabel.getElement().getThemeList().clear();
-        localAIStatusLabel.addClassNames(LumoUtility.TextColor.SUCCESS);
-      }
-      case FAILED -> {
-        localAIStatusLabel.getElement().getThemeList().clear();
-        localAIStatusLabel.addClassNames(LumoUtility.TextColor.ERROR);
-      }
-      case STARTING, DOWNLOADING_MODEL -> {
-        localAIStatusLabel.getElement().getThemeList().clear();
-        localAIStatusLabel.addClassNames(LumoUtility.TextColor.PRIMARY);
-      }
-      default -> {
-        localAIStatusLabel.getElement().getThemeList().clear();
-        localAIStatusLabel.addClassNames(LumoUtility.TextColor.SECONDARY);
-      }
-    }
-  }
-
   private void saveSetting(String key, String value) {
+    if (value == null) {
+      return;
+    }
     GameSetting setting = gameSettingService.findById(key).orElseGet(GameSetting::new);
     setting.setId(key);
     setting.setValue(value);
     gameSettingService.save(setting);
-    Notification.show("Setting '" + key + "' updated to: " + value)
+    Notification.show("Setting '" + key + "' updated!")
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 }

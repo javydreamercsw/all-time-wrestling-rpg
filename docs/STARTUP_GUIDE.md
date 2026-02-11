@@ -126,7 +126,4 @@ The application can be configured using environment variables. These variables w
 | `AI_GEMINI_ENABLED`       | Enable Gemini                                     | false                                      |
 | `AI_GEMINI_API_KEY`       | Gemini API Key                                    |                                            |
 | `AI_GEMINI_MODEL_NAME`    | Gemini Model Name                                 | gemini-2.5-flash                           |
-| `AI_LOCALAI_ENABLED`      | Enable LocalAI                                    | false                                      |
-| `AI_LOCALAI_BASE_URL`     | LocalAI Base URL                                  | http://localhost:8088                      |
-| `AI_LOCALAI_MODEL`        | LocalAI Model Name                                | llama-3.2-1b-instruct:q4_k_m               |
 

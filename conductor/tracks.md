@@ -84,9 +84,3 @@
 
 *Link: [./conductor/tracks/wrestler_career_legacy/index.md](./conductor/tracks/wrestler_career_legacy/index.md)*
 *Status: Proposed*
-
-### [x] Track: LocalAI Hot Enabling at Runtime
-
-*Link: [./conductor/tracks/localai_hot_enabling_20260209/index.md](./conductor/tracks/localai_hot_enabling_20260209/index.md)*
-*Status: Completed*
-*Date: 2026-02-09*

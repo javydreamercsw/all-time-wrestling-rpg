@@ -163,7 +163,6 @@ public class SegmentNarrationServiceFactory {
   public List<SegmentNarrationService> getAvailableServicesInPriorityOrder() {
     // Define priority order based on cost-effectiveness
     ProviderPriority[] priorityOrder = {
-      new ProviderPriority("LocalAI", 0, 0.0, "Local AI, free and private"),
       new ProviderPriority("Gemini", 1, 0.0, "FREE tier with excellent quality"),
       new ProviderPriority("Claude", 2, 0.25, "Claude Haiku - good quality, reasonable cost"),
       new ProviderPriority("OpenAI", 3, 0.50, "GPT-3.5 - good quality, moderate cost"),
@@ -263,9 +262,7 @@ public class SegmentNarrationServiceFactory {
   private CostInfo getCostInfo(String providerName) {
     String lowerName = providerName.toLowerCase();
 
-    if (lowerName.contains("localai")) {
-      return new CostInfo(0, 0.0, "FREE", "Local AI, free and private");
-    } else if (lowerName.contains("gemini")) {
+    if (lowerName.contains("gemini")) {
       return new CostInfo(1, 0.0, "FREE", "Free tier: 15 req/min, 1.5K req/day, excellent quality");
     } else if (lowerName.contains("claude")) {
       return new CostInfo(

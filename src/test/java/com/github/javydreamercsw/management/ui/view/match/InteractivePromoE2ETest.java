@@ -208,7 +208,6 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
     wait.until(d -> Objects.requireNonNull(d.getPageSource()).contains(promoText));
 
     // 5. Verify AI Retort appears (The Silent One)
-    // This depends on LocalAI generation speed. Giving it ample time.
     WebDriverWait aiWait = new WebDriverWait(driver, Duration.ofSeconds(60));
     aiWait.until(d -> Objects.requireNonNull(d.getPageSource()).contains("The Silent One"));
 

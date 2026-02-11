@@ -23,11 +23,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
-import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -71,7 +69,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
 class ShowDetailViewTest {
@@ -89,11 +86,9 @@ class ShowDetailViewTest {
   @Mock private SeasonService seasonService;
   @Mock private ShowTemplateService showTemplateService;
   @Mock private RivalryService rivalryService;
-  @Mock private LocalAIStatusService localAIStatusService;
   @Mock private SegmentNarrationConfig segmentNarrationConfig;
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private Environment env;
-  @Mock private LocalAIConfigProperties localAIConfigProperties;
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private ShowController showController;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
@@ -146,7 +141,6 @@ class ShowDetailViewTest {
               segmentService,
               segmentRepository,
               segmentTypeRepository,
-              wrestlerRepository,
               npcService,
               wrestlerService,
               titleService,
@@ -155,16 +149,11 @@ class ShowDetailViewTest {
               seasonService,
               showTemplateService,
               rivalryService,
-              localAIStatusService,
-              localAIConfigProperties,
-              segmentNarrationConfig,
               segmentNarrationServiceFactory,
-              mock(WebClient.Builder.class),
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
-              leagueRepository,
-              env);
+              leagueRepository);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -227,7 +216,6 @@ class ShowDetailViewTest {
               segmentService,
               segmentRepository,
               segmentTypeRepository,
-              wrestlerRepository,
               npcService,
               wrestlerService,
               titleService,
@@ -236,16 +224,11 @@ class ShowDetailViewTest {
               seasonService,
               showTemplateService,
               rivalryService,
-              localAIStatusService,
-              localAIConfigProperties,
-              segmentNarrationConfig,
               segmentNarrationServiceFactory,
-              mock(WebClient.Builder.class),
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
-              leagueRepository,
-              env);
+              leagueRepository);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));
