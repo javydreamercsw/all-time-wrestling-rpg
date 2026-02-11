@@ -455,7 +455,8 @@ public class ShowListView extends Main {
         selectedDate,
         newSeason.getValue() != null ? newSeason.getValue().getId() : null,
         newTemplate.getValue() != null ? newTemplate.getValue().getId() : null,
-        newLeague.getValue() != null ? newLeague.getValue().getId() : null);
+        newLeague.getValue() != null ? newLeague.getValue().getId() : null,
+        null);
     name.clear();
     newShowType.clear();
     newSeason.clear();

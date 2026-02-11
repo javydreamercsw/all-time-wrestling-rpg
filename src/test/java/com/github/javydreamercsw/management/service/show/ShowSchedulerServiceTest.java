@@ -98,19 +98,54 @@ class ShowSchedulerServiceTest {
     // Should generate shows for Feb 2, 9, 16, 23, March 2
     verify(showService, atLeastOnce())
         .createShow(
-            eq("Weekly Show"), any(), eq(1L), eq(LocalDate.of(2026, 2, 2)), eq(1L), eq(1L), any());
+            eq("Weekly Show"),
+            any(),
+            eq(1L),
+            eq(LocalDate.of(2026, 2, 2)),
+            eq(1L),
+            eq(1L),
+            any(),
+            any());
     verify(showService, atLeastOnce())
         .createShow(
-            eq("Weekly Show"), any(), eq(1L), eq(LocalDate.of(2026, 2, 9)), eq(1L), eq(1L), any());
+            eq("Weekly Show"),
+            any(),
+            eq(1L),
+            eq(LocalDate.of(2026, 2, 9)),
+            eq(1L),
+            eq(1L),
+            any(),
+            any());
     verify(showService, atLeastOnce())
         .createShow(
-            eq("Weekly Show"), any(), eq(1L), eq(LocalDate.of(2026, 2, 16)), eq(1L), eq(1L), any());
+            eq("Weekly Show"),
+            any(),
+            eq(1L),
+            eq(LocalDate.of(2026, 2, 16)),
+            eq(1L),
+            eq(1L),
+            any(),
+            any());
     verify(showService, atLeastOnce())
         .createShow(
-            eq("Weekly Show"), any(), eq(1L), eq(LocalDate.of(2026, 2, 23)), eq(1L), eq(1L), any());
+            eq("Weekly Show"),
+            any(),
+            eq(1L),
+            eq(LocalDate.of(2026, 2, 23)),
+            eq(1L),
+            eq(1L),
+            any(),
+            any());
     verify(showService, atLeastOnce())
         .createShow(
-            eq("Weekly Show"), any(), eq(1L), eq(LocalDate.of(2026, 3, 2)), eq(1L), eq(1L), any());
+            eq("Weekly Show"),
+            any(),
+            eq(1L),
+            eq(LocalDate.of(2026, 3, 2)),
+            eq(1L),
+            eq(1L),
+            any(),
+            any());
   }
 
   @Test
@@ -130,6 +165,7 @@ class ShowSchedulerServiceTest {
             eq(LocalDate.of(2026, 2, 22)),
             eq(1L),
             eq(2L),
+            any(),
             any());
     verify(showService, atLeastOnce())
         .createShow(
@@ -139,6 +175,7 @@ class ShowSchedulerServiceTest {
             eq(LocalDate.of(2026, 2, 23)),
             eq(1L),
             eq(2L),
+            any(),
             any());
   }
 
@@ -165,6 +202,6 @@ class ShowSchedulerServiceTest {
 
     // Verify no shows were created
     verify(showService, org.mockito.Mockito.never())
-        .createShow(any(), any(), any(), any(), any(), any(), any());
+        .createShow(any(), any(), any(), any(), any(), any(), any(), any());
   }
 }

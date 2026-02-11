@@ -474,6 +474,7 @@ public class DataInitializer implements Initializable {
                   dto.getShowTypeName(),
                   dto.getNotionUrl(),
                   null,
+                  dto.getCommentaryTeamName(),
                   dto.getExpectedMatches(),
                   dto.getExpectedPromos(),
                   dto.getDurationDays(),

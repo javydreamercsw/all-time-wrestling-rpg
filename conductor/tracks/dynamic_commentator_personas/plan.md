@@ -3,8 +3,8 @@
 ## Phase 1: Data Model & Personas
 
 - [x] Create `Commentator` entity and repository. fcaf78ce
-- [~] Populate database with initial "Commentary Teams" (Pairs of Commentators).
-- [ ] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`.
+- [x] Populate database with initial "Commentary Teams" (Pairs of Commentators). 94c7776a
+- [~] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`.
 
 ## Phase 2: AI Prompt Engineering
 

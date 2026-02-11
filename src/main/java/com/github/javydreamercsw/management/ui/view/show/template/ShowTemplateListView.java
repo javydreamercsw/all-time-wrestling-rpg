@@ -22,6 +22,8 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -76,6 +78,7 @@ public class ShowTemplateListView extends Main {
 
   private final ShowTemplateService showTemplateService;
   private final ShowTypeService showTypeService;
+  private final CommentaryTeamRepository commentaryTeamRepository;
   private final SecurityUtils securityUtils;
   private final ImageGenerationServiceFactory imageGenerationServiceFactory;
   private final ImageStorageService imageStorageService;
@@ -85,6 +88,7 @@ public class ShowTemplateListView extends Main {
   private TextField editName;
   private TextArea editDescription;
   private ComboBox<ShowType> editShowType;
+  private ComboBox<CommentaryTeam> editCommentaryTeam;
   private TextField editNotionUrl;
   private IntegerField editExpectedMatches;
   private IntegerField editExpectedPromos;
@@ -105,12 +109,14 @@ public class ShowTemplateListView extends Main {
   public ShowTemplateListView(
       @NonNull ShowTemplateService showTemplateService,
       @NonNull ShowTypeService showTypeService,
+      @NonNull CommentaryTeamRepository commentaryTeamRepository,
       @NonNull SecurityUtils securityUtils,
       @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
       @NonNull ImageStorageService imageStorageService,
       @NonNull AiSettingsService aiSettingsService) {
     this.showTemplateService = showTemplateService;
     this.showTypeService = showTypeService;
+    this.commentaryTeamRepository = commentaryTeamRepository;
     this.securityUtils = securityUtils;
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
@@ -324,6 +330,15 @@ public class ShowTemplateListView extends Main {
     editShowType.setWidthFull();
     editShowType.setRequired(true);
 
+    editCommentaryTeam = new ComboBox<>("Commentary Team");
+    editCommentaryTeam.setItems(
+        commentaryTeamRepository.findAll().stream()
+            .sorted(Comparator.comparing(CommentaryTeam::getName))
+            .collect(Collectors.toList()));
+    editCommentaryTeam.setItemLabelGenerator(CommentaryTeam::getName);
+    editCommentaryTeam.setWidthFull();
+    editCommentaryTeam.setClearButtonVisible(true);
+
     editNotionUrl = new TextField("Notion URL");
     editNotionUrl.setWidthFull();
     editNotionUrl.setPlaceholder("https://notion.so/...");
@@ -417,6 +432,7 @@ public class ShowTemplateListView extends Main {
         editName,
         editDescription,
         editShowType,
+        editCommentaryTeam,
         editNotionUrl,
         editExpectedMatches,
         editExpectedPromos,
@@ -453,6 +469,9 @@ public class ShowTemplateListView extends Main {
         .forField(editShowType)
         .asRequired("Show type is required")
         .bind(ShowTemplate::getShowType, ShowTemplate::setShowType);
+    binder
+        .forField(editCommentaryTeam)
+        .bind(ShowTemplate::getCommentaryTeam, ShowTemplate::setCommentaryTeam);
     binder.forField(editNotionUrl).bind(ShowTemplate::getNotionUrl, ShowTemplate::setNotionUrl);
     binder
         .forField(editExpectedMatches)
@@ -539,6 +558,9 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getShowType().getName(),
                 editingTemplate.getNotionUrl(),
                 null,
+                editingTemplate.getCommentaryTeam() != null
+                    ? editingTemplate.getCommentaryTeam().getName()
+                    : null,
                 editingTemplate.getExpectedMatches(),
                 editingTemplate.getExpectedPromos(),
                 editingTemplate.getDurationDays(),
@@ -565,6 +587,9 @@ public class ShowTemplateListView extends Main {
             editingTemplate.getShowType().getName(),
             editingTemplate.getNotionUrl(),
             editingTemplate.getImageUrl(),
+            editingTemplate.getCommentaryTeam() != null
+                ? editingTemplate.getCommentaryTeam().getName()
+                : null,
             editingTemplate.getExpectedMatches(),
             editingTemplate.getExpectedPromos(),
             editingTemplate.getDurationDays(),
