@@ -44,15 +44,16 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @PageTitle("AI Settings")
-@Component
 @RolesAllowed("ADMIN")
 @Lazy
 @UIScope
+@Component
 public class AiSettingsView extends VerticalLayout {
 
   private final AiSettingsService aiSettingsService;
@@ -93,6 +94,7 @@ public class AiSettingsView extends VerticalLayout {
   private TextField localAIModelUrl;
   private Span localAIStatusLabel;
   private Button openLocalAiUiBtn;
+  private Button refreshModelsBtn;
 
   @Override
   protected void onAttach(AttachEvent attachEvent) {
@@ -128,11 +130,19 @@ public class AiSettingsView extends VerticalLayout {
     FormLayout commonSettingsLayout = new FormLayout();
     aiProviderAuto = new Checkbox("Auto Select Provider", aiSettingsService.isAiProviderAuto());
     aiProviderAuto.addValueChangeListener(
-        event -> saveSetting("AI_PROVIDER_AUTO", String.valueOf(event.getValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_PROVIDER_AUTO", String.valueOf(event.getValue()));
+          }
+        });
     aiTimeout = new NumberField("Timeout (seconds)");
     aiTimeout.setValue((double) aiSettingsService.getAiTimeout());
     aiTimeout.addValueChangeListener(
-        event -> saveSetting("AI_TIMEOUT", String.valueOf(event.getValue().intValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_TIMEOUT", String.valueOf(event.getValue().intValue()));
+          }
+        });
     commonSettingsLayout.add(aiProviderAuto, aiTimeout);
     add(commonSettingsLayout);
 
@@ -140,34 +150,66 @@ public class AiSettingsView extends VerticalLayout {
     FormLayout openAISettingsLayout = new FormLayout();
     openAIEnabled = new Checkbox("Enabled", aiSettingsService.isOpenAIEnabled());
     openAIEnabled.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_ENABLED", String.valueOf(event.getValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_ENABLED", String.valueOf(event.getValue()));
+          }
+        });
     openAIApiUrl = new TextField("API URL", aiSettingsService.getOpenAIApiUrl(), "");
     openAIApiUrl.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_API_URL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_API_URL", event.getValue());
+          }
+        });
     openAIApiKey =
         new PasswordField(
             "API KEY",
             aiSettingsService.getOpenAIApiKey(),
-            event -> saveSetting("AI_OPENAI_API_KEY", event.getValue()));
+            event -> {
+              if (event.isFromClient()) {
+                saveSetting("AI_OPENAI_API_KEY", event.getValue());
+              }
+            });
     openAIDefaultModel =
         new TextField("Default Model", aiSettingsService.getOpenAIDefaultModel(), "");
     openAIDefaultModel.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_DEFAULT_MODEL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_DEFAULT_MODEL", event.getValue());
+          }
+        });
     openAIPremiumModel =
         new TextField("Premium Model", aiSettingsService.getOpenAIPremiumModel(), "");
     openAIPremiumModel.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_PREMIUM_MODEL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_PREMIUM_MODEL", event.getValue());
+          }
+        });
     openAIImageModel = new TextField("Image Model", aiSettingsService.getOpenAIImageModel(), "");
     openAIImageModel.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_IMAGE_MODEL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_IMAGE_MODEL", event.getValue());
+          }
+        });
     openAIMaxTokens = new NumberField("Max Tokens");
     openAIMaxTokens.setValue((double) aiSettingsService.getOpenAIMaxTokens());
     openAIMaxTokens.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_MAX_TOKENS", String.valueOf(event.getValue().intValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_MAX_TOKENS", String.valueOf(event.getValue().intValue()));
+          }
+        });
     openAITemperature = new NumberField("Temperature");
     openAITemperature.setValue((double) aiSettingsService.getOpenAITemperature());
     openAITemperature.addValueChangeListener(
-        event -> saveSetting("AI_OPENAI_TEMPERATURE", String.valueOf(event.getValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OPENAI_TEMPERATURE", String.valueOf(event.getValue()));
+          }
+        });
     openAISettingsLayout.add(
         openAIEnabled,
         openAIApiUrl,
@@ -183,18 +225,34 @@ public class AiSettingsView extends VerticalLayout {
     FormLayout claudeSettingsLayout = new FormLayout();
     claudeEnabled = new Checkbox("Enabled", aiSettingsService.isClaudeEnabled());
     claudeEnabled.addValueChangeListener(
-        event -> saveSetting("AI_CLAUDE_ENABLED", String.valueOf(event.getValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_CLAUDE_ENABLED", String.valueOf(event.getValue()));
+          }
+        });
     claudeApiUrl = new TextField("API URL", aiSettingsService.getClaudeApiUrl(), "");
     claudeApiUrl.addValueChangeListener(
-        event -> saveSetting("AI_CLAUDE_API_URL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_CLAUDE_API_URL", event.getValue());
+          }
+        });
     claudeApiKey =
         new PasswordField(
             "API KEY",
             aiSettingsService.getClaudeApiKey(),
-            event -> saveSetting("AI_CLAUDE_API_KEY", event.getValue()));
+            event -> {
+              if (event.isFromClient()) {
+                saveSetting("AI_CLAUDE_API_KEY", event.getValue());
+              }
+            });
     claudeModelName = new TextField("Model Name", aiSettingsService.getClaudeModelName(), "");
     claudeModelName.addValueChangeListener(
-        event -> saveSetting("AI_CLAUDE_MODEL_NAME", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_CLAUDE_MODEL_NAME", event.getValue());
+          }
+        });
     claudeSettingsLayout.add(claudeEnabled, claudeApiUrl, claudeApiKey, claudeModelName);
     add(claudeSettingsLayout);
 
@@ -202,18 +260,34 @@ public class AiSettingsView extends VerticalLayout {
     FormLayout geminiSettingsLayout = new FormLayout();
     geminiEnabled = new Checkbox("Enabled", aiSettingsService.isGeminiEnabled());
     geminiEnabled.addValueChangeListener(
-        event -> saveSetting("AI_GEMINI_ENABLED", String.valueOf(event.getValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_GEMINI_ENABLED", String.valueOf(event.getValue()));
+          }
+        });
     geminiApiUrl = new TextField("API URL", aiSettingsService.getGeminiApiUrl(), "");
     geminiApiUrl.addValueChangeListener(
-        event -> saveSetting("AI_GEMINI_API_URL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_GEMINI_API_URL", event.getValue());
+          }
+        });
     geminiApiKey =
         new PasswordField(
             "API KEY",
             aiSettingsService.getGeminiApiKey(),
-            event -> saveSetting("AI_GEMINI_API_KEY", event.getValue()));
+            event -> {
+              if (event.isFromClient()) {
+                saveSetting("AI_GEMINI_API_KEY", event.getValue());
+              }
+            });
     geminiModelName = new TextField("Model Name", aiSettingsService.getGeminiModelName(), "");
     geminiModelName.addValueChangeListener(
-        event -> saveSetting("AI_GEMINI_MODEL_NAME", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_GEMINI_MODEL_NAME", event.getValue());
+          }
+        });
     geminiSettingsLayout.add(geminiEnabled, geminiApiUrl, geminiApiKey, geminiModelName);
     add(geminiSettingsLayout);
 
@@ -226,34 +300,32 @@ public class AiSettingsView extends VerticalLayout {
     localAIEnabled = new Checkbox("Enabled", aiSettingsService.isLocalAIEnabled());
     localAIEnabled.addValueChangeListener(
         event -> {
-          saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
-          if (event.getValue()) {
-            // Force start to bypass potential DB read delay/caching
-            localAIContainerConfig.startLocalAiContainer(true);
-            Notification.show("LocalAI enabled. Starting container if necessary...")
-                .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
-          } else {
-            localAIContainerConfig.stopLocalAiContainer();
-            Notification.show("LocalAI disabled and container stopped.")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+          if (event.isFromClient()) {
+            saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
+            if (event.getValue()) {
+              // Force start to bypass potential DB read delay/caching
+              localAIContainerConfig.startLocalAiContainer(true);
+              Notification.show("LocalAI enabled. Starting container if necessary...")
+                  .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
+            } else {
+              localAIContainerConfig.stopLocalAiContainer();
+              Notification.show("LocalAI disabled and container stopped.")
+                  .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+            }
+            updateLocalAIStatus();
           }
-          updateLocalAIStatus();
         });
     localAIBaseUrl = new TextField("Base URL", aiSettingsService.getLocalAIBaseUrl(), "");
     localAIBaseUrl.addValueChangeListener(
-        event -> saveSetting("AI_LOCALAI_BASE_URL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_LOCALAI_BASE_URL", event.getValue());
+          }
+        });
 
     localAIModel = new ComboBox<>("Model");
 
-    localAIModel.setItems(
-        "phi-2",
-        "llama-3.2-1b-instruct:q4_k_m",
-        "llama-3.2-1b-instruct",
-        "llama-3-8b-instruct",
-        "gpt-4",
-        "gpt-oss-120b",
-        "cerbero",
-        "mistral");
+    localAIModel.setItems("phi-2", aiSettingsService.getLocalAIModel());
     localAIModel.setAllowCustomValue(true);
     localAIModel.addCustomValueSetListener(
         e -> {
@@ -261,14 +333,27 @@ public class AiSettingsView extends VerticalLayout {
         });
 
     localAIModel.setValue(aiSettingsService.getLocalAIModel());
-    localAIModel.addValueChangeListener(event -> saveSetting("AI_LOCALAI_MODEL", event.getValue()));
+    localAIModel.addValueChangeListener(
+        event -> {
+          if (event.isFromClient() && !event.getValue().isEmpty()) {
+            saveSetting("AI_LOCALAI_MODEL", event.getValue());
+          }
+        });
 
     localAIImageModel = new TextField("Image Model", aiSettingsService.getLocalAIImageModel(), "");
     localAIImageModel.addValueChangeListener(
-        event -> saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_LOCALAI_IMAGE_MODEL", event.getValue());
+          }
+        });
     localAIModelUrl = new TextField("Model URL", aiSettingsService.getLocalAIModelUrl(), "");
     localAIModelUrl.addValueChangeListener(
-        event -> saveSetting("AI_LOCALAI_MODEL_URL", event.getValue()));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_LOCALAI_MODEL_URL", event.getValue());
+          }
+        });
     localAISettingsLayout.add(
         localAIEnabled, localAIBaseUrl, localAIModel, localAIImageModel, localAIModelUrl);
     add(localAISettingsLayout);
@@ -316,7 +401,8 @@ public class AiSettingsView extends VerticalLayout {
           Notification.show("LocalAI Status: " + localAIStatusService.getMessage());
         });
 
-    Button refreshModelsBtn = new Button("Refresh Models", new Icon(VaadinIcon.REFRESH));
+    refreshModelsBtn = new Button("Refresh Models", new Icon(VaadinIcon.REFRESH));
+    refreshModelsBtn.setEnabled(false);
     refreshModelsBtn.addClickListener(
         e -> {
           updateLocalAIStatus();
@@ -341,13 +427,21 @@ public class AiSettingsView extends VerticalLayout {
     Checkbox pollinationsEnabled =
         new Checkbox("Enabled", aiSettingsService.isPollinationsEnabled());
     pollinationsEnabled.addValueChangeListener(
-        event -> saveSetting("AI_POLLINATIONS_ENABLED", String.valueOf(event.getValue())));
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_POLLINATIONS_ENABLED", String.valueOf(event.getValue()));
+          }
+        });
 
     PasswordField pollinationsApiKey =
         new PasswordField(
             "API Key",
             aiSettingsService.getPollinationsApiKey(),
-            event -> saveSetting("AI_POLLINATIONS_API_KEY", event.getValue()));
+            event -> {
+              if (event.isFromClient()) {
+                saveSetting("AI_POLLINATIONS_API_KEY", event.getValue());
+              }
+            });
 
     pollinationsSettingsLayout.add(pollinationsEnabled, pollinationsApiKey);
     add(pollinationsSettingsLayout);
@@ -364,6 +458,11 @@ public class AiSettingsView extends VerticalLayout {
 
     if (openLocalAiUiBtn != null) {
       openLocalAiUiBtn.setEnabled(
+          localAIStatusService.getStatus() == LocalAIStatusService.Status.READY);
+    }
+
+    if (refreshModelsBtn != null) {
+      refreshModelsBtn.setEnabled(
           localAIStatusService.getStatus() == LocalAIStatusService.Status.READY);
     }
 
