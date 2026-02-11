@@ -157,6 +157,10 @@ public class AiSettingsService {
   }
 
   public String getLocalAIBaseUrl() {
+    String systemProp = System.getProperty("ai.localai.base-url");
+    if (systemProp != null && !systemProp.isEmpty()) {
+      return systemProp;
+    }
     return gameSettingService
         .findById("AI_LOCALAI_BASE_URL")
         .map(GameSetting::getValue)

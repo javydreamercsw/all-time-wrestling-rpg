@@ -198,13 +198,14 @@ public class LocalAIStatusService {
 
       if (response.statusCode() == 200) {
         status = Status.READY;
-        message = "LocalAI is ready.";
+        message = "LocalAI is ready and healthy at " + baseUrl;
         failureCount = 0; // Reset on success
       } else {
         failureCount++;
         if (failureCount >= MAX_FAILURES) {
           status = Status.STARTING;
-          message = "LocalAI is starting up (HTTP " + response.statusCode() + ")";
+          message =
+              "LocalAI is starting up at " + baseUrl + " (HTTP " + response.statusCode() + ")";
         }
       }
     } catch (Exception e) {
