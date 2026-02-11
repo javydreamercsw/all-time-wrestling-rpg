@@ -93,6 +93,8 @@ public class AiSettingsView extends VerticalLayout {
   private TextField localAIImageModel;
   private TextField localAIModelUrl;
   private Span localAIStatusLabel;
+  private Span localAIInstallationStatus;
+  private com.vaadin.flow.component.progressbar.ProgressBar localAIProgressBar;
   private Button openLocalAiUiBtn;
   private Button refreshModelsBtn;
 
@@ -295,6 +297,17 @@ public class AiSettingsView extends VerticalLayout {
     localAIStatusLabel = new Span();
     updateLocalAIStatus();
     add(localAIStatusLabel);
+
+    localAIInstallationStatus = new Span();
+    localAIInstallationStatus.setVisible(false);
+    localAIInstallationStatus.getStyle().set("font-size", "0.9em");
+    localAIInstallationStatus.getStyle().set("font-style", "italic");
+    add(localAIInstallationStatus);
+
+    localAIProgressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
+    localAIProgressBar.setVisible(false);
+    localAIProgressBar.setIndeterminate(true);
+    add(localAIProgressBar);
 
     FormLayout localAISettingsLayout = new FormLayout();
     localAIEnabled = new Checkbox("Enabled", aiSettingsService.isLocalAIEnabled());
@@ -512,6 +525,25 @@ public class AiSettingsView extends VerticalLayout {
 
     if (localAIStatusService.getStatus() == LocalAIStatusService.Status.READY
         && localAIModel != null) {
+      // Check for active installation jobs
+      List<Map<String, Object>> jobs = localAIStatusService.fetchInstallationJobs();
+      if (!jobs.isEmpty()) {
+        localAIInstallationStatus.setVisible(true);
+        localAIProgressBar.setVisible(true);
+        StringBuilder sb = new StringBuilder();
+        for (Map<String, Object> job : jobs) {
+          String fileName = (String) job.get("file_name");
+          Object progressObj = job.get("progress");
+          double progress =
+              progressObj instanceof Number ? ((Number) progressObj).doubleValue() : 0;
+          sb.append(String.format("Installing %s: %.1f%%. ", fileName, progress));
+        }
+        localAIInstallationStatus.setText(sb.toString());
+      } else {
+        localAIInstallationStatus.setVisible(false);
+        localAIProgressBar.setVisible(false);
+      }
+
       List<String> models = localAIStatusService.fetchAvailableModels();
       if (!models.isEmpty()) {
         String current = localAIModel.getValue();

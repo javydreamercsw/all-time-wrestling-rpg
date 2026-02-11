@@ -126,6 +126,35 @@ public class LocalAIStatusService {
     }
   }
 
+  /**
+   * Fetches the current background jobs (like model installations) from LocalAI.
+   *
+   * @return A list of maps containing job details (id, status, progress, etc.)
+   */
+  @SuppressWarnings("unchecked")
+  public List<Map<String, Object>> fetchInstallationJobs() {
+    if (status != Status.READY) {
+      return List.of();
+    }
+
+    try {
+      String baseUrl = config.getBaseUrl();
+      URI uri = URI.create(baseUrl + "/v1/models/jobs");
+      HttpRequest request =
+          HttpRequest.newBuilder().uri(uri).timeout(Duration.ofSeconds(5)).GET().build();
+
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        return objectMapper.readValue(response.body(), List.class);
+      }
+    } catch (Exception e) {
+      log.warn("Failed to fetch installation jobs from LocalAI: {}", e.getMessage());
+    }
+    return List.of();
+  }
+
   public enum Status {
     NOT_STARTED,
     STARTING,
