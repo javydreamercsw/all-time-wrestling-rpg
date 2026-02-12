@@ -29,7 +29,6 @@ CREATE TABLE commentary_team_members (
 -- Update NPC table with gender and alignment
 ALTER TABLE npc ADD COLUMN gender VARCHAR(255);
 ALTER TABLE npc ADD COLUMN alignment VARCHAR(255);
-ALTER TABLE npc ADD COLUMN last_sync TIMESTAMP;
 ALTER TABLE npc ALTER COLUMN description VARCHAR(4000);
 
 -- Update Show and ShowTemplate with commentary team reference

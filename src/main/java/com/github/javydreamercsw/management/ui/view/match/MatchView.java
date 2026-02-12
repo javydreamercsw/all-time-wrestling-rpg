@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.match;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.CommentatorContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
@@ -24,6 +25,8 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -92,6 +95,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final MatchFulfillmentService matchFulfillmentService;
   private final PromoService promoService;
+  private final CommentaryTeamRepository commentaryTeamRepository;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -110,7 +114,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       SegmentAdjudicationService segmentAdjudicationService,
       MatchFulfillmentRepository matchFulfillmentRepository,
       MatchFulfillmentService matchFulfillmentService,
-      PromoService promoService) {
+      PromoService promoService,
+      CommentaryTeamRepository commentaryTeamRepository) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -122,6 +127,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.matchFulfillmentService = matchFulfillmentService;
     this.promoService = promoService;
+    this.commentaryTeamRepository = commentaryTeamRepository;
   }
 
   @Override
@@ -541,12 +547,49 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                   })
               .toList());
 
+      // Commentary Team Context
+      CommentaryTeam team = segment.getShow().getCommentaryTeam();
+      if (team == null) {
+        // Default to All-Time Broadcast Team if not set
+        team =
+            commentaryTeamRepository.findAll().stream()
+                .filter(t -> t.getName().equalsIgnoreCase("All-Time Broadcast Team"))
+                .findFirst()
+                .orElse(null);
+      }
+
+      if (team != null) {
+        context.setCommentators(
+            team.getCommentators().stream()
+                .map(
+                    c -> {
+                      CommentatorContext cc = new CommentatorContext();
+                      cc.setName(c.getNpc().getName());
+                      cc.setGender(
+                          c.getNpc().getGender() != null ? c.getNpc().getGender().name() : null);
+                      cc.setAlignment(
+                          c.getNpc().getAlignment() != null
+                              ? c.getNpc().getAlignment().name()
+                              : null);
+                      cc.setStyle(c.getStyle());
+                      cc.setCatchphrase(c.getCatchphrase());
+                      cc.setPersonaDescription(c.getPersonaDescription());
+                      cc.setDescription(c.getNpc().getDescription());
+                      return cc;
+                    })
+                .toList());
+      }
+
       String feedback = feedbackArea.getValue();
       String instructions =
-          "Narrate a compelling wrestling match based on the provided wrestlers and rules. "
-              + "IMPORTANT: You MUST ONLY use the wrestlers and NPCs provided in the context. "
-              + "Do NOT invent new characters, announcers, or managers. "
-              + "Stick strictly to the All Time Wrestling roster provided.";
+          "Narrate a compelling wrestling match based on the provided wrestlers and rules. The"
+              + " match should be narrated as a conversation between the commentary team members"
+              + " provided in the context. Each commentator has a distinct persona (Alignment,"
+              + " Style, Catchphrase) that MUST be respected. Ensure the narration flows as dynamic"
+              + " dialogue, capturing their different perspectives on the match. IMPORTANT: You"
+              + " MUST ONLY use the wrestlers, commentators and NPCs provided in the context. Do"
+              + " NOT invent new characters, announcers, or managers. Stick strictly to the All"
+              + " Time Wrestling roster provided.";
 
       if (feedback != null && !feedback.isBlank()) {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;

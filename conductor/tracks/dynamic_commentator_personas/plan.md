@@ -6,11 +6,11 @@
 - [x] Populate database with initial "Commentary Teams" (Pairs of Commentators). 94c7776a
 - [x] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`. 0c90774c
 
-## Phase 2: AI Prompt Engineering [checkpoint: 8bf3483]
+## Phase 2: AI Prompt Engineering [checkpoint: e60e190]
 
 - [x] Refactor `SegmentNarrationService` to include commentator profiles in the AI prompt context. 0ec7d045
-- [x] Update AI system instructions to enforce dialogue-style output with specific tags. 6a18ea07
-- [x] Implement a parser to split the AI response into a list of `NarrationLine` objects. 8bf3483d
+- [x] Update AI system instructions to enforce dialogue-style output with specific tags. e60e190d
+- [x] Implement a parser to split the AI response into a list of `NarrationLine` objects. e60e190d
 
 ## Phase 3: UI Enhancement
 

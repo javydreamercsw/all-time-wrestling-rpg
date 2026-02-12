@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -74,6 +75,7 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private PromoService promoService;
+  @Mock private CommentaryTeamRepository commentaryTeamRepository;
   private MatchView matchView;
 
   @BeforeEach
@@ -90,7 +92,8 @@ class MatchViewTest extends AbstractViewTest {
             segmentAdjudicationService,
             matchFulfillmentRepository,
             matchFulfillmentService,
-            promoService);
+            promoService,
+            commentaryTeamRepository);
   }
 
   @Test
