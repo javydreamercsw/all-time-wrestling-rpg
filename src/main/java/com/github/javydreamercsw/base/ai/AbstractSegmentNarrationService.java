@@ -49,7 +49,9 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
           + " task is to provide a transcript of the match, alternating between vivid"
           + " descriptions of the action (as 'Narrator') and character-driven commentary from"
           + " the commentators. Each commentator has a unique voice, alignment (Face/Heel), and"
-          + " style. IMPORTANT: Every line of output MUST follow the format: 'Name: Text'.";
+          + " style. Commentators MUST show bias based on their alignment and the alignment of the"
+          + " wrestlers they are describing (Face vs Heel dynamics). IMPORTANT: Every line of"
+          + " output MUST follow the format: 'Name: Text'.";
     }
   }
 
@@ -79,6 +81,22 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append(
         "A 'HEEL' commentator should be snarky, support rule-breakers, and offer critical or"
             + " controversial takes.\n");
+    prompt.append("COMMENTARY INTERACTION RULES:\n");
+    prompt.append(
+        "- FACE Commentator vs. FACE Wrestler: Enthusiastic support, praise for skill and"
+            + " integrity.\n");
+    prompt.append(
+        "- FACE Commentator vs. HEEL Wrestler: Critical of dirty tactics, focuses on the"
+            + " importance of rules and fair play.\n");
+    prompt.append(
+        "- HEEL Commentator vs. FACE Wrestler: Mockery, dismissal of skills as 'boring' or 'just"
+            + " luck', finds their moral high ground annoying.\n");
+    prompt.append(
+        "- HEEL Commentator vs. HEEL Wrestler: Justifies rule-breaking as 'strategy', praises"
+            + " ruthlessness and 'doing what it takes to win'.\n");
+    prompt.append(
+        "- NEUTRAL (Wrestler or Commentator): Focus strictly on technical execution, stats, and"
+            + " the importance of the match outcome without moral bias.\n\n");
     prompt.append(
         "IMPORTANT: You MUST format the narration as a transcript of dialogue and action.\n");
     prompt.append(

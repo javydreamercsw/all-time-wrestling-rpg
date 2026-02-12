@@ -85,94 +85,83 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   }
 
   private String generateMockTextNarration(String prompt) {
-
     List<String> participants = extractParticipants(prompt);
-
     Map<String, String> participantAlignments = extractWrestlerAlignments(prompt);
-
-    String wrestler1 = participants.size() > 0 ? participants.get(0) : "Wrestler A";
-
+    String wrestler1 = !participants.isEmpty() ? participants.get(0) : "Wrestler A";
     String wrestler2 = participants.size() > 1 ? participants.get(1) : "Wrestler B";
-
     String venue = extractVenue(prompt);
-
     String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
 
     List<String> commentators = extractCommentators(prompt);
-
-    String comm1 = commentators.size() > 0 ? commentators.get(0) : "Dara Hoshiko";
-
+    String comm1 = !commentators.isEmpty() ? commentators.get(0) : "Dara Hoshiko";
     String comm2 = commentators.size() > 1 ? commentators.get(1) : "Lord Bastian Von Crowe";
 
     StringBuilder sb = new StringBuilder();
-
     sb.append("Narrator: ").append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n");
-
     String w1Alignment = participantAlignments.getOrDefault(wrestler1, "FACE");
-
     String w2Alignment = participantAlignments.getOrDefault(wrestler2, "HEEL");
-
     sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n");
 
     if (type.equals("Match")) {
 
       sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n");
 
-      String reaction =
-          "HEEL".equalsIgnoreCase(w1Alignment)
-              ? "I love that aggressive style from " + wrestler1 + "!"
-              : wrestler1 + " is showing incredible heart!";
+      String reaction;
+
+      if ("HEEL".equalsIgnoreCase(w1Alignment)) {
+
+        reaction =
+            "Lord Bastian Von Crowe".equalsIgnoreCase(comm2)
+                ? "I love that aggressive style from " + wrestler1 + "! Pure strategy."
+                : "That's a blatant disregard for the rules by " + wrestler1 + "!";
+
+      } else if ("FACE".equalsIgnoreCase(w1Alignment)) {
+
+        reaction =
+            "Dara Hoshiko".equalsIgnoreCase(comm2)
+                ? wrestler1 + " is showing incredible heart and integrity!"
+                : "How boring. "
+                    + wrestler1
+                    + " should spend less time pandering and more time winning.";
+
+      } else {
+
+        reaction = "Wrestler " + wrestler1 + " is executing their move set with precision.";
+      }
 
       sb.append(comm2).append(": ").append(reaction).append("\n");
 
       sb.append("Narrator: ").append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n");
-
       sb.append(comm1).append(": ").append("I can't believe the resilience!").append("\n");
-
       sb.append("Narrator: ").append(generateClimaxAndFinish(wrestler1, wrestler2)).append("\n");
-
       sb.append(comm2).append(": ").append("What an ending!");
-
     } else {
-
       sb.append("Narrator: ")
           .append(wrestler1)
           .append(" grabs the microphone and looks intensely at the crowd.\n");
-
       sb.append(comm1)
           .append(": ")
           .append("\"I've waited a long time for this moment,\" he declares.\n");
-
       sb.append("Narrator: ")
           .append(wrestler2)
           .append(" interrupts, walking down the ramp with a confident smirk.\n");
-
       sb.append(comm2)
           .append(": ")
           .append("The tension is thick as they stand face-to-face in the middle of the ring.");
     }
-
     return sb.toString();
   }
 
-  private Map<String, String> extractWrestlerAlignments(String prompt) {
-
+  private Map<String, String> extractWrestlerAlignments(@NonNull String prompt) {
     Map<String, String> alignments = new java.util.HashMap<>();
-
     int wrestlersStart = prompt.indexOf("\"wrestlers\"");
-
     if (wrestlersStart != -1) {
-
       // Very crude regex-based JSON extraction for mock
-
       Pattern blockPattern =
           Pattern.compile(
               "\\{[^}]*?\"name\"\\s*:\\s*\"([^\"]+)\".*?\"alignment\"\\s*:\\s*\"([^\"]+)\"");
-
       Matcher matcher = blockPattern.matcher(prompt.substring(wrestlersStart));
-
       while (matcher.find()) {
-
         alignments.put(matcher.group(1), matcher.group(2));
       }
     }
