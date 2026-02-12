@@ -142,6 +142,7 @@ public interface SegmentNarrationService {
     private String description;
     private String team;
     private String gender;
+    private String alignment;
     private String tier;
     private String managerName;
     private MoveSet moveSet;

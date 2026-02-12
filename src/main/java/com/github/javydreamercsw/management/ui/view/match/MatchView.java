@@ -550,8 +550,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               .map(
                   p -> {
                     WrestlerContext wc = new WrestlerContext();
-                    wc.setName(p.getWrestler().getName());
-                    wc.setDescription(p.getWrestler().getDescription());
+                    Wrestler w = p.getWrestler();
+                    wc.setName(w.getName());
+                    wc.setDescription(w.getDescription());
+                    if (w.getAlignment() != null) {
+                      wc.setAlignment(w.getAlignment().getAlignmentType().name());
+                    }
                     return wc;
                   })
               .toList());
