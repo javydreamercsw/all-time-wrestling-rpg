@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -76,6 +77,7 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private PromoService promoService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private NarrationParserService narrationParserService;
   private MatchView matchView;
 
   @BeforeEach
@@ -93,7 +95,8 @@ class MatchViewTest extends AbstractViewTest {
             matchFulfillmentRepository,
             matchFulfillmentService,
             promoService,
-            commentaryTeamRepository);
+            commentaryTeamRepository,
+            narrationParserService);
   }
 
   @Test

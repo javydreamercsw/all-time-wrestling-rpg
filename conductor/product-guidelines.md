@@ -26,9 +26,10 @@ The project should adhere to the following quality standards for its software an
 
 ## Database & Migrations
 
-1.  **Multi-DB Support:** Always provide migration scripts for both **H2** (used for development and testing) and **MySQL** (used for production). Ensure they are in sync regarding table names, column names, and constraints.
-    -   H2 location: `src/main/resources/db/migration/h2/`
-    -   MySQL location: `src/main/resources/db/migration/mysql/`
-2.  **Migration Immutability:** NEVER modify a migration script that has already been released or applied to an environment. Modifying existing scripts will cause checksum failures and break the application for existing users.
-3.  **Release Awareness:** Before modifying the *most recent* migration script, always verify if it has been included in a released version. If it has, you MUST create a new migration file instead of modifying the existing one.
-4.  **Verification:** Always run integration tests (`-Pintegration-test`) after adding or modifying migrations to ensure `DataInitializer` and Hibernate mapping are consistent with the new schema.
+1. **Multi-DB Support:** Always provide migration scripts for both **H2** (used for development and testing) and **MySQL** (used for production). Ensure they are in sync regarding table names, column names, and constraints.
+   - H2 location: `src/main/resources/db/migration/h2/`
+   - MySQL location: `src/main/resources/db/migration/mysql/`
+2. **Migration Immutability:** NEVER modify a migration script that has already been released or applied to an environment. Modifying existing scripts will cause checksum failures and break the application for existing users.
+3. **Release Awareness:** Before modifying the *most recent* migration script, always verify if it has been included in a released version. If it has, you MUST create a new migration file instead of modifying the existing one.
+4. **Verification:** Always run integration tests (`-Pintegration-test`) after adding or modifying migrations to ensure `DataInitializer` and Hibernate mapping are consistent with the new schema.
+
