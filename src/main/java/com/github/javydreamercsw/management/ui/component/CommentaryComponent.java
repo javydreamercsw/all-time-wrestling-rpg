@@ -21,11 +21,15 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.NonNull;
 
 /** Component for displaying structured match commentary. */
 public class CommentaryComponent extends VerticalLayout {
+
+  private Map<String, String> commentatorAlignments = new HashMap<>();
 
   public CommentaryComponent() {
     setSpacing(true);
@@ -36,6 +40,13 @@ public class CommentaryComponent extends VerticalLayout {
         LumoUtility.Border.ALL,
         LumoUtility.BorderRadius.MEDIUM,
         LumoUtility.Padding.MEDIUM);
+  }
+
+  public void setCommentary(@NonNull List<NarrationLineDTO> lines, Map<String, String> alignments) {
+    if (alignments != null) {
+      this.commentatorAlignments = alignments;
+    }
+    setCommentary(lines);
   }
 
   public void setCommentary(@NonNull List<NarrationLineDTO> lines) {
@@ -68,9 +79,15 @@ public class CommentaryComponent extends VerticalLayout {
       nameSpan.addClassNames(LumoUtility.TextColor.PRIMARY);
       contentSpan.getStyle().set("font-style", "italic");
     } else {
-      // Style based on some characteristic (could be alignment if passed here)
       container.addClassNames(LumoUtility.Background.BASE);
-      nameSpan.addClassNames(LumoUtility.TextColor.SECONDARY);
+      String alignment = commentatorAlignments.getOrDefault(line.getCommentatorName(), "NONE");
+      if ("FACE".equalsIgnoreCase(alignment)) {
+        nameSpan.getStyle().set("color", "var(--lumo-primary-text-color)");
+      } else if ("HEEL".equalsIgnoreCase(alignment)) {
+        nameSpan.getStyle().set("color", "var(--lumo-error-text-color)");
+      } else {
+        nameSpan.addClassNames(LumoUtility.TextColor.SECONDARY);
+      }
     }
 
     container.add(nameSpan, contentSpan);

@@ -508,7 +508,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void updateCommentaryDisplay() {
     String narration = segment.getNarration();
     if (narration != null && !narration.isBlank()) {
-      commentaryComponent.setCommentary(narrationParserService.parse(narration));
+      java.util.Map<String, String> alignments = new java.util.HashMap<>();
+      CommentaryTeam team = segment.getShow().getCommentaryTeam();
+      if (team != null) {
+        team.getCommentators()
+            .forEach(
+                c -> {
+                  if (c.getNpc().getAlignment() != null) {
+                    alignments.put(c.getNpc().getName(), c.getNpc().getAlignment().name());
+                  }
+                });
+      }
+      commentaryComponent.setCommentary(narrationParserService.parse(narration), alignments);
       commentaryComponent.setVisible(true);
     } else {
       commentaryComponent.setVisible(false);
