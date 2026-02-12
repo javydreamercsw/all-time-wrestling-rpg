@@ -103,29 +103,22 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n");
 
     if (type.equals("Match")) {
-
       sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n");
-
       String reaction;
-
       if ("HEEL".equalsIgnoreCase(w1Alignment)) {
-
         reaction =
             "Lord Bastian Von Crowe".equalsIgnoreCase(comm2)
                 ? "I love that aggressive style from " + wrestler1 + "! Pure strategy."
                 : "That's a blatant disregard for the rules by " + wrestler1 + "!";
 
       } else if ("FACE".equalsIgnoreCase(w1Alignment)) {
-
         reaction =
             "Dara Hoshiko".equalsIgnoreCase(comm2)
                 ? wrestler1 + " is showing incredible heart and integrity!"
                 : "How boring. "
                     + wrestler1
                     + " should spend less time pandering and more time winning.";
-
       } else {
-
         reaction = "Wrestler " + wrestler1 + " is executing their move set with precision.";
       }
 
