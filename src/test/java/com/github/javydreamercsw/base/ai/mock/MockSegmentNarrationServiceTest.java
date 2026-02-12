@@ -33,12 +33,16 @@ class MockSegmentNarrationServiceTest {
     String result = service.generateText(prompt);
 
     assertTrue(result.contains("Dara Hoshiko:"), "Output should contain Dara's speaker tag");
+
     assertTrue(
         result.contains("Lord Bastian Von Crowe:"),
         "Output should contain Lord Bastian's speaker tag");
+
     assertTrue(result.contains("Narrator:"), "Output should contain Narrator tag");
 
-    String[] lines = result.split("\n");
+    assertTrue(result.contains("\n\n"), "Output should contain double newlines between sections");
+
+    String[] lines = result.split("\n\n");
     for (String line : lines) {
       if (!line.trim().isEmpty()) {
         assertTrue(

@@ -85,25 +85,75 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   }
 
   private String generateMockTextNarration(String prompt) {
-    List<String> participants = extractParticipants(prompt);
-    Map<String, String> participantAlignments = extractWrestlerAlignments(prompt);
-    String wrestler1 = !participants.isEmpty() ? participants.get(0) : "Wrestler A";
-    String wrestler2 = participants.size() > 1 ? participants.get(1) : "Wrestler B";
-    String venue = extractVenue(prompt);
+    String wrestler1 = "Wrestler A";
+    String wrestler2 = "Wrestler B";
+    String venue = "the arena";
     String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
+    String comm1 = "Dara Hoshiko";
+    String comm2 = "Lord Bastian Von Crowe";
+    Map<String, String> participantAlignments = new java.util.HashMap<>();
 
-    List<String> commentators = extractCommentators(prompt);
-    String comm1 = !commentators.isEmpty() ? commentators.get(0) : "Dara Hoshiko";
-    String comm2 = commentators.size() > 1 ? commentators.get(1) : "Lord Bastian Von Crowe";
+    try {
+      String jsonMarker = "Here is the JSON context:\n\n";
+      int jsonStart = prompt.indexOf(jsonMarker);
+      if (jsonStart != -1) {
+        String jsonContext = prompt.substring(jsonStart + jsonMarker.length());
+        JsonNode rootNode = objectMapper.readTree(jsonContext);
+
+        // Extract wrestlers
+        if (rootNode.has("wrestlers") && rootNode.get("wrestlers").isArray()) {
+          List<String> participantsList = new ArrayList<>();
+          for (JsonNode w : rootNode.get("wrestlers")) {
+            String name = w.path("name").asText();
+            if (!name.isEmpty()) {
+              participantsList.add(name);
+              participantAlignments.put(name, w.path("alignment").asText("FACE"));
+            }
+          }
+          if (!participantsList.isEmpty()) {
+            wrestler1 = participantsList.get(0);
+            if (participantsList.size() > 1) {
+              wrestler2 = participantsList.get(1);
+            }
+          }
+        }
+
+        // Extract commentators
+        if (rootNode.has("commentators") && rootNode.get("commentators").isArray()) {
+          List<String> commentatorsList = new ArrayList<>();
+          for (JsonNode c : rootNode.get("commentators")) {
+            String name = c.path("name").asText();
+            if (!name.isEmpty()) {
+              commentatorsList.add(name);
+            }
+          }
+          if (!commentatorsList.isEmpty()) {
+            comm1 = commentatorsList.get(0);
+            if (commentatorsList.size() > 1) {
+              comm2 = commentatorsList.get(1);
+            }
+          }
+        }
+
+        // Extract venue
+        if (rootNode.has("venue") && rootNode.get("venue").has("name")) {
+          venue = rootNode.get("venue").get("name").asText("the arena");
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Failed to parse JSON context in mock service: {}", e.getMessage());
+    }
 
     StringBuilder sb = new StringBuilder();
-    sb.append("Narrator: ").append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n");
+    sb.append("Narrator: ")
+        .append(generateOpening(wrestler1, wrestler2, venue, type))
+        .append("\n\n");
     String w1Alignment = participantAlignments.getOrDefault(wrestler1, "FACE");
-    String w2Alignment = participantAlignments.getOrDefault(wrestler2, "HEEL");
-    sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n");
+    sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n\n");
 
     if (type.equals("Match")) {
-      sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n");
+      sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
+
       String reaction;
       if ("HEEL".equalsIgnoreCase(w1Alignment)) {
         reaction =
@@ -122,57 +172,27 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
         reaction = "Wrestler " + wrestler1 + " is executing their move set with precision.";
       }
 
-      sb.append(comm2).append(": ").append(reaction).append("\n");
+      sb.append(comm2).append(": ").append(reaction).append("\n\n");
 
-      sb.append("Narrator: ").append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n");
-      sb.append(comm1).append(": ").append("I can't believe the resilience!").append("\n");
-      sb.append("Narrator: ").append(generateClimaxAndFinish(wrestler1, wrestler2)).append("\n");
+      sb.append("Narrator: ").append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n\n");
+      sb.append(comm1).append(": ").append("I can't believe the resilience!").append("\n\n");
+      sb.append("Narrator: ").append(generateClimaxAndFinish(wrestler1, wrestler2)).append("\n\n");
       sb.append(comm2).append(": ").append("What an ending!");
     } else {
       sb.append("Narrator: ")
           .append(wrestler1)
-          .append(" grabs the microphone and looks intensely at the crowd.\n");
+          .append(" grabs the microphone and looks intensely at the crowd.\n\n");
       sb.append(comm1)
           .append(": ")
-          .append("\"I've waited a long time for this moment,\" he declares.\n");
+          .append("\"I've waited a long time for this moment,\" he declares.\n\n");
       sb.append("Narrator: ")
           .append(wrestler2)
-          .append(" interrupts, walking down the ramp with a confident smirk.\n");
+          .append(" interrupts, walking down the ramp with a confident smirk.\n\n");
       sb.append(comm2)
           .append(": ")
           .append("The tension is thick as they stand face-to-face in the middle of the ring.");
     }
     return sb.toString();
-  }
-
-  private Map<String, String> extractWrestlerAlignments(@NonNull String prompt) {
-    Map<String, String> alignments = new java.util.HashMap<>();
-    int wrestlersStart = prompt.indexOf("\"wrestlers\"");
-    if (wrestlersStart != -1) {
-      // Very crude regex-based JSON extraction for mock
-      Pattern blockPattern =
-          Pattern.compile(
-              "\\{[^}]*?\"name\"\\s*:\\s*\"([^\"]+)\".*?\"alignment\"\\s*:\\s*\"([^\"]+)\"");
-      Matcher matcher = blockPattern.matcher(prompt.substring(wrestlersStart));
-      while (matcher.find()) {
-        alignments.put(matcher.group(1), matcher.group(2));
-      }
-    }
-
-    return alignments;
-  }
-
-  private List<String> extractCommentators(String prompt) {
-    List<String> commentators = new ArrayList<>();
-    int commentatorsStart = prompt.indexOf("\"commentators\"");
-    if (commentatorsStart != -1) {
-      Pattern namePattern = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
-      Matcher matcher = namePattern.matcher(prompt.substring(commentatorsStart));
-      while (matcher.find()) {
-        commentators.add(matcher.group(1));
-      }
-    }
-    return commentators;
   }
 
   private String generateMockCampaignEncounter(String prompt) {

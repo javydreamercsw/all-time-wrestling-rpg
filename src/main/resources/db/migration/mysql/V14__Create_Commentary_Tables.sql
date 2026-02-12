@@ -27,10 +27,8 @@ CREATE TABLE IF NOT EXISTS commentary_team_members (
 );
 
 -- Update NPC table with gender and alignment
-ALTER TABLE npc ADD COLUMN IF NOT EXISTS gender VARCHAR(255);
-ALTER TABLE npc ADD COLUMN IF NOT EXISTS alignment VARCHAR(255);
--- last_sync already exists in some versions but let's be safe
--- ALTER TABLE npc ADD COLUMN IF NOT EXISTS last_sync TIMESTAMP NULL; 
+ALTER TABLE npc ADD COLUMN gender VARCHAR(255);
+ALTER TABLE npc ADD COLUMN alignment VARCHAR(255);
 
 -- Ensure npc.description is long enough
 ALTER TABLE npc MODIFY COLUMN description LONGTEXT;
