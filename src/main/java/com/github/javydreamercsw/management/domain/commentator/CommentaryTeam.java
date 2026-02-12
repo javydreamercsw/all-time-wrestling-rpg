@@ -49,7 +49,7 @@ public class CommentaryTeam extends AbstractEntity<Long> {
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
-      name = "commentary_team_member",
+      name = "commentary_team_members",
       joinColumns = @JoinColumn(name = "team_id"),
       inverseJoinColumns = @JoinColumn(name = "commentator_id"))
   private List<Commentator> commentators = new ArrayList<>();

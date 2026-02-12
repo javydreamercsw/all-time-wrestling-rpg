@@ -95,38 +95,28 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     String comm2 = commentators.size() > 1 ? commentators.get(1) : "Lord Bastian Von Crowe";
 
     StringBuilder sb = new StringBuilder();
-    sb.append("[SPEAKER:")
-        .append(comm1)
-        .append("]: ")
-        .append(generateOpening(wrestler1, wrestler2, venue, type))
-        .append("\n");
+    sb.append("Narrator: ").append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n");
+    sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n");
+
     if (type.equals("Match")) {
-      sb.append("[SPEAKER:")
-          .append(comm2)
-          .append("]: ")
-          .append(generateEarlyAction(wrestler1, wrestler2))
-          .append("\n");
-      sb.append("[SPEAKER:")
-          .append(comm1)
-          .append("]: ")
-          .append(generateMidSegmentDrama(wrestler1, wrestler2))
-          .append("\n");
-      sb.append("[SPEAKER:")
-          .append(comm2)
-          .append("]: ")
-          .append(generateClimaxAndFinish(wrestler1, wrestler2));
+      sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n");
+      sb.append(comm2).append(": ").append("This is going to be a slugfest!").append("\n");
+      sb.append("Narrator: ").append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n");
+      sb.append(comm1).append(": ").append("I can't believe the resilience!").append("\n");
+      sb.append("Narrator: ").append(generateClimaxAndFinish(wrestler1, wrestler2)).append("\n");
+      sb.append(comm2).append(": ").append("What an ending!");
     } else {
-      sb.append("[SPEAKER:")
-          .append(comm1)
-          .append("]: ")
+      sb.append("Narrator: ")
           .append(wrestler1)
-          .append(" grabs the microphone and looks intensely at the crowd. ")
-          .append("\"I've waited a long time for this moment,\" he declares. \n");
-      sb.append("[SPEAKER:")
-          .append(comm2)
-          .append("]: ")
+          .append(" grabs the microphone and looks intensely at the crowd.\n");
+      sb.append(comm1)
+          .append(": ")
+          .append("\"I've waited a long time for this moment,\" he declares.\n");
+      sb.append("Narrator: ")
           .append(wrestler2)
-          .append(" interrupts, walking down the ramp with a confident smirk. ")
+          .append(" interrupts, walking down the ramp with a confident smirk.\n");
+      sb.append(comm2)
+          .append(": ")
           .append("The tension is thick as they stand face-to-face in the middle of the ring.");
     }
     return sb.toString();

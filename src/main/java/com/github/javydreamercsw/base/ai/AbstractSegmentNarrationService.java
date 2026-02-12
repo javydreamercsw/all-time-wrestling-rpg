@@ -45,11 +45,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
       return "You are a wrestling expert. Your task is to provide a concise summary of a wrestling"
           + " segment narration.";
     } else {
-      return "You are a team of professional wrestling commentators. Your task is to provide"
-          + " dynamic, character-driven dialogue narrating the match from multiple"
-          + " perspectives. Each commentator has a unique voice, alignment (Face/Heel), and"
-          + " style that must be captured in the dialogue. IMPORTANT: Every line of output MUST"
-          + " follow the dialogue format: '[SPEAKER:Commentator Name]: Dialogue text'.";
+      return "You are a team of professional wrestling commentators and a match narrator. Your"
+          + " task is to provide a transcript of the match, alternating between vivid"
+          + " descriptions of the action (as 'Narrator') and character-driven commentary from"
+          + " the commentators. Each commentator has a unique voice, alignment (Face/Heel), and"
+          + " style. IMPORTANT: Every line of output MUST follow the format: 'Name: Text'.";
     }
   }
 
@@ -79,16 +79,26 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append(
         "A 'HEEL' commentator should be snarky, support rule-breakers, and offer critical or"
             + " controversial takes.\n");
-    prompt.append("IMPORTANT: You MUST format the narration as lines of dialogue.\n");
     prompt.append(
-        "Each line of dialogue MUST start with a tag identifying the speaker in the following"
-            + " format: '[SPEAKER:Commentator Name]'.\n");
-    prompt.append("Follow the tag immediately with a colon and the commentator's dialogue.\n");
-    prompt.append("Example: '[SPEAKER:Dara Hoshiko]: I can't believe he just did that!'\n");
+        "IMPORTANT: You MUST format the narration as a transcript of dialogue and action.\n");
     prompt.append(
-        "Example: '[SPEAKER:Lord Bastian Von Crowe]: It was a stroke of genius, Dara, if you had"
-            + " any taste you'd see that.'\n");
-    prompt.append("DO NOT include any text that is not part of a tagged dialogue line.\n\n");
+        "For each sequence of events, start the line with 'Narrator:' followed by a vivid,"
+            + " objective description of the wrestling action and moves performed.\n");
+    prompt.append(
+        "Follow the action lines with reactions and analysis from the commentators provided in the"
+            + " JSON.\n");
+    prompt.append(
+        "Each line MUST start with the speaker's name (either 'Narrator' or a commentator's name)"
+            + " followed immediately by a colon and their text.\n");
+    prompt.append(
+        "Example: 'Narrator: Jax Felix scales the ropes and connects with a springboard"
+            + " moonsault!'\n");
+    prompt.append("Example: 'Dara Hoshiko: Incredible athleticism! Jax is taking control!'\n");
+    prompt.append(
+        "Example: 'Lord Bastian Von Crowe: A flashy move, but Eddie Guerrero is far from"
+            + " finished. He's just baiting the boy in.'\n");
+    prompt.append("DO NOT use square brackets like [SPEAKER:Name] around the names.\n");
+    prompt.append("DO NOT include any text that is not a tagged line.\n\n");
     prompt.append(
         "If a segmentChampionship is provided, use it as the title of the segment narration.\n\n");
     prompt.append(

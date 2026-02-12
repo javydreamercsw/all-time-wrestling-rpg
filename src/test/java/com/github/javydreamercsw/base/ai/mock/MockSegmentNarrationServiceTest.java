@@ -32,18 +32,18 @@ class MockSegmentNarrationServiceTest {
 
     String result = service.generateText(prompt);
 
+    assertTrue(result.contains("Dara Hoshiko:"), "Output should contain Dara's speaker tag");
     assertTrue(
-        result.contains("[SPEAKER:Dara Hoshiko]:"), "Output should contain Dara's speaker tag");
-    assertTrue(
-        result.contains("[SPEAKER:Lord Bastian Von Crowe]:"),
+        result.contains("Lord Bastian Von Crowe:"),
         "Output should contain Lord Bastian's speaker tag");
+    assertTrue(result.contains("Narrator:"), "Output should contain Narrator tag");
 
     String[] lines = result.split("\n");
     for (String line : lines) {
       if (!line.trim().isEmpty()) {
         assertTrue(
-            line.startsWith("[SPEAKER:"),
-            "Each non-empty line should start with [SPEAKER: format. Line: " + line);
+            line.contains(": "),
+            "Each non-empty line should follow Name: Text format. Line: " + line);
       }
     }
   }

@@ -29,8 +29,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class NarrationParserService {
 
-  private static final Pattern LINE_PATTERN =
-      Pattern.compile("^\\[SPEAKER:(.*?)\\]: (.*)$", Pattern.MULTILINE);
+  private static final Pattern LINE_PATTERN = Pattern.compile("^(.*?): (.*)$", Pattern.MULTILINE);
 
   /**
    * Parses a raw narration string into a list of NarrationLineDTO objects.

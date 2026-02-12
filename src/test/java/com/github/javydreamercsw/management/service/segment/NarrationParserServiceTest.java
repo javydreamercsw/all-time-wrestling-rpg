@@ -30,8 +30,8 @@ class NarrationParserServiceTest {
   @Test
   void testParseDialogue() {
     String raw =
-        "[SPEAKER:Dara Hoshiko]: Welcome to the show!\n"
-            + "[SPEAKER:Lord Bastian Von Crowe]: It's a dreadful night for some, Dara.";
+        "Dara Hoshiko: Welcome to the show!\n"
+            + "Lord Bastian Von Crowe: It's a dreadful night for some, Dara.";
 
     List<NarrationLineDTO> result = parser.parse(raw);
 
@@ -55,7 +55,7 @@ class NarrationParserServiceTest {
 
   @Test
   void testParseMixed() {
-    String raw = "Some intro text.\n" + "[SPEAKER:Dara]: Action!\n" + "Some outro text.";
+    String raw = "Some intro text.\n" + "Dara: Action!\n" + "Some outro text.";
 
     List<NarrationLineDTO> result = parser.parse(raw);
 
