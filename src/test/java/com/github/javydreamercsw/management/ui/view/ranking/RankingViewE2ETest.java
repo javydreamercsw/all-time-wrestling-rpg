@@ -21,6 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -42,6 +47,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 class RankingViewE2ETest extends AbstractE2ETest {
 
@@ -49,28 +56,12 @@ class RankingViewE2ETest extends AbstractE2ETest {
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentTypeService segmentTypeService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
-      campaignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @Autowired private org.springframework.cache.CacheManager cacheManager;
+  @Autowired private CampaignRepository campaignRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
+  @Autowired private CacheManager cacheManager;
 
   @BeforeEach
   void setUp() {
@@ -81,42 +72,28 @@ class RankingViewE2ETest extends AbstractE2ETest {
           .getCacheNames()
           .forEach(
               name -> {
-                org.springframework.cache.Cache cache = cacheManager.getCache(name);
-
+                Cache cache = cacheManager.getCache(name);
                 if (cache != null) {
-
                   cache.clear();
                 }
               });
     }
-
     wrestlerAlignmentRepository.deleteAllInBatch();
-
     campaignStateRepository.deleteAllInBatch();
-
     backstageActionHistoryRepository.deleteAllInBatch();
-
     campaignEncounterRepository.deleteAllInBatch();
-
     campaignRepository.deleteAllInBatch();
-
     titleReignRepository.deleteAll();
-
     titleRepository
         .findAll()
         .forEach(
             t -> {
               t.setChampion(null);
-
               titleRepository.save(t);
             });
-
     titleRepository.deleteAll();
-
     segmentRepository.deleteAll();
-
     showRepository.deleteAll();
-
     wrestlerRepository.deleteAll();
   }
 
@@ -156,19 +133,14 @@ class RankingViewE2ETest extends AbstractE2ETest {
     titleRepository.saveAndFlush(title);
 
     // When
-
     driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
 
     // Then
-
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Explicitly select the championship to trigger update
-
     WebElement comboBox = waitForVaadinElement(driver, By.id("championship-combo-box"));
-
     selectFromVaadinComboBox(comboBox, "Legacy Title");
-
     wait.until(
         ExpectedConditions.visibilityOfElementLocated(
             By.xpath("//h3[text()='Championship History']")));
