@@ -20,9 +20,10 @@
 - [x] Add E2E documentation test to capture commentator personas in action. 57762e3f
 - [x] Update Game Mechanics guide with AI Commentary section. 57762e3f
 
-## Phase 4: Verification [checkpoint: 28ccc38]
+## Phase 4: Verification [checkpoint: 586393a]
 
 - [x] Unit tests for dialogue parsing logic. 8bf3483d
+- [x] Fix `AbstractMatchNarrationServiceTest` for new prompt format. 586393ae
 - [x] E2E tests verifying that narration displays with multiple personas. 57762e3f
 - [x] Documentation screenshots updated. 28ccc38f
 
