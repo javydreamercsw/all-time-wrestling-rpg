@@ -8,9 +8,9 @@
 
 ## Phase 2: AI Prompt Engineering
 
-- [~] Refactor `SegmentNarrationService` to include commentator profiles in the AI prompt context.
-- [ ] Update AI system instructions to enforce dialogue-style output with specific tags.
-- [ ] Implement a parser to split the AI response into a list of `NarrationLine` objects.
+- [x] Refactor `SegmentNarrationService` to include commentator profiles in the AI prompt context. 0ec7d045
+- [x] Update AI system instructions to enforce dialogue-style output with specific tags. 6a18ea07
+- [~] Implement a parser to split the AI response into a list of `NarrationLine` objects.
 
 ## Phase 3: UI Enhancement
 
