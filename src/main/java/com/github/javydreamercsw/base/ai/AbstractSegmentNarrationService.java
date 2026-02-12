@@ -45,10 +45,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
       return "You are a wrestling expert. Your task is to provide a concise summary of a wrestling"
           + " segment narration.";
     } else {
-      return "You are a professional wrestling commentator and storyteller. You have deep knowledge"
-          + " of wrestling history, storytelling techniques, and segment psychology. Create"
-          + " vivid, engaging segment narrations that capture the drama and excitement of"
-          + " professional wrestling.";
+      return "You are a team of professional wrestling commentators. Your task is to provide"
+          + " dynamic, character-driven dialogue narrating the match from multiple"
+          + " perspectives. Each commentator has a unique voice, alignment (Face/Heel), and"
+          + " style that must be captured in the dialogue. IMPORTANT: Every line of output MUST"
+          + " follow the dialogue format: '[SPEAKER:Commentator Name]: Dialogue text'.";
     }
   }
 
@@ -64,11 +65,30 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     }
 
     StringBuilder prompt = new StringBuilder();
-    prompt.append("You are a professional wrestling commentator and storyteller.\n");
+    prompt.append("You are a team of professional wrestling commentators.\n");
     prompt.append("You will be provided with a context object in JSON format.\n");
     prompt.append(
-        "Generate a compelling wrestling narration based on the data in the JSON object.\n");
+        "Generate a compelling wrestling narration as a DIALOGUE between the commentators provided"
+            + " in the JSON.\n");
     prompt.append("The JSON object contains instructions that you must follow.\n");
+    prompt.append(
+        "If commentators are provided, use their names, styles, and alignments to drive the"
+            + " conversation.\n");
+    prompt.append(
+        "A 'FACE' commentator should be supportive of rule-abiding wrestlers and optimistic.\n");
+    prompt.append(
+        "A 'HEEL' commentator should be snarky, support rule-breakers, and offer critical or"
+            + " controversial takes.\n");
+    prompt.append("IMPORTANT: You MUST format the narration as lines of dialogue.\n");
+    prompt.append(
+        "Each line of dialogue MUST start with a tag identifying the speaker in the following"
+            + " format: '[SPEAKER:Commentator Name]'.\n");
+    prompt.append("Follow the tag immediately with a colon and the commentator's dialogue.\n");
+    prompt.append("Example: '[SPEAKER:Dara Hoshiko]: I can't believe he just did that!'\n");
+    prompt.append(
+        "Example: '[SPEAKER:Lord Bastian Von Crowe]: It was a stroke of genius, Dara, if you had"
+            + " any taste you'd see that.'\n");
+    prompt.append("DO NOT include any text that is not part of a tagged dialogue line.\n\n");
     prompt.append(
         "If a segmentChampionship is provided, use it as the title of the segment narration.\n\n");
     prompt.append(

@@ -90,19 +90,59 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     String venue = extractVenue(prompt);
     String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
 
+    List<String> commentators = extractCommentators(prompt);
+    String comm1 = commentators.size() > 0 ? commentators.get(0) : "Dara Hoshiko";
+    String comm2 = commentators.size() > 1 ? commentators.get(1) : "Lord Bastian Von Crowe";
+
     StringBuilder sb = new StringBuilder();
-    sb.append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n\n");
+    sb.append("[SPEAKER:")
+        .append(comm1)
+        .append("]: ")
+        .append(generateOpening(wrestler1, wrestler2, venue, type))
+        .append("\n");
     if (type.equals("Match")) {
-      sb.append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
-      sb.append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n\n");
-      sb.append(generateClimaxAndFinish(wrestler1, wrestler2));
+      sb.append("[SPEAKER:")
+          .append(comm2)
+          .append("]: ")
+          .append(generateEarlyAction(wrestler1, wrestler2))
+          .append("\n");
+      sb.append("[SPEAKER:")
+          .append(comm1)
+          .append("]: ")
+          .append(generateMidSegmentDrama(wrestler1, wrestler2))
+          .append("\n");
+      sb.append("[SPEAKER:")
+          .append(comm2)
+          .append("]: ")
+          .append(generateClimaxAndFinish(wrestler1, wrestler2));
     } else {
-      sb.append(wrestler1).append(" grabs the microphone and looks intensely at the crowd. ");
-      sb.append("\"I've waited a long time for this moment,\" he declares. ");
-      sb.append(wrestler2).append(" interrupts, walking down the ramp with a confident smirk. ");
-      sb.append("The tension is thick as they stand face-to-face in the middle of the ring.");
+      sb.append("[SPEAKER:")
+          .append(comm1)
+          .append("]: ")
+          .append(wrestler1)
+          .append(" grabs the microphone and looks intensely at the crowd. ")
+          .append("\"I've waited a long time for this moment,\" he declares. \n");
+      sb.append("[SPEAKER:")
+          .append(comm2)
+          .append("]: ")
+          .append(wrestler2)
+          .append(" interrupts, walking down the ramp with a confident smirk. ")
+          .append("The tension is thick as they stand face-to-face in the middle of the ring.");
     }
     return sb.toString();
+  }
+
+  private List<String> extractCommentators(String prompt) {
+    List<String> commentators = new ArrayList<>();
+    int commentatorsStart = prompt.indexOf("\"commentators\"");
+    if (commentatorsStart != -1) {
+      Pattern namePattern = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
+      Matcher matcher = namePattern.matcher(prompt.substring(commentatorsStart));
+      while (matcher.find()) {
+        commentators.add(matcher.group(1));
+      }
+    }
+    return commentators;
   }
 
   private String generateMockCampaignEncounter(String prompt) {
