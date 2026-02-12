@@ -6,10 +6,11 @@
 - [x] Populate database with initial "Commentary Teams" (Pairs of Commentators). 94c7776a
 - [x] Add `CommentaryTeam` selection to `Show` and `ShowTemplate`. 0c90774c
 
-## Phase 2: AI Prompt Engineering [checkpoint: aa1a37f]
+## Phase 2: AI Prompt Engineering [checkpoint: 8d49fdf]
 
 - [x] Refactor `SegmentNarrationService` to include commentator profiles and wrestler alignment in the AI prompt context. aa1a37f8
 - [x] Update AI system instructions to enforce dialogue-style output with specific tags. e60e190d
+- [x] Refine prompt with explicit interaction rules for wrestler alignments (Face/Heel/Neutral). 8d49fdff
 - [x] Implement a parser to split the AI response into a list of `NarrationLine` objects. e60e190d
 
 ## Phase 3: UI Enhancement [checkpoint: aa1a37f]
