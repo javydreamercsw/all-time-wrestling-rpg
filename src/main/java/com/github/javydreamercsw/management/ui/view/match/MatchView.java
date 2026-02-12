@@ -36,9 +36,11 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -96,11 +98,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final MatchFulfillmentService matchFulfillmentService;
   private final PromoService promoService;
   private final CommentaryTeamRepository commentaryTeamRepository;
+  private final NarrationParserService narrationParserService;
 
   private Segment segment;
   private TextArea narrationArea;
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
+  private CommentaryComponent commentaryComponent;
 
   @Autowired
   public MatchView(
@@ -115,7 +119,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       MatchFulfillmentRepository matchFulfillmentRepository,
       MatchFulfillmentService matchFulfillmentService,
       PromoService promoService,
-      CommentaryTeamRepository commentaryTeamRepository) {
+      CommentaryTeamRepository commentaryTeamRepository,
+      NarrationParserService narrationParserService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -128,6 +133,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.matchFulfillmentService = matchFulfillmentService;
     this.promoService = promoService;
     this.commentaryTeamRepository = commentaryTeamRepository;
+    this.narrationParserService = narrationParserService;
   }
 
   @Override
@@ -457,6 +463,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.setId("save-narration-button");
 
+    commentaryComponent = new CommentaryComponent();
+    updateCommentaryDisplay();
+
     boolean isCampaignMatch = false;
     if (playerWrestler != null) {
       var campaignOpt = campaignRepository.findActiveByWrestler(playerWrestler);
@@ -487,13 +496,23 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     narrationButtons.add(saveButton);
 
     if (showGenerateButton) {
-      narrationContent.add(feedbackArea, narrationArea, narrationButtons);
+      narrationContent.add(feedbackArea, commentaryComponent, narrationArea, narrationButtons);
     } else {
-      narrationContent.add(narrationArea, narrationButtons);
+      narrationContent.add(commentaryComponent, narrationArea, narrationButtons);
     }
 
     narrationCard.add(narrationContent);
     add(narrationCard);
+  }
+
+  private void updateCommentaryDisplay() {
+    String narration = segment.getNarration();
+    if (narration != null && !narration.isBlank()) {
+      commentaryComponent.setCommentary(narrationParserService.parse(narration));
+      commentaryComponent.setVisible(true);
+    } else {
+      commentaryComponent.setVisible(false);
+    }
   }
 
   private void generateAiNarration() {
@@ -603,6 +622,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         narrationArea.setValue(generated);
         segment.setNarration(generated);
         segmentService.updateSegment(segment);
+        updateCommentaryDisplay();
         Notification.show("Narration generated!")
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
@@ -692,6 +712,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void saveNarration() {
     segment.setNarration(narrationArea.getValue());
     segmentService.updateSegment(segment);
+    updateCommentaryDisplay();
     Notification.show("Narration saved!");
   }
 }
