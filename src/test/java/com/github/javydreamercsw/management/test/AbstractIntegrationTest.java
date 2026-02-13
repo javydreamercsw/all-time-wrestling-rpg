@@ -102,6 +102,37 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
 
   @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
+  @Autowired protected com.github.javydreamercsw.management.domain.npc.NpcRepository npcRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+
+  @Autowired protected com.github.javydreamercsw.management.DatabaseCleanup databaseCleanup;
+  @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
+
+  @Autowired
   protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
       titleReignRepository;
 
@@ -179,47 +210,10 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void cleanupLeagues() {
-    log.info("Cleaning up Leagues and related data...");
-    inboxItemTargetRepository.deleteAllInBatch();
-    inboxRepository.deleteAllInBatch();
-    titleReignRepository.deleteAllInBatch();
-    matchFulfillmentRepository.deleteAllInBatch();
-    draftPickRepository.deleteAllInBatch();
-    draftRepository.deleteAllInBatch();
-    leagueRosterRepository.deleteAllInBatch();
-    leagueMembershipRepository.deleteAllInBatch();
-
-    // Clear league references from shows first or delete them
-    showRepository
-        .findAll()
-        .forEach(
-            show -> {
-              if (show.getLeague() != null) {
-                show.setLeague(null);
-                showRepository.save(show);
-              }
-            });
-
-    // Reset activeWrestlerId for all accounts to ensure test isolation
-    accountRepository
-        .findAll()
-        .forEach(
-            account -> {
-              if (account.getActiveWrestlerId() != null) {
-                account.setActiveWrestlerId(null);
-                accountRepository.save(account);
-              }
-            });
-
-    leagueRepository.deleteAllInBatch();
-
-    // Additional cleanup for E2E reliability
-    segmentRepository.deleteAllInBatch();
-    showRepository.deleteAllInBatch();
-    showTemplateRepository.deleteAllInBatch();
-    showTypeRepository.deleteAllInBatch();
-    wrestlerRepository.deleteAllInBatch();
-
-    log.info("League and entity cleanup complete.");
+    log.info("Cleaning up database using DatabaseCleanup...");
+    databaseCleanup.clearRepositories();
+    log.info("Re-initializing data using DataInitializer...");
+    dataInitializer.init();
+    log.info("Database reset complete.");
   }
 }

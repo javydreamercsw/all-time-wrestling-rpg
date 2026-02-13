@@ -78,9 +78,27 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     log.info("🔄 Deletion order: {}", syncOrder);
 
+    // Entities that should NOT be cleared as they contain static configuration data
+    // loaded by DataInitializer and needed by many views.
+    Set<String> protectedEntities =
+        new HashSet<>(
+            Arrays.asList(
+                "showtype",
+                "segmenttype",
+                "segmentrule",
+                "cardset",
+                "card",
+                "campaignabilitycard",
+                "holiday",
+                "injurytype"));
+
     // Delete data in the correct order
     int deletedCount = 0;
     for (String entityName : syncOrder) {
+      if (protectedEntities.contains(entityName.toLowerCase())) {
+        log.debug("🛡️ Skipping protected entity: {}", entityName);
+        continue;
+      }
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
         if (repository.count() > 0) {
@@ -92,7 +110,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     // Clean up any remaining repositories not in the entity list
     for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
-      if (!syncOrder.contains(entry.getKey())) {
+      if (!syncOrder.contains(entry.getKey()) && !protectedEntities.contains(entry.getKey())) {
         if (entry.getValue().count() > 0) {
           entry.getValue().deleteAllInBatch();
           deletedCount++;

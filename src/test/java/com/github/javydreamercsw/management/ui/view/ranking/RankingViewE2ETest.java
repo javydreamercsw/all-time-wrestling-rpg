@@ -81,12 +81,9 @@ class RankingViewE2ETest extends AbstractE2ETest {
                 }
               });
     }
-    wrestlerAlignmentRepository.deleteAllInBatch();
-    campaignStateRepository.deleteAllInBatch();
-    backstageActionHistoryRepository.deleteAllInBatch();
-    campaignEncounterRepository.deleteAllInBatch();
-    campaignRepository.deleteAllInBatch();
-    titleReignRepository.deleteAll();
+
+    // Targeted cleanup for entities created in this test
+    titleReignRepository.deleteAllInBatch();
     titleRepository
         .findAll()
         .forEach(
@@ -94,7 +91,9 @@ class RankingViewE2ETest extends AbstractE2ETest {
               t.setChampion(null);
               titleRepository.save(t);
             });
-    titleRepository.deleteAll();
+    titleRepository.deleteAllInBatch();
+    segmentRepository.deleteAllInBatch();
+    showRepository.deleteAllInBatch();
 
     // Ensure Weekly show type exists for the test
     showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 4, 2);
