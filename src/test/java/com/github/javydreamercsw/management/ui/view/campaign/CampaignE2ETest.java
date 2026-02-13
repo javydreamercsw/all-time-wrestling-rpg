@@ -145,8 +145,8 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // 3. Verify Upgrade section is visible
     waitForText("Available Skill Upgrades");
-    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Iron Man"));
-    assertTrue(driver.getPageSource().contains("Unbreakable"));
+    waitForText("Iron Man");
+    waitForText("Unbreakable");
 
     // 4. Purchase an upgrade (Iron Man)
     WebElement upgradeButton =
@@ -157,10 +157,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // 5. Verify upgrade is in "Purchased Skills" section
     waitForText("Purchased Skills");
-    assertTrue(
-        driver
-            .getPageSource()
-            .contains("Iron Man: Increases your wrestler’s maximum stamina by 2."));
+    waitForText("Iron Man: Increases your wrestler’s maximum stamina by 2.");
 
     // 6. Verify the upgrade section is gone (since only 8 tokens were granted and consumed)
     // assertFalse(driver.getPageSource().contains("Available Skill Upgrades"));
