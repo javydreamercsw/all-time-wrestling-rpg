@@ -212,6 +212,20 @@ public abstract class AbstractIntegrationTest {
   protected void cleanupLeagues() {
     log.info("Cleaning up database using DatabaseCleanup...");
     databaseCleanup.clearRepositories();
+
+    if (cacheManager != null) {
+      log.info("Clearing all caches...");
+      cacheManager
+          .getCacheNames()
+          .forEach(
+              cacheName -> {
+                var cache = cacheManager.getCache(cacheName);
+                if (cache != null) {
+                  cache.clear();
+                }
+              });
+    }
+
     log.info("Re-initializing data using DataInitializer...");
     dataInitializer.init();
     log.info("Database reset complete.");

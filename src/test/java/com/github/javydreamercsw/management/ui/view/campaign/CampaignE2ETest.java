@@ -16,14 +16,17 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -68,7 +71,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     Account admin = accountRepository.findByUsername("admin").get();
 
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    Wrestler player = wrestlers.isEmpty() ? null : wrestlers.get(0);
+    Wrestler player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     if (player == null) {
       Wrestler w =
@@ -98,7 +101,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // Verify dashboard loaded
     waitForText("Campaign: All or Nothing");
-    assertTrue(driver.getPageSource().contains("Chapter"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Chapter"));
     assertTrue(driver.getPageSource().contains("Victory Points"));
 
     // 2. Navigate to Backstage Actions
@@ -132,9 +135,8 @@ class CampaignE2ETest extends AbstractE2ETest {
   void testCampaignUpgrades() {
     // 1. Grant tokens directly in DB before starting test
     Account admin = accountRepository.findByUsername("admin").get();
-    Wrestler player = wrestlerRepository.findByAccount(admin).get(0);
-    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
-        campaignRepository.findActiveByWrestler(player).get();
+    Wrestler player = wrestlerRepository.findByAccount(admin).getFirst();
+    Campaign campaign = campaignRepository.findActiveByWrestler(player).get();
     campaign.getState().setSkillTokens(8);
     campaignRepository.save(campaign);
 
@@ -145,7 +147,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // 3. Verify Upgrade section is visible
     waitForText("Available Skill Upgrades");
-    assertTrue(driver.getPageSource().contains("Iron Man"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Iron Man"));
     assertTrue(driver.getPageSource().contains("Unbreakable"));
 
     // 4. Purchase an upgrade (Iron Man)
@@ -163,7 +165,7 @@ class CampaignE2ETest extends AbstractE2ETest {
             .contains("Iron Man: Increases your wrestler’s maximum stamina by 2."));
 
     // 6. Verify the upgrade section is gone (since only 8 tokens were granted and consumed)
-    assertTrue(!driver.getPageSource().contains("Available Skill Upgrades"));
+    assertFalse(driver.getPageSource().contains("Available Skill Upgrades"));
   }
 
   private void waitForText(String text) {

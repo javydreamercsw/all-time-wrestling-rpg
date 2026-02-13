@@ -79,7 +79,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
     log.info("🔄 Deletion order: {}", syncOrder);
 
     // Entities that should NOT be cleared as they contain static configuration data
+
     // loaded by DataInitializer and needed by many views.
+
     Set<String> protectedEntities =
         new HashSet<>(
             Arrays.asList(
@@ -89,6 +91,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "cardset",
                 "card",
                 "campaignabilitycard",
+                "campaignupgrade",
+                "commentator",
+                "commentaryteam",
                 "holiday",
                 "injurytype"));
 
