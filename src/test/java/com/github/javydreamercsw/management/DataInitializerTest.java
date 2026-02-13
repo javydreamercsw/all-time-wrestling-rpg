@@ -54,6 +54,7 @@ import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
@@ -78,6 +79,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,7 +106,8 @@ class DataInitializerTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
-  @Mock private org.springframework.core.env.Environment env;
+  @Mock private Environment env;
+  @Mock private CampaignUpgradeService campaignUpgradeService;
 
   @BeforeEach
   void setUp() {
@@ -129,6 +132,7 @@ class DataInitializerTest {
             teamRepository,
             campaignAbilityCardService,
             commentaryService,
+            campaignUpgradeService,
             env);
 
     // Mock count methods to prevent issues during init()

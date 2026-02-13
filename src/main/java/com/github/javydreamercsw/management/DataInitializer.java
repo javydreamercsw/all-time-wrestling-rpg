@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.dto.commentator.CommentaryTeamImport
 import com.github.javydreamercsw.management.dto.commentator.CommentatorImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
@@ -109,6 +110,7 @@ public class DataInitializer implements Initializable {
   private final TeamRepository teamRepository;
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final CommentaryService commentaryService;
+  private final CampaignUpgradeService campaignUpgradeService;
   private final Environment env;
 
   @Autowired
@@ -131,6 +133,7 @@ public class DataInitializer implements Initializable {
       TeamRepository teamRepository,
       CampaignAbilityCardService campaignAbilityCardService,
       CommentaryService commentaryService,
+      CampaignUpgradeService campaignUpgradeService,
       Environment env) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
@@ -150,6 +153,7 @@ public class DataInitializer implements Initializable {
     this.teamRepository = teamRepository;
     this.campaignAbilityCardService = campaignAbilityCardService;
     this.commentaryService = commentaryService;
+    this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
   }
 
@@ -172,6 +176,7 @@ public class DataInitializer implements Initializable {
       syncFactionsFromFile();
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();
+      campaignUpgradeService.loadUpgrades();
       syncCommentatorsFromFile();
       syncCommentaryTeamsFromFile();
     }

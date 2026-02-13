@@ -49,11 +49,7 @@ public class CampaignUpgradeService {
   }
 
   public void loadUpgrades() {
-    if (upgradeRepository.count() > 0) {
-      log.info("Campaign upgrades already loaded.");
-      return;
-    }
-
+    log.info("Loading campaign upgrades...");
     try (InputStream is = getClass().getResourceAsStream("/campaign_upgrades.json")) {
       if (is == null) {
         log.error("campaign_upgrades.json not found in resources.");
@@ -61,6 +57,9 @@ public class CampaignUpgradeService {
       }
       List<CampaignUpgrade> upgrades =
           objectMapper.readValue(is, new TypeReference<List<CampaignUpgrade>>() {});
+
+      // Clear existing upgrades before saving new ones to ensure idempotency
+      upgradeRepository.deleteAllInBatch();
       upgradeRepository.saveAll(upgrades);
       log.info("Loaded {} campaign upgrades into database.", upgrades.size());
     } catch (IOException e) {
