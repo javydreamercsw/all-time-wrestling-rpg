@@ -44,7 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
     username = "admin",
     roles = {"ADMIN", "BOOKER"})
 @DirtiesContext
-class InjurySystemIntegrationTest extends ManagementIntegrationTest {
+class InjurySystemIT extends ManagementIntegrationTest {
   @Autowired private InjuryService injuryService;
   @Autowired private InjuryRepository injuryRepository;
 

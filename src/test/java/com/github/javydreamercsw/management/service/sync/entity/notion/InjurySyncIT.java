@@ -51,7 +51,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @WithMockUser(
     username = "injury-user",
     roles = {"ADMIN"})
-class InjurySyncIntegrationTest extends ManagementIntegrationTest {
+class InjurySyncIT extends ManagementIntegrationTest {
 
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
