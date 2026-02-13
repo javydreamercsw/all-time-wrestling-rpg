@@ -92,8 +92,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "card",
                 "campaignabilitycard",
                 "campaignupgrade",
-                "commentator",
-                "commentaryteam",
                 "holiday",
                 "injurytype"));
 
