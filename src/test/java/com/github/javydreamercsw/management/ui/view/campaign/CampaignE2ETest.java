@@ -78,6 +78,15 @@ class CampaignE2ETest extends AbstractE2ETest {
     if (!campaignService.hasActiveCampaign(player)) {
       campaignService.startCampaign(player);
     }
+
+    // Ensure the campaign state is clean of any upgrades for this test
+    campaignRepository
+        .findActiveByWrestler(player)
+        .ifPresent(
+            campaign -> {
+              campaign.getState().getUpgrades().clear();
+              campaignRepository.save(campaign);
+            });
   }
 
   @Test
