@@ -17,11 +17,13 @@
 package com.github.javydreamercsw.management.domain.show.template;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -74,6 +76,10 @@ public class ShowTemplate extends AbstractEntity<Long> {
 
   @Column(name = "expected_promos")
   private Integer expectedPromos;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "commentary_team_id")
+  private CommentaryTeam commentaryTeam;
 
   @Column(name = "duration_days")
   private Integer durationDays = 1;

@@ -54,8 +54,10 @@ import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
+import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -77,6 +79,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 
 @ExtendWith(MockitoExtension.class)
@@ -99,10 +102,12 @@ class DataInitializerTest {
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
+  @Mock private CommentaryService commentaryService;
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
-  @Mock private org.springframework.core.env.Environment env;
+  @Mock private Environment env;
+  @Mock private CampaignUpgradeService campaignUpgradeService;
 
   @BeforeEach
   void setUp() {
@@ -126,6 +131,8 @@ class DataInitializerTest {
             teamService,
             teamRepository,
             campaignAbilityCardService,
+            commentaryService,
+            campaignUpgradeService,
             env);
 
     // Mock count methods to prevent issues during init()
@@ -219,6 +226,34 @@ class DataInitializerTest {
     long initialDeckCount = deckService.count();
     dataInitializer.init();
     assertEquals(initialDeckCount, deckService.count());
+  }
+
+  @Test
+  void validateCommentatorsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("commentators.json").getInputStream(),
+                  new TypeReference<
+                      List<
+                          com.github.javydreamercsw.management.dto.commentator
+                              .CommentatorImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateCommentaryTeamsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("commentary_teams.json").getInputStream(),
+                  new TypeReference<
+                      List<
+                          com.github.javydreamercsw.management.dto.commentator
+                              .CommentaryTeamImportDTO>>() {});
+        });
   }
 
   @Test

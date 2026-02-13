@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -68,6 +69,7 @@ public class ShowService {
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
+  private final CommentaryTeamRepository commentaryTeamRepository;
 
   ShowService(
       ShowRepository showRepository,
@@ -81,7 +83,8 @@ public class ShowService {
       ApplicationEventPublisher eventPublisher,
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
-      GameSettingService gameSettingService) {
+      GameSettingService gameSettingService,
+      CommentaryTeamRepository commentaryTeamRepository) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -94,6 +97,7 @@ public class ShowService {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.gameSettingService = gameSettingService;
+    this.commentaryTeamRepository = commentaryTeamRepository;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -279,7 +283,8 @@ public class ShowService {
       LocalDate showDate,
       Long seasonId,
       Long templateId,
-      Long leagueId) {
+      Long leagueId,
+      Long commentaryTeamId) {
 
     Show show = new Show();
     show.setName(name);
@@ -321,6 +326,17 @@ public class ShowService {
       show.setLeague(league);
     }
 
+    // Set commentary team (optional)
+    if (commentaryTeamId != null) {
+      show.setCommentaryTeam(
+          commentaryTeamRepository
+              .findById(commentaryTeamId)
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          "Commentary team not found: " + commentaryTeamId)));
+    }
+
     return showRepository.saveAndFlush(show);
   }
 
@@ -352,7 +368,8 @@ public class ShowService {
       LocalDate showDate,
       Long seasonId,
       Long templateId,
-      Long leagueId) {
+      Long leagueId,
+      Long commentaryTeamId) {
 
     return showRepository
         .findById(id)
@@ -404,6 +421,18 @@ public class ShowService {
                 show.setLeague(league);
               } else {
                 show.setLeague(null);
+              }
+
+              if (commentaryTeamId != null) {
+                show.setCommentaryTeam(
+                    commentaryTeamRepository
+                        .findById(commentaryTeamId)
+                        .orElseThrow(
+                            () ->
+                                new IllegalArgumentException(
+                                    "Commentary team not found: " + commentaryTeamId)));
+              } else {
+                show.setCommentaryTeam(null);
               }
 
               return showRepository.saveAndFlush(show);

@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -41,6 +42,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -74,6 +76,8 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private PromoService promoService;
+  @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private NarrationParserService narrationParserService;
   private MatchView matchView;
 
   @BeforeEach
@@ -90,7 +94,9 @@ class MatchViewTest extends AbstractViewTest {
             segmentAdjudicationService,
             matchFulfillmentRepository,
             matchFulfillmentService,
-            promoService);
+            promoService,
+            commentaryTeamRepository,
+            narrationParserService);
   }
 
   @Test

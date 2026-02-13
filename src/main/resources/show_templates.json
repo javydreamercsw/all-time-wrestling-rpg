@@ -2,6 +2,7 @@
   "name": "Continuum",
   "description": "Innovation, rebellion, and raw momentum. Continuum is chaotic, experimental, and edgy. It’s the proving ground for newer wrestlers and the home of the Intertemporal and Extreme divisions. Think of it as the collision point of chaos and evolution.",
   "showTypeName": "Weekly",
+  "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "WEEKLY",
   "dayOfWeek": "MONDAY",
   "durationDays": 1

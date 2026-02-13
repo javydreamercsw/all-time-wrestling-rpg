@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.template;
 
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -46,6 +47,7 @@ public class ShowTemplateService {
 
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private CommentaryTeamRepository commentaryTeamRepository;
   @Autowired private Clock clock;
 
   /**
@@ -217,6 +219,7 @@ public class ShowTemplateService {
       @NonNull String showTypeName,
       String notionUrl,
       String imageUrl,
+      String commentaryTeamName,
       Integer expectedMatches,
       Integer expectedPromos,
       Integer durationDays,
@@ -263,6 +266,13 @@ public class ShowTemplateService {
     template.setWeekOfMonth(weekOfMonth);
     template.setMonth(month);
 
+    if (commentaryTeamName != null && !commentaryTeamName.trim().isEmpty()) {
+      commentaryTeamRepository.findAll().stream()
+          .filter(t -> t.getName().equals(commentaryTeamName))
+          .findFirst()
+          .ifPresent(template::setCommentaryTeam);
+    }
+
     return showTemplateRepository.save(template);
   }
 
@@ -281,6 +291,7 @@ public class ShowTemplateService {
         description,
         showTypeName,
         notionUrl,
+        null,
         null,
         null,
         null,
@@ -350,6 +361,7 @@ public class ShowTemplateService {
       @NonNull String showTypeName,
       String notionUrl,
       String imageUrl,
+      String commentaryTeamName,
       Integer expectedMatches,
       Integer expectedPromos,
       Integer durationDays,
@@ -390,6 +402,15 @@ public class ShowTemplateService {
     template.setWeekOfMonth(weekOfMonth);
     template.setMonth(month);
 
+    if (commentaryTeamName != null && !commentaryTeamName.trim().isEmpty()) {
+      commentaryTeamRepository.findAll().stream()
+          .filter(t -> t.getName().equals(commentaryTeamName))
+          .findFirst()
+          .ifPresent(template::setCommentaryTeam);
+    } else {
+      template.setCommentaryTeam(null);
+    }
+
     ShowTemplate savedTemplate = showTemplateRepository.save(template);
     log.info("Updated show template: {}", name);
     return Optional.of(savedTemplate);
@@ -427,6 +448,7 @@ public class ShowTemplateService {
         showTypeName,
         notionUrl,
         st.getImageUrl(),
+        st.getCommentaryTeam() != null ? st.getCommentaryTeam().getName() : null,
         st.getExpectedMatches(),
         st.getExpectedPromos(),
         st.getDurationDays(),

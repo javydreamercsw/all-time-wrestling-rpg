@@ -31,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class InboxServiceIntegrationTest extends ManagementIntegrationTest {
+class InboxServiceIT extends ManagementIntegrationTest {
 
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
