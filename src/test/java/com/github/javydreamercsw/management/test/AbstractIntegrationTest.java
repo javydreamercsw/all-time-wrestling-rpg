@@ -212,6 +212,14 @@ public abstract class AbstractIntegrationTest {
             });
 
     leagueRepository.deleteAllInBatch();
-    log.info("League cleanup complete.");
+
+    // Additional cleanup for E2E reliability
+    segmentRepository.deleteAllInBatch();
+    showRepository.deleteAllInBatch();
+    showTemplateRepository.deleteAllInBatch();
+    showTypeRepository.deleteAllInBatch();
+    wrestlerRepository.deleteAllInBatch();
+
+    log.info("League and entity cleanup complete.");
   }
 }

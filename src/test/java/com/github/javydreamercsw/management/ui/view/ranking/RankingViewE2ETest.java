@@ -63,6 +63,9 @@ class RankingViewE2ETest extends AbstractE2ETest {
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private CacheManager cacheManager;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService;
+
   @BeforeEach
   void setUp() {
     cleanupLeagues();
@@ -92,9 +95,9 @@ class RankingViewE2ETest extends AbstractE2ETest {
               titleRepository.save(t);
             });
     titleRepository.deleteAll();
-    segmentRepository.deleteAll();
-    showRepository.deleteAll();
-    wrestlerRepository.deleteAll();
+
+    // Ensure Weekly show type exists for the test
+    showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 4, 2);
   }
 
   @Test
