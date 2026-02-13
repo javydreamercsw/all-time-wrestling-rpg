@@ -381,6 +381,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
             null);
 
     // Create a new segment objects
@@ -475,6 +476,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
             null);
 
     // Create a new segment objects
@@ -566,6 +568,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
             null);
 
     // Create a new segment objects

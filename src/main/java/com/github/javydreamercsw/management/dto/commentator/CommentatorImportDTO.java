@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,16 +14,19 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.dto.commentator;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import lombok.Data;
 
-import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
-import org.junit.jupiter.api.DisplayName;
-
-/**
- * Integration test for FactionListView that tests real database interactions. This test would catch
- * LazyInitializationException that unit tests with mocks cannot detect.
- */
-@DisplayName("Faction ListView Integration Tests")
-class FactionListViewIntegrationTest extends AbstractMockUserIntegrationTest {}
+@Data
+public class CommentatorImportDTO {
+  private String npcName;
+  private Gender gender;
+  private AlignmentType alignment;
+  private String description;
+  private String style;
+  private String catchphrase;
+  private String personaDescription;
+}

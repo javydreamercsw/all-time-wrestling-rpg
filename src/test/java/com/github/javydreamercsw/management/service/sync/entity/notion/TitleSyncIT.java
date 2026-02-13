@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
@@ -43,10 +44,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
-class TitleSyncIntegrationTest extends ManagementIntegrationTest {
+class TitleSyncIT extends ManagementIntegrationTest {
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
+  @Autowired private NotionSyncService notionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
 

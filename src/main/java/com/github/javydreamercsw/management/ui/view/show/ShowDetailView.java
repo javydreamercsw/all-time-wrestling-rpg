@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -117,6 +118,7 @@ public class ShowDetailView extends Main
   private final ShowController showController;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final LeagueRepository leagueRepository;
+  private final CommentaryTeamRepository commentaryTeamRepository;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -142,7 +144,8 @@ public class ShowDetailView extends Main
       SegmentNarrationController segmentNarrationController,
       ShowController showController,
       MatchFulfillmentRepository matchFulfillmentRepository,
-      LeagueRepository leagueRepository) {
+      LeagueRepository leagueRepository,
+      CommentaryTeamRepository commentaryTeamRepository) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -160,6 +163,7 @@ public class ShowDetailView extends Main
     this.showController = showController;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRepository = leagueRepository;
+    this.commentaryTeamRepository = commentaryTeamRepository;
     initializeComponents();
   }
 
@@ -389,6 +393,15 @@ public class ShowDetailView extends Main
             show.getTemplate() != null ? show.getTemplate().getName() : "No template assigned");
     detailsLayout.add(templateLayout);
 
+    // Commentary Team
+    HorizontalLayout commentaryLayout =
+        createDetailRow(
+            "Commentary Team:",
+            show.getCommentaryTeam() != null
+                ? show.getCommentaryTeam().getName()
+                : "No commentary team assigned");
+    detailsLayout.add(commentaryLayout);
+
     // Show ID
     assert show.getId() != null;
     HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());
@@ -438,6 +451,7 @@ public class ShowDetailView extends Main
                   seasonService,
                   showTemplateService,
                   leagueRepository,
+                  commentaryTeamRepository,
                   show);
           dialog.addOpenedChangeListener(
               event -> {

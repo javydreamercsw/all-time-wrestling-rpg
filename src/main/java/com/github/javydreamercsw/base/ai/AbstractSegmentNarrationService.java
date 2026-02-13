@@ -45,10 +45,13 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
       return "You are a wrestling expert. Your task is to provide a concise summary of a wrestling"
           + " segment narration.";
     } else {
-      return "You are a professional wrestling commentator and storyteller. You have deep knowledge"
-          + " of wrestling history, storytelling techniques, and segment psychology. Create"
-          + " vivid, engaging segment narrations that capture the drama and excitement of"
-          + " professional wrestling.";
+      return "You are a team of professional wrestling commentators and a match narrator. Your"
+          + " task is to provide a transcript of the match, alternating between vivid"
+          + " descriptions of the action (as 'Narrator') and character-driven commentary from"
+          + " the commentators. Each commentator has a unique voice, alignment (Face/Heel), and"
+          + " style. Commentators MUST show bias based on their alignment and the alignment of the"
+          + " wrestlers they are describing (Face vs Heel dynamics). IMPORTANT: Every line of"
+          + " output MUST follow the format: 'Name: Text'.";
     }
   }
 
@@ -64,11 +67,56 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     }
 
     StringBuilder prompt = new StringBuilder();
-    prompt.append("You are a professional wrestling commentator and storyteller.\n");
+    prompt.append("You are a team of professional wrestling commentators.\n");
     prompt.append("You will be provided with a context object in JSON format.\n");
     prompt.append(
-        "Generate a compelling wrestling narration based on the data in the JSON object.\n");
+        "Generate a compelling wrestling narration as a DIALOGUE between the commentators provided"
+            + " in the JSON.\n");
     prompt.append("The JSON object contains instructions that you must follow.\n");
+    prompt.append(
+        "If commentators are provided, use their names, styles, and alignments to drive the"
+            + " conversation.\n");
+    prompt.append(
+        "A 'FACE' commentator should be supportive of rule-abiding wrestlers and optimistic.\n");
+    prompt.append(
+        "A 'HEEL' commentator should be snarky, support rule-breakers, and offer critical or"
+            + " controversial takes.\n");
+    prompt.append("COMMENTARY INTERACTION RULES:\n");
+    prompt.append(
+        "- FACE Commentator vs. FACE Wrestler: Enthusiastic support, praise for skill and"
+            + " integrity.\n");
+    prompt.append(
+        "- FACE Commentator vs. HEEL Wrestler: Critical of dirty tactics, focuses on the"
+            + " importance of rules and fair play.\n");
+    prompt.append(
+        "- HEEL Commentator vs. FACE Wrestler: Mockery, dismissal of skills as 'boring' or 'just"
+            + " luck', finds their moral high ground annoying.\n");
+    prompt.append(
+        "- HEEL Commentator vs. HEEL Wrestler: Justifies rule-breaking as 'strategy', praises"
+            + " ruthlessness and 'doing what it takes to win'.\n");
+    prompt.append(
+        "- NEUTRAL (Wrestler or Commentator): Focus strictly on technical execution, stats, and"
+            + " the importance of the match outcome without moral bias.\n\n");
+    prompt.append(
+        "IMPORTANT: You MUST format the narration as a transcript of dialogue and action.\n");
+    prompt.append(
+        "For each sequence of events, start the line with 'Narrator:' followed by a vivid,"
+            + " objective description of the wrestling action and moves performed.\n");
+    prompt.append(
+        "Follow the action lines with reactions and analysis from the commentators provided in the"
+            + " JSON.\n");
+    prompt.append(
+        "Each line MUST start with the speaker's name (either 'Narrator' or a commentator's name)"
+            + " followed immediately by a colon and their text.\n");
+    prompt.append(
+        "Example: 'Narrator: Jax Felix scales the ropes and connects with a springboard"
+            + " moonsault!'\n");
+    prompt.append("Example: 'Dara Hoshiko: Incredible athleticism! Jax is taking control!'\n");
+    prompt.append(
+        "Example: 'Lord Bastian Von Crowe: A flashy move, but Eddie Guerrero is far from"
+            + " finished. He's just baiting the boy in.'\n");
+    prompt.append("DO NOT use square brackets like [SPEAKER:Name] around the names.\n");
+    prompt.append("DO NOT include any text that is not a tagged line.\n\n");
     prompt.append(
         "If a segmentChampionship is provided, use it as the title of the segment narration.\n\n");
     prompt.append(

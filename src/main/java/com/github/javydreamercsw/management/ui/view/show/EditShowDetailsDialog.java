@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -52,6 +54,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
   private final LeagueRepository leagueRepository;
+  private final CommentaryTeamRepository commentaryTeamRepository;
   private final Show show;
   private final Binder<Show> binder = new Binder<>(Show.class);
 
@@ -60,6 +63,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final ComboBox<Season> seasonField = new ComboBox<>("Season");
   private final ComboBox<ShowTemplate> templateField = new ComboBox<>("Template");
   private final ComboBox<League> leagueField = new ComboBox<>("League");
+  private final ComboBox<CommentaryTeam> commentaryTeamField = new ComboBox<>("Commentary Team");
   private final DatePicker showDateField = new DatePicker("Show Date");
 
   public EditShowDetailsDialog(
@@ -68,12 +72,14 @@ public class EditShowDetailsDialog extends Dialog {
       @NonNull SeasonService seasonService,
       @NonNull ShowTemplateService showTemplateService,
       @NonNull LeagueRepository leagueRepository,
+      @NonNull CommentaryTeamRepository commentaryTeamRepository,
       @NonNull Show show) {
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
     this.leagueRepository = leagueRepository;
+    this.commentaryTeamRepository = commentaryTeamRepository;
     this.show = show;
 
     setHeaderTitle("Edit Show Details");
@@ -122,6 +128,15 @@ public class EditShowDetailsDialog extends Dialog {
     leagueField.setClearButtonVisible(true);
     leagueField.setWidthFull();
 
+    commentaryTeamField.setItems(
+        commentaryTeamRepository.findAll().stream()
+            .sorted(Comparator.comparing(CommentaryTeam::getName))
+            .collect(Collectors.toList()));
+    commentaryTeamField.setItemLabelGenerator(CommentaryTeam::getName);
+    commentaryTeamField.setValue(show.getCommentaryTeam());
+    commentaryTeamField.setClearButtonVisible(true);
+    commentaryTeamField.setWidthFull();
+
     showDateField.setValue(show.getShowDate());
     showDateField.setClearButtonVisible(true);
     showDateField.setWidthFull();
@@ -132,6 +147,7 @@ public class EditShowDetailsDialog extends Dialog {
     binder.bind(seasonField, Show::getSeason, Show::setSeason);
     binder.bind(templateField, Show::getTemplate, Show::setTemplate);
     binder.bind(leagueField, Show::getLeague, Show::setLeague);
+    binder.bind(commentaryTeamField, Show::getCommentaryTeam, Show::setCommentaryTeam);
     binder.bind(showDateField, Show::getShowDate, Show::setShowDate);
 
     // Buttons
@@ -146,7 +162,13 @@ public class EditShowDetailsDialog extends Dialog {
 
     FormLayout formLayout =
         new FormLayout(
-            descriptionField, typeField, seasonField, templateField, leagueField, showDateField);
+            descriptionField,
+            typeField,
+            seasonField,
+            templateField,
+            leagueField,
+            commentaryTeamField,
+            showDateField);
     formLayout.setWidthFull();
 
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
@@ -168,7 +190,8 @@ public class EditShowDetailsDialog extends Dialog {
             showDateField.getValue(),
             seasonField.getValue() != null ? seasonField.getValue().getId() : null,
             templateField.getValue() != null ? templateField.getValue().getId() : null,
-            leagueField.getValue() != null ? leagueField.getValue().getId() : null);
+            leagueField.getValue() != null ? leagueField.getValue().getId() : null,
+            commentaryTeamField.getValue() != null ? commentaryTeamField.getValue().getId() : null);
         Notification.show(
                 "Show details updated successfully!", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

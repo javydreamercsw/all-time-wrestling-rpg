@@ -113,8 +113,8 @@ public class ShowSchedulerService {
                 actualDate,
                 season.getId(),
                 template.getId(),
-                null // League ID - might need to be passed in
-                );
+                null, // League ID - might need to be passed in
+                template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null);
           }
         }
       }

@@ -180,7 +180,8 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
             LocalDate.now(),
             null,
             null,
-            league.getId());
+            league.getId(),
+            null);
     show = showRepository.saveAndFlush(show);
     entityManager.clear();
     show = showRepository.findById(show.getId()).get();

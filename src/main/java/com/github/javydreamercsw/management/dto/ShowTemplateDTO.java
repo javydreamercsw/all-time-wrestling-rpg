@@ -25,6 +25,7 @@ public class ShowTemplateDTO {
   private String showTypeName;
   private String notionUrl;
   private String externalId;
+  private String commentaryTeamName;
   private Integer expectedMatches;
   private Integer expectedPromos;
   private Integer durationDays;

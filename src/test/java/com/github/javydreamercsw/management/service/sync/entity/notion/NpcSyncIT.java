@@ -44,7 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
-class NpcSyncIntegrationTest extends ManagementIntegrationTest {
+class NpcSyncIT extends ManagementIntegrationTest {
 
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;

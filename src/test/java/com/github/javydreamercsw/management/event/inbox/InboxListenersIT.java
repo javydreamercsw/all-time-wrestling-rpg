@@ -60,7 +60,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
-public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
+public class InboxListenersIT extends AbstractIntegrationTest {
 
   @Autowired private ApplicationEventPublisher eventPublisher;
 
@@ -315,8 +315,9 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
             wrestler1.getName(), title.getName(), wrestler2.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     assertEquals(3, targetsCaptor.getValue().size());
-    assertEquals(title.getId().toString(), targetsCaptor.getValue().get(0).targetId());
-    assertEquals(InboxItemTarget.TargetType.TITLE, targetsCaptor.getValue().get(0).type());
+    assert title.getId() != null;
+    assertEquals(title.getId().toString(), targetsCaptor.getValue().getFirst().targetId());
+    assertEquals(InboxItemTarget.TargetType.TITLE, targetsCaptor.getValue().getFirst().type());
   }
 
   @Test

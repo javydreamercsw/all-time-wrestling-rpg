@@ -724,6 +724,7 @@ public class CampaignService {
                   finalDate,
                   season.getId(),
                   finalTemplateId,
+                  null,
                   null);
             });
   }
