@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "ai-features-ai-dynamic-commentary",
+    "category": "AI Features",
+    "title": "Dynamic Commentator Personas",
+    "description": "Experience the match through the eyes of unique commentator teams. Each commentator brings their own alignment, style, and catchphrases to the broadcast, creating an immersive 'sports-entertainment' feel. Face commentators cheer the heroes, while Heel commentators favor the rule-breakers.",
+    "imagePath": "screenshots/ai-dynamic-commentary.png",
+    "order": 410
+  }, {
     "id": "entities-entity-teams",
     "category": "Entities",
     "title": "Tag Teams",
