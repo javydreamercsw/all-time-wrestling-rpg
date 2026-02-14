@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,17 +46,21 @@ class NewsGenerationServiceTest {
   private SegmentNarrationService aiService;
   private NewsGenerationService newsGenerationService;
   private ObjectMapper objectMapper;
+  private GameSettingService gameSettingService;
 
   @BeforeEach
   void setUp() {
     newsService = mock(NewsService.class);
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     aiService = mock(SegmentNarrationService.class);
+    gameSettingService = mock(GameSettingService.class);
     objectMapper = new ObjectMapper();
-    newsGenerationService = new NewsGenerationService(newsService, aiFactory, objectMapper);
+    newsGenerationService =
+        new NewsGenerationService(newsService, aiFactory, objectMapper, gameSettingService);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
+    when(gameSettingService.isAiNewsEnabled()).thenReturn(true);
   }
 
   @Test

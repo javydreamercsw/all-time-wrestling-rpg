@@ -80,7 +80,8 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    VerticalLayout layout = new VerticalLayout(gameDatePicker, defaultThemeSelection, aiNewsEnabled);
+    VerticalLayout layout =
+        new VerticalLayout(gameDatePicker, defaultThemeSelection, aiNewsEnabled);
     add(layout);
   }
 }

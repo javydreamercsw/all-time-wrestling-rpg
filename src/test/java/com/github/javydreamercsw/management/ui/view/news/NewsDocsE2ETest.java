@@ -12,9 +12,6 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program.  |
-*
-* You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
 package com.github.javydreamercsw.management.ui.view.news;
@@ -34,7 +31,8 @@ class NewsDocsE2ETest extends AbstractE2ETest {
     // 1. Setup - Ensure some news exists
     newsService.createNewsItem(
         "Breaking: Major Championship Change!",
-        "In a shocking turn of events, the ATW World Championship has changed hands in a surprise match.",
+        "In a shocking turn of events, the ATW World Championship has changed hands in a surprise"
+            + " match.",
         NewsCategory.BREAKING,
         false,
         5);
