@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Primary
-@Profile("test")
+@Profile("test & !account-lockout-test")
 public class TestCustomUserDetailsService implements UserDetailsService {
 
   @Autowired private AccountRepository accountRepository;

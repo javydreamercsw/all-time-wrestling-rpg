@@ -17,14 +17,12 @@
 package com.github.javydreamercsw.base.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -49,12 +47,6 @@ public class TestSecurityConfig {
     ObjectMapper mapper = new ObjectMapper();
     mapper.findAndRegisterModules();
     return mapper;
-  }
-
-  @Bean
-  @Primary
-  public TestCustomUserDetailsService testCustomUserDetailsService() {
-    return new TestCustomUserDetailsService();
   }
 
   @Bean
