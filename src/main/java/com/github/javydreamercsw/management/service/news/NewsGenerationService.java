@@ -17,13 +17,17 @@
 package com.github.javydreamercsw.management.service.news;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
+import com.github.javydreamercsw.management.domain.news.NewsItem;
+import com.github.javydreamercsw.management.domain.news.NewsRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.stream.Collectors;
+import java.util.Random;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -40,11 +44,15 @@ public class NewsGenerationService {
   private final SegmentNarrationServiceFactory aiFactory;
   private final ObjectMapper objectMapper;
   private final GameSettingService gameSettingService;
+  private final InjuryRepository injuryRepository;
+  private final Random random = new Random();
 
   private static final String SYSTEM_PROMPT =
       """
       You are a professional wrestling sports journalist.
-      Based on the provided match results, generate a news item or a backstage rumor.
+      Based on the provided match results (can be a single segment or a whole show roundup), generate a news item or a backstage rumor.
+      
+      For show roundups, synthesize multiple results into 1-2 major headlines that highlight the most important events.
 
       Output MUST be a valid JSON object with the following fields:
       - headline: A catchy, sports-journalism style headline (max 255 chars).
@@ -58,6 +66,11 @@ public class NewsGenerationService {
     if (!gameSettingService.isAiNewsEnabled()) {
       log.debug("AI news generation is disabled. Creating fallback news.");
       createFallbackNews(segment);
+      return;
+    }
+
+    if ("SEGMENT".equals(gameSettingService.getNewsStrategy()) && !isNewsWorthy(segment)) {
+      log.debug("Segment is not news-worthy. Skipping news generation.");
       return;
     }
 
@@ -92,27 +105,84 @@ public class NewsGenerationService {
     try {
       String response =
           aiService.generateText(SYSTEM_PROMPT + "\n\nContext:\n" + prompt.toString());
-
-      // Clean JSON if needed (some LLMs might wrap it in ```json)
-      if (response.contains("```json")) {
-        response = response.substring(response.indexOf("```json") + 7);
-        response = response.substring(0, response.lastIndexOf("```"));
-      } else if (response.contains("```")) {
-        response = response.substring(response.indexOf("```") + 3);
-        response = response.substring(0, response.lastIndexOf("```"));
-      }
-
-      NewsDTO dto = objectMapper.readValue(response, NewsDTO.class);
-      newsService.createNewsItem(
-          dto.getHeadline(),
-          dto.getContent(),
-          NewsCategory.valueOf(dto.getCategory().toUpperCase()),
-          dto.getIsRumor(),
-          dto.getImportance());
+      parseAndCreateNews(response);
     } catch (Exception e) {
       log.error("Failed to generate AI news item", e);
       createFallbackNews(segment);
     }
+  }
+
+  public void generateNewsForShow(@NonNull Show show) {
+    if (!gameSettingService.isAiNewsEnabled()) return;
+
+    SegmentNarrationService aiService = aiFactory.getBestAvailableService();
+    if (aiService == null || !aiService.isAvailable()) return;
+
+    StringBuilder context = new StringBuilder();
+    context.append("Show: ").append(show.getName()).append("\n");
+    context.append("Results Roundup:\n");
+
+    for (Segment s : show.getSegments()) {
+      String winners =
+          s.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+      context
+          .append("- ")
+          .append(s.getSegmentType().getName())
+          .append(": ")
+          .append(winners)
+          .append(" won");
+      if (s.getIsTitleSegment()) context.append(" (TITLE MATCH)");
+      context.append("\n");
+    }
+
+    try {
+      String response =
+          aiServiceOpt.get().generateText(SYSTEM_PROMPT + "\n\nContext:\n" + context.toString());
+      parseAndCreateNews(response);
+    } catch (Exception e) {
+      log.error("Failed to generate show roundup news", e);
+    }
+  }
+
+  public void rollForRumor() {
+    if (!gameSettingService.isAiNewsEnabled()) return;
+
+    int chance = gameSettingService.getNewsRumorChance();
+    if (random.nextInt(100) < chance) {
+      log.info("Rumor roll success! Generating rumor...");
+      SegmentNarrationService aiService = aiFactory.getBestAvailableService();
+      if (aiService != null && aiService.isAvailable()) {
+        try {
+          String response =
+              aiService.generateText(
+                  SYSTEM_PROMPT
+                      + "\n\nContext: Generate a plausible backstage rumor about the current"
+                      + " wrestling roster. It should be speculative and interesting.");
+          parseAndCreateNews(response);
+        } catch (Exception e) {
+          log.error("Failed to generate random rumor", e);
+        }
+      }
+    }
+  }
+
+  private void parseAndCreateNews(String response) throws Exception {
+    // Clean JSON if needed (some LLMs might wrap it in ```json)
+    if (response.contains("```json")) {
+      response = response.substring(response.indexOf("```json") + 7);
+      response = response.substring(0, response.lastIndexOf("```"));
+    } else if (response.contains("```")) {
+      response = response.substring(response.indexOf("```") + 3);
+      response = response.substring(0, response.lastIndexOf("```"));
+    }
+
+    NewsDTO dto = objectMapper.readValue(response, NewsDTO.class);
+    newsService.createNewsItem(
+        dto.getHeadline(),
+        dto.getContent(),
+        NewsCategory.valueOf(dto.getCategory().toUpperCase()),
+        dto.getIsRumor(),
+        dto.getImportance());
   }
 
   private void createFallbackNews(Segment segment) {
@@ -129,6 +199,24 @@ public class NewsGenerationService {
 
     newsService.createNewsItem(
         headline, content, NewsCategory.BREAKING, false, segment.getIsTitleSegment() ? 5 : 3);
+  }
+
+  public boolean isNewsWorthy(@NonNull Segment segment) {
+    // 1. Title matches are always news-worthy
+    if (segment.getIsTitleSegment()) return true;
+
+    // 2. Main events are news-worthy
+    if (segment.isMainEvent()) return true;
+
+    // 3. New injuries are news-worthy
+    boolean hasInjuries =
+        segment.getWrestlers().stream()
+            .anyMatch(w -> !injuryRepository.findByWrestlerAndInjuryDate(w, segment.getSegmentDate()).isEmpty());
+    if (hasInjuries) return true;
+
+    // 4. Rivalry conclusions or high heat could be added here later
+    
+    return false;
   }
 
   @Data

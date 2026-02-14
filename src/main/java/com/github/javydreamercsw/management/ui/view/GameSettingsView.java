@@ -24,9 +24,11 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -71,17 +73,76 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
-    aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
-    aiNewsEnabled.addValueChangeListener(
-        event -> {
-          gameSettingService.setAiNewsEnabled(event.getValue());
-          Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
+        Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
 
-    VerticalLayout layout =
-        new VerticalLayout(gameDatePicker, defaultThemeSelection, aiNewsEnabled);
-    add(layout);
+        aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
+
+        aiNewsEnabled.addValueChangeListener(
+
+            event -> {
+
+              gameSettingService.setAiNewsEnabled(event.getValue());
+
+              Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
+
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+
+            });
+
+    
+
+        IntegerField rumorChance = new IntegerField("Daily Rumor Chance (%)");
+
+        rumorChance.setMin(0);
+
+        rumorChance.setMax(100);
+
+        rumorChance.setValue(gameSettingService.getNewsRumorChance());
+
+        rumorChance.setStepButtonsVisible(true);
+
+        rumorChance.addValueChangeListener(
+
+            event -> {
+
+              gameSettingService.setNewsRumorChance(event.getValue());
+
+              Notification.show("Rumor chance updated to: " + event.getValue() + "%")
+
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+
+            });
+
+    
+
+        ComboBox<String> newsStrategy = new ComboBox<>("News Generation Strategy");
+
+        newsStrategy.setItems(List.of("SEGMENT", "SHOW"));
+
+        newsStrategy.setValue(gameSettingService.getNewsStrategy());
+
+        newsStrategy.addValueChangeListener(
+
+            event -> {
+
+              gameSettingService.setNewsStrategy(event.getValue());
+
+              Notification.show("News strategy updated to: " + event.getValue())
+
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+
+            });
+
+    
+
+        VerticalLayout layout =
+
+            new VerticalLayout(
+
+                gameDatePicker, defaultThemeSelection, aiNewsEnabled, rumorChance, newsStrategy);
+
+        add(layout);
+
+    
   }
 }

@@ -24,3 +24,11 @@
 - [x] E2E test verifying news appears on the dashboard.
 - [x] DocsE2ETest to capture news feature screenshots.
 
+## Phase 5: Refinement & Optimization
+
+- [ ] Implement "News-Worthy" filtering (Titles, Injuries, Rivalry endings).
+- [ ] Add Show-level synthesis strategy (batch segments into one AI call).
+- [ ] Implement probability-based Rumor Engine ("Daily Roll").
+- [ ] Add advanced configurations to Game Settings (Rumor chance, Strategy toggle).
+- [ ] Update DocsE2ETest to verify refined triggers.
+
