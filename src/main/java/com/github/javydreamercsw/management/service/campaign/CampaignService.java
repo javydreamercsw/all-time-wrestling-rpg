@@ -226,7 +226,7 @@ public class CampaignService {
   /**
    * Creates a match segment for a campaign encounter.
    *
-   * @param campaign The campaign.
+   * @param campaignParam The campaign.
    * @param opponentName The name of the opponent.
    * @param narration The narrative text for the match.
    * @param segmentTypeName The name of the segment type (e.g., "One on One").
@@ -651,7 +651,7 @@ public class CampaignService {
   /**
    * Completes the post-match narrative and returns the campaign to the backstage phase.
    *
-   * @param campaign The campaign to transition.
+   * @param campaignParam The campaign to transition.
    */
   public void completePostMatch(@NonNull Campaign campaignParam) {
     // Reload campaign to ensure attached entity and fresh state
