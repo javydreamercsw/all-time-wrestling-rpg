@@ -66,14 +66,15 @@
 *Status: Completed*
 *Date: 2026-02-09*
 
+### [x] Track: Dynamic Commentator Personas (AI)
+
+*Link: [./conductor/archive/dynamic_commentator_personas_20260213/index.md](./conductor/archive/dynamic_commentator_personas_20260213/index.md)*
+*Status: Completed*
+*Date: 2026-02-13*
+
 ---
 
 ## Active Tracks
-
-### [ ] Track: Dynamic Commentator Personas (AI)
-
-*Link: [./conductor/tracks/dynamic_commentator_personas/index.md](./conductor/tracks/dynamic_commentator_personas/index.md)*
-*Status: Proposed*
 
 ### [ ] Track: AI-Driven News & Rumor Feed
 

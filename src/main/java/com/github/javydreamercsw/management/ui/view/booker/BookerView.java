@@ -23,9 +23,11 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.rivalry.RivalryListView;
 import com.github.javydreamercsw.management.ui.view.show.ShowListView;
@@ -54,13 +56,18 @@ public class BookerView extends VerticalLayout {
   private final ShowService showService;
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
+  private final NewsService newsService;
 
   @Autowired
   public BookerView(
-      ShowService showService, RivalryService rivalryService, WrestlerService wrestlerService) {
+      ShowService showService,
+      RivalryService rivalryService,
+      WrestlerService wrestlerService,
+      NewsService newsService) {
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
+    this.newsService = newsService;
 
     setHeightFull();
     setPadding(false);
@@ -72,10 +79,11 @@ public class BookerView extends VerticalLayout {
 
   private void buildDashboard() {
     Component quickActions = createQuickActions();
+    NewsTickerComponent newsTicker = new NewsTickerComponent(newsService);
     Tabs tabs = createTabs();
     Div pages = createPages(tabs);
 
-    VerticalLayout tabsComponent = new VerticalLayout(tabs, pages);
+    VerticalLayout tabsComponent = new VerticalLayout(newsTicker, tabs, pages);
     tabsComponent.setPadding(false);
     tabsComponent.setSpacing(false);
     tabsComponent.setAlignItems(Alignment.STRETCH);

@@ -55,6 +55,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -92,6 +93,7 @@ class CampaignServiceTest {
   @Mock private TitleService titleService;
   @Mock private SegmentAdjudicationService adjudicationService;
   @Mock private MatchRewardService matchRewardService;
+  @Mock private NewsGenerationService newsGenerationService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignService campaignService;

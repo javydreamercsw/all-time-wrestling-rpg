@@ -32,10 +32,12 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignDashboardView;
 import com.github.javydreamercsw.management.ui.view.match.MatchView;
@@ -82,6 +84,7 @@ public class PlayerView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final AccountService accountService;
   private final SegmentService segmentService;
+  private final NewsService newsService;
 
   private Wrestler playerWrestler;
 
@@ -93,7 +96,8 @@ public class PlayerView extends VerticalLayout {
       InboxService inboxService,
       SecurityUtils securityUtils,
       @Qualifier("managementAccountService") AccountService accountService,
-      SegmentService segmentService) {
+      SegmentService segmentService,
+      NewsService newsService) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;
@@ -101,6 +105,7 @@ public class PlayerView extends VerticalLayout {
     this.securityUtils = securityUtils;
     this.accountService = accountService;
     this.segmentService = segmentService;
+    this.newsService = newsService;
 
     setHeightFull();
     setPadding(false);
@@ -165,10 +170,12 @@ public class PlayerView extends VerticalLayout {
 
   private void buildDashboard() {
     Component profileCard = createProfileCard();
+    NewsTickerComponent newsTicker = new NewsTickerComponent(newsService);
     Component tabsComponent = createTabs();
 
-    add(profileCard, tabsComponent);
+    add(profileCard, newsTicker, tabsComponent);
     setFlexGrow(0, profileCard); // Profile card doesn't grow
+    setFlexGrow(0, newsTicker);
     setFlexGrow(1, tabsComponent); // Tabs component grows to fill space
     getStyle().set("padding", "1em");
   }

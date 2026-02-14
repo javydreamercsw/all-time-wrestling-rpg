@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -69,6 +70,7 @@ public class SegmentService {
   private final LeagueRosterRepository leagueRosterRepository;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final InboxService inboxService;
+  private final NewsGenerationService newsGenerationService;
   private final InboxEventType matchRequestEventType;
 
   @PersistenceContext private EntityManager entityManager;
@@ -84,6 +86,7 @@ public class SegmentService {
       LeagueRosterRepository leagueRosterRepository,
       MatchFulfillmentRepository matchFulfillmentRepository,
       InboxService inboxService,
+      NewsGenerationService newsGenerationService,
       @Qualifier("MATCH_REQUEST") InboxEventType matchRequestEventType) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
@@ -94,6 +97,7 @@ public class SegmentService {
     this.leagueRosterRepository = leagueRosterRepository;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.inboxService = inboxService;
+    this.newsGenerationService = newsGenerationService;
     this.matchRequestEventType = matchRequestEventType;
   }
 
@@ -542,6 +546,10 @@ public class SegmentService {
     if (isNew) {
       // Check for league match and send notifications
       checkAndNotifyLeagueMatch(saved);
+    } else if (saved.getAdjudicationStatus()
+        == com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED) {
+      // Generate news for completed matches
+      newsGenerationService.generateNewsForSegment(saved);
     }
     return saved;
   }

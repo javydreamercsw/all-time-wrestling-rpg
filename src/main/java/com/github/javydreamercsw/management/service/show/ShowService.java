@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -70,6 +71,7 @@ public class ShowService {
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
   private final CommentaryTeamRepository commentaryTeamRepository;
+  private final NewsGenerationService newsGenerationService;
 
   ShowService(
       ShowRepository showRepository,
@@ -84,7 +86,8 @@ public class ShowService {
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       GameSettingService gameSettingService,
-      CommentaryTeamRepository commentaryTeamRepository) {
+      CommentaryTeamRepository commentaryTeamRepository,
+      NewsGenerationService newsGenerationService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -98,6 +101,7 @@ public class ShowService {
     this.wrestlerRepository = wrestlerRepository;
     this.gameSettingService = gameSettingService;
     this.commentaryTeamRepository = commentaryTeamRepository;
+    this.newsGenerationService = newsGenerationService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -492,6 +496,10 @@ public class ShowService {
         .forEach(resting -> wrestlerService.healChance(resting.getId()));
 
     gameSettingService.saveCurrentGameDate(show.getShowDate());
+
+    if ("SHOW".equals(gameSettingService.getNewsStrategy())) {
+      newsGenerationService.generateNewsForShow(show);
+    }
 
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
