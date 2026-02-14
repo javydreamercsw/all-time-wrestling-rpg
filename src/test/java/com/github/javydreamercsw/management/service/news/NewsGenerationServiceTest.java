@@ -29,9 +29,11 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -47,6 +49,8 @@ class NewsGenerationServiceTest {
   private NewsGenerationService newsGenerationService;
   private ObjectMapper objectMapper;
   private GameSettingService gameSettingService;
+  private InjuryRepository injuryRepository;
+  private SegmentRepository segmentRepository;
 
   @BeforeEach
   void setUp() {
@@ -54,9 +58,17 @@ class NewsGenerationServiceTest {
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     aiService = mock(SegmentNarrationService.class);
     gameSettingService = mock(GameSettingService.class);
+    injuryRepository = mock(InjuryRepository.class);
+    segmentRepository = mock(SegmentRepository.class);
     objectMapper = new ObjectMapper();
     newsGenerationService =
-        new NewsGenerationService(newsService, aiFactory, objectMapper, gameSettingService);
+        new NewsGenerationService(
+            newsService,
+            aiFactory,
+            objectMapper,
+            gameSettingService,
+            injuryRepository,
+            segmentRepository);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
