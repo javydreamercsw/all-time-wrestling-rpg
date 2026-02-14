@@ -1,5 +1,19 @@
 {
   "features": [ {
+    "id": "dashboards-dashboards-news-feed",
+    "category": "Dashboards",
+    "title": "News & Rumors Feed",
+    "description": "A procedural news system that reacts to in-game events across the promotion.",
+    "imagePath": "screenshots/dashboards-news-feed.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-dashboard-news-ticker",
+    "category": "Booker",
+    "title": "Dashboard with News Ticker",
+    "description": "Latest headlines and rumors are visible directly on the booker dashboard.",
+    "imagePath": "screenshots/booker-dashboard-news-ticker.png",
+    "order": 10
+  }, {
     "id": "ai-features-ai-dynamic-commentary",
     "category": "AI Features",
     "title": "Dynamic Commentator Personas",
