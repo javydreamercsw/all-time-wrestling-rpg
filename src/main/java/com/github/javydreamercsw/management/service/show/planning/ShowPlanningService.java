@@ -147,6 +147,9 @@ public class ShowPlanningService {
     } else {
       template.setExpectedPromos(show.getType().getExpectedPromos());
     }
+    if (show.getTemplate() != null) {
+      template.setGenderConstraint(show.getTemplate().getGenderConstraint());
+    }
     context.setShowTemplate(template);
 
     // Get championships

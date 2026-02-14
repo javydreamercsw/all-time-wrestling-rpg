@@ -227,7 +227,8 @@ public class ShowTemplateService {
       java.time.DayOfWeek dayOfWeek,
       Integer dayOfMonth,
       Integer weekOfMonth,
-      java.time.Month month) {
+      java.time.Month month,
+      com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
 
     // Find or create show type
     Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -265,6 +266,7 @@ public class ShowTemplateService {
     template.setDayOfMonth(dayOfMonth);
     template.setWeekOfMonth(weekOfMonth);
     template.setMonth(month);
+    template.setGenderConstraint(genderConstraint);
 
     if (commentaryTeamName != null && !commentaryTeamName.trim().isEmpty()) {
       commentaryTeamRepository.findAll().stream()
@@ -291,6 +293,7 @@ public class ShowTemplateService {
         description,
         showTypeName,
         notionUrl,
+        null,
         null,
         null,
         null,
@@ -369,7 +372,8 @@ public class ShowTemplateService {
       java.time.DayOfWeek dayOfWeek,
       Integer dayOfMonth,
       Integer weekOfMonth,
-      java.time.Month month) {
+      java.time.Month month,
+      com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
 
     Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
     if (templateOpt.isEmpty()) {
@@ -401,6 +405,7 @@ public class ShowTemplateService {
     template.setDayOfMonth(dayOfMonth);
     template.setWeekOfMonth(weekOfMonth);
     template.setMonth(month);
+    template.setGenderConstraint(genderConstraint);
 
     if (commentaryTeamName != null && !commentaryTeamName.trim().isEmpty()) {
       commentaryTeamRepository.findAll().stream()
@@ -456,7 +461,8 @@ public class ShowTemplateService {
         st.getDayOfWeek(),
         st.getDayOfMonth(),
         st.getWeekOfMonth(),
-        st.getMonth());
+        st.getMonth(),
+        st.getGenderConstraint());
   }
 
   /**

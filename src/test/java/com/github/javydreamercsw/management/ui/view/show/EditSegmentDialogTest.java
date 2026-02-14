@@ -94,9 +94,11 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
         new EditSegmentDialog(
             segment,
             mock(WrestlerRepository.class),
+            wrestlerService,
             titleService,
             mock(SegmentTypeRepository.class),
             mock(SegmentRuleRepository.class),
+            null,
             onSave);
     dialog.open();
 
@@ -119,7 +121,7 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     ProposedSegment updatedSegment = dialog.getSegment();
     assertEquals("New Description", updatedSegment.getNarration());
     assertEquals(1, updatedSegment.getParticipants().size());
-    assertEquals("Wrestler 2", updatedSegment.getParticipants().get(0));
+    assertEquals("Wrestler 2", updatedSegment.getParticipants().getFirst());
     // Verify that no titles were selected if it's not a title segment
     assertTrue(updatedSegment.getTitles().isEmpty());
     assertEquals(false, updatedSegment.getIsTitleSegment());
@@ -143,9 +145,11 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
         new EditSegmentDialog(
             segment,
             mock(WrestlerRepository.class),
+            wrestlerService,
             titleService,
             mock(SegmentTypeRepository.class),
             mock(SegmentRuleRepository.class),
+            null,
             onSave);
     dialog.open();
 

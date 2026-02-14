@@ -127,6 +127,7 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
         DayOfWeek.MONDAY,
         null,
         null,
+        null,
         null);
 
     showTemplateService.createOrUpdateTemplate(
@@ -141,6 +142,7 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
         1,
         RecurrenceType.WEEKLY,
         DayOfWeek.FRIDAY,
+        null,
         null,
         null,
         null);
@@ -159,7 +161,8 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
         DayOfWeek.SUNDAY,
         null,
         -1, // Last Sunday
-        Month.JANUARY);
+        Month.JANUARY,
+        null);
 
     // Navigate to Season Settings view
     driver.get(

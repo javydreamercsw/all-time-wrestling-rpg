@@ -90,3 +90,8 @@
 
 *Link: [./conductor/tracks/localai_hot_enabling_20260209/index.md](./conductor/tracks/localai_hot_enabling_20260209/index.md)*
 *Status: New*
+
+### [ ] Track: Enhanced Filtering Controls (Alignment & Gender)
+
+*Link: [./conductor/tracks/enhanced_filtering_controls/index.md](./conductor/tracks/enhanced_filtering_controls/index.md)*
+*Status: New*

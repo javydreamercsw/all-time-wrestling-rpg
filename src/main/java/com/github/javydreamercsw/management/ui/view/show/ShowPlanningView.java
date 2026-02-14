@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -71,6 +72,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowService showService;
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
+  private final WrestlerService wrestlerService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
 
@@ -89,6 +91,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowService showService,
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
+      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
@@ -99,6 +102,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
+    this.wrestlerService = wrestlerService;
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
 
@@ -178,13 +182,21 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           Button editButton = new Button("Edit");
           editButton.addClickListener(
               e -> {
+                Show selectedShow = showComboBox.getValue();
+                com.github.javydreamercsw.base.domain.wrestler.Gender constraint =
+                    (selectedShow != null && selectedShow.getTemplate() != null)
+                        ? selectedShow.getTemplate().getGenderConstraint()
+                        : null;
+
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,
                         wrestlerRepository,
+                        wrestlerService,
                         titleService,
                         segmentTypeRepository,
                         segmentRuleRepository,
+                        constraint,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });

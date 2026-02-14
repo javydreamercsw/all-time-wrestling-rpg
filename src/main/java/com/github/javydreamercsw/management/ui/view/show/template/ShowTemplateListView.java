@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
@@ -98,6 +99,7 @@ public class ShowTemplateListView extends Main {
   private IntegerField editDayOfMonth;
   private ComboBox<Integer> editWeekOfMonth;
   private ComboBox<Month> editMonth;
+  private ComboBox<Gender> editGenderConstraint;
   private ShowTemplate editingTemplate;
   private Binder<ShowTemplate> binder;
 
@@ -219,6 +221,17 @@ public class ShowTemplateListView extends Main {
         .addColumn(
             template -> template.getShowType() != null ? template.getShowType().getName() : "")
         .setHeader("Show Type")
+        .setSortable(true)
+        .setFlexGrow(1);
+
+    // Gender Constraint column
+    templateGrid
+        .addColumn(
+            template ->
+                template.getGenderConstraint() != null
+                    ? template.getGenderConstraint().name()
+                    : "Both")
+        .setHeader("Gender Constraint")
         .setSortable(true)
         .setFlexGrow(1);
 
@@ -397,6 +410,17 @@ public class ShowTemplateListView extends Main {
     editMonth.setWidthFull();
     editMonth.setVisible(false);
 
+    editGenderConstraint = new ComboBox<>("Gender Constraint");
+    editGenderConstraint.setItems(Gender.values());
+    editGenderConstraint.setItemLabelGenerator(
+        g -> {
+          if (g == null) return "Both";
+          return g.name();
+        });
+    editGenderConstraint.setPlaceholder("Both (No constraint)");
+    editGenderConstraint.setClearButtonVisible(true);
+    editGenderConstraint.setWidthFull();
+
     editRecurrenceType.addValueChangeListener(
         e -> {
           RecurrenceType type = e.getValue();
@@ -441,7 +465,8 @@ public class ShowTemplateListView extends Main {
         editDayOfWeek,
         editDayOfMonth,
         editWeekOfMonth,
-        editMonth);
+        editMonth,
+        editGenderConstraint);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
@@ -458,6 +483,9 @@ public class ShowTemplateListView extends Main {
 
     // Setup binder
     binder = new Binder<>(ShowTemplate.class);
+    binder
+        .forField(editGenderConstraint)
+        .bind(ShowTemplate::getGenderConstraint, ShowTemplate::setGenderConstraint);
     binder
         .forField(editName)
         .asRequired("Name is required")
@@ -568,7 +596,8 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getDayOfWeek(),
                 editingTemplate.getDayOfMonth(),
                 editingTemplate.getWeekOfMonth(),
-                editingTemplate.getMonth());
+                editingTemplate.getMonth(),
+                editingTemplate.getGenderConstraint());
 
         if (savedTemplate != null) {
           Notification.show("Template created successfully", 3000, Notification.Position.BOTTOM_END)
@@ -597,7 +626,8 @@ public class ShowTemplateListView extends Main {
             editingTemplate.getDayOfWeek(),
             editingTemplate.getDayOfMonth(),
             editingTemplate.getWeekOfMonth(),
-            editingTemplate.getMonth());
+            editingTemplate.getMonth(),
+            editingTemplate.getGenderConstraint());
 
         Notification.show("Template updated successfully", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
