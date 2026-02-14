@@ -34,7 +34,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class GameSettingService {
 
   public static final String CURRENT_GAME_DATE_KEY = "current_game_date";
+  public static final String AI_NEWS_ENABLED_KEY = "ai_news_enabled";
   private final GameSettingRepository repository;
+
+  @PreAuthorize("permitAll()")
+  public boolean isAiNewsEnabled() {
+    return repository
+        .findById(AI_NEWS_ENABLED_KEY)
+        .map(GameSetting::getValue)
+        .map(Boolean::parseBoolean)
+        .orElse(true); // Enabled by default
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @Transactional
+  public void setAiNewsEnabled(boolean enabled) {
+    save(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
+  }
 
   @PreAuthorize("permitAll()")
   public LocalDate getCurrentGameDate() {

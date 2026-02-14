@@ -27,11 +27,13 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.shared.Tooltip;
 import lombok.NonNull;
 
 public class NewsDialog extends Dialog {
 
   public NewsDialog(@NonNull NewsService newsService, @NonNull Runnable onSave) {
+    setWidth("600px");
     setHeaderTitle("Create News Item");
 
     TextField headline = new TextField("Headline");
@@ -56,6 +58,10 @@ public class NewsDialog extends Dialog {
     importance.setMax(5);
     importance.setValue(3);
     importance.setStepButtonsVisible(true);
+    Tooltip.forComponent(importance)
+        .setText(
+            "Higher importance news items generate more buzz, leading to increased Feud Heat and"
+                + " potential Momentum bonuses for featured wrestlers.");
 
     VerticalLayout layout = new VerticalLayout(headline, content, category, isRumor, importance);
     layout.setPadding(false);

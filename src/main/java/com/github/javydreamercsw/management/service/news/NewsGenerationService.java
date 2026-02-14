@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,6 +39,7 @@ public class NewsGenerationService {
   private final NewsService newsService;
   private final SegmentNarrationServiceFactory aiFactory;
   private final ObjectMapper objectMapper;
+  private final GameSettingService gameSettingService;
 
   private static final String SYSTEM_PROMPT =
       """
@@ -53,6 +55,12 @@ public class NewsGenerationService {
       """;
 
   public void generateNewsForSegment(@NonNull Segment segment) {
+    if (!gameSettingService.isAiNewsEnabled()) {
+      log.debug("AI news generation is disabled. Creating fallback news.");
+      createFallbackNews(segment);
+      return;
+    }
+
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for news generation. Creating fallback news.");

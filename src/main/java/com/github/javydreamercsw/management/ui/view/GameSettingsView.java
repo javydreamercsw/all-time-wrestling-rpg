@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.notification.Notification;
@@ -70,7 +71,16 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    VerticalLayout layout = new VerticalLayout(gameDatePicker, defaultThemeSelection);
+    Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
+    aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
+    aiNewsEnabled.addValueChangeListener(
+        event -> {
+          gameSettingService.setAiNewsEnabled(event.getValue());
+          Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout layout = new VerticalLayout(gameDatePicker, defaultThemeSelection, aiNewsEnabled);
     add(layout);
   }
 }

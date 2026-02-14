@@ -18,8 +18,9 @@
 - [x] Integrate the widget into the `DashboardView`.
 - [x] Add icons/styling to distinguish between "Breaking News" and "Backstage Rumors."
 
-## Phase 4: Verification
+## Phase 4: Verification [checkpoint: 8f3cf619]
 
-- [ ] Integration test for news generation based on mock show results.
-- [ ] E2E test verifying news appears on the dashboard.
+- [x] Integration test for news generation based on mock show results.
+- [x] E2E test verifying news appears on the dashboard.
+- [x] DocsE2ETest to capture news feature screenshots.
 
