@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -171,7 +172,7 @@ class ShowPlanningServiceTest {
     activeWrestler.setName("Active Wrestler");
     activeWrestler.setActive(true);
 
-    when(wrestlerService.findAll()).thenReturn(List.of(activeWrestler));
+    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
