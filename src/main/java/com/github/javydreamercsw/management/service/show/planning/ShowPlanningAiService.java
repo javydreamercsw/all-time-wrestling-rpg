@@ -128,13 +128,6 @@ public class ShowPlanningAiService {
           .append("Expected Promos: ")
           .append(context.getShowTemplate().getExpectedPromos())
           .append("\n");
-      if (context.getShowTemplate().getGenderConstraint() != null) {
-        prompt
-            .append("Gender Constraint: ONLY ")
-            .append(context.getShowTemplate().getGenderConstraint().name())
-            .append(" wrestlers are allowed for this show.")
-            .append("\n");
-      }
     }
 
     if (context.getShowDate() != null) {
