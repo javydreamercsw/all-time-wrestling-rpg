@@ -69,7 +69,7 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     wrestler2.setName("Wrestler 2");
     List<Wrestler> allWrestlers = Arrays.asList(wrestler1, wrestler2);
 
-    when(wrestlerService.findAll()).thenReturn(allWrestlers);
+    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(allWrestlers);
     when(wrestlerService.findByName("Wrestler 1")).thenReturn(Optional.of(wrestler1));
     when(wrestlerService.findByName("Wrestler 2")).thenReturn(Optional.of(wrestler2));
     when(wrestlerRepository.findAll()).thenReturn(allWrestlers);
