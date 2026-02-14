@@ -73,76 +73,54 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-        Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
+    Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
 
-        aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
+    aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
 
-        aiNewsEnabled.addValueChangeListener(
+    aiNewsEnabled.addValueChangeListener(
+        event -> {
+          gameSettingService.setAiNewsEnabled(event.getValue());
 
-            event -> {
+          Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
 
-              gameSettingService.setAiNewsEnabled(event.getValue());
+    IntegerField rumorChance = new IntegerField("Daily Rumor Chance (%)");
 
-              Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
+    rumorChance.setMin(0);
 
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    rumorChance.setMax(100);
 
-            });
+    rumorChance.setValue(gameSettingService.getNewsRumorChance());
 
-    
+    rumorChance.setStepButtonsVisible(true);
 
-        IntegerField rumorChance = new IntegerField("Daily Rumor Chance (%)");
+    rumorChance.addValueChangeListener(
+        event -> {
+          gameSettingService.setNewsRumorChance(event.getValue());
 
-        rumorChance.setMin(0);
+          Notification.show("Rumor chance updated to: " + event.getValue() + "%")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
 
-        rumorChance.setMax(100);
+    ComboBox<String> newsStrategy = new ComboBox<>("News Generation Strategy");
 
-        rumorChance.setValue(gameSettingService.getNewsRumorChance());
+    newsStrategy.setItems(List.of("SEGMENT", "SHOW"));
 
-        rumorChance.setStepButtonsVisible(true);
+    newsStrategy.setValue(gameSettingService.getNewsStrategy());
 
-        rumorChance.addValueChangeListener(
+    newsStrategy.addValueChangeListener(
+        event -> {
+          gameSettingService.setNewsStrategy(event.getValue());
 
-            event -> {
+          Notification.show("News strategy updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
 
-              gameSettingService.setNewsRumorChance(event.getValue());
+    VerticalLayout layout =
+        new VerticalLayout(
+            gameDatePicker, defaultThemeSelection, aiNewsEnabled, rumorChance, newsStrategy);
 
-              Notification.show("Rumor chance updated to: " + event.getValue() + "%")
-
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-
-            });
-
-    
-
-        ComboBox<String> newsStrategy = new ComboBox<>("News Generation Strategy");
-
-        newsStrategy.setItems(List.of("SEGMENT", "SHOW"));
-
-        newsStrategy.setValue(gameSettingService.getNewsStrategy());
-
-        newsStrategy.addValueChangeListener(
-
-            event -> {
-
-              gameSettingService.setNewsStrategy(event.getValue());
-
-              Notification.show("News strategy updated to: " + event.getValue())
-
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-
-            });
-
-    
-
-        VerticalLayout layout =
-
-            new VerticalLayout(
-
-                gameDatePicker, defaultThemeSelection, aiNewsEnabled, rumorChance, newsStrategy);
-
-        add(layout);
-
-    
+    add(layout);
   }
 }

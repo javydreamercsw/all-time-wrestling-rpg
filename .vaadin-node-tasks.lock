@@ -1,2 +1,0 @@
-76294
-/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false -jar /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/target/surefire/surefirebooter-20260213201055743_3.jar /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/target/surefire 2026-02-13T20-10-55_681-jvmRun1 surefire-20260213201055743_1tmp surefire_0-20260213201055743_2tmp

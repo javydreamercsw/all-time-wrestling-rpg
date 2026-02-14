@@ -17,17 +17,18 @@
 package com.github.javydreamercsw.management.service.news;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
-import com.github.javydreamercsw.management.domain.news.NewsItem;
-import com.github.javydreamercsw.management.domain.news.NewsRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
-import java.util.stream.Collectors;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -45,13 +46,14 @@ public class NewsGenerationService {
   private final ObjectMapper objectMapper;
   private final GameSettingService gameSettingService;
   private final InjuryRepository injuryRepository;
+  private final SegmentRepository segmentRepository;
   private final Random random = new Random();
 
   private static final String SYSTEM_PROMPT =
       """
       You are a professional wrestling sports journalist.
       Based on the provided match results (can be a single segment or a whole show roundup), generate a news item or a backstage rumor.
-      
+
       For show roundups, synthesize multiple results into 1-2 major headlines that highlight the most important events.
 
       Output MUST be a valid JSON object with the following fields:
@@ -122,7 +124,8 @@ public class NewsGenerationService {
     context.append("Show: ").append(show.getName()).append("\n");
     context.append("Results Roundup:\n");
 
-    for (Segment s : show.getSegments()) {
+    List<Segment> segments = segmentRepository.findByShow(show);
+    for (Segment s : segments) {
       String winners =
           s.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
       context
@@ -137,7 +140,7 @@ public class NewsGenerationService {
 
     try {
       String response =
-          aiServiceOpt.get().generateText(SYSTEM_PROMPT + "\n\nContext:\n" + context.toString());
+          aiService.generateText(SYSTEM_PROMPT + "\n\nContext:\n" + context.toString());
       parseAndCreateNews(response);
     } catch (Exception e) {
       log.error("Failed to generate show roundup news", e);
@@ -211,11 +214,15 @@ public class NewsGenerationService {
     // 3. New injuries are news-worthy
     boolean hasInjuries =
         segment.getWrestlers().stream()
-            .anyMatch(w -> !injuryRepository.findByWrestlerAndInjuryDate(w, segment.getSegmentDate()).isEmpty());
+            .anyMatch(
+                w ->
+                    !injuryRepository
+                        .findByWrestlerAndInjuryDate(w, segment.getSegmentDate())
+                        .isEmpty());
     if (hasInjuries) return true;
 
     // 4. Rivalry conclusions or high heat could be added here later
-    
+
     return false;
   }
 
