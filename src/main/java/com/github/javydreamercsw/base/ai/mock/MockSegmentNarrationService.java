@@ -80,8 +80,47 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockNarration(prompt);
     }
 
+    if (prompt.contains("professional wrestling sports journalist")
+        || prompt.contains("generate a news item")) {
+      return generateMockNews(prompt);
+    }
+
     return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
         + " walking away.";
+  }
+
+  private String generateMockNews(String prompt) {
+    try {
+      String headline = "BREAKING: Major Results from the Ring!";
+      String category = "BREAKING";
+      boolean isRumor = false;
+      int importance = 3;
+
+      if (prompt.contains("TITLE match")) {
+        headline = "NEW CHAMPION CROWNED!";
+        importance = 5;
+      } else if (prompt.contains("RUMOR")) {
+        headline = "Backstage Gossip: Trouble Brewing?";
+        category = "RUMOR";
+        isRumor = true;
+      }
+
+      var response =
+          Map.of(
+              "headline", headline,
+              "content",
+                  "In an incredible turn of events, the wrestling world was shaken by the latest"
+                      + " show results. Fans are still talking about the implications of these"
+                      + " matches.",
+              "category", category,
+              "isRumor", isRumor,
+              "importance", importance);
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock news", e);
+      return "{}";
+    }
   }
 
   private String generateMockTextNarration(String prompt) {

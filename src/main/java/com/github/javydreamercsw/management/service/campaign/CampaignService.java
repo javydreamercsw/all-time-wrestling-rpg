@@ -58,6 +58,7 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -105,6 +106,7 @@ public class CampaignService {
   private final TitleService titleService;
   private final SegmentAdjudicationService adjudicationService;
   private final MatchRewardService matchRewardService;
+  private final NewsGenerationService newsGenerationService;
   private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
@@ -506,6 +508,9 @@ public class CampaignService {
               });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segmentRepository.save(match);
+
+      // Generate News
+      newsGenerationService.generateNewsForSegment(match);
     }
 
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
