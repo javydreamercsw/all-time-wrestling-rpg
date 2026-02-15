@@ -38,6 +38,7 @@ class LegacyServiceTest {
   @Mock private AccountRepository accountRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
+  @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
 
   @InjectMocks private LegacyService legacyService;
 

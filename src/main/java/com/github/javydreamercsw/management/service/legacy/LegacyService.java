@@ -20,9 +20,13 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +41,7 @@ public class LegacyService {
   private final AccountRepository accountRepository;
   private final WrestlerRepository wrestlerRepository;
   private final AchievementRepository achievementRepository;
+  private final TitleRepository titleRepository;
 
   /**
    * Recalculates the legacy score for an account based on their managed wrestlers. Formula: - 1
@@ -46,9 +51,7 @@ public class LegacyService {
    * @param account The account to update
    */
   @Transactional
-  public void updateLegacyScore(Account account) {
-    if (account == null) return;
-
+  public void updateLegacyScore(@NonNull Account account) {
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
 
     long totalFans = wrestlers.stream().mapToLong(Wrestler::getFans).sum();
@@ -58,18 +61,23 @@ public class LegacyService {
             .filter(com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign)
             .count();
 
-    long score = totalFans / 1000;
-    // Add 50 points per title currently held
-    score += currentTitlesHeld * 50;
-
-    // Add Achievement XP
-    score += account.getAchievements().stream().mapToInt(Achievement::getXpValue).sum();
+    long score = calculateScore(account, totalFans, currentTitlesHeld);
 
     account.setLegacyScore(score);
     accountRepository.save(account);
     log.info("Updated legacy score for {}: {}", account.getUsername(), score);
 
     checkAchievements(account, wrestlers, totalFans, currentTitlesHeld);
+  }
+
+  private long calculateScore(Account account, long totalFans, long currentTitlesHeld) {
+    long score = totalFans / 1000;
+    // Add 50 points per title currently held
+    score += currentTitlesHeld * 50;
+
+    // Add Achievement XP
+    score += account.getAchievements().stream().mapToInt(Achievement::getXpValue).sum();
+    return score;
   }
 
   private void checkAchievements(
@@ -83,6 +91,9 @@ public class LegacyService {
     if (wrestlers.size() >= 10) {
       unlockAchievement(account, "ROSTER_BUILDER");
     }
+    if (wrestlers.size() >= 50) {
+      unlockAchievement(account, "FULL_HOUSE");
+    }
     if (totalFans >= 10_000) {
       unlockAchievement(account, "CROWD_PLEASER");
     }
@@ -94,6 +105,23 @@ public class LegacyService {
     }
     if (currentTitlesHeld > 0) {
       unlockAchievement(account, "FIRST_CHAMPION");
+    }
+
+    // Check for Grand Slam (Holding all active titles)
+    List<Title> activeTitles = titleRepository.findByIsActiveTrue();
+    if (!activeTitles.isEmpty()) {
+      Set<Long> heldTitleIds =
+          wrestlers.stream()
+              .flatMap(w -> w.getReigns().stream())
+              .filter(com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign)
+              .map(reign -> reign.getTitle().getId())
+              .collect(Collectors.toSet());
+
+      boolean holdsAll =
+          activeTitles.stream().allMatch(title -> heldTitleIds.contains(title.getId()));
+      if (holdsAll) {
+        unlockAchievement(account, "GRAND_SLAM");
+      }
     }
   }
 
@@ -117,10 +145,22 @@ public class LegacyService {
             achievement -> {
               if (!account.getAchievements().contains(achievement)) {
                 account.getAchievements().add(achievement);
-                account.setPrestige(
-                    account.getPrestige() + achievement.getXpValue()); // Prestige accumulates XP
+                account.setPrestige(account.getPrestige() + achievement.getXpValue());
+
+                // Recalculate score without re-triggering achievement checks
+                List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+                long totalFans = wrestlers.stream().mapToLong(Wrestler::getFans).sum();
+                long currentTitlesHeld =
+                    wrestlers.stream()
+                        .flatMap(w -> w.getReigns().stream())
+                        .filter(
+                            com.github.javydreamercsw.management.domain.title.TitleReign
+                                ::isCurrentReign)
+                        .count();
+
+                account.setLegacyScore(calculateScore(account, totalFans, currentTitlesHeld));
                 accountRepository.save(account);
-                updateLegacyScore(account);
+
                 log.info(
                     "Unlocked achievement '{}' for {}",
                     achievement.getName(),

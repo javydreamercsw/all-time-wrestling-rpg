@@ -70,11 +70,19 @@
 *Link: [./conductor/archive/enhanced_filtering_controls_20260214/](./conductor/archive/enhanced_filtering_controls_20260214/)*
 *Status: Completed (2026-02-14)*
 
+### [x] Track: Wrestler Career Legacy & Hall of Fame
+
+*Link: [./conductor/archive/wrestler_career_legacy_20260214/index.md](./conductor/archive/wrestler_career_legacy_20260214/index.md)*
+*Status: Completed (2026-02-14)*
+
+### [x] Track: Data-Driven Achievements
+
+*Link: [./conductor/archive/data_driven_achievements_20260214/spec.md](./conductor/archive/data_driven_achievements_20260214/spec.md)*
+*Status: Completed (2026-02-14)*
+
 ---
 
 ## Active Tracks
 
-### [ ] Track: Wrestler Career Legacy & Hall of Fame
+### (None)
 
-*Link: [./conductor/tracks/wrestler_career_legacy/index.md](./conductor/tracks/wrestler_career_legacy/index.md)*
-*Status: Proposed*
