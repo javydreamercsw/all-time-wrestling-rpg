@@ -77,6 +77,24 @@
   "xpValue": 2500,
   "category": "SPECIAL_EVENT"
 }, {
+  "key": "PARTICIPATE_NORMAL",
+  "name": "Debut Match",
+  "description": "Participate in your first standard match",
+  "xpValue": 25,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_NORMAL",
+  "name": "First Victory",
+  "description": "Win your first standard match",
+  "xpValue": 50,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_PROMO",
+  "name": "Cutting a Promo",
+  "description": "Take the mic for the first time",
+  "xpValue": 25,
+  "category": "MATCH_TYPE"
+}, {
   "key": "PARTICIPATE_NO_DQ",
   "name": "Anything Goes",
   "description": "Participate in a No DQ match",
@@ -161,13 +179,13 @@
   "xpValue": 400,
   "category": "MATCH_TYPE"
 }, {
-  "key": "PARTICIPATE_FREE-FOR-ALL",
+  "key": "PARTICIPATE_FREEFORALL",
   "name": "Chaos Theory",
   "description": "Participate in a Free-For-All match",
   "xpValue": 100,
   "category": "MATCH_TYPE"
 }, {
-  "key": "WIN_FREE-FOR-ALL",
+  "key": "WIN_FREEFORALL",
   "name": "One vs All",
   "description": "Win a Free-For-All match",
   "xpValue": 300,
@@ -255,6 +273,18 @@
   "name": "Endurance Master",
   "description": "Win a Gauntlet match",
   "xpValue": 500,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_ONE_ON_ONE",
+  "name": "Singles Competitor",
+  "description": "Participate in a One on One match",
+  "xpValue": 25,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_ONE_ON_ONE",
+  "name": "Winner",
+  "description": "Win a One on One match",
+  "xpValue": 50,
   "category": "MATCH_TYPE"
 }, {
   "key": "PARTICIPATE_TAG_TEAM",
