@@ -36,7 +36,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-public abstract class BaseNotionSyncService<T extends AbstractEntity> implements NotionSyncService {
+public abstract class BaseNotionSyncService<T extends AbstractEntity>
+    implements NotionEntitySyncService {
 
   protected final JpaRepository<T, Long> repository;
   protected final SyncServiceDependencies syncServiceDependencies;

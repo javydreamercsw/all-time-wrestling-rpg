@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -37,6 +36,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -59,12 +59,12 @@ class ShowPlanningViewTest {
   @Mock private ShowPlanningService showPlanningService;
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerService wrestlerService;
   private ShowPlanningView showPlanningView;
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private ObjectMapper objectMapper;
-  @Mock private LocalAIStatusService localAIStatus;
   private SegmentNarrationServiceFactory aiFactory;
 
   @BeforeEach
@@ -76,13 +76,13 @@ class ShowPlanningViewTest {
             showService,
             showPlanningService,
             showPlanningAiService,
+            wrestlerService,
             wrestlerRepository,
             titleService,
             segmentTypeRepository,
             segmentRuleRepository,
             objectMapper,
-            aiFactory,
-            localAIStatus);
+            aiFactory);
     // Mock the UI since we are not in a Vaadin environment
     UI ui = mock(UI.class);
     UI.setCurrent(ui);

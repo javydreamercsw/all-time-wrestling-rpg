@@ -69,7 +69,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
         "AI Configuration",
         "Configure the Artificial Intelligence providers used for match narration, image"
             + " generation, and creative assistance. You can switch between different LLM providers"
-            + " (OpenAI, Anthropic, Gemini, LocalAI) and configure their specific settings.",
+            + " (OpenAI, Anthropic, Gemini) and configure their specific settings.",
         "admin-ai-settings");
   }
 

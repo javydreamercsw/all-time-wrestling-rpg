@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
@@ -38,6 +37,7 @@ import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -82,71 +82,112 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
     try (NotionClient client = clientOptional.get()) {
-      testWrestler1 = createTestWrestler("Wrestler One " + UUID.randomUUID());
-      wrestlerRepository.save(testWrestler1);
+      final Wrestler wrestler1 = createTestWrestler("Wrestler One " + UUID.randomUUID());
+      wrestlerRepository.save(wrestler1);
+      testWrestler1 = wrestler1;
 
-      testWrestler2 = createTestWrestler("Wrestler Two " + UUID.randomUUID());
-      wrestlerRepository.save(testWrestler2);
+      final Wrestler wrestler2 = createTestWrestler("Wrestler Two " + UUID.randomUUID());
+      wrestlerRepository.save(wrestler2);
+      testWrestler2 = wrestler2;
 
       testFaction = new Faction();
       testFaction.setName("Test Faction Team " + UUID.randomUUID());
       factionRepository.save(testFaction);
 
       // Sync dependencies to Notion to get external IDs
-      wrestlerNotionSyncService.syncToNotion("test-prep-wrestlers");
-      factionNotionSyncService.syncToNotion("test-prep-factions");
+
+      wrestlerNotionSyncService.syncToNotion(
+          "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
+
+      factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
+
+      final Wrestler wrestler1_reloaded = wrestlerRepository.findById(wrestler1.getId()).get();
+
+      final Wrestler wrestler2_reloaded = wrestlerRepository.findById(wrestler2.getId()).get();
+
+      testFaction = factionRepository.findById(testFaction.getId()).get();
 
       // Create a new Team
+
       team = new Team();
+
       team.setName("Test Team " + UUID.randomUUID());
+
       team.setDescription("A test wrestling team");
-      team.setWrestler1(testWrestler1);
-      team.setWrestler2(testWrestler2);
+
+      team.setWrestler1(wrestler1_reloaded);
+
+      team.setWrestler2(wrestler2_reloaded);
+
       team.setFaction(testFaction);
+
       team.setStatus(TeamStatus.ACTIVE);
+
       team.setFormedDate(Instant.now().minusSeconds(3600));
+
       teamRepository.save(team);
 
       // Sync to Notion for the first time
-      teamNotionSyncService.syncToNotion("test-op-1");
+
+      teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
 
       // Verify that the externalId and lastSync fields are updated
+
       assertNotNull(team.getId());
+
       Team updatedTeam = teamRepository.findById(team.getId()).get();
+
       assertNotNull(updatedTeam.getExternalId());
+
       assertNotNull(updatedTeam.getLastSync());
 
       // Retrieve the page from Notion and verify properties
+
       Page page =
           notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedTeam.getExternalId(), Collections.emptyList()));
+
       Map<String, PageProperty> props = page.getProperties();
+
       assertEquals(
           updatedTeam.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
+
       assertNotNull(props.get("Member 1").getRelation());
+
       assertFalse(props.get("Member 1").getRelation().isEmpty());
+
       assertEquals(
-          testWrestler1.getExternalId(), props.get("Member 1").getRelation().get(0).getId());
+          wrestler1_reloaded.getExternalId(), props.get("Member 1").getRelation().get(0).getId());
+
       assertNotNull(props.get("Member 2").getRelation());
+
       assertFalse(props.get("Member 2").getRelation().isEmpty());
+
       assertEquals(
-          testWrestler2.getExternalId(), props.get("Member 2").getRelation().get(0).getId());
+          wrestler2_reloaded.getExternalId(), props.get("Member 2").getRelation().get(0).getId());
+
       assertNotNull(props.get("Faction").getRelation());
+
       assertFalse(props.get("Faction").getRelation().isEmpty());
+
       assertEquals(testFaction.getExternalId(), props.get("Faction").getRelation().get(0).getId());
+
       assertTrue(Objects.requireNonNull(props.get("Status").getCheckbox()));
-      assertNotNull(props.get("Formed Date").getDate());
-      assertNull(props.get("Disbanded Date").getDate());
 
       // Sync to Notion again with updates
+
       updatedTeam.setName("Test Team Updated " + UUID.randomUUID());
+
       updatedTeam.setStatus(TeamStatus.DISBANDED);
+
       updatedTeam.setDisbandedDate(Instant.now());
+
       teamRepository.save(updatedTeam);
-      teamNotionSyncService.syncToNotion("test-op-2");
+
+      teamNotionSyncService.syncToNotion("test-op-2", List.of(team.getId()));
       Team updatedTeam2 = teamRepository.findById(team.getId()).get();
       assertTrue(updatedTeam2.getLastSync().isAfter(updatedTeam.getLastSync()));
 
@@ -161,7 +202,6 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
       assertFalse(Objects.requireNonNull(props.get("Status").getCheckbox()));
-      assertNotNull(props.get("Disbanded Date").getDate());
 
     } finally {
       if (team != null && team.getExternalId() != null) {

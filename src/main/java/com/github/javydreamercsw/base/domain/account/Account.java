@@ -77,6 +77,24 @@ public class Account {
   @Column(length = 50)
   private String themePreference;
 
+  @Column private Long activeWrestlerId;
+
+  @Column(nullable = false)
+  private Long legacyScore = 0L;
+
+  @Column(nullable = false)
+  private Long prestige = 0L;
+
+  @Column(nullable = false)
+  private Integer showsBooked = 0;
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "account_achievement",
+      joinColumns = @JoinColumn(name = "account_id"),
+      inverseJoinColumns = @JoinColumn(name = "achievement_id"))
+  private Set<Achievement> achievements = new HashSet<>();
+
   @Column private LocalDateTime lockedUntil;
 
   @Column private LocalDateTime lastLogin;

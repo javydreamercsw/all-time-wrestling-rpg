@@ -23,4 +23,6 @@ public class ShowPlanningChampionshipDTO {
   private String championshipName;
   private String championName;
   private String contenderName;
+  private Integer defenseFrequency;
+  private Long daysSinceLastDefense;
 }

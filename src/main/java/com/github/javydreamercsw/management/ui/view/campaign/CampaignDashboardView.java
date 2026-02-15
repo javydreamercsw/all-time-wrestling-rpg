@@ -135,24 +135,29 @@ public class CampaignDashboardView extends VerticalLayout {
         .ifPresentOrElse(
             user -> {
               log.info("Authenticated user: {}", user.getUsername());
-              wrestlerRepository
-                  .findByAccount(user.getAccount())
-                  .ifPresentOrElse(
-                      wrestler -> {
-                        log.info("Wrestler found: {}", wrestler.getName());
-                        campaignRepository
-                            .findActiveByWrestler(wrestler)
-                            .ifPresentOrElse(
-                                campaign -> {
-                                  log.info("Active campaign found: {}", campaign.getId());
-                                  currentCampaign = campaign;
-                                },
-                                () ->
-                                    log.info(
-                                        "No active campaign found for wrestler: {}",
-                                        wrestler.getName()));
-                      },
-                      () -> log.warn("No wrestler found for account: {}", user.getUsername()));
+              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
+              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              Wrestler active =
+                  wrestlers.stream()
+                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                      .findFirst()
+                      .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
+
+              if (active != null) {
+                log.info("Wrestler found: {}", active.getName());
+                campaignRepository
+                    .findActiveByWrestler(active)
+                    .ifPresentOrElse(
+                        campaign -> {
+                          log.info("Active campaign found: {}", campaign.getId());
+                          currentCampaign = campaign;
+                        },
+                        () ->
+                            log.info(
+                                "No active campaign found for wrestler: {}", active.getName()));
+              } else {
+                log.warn("No wrestler found for account: {}", user.getUsername());
+              }
             },
             () -> log.warn("No authenticated user found during loadCampaign"));
   }
@@ -175,24 +180,30 @@ public class CampaignDashboardView extends VerticalLayout {
                     .getAuthenticatedUser()
                     .ifPresentOrElse(
                         user -> {
-                          wrestlerRepository
-                              .findByAccount(user.getAccount())
-                              .ifPresentOrElse(
-                                  wrestler -> {
-                                    campaignService.startCampaign(wrestler);
-                                    refreshUI();
-                                  },
-                                  () -> {
-                                    List<Wrestler> all = wrestlerRepository.findAll();
-                                    if (!all.isEmpty()) {
-                                      Wrestler first = all.get(0);
-                                      first.setAccount(user.getAccount());
-                                      first.setIsPlayer(true);
-                                      wrestlerRepository.save(first);
-                                      campaignService.startCampaign(first);
-                                      refreshUI();
-                                    }
-                                  });
+                          com.github.javydreamercsw.base.domain.account.Account account =
+                              user.getAccount();
+                          java.util.List<Wrestler> wrestlers =
+                              wrestlerRepository.findByAccount(account);
+                          Wrestler active =
+                              wrestlers.stream()
+                                  .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                                  .findFirst()
+                                  .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
+
+                          if (active != null) {
+                            campaignService.startCampaign(active);
+                            refreshUI();
+                          } else {
+                            List<Wrestler> all = wrestlerRepository.findAll();
+                            if (!all.isEmpty()) {
+                              Wrestler first = all.get(0);
+                              first.setAccount(user.getAccount());
+                              first.setIsPlayer(true);
+                              wrestlerRepository.save(first);
+                              campaignService.startCampaign(first);
+                              refreshUI();
+                            }
+                          }
                         },
                         () ->
                             log.warn(

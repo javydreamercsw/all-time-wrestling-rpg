@@ -17,9 +17,14 @@
 package com.github.javydreamercsw.management.domain.show.template;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,7 +34,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.Month;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -61,6 +68,44 @@ public class ShowTemplate extends AbstractEntity<Long> {
 
   @Column(name = "notion_url")
   @Size(max = 500) private String notionUrl;
+
+  @Column(name = "image_url")
+  @Size(max = 512) private String imageUrl;
+
+  @Column(name = "expected_matches")
+  private Integer expectedMatches;
+
+  @Column(name = "expected_promos")
+  private Integer expectedPromos;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "gender_constraint")
+  private Gender genderConstraint;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "commentary_team_id")
+  private CommentaryTeam commentaryTeam;
+
+  @Column(name = "duration_days")
+  private Integer durationDays = 1;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence_type")
+  private RecurrenceType recurrenceType = RecurrenceType.NONE;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence_day_of_week")
+  private DayOfWeek dayOfWeek;
+
+  @Column(name = "recurrence_day_of_month")
+  private Integer dayOfMonth;
+
+  @Column(name = "recurrence_week_of_month")
+  private Integer weekOfMonth;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence_month")
+  private Month month;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;

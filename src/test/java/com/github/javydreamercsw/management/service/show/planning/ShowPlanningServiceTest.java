@@ -17,7 +17,10 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,7 +90,7 @@ class ShowPlanningServiceTest {
   @BeforeEach
   void setUp() {
     // Mock the clock to a fixed time
-    when(clock.getZone()).thenReturn(java.time.ZoneOffset.UTC);
+    lenient().when(clock.getZone()).thenReturn(java.time.ZoneOffset.UTC);
   }
 
   @Test
@@ -169,7 +172,7 @@ class ShowPlanningServiceTest {
     activeWrestler.setName("Active Wrestler");
     activeWrestler.setActive(true);
 
-    when(wrestlerService.findAll()).thenReturn(List.of(activeWrestler));
+    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
@@ -183,5 +186,20 @@ class ShowPlanningServiceTest {
     ShowPlanningContext capturedContext = showPlanningContextCaptor.getValue();
     assertEquals(1, capturedContext.getFullRoster().size());
     assertEquals("Active Wrestler", capturedContext.getFullRoster().get(0).getName());
+  }
+
+  @Test
+  void testGetShowPlanningContext_ThrowsWhenShowDateMissing() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    ShowType showType = new ShowType();
+    showType.setExpectedMatches(5);
+    showType.setExpectedPromos(2);
+    show.setType(showType);
+    // showDate intentionally not set
+
+    assertThrows(
+        IllegalStateException.class, () -> showPlanningService.getShowPlanningContext(show));
   }
 }

@@ -58,6 +58,7 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -105,6 +106,7 @@ public class CampaignService {
   private final TitleService titleService;
   private final SegmentAdjudicationService adjudicationService;
   private final MatchRewardService matchRewardService;
+  private final NewsGenerationService newsGenerationService;
   private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
@@ -224,7 +226,7 @@ public class CampaignService {
   /**
    * Creates a match segment for a campaign encounter.
    *
-   * @param campaign The campaign.
+   * @param campaignParam The campaign.
    * @param opponentName The name of the opponent.
    * @param narration The narrative text for the match.
    * @param segmentTypeName The name of the segment type (e.g., "One on One").
@@ -506,6 +508,9 @@ public class CampaignService {
               });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segmentRepository.save(match);
+
+      // Generate News
+      newsGenerationService.generateNewsForSegment(match);
     }
 
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
@@ -646,7 +651,7 @@ public class CampaignService {
   /**
    * Completes the post-match narrative and returns the campaign to the backstage phase.
    *
-   * @param campaign The campaign to transition.
+   * @param campaignParam The campaign to transition.
    */
   public void completePostMatch(@NonNull Campaign campaignParam) {
     // Reload campaign to ensure attached entity and fresh state
@@ -723,7 +728,9 @@ public class CampaignService {
                   weekly.getId(),
                   finalDate,
                   season.getId(),
-                  finalTemplateId);
+                  finalTemplateId,
+                  null,
+                  null);
             });
   }
 

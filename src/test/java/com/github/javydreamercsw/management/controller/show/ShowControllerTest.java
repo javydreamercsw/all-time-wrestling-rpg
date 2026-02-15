@@ -45,11 +45,12 @@ class ShowControllerTest extends AbstractControllerTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    when(showService.createShow(any(), any(), any(), any(), any(), any())).thenReturn(show);
+    when(showService.createShow(any(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(show);
 
     ShowController.CreateShowRequest request =
         new ShowController.CreateShowRequest(
-            "Test Show", "Description", 1L, LocalDate.now(), 1L, 1L);
+            "Test Show", "Description", 1L, LocalDate.now(), 1L, 1L, null, null);
 
     mockMvc
         .perform(

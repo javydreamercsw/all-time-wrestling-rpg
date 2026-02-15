@@ -140,6 +140,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setSrc("https://via.placeholder.com/150");
     wrestlerImage.setAlt("Wrestler Image");
+    wrestlerImage.setId("wrestler-image");
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,

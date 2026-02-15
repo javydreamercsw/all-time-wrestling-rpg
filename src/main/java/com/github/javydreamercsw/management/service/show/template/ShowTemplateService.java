@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.template;
 
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -46,6 +47,7 @@ public class ShowTemplateService {
 
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private CommentaryTeamRepository commentaryTeamRepository;
   @Autowired private Clock clock;
 
   /**
@@ -77,7 +79,10 @@ public class ShowTemplateService {
    */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public ShowTemplate save(@NonNull ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
@@ -203,10 +208,27 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
-      @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
+      @NonNull String name,
+      String description,
+      @NonNull String showTypeName,
+      String notionUrl,
+      String imageUrl,
+      String commentaryTeamName,
+      Integer expectedMatches,
+      Integer expectedPromos,
+      Integer durationDays,
+      com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
+      java.time.DayOfWeek dayOfWeek,
+      Integer dayOfMonth,
+      Integer weekOfMonth,
+      java.time.Month month,
+      com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
 
     // Find or create show type
     Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -232,8 +254,56 @@ public class ShowTemplateService {
     template.setDescription(description);
     template.setShowType(showType);
     template.setNotionUrl(notionUrl);
+    template.setImageUrl(imageUrl);
+    template.setExpectedMatches(expectedMatches);
+    template.setExpectedPromos(expectedPromos);
+    template.setDurationDays(durationDays != null ? durationDays : 1);
+    template.setRecurrenceType(
+        recurrenceType != null
+            ? recurrenceType
+            : com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE);
+    template.setDayOfWeek(dayOfWeek);
+    template.setDayOfMonth(dayOfMonth);
+    template.setWeekOfMonth(weekOfMonth);
+    template.setMonth(month);
+    template.setGenderConstraint(genderConstraint);
+
+    if (commentaryTeamName != null && !commentaryTeamName.trim().isEmpty()) {
+      commentaryTeamRepository.findAll().stream()
+          .filter(t -> t.getName().equals(commentaryTeamName))
+          .findFirst()
+          .ifPresent(template::setCommentaryTeam);
+    }
 
     return showTemplateRepository.save(template);
+  }
+
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
+      allEntries = true)
+  public ShowTemplate createOrUpdateTemplate(
+      @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
+    return createOrUpdateTemplate(
+        name,
+        description,
+        showTypeName,
+        notionUrl,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   /**
@@ -282,14 +352,28 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
       @NonNull Long id,
       @NonNull String name,
       String description,
       @NonNull String showTypeName,
-      String notionUrl) {
+      String notionUrl,
+      String imageUrl,
+      String commentaryTeamName,
+      Integer expectedMatches,
+      Integer expectedPromos,
+      Integer durationDays,
+      com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
+      java.time.DayOfWeek dayOfWeek,
+      Integer dayOfMonth,
+      Integer weekOfMonth,
+      java.time.Month month,
+      com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
 
     Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
     if (templateOpt.isEmpty()) {
@@ -309,10 +393,76 @@ public class ShowTemplateService {
     template.setDescription(description);
     template.setShowType(showTypeOpt.get());
     template.setNotionUrl(notionUrl);
+    template.setImageUrl(imageUrl);
+    template.setExpectedMatches(expectedMatches);
+    template.setExpectedPromos(expectedPromos);
+    template.setDurationDays(durationDays != null ? durationDays : 1);
+    template.setRecurrenceType(
+        recurrenceType != null
+            ? recurrenceType
+            : com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE);
+    template.setDayOfWeek(dayOfWeek);
+    template.setDayOfMonth(dayOfMonth);
+    template.setWeekOfMonth(weekOfMonth);
+    template.setMonth(month);
+    template.setGenderConstraint(genderConstraint);
+
+    if (commentaryTeamName != null && !commentaryTeamName.trim().isEmpty()) {
+      commentaryTeamRepository.findAll().stream()
+          .filter(t -> t.getName().equals(commentaryTeamName))
+          .findFirst()
+          .ifPresent(template::setCommentaryTeam);
+    } else {
+      template.setCommentaryTeam(null);
+    }
 
     ShowTemplate savedTemplate = showTemplateRepository.save(template);
     log.info("Updated show template: {}", name);
     return Optional.of(savedTemplate);
+  }
+
+  /**
+   * Update an existing show template.
+   *
+   * @param id The ID of the show template to update
+   * @param name New name for the show template
+   * @param description New description for the show template
+   * @param showTypeName New show type name
+   * @param notionUrl New Notion URL
+   * @return Optional containing the updated show template if found
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+      },
+      allEntries = true)
+  public Optional<ShowTemplate> updateTemplate(
+      @NonNull Long id,
+      @NonNull String name,
+      String description,
+      @NonNull String showTypeName,
+      String notionUrl) {
+    ShowTemplate st = showTemplateRepository.findById(id).orElseThrow();
+    return updateTemplate(
+        id,
+        name,
+        description,
+        showTypeName,
+        notionUrl,
+        st.getImageUrl(),
+        st.getCommentaryTeam() != null ? st.getCommentaryTeam().getName() : null,
+        st.getExpectedMatches(),
+        st.getExpectedPromos(),
+        st.getDurationDays(),
+        st.getRecurrenceType(),
+        st.getDayOfWeek(),
+        st.getDayOfMonth(),
+        st.getWeekOfMonth(),
+        st.getMonth(),
+        st.getGenderConstraint());
   }
 
   /**

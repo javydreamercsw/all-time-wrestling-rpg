@@ -17,12 +17,15 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
@@ -31,8 +34,10 @@ import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,6 +82,9 @@ class WrestlerServiceTest {
                     .isPlayer(true)
                     .tier(WrestlerTier.MAIN_EVENTER)
                     .fans(1000L)
+                    .gender(Gender.MALE)
+                    .alignment(
+                        WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build())
                     .build(),
                 Wrestler.builder()
                     .id(2L)
@@ -85,6 +93,9 @@ class WrestlerServiceTest {
                     .isPlayer(false)
                     .tier(WrestlerTier.MAIN_EVENTER)
                     .fans(900L)
+                    .gender(Gender.FEMALE)
+                    .alignment(
+                        WrestlerAlignment.builder().alignmentType(AlignmentType.HEEL).build())
                     .build(),
                 Wrestler.builder()
                     .id(3L)
@@ -93,6 +104,7 @@ class WrestlerServiceTest {
                     .isPlayer(true)
                     .tier(WrestlerTier.MIDCARDER)
                     .fans(800L)
+                    .gender(Gender.MALE)
                     .build(),
                 Wrestler.builder()
                     .id(4L)
@@ -101,6 +113,7 @@ class WrestlerServiceTest {
                     .isPlayer(false)
                     .tier(WrestlerTier.MIDCARDER)
                     .fans(700L)
+                    .gender(Gender.FEMALE)
                     .build(),
                 Wrestler.builder()
                     .id(5L)
@@ -109,8 +122,46 @@ class WrestlerServiceTest {
                     .isPlayer(false)
                     .tier(WrestlerTier.MIDCARDER)
                     .fans(600L)
+                    .gender(Gender.MALE)
+                    .alignment(
+                        WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build())
                     .build()));
     wrestlers.sort(Comparator.comparing(Wrestler::getFans).reversed());
+  }
+
+  @Test
+  void testFindAllFiltered() {
+    // Given
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // Test 1: Filter by Alignment (FACE)
+    List<Wrestler> faceWrestlers = wrestlerService.findAllFiltered(AlignmentType.FACE, null, null);
+    assertEquals(2, faceWrestlers.size());
+    assertTrue(
+        faceWrestlers.stream()
+            .allMatch(w -> w.getAlignment().getAlignmentType() == AlignmentType.FACE));
+
+    // Test 2: Filter by Gender (FEMALE)
+    List<Wrestler> femaleWrestlers = wrestlerService.findAllFiltered(null, Gender.FEMALE, null);
+    assertEquals(1, femaleWrestlers.size());
+    assertEquals("Active NPC", femaleWrestlers.get(0).getName());
+
+    // Test 3: Filter by both
+    List<Wrestler> faceMaleWrestlers =
+        wrestlerService.findAllFiltered(AlignmentType.FACE, Gender.MALE, null);
+    assertEquals(2, faceMaleWrestlers.size());
+
+    // Test 4: Included wrestlers should be present regardless of filters
+    Wrestler heelFemale =
+        wrestlers.stream().filter(w -> w.getName().equals("Active NPC")).findFirst().get();
+    Set<Wrestler> included = new HashSet<>();
+    included.add(heelFemale);
+
+    List<Wrestler> faceMaleWithHeelFemale =
+        wrestlerService.findAllFiltered(AlignmentType.FACE, Gender.MALE, included);
+    assertEquals(3, faceMaleWithHeelFemale.size());
+    assertTrue(faceMaleWithHeelFemale.contains(heelFemale));
   }
 
   @Test

@@ -87,6 +87,7 @@ public class ShowPlanningAiService {
                     ProposedSegment segment = new ProposedSegment();
                     segment.setType(dto.getType());
                     segment.setNarration(dto.getDescription());
+                    segment.setSummary(dto.getOutcome());
                     segment.setParticipants(dto.getParticipants());
                     return segment;
                   })
@@ -197,6 +198,8 @@ public class ShowPlanningAiService {
                       .append(String.join(", ", rivalry.getParticipants()))
                       .append(", Heat: ")
                       .append(rivalry.getHeat())
+                      .append(", Priority: ")
+                      .append(rivalry.getPriority())
                       .append("\n"));
       prompt.append("\n**Rivalry Resolution Rules:**\n");
       prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
@@ -239,6 +242,10 @@ public class ShowPlanningAiService {
                       .append(championship.getChampionName())
                       .append(", Contender: ")
                       .append(championship.getContenderName())
+                      .append(", Defense Frequency: ")
+                      .append(championship.getDefenseFrequency())
+                      .append(" days, Days since last defense: ")
+                      .append(championship.getDaysSinceLastDefense())
                       .append("\n"));
     }
 
@@ -255,6 +262,8 @@ public class ShowPlanningAiService {
                       .append(wrestler.getGender())
                       .append(", Tier: ")
                       .append(wrestler.getTier())
+                      .append(", Injured: ")
+                      .append(wrestler.isInjured())
                       .append(", Description: ")
                       .append(wrestler.getDescription())
                       .append("\n"));
@@ -303,14 +312,26 @@ public class ShowPlanningAiService {
       }
     }
 
-    prompt.append("\n**Other considerations:**\n");
+    prompt.append("\n**Booking Rules & Participation Goal:**\n");
+    prompt.append(
+        "- Goal: Every healthy (non-injured) wrestler MUST participate in at least one segment"
+            + " per week.\n");
+    prompt.append(
+        "- Prioritize active feuds (especially high priority ones) and title defenses if the days"
+            + " since last defense exceeds the frequency.\n");
+    prompt.append(
+        "- To ensure 100% participation, use multi-man matches (Triple Threat, Fatal Four-Way,"
+            + " Battle Royale) or Faction-based tag matches to consolidate many wrestlers into few"
+            + " segments.\n");
+    prompt.append(
+        "- If healthy wrestlers remain after booking matches, assign them to Promos or Backstage"
+            + " segments.\n");
     prompt.append(
         "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
             + " participate in promos and any other capacity as long as it doesn't involve"
             + " officially participating in the match.\n");
     prompt.append(
-        "- Within the same calendar week, avoid having a wrestler in more than one match. Instead"
-            + " focus on giving all wrestlers a change to perform in a match every week. The"
+        "- Within the same calendar week, avoid having a wrestler in more than one match. The"
             + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
 
     List<SegmentType> segmentTypes = segmentTypeService.findAll();

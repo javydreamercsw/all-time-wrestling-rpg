@@ -17,8 +17,12 @@
 package com.github.javydreamercsw.management.domain.npc;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -39,11 +43,22 @@ public class Npc extends AbstractEntity<Long> {
   @Column(unique = true, nullable = false)
   private String name;
 
-  @Column private String description;
+  @Column(length = 4000)
+  private String description;
+
+  @Column private String imageUrl;
 
   @Column(nullable = false)
   private String
       npcType; // Used for the NPC's role (e.g., Referee, Commentator, Commissioner, Other)
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private Gender gender = Gender.MALE;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "alignment", nullable = false)
+  private AlignmentType alignment = AlignmentType.NEUTRAL;
 
   @Override
   public Long getId() {

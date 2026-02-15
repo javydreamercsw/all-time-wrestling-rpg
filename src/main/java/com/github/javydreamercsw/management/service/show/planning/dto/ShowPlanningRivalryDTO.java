@@ -25,4 +25,5 @@ public class ShowPlanningRivalryDTO {
   private String name;
   private List<String> participants;
   private int heat;
+  private Integer priority;
 }

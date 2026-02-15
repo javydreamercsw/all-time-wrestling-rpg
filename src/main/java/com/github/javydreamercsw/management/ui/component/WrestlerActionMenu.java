@@ -44,8 +44,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.RouteParameters;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+@Slf4j
 public class WrestlerActionMenu extends MenuBar {
   private final AccountService accountService;
 
@@ -60,6 +62,7 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull SecurityUtils securityUtils,
       @NonNull @Qualifier("baseAccountService") AccountService accountService) {
     this.accountService = accountService;
+
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
     SubMenu subMenu = menuItem.getSubMenu();
