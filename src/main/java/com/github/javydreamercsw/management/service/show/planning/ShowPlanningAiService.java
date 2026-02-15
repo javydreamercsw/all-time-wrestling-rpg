@@ -87,6 +87,7 @@ public class ShowPlanningAiService {
                     ProposedSegment segment = new ProposedSegment();
                     segment.setType(dto.getType());
                     segment.setNarration(dto.getDescription());
+                    segment.setSummary(dto.getOutcome());
                     segment.setParticipants(dto.getParticipants());
                     return segment;
                   })

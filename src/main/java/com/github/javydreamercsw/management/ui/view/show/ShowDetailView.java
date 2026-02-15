@@ -1100,11 +1100,9 @@ public class ShowDetailView extends Main
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
-    wrestlersCombo.setValue(segment.getWrestlers());
     wrestlersCombo.setId("edit-wrestlers-combo-box");
 
     // Filter logic helper
-
     java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
         (selected) -> {
           AlignmentType alignment = alignmentFilter.getValue();
@@ -1114,7 +1112,9 @@ public class ShowDetailView extends Main
           wrestlersCombo.setItems(wrestlerService.findAllFiltered(alignment, gender, selected));
         };
 
+    // Initial population: set items FIRST, then value
     refreshWrestlers.accept(new HashSet<>(segment.getWrestlers()));
+    wrestlersCombo.setValue(new HashSet<>(segment.getWrestlers()));
 
     alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
     genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
