@@ -1363,6 +1363,7 @@
       <id>notion-e2e</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
         <jacoco.it.destFile>${jacoco.notion.e2e.destFile}</jacoco.it.destFile>
       </properties>
       <build>
