@@ -24,12 +24,14 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,7 @@ public class LegacyService {
   private final WrestlerRepository wrestlerRepository;
   private final AchievementRepository achievementRepository;
   private final TitleRepository titleRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * Recalculates the legacy score for an account based on their managed wrestlers. Formula: - 1
@@ -160,6 +163,9 @@ public class LegacyService {
 
                 account.setLegacyScore(calculateScore(account, totalFans, currentTitlesHeld));
                 accountRepository.save(account);
+
+                eventPublisher.publishEvent(
+                    new AchievementUnlockedEvent(this, account, achievement));
 
                 log.info(
                     "Unlocked achievement '{}' for {}",

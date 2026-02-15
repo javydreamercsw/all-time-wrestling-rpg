@@ -84,5 +84,8 @@
 
 ## Active Tracks
 
-### (None)
+### [x] Track: Achievement Notifications
+
+*Link: [./conductor/tracks/achievement_notifications/spec.md](./conductor/tracks/achievement_notifications/spec.md)*
+*Status: Completed (2026-02-15)*
 

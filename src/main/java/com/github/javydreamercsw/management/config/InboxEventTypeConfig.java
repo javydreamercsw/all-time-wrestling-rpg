@@ -115,4 +115,9 @@ public class InboxEventTypeConfig {
 
     return new InboxEventType("DRAFT_STARTED", "Draft Started");
   }
+
+  @Bean
+  @Qualifier("ACHIEVEMENT_UNLOCKED") InboxEventType achievementUnlocked() {
+    return new InboxEventType("ACHIEVEMENT_UNLOCKED", "Achievement Unlocked");
+  }
 }
