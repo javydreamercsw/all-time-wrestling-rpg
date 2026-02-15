@@ -110,6 +110,17 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private Boolean isPlayer = false;
 
+  @Column(name = "is_legend", nullable = false)
+  @Builder.Default
+  private Boolean isLegend = false;
+
+  @Column(name = "legacy_score", nullable = false)
+  @Builder.Default
+  private Long legacyScore = 0L;
+
+  @Column(name = "retirement_date")
+  private Instant retirementDate;
+
   @Column(name = "active", nullable = false)
   @Builder.Default
   private Boolean active = true;
@@ -327,6 +338,12 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
     }
     if (gender == null) {
       gender = Gender.MALE;
+    }
+    if (legacyScore == null) {
+      legacyScore = 0L;
+    }
+    if (isLegend == null) {
+      isLegend = false;
     }
   }
 
