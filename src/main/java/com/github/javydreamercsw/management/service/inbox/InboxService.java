@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.inbox;
 
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -45,6 +46,7 @@ public class InboxService {
 
   private final InboxRepository inboxRepository;
   private final InboxEventTypeRegistry eventTypeRegistry;
+  private final SecurityUtils securityUtils;
   @Getter private final AccountRepository accountRepository;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -118,19 +120,41 @@ public class InboxService {
             predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
+          boolean isAdminOrBooker = securityUtils.isAdmin() || securityUtils.isBooker();
+          Long effectiveAccountId = accountId;
+          Set<Wrestler> effectiveTargets = targets;
+
+          if (!isAdminOrBooker) {
+            // Force filter by current user if not Admin/Booker
+            Long currentAccountId = securityUtils.getCurrentAccountId().orElse(null);
+            if (effectiveAccountId == null || !effectiveAccountId.equals(currentAccountId)) {
+              effectiveAccountId = currentAccountId;
+            }
+            // If targets are provided, filter them to only those owned by the user
+            if (effectiveTargets != null && !effectiveTargets.isEmpty()) {
+              effectiveTargets =
+                  effectiveTargets.stream()
+                      .filter(wrestler -> securityUtils.isOwner(wrestler))
+                      .collect(java.util.stream.Collectors.toSet());
+            }
+          }
+
           Predicate targetPredicate = null;
-          if (targets != null && !targets.isEmpty()) {
+          if (effectiveTargets != null && !effectiveTargets.isEmpty()) {
             Join<InboxItem, InboxItemTarget> join = root.join("targets", JoinType.INNER);
             targetPredicate =
                 join.get("targetId")
-                    .in(targets.stream().map(wrestler -> wrestler.getId().toString()).toList());
+                    .in(
+                        effectiveTargets.stream()
+                            .map(wrestler -> wrestler.getId().toString())
+                            .toList());
           }
 
-          if (accountId != null) {
+          if (effectiveAccountId != null) {
             Join<InboxItem, InboxItemTarget> accountJoin = root.join("targets", JoinType.INNER);
             Predicate accountPredicate =
                 cb.and(
-                    cb.equal(accountJoin.get("targetId"), accountId.toString()),
+                    cb.equal(accountJoin.get("targetId"), effectiveAccountId.toString()),
                     cb.equal(accountJoin.get("targetType"), InboxItemTarget.TargetType.ACCOUNT));
             if (targetPredicate != null) {
               targetPredicate = cb.or(targetPredicate, accountPredicate);
@@ -141,6 +165,9 @@ public class InboxService {
 
           if (targetPredicate != null) {
             predicate = cb.and(predicate, targetPredicate);
+          } else if (!isAdminOrBooker) {
+            // If no targets/account matched and not admin, return nothing
+            predicate = cb.and(predicate, cb.disjunction());
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {

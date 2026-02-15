@@ -84,6 +84,11 @@
 
 ## Active Tracks
 
+### [ ] Track: Inbox Visibility Fix
+
+*Link: [./conductor/tracks/inbox_visibility_fix/spec.md](./conductor/tracks/inbox_visibility_fix/spec.md)*
+*Status: Active (2026-02-15)*
+
 ### [x] Track: Achievement Notifications
 
 *Link: [./conductor/tracks/achievement_notifications/spec.md](./conductor/tracks/achievement_notifications/spec.md)*
