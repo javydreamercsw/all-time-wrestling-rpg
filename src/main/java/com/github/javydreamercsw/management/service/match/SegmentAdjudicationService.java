@@ -254,16 +254,25 @@ public class SegmentAdjudicationService {
     }
 
     // Trigger Achievements
-    String keySuffix = segment.getSegmentType().getName().toUpperCase().replace(" ", "_");
+    List<String> achievementKeys = new ArrayList<>();
+    achievementKeys.add(segment.getSegmentType().getName());
+    segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
+
     for (Wrestler participant : segment.getWrestlers()) {
       if (participant.getAccount() != null) {
-        legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
-        if (winners.contains(participant)) {
-          legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
-          if (segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
-            legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
+        for (String baseKey : achievementKeys) {
+          String keySuffix = baseKey.toUpperCase().replaceAll("[^A-Z0-9 ]", "").replace(" ", "_");
+          legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
+          if (winners.contains(participant)) {
+            legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
           }
         }
+
+        if (winners.contains(participant)
+            && segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+          legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
+        }
+
         if (segment.isMainEvent()) {
           legacyService.unlockAchievement(participant.getAccount(), "MAIN_EVENT");
           if (segment.getShow().isPremiumLiveEvent()) {

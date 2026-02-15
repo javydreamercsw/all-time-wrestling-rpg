@@ -59,30 +59,6 @@
   "xpValue": 1000,
   "category": "BOOKING"
 }, {
-  "key": "PARTICIPATE_CAGE",
-  "name": "Inside the Steel",
-  "description": "Participate in your first Cage match",
-  "xpValue": 100,
-  "category": "MATCH_TYPE"
-}, {
-  "key": "WIN_CAGE",
-  "name": "Escape the Cage",
-  "description": "Win your first Cage match",
-  "xpValue": 250,
-  "category": "MATCH_TYPE"
-}, {
-  "key": "PARTICIPATE_CASKET",
-  "name": "Graveyard Shift",
-  "description": "Participate in your first Casket match",
-  "xpValue": 100,
-  "category": "MATCH_TYPE"
-}, {
-  "key": "WIN_CASKET",
-  "name": "Rest in Peace",
-  "description": "Win your first Casket match",
-  "xpValue": 250,
-  "category": "MATCH_TYPE"
-}, {
   "key": "MAIN_EVENT",
   "name": "Headliner",
   "description": "Main event a weekly show",
@@ -99,5 +75,203 @@
   "name": "The One",
   "description": "Win an Abu Dhabi Rumble match",
   "xpValue": 2500,
+  "category": "SPECIAL_EVENT"
+}, {
+  "key": "PARTICIPATE_NO_DQ",
+  "name": "Anything Goes",
+  "description": "Participate in a No DQ match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_NO_DQ",
+  "name": "Ruthless Efficiency",
+  "description": "Win a No DQ match",
+  "xpValue": 200,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_EXTREME",
+  "name": "Hardcore Entry",
+  "description": "Participate in an Extreme Rules match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_EXTREME",
+  "name": "Extreme Legend",
+  "description": "Win an Extreme Rules match",
+  "xpValue": 250,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_ELIMINATION",
+  "name": "Survival Mode",
+  "description": "Participate in an Elimination match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_ELIMINATION",
+  "name": "Sole Survivor",
+  "description": "Win an Elimination match",
+  "xpValue": 300,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_OVER_THE_TOP_ROPE_ELIMINATION",
+  "name": "Royal Entry",
+  "description": "Participate in a Battle Royal",
+  "xpValue": 150,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_OVER_THE_TOP_ROPE_ELIMINATION",
+  "name": "King of the Hill",
+  "description": "Win a Battle Royal",
+  "xpValue": 500,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_SUBMISSION",
+  "name": "Technical Wizardry",
+  "description": "Participate in a Submission match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_SUBMISSION",
+  "name": "Tap Out King",
+  "description": "Win a Submission match",
+  "xpValue": 250,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_CAGE",
+  "name": "Inside the Steel",
+  "description": "Participate in a Steel Cage match",
+  "xpValue": 150,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_CAGE",
+  "name": "Escape Artist",
+  "description": "Win a Steel Cage match",
+  "xpValue": 350,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_LAST_MAN_STANDING",
+  "name": "Will to Fight",
+  "description": "Participate in a Last Man Standing match",
+  "xpValue": 150,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_LAST_MAN_STANDING",
+  "name": "Standing Tall",
+  "description": "Win a Last Man Standing match",
+  "xpValue": 400,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_FREE-FOR-ALL",
+  "name": "Chaos Theory",
+  "description": "Participate in a Free-For-All match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_FREE-FOR-ALL",
+  "name": "One vs All",
+  "description": "Win a Free-For-All match",
+  "xpValue": 300,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_I_QUIT_MATCH",
+  "name": "Never Back Down",
+  "description": "Participate in an I Quit match",
+  "xpValue": 200,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_I_QUIT_MATCH",
+  "name": "Maximum Fortitude",
+  "description": "Win an I Quit match",
+  "xpValue": 500,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_LADDER_MATCH",
+  "name": "Climbing the Ranks",
+  "description": "Participate in a Ladder match",
+  "xpValue": 150,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_LADDER_MATCH",
+  "name": "Top of the World",
+  "description": "Win a Ladder match",
+  "xpValue": 400,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_CASKET_MATCH",
+  "name": "Funeral Director",
+  "description": "Participate in a Casket match",
+  "xpValue": 200,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_CASKET_MATCH",
+  "name": "Grave Digger",
+  "description": "Win a Casket match",
+  "xpValue": 500,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_TABLES_LADDERS_AND_CHAIRS_TLC",
+  "name": "Tables, Ladders & Chairs",
+  "description": "Participate in a TLC match",
+  "xpValue": 200,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_TABLES_LADDERS_AND_CHAIRS_TLC",
+  "name": "The Specialist",
+  "description": "Win a TLC match",
+  "xpValue": 500,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_WAR_GAMES",
+  "name": "War Games Veteran",
+  "description": "Participate in a War Games match",
+  "xpValue": 250,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_WAR_GAMES",
+  "name": "Battle Tested",
+  "description": "Win a War Games match",
+  "xpValue": 600,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_BARBWIRE_EXPLODING_DEATHMATCH",
+  "name": "Deathmatch Daredevil",
+  "description": "Participate in a Barbwire Exploding Deathmatch",
+  "xpValue": 300,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_BARBWIRE_EXPLODING_DEATHMATCH",
+  "name": "Immortalized in Fire",
+  "description": "Win a Barbwire Exploding Deathmatch",
+  "xpValue": 750,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_GAUNTLET",
+  "name": "Running the Gauntlet",
+  "description": "Participate in a Gauntlet match",
+  "xpValue": 150,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_GAUNTLET",
+  "name": "Endurance Master",
+  "description": "Win a Gauntlet match",
+  "xpValue": 500,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_TAG_TEAM",
+  "name": "Tag Team Partner",
+  "description": "Participate in a Tag Team match",
+  "xpValue": 50,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_TAG_TEAM",
+  "name": "Dynamic Duo",
+  "description": "Win a Tag Team match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_ABU_DHABI_RUMBLE",
+  "name": "Rumble Entrant",
+  "description": "Participate in an Abu Dhabi Rumble",
+  "xpValue": 250,
   "category": "SPECIAL_EVENT"
 } ]
