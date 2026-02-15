@@ -99,8 +99,11 @@ class AchievementSystemTest {
             new Random());
 
     account = new Account();
+    account.setId(1L);
     account.setUsername("testuser");
     account.setPrestige(0L);
+
+    lenient().when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
     wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
