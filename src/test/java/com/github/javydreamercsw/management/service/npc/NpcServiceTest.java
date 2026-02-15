@@ -88,7 +88,7 @@ class NpcServiceTest {
 
   @Test
   void testFindByName() {
-    when(npcRepository.findByName("Test NPC")).thenReturn(java.util.Optional.of(npc));
+    when(npcRepository.findByName("Test NPC")).thenReturn(npc);
 
     Npc result = npcService.findByName("Test NPC");
 

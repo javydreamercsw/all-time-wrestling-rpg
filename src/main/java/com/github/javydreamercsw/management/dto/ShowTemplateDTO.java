@@ -25,14 +25,4 @@ public class ShowTemplateDTO {
   private String showTypeName;
   private String notionUrl;
   private String externalId;
-  private String commentaryTeamName;
-  private Integer expectedMatches;
-  private Integer expectedPromos;
-  private Integer durationDays;
-  private String recurrenceType;
-  private String dayOfWeek;
-  private Integer dayOfMonth;
-  private Integer weekOfMonth;
-  private String month;
-  private String genderConstraint;
 }

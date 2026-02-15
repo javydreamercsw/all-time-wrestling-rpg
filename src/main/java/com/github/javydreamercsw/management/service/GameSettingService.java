@@ -34,51 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GameSettingService {
 
   public static final String CURRENT_GAME_DATE_KEY = "current_game_date";
-  public static final String AI_NEWS_ENABLED_KEY = "ai_news_enabled";
-  public static final String NEWS_RUMOR_CHANCE_KEY = "news_rumor_chance";
-  public static final String NEWS_STRATEGY_KEY = "news_strategy"; // "SEGMENT" or "SHOW"
   private final GameSettingRepository repository;
-
-  @PreAuthorize("permitAll()")
-  public boolean isAiNewsEnabled() {
-    return repository
-        .findById(AI_NEWS_ENABLED_KEY)
-        .map(GameSetting::getValue)
-        .map(Boolean::parseBoolean)
-        .orElse(true); // Enabled by default
-  }
-
-  @PreAuthorize("permitAll()")
-  public int getNewsRumorChance() {
-    return repository
-        .findById(NEWS_RUMOR_CHANCE_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(20); // 20% default
-  }
-
-  @PreAuthorize("permitAll()")
-  public String getNewsStrategy() {
-    return repository.findById(NEWS_STRATEGY_KEY).map(GameSetting::getValue).orElse("SEGMENT");
-  }
-
-  @PreAuthorize("hasRole('ADMIN')")
-  @Transactional
-  public void setAiNewsEnabled(boolean enabled) {
-    save(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
-  }
-
-  @PreAuthorize("hasRole('ADMIN')")
-  @Transactional
-  public void setNewsRumorChance(int chance) {
-    save(NEWS_RUMOR_CHANCE_KEY, String.valueOf(chance));
-  }
-
-  @PreAuthorize("hasRole('ADMIN')")
-  @Transactional
-  public void setNewsStrategy(String strategy) {
-    save(NEWS_STRATEGY_KEY, strategy);
-  }
 
   @PreAuthorize("permitAll()")
   public LocalDate getCurrentGameDate() {

@@ -209,17 +209,12 @@ To run the application using Docker, you need to provide the required environmen
 	```bash
 	docker run -p 9090:9090 \
 	-v /path/to/your/data:/data \
-	-e NOTION_TOKEN="your_notion_token" \
-	-e AI_GEMINI_API_KEY="your_gemini_key" \
-	-e AI_OPENAI_API_KEY="your_openai_key" \
-	-e AI_CLAUDE_API_KEY="your_claude_key" \
-	all-time-wrestling-rpg
-	```
+	-e NOTION_TOKEN="<your_notion_token>" \
+	all-time-wrestling-rpg	```
 
 	*   `-p 9090:9090`: Maps the container's port 9090 to the host's port 9090.
 	*   `-v /path/to/your/data:/data`: Mounts a directory from your host machine to the `/data` directory inside the container. This is where the H2 database file will be stored, ensuring data persistence. Replace `/path/to/your/data` with the absolute path on your host machine.
-	*   `-e`: Sets the environment variables required for Notion integration and AI services. **Mandatory Security Note:** Sensitive values (API keys, tokens) are not stored in the Docker image and must be provided at runtime using this flag or an `--env-file`.
-	*   AI settings can be configured via environment variables or in-application in the AI Settings view.
+	*   `-e`: Sets the environment variables required for Notion integration and AI services. AI settings can be configured via environment variables or in-application in the AI Settings view.
 
 #### AI Environment Variables
 The following environment variables can be used to configure AI services:
@@ -231,6 +226,7 @@ The following environment variables can be used to configure AI services:
 - `AI_CLAUDE_API_KEY`: Your Claude API key.
 - `AI_GEMINI_ENABLED`: Enable Gemini (default: false).
 - `AI_GEMINI_API_KEY`: Your Gemini API key.
+- `AI_LOCALAI_ENABLED`: Enable LocalAI (default: false).
 
 See the [Startup Guide](./docs/STARTUP_GUIDE.md) for a full list of available environment variables.
 

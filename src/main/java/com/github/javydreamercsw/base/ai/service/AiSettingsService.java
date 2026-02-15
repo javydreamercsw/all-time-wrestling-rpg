@@ -82,13 +82,6 @@ public class AiSettingsService {
         .orElse(1000);
   }
 
-  public String getOpenAIImageModel() {
-    return gameSettingService
-        .findById("AI_OPENAI_IMAGE_MODEL")
-        .map(GameSetting::getValue)
-        .orElse("dall-e-3");
-  }
-
   public float getOpenAITemperature() {
     return gameSettingService
         .findById("AI_OPENAI_TEMPERATURE")
@@ -148,17 +141,39 @@ public class AiSettingsService {
         .orElse("gemini-2.5-flash");
   }
 
-  // Pollinations settings
-  public boolean isPollinationsEnabled() {
+  // LocalAI settings
+  public boolean isLocalAIEnabled() {
     return gameSettingService
-        .findById("AI_POLLINATIONS_ENABLED")
+        .findById("AI_LOCALAI_ENABLED")
         .map(gs -> Boolean.parseBoolean(gs.getValue()))
         .orElse(false);
   }
 
-  public String getPollinationsApiKey() {
+  public String getLocalAIBaseUrl() {
+    String sysProp = System.getProperty("ai.localai.base-url");
+    if (sysProp != null && !sysProp.isEmpty()) {
+      return sysProp;
+    }
     return gameSettingService
-        .findById("AI_POLLINATIONS_API_KEY")
+        .findById("AI_LOCALAI_BASE_URL")
+        .map(GameSetting::getValue)
+        .orElse("http://localhost:8088");
+  }
+
+  public String getLocalAIModel() {
+    String sysProp = System.getProperty("ai.localai.model");
+    if (sysProp != null && !sysProp.isEmpty()) {
+      return sysProp;
+    }
+    return gameSettingService
+        .findById("AI_LOCALAI_MODEL")
+        .map(GameSetting::getValue)
+        .orElse("llama-3.2-1b-instruct:q4_k_m");
+  }
+
+  public String getLocalAIModelUrl() {
+    return gameSettingService
+        .findById("AI_LOCALAI_MODEL_URL")
         .map(GameSetting::getValue)
         .orElse("");
   }

@@ -39,11 +39,10 @@ import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class ShowNotionSyncService implements NotionEntitySyncService {
+public class ShowNotionSyncService implements NotionSyncService {
 
   private final ShowRepository showRepository;
   private final NotionHandler notionHandler;
@@ -56,15 +55,7 @@ public class ShowNotionSyncService implements NotionEntitySyncService {
   }
 
   @Override
-  @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    return syncToNotion(operationId, null);
-  }
-
-  @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
     if (notionHandler != null) {
       Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
       if (clientOptional.isPresent()) {
@@ -77,10 +68,7 @@ public class ShowNotionSyncService implements NotionEntitySyncService {
             int updated = 0;
             int errors = 0;
             progressTracker.startOperation(operationId, "Sync Shows", 1);
-            List<Show> shows =
-                (ids == null || ids.isEmpty())
-                    ? showRepository.findAll()
-                    : showRepository.findAllById(ids);
+            List<Show> shows = showRepository.findAll();
             for (Show entity : shows) {
               if (processedCount % 5 == 0) {
                 progressTracker.updateProgress(
@@ -97,15 +85,17 @@ public class ShowNotionSyncService implements NotionEntitySyncService {
                     NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
                 // Map Show Type (Relation)
-                if (entity.getType() != null && entity.getType().getExternalId() != null) {
-                  properties.put(
-                      "Show Type",
-                      NotionPropertyBuilder.createRelationProperty(
-                          entity.getType().getExternalId()));
+                if (entity.getType() != null) {
+                  if (entity.getType().getExternalId() != null) {
+                    properties.put(
+                        "Show Type",
+                        NotionPropertyBuilder.createRelationProperty(
+                            entity.getType().getExternalId()));
+                  }
                 }
 
                 // Map Season (Relation)
-                if (entity.getSeason() != null && entity.getSeason().getExternalId() != null) {
+                if (entity.getSeason() != null) {
                   properties.put(
                       "Season", // Assuming Notion property is "Season"
                       NotionPropertyBuilder.createRelationProperty(
@@ -113,7 +103,7 @@ public class ShowNotionSyncService implements NotionEntitySyncService {
                 }
 
                 // Map Template (Relation)
-                if (entity.getTemplate() != null && entity.getTemplate().getExternalId() != null) {
+                if (entity.getTemplate() != null) {
                   properties.put(
                       "Template", // Assuming Notion property is "Template"
                       NotionPropertyBuilder.createRelationProperty(

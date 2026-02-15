@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -70,6 +72,8 @@ public class NarrationDialog extends Dialog {
   private final ShowService showService;
   private final SegmentService segmentService;
   private final RivalryService rivalryService;
+  private final LocalAIStatusService localAIStatusService;
+  private final LocalAIConfigProperties localAIConfigProperties;
   private final SegmentNarrationServiceFactory aiFactory;
 
   private final ProgressBar progressBar;
@@ -96,6 +100,8 @@ public class NarrationDialog extends Dialog {
       SegmentService segmentService,
       Consumer<Segment> onSaveCallback,
       RivalryService rivalryService,
+      LocalAIStatusService localAIStatusService,
+      LocalAIConfigProperties localAIConfigProperties,
       SegmentNarrationController segmentNarrationController,
       SegmentNarrationServiceFactory aiFactory) {
     this.segment = segment;
@@ -105,6 +111,8 @@ public class NarrationDialog extends Dialog {
     this.segmentService = segmentService;
     this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
+    this.localAIStatusService = localAIStatusService;
+    this.localAIConfigProperties = localAIConfigProperties;
     this.segmentNarrationController = segmentNarrationController;
     this.aiFactory = aiFactory;
 
@@ -281,9 +289,28 @@ public class NarrationDialog extends Dialog {
   private void generateNarration() {
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
+      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
+        reason = "LocalAI is still initializing: " + localAIStatusService.getMessage();
+      }
       Notification.show(reason, 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;
+    }
+
+    boolean isLocalAi = isLocalAiConfigured();
+    log.debug("Is LocalAI configured? {}", isLocalAi);
+
+    if (isLocalAi && !localAIStatusService.isReady()) {
+      Notification.show(localAIStatusService.getMessage(), 5_000, Notification.Position.BOTTOM_END);
+      return;
+    }
+
+    if (isLocalAi) {
+      Notification.show(
+              "Using LocalAI. Generation may take several minutes...",
+              5_000,
+              Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
     }
 
     showProgress(true);
@@ -317,6 +344,19 @@ public class NarrationDialog extends Dialog {
     } finally {
       showProgress(false);
     }
+  }
+
+  private boolean isLocalAiConfigured() {
+    boolean configured =
+        localAIConfigProperties != null
+            && localAIConfigProperties.getBaseUrl() != null
+            && !localAIConfigProperties.getBaseUrl().isEmpty()
+            && localAIConfigProperties.isEnabled();
+    log.debug(
+        "LocalAI Config Check: baseUrl={}, configured={}",
+        localAIConfigProperties != null ? localAIConfigProperties.getBaseUrl() : "null",
+        configured);
+    return configured;
   }
 
   SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {

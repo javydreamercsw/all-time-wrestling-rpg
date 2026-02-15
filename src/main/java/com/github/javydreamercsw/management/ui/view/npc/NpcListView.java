@@ -18,9 +18,6 @@ package com.github.javydreamercsw.management.ui.view.npc;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
-import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
-import com.github.javydreamercsw.base.ai.image.ImageStorageService;
-import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -40,7 +37,6 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.stream.Stream;
@@ -59,12 +55,7 @@ public class NpcListView extends Main {
   final Button createBtn;
   final Grid<Npc> npcGrid;
 
-  public NpcListView(
-      @NonNull NpcService npcService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull ImageGenerationServiceFactory imageFactory,
-      @NonNull ImageStorageService storageService,
-      @NonNull AiSettingsService aiSettingsService) {
+  public NpcListView(@NonNull NpcService npcService, @NonNull SecurityUtils securityUtils) {
     this.npcService = npcService;
 
     name = new TextField();
@@ -84,7 +75,6 @@ public class NpcListView extends Main {
     createBtn.setVisible(securityUtils.canCreate());
 
     npcGrid = new Grid<>();
-    npcGrid.setId("npc-grid");
     Editor<Npc> editor = npcGrid.getEditor();
     editor.setBuffered(true);
     Binder<Npc> binder = new Binder<>(Npc.class);
@@ -107,53 +97,14 @@ public class NpcListView extends Main {
         .setHeader("Type")
         .setEditorComponent(npcTypeField)
         .setSortable(true);
-    TextField imageUrlField = new TextField();
-    npcGrid
-        .addColumn(Npc::getImageUrl)
-        .setHeader("Image URL")
-        .setEditorComponent(imageUrlField)
-        .setSortable(true);
 
     npcGrid
         .addComponentColumn(
             npc -> {
-              HorizontalLayout buttons = new HorizontalLayout();
-
-              Button viewProfileButton = new Button("View Profile");
-              viewProfileButton.addClickListener(
-                  e -> {
-                    getUI()
-                        .ifPresent(
-                            ui ->
-                                ui.navigate(
-                                    NpcProfileView.class,
-                                    new RouteParameters("npcId", String.valueOf(npc.getId()))));
-                  });
-              viewProfileButton.setId("view-profile-btn-" + npc.getId());
-              buttons.add(viewProfileButton);
-
               Button editButton = new Button("Edit");
               editButton.addClickListener(e -> npcGrid.getEditor().editItem(npc));
               editButton.setVisible(securityUtils.canEdit());
-              buttons.add(editButton);
-
-              Button generateImageButton = new Button("Generate Image");
-              generateImageButton.setId("generate-image-btn-" + npc.getId());
-              generateImageButton.addClickListener(
-                  e -> {
-                    new NpcImageGenerationDialog(
-                            npc,
-                            npcService,
-                            imageFactory,
-                            storageService,
-                            aiSettingsService,
-                            () -> npcGrid.getDataProvider().refreshAll())
-                        .open();
-                  });
-              generateImageButton.setVisible(securityUtils.canEdit());
-              buttons.add(generateImageButton);
-
-              return buttons;
+              return editButton;
             })
         .setHeader("Actions");
 
@@ -178,7 +129,6 @@ public class NpcListView extends Main {
 
     binder.forField(nameField).bind("name");
     binder.forField(npcTypeField).bind("npcType");
-    binder.forField(imageUrlField).bind("imageUrl");
 
     editor.addSaveListener(
         event -> {

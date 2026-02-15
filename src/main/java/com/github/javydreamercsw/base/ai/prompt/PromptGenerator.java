@@ -90,14 +90,7 @@ public class PromptGenerator {
         prompt.append("   Rules: ").append(String.join(", ", segmentType.getRules())).append(".\n");
       }
     }
-    prompt.append(
-        "Generate a compelling wrestling narration as a DIALOGUE between the commentators provided"
-            + " in the JSON.\n");
-    prompt.append(
-        "Each line of dialogue MUST start with a tag identifying the speaker in the following"
-            + " format: '[SPEAKER:Commentator Name]'.\n");
-    prompt.append("Follow the tag immediately with a colon and the commentator's dialogue.\n");
-    prompt.append("DO NOT include any text that is not part of a tagged dialogue line.\n\n");
+    prompt.append("\n");
 
     prompt.append("Here is the full context for the segment:\n");
     try {
@@ -197,9 +190,8 @@ public class PromptGenerator {
 
     prompt.append(
         "\n"
-            + "INSTRUCTIONS: Write a commentary for this match as a dialogue between the"
-            + " commentators. Each line MUST start with '[SPEAKER:Commentator Name]:'. Include all"
-            + " participants. Mention the referee and commentators. Follow the outcome exactly.");
+            + "INSTRUCTIONS: Write a commentary for this match. Include all participants. Mention"
+            + " the referee and commentators. Follow the outcome exactly.");
 
     return prompt.toString();
   }

@@ -25,16 +25,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.AchievementRepository;
-import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -57,10 +52,8 @@ import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
-import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
-import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -82,7 +75,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,14 +97,10 @@ class DataInitializerTest {
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
-  @Mock private CommentaryService commentaryService;
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
-  @Mock private Environment env;
-  @Mock private CampaignUpgradeService campaignUpgradeService;
-  @Mock private AchievementRepository achievementRepository;
-  @Mock private AccountRepository accountRepository;
+  @Mock private org.springframework.core.env.Environment env;
 
   @BeforeEach
   void setUp() {
@@ -136,11 +124,7 @@ class DataInitializerTest {
             teamService,
             teamRepository,
             campaignAbilityCardService,
-            commentaryService,
-            campaignUpgradeService,
-            env,
-            achievementRepository,
-            accountRepository);
+            env);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);
@@ -223,12 +207,6 @@ class DataInitializerTest {
     lenient()
         .when(gameSettingService.findById("AI_GEMINI_ENABLED"))
         .thenReturn(Optional.of(geminiSetting));
-
-    Account playerAccount = new Account();
-    playerAccount.setUsername("player");
-    lenient()
-        .when(accountRepository.findByUsername("player"))
-        .thenReturn(Optional.of(playerAccount));
   }
 
   @Test
@@ -239,34 +217,6 @@ class DataInitializerTest {
     long initialDeckCount = deckService.count();
     dataInitializer.init();
     assertEquals(initialDeckCount, deckService.count());
-  }
-
-  @Test
-  void validateCommentatorsJson() {
-    assertDoesNotThrow(
-        () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("commentators.json").getInputStream(),
-                  new TypeReference<
-                      List<
-                          com.github.javydreamercsw.management.dto.commentator
-                              .CommentatorImportDTO>>() {});
-        });
-  }
-
-  @Test
-  void validateCommentaryTeamsJson() {
-    assertDoesNotThrow(
-        () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("commentary_teams.json").getInputStream(),
-                  new TypeReference<
-                      List<
-                          com.github.javydreamercsw.management.dto.commentator
-                              .CommentaryTeamImportDTO>>() {});
-        });
   }
 
   @Test
@@ -442,21 +392,5 @@ class DataInitializerTest {
     assertNotNull(savedWrestler);
     assertEquals(100, (long) savedWrestler.getFans());
     assertEquals(100, (int) savedWrestler.getBumps());
-  }
-
-  @Test
-  void syncAiSettingsFromEnvironment_doesNotOverwriteExistingDbValueByDefault() {
-    // Simulate an environment variable being set
-    when(env.getProperty("AI_OPENAI_ENABLED")).thenReturn("true");
-
-    // But the DB already has a value (e.g., user explicitly disabled it)
-    GameSetting existingSetting = mock(GameSetting.class);
-    when(existingSetting.getValue()).thenReturn("false");
-    when(gameSettingService.findById("AI_OPENAI_ENABLED")).thenReturn(Optional.of(existingSetting));
-
-    dataInitializer.init();
-
-    // Should NOT overwrite existing DB value unless forceOverride is enabled
-    verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
   }
 }

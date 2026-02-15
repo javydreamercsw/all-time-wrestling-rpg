@@ -62,11 +62,10 @@ class AbstractMatchNarrationServiceTest {
     assertThat(prompt)
         .isNotNull()
         .isNotEmpty()
-        .contains("You are a team of professional wrestling commentators.")
+        .contains("You are a professional wrestling commentator and storyteller.")
         .contains("You will be provided with a context object in JSON format.")
-        .contains("Generate a compelling wrestling narration as a DIALOGUE")
+        .contains("Generate a compelling wrestling narration based on the data in the JSON object.")
         .contains("The JSON object contains instructions that you must follow.")
-        .contains("Each line MUST start with the speaker's name")
         .contains("Here is the JSON context:")
         .contains(jsonContext);
   }

@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -53,8 +52,7 @@ public class SegmentsApprovedInboxListener implements ApplicationListener<Segmen
     inboxService.createInboxItem(
         segmentsApproved,
         String.format("Segments approved for show: %s", event.getShow().getName()),
-        event.getShow().getId().toString(),
-        InboxItemTarget.TargetType.SHOW);
+        event.getShow().getId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -32,6 +32,9 @@ ai:
   openai:
     api-url: https://api.openai.com/v1/chat/completions
     model: gpt-3.5-turbo
+  localai:
+    base-url: http://localhost:8088
+    model: google-gemma-3-27b-it-qat-q4_0-small
 
 # Logging configuration for tests
 logging:

@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,172 +63,31 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockCampaignEncounter(prompt);
     }
 
-    if (prompt.contains("Respond directly to them with a short, impactful retort")) {
-      return "You think you can just step into my ring and talk like that? I've retired legends"
-          + " while you were still learning to tie your boots. When the bell rings, the"
-          + " talking stops and the pain begins!";
-    }
-
     log.info("Mock AI generating segment narration (simulated processing time)");
     if (prompt.contains("Generate a compelling wrestling narration")) {
       return generateMockTextNarration(prompt);
     }
-
-    if (prompt.contains("professional wrestling show planner")
-        || prompt.contains("JSON array of segments")) {
-      return generateMockNarration(prompt);
-    }
-
-    if (prompt.contains("professional wrestling sports journalist")
-        || prompt.contains("generate a news item")) {
-      return generateMockNews(prompt);
-    }
-
-    return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
-        + " walking away.";
-  }
-
-  private String generateMockNews(String prompt) {
-    try {
-      String headline = "BREAKING: Major Results from the Ring!";
-      String category = "BREAKING";
-      boolean isRumor = false;
-      int importance = 3;
-
-      if (prompt.contains("TITLE match")) {
-        headline = "NEW CHAMPION CROWNED!";
-        importance = 5;
-      } else if (prompt.contains("RUMOR")) {
-        headline = "Backstage Gossip: Trouble Brewing?";
-        category = "RUMOR";
-        isRumor = true;
-      }
-
-      var response =
-          Map.of(
-              "headline", headline,
-              "content",
-                  "In an incredible turn of events, the wrestling world was shaken by the latest"
-                      + " show results. Fans are still talking about the implications of these"
-                      + " matches.",
-              "category", category,
-              "isRumor", isRumor,
-              "importance", importance);
-
-      return objectMapper.writeValueAsString(response);
-    } catch (Exception e) {
-      log.error("Error generating mock news", e);
-      return "{}";
-    }
+    return generateMockNarration(prompt);
   }
 
   private String generateMockTextNarration(String prompt) {
-    String wrestler1 = "Wrestler A";
-    String wrestler2 = "Wrestler B";
-    String venue = "the arena";
+    List<String> participants = extractParticipants(prompt);
+    String wrestler1 = participants.size() > 0 ? participants.get(0) : "Wrestler A";
+    String wrestler2 = participants.size() > 1 ? participants.get(1) : "Wrestler B";
+    String venue = extractVenue(prompt);
     String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
-    String comm1 = "Dara Hoshiko";
-    String comm2 = "Lord Bastian Von Crowe";
-    Map<String, String> participantAlignments = new java.util.HashMap<>();
-
-    try {
-      String jsonMarker = "Here is the JSON context:\n\n";
-      int jsonStart = prompt.indexOf(jsonMarker);
-      if (jsonStart != -1) {
-        String jsonContext = prompt.substring(jsonStart + jsonMarker.length());
-        JsonNode rootNode = objectMapper.readTree(jsonContext);
-
-        // Extract wrestlers
-        if (rootNode.has("wrestlers") && rootNode.get("wrestlers").isArray()) {
-          List<String> participantsList = new ArrayList<>();
-          for (JsonNode w : rootNode.get("wrestlers")) {
-            String name = w.path("name").asText();
-            if (!name.isEmpty()) {
-              participantsList.add(name);
-              participantAlignments.put(name, w.path("alignment").asText("FACE"));
-            }
-          }
-          if (!participantsList.isEmpty()) {
-            wrestler1 = participantsList.get(0);
-            if (participantsList.size() > 1) {
-              wrestler2 = participantsList.get(1);
-            }
-          }
-        }
-
-        // Extract commentators
-        if (rootNode.has("commentators") && rootNode.get("commentators").isArray()) {
-          List<String> commentatorsList = new ArrayList<>();
-          for (JsonNode c : rootNode.get("commentators")) {
-            String name = c.path("name").asText();
-            if (!name.isEmpty()) {
-              commentatorsList.add(name);
-            }
-          }
-          if (!commentatorsList.isEmpty()) {
-            comm1 = commentatorsList.get(0);
-            if (commentatorsList.size() > 1) {
-              comm2 = commentatorsList.get(1);
-            }
-          }
-        }
-
-        // Extract venue
-        if (rootNode.has("venue") && rootNode.get("venue").has("name")) {
-          venue = rootNode.get("venue").get("name").asText("the arena");
-        }
-      }
-    } catch (Exception e) {
-      log.warn("Failed to parse JSON context in mock service: {}", e.getMessage());
-    }
 
     StringBuilder sb = new StringBuilder();
-    sb.append("Narrator: ")
-        .append(generateOpening(wrestler1, wrestler2, venue, type))
-        .append("\n\n");
-    String w1Alignment = participantAlignments.getOrDefault(wrestler1, "FACE");
-    sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n\n");
-
+    sb.append(generateOpening(wrestler1, wrestler2, venue, type)).append("\n\n");
     if (type.equals("Match")) {
-      sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
-
-      String reaction;
-      if ("HEEL".equalsIgnoreCase(w1Alignment)) {
-        reaction =
-            "Lord Bastian Von Crowe".equalsIgnoreCase(comm2)
-                ? "I love that aggressive style from " + wrestler1 + "! Pure strategy."
-                : "That's a blatant disregard for the rules by " + wrestler1 + "!";
-
-      } else if ("FACE".equalsIgnoreCase(w1Alignment)) {
-        reaction =
-            "Dara Hoshiko".equalsIgnoreCase(comm2)
-                ? wrestler1 + " is showing incredible heart and integrity!"
-                : "How boring. "
-                    + wrestler1
-                    + " should spend less time pandering and more time winning.";
-      } else {
-        reaction = "Wrestler " + wrestler1 + " is executing their move set with precision.";
-      }
-
-      sb.append(comm2).append(": ").append(reaction).append("\n\n");
-
-      sb.append("Narrator: ").append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n\n");
-      sb.append(comm1).append(": ").append("I can't believe the resilience!").append("\n\n");
-      sb.append("Narrator: ").append(generateClimaxAndFinish(wrestler1, wrestler2)).append("\n\n");
-      sb.append(comm2).append(": ").append("What an ending!");
+      sb.append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
+      sb.append(generateMidSegmentDrama(wrestler1, wrestler2)).append("\n\n");
+      sb.append(generateClimaxAndFinish(wrestler1, wrestler2));
     } else {
-      sb.append("Narrator: ")
-          .append(wrestler1)
-          .append(" grabs the microphone and looks intensely at the crowd.\n\n");
-      sb.append(comm1)
-          .append(": ")
-          .append("\"I've waited a long time for this moment,\" he declares.\n\n");
-      sb.append("Narrator: ")
-          .append(wrestler2)
-          .append(" interrupts, walking down the ramp with a confident smirk.\n\n");
-      sb.append(comm2)
-          .append(": ")
-          .append("The tension is thick as they stand face-to-face in the middle of the ring.");
+      sb.append(wrestler1).append(" grabs the microphone and looks intensely at the crowd. ");
+      sb.append("\"I've waited a long time for this moment,\" he declares. ");
+      sb.append(wrestler2).append(" interrupts, walking down the ramp with a confident smirk. ");
+      sb.append("The tension is thick as they stand face-to-face in the middle of the ring.");
     }
     return sb.toString();
   }
@@ -277,6 +135,16 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   @Override
   public boolean isAvailable() {
     return true; // Always available for testing
+  }
+
+  @Override
+  public String generateText(@NonNull String prompt) {
+    if (prompt.contains(
+            "Generate a professional wrestling narrative segment appropriate for chapter")
+        || prompt.contains("Generate a 'Post-Match' narrative segment")) {
+      return generateMockCampaignEncounter(prompt);
+    }
+    return generateMockNarration(prompt);
   }
 
   /** Generates a realistic mock wrestling segment narration. */

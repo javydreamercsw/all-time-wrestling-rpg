@@ -19,11 +19,7 @@ package com.github.javydreamercsw.management.ui;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -32,7 +28,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +38,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 public class GenderFilteringE2ETest extends AbstractE2ETest {
@@ -50,30 +46,49 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TitleRepository titleRepository;
-  @Autowired private CampaignRepository campaignRepository;
-  @Autowired private CampaignStateRepository campaignStateRepository;
-  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
-  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
-  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private SegmentRepository segmentRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
 
   private Wrestler maleWrestler;
+
   private Wrestler femaleWrestler;
+
   private Title womensTitle;
 
   @BeforeEach
+  @Transactional
   public void setupTestData() {
-    cleanupLeagues();
-    if (cacheManager != null) {
-      cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
-    }
 
     wrestlerAlignmentRepository.deleteAllInBatch();
+
     campaignStateRepository.deleteAllInBatch();
+
     backstageActionHistoryRepository.deleteAllInBatch();
+
     campaignEncounterRepository.deleteAllInBatch();
+
     campaignRepository.deleteAllInBatch();
+
     titleRepository.deleteAll();
-    wrestlerRepository.deleteAll();
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");
@@ -124,9 +139,12 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify both wrestlers are displayed initially
       log.info("Verifying both wrestlers are displayed");
-      waitForGridToPopulate("wrestler-rankings-grid");
-      assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
-      assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), maleWrestler.getName()));
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), femaleWrestler.getName()));
 
       // Select "FEMALE" from the gender ComboBox
       log.info("Filtering by FEMALE");
@@ -137,14 +155,12 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify only the female wrestler is displayed
       log.info("Verifying only female wrestler is displayed");
-      waitForGridToPopulate("wrestler-rankings-grid");
-      assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
-
       wait.until(
-          d -> {
-            List<WebElement> rows = getGridRows("wrestler-rankings-grid");
-            return rows.stream().noneMatch(row -> row.getText().contains(maleWrestler.getName()));
-          });
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), femaleWrestler.getName()));
+      wait.until(
+          ExpectedConditions.invisibilityOfElementWithText(
+              By.tagName("vaadin-grid-cell-content"), maleWrestler.getName()));
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -162,8 +178,12 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify both wrestlers are displayed initially
       log.info("Verifying both wrestlers are displayed");
-      assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
-      assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), maleWrestler.getName()));
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), femaleWrestler.getName()));
 
       // Select "MALE" from the gender ComboBox
       log.info("Filtering by MALE");
@@ -174,14 +194,12 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify only the male wrestler is displayed
       log.info("Verifying only male wrestler is displayed");
-      waitForGridToPopulate("wrestler-rankings-grid");
-      assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
-
       wait.until(
-          d -> {
-            List<WebElement> rows = getGridRows("wrestler-rankings-grid");
-            return rows.stream().noneMatch(row -> row.getText().contains(femaleWrestler.getName()));
-          });
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), maleWrestler.getName()));
+      wait.until(
+          ExpectedConditions.invisibilityOfElementWithText(
+              By.tagName("vaadin-grid-cell-content"), femaleWrestler.getName()));
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -207,8 +225,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Verify the female wrestler is in the contenders list
       log.info("Verifying female wrestler is a contender");
-      waitForGridToPopulate("wrestler-contenders-grid");
-      assertGridContains("wrestler-contenders-grid", femaleWrestler.getName());
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.tagName("vaadin-grid"), femaleWrestler.getName()));
 
       // Open the "Tier Boundaries" dialog
       log.info("Opening tier boundaries dialog");
@@ -224,13 +243,14 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Select "FEMALE" in the dialog's gender ComboBox
       log.info("Filtering tier boundaries by FEMALE");
       WebElement dialogGenderComboBox =
-          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("tier-gender-selection")));
+          driver.findElement(By.cssSelector("vaadin-dialog vaadin-combo-box"));
       selectFromVaadinComboBox(dialogGenderComboBox, "FEMALE");
 
       // Verify that the female tier boundaries are displayed in the dialog's grid
       log.info("Verifying female tier boundaries");
-      waitForGridToPopulate("tier-boundaries-grid");
-      assertGridContains("tier-boundaries-grid", "Midcarder");
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.cssSelector("vaadin-dialog vaadin-grid"), "Midcarder"));
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);

@@ -19,11 +19,8 @@ package com.github.javydreamercsw.management.service.season;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -44,7 +41,6 @@ public class SeasonService {
 
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private Clock clock;
-  @Autowired private GameSettingService gameSettingService;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
@@ -77,8 +73,7 @@ public class SeasonService {
     season.setDescription(description);
     season.setShowsPerPpv(showsPerPpv == null ? 5 : showsPerPpv); // Default to 5 if not provided
     season.setIsActive(true);
-    season.setStartDate(
-        gameSettingService.getCurrentGameDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
+    season.setStartDate(Instant.now(clock));
     season.setCreationDate(Instant.now(clock));
 
     return seasonRepository.saveAndFlush(season);
@@ -91,15 +86,7 @@ public class SeasonService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       key = "'active'")
   public Optional<Season> getActiveSeason() {
-    LocalDate today = gameSettingService.getCurrentGameDate();
-    return seasonRepository.findAll().stream()
-        .filter(Season::getIsActive)
-        .filter(s -> !s.getStartDate().atZone(ZoneId.systemDefault()).toLocalDate().isAfter(today))
-        .filter(
-            s ->
-                s.getEndDate() == null
-                    || !s.getEndDate().atZone(ZoneId.systemDefault()).toLocalDate().isBefore(today))
-        .findFirst();
+    return seasonRepository.findActiveSeason();
   }
 
   /** Get season by ID. */

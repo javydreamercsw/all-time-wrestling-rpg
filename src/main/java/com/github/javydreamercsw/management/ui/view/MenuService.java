@@ -42,8 +42,6 @@ public class MenuService {
     dashboards.addChild(new MenuItem("Wrestler Rankings", VaadinIcon.STAR, "wrestler-rankings"));
     dashboards.addChild(
         new MenuItem("Championship Rankings", VaadinIcon.TROPHY, "championship-rankings"));
-    dashboards.addChild(new MenuItem("News & Rumors", VaadinIcon.NEWSPAPER, "news"));
-    dashboards.addChild(new MenuItem("Hall of Fame", VaadinIcon.ACADEMY_CAP, "hall-of-fame"));
 
     // Booker Dashboard: Only BOOKER and ADMIN
     MenuItem bookerDashboard =
@@ -113,29 +111,10 @@ public class MenuService {
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
     help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html", true));
 
-    // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
-    MenuItem multiplayer =
-        new MenuItem(
-            "Multiplayer",
-            VaadinIcon.USERS,
-            null,
-            RoleName.ADMIN,
-            RoleName.BOOKER,
-            RoleName.PLAYER);
-    multiplayer.addChild(
-        new MenuItem(
-            "My Leagues",
-            VaadinIcon.LIST,
-            "leagues",
-            RoleName.ADMIN,
-            RoleName.BOOKER,
-            RoleName.PLAYER));
-
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);
     menuItems.add(playerDashboard);
     menuItems.add(campaignMenu);
-    menuItems.add(multiplayer);
     menuItems.add(entities);
     menuItems.add(contentGeneration);
     menuItems.add(cardGame);
@@ -187,11 +166,27 @@ public class MenuService {
             .filter(child -> child != null)
             .toList();
 
-    MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
-    filtered.setExternal(menuItem.isExternal());
-    filtered.setRequiredRoles(menuItem.getRequiredRoles());
-    filteredChildren.forEach(filtered::addChild);
-    return filtered;
+    // For parent menus (no path), only show if they have accessible children
+    // For leaf items (with path), show if user has access
+    boolean shouldShow = false;
+    if (menuItem.getPath() == null) {
+      // Parent menu - show only if it has accessible children
+      shouldShow = !filteredChildren.isEmpty();
+    } else {
+      // Leaf item - show if user has access (which we already verified)
+      shouldShow = true;
+    }
+
+    if (shouldShow) {
+      MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
+      filtered.setExternal(menuItem.isExternal());
+      filtered.setRequiredRoles(menuItem.getRequiredRoles());
+      filteredChildren.forEach(filtered::addChild);
+      return filtered;
+    }
+
+    // No accessible children for parent menu
+    return null;
   }
 
   private void sortSubMenus(MenuItem menuItem) {

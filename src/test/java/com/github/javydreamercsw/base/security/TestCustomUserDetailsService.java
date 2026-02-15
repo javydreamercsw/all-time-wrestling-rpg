@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Primary
-@Profile("test & !account-lockout-test")
+@Profile("test")
 public class TestCustomUserDetailsService implements UserDetailsService {
 
   @Autowired private AccountRepository accountRepository;
@@ -121,24 +121,24 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   }
 
   private Wrestler findOrCreateWrestlerForAccount(@NonNull Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-    if (!wrestlers.isEmpty()) {
-      return wrestlers.get(0);
-    }
-
-    // Check if a wrestler with the external ID already exists
-    String externalId = "wrestler-" + account.getUsername();
     return wrestlerRepository
-        .findByExternalId(externalId)
+        .findByAccount(account)
         .orElseGet(
             () -> {
-              Wrestler wrestler = new Wrestler();
-              wrestler.setName(account.getUsername() + " Wrestler");
-              wrestler.setIsPlayer(true);
-              wrestler.setAccount(account);
-              wrestler.setCreationDate(clock.instant());
-              wrestler.setExternalId(externalId);
-              return wrestlerRepository.save(wrestler);
+              // Check if a wrestler with the external ID already exists
+              String externalId = "wrestler-" + account.getUsername();
+              return wrestlerRepository
+                  .findByExternalId(externalId)
+                  .orElseGet(
+                      () -> {
+                        Wrestler wrestler = new Wrestler();
+                        wrestler.setName(account.getUsername() + " Wrestler");
+                        wrestler.setIsPlayer(true);
+                        wrestler.setAccount(account);
+                        wrestler.setCreationDate(clock.instant());
+                        wrestler.setExternalId(externalId);
+                        return wrestlerRepository.save(wrestler);
+                      });
             });
   }
 

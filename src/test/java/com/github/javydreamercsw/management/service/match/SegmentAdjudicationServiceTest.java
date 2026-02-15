@@ -20,7 +20,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
@@ -29,12 +28,10 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,13 +57,6 @@ class SegmentAdjudicationServiceTest {
   @Mock private Show show;
   @Mock private TitleService titleService;
   @Mock private MatchRewardService matchRewardService;
-  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
-
-  @Mock private LegacyService legacyService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -80,9 +70,6 @@ class SegmentAdjudicationServiceTest {
             feudService,
             titleService,
             matchRewardService,
-            matchFulfillmentRepository,
-            leagueRosterRepository,
-            legacyService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
@@ -93,7 +80,6 @@ class SegmentAdjudicationServiceTest {
     when(segmentType.getName()).thenReturn("Test Match");
     when(segment.getShow()).thenReturn(show);
     when(show.isPremiumLiveEvent()).thenReturn(false);
-    when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
   }
 
   @Test

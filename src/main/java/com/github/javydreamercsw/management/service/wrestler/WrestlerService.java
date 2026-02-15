@@ -26,7 +26,6 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
@@ -35,17 +34,13 @@ import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
-import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -74,37 +69,6 @@ public class WrestlerService {
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
-  @Autowired private LegacyService legacyService;
-
-  /**
-   * Find all active wrestlers filtered by alignment and gender.
-   *
-   * @param alignment Optional alignment filter
-   * @param gender Optional gender filter
-   * @param includedWrestlers Set of wrestlers to always include regardless of filters
-   * @return Filtered list of wrestlers sorted by name
-   */
-  @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findAllFiltered(
-      @Nullable AlignmentType alignment,
-      @Nullable Gender gender,
-      @Nullable Set<Wrestler> includedWrestlers) {
-    return findAll().stream()
-        .filter(
-            w -> {
-              if (includedWrestlers != null && includedWrestlers.contains(w)) {
-                return true;
-              }
-              boolean matchesAlignment =
-                  alignment == null
-                      || (w.getAlignment() != null
-                          && w.getAlignment().getAlignmentType() == alignment);
-              boolean matchesGender = gender == null || w.getGender() == gender;
-              return matchesAlignment && matchesGender;
-            })
-        .sorted(Comparator.comparing(Wrestler::getName))
-        .collect(Collectors.toList());
-  }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void createWrestler(@NonNull String name) {
@@ -192,6 +156,20 @@ public class WrestlerService {
                                     "Account not found with ID: " + accountId));
               }
 
+              // Check if the account is already assigned to another wrestler
+              if (account != null) {
+                Optional<Wrestler> existingPlayerWrestler =
+                    wrestlerRepository.findByAccount(account);
+                if (existingPlayerWrestler.isPresent()
+                    && !existingPlayerWrestler.get().getId().equals(wrestlerId)) {
+                  throw new IllegalArgumentException(
+                      "Account "
+                          + account.getUsername()
+                          + " is already assigned to another wrestler: "
+                          + existingPlayerWrestler.get().getName());
+                }
+              }
+
               wrestler.setAccount(account);
               wrestler.setIsPlayer(account != null); // Set isPlayer based on account presence
               return wrestlerRepository.saveAndFlush(wrestler);
@@ -268,13 +246,8 @@ public class WrestlerService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findByAccount(@NonNull Account account) {
+  public Optional<Wrestler> findByAccount(@NonNull Account account) {
     return wrestlerRepository.findByAccount(account);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findAllByAccount(@NonNull Account account) {
-    return wrestlerRepository.findAllByAccount(account);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -313,10 +286,6 @@ public class WrestlerService {
               tierRecalculationService.recalculateTier(wrestler);
               Wrestler savedWrestler = wrestlerRepository.save(wrestler);
               eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
-
-              if (savedWrestler.getAccount() != null) {
-                legacyService.updateLegacyScore(savedWrestler.getAccount());
-              }
 
               return savedWrestler;
             })

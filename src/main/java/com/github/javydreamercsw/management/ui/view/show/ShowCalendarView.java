@@ -25,7 +25,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.H5;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -403,28 +402,9 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     Span showType = new Span(show.getType().getName());
     showType.addClassNames(LumoUtility.TextColor.TERTIARY, LumoUtility.FontSize.XSMALL);
 
-    Image templateImage = new Image();
-    if (show.getTemplate() != null
-        && show.getTemplate().getImageUrl() != null
-        && !show.getTemplate().getImageUrl().isEmpty()) {
-      templateImage.setSrc(show.getTemplate().getImageUrl());
-    } else {
-      templateImage.setSrc("https://via.placeholder.com/100");
-    }
-    templateImage.setHeight("60px");
-    templateImage.setWidth("60px");
-    templateImage.addClassName(LumoUtility.BorderRadius.SMALL);
-
-    HorizontalLayout content = new HorizontalLayout();
-    content.setSpacing(true);
+    VerticalLayout content = new VerticalLayout(showName, showDate, showType);
+    content.setSpacing(false);
     content.setPadding(false);
-    content.setAlignItems(FlexComponent.Alignment.CENTER);
-
-    VerticalLayout textLayout = new VerticalLayout(showName, showDate, showType);
-    textLayout.setSpacing(false);
-    textLayout.setPadding(false);
-
-    content.add(templateImage, textLayout);
 
     showItem.add(content);
     return showItem;

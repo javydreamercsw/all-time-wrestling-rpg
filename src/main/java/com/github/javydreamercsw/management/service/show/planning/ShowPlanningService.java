@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -40,7 +39,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -76,16 +74,6 @@ public class ShowPlanningService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
-    if (show.getShowDate() == null) {
-      throw new IllegalStateException(
-          "Show '"
-              + show.getName()
-              + "' (id="
-              + show.getId()
-              + ") has no showDate set. "
-              + "Set a scheduled date before opening Show Planning.");
-    }
-
     ShowPlanningContext context = new ShowPlanningContext();
 
     // Get segments from the last 7 days
@@ -131,26 +119,12 @@ public class ShowPlanningService {
     log.debug("Found {} promos in the last month", lastWeekPromos.size());
     context.setRecentPromos(lastWeekPromos);
 
-    // Get show template
+    // Get show template (hardcoded for now)
     ShowTemplate template = new ShowTemplate();
     template.setShowName(show.getName());
     template.setDescription(show.getDescription());
-
-    // Use template's expected values if set, otherwise fallback to show type defaults
-    if (show.getTemplate() != null && show.getTemplate().getExpectedMatches() != null) {
-      template.setExpectedMatches(show.getTemplate().getExpectedMatches());
-    } else {
-      template.setExpectedMatches(show.getType().getExpectedMatches());
-    }
-
-    if (show.getTemplate() != null && show.getTemplate().getExpectedPromos() != null) {
-      template.setExpectedPromos(show.getTemplate().getExpectedPromos());
-    } else {
-      template.setExpectedPromos(show.getType().getExpectedPromos());
-    }
-    if (show.getTemplate() != null) {
-      template.setGenderConstraint(show.getTemplate().getGenderConstraint());
-    }
+    template.setExpectedMatches(show.getType().getExpectedMatches());
+    template.setExpectedPromos(show.getType().getExpectedPromos());
     context.setShowTemplate(template);
 
     // Get championships
@@ -168,39 +142,12 @@ public class ShowPlanningService {
       if (numberOneContenders != null && !numberOneContenders.isEmpty()) {
         championship.getContenders().addAll(numberOneContenders);
       }
-
-      // Calculate days since last defense
-      Instant lastDefense =
-          title
-              .getCurrentReign()
-              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getStartDate)
-              .orElse(null);
-
-      // Check if there are any title matches after the start of the reign
-      Optional<Instant> lastMatch =
-          title.getSegments().stream()
-              .filter(s -> s.getIsTitleSegment() != null && s.getIsTitleSegment())
-              .map(com.github.javydreamercsw.management.domain.show.segment.Segment::getSegmentDate)
-              .max(Comparator.naturalOrder());
-
-      if (lastMatch.isPresent() && (lastDefense == null || lastMatch.get().isAfter(lastDefense))) {
-        lastDefense = lastMatch.get();
-      }
-
-      if (lastDefense != null) {
-        championship.setDaysSinceLastDefense(ChronoUnit.DAYS.between(lastDefense, showDate));
-      }
-
       championships.add(championship);
     }
     context.setChampionships(championships);
 
     // Get all wrestlers
-    Gender genderConstraint =
-        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
-
-    List<Wrestler> allWrestlers = wrestlerService.findAllFiltered(null, genderConstraint, null);
-
+    List<Wrestler> allWrestlers = wrestlerService.findAll();
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
@@ -228,16 +175,6 @@ public class ShowPlanningService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
-    if (show.getShowDate() == null) {
-      throw new IllegalStateException(
-          "Cannot approve segments for show '"
-              + show.getName()
-              + "' (id="
-              + show.getId()
-              + ") "
-              + "because showDate is not set.");
-    }
-
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
     for (int i = 0; i < proposedSegments.size(); i++) {

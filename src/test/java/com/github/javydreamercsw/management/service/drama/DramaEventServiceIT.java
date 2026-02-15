@@ -72,7 +72,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     // Ensure no wrestler is associated with this account from previous tests
     wrestlerRepository
         .findByAccount(dramaPlayerAccount)
-        .forEach(
+        .ifPresent(
             w -> {
               wrestlerRepository.delete(w);
               wrestlerRepository.flush();

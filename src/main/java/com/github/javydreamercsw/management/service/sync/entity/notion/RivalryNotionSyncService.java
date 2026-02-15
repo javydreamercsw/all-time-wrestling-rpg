@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class RivalryNotionSyncService implements NotionEntitySyncService {
+public class RivalryNotionSyncService implements NotionSyncService {
 
   private final RivalryRepository rivalryRepository;
   private final NotionHandler notionHandler;

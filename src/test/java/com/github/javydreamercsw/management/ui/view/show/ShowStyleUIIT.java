@@ -20,12 +20,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
-import com.github.javydreamercsw.base.ai.image.ImageStorageService;
-import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -128,24 +124,9 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(securityUtils.canEdit()).thenReturn(true); // Default to true for tests
     when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
 
-    LeagueRepository leagueRepository = mock(LeagueRepository.class);
-    ImageGenerationServiceFactory imageGenerationServiceFactory =
-        mock(ImageGenerationServiceFactory.class);
-    ImageStorageService imageStorageService = mock(ImageStorageService.class);
-    AiSettingsService aiSettingsService = mock(AiSettingsService.class);
-
     ShowListView showListView =
         new ShowListView(
-            showService,
-            showTypeService,
-            seasonService,
-            showTemplateService,
-            leagueRepository,
-            securityUtils,
-            imageGenerationServiceFactory,
-            imageStorageService,
-            aiSettingsService,
-            clock);
+            showService, showTypeService, seasonService, showTemplateService, securityUtils, clock);
     Grid<Show> grid = showListView.showGrid;
 
     // Test the part name generator

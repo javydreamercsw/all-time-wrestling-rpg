@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -58,8 +57,7 @@ public class WrestlerInjuryHealedInboxListener
             event.getWrestler().getName(),
             event.getInjury().getDescription(),
             event.getWrestler().getInjuries().size()),
-        event.getWrestler().getId().toString(),
-        InboxItemTarget.TargetType.WRESTLER);
+        event.getWrestler().getId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
