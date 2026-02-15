@@ -23,7 +23,6 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,7 @@ import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -56,6 +56,7 @@ public class TeamNotionSyncService implements NotionEntitySyncService {
   }
 
   @Override
+  @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
@@ -92,18 +93,16 @@ public class TeamNotionSyncService implements NotionEntitySyncService {
                     NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
               }
 
-              // Map Member 1 (Relation)
-              if (entity.getWrestler1() != null) {
+              // Map Members (Relation)
+              if (entity.getWrestler1() != null && entity.getWrestler1().getExternalId() != null) {
                 properties.put(
-                    "Member 1", // Assuming Notion property is "Member 1"
+                    "Member 1",
                     NotionPropertyBuilder.createRelationProperty(
                         entity.getWrestler1().getExternalId()));
               }
-
-              // Map Member 2 (Relation)
-              if (entity.getWrestler2() != null) {
+              if (entity.getWrestler2() != null && entity.getWrestler2().getExternalId() != null) {
                 properties.put(
-                    "Member 2", // Assuming Notion property is "Member 2"
+                    "Member 2",
                     NotionPropertyBuilder.createRelationProperty(
                         entity.getWrestler2().getExternalId()));
               }
@@ -123,21 +122,6 @@ public class TeamNotionSyncService implements NotionEntitySyncService {
                     NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
               }
 
-              // Map Formed Date
-              if (entity.getFormedDate() != null) {
-                properties.put(
-                    "Formed Date", // Assuming Notion property is "Formed Date"
-                    NotionPropertyBuilder.createDateProperty(
-                        entity.getFormedDate().atOffset(ZoneOffset.UTC).toString()));
-              }
-
-              // Map Disbanded Date
-              if (entity.getDisbandedDate() != null) {
-                properties.put(
-                    "Disbanded Date",
-                    NotionPropertyBuilder.createDateProperty(
-                        entity.getDisbandedDate().atOffset(ZoneOffset.UTC).toString()));
-              }
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 // Update existing page
                 UpdatePageRequest updatePageRequest =
@@ -157,6 +141,7 @@ public class TeamNotionSyncService implements NotionEntitySyncService {
               teamRepository.save(entity);
               processedCount++;
             } catch (Exception ex) {
+              log.error("Error syncing team: " + entity.getName(), ex);
               errors++;
               processedCount++;
             }

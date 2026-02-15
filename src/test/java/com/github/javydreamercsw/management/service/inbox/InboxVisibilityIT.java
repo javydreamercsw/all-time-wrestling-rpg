@@ -48,12 +48,25 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
   @BeforeEach
   public void setUp() {
     inboxRepository.deleteAll();
-    dataInitializer.init();
 
-    userA =
-        inboxService.getAccountRepository().save(new Account("userA", "password123", "a@test.com"));
-    userB =
-        inboxService.getAccountRepository().save(new Account("userB", "password123", "b@test.com"));
+    // Clean up specifically for these tests
+    accountRepository
+        .findByUsername("testUserA")
+        .ifPresent(
+            a -> {
+              wrestlerRepository.findByAccount(a).forEach(wrestlerRepository::delete);
+              accountRepository.delete(a);
+            });
+    accountRepository
+        .findByUsername("testUserB")
+        .ifPresent(
+            a -> {
+              wrestlerRepository.findByAccount(a).forEach(wrestlerRepository::delete);
+              accountRepository.delete(a);
+            });
+
+    userA = accountRepository.save(new Account("testUserA", "password123", "a@test.com"));
+    userB = accountRepository.save(new Account("testUserB", "password123", "b@test.com"));
 
     wrestlerA = new Wrestler();
     wrestlerA.setName("Wrestler A");
@@ -83,8 +96,7 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
         InboxItemTarget.TargetType.WRESTLER);
 
     // User A searches for their items
-    // In InboxView, if User A is a player, it would pass their wrestler in targets and their
-    // accountId
+    loginAs("testUserA");
     List<InboxItem> resultsA =
         inboxService.search(Collections.singleton(wrestlerA), "All", "All", false, userA.getId());
 
@@ -92,10 +104,32 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
     Assertions.assertEquals("For User A", resultsA.getFirst().getDescription());
 
     // User B searches for their items
+    loginAs("testUserB");
     List<InboxItem> resultsB =
         inboxService.search(Collections.singleton(wrestlerB), "All", "All", false, userB.getId());
     Assertions.assertEquals(1, resultsB.size(), "User B should see exactly one message");
     Assertions.assertEquals("For Wrestler B", resultsB.getFirst().getDescription());
+  }
+
+  @Test
+  void testUserCannotSeeOtherWrestlerMessages() {
+    // Create message for Wrestler B
+    inboxService.createInboxItem(
+        eventTypeRegistry.getEventTypes().get(0),
+        "For Wrestler B",
+        wrestlerB.getId().toString(),
+        InboxItemTarget.TargetType.WRESTLER);
+
+    // Login as User A
+    loginAs("testUserA");
+
+    // User A tries to search for Wrestler B's items
+    List<InboxItem> results =
+        inboxService.search(Collections.singleton(wrestlerB), "All", "All", false, null);
+
+    // Should return 0 because User A doesn't own Wrestler B
+    Assertions.assertEquals(
+        0, results.size(), "User A should not be able to see Wrestler B's messages");
   }
 
   @Test
@@ -107,12 +141,35 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
         "999",
         InboxItemTarget.TargetType.ACCOUNT);
 
+    // Login as a regular user (User A)
+    loginAs("testUserA");
+
     // If accountId is null and targets is empty, we should NOT see it if we are a regular user.
-    // However, the current implementation returns everything if both are null.
     List<InboxItem> results =
         inboxService.search(Collections.emptySet(), "All", "All", false, null);
 
-    // This is the suspected bug: it returns 1 instead of 0
-    Assertions.assertEquals(0, results.size(), "Should not see any messages if no target matches");
+    // This should now be 0
+    Assertions.assertEquals(
+        0, results.size(), "Should not see any messages if no target matches and not admin");
+  }
+
+  @Test
+  void testAdminCanSeeEverything() {
+    // Create a message for someone else
+    inboxService.createInboxItem(
+        eventTypeRegistry.getEventTypes().getFirst(),
+        "Secret Message",
+        "999",
+        InboxItemTarget.TargetType.ACCOUNT);
+
+    // Login as admin
+    loginAs("admin");
+
+    // Admin should see it even with no filters
+    List<InboxItem> results =
+        inboxService.search(Collections.emptySet(), "All", "All", false, null);
+
+    Assertions.assertTrue(
+        results.stream().anyMatch(item -> item.getDescription().equals("Secret Message")));
   }
 }
