@@ -160,4 +160,36 @@ class NewsGenerationServiceTest {
             eq(false),
             eq(5));
   }
+
+  @Test
+  void testRollForRumor_Success() {
+    when(gameSettingService.getNewsRumorChance()).thenReturn(100); // 100% chance
+
+    String aiResponse =
+        "{\"headline\": \"Backstage Gossip\", \"content\": \"Someone was seen talking to someone"
+            + " else.\", \"category\": \"RUMOR\", \"isRumor\": true, \"importance\": 2}";
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.rollForRumor();
+
+    verify(aiService, times(1)).generateText(anyString());
+    verify(newsService, times(1))
+        .createNewsItem(
+            eq("Backstage Gossip"),
+            eq("Someone was seen talking to someone else."),
+            eq(NewsCategory.RUMOR),
+            eq(true),
+            eq(2));
+  }
+
+  @Test
+  void testRollForRumor_Failure() {
+    when(gameSettingService.getNewsRumorChance()).thenReturn(0); // 0% chance
+
+    newsGenerationService.rollForRumor();
+
+    verify(aiService, times(0)).generateText(anyString());
+    verify(newsService, times(0))
+        .createNewsItem(anyString(), anyString(), any(), anyBoolean(), anyInt());
+  }
 }

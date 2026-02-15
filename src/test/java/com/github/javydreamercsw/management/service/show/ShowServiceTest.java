@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -59,6 +60,7 @@ class ShowServiceTest {
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
   @Mock private ApplicationEventPublisher eventPublisher; // Needed to avoid NPE
   @Mock private GameSettingService gameSettingService;
+  @Mock private NewsGenerationService newsGenerationService;
 
   @InjectMocks private ShowService showService;
 
@@ -159,6 +161,7 @@ class ShowServiceTest {
 
     // Then
     verify(gameSettingService, times(1)).saveCurrentGameDate(showDate);
+    verify(newsGenerationService, times(1)).rollForRumor();
     verify(eventPublisher, times(1)).publishEvent(any(AdjudicationCompletedEvent.class));
   }
 

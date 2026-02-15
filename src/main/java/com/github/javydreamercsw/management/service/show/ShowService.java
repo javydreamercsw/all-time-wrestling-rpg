@@ -501,6 +501,9 @@ public class ShowService {
       newsGenerationService.generateNewsForShow(show);
     }
 
+    // Roll for a random rumor after the show news is processed
+    newsGenerationService.rollForRumor();
+
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 

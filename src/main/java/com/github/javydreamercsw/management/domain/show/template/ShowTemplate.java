@@ -78,6 +78,10 @@ public class ShowTemplate extends AbstractEntity<Long> {
   @Column(name = "expected_promos")
   private Integer expectedPromos;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "gender_constraint")
+  private Gender genderConstraint;
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "commentary_team_id")
   private CommentaryTeam commentaryTeam;
@@ -102,10 +106,6 @@ public class ShowTemplate extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   @Column(name = "recurrence_month")
   private Month month;
-
-  @Enumerated(EnumType.STRING)
-  @Column(name = "gender_constraint")
-  private Gender genderConstraint;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
