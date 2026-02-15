@@ -20,10 +20,13 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -59,5 +62,29 @@ class LegacyServiceTest {
 
     // Total fans = 7500. Score = 7500 / 1000 = 7.
     verify(accountRepository).save(argThat(a -> a.getLegacyScore() == 7));
+  }
+
+  @Test
+  void testAchievementUnlocking() {
+    Account account = new Account();
+    account.setUsername("testuser");
+
+    Wrestler w1 = new Wrestler();
+    w1.setFans(10000L);
+
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1));
+
+    Achievement achievement = new Achievement();
+
+    achievement.setType(AchievementType.CROWD_PLEASER);
+
+    when(achievementRepository.findByType(AchievementType.CROWD_PLEASER))
+        .thenReturn(Optional.of(achievement));
+
+    legacyService.updateLegacyScore(account);
+
+    // Should unlock Crowd Pleaser
+    verify(accountRepository, atLeastOnce())
+        .save(argThat(a -> a.getAchievements().contains(achievement) && a.getPrestige() == 100));
   }
 }

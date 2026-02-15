@@ -1,22 +1,22 @@
 # Plan: Player Career Legacy & Hall of Fame
 
-## Phase 1: Legacy Engine
+## Phase 1: Legacy Engine [checkpoint: 76af5732]
 
-- [ ] Add `legacyScore` and `prestige` fields to `Account` entity.
-- [ ] Create `Achievement` entity and `AccountAchievement` link table.
-- [ ] Implement `LegacyService` to calculate score updates based on game events.
+- [x] Add `legacyScore` and `prestige` fields to `Account` entity.
+- [x] Create `Achievement` entity and `AccountAchievement` link table.
+- [x] Implement `LegacyService` to calculate score updates based on game events.
 
-## Phase 2: Milestones & Badges
+## Phase 2: Milestones & Badges [checkpoint: Phase 2]
 
-- [ ] Define `AchievementType` enum (e.g., FIRST_TITLE, WIN_STREAK, BOOKER_OF_THE_YEAR).
-- [ ] Implement logic to trigger achievements upon relevant events.
-- [ ] Update `Account` to track `milestones` list.
+- [x] Define `AchievementType` enum (e.g., FIRST_TITLE, WIN_STREAK, BOOKER_OF_THE_YEAR).
+- [x] Implement logic to trigger achievements upon relevant events.
+- [x] Update `Account` to track `milestones` list (mapped to Achievements).
 
-## Phase 3: Hall of Fame UI
+## Phase 3: Hall of Fame UI [checkpoint: Phase 3]
 
-- [ ] Create `HallOfFameView` to list top Accounts by Legacy Score.
-- [ ] Update `PlayerDashboard` to show current Legacy Score and Badges.
-- [ ] Implement "Induction Ceremony" notification.
+- [x] Create `HallOfFameView` to list top Accounts by Legacy Score.
+- [x] Update `PlayerDashboard` to show current Legacy Score and Badges.
+- [ ] Implement "Induction Ceremony" notification (Bonus).
 
 ## Phase 4: Verification
 

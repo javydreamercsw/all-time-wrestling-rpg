@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
@@ -68,12 +69,27 @@ public class LegacyService {
     account.setLegacyScore(score);
     accountRepository.save(account);
     log.info("Updated legacy score for {}: {}", account.getUsername(), score);
+
+    checkAchievements(account, wrestlers, totalFans);
+  }
+
+  private void checkAchievements(Account account, List<Wrestler> wrestlers, long totalFans) {
+    if (wrestlers.size() >= 1) {
+      unlockAchievement(account, AchievementType.FIRST_WRESTLER);
+    }
+    if (wrestlers.size() >= 10) {
+      unlockAchievement(account, AchievementType.ROSTER_BUILDER);
+    }
+    if (totalFans >= 10000) {
+      unlockAchievement(account, AchievementType.CROWD_PLEASER);
+    }
+    // Add more checks here
   }
 
   @Transactional
-  public void unlockAchievement(Account account, String achievementName) {
+  public void unlockAchievement(Account account, AchievementType type) {
     achievementRepository
-        .findByName(achievementName)
+        .findByType(type)
         .ifPresent(
             achievement -> {
               if (!account.getAchievements().contains(achievement)) {
@@ -83,7 +99,9 @@ public class LegacyService {
                 accountRepository.save(account);
                 updateLegacyScore(account); // Update legacy score to reflect new achievement
                 log.info(
-                    "Unlocked achievement '{}' for {}", achievementName, account.getUsername());
+                    "Unlocked achievement '{}' for {}",
+                    type.getDisplayName(),
+                    account.getUsername());
               }
             });
   }

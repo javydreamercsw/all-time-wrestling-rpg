@@ -19,6 +19,10 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.Initializable;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
@@ -113,6 +117,8 @@ public class DataInitializer implements Initializable {
   private final CommentaryService commentaryService;
   private final CampaignUpgradeService campaignUpgradeService;
   private final Environment env;
+  private final AchievementRepository achievementRepository;
+  private final AccountRepository accountRepository;
 
   @Autowired
   public DataInitializer(
@@ -135,7 +141,9 @@ public class DataInitializer implements Initializable {
       CampaignAbilityCardService campaignAbilityCardService,
       CommentaryService commentaryService,
       CampaignUpgradeService campaignUpgradeService,
-      Environment env) {
+      Environment env,
+      AchievementRepository achievementRepository,
+      AccountRepository accountRepository) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -156,6 +164,8 @@ public class DataInitializer implements Initializable {
     this.commentaryService = commentaryService;
     this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
+    this.achievementRepository = achievementRepository;
+    this.accountRepository = accountRepository;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -180,7 +190,21 @@ public class DataInitializer implements Initializable {
       campaignUpgradeService.loadUpgrades();
       syncCommentatorsFromFile();
       syncCommentaryTeamsFromFile();
+      loadAchievements();
     }
+  }
+
+  private void loadAchievements() {
+    log.info("Loading achievements...");
+    for (AchievementType type : AchievementType.values()) {
+      if (achievementRepository.findByType(type).isEmpty()) {
+        Achievement achievement = new Achievement();
+        achievement.setType(type);
+        achievementRepository.save(achievement);
+        log.debug("Loaded achievement: {}", type.getDisplayName());
+      }
+    }
+    log.info("Achievement loading completed.");
   }
 
   private void syncCommentatorsFromFile() {

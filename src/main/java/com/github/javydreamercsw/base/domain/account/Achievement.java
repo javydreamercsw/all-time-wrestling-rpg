@@ -26,7 +26,7 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "achievement", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Table(name = "achievement", uniqueConstraints = @UniqueConstraint(columnNames = {"type"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,17 +37,25 @@ public class Achievement extends AbstractEntity<Long> {
   @Column(name = "achievement_id")
   private Long id;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false, unique = true)
-  @NotNull @Size(max = 100) private String name;
-
-  @Column(nullable = false)
-  @NotNull @Size(max = 500) private String description;
+  @NotNull private AchievementType type;
 
   @Column(name = "icon_url")
   @Size(max = 512) private String iconUrl;
 
-  @Column(nullable = false)
-  @NotNull private Integer xpValue;
+  // Delegates to Enum
+  public String getName() {
+    return type.getDisplayName();
+  }
+
+  public String getDescription() {
+    return type.getDescription();
+  }
+
+  public Integer getXpValue() {
+    return type.getXpValue();
+  }
 
   @Override
   public @Nullable Long getId() {

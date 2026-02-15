@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -73,6 +74,7 @@ public class WrestlerService {
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
+  @Autowired private LegacyService legacyService;
 
   /**
    * Find all active wrestlers filtered by alignment and gender.
@@ -311,6 +313,10 @@ public class WrestlerService {
               tierRecalculationService.recalculateTier(wrestler);
               Wrestler savedWrestler = wrestlerRepository.save(wrestler);
               eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
+
+              if (savedWrestler.getAccount() != null) {
+                legacyService.updateLegacyScore(savedWrestler.getAccount());
+              }
 
               return savedWrestler;
             })

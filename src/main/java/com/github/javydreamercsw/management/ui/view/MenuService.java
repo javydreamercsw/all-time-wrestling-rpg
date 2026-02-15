@@ -43,6 +43,7 @@ public class MenuService {
     dashboards.addChild(
         new MenuItem("Championship Rankings", VaadinIcon.TROPHY, "championship-rankings"));
     dashboards.addChild(new MenuItem("News & Rumors", VaadinIcon.NEWSPAPER, "news"));
+    dashboards.addChild(new MenuItem("Hall of Fame", VaadinIcon.ACADEMY_CAP, "hall-of-fame"));
 
     // Booker Dashboard: Only BOOKER and ADMIN
     MenuItem bookerDashboard =
