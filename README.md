@@ -24,6 +24,7 @@ All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows 
 - [Code Coverage](#code-coverage)
 - [Code Formatting](#code-formatting)
 - [Security](#security)
+- [Maintenance](#maintenance)
 - [Dependency Security](#dependency-security)
 - [NVD API Key Configuration](#nvd-api-key-configuration)
 - [Security Workflows](#security-workflows)
@@ -377,6 +378,10 @@ This project includes a comprehensive security implementation based on **Spring 
 For a detailed guide on account management and user roles, see the [**User Guide**](./docs/USER_GUIDE.md).
 
 For technical details on the security implementation, see the [**Developer Security Guide**](./docs/DEVELOPER_GUIDE.md).
+
+### Maintenance
+
+For details on automated database backups and other maintenance tasks, see the [**Database Maintenance Guide**](./docs/MAINTENANCE_GUIDE.md).
 
 #### Authentication & Authorization
 - **Role-Based Access Control**: The application uses a robust role-based system with four distinct roles:
