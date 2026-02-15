@@ -34,4 +34,5 @@ public class ShowTemplateDTO {
   private Integer dayOfMonth;
   private Integer weekOfMonth;
   private String month;
+  private String genderConstraint;
 }

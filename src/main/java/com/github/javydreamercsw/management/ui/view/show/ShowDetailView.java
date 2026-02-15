@@ -18,9 +18,11 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -873,16 +875,46 @@ public class ShowDetailView extends Main
     rulesCombo.setId("segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
+    // Alignment and Gender Filters
+    ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
+    alignmentFilter.setItems(AlignmentType.values());
+    alignmentFilter.setClearButtonVisible(true);
+    alignmentFilter.setPlaceholder("All alignments");
+    alignmentFilter.setWidthFull();
+    alignmentFilter.setId("add-alignment-filter-combo-box");
+
+    ComboBox<Gender> genderFilter = new ComboBox<>("Gender Filter");
+    genderFilter.setItems(Gender.values());
+    genderFilter.setClearButtonVisible(true);
+    genderFilter.setPlaceholder("All genders");
+    genderFilter.setWidthFull();
+    Gender defaultGender =
+        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+    genderFilter.setValue(defaultGender);
+    genderFilter.setId("add-gender-filter-combo-box");
+
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(
-        wrestlerService.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
     wrestlersCombo.setId("wrestlers-combo-box");
+
+    // Filter logic helper
+
+    java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
+        (selected) -> {
+          AlignmentType alignment = alignmentFilter.getValue();
+
+          Gender gender = genderFilter.getValue();
+
+          wrestlersCombo.setItems(wrestlerService.findAllFiltered(alignment, gender, selected));
+        };
+
+    refreshWrestlers.accept(new HashSet<>());
+
+    alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
+    genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
     // Winner selection (will be populated based on selected wrestlers)
     ComboBox<Wrestler> winnerCombo = new ComboBox<>("Winner (Optional)");
@@ -938,6 +970,8 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        alignmentFilter,
+        genderFilter,
         wrestlersCombo,
         winnerCombo,
         isTitleSegmentCheckbox,
@@ -1041,17 +1075,49 @@ public class ShowDetailView extends Main
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
+    // Alignment and Gender Filters
+    ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
+    alignmentFilter.setItems(AlignmentType.values());
+    alignmentFilter.setClearButtonVisible(true);
+    alignmentFilter.setPlaceholder("All alignments");
+    alignmentFilter.setWidthFull();
+    alignmentFilter.setId("edit-alignment-filter-combo-box");
+
+    ComboBox<Gender> genderFilter = new ComboBox<>("Gender Filter");
+    genderFilter.setItems(Gender.values());
+    genderFilter.setClearButtonVisible(true);
+    genderFilter.setPlaceholder("All genders");
+    genderFilter.setWidthFull();
+    Gender defaultGender =
+        (segment.getShow() != null && segment.getShow().getTemplate() != null)
+            ? segment.getShow().getTemplate().getGenderConstraint()
+            : null;
+    genderFilter.setValue(defaultGender);
+    genderFilter.setId("edit-gender-filter-combo-box");
+
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(
-        wrestlerService.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
-    wrestlersCombo.setValue(segment.getWrestlers());
     wrestlersCombo.setId("edit-wrestlers-combo-box");
+
+    // Filter logic helper
+    java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
+        (selected) -> {
+          AlignmentType alignment = alignmentFilter.getValue();
+
+          Gender gender = genderFilter.getValue();
+
+          wrestlersCombo.setItems(wrestlerService.findAllFiltered(alignment, gender, selected));
+        };
+
+    // Initial population: set items FIRST, then value
+    refreshWrestlers.accept(new HashSet<>(segment.getWrestlers()));
+    wrestlersCombo.setValue(new HashSet<>(segment.getWrestlers()));
+
+    alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
+    genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
     // Winner selection (multi-select)
     MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
@@ -1115,6 +1181,8 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        alignmentFilter,
+        genderFilter,
         wrestlersCombo,
         winnersCombo,
         isTitleSegmentCheckbox,

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -147,6 +148,9 @@ public class ShowPlanningService {
     } else {
       template.setExpectedPromos(show.getType().getExpectedPromos());
     }
+    if (show.getTemplate() != null) {
+      template.setGenderConstraint(show.getTemplate().getGenderConstraint());
+    }
     context.setShowTemplate(template);
 
     // Get championships
@@ -192,7 +196,11 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerService.findAll();
+    Gender genderConstraint =
+        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+
+    List<Wrestler> allWrestlers = wrestlerService.findAllFiltered(null, genderConstraint, null);
+
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 

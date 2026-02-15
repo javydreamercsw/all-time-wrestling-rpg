@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -58,6 +59,7 @@ class ShowPlanningViewTest {
   @Mock private ShowPlanningService showPlanningService;
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerService wrestlerService;
   private ShowPlanningView showPlanningView;
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
@@ -74,6 +76,7 @@ class ShowPlanningViewTest {
             showService,
             showPlanningService,
             showPlanningAiService,
+            wrestlerService,
             wrestlerRepository,
             titleService,
             segmentTypeRepository,

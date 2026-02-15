@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -25,6 +27,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -34,6 +37,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -41,12 +45,16 @@ public class EditSegmentDialog extends Dialog {
 
   @Getter private final ProposedSegment segment;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
   private final TitleService titleService;
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
+
+  private final ComboBox<Gender> genderFilter;
+  private final ComboBox<AlignmentType> alignmentFilter;
 
   @Getter
   private final MultiSelectComboBox<Title>
@@ -63,12 +71,15 @@ public class EditSegmentDialog extends Dialog {
   public EditSegmentDialog(
       ProposedSegment segment,
       WrestlerRepository wrestlerRepository,
+      WrestlerService wrestlerService,
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
+      Gender defaultGenderConstraint,
       Runnable onSave) {
     this.segment = segment;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerService = wrestlerService;
     this.titleService = titleService;
     this.segmentTypeRepository = segmentTypeRepository;
     this.segmentRuleRepository = segmentRuleRepository;
@@ -111,18 +122,43 @@ public class EditSegmentDialog extends Dialog {
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
+    alignmentFilter = new ComboBox<>("Alignment Filter");
+    alignmentFilter.setItems(AlignmentType.values());
+    alignmentFilter.setClearButtonVisible(true);
+    alignmentFilter.setPlaceholder("All alignments");
+    alignmentFilter.setWidthFull();
+    alignmentFilter.setId("edit-alignment-filter-combo-box");
+
+    genderFilter = new ComboBox<>("Gender Filter");
+    genderFilter.setItems(Gender.values());
+    genderFilter.setClearButtonVisible(true);
+    genderFilter.setPlaceholder("All genders");
+    genderFilter.setWidthFull();
+    genderFilter.setValue(defaultGenderConstraint);
+    genderFilter.setId("edit-gender-filter-combo-box");
+
     participantsCombo = new MultiSelectComboBox<>("Participants");
-    participantsCombo.setItems(wrestlerRepository.findAll());
     participantsCombo.setItemLabelGenerator(Wrestler::getName);
-    participantsCombo.setValue(
+    participantsCombo.setWidthFull();
+    participantsCombo.setRequired(true);
+    participantsCombo.setId("edit-wrestlers-combo-box");
+
+    // Pre-select existing participants
+    java.util.Set<Wrestler> existingParticipants =
         segment.getParticipants().stream()
             .map(wrestlerRepository::findByName)
             .filter(java.util.Optional::isPresent)
             .map(java.util.Optional::get)
-            .collect(Collectors.toSet()));
-    participantsCombo.setWidthFull();
-    participantsCombo.setRequired(true);
-    participantsCombo.setId("edit-wrestlers-combo-box");
+            .collect(Collectors.toSet());
+
+    refreshParticipantsList(existingParticipants);
+
+    // Filter logic
+    alignmentFilter.addValueChangeListener(
+        e -> refreshParticipantsList(participantsCombo.getValue()));
+    genderFilter.addValueChangeListener(e -> refreshParticipantsList(participantsCombo.getValue()));
+
+    participantsCombo.setValue(existingParticipants);
 
     winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
@@ -188,6 +224,8 @@ public class EditSegmentDialog extends Dialog {
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        alignmentFilter,
+        genderFilter,
         participantsCombo,
         winnersCombo,
         isTitleSegmentCheckbox,
@@ -200,6 +238,18 @@ public class EditSegmentDialog extends Dialog {
 
     getFooter().add(cancelButton, saveButton);
     add(new VerticalLayout(formLayout));
+  }
+
+  private void refreshParticipantsList(java.util.Set<Wrestler> selectedWrestlers) {
+
+    AlignmentType alignment = alignmentFilter.getValue();
+
+    Gender gender = genderFilter.getValue();
+
+    List<Wrestler> filteredWrestlers =
+        wrestlerService.findAllFiltered(alignment, gender, selectedWrestlers);
+
+    participantsCombo.setItems(filteredWrestlers);
   }
 
   public void save() {

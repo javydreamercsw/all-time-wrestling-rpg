@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.Initializable;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
@@ -489,7 +490,10 @@ public class DataInitializer implements Initializable {
                   dto.getDayOfWeek() != null ? DayOfWeek.valueOf(dto.getDayOfWeek()) : null,
                   dto.getDayOfMonth(),
                   dto.getWeekOfMonth(),
-                  dto.getMonth() != null ? Month.valueOf(dto.getMonth()) : null);
+                  dto.getMonth() != null ? Month.valueOf(dto.getMonth()) : null,
+                  dto.getGenderConstraint() != null
+                      ? Gender.valueOf(dto.getGenderConstraint())
+                      : null);
           if (template != null) {
             log.debug(
                 "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());
@@ -787,7 +791,7 @@ public class DataInitializer implements Initializable {
           List<Deck> byWrestler = deckService.findByWrestler(wrestler);
           Deck deck;
           if (!byWrestler.isEmpty()) {
-            deck = byWrestler.get(0); // Get the existing deck
+            deck = byWrestler.getFirst(); // Get the existing deck
           } else {
             deck = deckService.createDeck(wrestler);
           }

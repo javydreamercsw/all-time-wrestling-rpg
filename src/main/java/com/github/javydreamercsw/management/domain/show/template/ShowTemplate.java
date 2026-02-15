@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.show.template;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.Column;
@@ -101,6 +102,10 @@ public class ShowTemplate extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   @Column(name = "recurrence_month")
   private Month month;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "gender_constraint")
+  private Gender genderConstraint;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;

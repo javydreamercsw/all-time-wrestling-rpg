@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
@@ -39,8 +40,11 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -69,6 +73,36 @@ public class WrestlerService {
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
+
+  /**
+   * Find all active wrestlers filtered by alignment and gender.
+   *
+   * @param alignment Optional alignment filter
+   * @param gender Optional gender filter
+   * @param includedWrestlers Set of wrestlers to always include regardless of filters
+   * @return Filtered list of wrestlers sorted by name
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findAllFiltered(
+      @Nullable AlignmentType alignment,
+      @Nullable Gender gender,
+      @Nullable Set<Wrestler> includedWrestlers) {
+    return findAll().stream()
+        .filter(
+            w -> {
+              if (includedWrestlers != null && includedWrestlers.contains(w)) {
+                return true;
+              }
+              boolean matchesAlignment =
+                  alignment == null
+                      || (w.getAlignment() != null
+                          && w.getAlignment().getAlignmentType() == alignment);
+              boolean matchesGender = gender == null || w.getGender() == gender;
+              return matchesAlignment && matchesGender;
+            })
+        .sorted(Comparator.comparing(Wrestler::getName))
+        .collect(Collectors.toList());
+  }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void createWrestler(@NonNull String name) {

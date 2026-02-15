@@ -59,6 +59,7 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
                       null,
                       null,
                       null,
+                      null,
                       null);
                 });
   }
