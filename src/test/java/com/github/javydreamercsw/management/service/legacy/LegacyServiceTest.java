@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationEventPublisher;
 
 class LegacyServiceTest {
 
@@ -39,6 +40,7 @@ class LegacyServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
   @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private LegacyService legacyService;
 
