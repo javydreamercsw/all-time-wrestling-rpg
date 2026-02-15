@@ -18,3 +18,11 @@ Track the momentum of every wrestler in the promotion. Rankings determine title 
 
 ---
 
+## Hall of Fame
+
+The Hall of Fame tracks the top players across the entire ATW RPG ecosystem. Ranking is primarily based on the Legacy Score, which combines cumulative fans earned across all managed wrestlers and points from unlocked achievements.
+
+![Hall of Fame](/screenshots/hall-of-fame.png)
+
+---
+

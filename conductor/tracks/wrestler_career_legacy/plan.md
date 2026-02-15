@@ -1,25 +1,25 @@
-# Plan: Wrestler Career Legacy & Hall of Fame
+# Plan: Player Career Legacy & Hall of Fame
 
-## Phase 1: Legacy Engine
+## Phase 1: Legacy Engine [checkpoint: 76af5732]
 
-- [ ] Add `legacyScore` and `careerMilestones` fields to `Wrestler` entity.
-- [ ] Implement `LegacyService` to calculate score updates after each show.
-- [ ] Create `Achievement` enum and persistence logic.
+- [x] Add `legacyScore` and `prestige` fields to `Account` entity.
+- [x] Create `Achievement` entity and `AccountAchievement` link table.
+- [x] Implement `LegacyService` to calculate score updates based on game events.
 
-## Phase 2: Legend Status
+## Phase 2: Milestones & Badges [checkpoint: Phase 2]
 
-- [ ] Add `isLegend` and `retirementDate` to `Wrestler`.
-- [ ] Implement retirement workflow (manual or age-based).
-- [ ] Add "Legendary Perk" logic (bonus points for faction members).
+- [x] Define `AchievementType` enum (e.g., FIRST_TITLE, WIN_STREAK, BOOKER_OF_THE_YEAR).
+- [x] Implement logic to trigger achievements upon relevant events.
+- [x] Update `Account` to track `milestones` list (mapped to Achievements).
 
-## Phase 3: Hall of Fame UI
+## Phase 3: Hall of Fame UI [checkpoint: Phase 3]
 
-- [ ] Create `HallOfFameView`.
-- [ ] Build a "Career Highlight" component for the Wrestler Profile.
-- [ ] Implement filtering for "All-Time Greats."
+- [x] Create `HallOfFameView` to list top Accounts by Legacy Score.
+- [x] Update `PlayerDashboard` to show current Legacy Score and Badges.
+- [ ] Implement "Induction Ceremony" notification (Bonus).
 
 ## Phase 4: Verification
 
-- [ ] Unit tests for Legacy Score formula.
-- [ ] E2E test for the retirement transition.
+- [ ] Unit tests for Legacy Score formula and achievement triggers.
+- [ ] E2E test for Hall of Fame display and Player Profile updates.
 

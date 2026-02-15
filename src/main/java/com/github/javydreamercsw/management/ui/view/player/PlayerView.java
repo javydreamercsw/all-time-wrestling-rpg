@@ -21,6 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -57,6 +58,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.PageTitle;
@@ -71,6 +73,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Route(value = "player", layout = MainLayout.class)
 @PageTitle("Player Dashboard | ATW RPG")
@@ -85,6 +88,7 @@ public class PlayerView extends VerticalLayout {
   private final AccountService accountService;
   private final SegmentService segmentService;
   private final NewsService newsService;
+  private final TransactionTemplate transactionTemplate;
 
   private Wrestler playerWrestler;
 
@@ -97,7 +101,8 @@ public class PlayerView extends VerticalLayout {
       SecurityUtils securityUtils,
       @Qualifier("managementAccountService") AccountService accountService,
       SegmentService segmentService,
-      NewsService newsService) {
+      NewsService newsService,
+      TransactionTemplate transactionTemplate) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;
@@ -106,6 +111,7 @@ public class PlayerView extends VerticalLayout {
     this.accountService = accountService;
     this.segmentService = segmentService;
     this.newsService = newsService;
+    this.transactionTemplate = transactionTemplate;
 
     setHeightFull();
     setPadding(false);
@@ -115,37 +121,42 @@ public class PlayerView extends VerticalLayout {
   }
 
   private void init() {
-    Optional<CustomUserDetails> maybeUserDetails = securityUtils.getAuthenticatedUser();
-    if (maybeUserDetails.isPresent()) {
-      Account account = maybeUserDetails.get().getAccount();
-      // Reload account to get latest activeWrestlerId
-      account = accountService.get(account.getId()).get();
+    transactionTemplate.execute(
+        status -> {
+          Optional<CustomUserDetails> maybeUserDetails = securityUtils.getAuthenticatedUser();
+          if (maybeUserDetails.isPresent()) {
+            Account account = maybeUserDetails.get().getAccount();
+            // Reload account to get latest activeWrestlerId and initialize collections
+            account = accountService.get(account.getId()).get();
+            org.hibernate.Hibernate.initialize(account.getAchievements());
 
-      Wrestler active = null;
-      if (account.getActiveWrestlerId() != null) {
-        active = wrestlerService.findById(account.getActiveWrestlerId()).orElse(null);
-      }
+            Wrestler active = null;
+            if (account.getActiveWrestlerId() != null) {
+              active = wrestlerService.findById(account.getActiveWrestlerId()).orElse(null);
+            }
 
-      if (active == null) {
-        java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
-        if (!owned.isEmpty()) {
-          active = owned.get(0);
-          accountService.setActiveWrestlerId(account.getId(), active.getId());
-        }
-      }
+            if (active == null) {
+              java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
+              if (!owned.isEmpty()) {
+                active = owned.get(0);
+                accountService.setActiveWrestlerId(account.getId(), active.getId());
+              }
+            }
 
-      removeAll();
-      add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account)));
+            removeAll();
+            add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account)));
 
-      if (active != null) {
-        playerWrestler = wrestlerService.findByIdWithInjuries(active.getId()).get();
-        buildDashboard();
-      } else {
-        add(new H2("No wrestler assigned to your account."));
-      }
-    } else {
-      add(new H2("You must be logged in to see this page."));
-    }
+            if (active != null) {
+              playerWrestler = wrestlerService.findByIdWithInjuries(active.getId()).get();
+              buildDashboard();
+            } else {
+              add(new H2("No wrestler assigned to your account."));
+            }
+          } else {
+            add(new H2("You must be logged in to see this page."));
+          }
+          return null;
+        });
   }
 
   private Component createWrestlerSwitcher(Account account) {
@@ -236,8 +247,48 @@ public class PlayerView extends VerticalLayout {
 
     Div injuries = createInjuriesSummary();
 
+    // Career Legacy Info
+    HorizontalLayout legacyLayout = new HorizontalLayout();
+    legacyLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+    legacyLayout.setSpacing(true);
+
+    Span legacyScoreLabel = new Span("Legacy: " + playerWrestler.getAccount().getLegacyScore());
+    legacyScoreLabel.getElement().getThemeList().add("badge contrast");
+    Tooltip.forComponent(legacyScoreLabel)
+        .setText("Total points earned through fans and achievements");
+
+    Span prestigeLabel = new Span("Prestige: " + playerWrestler.getAccount().getPrestige());
+    prestigeLabel.getElement().getThemeList().add("badge");
+    Tooltip.forComponent(prestigeLabel).setText("Permanent XP earned from achievements");
+
+    legacyLayout.add(legacyScoreLabel, prestigeLabel);
+
+    HorizontalLayout badgesLayout = new HorizontalLayout();
+    badgesLayout.setPadding(false);
+    badgesLayout.setSpacing(true);
+    playerWrestler
+        .getAccount()
+        .getAchievements()
+        .forEach(
+            achievement -> {
+              Icon badgeIcon = VaadinIcon.MEDAL.create();
+              badgeIcon.getStyle().set("width", "16px");
+              badgeIcon.getStyle().set("height", "16px");
+              badgeIcon.setColor("var(--lumo-success-color)");
+              Tooltip.forComponent(badgeIcon)
+                  .setText(achievement.getName() + ": " + achievement.getDescription());
+              badgesLayout.add(badgeIcon);
+            });
+
     VerticalLayout infoLayout =
-        new VerticalLayout(nameAndTier, statsLayout, injuries, profileButton, campaignButton);
+        new VerticalLayout(
+            nameAndTier,
+            legacyLayout,
+            badgesLayout,
+            statsLayout,
+            injuries,
+            profileButton,
+            campaignButton);
     infoLayout.setPadding(false);
     infoLayout.setSpacing(false);
     infoLayout.getStyle().set("gap", "0.5em");
@@ -269,22 +320,26 @@ public class PlayerView extends VerticalLayout {
     Grid<Segment> upcomingMatchesGrid = createUpcomingMatchesGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
     Grid<InboxItem> inboxGrid = createInboxGrid();
+    Grid<AchievementType> achievementsGrid = createAchievementsGrid();
 
-    pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid);
+    pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid, achievementsGrid);
     rivalriesGrid.setVisible(false);
     inboxGrid.setVisible(false);
+    achievementsGrid.setVisible(false);
 
     Tab matchesTab = new Tab("Upcoming Matches");
     Tab rivalriesTab = new Tab("Rivalries");
     Tab inboxTab = new Tab("Inbox");
+    Tab achievementsTab = new Tab("Achievements");
 
     Map<Tab, Component> tabsToPages =
         Map.of(
             matchesTab, upcomingMatchesGrid,
             rivalriesTab, rivalriesGrid,
-            inboxTab, inboxGrid);
+            inboxTab, inboxGrid,
+            achievementsTab, achievementsGrid);
 
-    Tabs tabs = new Tabs(matchesTab, rivalriesTab, inboxTab);
+    Tabs tabs = new Tabs(matchesTab, rivalriesTab, achievementsTab, inboxTab);
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
@@ -370,6 +425,37 @@ public class PlayerView extends VerticalLayout {
     } else {
       grid.setItems(Collections.emptyList());
     }
+    grid.setSizeFull();
+    return grid;
+  }
+
+  private Grid<AchievementType> createAchievementsGrid() {
+    Grid<AchievementType> grid = new Grid<>();
+    grid.setId("achievements-grid");
+
+    grid.addComponentColumn(
+            type -> {
+              Icon icon = VaadinIcon.MEDAL.create();
+              boolean earned =
+                  playerWrestler.getAccount().getAchievements().stream()
+                      .anyMatch(a -> a.getType() == type);
+              if (earned) {
+                icon.setColor("var(--lumo-success-color)");
+              } else {
+                icon.setColor("var(--lumo-disabled-text-color)");
+                icon.getStyle().set("opacity", "0.5");
+              }
+              return icon;
+            })
+        .setHeader("")
+        .setFlexGrow(0)
+        .setWidth("50px");
+
+    grid.addColumn(AchievementType::getDisplayName).setHeader("Achievement").setSortable(true);
+    grid.addColumn(AchievementType::getDescription).setHeader("Requirement");
+    grid.addColumn(type -> type.getXpValue() + " XP").setHeader("Reward").setSortable(true);
+
+    grid.setItems(java.util.Arrays.asList(AchievementType.values()));
     grid.setSizeFull();
     return grid;
   }

@@ -31,6 +31,9 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
@@ -108,6 +111,8 @@ class DataInitializerTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private Environment env;
   @Mock private CampaignUpgradeService campaignUpgradeService;
+  @Mock private AchievementRepository achievementRepository;
+  @Mock private AccountRepository accountRepository;
 
   @BeforeEach
   void setUp() {
@@ -133,7 +138,9 @@ class DataInitializerTest {
             campaignAbilityCardService,
             commentaryService,
             campaignUpgradeService,
-            env);
+            env,
+            achievementRepository,
+            accountRepository);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);
@@ -216,6 +223,12 @@ class DataInitializerTest {
     lenient()
         .when(gameSettingService.findById("AI_GEMINI_ENABLED"))
         .thenReturn(Optional.of(geminiSetting));
+
+    Account playerAccount = new Account();
+    playerAccount.setUsername("player");
+    lenient()
+        .when(accountRepository.findByUsername("player"))
+        .thenReturn(Optional.of(playerAccount));
   }
 
   @Test

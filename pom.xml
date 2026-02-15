@@ -32,6 +32,8 @@
     <jacoco.coverage.minimum>0.90</jacoco.coverage.minimum>
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.it.destFile>${project.build.directory}/jacoco-it.exec</jacoco.it.destFile>
+    <jacoco.notion.e2e.destFile>${project.build.directory}/jacoco-notion-e2e.exec</jacoco.notion.e2e.destFile>
+    <jacoco.notion.it.destFile>${project.build.directory}/jacoco-notion-it.exec</jacoco.notion.it.destFile>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.ut.destFile>${project.build.directory}/jacoco.exec</jacoco.ut.destFile>
     <jacoco.version>0.8.14</jacoco.version>
@@ -1321,10 +1323,10 @@
       </build>
     </profile>
     <profile>
-      <id>notion-integration-test</id>
+      <id>notion-it</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
-        <jacoco.it.destFile>${project.build.directory}/jacoco-notion-it.exec</jacoco.it.destFile>
+        <jacoco.it.destFile>${jacoco.notion.it.destFile}</jacoco.it.destFile>
       </properties>
       <build>
         <plugins>
@@ -1333,7 +1335,8 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</include>
+                <include>**/*Notion*IT.java</include>
+                <include>**/Notion*IT.java</include>
               </includes>
             </configuration>
           </plugin>
@@ -1347,7 +1350,7 @@
                   <goal>report-integration</goal>
                 </goals>
                 <configuration>
-                  <dataFile>${jacoco.it.destFile}</dataFile>
+                  <dataFile>${jacoco.notion.it.destFile}</dataFile>
                   <outputDirectory>${project.reporting.outputDirectory}/jacoco-notion-it</outputDirectory>
                 </configuration>
               </execution>
@@ -1357,10 +1360,10 @@
       </build>
     </profile>
     <profile>
-      <id>notion-e2e-test</id>
+      <id>notion-e2e</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
-        <jacoco.it.destFile>${project.build.directory}/jacoco-notion-e2e.exec</jacoco.it.destFile>
+        <jacoco.it.destFile>${jacoco.notion.e2e.destFile}</jacoco.it.destFile>
       </properties>
       <build>
         <plugins>
@@ -1369,7 +1372,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsE2ETest.java</include>
+                <include>**/*Notion*E2ETest.java</include>
               </includes>
               <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
@@ -1389,7 +1392,7 @@
                   <goal>report-integration</goal>
                 </goals>
                 <configuration>
-                  <dataFile>${jacoco.it.destFile}</dataFile>
+                  <dataFile>${jacoco.notion.e2e.destFile}</dataFile>
                   <outputDirectory>${project.reporting.outputDirectory}/jacoco-notion-e2e</outputDirectory>
                 </configuration>
               </execution>

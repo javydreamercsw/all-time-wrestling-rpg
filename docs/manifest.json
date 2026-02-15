@@ -1,5 +1,26 @@
 {
   "features": [ {
+    "id": "player-dashboard-player-achievements",
+    "category": "Player Dashboard",
+    "title": "Medals & Achievements",
+    "description": "Track your progress toward various career milestones in the Achievements tab. Each achievement awards permanent Prestige XP and a unique medal displayed on your profile.",
+    "imagePath": "screenshots/player-achievements.png",
+    "order": 20
+  }, {
+    "id": "dashboards-hall-of-fame",
+    "category": "Dashboards",
+    "title": "Hall of Fame",
+    "description": "The Hall of Fame tracks the top players across the entire ATW RPG ecosystem. Ranking is primarily based on the Legacy Score, which combines cumulative fans earned across all managed wrestlers and points from unlocked achievements.",
+    "imagePath": "screenshots/hall-of-fame.png",
+    "order": 0
+  }, {
+    "id": "player-dashboard-player-career-legacy",
+    "category": "Player Dashboard",
+    "title": "Career Legacy",
+    "description": "Your persistent career progress is tracked at the account level. View your current Legacy Score, Prestige XP, and earned achievement badges directly from your dashboard. These stats persist across seasons and different wrestlers.",
+    "imagePath": "screenshots/player-career-legacy.png",
+    "order": 10
+  }, {
     "id": "dashboards-dashboards-news-feed",
     "category": "Dashboards",
     "title": "News & Rumors Feed",
