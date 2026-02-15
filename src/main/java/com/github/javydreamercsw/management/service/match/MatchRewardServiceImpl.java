@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -39,6 +40,7 @@ public class MatchRewardServiceImpl implements MatchRewardService {
 
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
+  private final LegacyService legacyService;
   private final Random random = new Random();
 
   @Override
@@ -64,7 +66,7 @@ public class MatchRewardServiceImpl implements MatchRewardService {
       List<Wrestler> losers,
       int roll,
       double difficultyMultiplier) {
-    int matchQualityBonus = calculateMatchQualityBonus(roll);
+    int matchQualityBonus = calculateMatchQualityBonus(segment, roll);
 
     // Deduct fan fees for challengers in title segments
     if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
@@ -128,7 +130,7 @@ public class MatchRewardServiceImpl implements MatchRewardService {
     }
   }
 
-  private int calculateMatchQualityBonus(int roll) {
+  private int calculateMatchQualityBonus(Segment segment, int roll) {
     int bonus = 0;
     if (11 <= roll && roll <= 15) {
       bonus += 1_000;
@@ -138,6 +140,15 @@ public class MatchRewardServiceImpl implements MatchRewardService {
       bonus += 5_000;
     } else if (roll == 20) {
       bonus += 10_000;
+      // Trigger 5-Star Classic achievement for all participants
+      segment
+          .getWrestlers()
+          .forEach(
+              w -> {
+                if (w.getAccount() != null) {
+                  legacyService.unlockAchievement(w.getAccount(), "FIVE_STAR_CLASSIC");
+                }
+              });
     }
     return bonus;
   }

@@ -259,11 +259,18 @@ public class SegmentAdjudicationService {
     segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
 
     for (Wrestler participant : segment.getWrestlers()) {
+
       if (participant.getAccount() != null) {
+
         for (String baseKey : achievementKeys) {
-          String keySuffix = baseKey.toUpperCase().replaceAll("[^A-Z0-9 ]", "").replace(" ", "_");
+
+          String keySuffix =
+              baseKey.toUpperCase().replaceAll("[^A-Z0-9 ]", "").trim().replace(" ", "_");
+
           legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
+
           if (winners.contains(participant)) {
+
             legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
           }
         }
