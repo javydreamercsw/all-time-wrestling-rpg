@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.config;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -100,24 +99,7 @@ public class InboxEventTypeConfig {
   }
 
   @Bean
-  @Qualifier("DRAMA_EVENT_CREATED") InboxEventType dramaEventCreated() {
+  public InboxEventType dramaEventCreated() {
     return new InboxEventType("DRAMA_EVENT_CREATED", "Drama Event Created");
-  }
-
-  @Bean
-  @Qualifier("MATCH_REQUEST") InboxEventType matchRequest() {
-
-    return new InboxEventType("MATCH_REQUEST", "Match Request");
-  }
-
-  @Bean
-  @Qualifier("DRAFT_STARTED") InboxEventType draftStarted() {
-
-    return new InboxEventType("DRAFT_STARTED", "Draft Started");
-  }
-
-  @Bean
-  @Qualifier("ACHIEVEMENT_UNLOCKED") InboxEventType achievementUnlocked() {
-    return new InboxEventType("ACHIEVEMENT_UNLOCKED", "Achievement Unlocked");
   }
 }

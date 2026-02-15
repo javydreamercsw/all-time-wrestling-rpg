@@ -18,7 +18,6 @@ package com.github.javydreamercsw.base.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.authentication.event.AbstractAuthenticationEvent;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
@@ -31,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class AuthenticationEventListener
     implements ApplicationListener<AbstractAuthenticationEvent> {
 
-  private final ObjectProvider<CustomUserDetailsService> userDetailsService;
+  private final CustomUserDetailsService userDetailsService;
 
   @Override
   public void onApplicationEvent(AbstractAuthenticationEvent event) {
@@ -46,7 +45,7 @@ public class AuthenticationEventListener
   private void handleSuccessfulAuthentication(AuthenticationSuccessEvent event) {
     if (event.getAuthentication().getPrincipal() instanceof CustomUserDetails userDetails) {
       String username = userDetails.getUsername();
-      userDetailsService.ifAvailable(service -> service.recordSuccessfulLogin(username));
+      userDetailsService.recordSuccessfulLogin(username);
       log.debug("Successful login for user: {}", username);
     }
   }

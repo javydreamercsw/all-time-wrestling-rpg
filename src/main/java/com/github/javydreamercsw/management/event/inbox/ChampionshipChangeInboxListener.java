@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.stream.Collectors;
@@ -73,11 +72,7 @@ public class ChampionshipChangeInboxListener
               event.getTitleId(), newChampions, oldChampions);
     }
 
-    inboxService.createInboxItem(
-        championshipChange,
-        message,
-        event.getTitleId().toString(),
-        InboxItemTarget.TargetType.TITLE);
+    inboxService.createInboxItem(championshipChange, message, event.getTitleId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

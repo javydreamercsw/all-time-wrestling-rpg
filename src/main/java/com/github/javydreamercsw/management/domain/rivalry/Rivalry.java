@@ -63,9 +63,6 @@ public class Rivalry extends AbstractEntity<Long> {
   @Column(name = "heat", nullable = false)
   @Min(0) private Integer heat = 0;
 
-  @Column(name = "priority")
-  private Integer priority = 0;
-
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 

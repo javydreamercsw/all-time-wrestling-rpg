@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class InjuryNotionSyncService implements NotionEntitySyncService {
+public class InjuryNotionSyncService implements INotionSyncService {
 
   private final InjuryRepository injuryRepository;
   private final NotionHandler notionHandler;

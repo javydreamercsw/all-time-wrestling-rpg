@@ -66,11 +66,3 @@ The authorities are against you. Survive impossible odds and unfair stipulations
 
 ---
 
-## Interactive Promos
-
-Cut promos against your rivals. Choose your words carefully to sway the crowd, intimidate your opponent, or build your own popularity. Your choices affect your alignment and feud heat.
-
-![Interactive Promos](/screenshots/campaign-backstage-actions.png)
-
----
-

@@ -196,7 +196,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     // 4. Trigger AI Narration
-    clickButtonByText("Generate with Feedback");
+    clickButtonByText("AI Generate Narration");
 
     // Wait for narration to appear (Mock AI has 1-3s delay)
     try {
@@ -213,94 +213,8 @@ class BookerDocsE2ETest extends AbstractE2ETest {
         "Match Narration",
         "Bring your matches to life with AI-generated or manual narration. The Story Director uses"
             + " match participants, rules, and outcomes to weave a compelling narrative of the"
-            + " action. The new structured transcript format separates objective action from"
-            + " character-driven commentary.",
+            + " action.",
         "booker-match-narration");
-  }
-
-  @Test
-  void testCaptureDynamicCommentaryView() {
-    // 1. Setup participants
-    Wrestler w1 =
-        wrestlerRepository
-            .findByName("Roster Wrestler 1")
-            .orElseGet(
-                () -> {
-                  Account a = new Account();
-                  a.setUsername("w1_" + System.currentTimeMillis());
-                  a.setEmail("w1_" + System.currentTimeMillis() + "@example.com");
-                  a.setPassword("password");
-                  a = accountRepository.save(a);
-                  return wrestlerRepository.save(
-                      Wrestler.builder()
-                          .name("Roster Wrestler 1")
-                          .startingHealth(100)
-                          .startingStamina(100)
-                          .account(a)
-                          .active(true)
-                          .build());
-                });
-
-    Wrestler w2 =
-        wrestlerRepository
-            .findByName("Roster Wrestler 2")
-            .orElseGet(
-                () -> {
-                  Account a = new Account();
-                  a.setUsername("w2_" + System.currentTimeMillis());
-                  a.setEmail("w2_" + System.currentTimeMillis() + "@example.com");
-                  a.setPassword("password");
-                  a = accountRepository.save(a);
-                  return wrestlerRepository.save(
-                      Wrestler.builder()
-                          .name("Roster Wrestler 2")
-                          .startingHealth(100)
-                          .startingStamina(100)
-                          .account(a)
-                          .active(true)
-                          .build());
-                });
-
-    // 2. Setup a dummy show and segment
-    Show show = new Show();
-    show.setName("Commentary Docs Show");
-    show.setShowDate(LocalDate.now());
-    show.setDescription("Documentation Show for Commentary");
-    show.setType(showTypeRepository.findByName("Weekly").get());
-    show = showRepository.save(show);
-
-    Segment segment = new Segment();
-    segment.setShow(show);
-    segment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
-    segment.addParticipant(w1);
-    segment.addParticipant(w2);
-    segment = segmentRepository.save(segment);
-
-    // 3. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
-
-    // 4. Trigger AI Narration
-    clickButtonByText("Generate with Feedback");
-
-    // Wait for narration to appear (Mock AI has 1-3s delay)
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-    }
-
-    // 5. Verify & Capture
-    waitForText("Match Details");
-    waitForText("Match Narration");
-
-    documentFeature(
-        "AI Features",
-        "Dynamic Commentator Personas",
-        "Experience the match through the eyes of unique commentator teams. Each commentator"
-            + " brings their own alignment, style, and catchphrases to the broadcast, creating"
-            + " an immersive 'sports-entertainment' feel. Face commentators cheer the heroes,"
-            + " while Heel commentators favor the rule-breakers.",
-        "ai-dynamic-commentary");
   }
 
   private void waitForText(String text) {

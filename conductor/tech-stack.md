@@ -16,7 +16,7 @@
 
 ## Frontend
 
-* **Framework:** Vaadin Flow 25.0.4 (Java-based UI)
+* **Framework:** Vaadin Flow 25.0.3 (Java-based UI)
 * **Client-Side:**
   * **React:** 19 (Enabled via Vaadin React Components)
   * **Lit:** 3.3.2
@@ -24,7 +24,6 @@
 * **Build Tool:** Vite 7.3.1 (integrated with Vaadin)
 * **Styling:** Vaadin Lumo Theme
 * **Components:** Vaadin Components, FullCalendar
-* **Documentation:** VitePress (Docs-as-Code)
 
 ## Infrastructure & DevOps
 

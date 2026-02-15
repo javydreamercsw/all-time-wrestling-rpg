@@ -1,8 +1,0 @@
-{
-  "id": "inbox_visibility_fix",
-  "title": "Inbox Visibility Fix",
-  "description": "Ensure users only see messages targeted to them in their inbox.",
-  "status": "active",
-  "category": "Security",
-  "date_created": "2026-02-15"
-}

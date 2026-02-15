@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -56,6 +58,8 @@ class NarrationDialogTest {
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private RivalryService rivalryService;
+  @Mock private LocalAIStatusService localAIStatusService;
+  @Mock private LocalAIConfigProperties localAIConfigProperties;
   @Mock private Environment env;
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
@@ -107,6 +111,7 @@ class NarrationDialogTest {
     segments.add(segment);
 
     when(showService.getSegments(show)).thenReturn(segments);
+    when(localAIStatusService.isReady()).thenReturn(true);
     when(env.getActiveProfiles()).thenReturn(new String[] {});
     WebClient.Builder webClientBuilder = mock(WebClient.Builder.class);
     WebClient webClient = mock(WebClient.class);
@@ -121,6 +126,8 @@ class NarrationDialogTest {
             segmentService,
             s -> {},
             rivalryService,
+            localAIStatusService,
+            localAIConfigProperties,
             segmentNarrationController,
             segmentNarrationServiceFactory);
 

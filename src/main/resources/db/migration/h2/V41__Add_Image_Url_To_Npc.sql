@@ -1,1 +1,0 @@
-ALTER TABLE npc ADD COLUMN image_url VARCHAR(255);

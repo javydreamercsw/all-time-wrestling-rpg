@@ -96,7 +96,4 @@ public interface InjuryRepository
       """)
   java.util.Optional<Injury> findMostSevereActiveInjuryForWrestler(
       @Param("wrestler") Wrestler wrestler);
-
-  /** Find injuries for a wrestler on a specific date. */
-  List<Injury> findByWrestlerAndInjuryDate(Wrestler wrestler, java.time.Instant injuryDate);
 }

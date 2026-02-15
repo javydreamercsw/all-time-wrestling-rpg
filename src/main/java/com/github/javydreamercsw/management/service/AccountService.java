@@ -23,7 +23,6 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomPasswordValidator;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -110,10 +109,6 @@ public class AccountService {
     return accountRepository.findAll(pageable);
   }
 
-  public List<Account> findAll() {
-    return accountRepository.findAll();
-  }
-
   public int count() {
     return (int) accountRepository.count();
   }
@@ -170,18 +165,6 @@ public class AccountService {
             .findById(accountId)
             .orElseThrow(() -> new IllegalArgumentException("Account not found."));
     account.setThemePreference(themePreference);
-    return accountRepository.save(account);
-  }
-
-  @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
-          + " authentication.principal.id)")
-  public Account setActiveWrestlerId(Long accountId, Long wrestlerId) {
-    Account account =
-        accountRepository
-            .findById(accountId)
-            .orElseThrow(() -> new IllegalArgumentException("Account not found."));
-    account.setActiveWrestlerId(wrestlerId);
     return accountRepository.save(account);
   }
 }

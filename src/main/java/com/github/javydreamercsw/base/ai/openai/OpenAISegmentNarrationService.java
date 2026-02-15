@@ -185,17 +185,6 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
 
-      // Record token usage if available
-      if (getPerformanceMonitoringService() != null && response.containsKey("usage")) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> usage = (Map<String, Object>) response.get("usage");
-        if (usage != null) {
-          int input = (int) usage.getOrDefault("prompt_tokens", 0);
-          int output = (int) usage.getOrDefault("completion_tokens", 0);
-          getPerformanceMonitoringService().recordTokenUsage(getProviderName(), input, output);
-        }
-      }
-
       @SuppressWarnings("unchecked")
       List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
 

@@ -27,12 +27,9 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,21 +46,16 @@ class SeasonServiceTest {
 
   @Mock private SeasonRepository seasonRepository;
   @Mock private Clock clock;
-  @Mock private GameSettingService gameSettingService;
+  @Mock private ShowTypeService showTypeService;
 
   @InjectMocks private SeasonService seasonService;
-
-  private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
-  private final LocalDate fixedLocalDate = LocalDate.of(2024, 1, 1);
 
   private ShowType weeklyShowType;
   private ShowType pleShowType;
 
   @BeforeEach
   void setUp() {
-    lenient().when(clock.instant()).thenReturn(fixedInstant);
-    lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
-    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(fixedLocalDate);
+    lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
 
     weeklyShowType = new ShowType();
     weeklyShowType.setName("Weekly");
@@ -72,6 +64,11 @@ class SeasonServiceTest {
     pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setDescription("Premium Live Event show type");
+
+    lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(weeklyShowType));
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.of(pleShowType));
   }
 
   @Test
@@ -149,24 +146,15 @@ class SeasonServiceTest {
   @Test
   @DisplayName("Should get active season")
   void shouldGetActiveSeason() {
-
     // Given
-
-    // Create an active season that includes the fixedLocalDate
-
-    Season activeSeason =
-        createSeason("Active Season", 1, fixedLocalDate.minusDays(5), fixedLocalDate.plusDays(5));
-
-    when(seasonRepository.findAll()).thenReturn(List.of(activeSeason)); // Mock findAll()
+    Season activeSeason = createSeason("Active Season", 1);
+    when(seasonRepository.findActiveSeason()).thenReturn(Optional.of(activeSeason));
 
     // When
-
     Optional<Season> result = seasonService.getActiveSeason();
 
     // Then
-
     assertThat(result).isPresent();
-
     assertThat(result.get()).isEqualTo(activeSeason);
   }
 
@@ -209,7 +197,7 @@ class SeasonServiceTest {
   void shouldAddShowToActiveSeason() {
     // Given
     Season activeSeason = createSeason("Active Season", 1);
-    Show show = createShow("Test Show", weeklyShowType); // Use the initialized show type
+    Show show = createShow("Test Show", weeklyShowType);
 
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.of(activeSeason));
     when(seasonRepository.saveAndFlush(any(Season.class))).thenReturn(activeSeason);
@@ -228,7 +216,7 @@ class SeasonServiceTest {
   @DisplayName("Should return empty when no active season for show addition")
   void shouldReturnEmptyWhenNoActiveSeasonForShowAddition() {
     // Given
-    Show show = createShow("Test Show", weeklyShowType); // Use the initialized show type
+    Show show = createShow("Test Show", weeklyShowType);
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.empty());
 
     // When
@@ -247,7 +235,7 @@ class SeasonServiceTest {
 
     // Add 3 regular shows
     for (int i = 1; i <= 3; i++) {
-      Show show = createShow("Show " + i, weeklyShowType); // Use the initialized show type
+      Show show = createShow("Show " + i, weeklyShowType);
       activeSeason.addShow(show);
     }
 
@@ -357,12 +345,6 @@ class SeasonServiceTest {
   void testCreateSeasonWithDefaults() {
     Season activeSeason = new Season();
     activeSeason.setIsActive(true);
-    // Ensure the activeSeason is indeed active for the fixedLocalDate
-    activeSeason.setStartDate(
-        fixedLocalDate.minusDays(5).atStartOfDay(ZoneId.systemDefault()).toInstant());
-    activeSeason.setEndDate(
-        fixedLocalDate.plusDays(5).atStartOfDay(ZoneId.systemDefault()).toInstant());
-
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.of(activeSeason));
     when(seasonRepository.saveAndFlush(any(Season.class))).thenAnswer(i -> i.getArgument(0));
     Season newSeason = seasonService.createSeason("Season 1", "Description", null);
@@ -380,22 +362,7 @@ class SeasonServiceTest {
     season.setName(name);
     season.setShowsPerPpv(5);
     season.setIsActive(true);
-    // Set a default date range that includes fixedLocalDate
-    season.setStartDate(
-        fixedLocalDate.minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
-    season.setEndDate(fixedLocalDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
-    return season;
-  }
-
-  private Season createSeason(
-      String name, Integer seasonNumber, LocalDate startDate, LocalDate endDate) {
-    Season season = new Season();
-    season.setId(seasonNumber.longValue());
-    season.setName(name);
-    season.setShowsPerPpv(5);
-    season.setIsActive(true);
-    season.setStartDate(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    season.setEndDate(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    season.setStartDate(Instant.now(clock));
     return season;
   }
 

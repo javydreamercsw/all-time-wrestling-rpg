@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class ShowTypeNotionSyncService implements NotionEntitySyncService {
+public class ShowTypeNotionSyncService implements INotionSyncService {
 
   private final ShowTypeRepository showTypeRepository;
   private final NotionHandler notionHandler;
@@ -60,13 +60,6 @@ public class ShowTypeNotionSyncService implements NotionEntitySyncService {
   @Override
   @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    return syncToNotion(operationId, null);
-  }
-
-  @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
@@ -77,10 +70,7 @@ public class ShowTypeNotionSyncService implements NotionEntitySyncService {
           int updated = 0;
           int errors = 0;
           progressTracker.startOperation(operationId, "Sync Show Types", 1);
-          List<ShowType> showTypes =
-              (ids == null || ids.isEmpty())
-                  ? showTypeRepository.findAll()
-                  : showTypeRepository.findAllById(ids);
+          List<ShowType> showTypes = showTypeRepository.findAll();
           for (ShowType entity : showTypes) {
             if (processedCount % 5 == 0) {
               progressTracker.updateProgress(
@@ -95,6 +85,25 @@ public class ShowTypeNotionSyncService implements NotionEntitySyncService {
 
               // Name (Title property)
               properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+
+              // Description (Rich Text property)
+              if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+                properties.put(
+                    "Description",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+              }
+
+              // Expected Matches (Number property)
+              properties.put(
+                  "Expected Matches",
+                  NotionPropertyBuilder.createNumberProperty(
+                      Integer.valueOf(entity.getExpectedMatches()).doubleValue()));
+
+              // Expected Promos (Number property)
+              properties.put(
+                  "Expected Promos",
+                  NotionPropertyBuilder.createNumberProperty(
+                      Integer.valueOf(entity.getExpectedPromos()).doubleValue()));
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing show type page: {}", entity.getName());

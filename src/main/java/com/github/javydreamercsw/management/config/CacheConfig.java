@@ -17,11 +17,7 @@
 package com.github.javydreamercsw.management.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -129,35 +125,6 @@ public class CacheConfig {
                   log.info("   - {}: active (non-Caffeine cache)", cacheName);
                 }
               });
-    }
-
-    /** Gets detailed cache statistics for all caches. */
-    public List<Map<String, Object>> getDetailedCacheStatistics() {
-      List<Map<String, Object>> statsList = new ArrayList<>();
-
-      cacheManager
-          .getCacheNames()
-          .forEach(
-              cacheName -> {
-                var cache = cacheManager.getCache(cacheName);
-                Map<String, Object> stats = new HashMap<>();
-                stats.put("name", cacheName);
-
-                if (cache instanceof CaffeineCache caffeineCache) {
-                  var nativeCache = caffeineCache.getNativeCache();
-                  var cacheStats = nativeCache.stats();
-                  stats.put("size", nativeCache.estimatedSize());
-                  stats.put("hitCount", cacheStats.hitCount());
-                  stats.put("missCount", cacheStats.missCount());
-                  stats.put("hitRate", cacheStats.hitRate());
-                  stats.put("evictionCount", cacheStats.evictionCount());
-                } else {
-                  stats.put("status", cache != null ? "active" : "missing");
-                }
-                statsList.add(stats);
-              });
-
-      return statsList;
     }
 
     /** Clears all caches - useful for testing or when data is updated. */

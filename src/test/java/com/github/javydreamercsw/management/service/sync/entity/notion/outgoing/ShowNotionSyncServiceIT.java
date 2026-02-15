@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,7 +40,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -102,100 +102,58 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       showTemplateRepository.save(testShowTemplate);
 
       // Sync dependencies to Notion to get external IDs
-
-      showTypeNotionSyncService.syncToNotion("test-prep-showtypes", List.of(testShowType.getId()));
-
-      seasonNotionSyncService.syncToNotion("test-prep-seasons", List.of(testSeason.getId()));
-
-      showTemplateNotionSyncService.syncToNotion(
-          "test-prep-templates", List.of(testShowTemplate.getId()));
-
-      testShowType = showTypeRepository.findById(testShowType.getId()).get();
-
-      testSeason = seasonRepository.findById(testSeason.getId()).get();
-
-      testShowTemplate = showTemplateRepository.findById(testShowTemplate.getId()).get();
-
-      assertNotNull(testShowType.getExternalId(), "ShowType externalId should not be null");
-
-      assertNotNull(testSeason.getExternalId(), "Season externalId should not be null");
-
-      assertNotNull(testShowTemplate.getExternalId(), "ShowTemplate externalId should not be null");
+      showTypeNotionSyncService.syncToNotion("test-prep-showtypes");
+      seasonNotionSyncService.syncToNotion("test-prep-seasons");
+      showTemplateNotionSyncService.syncToNotion("test-prep-templates");
 
       // Create a new Show
-
       show = new Show();
-
       show.setName("Test Show " + UUID.randomUUID());
-
       show.setDescription("A test wrestling show");
-
       show.setType(testShowType);
-
       show.setSeason(testSeason);
-
       show.setTemplate(testShowTemplate);
-
       show.setShowDate(LocalDate.now());
-
       showRepository.save(show);
 
       // Sync to Notion for the first time
-
-      showNotionSyncService.syncToNotion("test-op-1", List.of(show.getId()));
+      showNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
-
       assertNotNull(show.getId());
-
       Show updatedShow = showRepository.findById(show.getId()).get();
-
       assertNotNull(updatedShow.getExternalId());
-
       assertNotNull(updatedShow.getLastSync());
 
       // Retrieve the page from Notion and verify properties
-
       Page page =
           notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
-
       Map<String, PageProperty> props = page.getProperties();
-
       assertEquals(
           updatedShow.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
-
+      assertNotNull(props.get("Show Type").getRelation());
+      assertFalse(props.get("Show Type").getRelation().isEmpty());
       assertEquals(
-          testShowType.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Show Type")));
-
+          testShowType.getExternalId(), props.get("Show Type").getRelation().get(0).getId());
+      assertNotNull(props.get("Season").getRelation());
+      assertFalse(props.get("Season").getRelation().isEmpty());
+      assertEquals(testSeason.getExternalId(), props.get("Season").getRelation().get(0).getId());
+      assertNotNull(props.get("Template").getRelation());
+      assertFalse(props.get("Template").getRelation().isEmpty());
       assertEquals(
-          testSeason.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Season")));
-
-      assertEquals(
-          testShowTemplate.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Template")));
-
+          testShowTemplate.getExternalId(), props.get("Template").getRelation().get(0).getId());
       assertNotNull(props.get("Date").getDate());
 
       // Sync to Notion again with updates
-
       updatedShow.setName("Test Show Updated " + UUID.randomUUID());
-
       updatedShow.setDescription("Updated description for the show");
-
       updatedShow.setShowDate(LocalDate.now().plusDays(7));
-
       showRepository.save(updatedShow);
-
-      showNotionSyncService.syncToNotion("test-op-2", List.of(show.getId()));
+      showNotionSyncService.syncToNotion("test-op-2");
       Show updatedShow2 = showRepository.findById(show.getId()).get();
       assertTrue(updatedShow2.getLastSync().isAfter(updatedShow.getLastSync()));
 
@@ -210,18 +168,17 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
       // Relations should remain the same unless explicitly changed
+      assertNotNull(props.get("Show Type").getRelation());
+      assertFalse(props.get("Show Type").getRelation().isEmpty());
       assertEquals(
-          testShowType.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Show Type")));
+          testShowType.getExternalId(), props.get("Show Type").getRelation().get(0).getId());
+      assertNotNull(props.get("Season").getRelation());
+      assertFalse(props.get("Season").getRelation().isEmpty());
+      assertEquals(testSeason.getExternalId(), props.get("Season").getRelation().get(0).getId());
+      assertNotNull(props.get("Template").getRelation());
+      assertFalse(props.get("Template").getRelation().isEmpty());
       assertEquals(
-          testSeason.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Season")));
-      assertEquals(
-          testShowTemplate.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Template")));
+          testShowTemplate.getExternalId(), props.get("Template").getRelation().get(0).getId());
       assertNotNull(props.get("Date").getDate());
 
     } finally {

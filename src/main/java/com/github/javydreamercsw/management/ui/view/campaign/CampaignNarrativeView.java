@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -64,6 +65,7 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final CampaignService campaignService;
   private final SecurityUtils securityUtils;
   private final SegmentNarrationServiceFactory aiFactory;
+  private final LocalAIStatusService localAIStatus;
 
   private Campaign currentCampaign;
   private VerticalLayout narrativeContainer;
@@ -77,13 +79,15 @@ public class CampaignNarrativeView extends VerticalLayout {
       CampaignEncounterService encounterService,
       CampaignService campaignService,
       SecurityUtils securityUtils,
-      SegmentNarrationServiceFactory aiFactory) {
+      SegmentNarrationServiceFactory aiFactory,
+      LocalAIStatusService localAIStatus) {
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
     this.securityUtils = securityUtils;
     this.aiFactory = aiFactory;
+    this.localAIStatus = localAIStatus;
 
     setSpacing(true);
     setPadding(true);
@@ -104,20 +108,12 @@ public class CampaignNarrativeView extends VerticalLayout {
   private void loadCampaign() {
     securityUtils
         .getAuthenticatedUser()
-        .ifPresent(
-            user -> {
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-              Wrestler active =
-                  wrestlers.stream()
-                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
-                      .findFirst()
-                      .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
-
-              if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
-              }
-            });
+        .flatMap(
+            user ->
+                wrestlerRepository
+                    .findByAccount(user.getAccount())
+                    .flatMap(campaignRepository::findActiveByWrestler))
+        .ifPresent(campaign -> currentCampaign = campaign);
   }
 
   private void initUI() {
@@ -162,6 +158,9 @@ public class CampaignNarrativeView extends VerticalLayout {
       narrativeContainer.add(title);
 
       String reason = "No AI providers are currently enabled or reachable.";
+      if (localAIStatus.getStatus() != LocalAIStatusService.Status.READY) {
+        reason = "LocalAI is still initializing: " + localAIStatus.getMessage();
+      }
 
       Paragraph p =
           new Paragraph(

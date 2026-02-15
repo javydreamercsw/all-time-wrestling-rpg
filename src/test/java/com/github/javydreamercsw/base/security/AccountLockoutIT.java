@@ -38,7 +38,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles({"test", "account-lockout-test"})
+@ActiveProfiles("test")
 public class AccountLockoutIT {
 
   @TestConfiguration

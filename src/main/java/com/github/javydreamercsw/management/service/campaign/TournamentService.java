@@ -328,18 +328,11 @@ public class TournamentService {
                             : match.getWrestler2Name();
                   }
 
-                  // Determine slot based on match number (odd = top/1, even = bottom/2)
-                  // ID format is "Rx-My", so split by "-M" and take the second part
-                  int matchNum = Integer.parseInt(match.getId().split("-M")[1]);
-                  boolean isTopSlot = (matchNum % 2) != 0;
-
-                  Long nextWrestlerId = match.getWinnerId() > 0 ? match.getWinnerId() : null;
-
-                  if (isTopSlot) {
-                    nextMatch.setWrestler1Id(nextWrestlerId);
+                  if (nextMatch.getWrestler1Id() == null && nextMatch.getWrestler1Name() == null) {
+                    nextMatch.setWrestler1Id(match.getWinnerId() > 0 ? match.getWinnerId() : null);
                     nextMatch.setWrestler1Name(winnerName);
                   } else {
-                    nextMatch.setWrestler2Id(nextWrestlerId);
+                    nextMatch.setWrestler2Id(match.getWinnerId() > 0 ? match.getWinnerId() : null);
                     nextMatch.setWrestler2Name(winnerName);
                   }
 

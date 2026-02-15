@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -35,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("!test | account-lockout-test")
 public class CustomUserDetailsService implements UserDetailsService {
 
   private final AccountRepository accountRepository;
@@ -58,19 +56,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     // Find the wrestler associated with the account
-    Wrestler wrestler = null;
-    if (account.getActiveWrestlerId() != null) {
-      wrestler = wrestlerRepository.findById(account.getActiveWrestlerId()).orElse(null);
-    }
-
-    if (wrestler == null) {
-      java.util.List<Wrestler> wrestlers = wrestlerRepository.findAllByAccount(account);
-      if (!wrestlers.isEmpty()) {
-        wrestler = wrestlers.get(0);
-        account.setActiveWrestlerId(wrestler.getId());
-        accountRepository.save(account);
-      }
-    }
+    Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
 
     return new CustomUserDetails(account, wrestler); // Pass reloaded account to constructor
   }

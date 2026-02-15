@@ -41,7 +41,6 @@ public class WrestlerDTO implements Serializable {
   private String externalId;
   private String imageUrl;
   private String managerName;
-  private boolean injured;
 
   public WrestlerDTO(@NonNull Wrestler wrestler) {
     this.id = wrestler.getId(); // Initialize id
@@ -53,7 +52,6 @@ public class WrestlerDTO implements Serializable {
     this.fans = wrestler.getFans();
     this.externalId = wrestler.getExternalId();
     this.imageUrl = wrestler.getImageUrl();
-    this.injured = !wrestler.getActiveInjuries().isEmpty();
     if (wrestler.getManager() != null) {
       this.managerName = wrestler.getManager().getName();
     }

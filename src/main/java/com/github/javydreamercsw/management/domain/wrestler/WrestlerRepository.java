@@ -30,9 +30,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 public interface WrestlerRepository
     extends JpaRepository<Wrestler, Long>, JpaSpecificationExecutor<Wrestler> {
 
-  List<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
-
-  List<Wrestler> findAllByAccount(com.github.javydreamercsw.base.domain.account.Account account);
+  Optional<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Wrestler> findAllBy(Pageable pageable);
@@ -54,9 +52,9 @@ public interface WrestlerRepository
   List<Wrestler> findAllByGenderAndActive(
       com.github.javydreamercsw.base.domain.wrestler.Gender gender, boolean active);
 
-  List<Wrestler> findByAccountUsername(String username);
+  Optional<Wrestler> findByAccountUsername(String username);
 
-  List<Wrestler> findByAccountId(Long accountId);
+  Optional<Wrestler> findByAccountId(Long accountId);
 
   @Query("SELECT w.id FROM Wrestler w")
   List<Long> findAllIds();

@@ -55,8 +55,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     accountRepository.flush();
 
     // Check if wrestler already exists for this account and reuse it or delete it
-    java.util.List<Wrestler> bookerWrestlers = wrestlerRepository.findByAccount(booker);
-    bookerWrestler = bookerWrestlers.isEmpty() ? null : bookerWrestlers.get(0);
+    bookerWrestler = wrestlerRepository.findByAccount(booker).orElse(null);
     if (bookerWrestler != null) {
       wrestlerRepository.delete(bookerWrestler);
       wrestlerRepository.flush();
@@ -69,8 +68,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     wrestlerRepository.saveAndFlush(bookerWrestler);
 
     // Check if wrestler already exists for this account and reuse it or delete it
-    java.util.List<Wrestler> playerWrestlers = wrestlerRepository.findByAccount(player);
-    playerWrestler = playerWrestlers.isEmpty() ? null : playerWrestlers.get(0);
+    playerWrestler = wrestlerRepository.findByAccount(player).orElse(null);
     if (playerWrestler != null) {
       wrestlerRepository.delete(playerWrestler);
       wrestlerRepository.flush();

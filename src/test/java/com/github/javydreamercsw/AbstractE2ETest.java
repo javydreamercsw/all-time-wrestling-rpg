@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.util.docs.DocEntry;
@@ -29,11 +31,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -117,8 +118,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
-    cleanupLeagues();
-
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
@@ -156,17 +155,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
     options.addArguments("--reduce-security-for-testing");
-    options.addArguments("--disable-notifications");
-    options.addArguments("--disable-save-password-bubble");
-    options.addArguments("--disable-infobars");
-    options.addArguments("--disable-extensions");
-
-    Map<String, Object> prefs = new HashMap<>();
-    prefs.put("credentials_enable_service", false);
-    prefs.put("profile.password_manager_enabled", false);
-    prefs.put("profile.password_manager_leak_detection", false);
-    options.setExperimentalOption("prefs", prefs);
-    options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
 
     driver = new ChromeDriver(options);
     login();
@@ -223,45 +211,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
-
-    String os = System.getProperty("os.name").toLowerCase();
-
-    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
-
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-
-    WebElement usernameInput =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript("return arguments[0].querySelector('input');", usernameField);
-
-    if (usernameInput == null) usernameInput = usernameField;
-
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
-                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
-                + " bubbles: true }));",
-            usernameInput,
-            username);
-
+    usernameField.sendKeys(username);
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-
-    WebElement passwordInput =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript("return arguments[0].querySelector('input');", passwordField);
-
-    if (passwordInput == null) passwordInput = passwordField;
-
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
-                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
-                + " bubbles: true }));",
-            passwordInput,
-            password);
-
+    passwordField.sendKeys(password);
     takeSequencedScreenshot("after-filling-credentials");
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
@@ -350,20 +303,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+    takeSequencedScreenshot("before-wait-for-element");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120)); // Increased from 60
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
-  protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
-  }
-
   protected void waitForGridToPopulate(@NonNull String gridId) {
-    // Delegate to the more robust 'settled' wait.
-    waitForGridToSettle(gridId, Duration.ofSeconds(30));
-
-    // Keep the previous semantics: we expect at least one row.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {
@@ -376,125 +321,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         });
   }
 
-  /**
-   * Waits for a Vaadin Grid to finish its (client-side) loading cycle and for its rendered DOM rows
-   * to become stable. This reduces flakiness with virtualized grids and async data-provider
-   * refreshes.
-   */
-  protected void waitForGridToSettle(@NonNull String gridId, @NonNull Duration timeout) {
-    WebDriverWait wait = new WebDriverWait(driver, timeout);
-
-    // 1) Wait until the element is present.
-    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
-
-    // 2) Wait until the grid is not in a 'loading' state (best-effort; property exists on Vaadin
-    // Grid).
-    wait.until(
-        d -> {
-          try {
-            Object loading =
-                ((JavascriptExecutor) d)
-                    .executeScript(
-                        "const g = arguments[0];"
-                            + "try { return !!g.loading; } catch(e) { return false; }",
-                        grid);
-            return loading instanceof Boolean && !((Boolean) loading);
-          } catch (Exception e) {
-            return true; // If we can't read the property, don't block.
-          }
-        });
-
-    // 3) Wait for the rendered content to stop changing for a short window.
-    // Using light-DOM vaadin-grid-cell-content is more robust across Vaadin versions.
-    wait.until(
-        d -> {
-          try {
-            String snap1 =
-                (String)
-                    ((JavascriptExecutor) d)
-                        .executeScript(
-                            "const g = arguments[0];return"
-                                + " Array.from(g.querySelectorAll('vaadin-grid-cell-content')).map(e"
-                                + " => (e.textContent || '').trim()).join('\\n"
-                                + "');",
-                            grid);
-            // Small sleep to detect stability. (WebDriverWait polling is 500ms by default; we still
-            // want an immediate back-to-back snapshot.)
-            try {
-              Thread.sleep(200);
-            } catch (InterruptedException ignored) {
-            }
-            String snap2 =
-                (String)
-                    ((JavascriptExecutor) d)
-                        .executeScript(
-                            "const g = arguments[0];return"
-                                + " Array.from(g.querySelectorAll('vaadin-grid-cell-content')).map(e"
-                                + " => (e.textContent || '').trim()).join('\\n"
-                                + "');",
-                            grid);
-            return Objects.equals(snap1, snap2);
-          } catch (Exception e) {
-            return false;
-          }
-        });
-  }
-
-  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
-    // Ensure the grid has finished refreshing before we scan it.
-    waitForGridToSettle(gridId, Duration.ofSeconds(30));
-
-    try {
-      new WebDriverWait(driver, Duration.ofSeconds(30))
-          .until(
-              d -> {
-                try {
-                  Boolean found =
-                      (Boolean)
-                          ((JavascriptExecutor) d)
-                              .executeScript(
-                                  "const grid = document.getElementById(arguments[0]);const text ="
-                                      + " arguments[1];if (!grid) return false;const cells ="
-                                      + " Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));return"
-                                      + " cells.some(c => c.textContent.includes(text));",
-                                  gridId,
-                                  expectedText);
-                  return Boolean.TRUE.equals(found);
-                } catch (Exception ignored) {
-                  // Allow retry.
-                }
-                return false;
-              });
-    } catch (org.openqa.selenium.TimeoutException e) {
-      // On failure, log what was actually found in the grid to help debugging.
-      String gridContent =
-          (String)
-              ((JavascriptExecutor) driver)
-                  .executeScript(
-                      "const grid = document.getElementById(arguments[0]);if (!grid) return 'Grid"
-                          + " not found';return"
-                          + " Array.from(grid.querySelectorAll('vaadin-grid-cell-content')).map(c"
-                          + " => c.textContent.trim()).join('|');",
-                      gridId);
-      log.error(
-          "Grid '{}' did not contain '{}'. Current content: {}", gridId, expectedText, gridContent);
-      takeSequencedScreenshot("assert-grid-contains-failed-" + gridId);
-      throw e;
-    }
-  }
-
   protected void waitForNotification(@NonNull String text) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(
-        d -> {
-          return (Boolean)
-              ((JavascriptExecutor) d)
-                  .executeScript(
-                      "const text = arguments[0];const notifications ="
-                          + " Array.from(document.querySelectorAll('vaadin-notification-card'));return"
-                          + " notifications.some(n => n.textContent.includes(text));",
-                      text);
-        });
+        ExpectedConditions.presenceOfElementLocated(
+            By.xpath("//vaadin-notification-card[contains(., '" + text + "')]")));
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
@@ -511,24 +342,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     // Wait for the main Vaadin app layout element to be present
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
-  }
-
-  protected void toggleVaadinCheckbox(@NonNull By selector) {
-    toggleVaadinCheckbox(driver.findElement(selector));
-  }
-
-  protected void toggleVaadinCheckbox(@NonNull WebElement checkbox) {
-    scrollIntoView(checkbox);
-    takeSequencedScreenshot("before-toggle-checkbox");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.visibilityOf(checkbox));
-
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].checked = !arguments[0].checked; arguments[0].dispatchEvent(new"
-                + " CustomEvent('change', { bubbles: true }));",
-            checkbox);
-    takeSequencedScreenshot("after-toggle-checkbox");
   }
 
   /**
@@ -548,27 +361,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
     takeSequencedScreenshot("before-click");
-    // First, wait for the element to be visible.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.visibilityOf(element));
-
-    // Ensure the drawer is closed if it might intercept clicks
-    try {
-      ((JavascriptExecutor) driver)
-          .executeScript(
-              "const layout = document.querySelector('vaadin-app-layout');"
-                  + "if (layout && layout.drawerOpened) { layout.drawerOpened = false; }");
-    } catch (Exception e) {
-      log.warn("Could not ensure drawer was closed", e);
-    }
-
-    // Use JavaScript to click to bypass potential interception by other elements (like the drawer
-    // or overlays).
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true,"
-                + " cancelable: true}));",
-            element);
+    // First, wait for the element to be clickable.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(ExpectedConditions.elementToBeClickable(element));
+    // Then, use JavaScript to click to bypass potential interception by other elements.
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
     takeSequencedScreenshot("after-click");
   }
 
@@ -628,7 +425,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     input.sendKeys(itemText);
 
     // Wait for the overlay to appear and the item to be clickable
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     try {
       wait.until(
           d ->
@@ -662,22 +459,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @return List of Strings representing the data in the specified column
    */
   protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
-    // This is more complex in Vaadin 24/25 because cells are in the light DOM
-    // and rows are managed via slots.
-    // We can try to group cell-content by their slot index or use the _index property if available.
-    return (List<String>)
-        ((JavascriptExecutor) driver)
-            .executeScript(
-                "const grid = arguments[0];"
-                    + "const colIndex = arguments[1];"
-                    + "const cols = Array.from(grid.querySelectorAll('vaadin-grid-column'));"
-                    + "if (colIndex >= cols.length) return [];"
-                    + "const targetCol = cols[colIndex];"
-                    + "return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))"
-                    + ".filter(c => c._column === targetCol)"
-                    + ".map(c => c.textContent.trim());",
-                grid,
-                columnIndex);
+    return getGridRows(grid).stream()
+        .map(
+            row -> {
+              List<WebElement> cells = row.findElements(By.cssSelector("[part~='cell']"));
+              return cells.size() > columnIndex ? cells.get(columnIndex).getText() : "";
+            })
+        .collect(Collectors.toList());
   }
 
   /**
@@ -687,11 +475,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @return the number of items
    */
   protected int getGridSize(@NonNull WebElement grid) {
-    Object size =
-        ((JavascriptExecutor) driver).executeScript("return arguments[0].size || 0;", grid);
-    if (size instanceof Long) return ((Long) size).intValue();
-    if (size instanceof Integer) return (Integer) size;
-    return 0;
+    return getGridRows(grid).size();
   }
 
   /**
@@ -704,83 +488,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return (List<WebElement>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const g = arguments[0];const items = g.shadowRoot.querySelector('#items') ||      "
-                    + "        g.shadowRoot.querySelector('tbody') ||             "
-                    + " g.shadowRoot.querySelector('[part~=\"items-container\"]');return items ?"
-                    + " Array.from(items.querySelectorAll('tr[part~=\"row\"], vaadin-grid-row')) :"
-                    + " [];",
+                "var items = arguments[0].shadowRoot.getElementById('items');"
+                    + " return items ? items.children : [];",
                 grid);
   }
 
   protected List<WebElement> getGridRows(@NonNull String gridId) {
     WebElement grid = waitForVaadinElement(driver, By.id(gridId));
     return getGridRows(grid);
-  }
-
-  /**
-   * Finds a button within a specific grid row that matches the given text.
-   *
-   * @param gridId The ID of the vaadin-grid
-   * @param rowMatchText The text to identify the row
-   * @param buttonSelector The selector for the button within the row's cell content
-   * @return The found WebElement for the button
-   */
-  protected WebElement findButtonInGridRow(
-      @NonNull String gridId, @NonNull String rowMatchText, @NonNull By buttonSelector) {
-    waitForGridToSettle(gridId, Duration.ofSeconds(30));
-
-    // Convert button selector to a CSS selector string if possible, or use a known one.
-    // In this project, we mostly use id^= or similar.
-    String cssSelector = buttonSelector.toString().replace("By.cssSelector: ", "");
-
-    return new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d -> {
-              Object result =
-                  ((JavascriptExecutor) d)
-                      .executeScript(
-                          "const grid = document.getElementById(arguments[0]);const rowText ="
-                              + " arguments[1];const btnSelector = arguments[2];const log = [];if"
-                              + " (!grid) return { found: false, log: 'Grid not found: ' +"
-                              + " arguments[0] };const sr = grid.shadowRoot;if (!sr) return {"
-                              + " found: false, log: 'No shadow root' };const items ="
-                              + " sr.querySelector('#items');if (!items) return { found: false,"
-                              + " log: 'No #items container in shadow DOM' };const rows ="
-                              + " Array.from(items.children).filter(el =>"
-                              + " !el.hidden);log.push('Visible rows in shadow DOM: ' +"
-                              + " rows.length);for (let i = 0; i < rows.length; i++) {  const row ="
-                              + " rows[i];  const cells = Array.from(row.children);  const"
-                              + " lightCells = [];  cells.forEach(c => {    const slot ="
-                              + " c.querySelector('slot');    if (slot) {      const name ="
-                              + " slot.getAttribute('name');      const lightCell ="
-                              + " grid.querySelector(`[slot=\"${name}\"]`);      if (lightCell)"
-                              + " lightCells.push(lightCell);    }  });  const match ="
-                              + " lightCells.some(lc => lc.textContent.includes(rowText));  if"
-                              + " (match) {    log.push('Match found in row ' + i);    for (const"
-                              + " lc of lightCells) {      const btn ="
-                              + " lc.querySelector(btnSelector);      if (btn) return { found:"
-                              + " true, element: btn };    }    log.push('Row matched but button"
-                              + " not found. Cells: ' + lightCells.length);   "
-                              + " lightCells.forEach(lc => log.push('Cell HTML: ' + lc.innerHTML));"
-                              + "  }}return { found: false, log: log.join('; ') };",
-                          gridId,
-                          rowMatchText,
-                          cssSelector);
-
-              if (result instanceof Map) {
-                Map<?, ?> map = (Map<?, ?>) result;
-                if (Boolean.TRUE.equals(map.get("found"))) {
-                  return (WebElement) map.get("element");
-                } else {
-                  String logMsg = (String) map.get("log");
-                  // Only log occasionally or on last attempt?
-                  // For now log every failure to debug
-                  System.out.println("findButtonInGridRow retry: " + logMsg);
-                  return null;
-                }
-              }
-              return null;
-            });
   }
 
   protected void takeSequencedScreenshot(@NonNull String context) {
@@ -821,6 +536,19 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
+  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
+    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
+    boolean found = false;
+    for (WebElement gridRow : getGridRows(grid)) {
+      if (gridRow.getText().contains(expectedText)) {
+        found = true;
+        break;
+      }
+    }
+
+    assertTrue(found, "Grid '" + gridId + "' does not contain '" + expectedText + "'.");
+  }
+
   /**
    * Selects an item from a Vaadin MultiSelectComboBox by opening it and scrolling through the
    * items.
@@ -850,7 +578,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     // 2. Wait for the item to appear and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     try {
       wait.until(
           d -> {
@@ -893,7 +621,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(mainButton);
 
     // 2. Wait and find the item by text in the DOM and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     try {
       wait.until(
           d -> {
@@ -946,7 +674,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].hasAttribute('invalid');", textFieldElement);
 
-    if (Boolean.TRUE.equals(isInvalid)) {
+    if (isInvalid) {
       // Access the shadow root of the vaadin-text-field
       SearchContext shadowRoot = textFieldElement.getShadowRoot();
 
@@ -962,10 +690,5 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
     }
     return null; // Or throw an exception if the field is not invalid
-  }
-
-  protected void waitForPageSourceToContain(@NonNull String text) {
-    new WebDriverWait(driver, java.time.Duration.ofSeconds(60))
-        .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

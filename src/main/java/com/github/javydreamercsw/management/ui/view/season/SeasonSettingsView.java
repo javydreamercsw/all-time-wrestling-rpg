@@ -16,10 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.season;
 
-import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.show.ShowSchedulerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -31,7 +28,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -45,18 +41,11 @@ import org.springframework.stereotype.Component;
 public class SeasonSettingsView extends VerticalLayout {
   private final WrestlerService wrestlerService;
   private final TierBoundaryService tierBoundaryService;
-  private final ShowSchedulerService showSchedulerService;
-  private final SeasonService seasonService;
 
   public SeasonSettingsView(
-      WrestlerService wrestlerService,
-      TierBoundaryService tierBoundaryService,
-      ShowSchedulerService showSchedulerService,
-      SeasonService seasonService) {
+      WrestlerService wrestlerService, TierBoundaryService tierBoundaryService) {
     this.wrestlerService = wrestlerService;
     this.tierBoundaryService = tierBoundaryService;
-    this.showSchedulerService = showSchedulerService;
-    this.seasonService = seasonService;
     log.info("Creating SeasonSettingsView");
     add(new H2("Season Management"));
 
@@ -159,51 +148,7 @@ public class SeasonSettingsView extends VerticalLayout {
             });
     fullResetButton.setId("full-reset-button");
 
-    Button generateScheduleButton =
-        new Button(
-            "Generate Season Schedule",
-            click -> {
-              Optional<Season> activeSeason = seasonService.getActiveSeason();
-              if (activeSeason.isEmpty()) {
-                Notification.show(
-                        "No active season found to generate schedule for.",
-                        3000,
-                        Notification.Position.BOTTOM_START)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-              }
-
-              Dialog dialog = new Dialog();
-              dialog.setHeaderTitle("Confirm Schedule Generation");
-              dialog.add(
-                  new Paragraph(
-                      "This will generate empty shows for the entire active season ('"
-                          + activeSeason.get().getName()
-                          + "') based on show templates."));
-
-              Button confirmButton =
-                  new Button(
-                      "Confirm",
-                      event -> {
-                        showSchedulerService.generateShowsForSeason(activeSeason.get());
-                        Notification.show(
-                                "Season schedule generated successfully.",
-                                3000,
-                                Notification.Position.BOTTOM_START)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                        dialog.close();
-                      });
-              confirmButton.setId("confirm-generate-schedule-button");
-
-              Button cancelButton = new Button("Cancel", event -> dialog.close());
-              cancelButton.setId("cancel-generate-schedule-button");
-
-              dialog.getFooter().add(cancelButton, confirmButton);
-              dialog.open();
-            });
-    generateScheduleButton.setId("generate-schedule-button");
-
-    add(generateScheduleButton, recalibrateFansButton, resetBoundariesButton, fullResetButton);
+    add(recalibrateFansButton, resetBoundariesButton, fullResetButton);
   }
 
   private void recalibrateFans() {

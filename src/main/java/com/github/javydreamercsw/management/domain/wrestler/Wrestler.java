@@ -143,7 +143,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JsonIgnore
   private Npc manager;
 
-  @ManyToOne
+  @OneToOne
   @JoinColumn(name = "account_id")
   private Account account;
 

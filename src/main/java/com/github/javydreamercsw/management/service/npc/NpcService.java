@@ -65,7 +65,7 @@ public class NpcService {
 
   @PreAuthorize("isAuthenticated()")
   public Npc findByName(String name) {
-    return npcRepository.findByName(name).orElse(null);
+    return npcRepository.findByName(name);
   }
 
   @PreAuthorize("isAuthenticated()")

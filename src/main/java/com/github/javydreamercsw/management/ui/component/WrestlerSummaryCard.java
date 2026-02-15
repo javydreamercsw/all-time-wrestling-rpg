@@ -111,46 +111,11 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               mods.setSpacing(false);
               mods.addClassNames(Margin.Top.SMALL, Padding.Top.SMALL, Border.TOP);
 
-              StringBuilder hpTooltip = new StringBuilder();
-              hpTooltip.append("Base Health: ").append(wrestler.getStartingHealth());
-
-              int campaignBonus = 0;
-              int campaignPenalty = 0;
-              if (wrestler.getAlignment() != null
-                  && wrestler.getAlignment().getCampaign() != null
-                  && wrestler.getAlignment().getCampaign().getState() != null) {
-                campaignBonus =
-                    wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
-                campaignPenalty =
-                    wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
-                if (campaignBonus > 0)
-                  hpTooltip.append("\nCampaign Bonus: +").append(campaignBonus);
-                if (campaignPenalty > 0)
-                  hpTooltip.append("\nCampaign Penalty: -").append(campaignPenalty);
-              }
-
-              if (wrestlerWithInjuries.getBumps() > 0) {
-                hpTooltip.append("\nBump Penalty: -").append(wrestlerWithInjuries.getBumps());
-              }
-
-              int injuryPenalty = wrestler.getTotalInjuryPenalty();
-              if (injuryPenalty > 0) {
-                hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
-              }
-
-              if (additionalPenalty > 0) {
-                hpTooltip.append("\nOpponent Penalty: -").append(additionalPenalty);
-              }
-
               String hpText = "❤️ Effective HP: " + effectiveHp;
-              Span hp = new Span(hpText);
-              if (wrestlerWithInjuries.getBumps() > 0) {
-                Span bumpIndicator =
-                    new Span(" (📉 -" + wrestlerWithInjuries.getBumps() + " bumps)");
-                bumpIndicator.addClassNames(TextColor.ERROR, FontSize.XSMALL, Margin.Left.XSMALL);
-                hp.add(bumpIndicator);
+              if (additionalPenalty > 0) {
+                hpText += " (Opponent Penalty: -" + additionalPenalty + ")";
               }
-              Tooltip.forComponent(hp).setText(hpTooltip.toString());
+              Span hp = new Span(hpText);
 
               Span stam =
                   new Span("⚡ Effective Stamina: " + wrestler.getEffectiveStartingStamina());
@@ -206,44 +171,18 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               getContent().add(mods);
 
               if (!wrestlerWithInjuries.getInjuries().isEmpty()) {
-                VerticalLayout activeInjuries = new VerticalLayout();
-                activeInjuries.setPadding(false);
-                activeInjuries.setSpacing(false);
-
-                VerticalLayout healedInjuries = new VerticalLayout();
-                healedInjuries.setPadding(false);
-                healedInjuries.setSpacing(false);
-
+                VerticalLayout injuryList = new VerticalLayout();
+                injuryList.setPadding(false);
+                injuryList.setSpacing(false);
                 wrestlerWithInjuries
                     .getInjuries()
                     .forEach(
                         injury -> {
                           Span i = new Span("🩹 " + injury.getDisplayString());
-                          i.addClassNames(FontSize.XSMALL);
-                          if (injury.isCurrentlyActive()) {
-                            i.addClassNames(TextColor.ERROR);
-                            activeInjuries.add(i);
-                          } else {
-                            i.addClassNames(TextColor.SECONDARY);
-                            healedInjuries.add(i);
-                          }
+                          i.addClassNames(FontSize.XSMALL, TextColor.ERROR);
+                          injuryList.add(i);
                         });
-
-                if (activeInjuries.getComponentCount() > 0) {
-                  getContent().add(activeInjuries);
-                }
-
-                if (healedInjuries.getComponentCount() > 0) {
-                  com.vaadin.flow.component.details.Details healedDetails =
-                      new com.vaadin.flow.component.details.Details(
-                          "Healed Injuries", healedInjuries);
-                  healedDetails.addThemeVariants(
-                      com.vaadin.flow.component.details.DetailsVariant.LUMO_REVERSE,
-                      com.vaadin.flow.component.details.DetailsVariant.LUMO_SMALL);
-                  healedDetails.setOpened(false);
-                  healedDetails.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
-                  getContent().add(healedDetails);
-                }
+                getContent().add(injuryList);
               }
             });
   }

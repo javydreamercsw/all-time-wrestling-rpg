@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class ShowTemplateNotionSyncService implements NotionEntitySyncService {
+public class ShowTemplateNotionSyncService implements NotionSyncService {
 
   private final ShowTemplateRepository showTemplateRepository;
   private final NotionHandler notionHandler;
@@ -60,13 +60,6 @@ public class ShowTemplateNotionSyncService implements NotionEntitySyncService {
   @Override
   @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    return syncToNotion(operationId, null);
-  }
-
-  @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
@@ -77,10 +70,7 @@ public class ShowTemplateNotionSyncService implements NotionEntitySyncService {
           int updated = 0;
           int errors = 0;
           progressTracker.startOperation(operationId, "Sync Show Templates", 1);
-          List<ShowTemplate> showTemplates =
-              (ids == null || ids.isEmpty())
-                  ? showTemplateRepository.findAll()
-                  : showTemplateRepository.findAllById(ids);
+          List<ShowTemplate> showTemplates = showTemplateRepository.findAll();
           for (ShowTemplate entity : showTemplates) {
             if (processedCount % 5 == 0) {
               progressTracker.updateProgress(

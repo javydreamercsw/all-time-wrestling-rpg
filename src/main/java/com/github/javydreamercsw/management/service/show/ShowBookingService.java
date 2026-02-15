@@ -165,10 +165,6 @@ public class ShowBookingService {
       show.setTemplate(template);
       show.setShowDate(showDate);
 
-      if (template != null && template.getCommentaryTeam() != null) {
-        show.setCommentaryTeam(template.getCommentaryTeam());
-      }
-
       Show savedShow = showRepository.save(show);
 
       // Add show to active season
