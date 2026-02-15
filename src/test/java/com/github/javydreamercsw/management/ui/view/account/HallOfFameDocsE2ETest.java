@@ -80,6 +80,19 @@ public class HallOfFameDocsE2ETest extends AbstractDocsE2ETest {
             + " Score, Prestige XP, and earned achievement badges directly from your dashboard."
             + " These stats persist across seasons and different wrestlers.",
         "player-career-legacy");
+
+    // Navigate to Achievements tab
+    click("vaadin-tab", "Achievements");
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.id("achievements-grid"));
+
+    documentFeature(
+        "Player Dashboard",
+        "Medals & Achievements",
+        "Track your progress toward various career milestones in the Achievements tab. Each"
+            + " achievement awards permanent Prestige XP and a unique medal displayed on your"
+            + " profile.",
+        "player-achievements");
   }
 
   private void waitForText(String text) {

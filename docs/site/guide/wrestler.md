@@ -20,5 +20,11 @@ Your persistent career progress is tracked at the account level. View your curre
 
 ![Career Legacy](/screenshots/player-career-legacy.png)
 
+### Medals & Achievements
+
+Track your progress toward various career milestones in the Achievements tab. Each achievement awards permanent Prestige XP and a unique medal displayed on your profile. Locked achievements show their requirements, helping you plan your next major career move.
+
+![Medals & Achievements](/screenshots/player-achievements.png)
+
 ---
 

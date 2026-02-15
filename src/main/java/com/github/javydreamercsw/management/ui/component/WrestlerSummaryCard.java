@@ -238,8 +238,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                       new com.vaadin.flow.component.details.Details(
                           "Healed Injuries", healedInjuries);
                   healedDetails.addThemeVariants(
-                      com.vaadin.flow.component.details.DetailsVariant.REVERSE,
-                      com.vaadin.flow.component.details.DetailsVariant.SMALL);
+                      com.vaadin.flow.component.details.DetailsVariant.LUMO_REVERSE,
+                      com.vaadin.flow.component.details.DetailsVariant.LUMO_SMALL);
                   healedDetails.setOpened(false);
                   healedDetails.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
                   getContent().add(healedDetails);

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,16 +53,15 @@ public class LegacyService {
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
 
     long totalFans = wrestlers.stream().mapToLong(Wrestler::getFans).sum();
-    long titlesHeld =
+    long currentTitlesHeld =
         wrestlers.stream()
-            .mapToLong(w -> w.getReigns().size())
-            .sum(); // This counts reigns, simplified for now
-    // TODO: Need proper title counting logic if 'reigns' includes past ones. Assuming active reigns
-    // for now or need a better check.
-    // Actually, getting current championships is better.
-    // For now, let's stick to Fans as the primary driver to verify persistence.
+            .flatMap(w -> w.getReigns().stream())
+            .filter(com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign)
+            .count();
 
     long score = totalFans / 1000;
+    // Add 50 points per title currently held
+    score += currentTitlesHeld * 50;
 
     // Add Achievement XP
     score += account.getAchievements().stream().mapToInt(Achievement::getXpValue).sum();
@@ -70,24 +70,36 @@ public class LegacyService {
     accountRepository.save(account);
     log.info("Updated legacy score for {}: {}", account.getUsername(), score);
 
-    checkAchievements(account, wrestlers, totalFans);
+    checkAchievements(account, wrestlers, totalFans, currentTitlesHeld);
   }
 
-  private void checkAchievements(Account account, List<Wrestler> wrestlers, long totalFans) {
-    if (wrestlers.size() >= 1) {
+  private void checkAchievements(
+      @NonNull Account account,
+      @NonNull List<Wrestler> wrestlers,
+      long totalFans,
+      long currentTitlesHeld) {
+    if (!wrestlers.isEmpty()) {
       unlockAchievement(account, AchievementType.FIRST_WRESTLER);
     }
     if (wrestlers.size() >= 10) {
       unlockAchievement(account, AchievementType.ROSTER_BUILDER);
     }
-    if (totalFans >= 10000) {
+    if (totalFans >= 10_000) {
       unlockAchievement(account, AchievementType.CROWD_PLEASER);
     }
-    // Add more checks here
+    if (totalFans >= 100_000) {
+      unlockAchievement(account, AchievementType.MAIN_EVENT_DRAW);
+    }
+    if (totalFans >= 1_000_000) {
+      unlockAchievement(account, AchievementType.GLOBAL_ICON);
+    }
+    if (currentTitlesHeld > 0) {
+      unlockAchievement(account, AchievementType.FIRST_CHAMPION);
+    }
   }
 
   @Transactional
-  public void unlockAchievement(Account account, AchievementType type) {
+  public void unlockAchievement(@NonNull Account account, @NonNull AchievementType type) {
     achievementRepository
         .findByType(type)
         .ifPresent(
@@ -97,7 +109,7 @@ public class LegacyService {
                 account.setPrestige(
                     account.getPrestige() + achievement.getXpValue()); // Prestige accumulates XP
                 accountRepository.save(account);
-                updateLegacyScore(account); // Update legacy score to reflect new achievement
+                updateLegacyScore(account);
                 log.info(
                     "Unlocked achievement '{}' for {}",
                     type.getDisplayName(),

@@ -21,6 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -319,22 +320,26 @@ public class PlayerView extends VerticalLayout {
     Grid<Segment> upcomingMatchesGrid = createUpcomingMatchesGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
     Grid<InboxItem> inboxGrid = createInboxGrid();
+    Grid<AchievementType> achievementsGrid = createAchievementsGrid();
 
-    pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid);
+    pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid, achievementsGrid);
     rivalriesGrid.setVisible(false);
     inboxGrid.setVisible(false);
+    achievementsGrid.setVisible(false);
 
     Tab matchesTab = new Tab("Upcoming Matches");
     Tab rivalriesTab = new Tab("Rivalries");
     Tab inboxTab = new Tab("Inbox");
+    Tab achievementsTab = new Tab("Achievements");
 
     Map<Tab, Component> tabsToPages =
         Map.of(
             matchesTab, upcomingMatchesGrid,
             rivalriesTab, rivalriesGrid,
-            inboxTab, inboxGrid);
+            inboxTab, inboxGrid,
+            achievementsTab, achievementsGrid);
 
-    Tabs tabs = new Tabs(matchesTab, rivalriesTab, inboxTab);
+    Tabs tabs = new Tabs(matchesTab, rivalriesTab, achievementsTab, inboxTab);
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
@@ -420,6 +425,37 @@ public class PlayerView extends VerticalLayout {
     } else {
       grid.setItems(Collections.emptyList());
     }
+    grid.setSizeFull();
+    return grid;
+  }
+
+  private Grid<AchievementType> createAchievementsGrid() {
+    Grid<AchievementType> grid = new Grid<>();
+    grid.setId("achievements-grid");
+
+    grid.addComponentColumn(
+            type -> {
+              Icon icon = VaadinIcon.MEDAL.create();
+              boolean earned =
+                  playerWrestler.getAccount().getAchievements().stream()
+                      .anyMatch(a -> a.getType() == type);
+              if (earned) {
+                icon.setColor("var(--lumo-success-color)");
+              } else {
+                icon.setColor("var(--lumo-disabled-text-color)");
+                icon.getStyle().set("opacity", "0.5");
+              }
+              return icon;
+            })
+        .setHeader("")
+        .setFlexGrow(0)
+        .setWidth("50px");
+
+    grid.addColumn(AchievementType::getDisplayName).setHeader("Achievement").setSortable(true);
+    grid.addColumn(AchievementType::getDescription).setHeader("Requirement");
+    grid.addColumn(type -> type.getXpValue() + " XP").setHeader("Reward").setSortable(true);
+
+    grid.setItems(java.util.Arrays.asList(AchievementType.values()));
     grid.setSizeFull();
     return grid;
   }
