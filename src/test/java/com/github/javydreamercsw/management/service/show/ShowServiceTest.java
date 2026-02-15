@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -33,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -61,6 +63,12 @@ class ShowServiceTest {
   @Mock private ApplicationEventPublisher eventPublisher; // Needed to avoid NPE
   @Mock private GameSettingService gameSettingService;
   @Mock private NewsGenerationService newsGenerationService;
+  @Mock private LegacyService legacyService;
+  @Mock private SecurityUtils securityUtils;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository
+      commentaryTeamRepository;
 
   @InjectMocks private ShowService showService;
 
@@ -74,6 +82,24 @@ class ShowServiceTest {
 
   @BeforeEach
   void setUp() {
+    showService =
+        new ShowService(
+            showRepository,
+            null, // ShowTypeRepository
+            null, // SeasonRepository
+            null, // ShowTemplateRepository
+            null, // LeagueRepository
+            java.time.Clock.systemUTC(),
+            segmentAdjudicationService,
+            segmentRepository,
+            eventPublisher,
+            wrestlerService,
+            wrestlerRepository,
+            gameSettingService,
+            commentaryTeamRepository,
+            newsGenerationService,
+            legacyService,
+            securityUtils);
     show = new Show();
     show.setId(1L);
 

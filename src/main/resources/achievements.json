@@ -1,0 +1,103 @@
+[ {
+  "key": "FIRST_WRESTLER",
+  "name": "Rookie Manager",
+  "description": "Manage your first wrestler",
+  "xpValue": 50,
+  "category": "COLLECTION"
+}, {
+  "key": "ROSTER_BUILDER",
+  "name": "Talent Scout",
+  "description": "Build a roster of 10 wrestlers",
+  "xpValue": 200,
+  "category": "COLLECTION"
+}, {
+  "key": "FULL_HOUSE",
+  "name": "Promoter",
+  "description": "Build a roster of 50 wrestlers",
+  "xpValue": 1000,
+  "category": "COLLECTION"
+}, {
+  "key": "CROWD_PLEASER",
+  "name": "Crowd Pleaser",
+  "description": "Accumulate 10,000 total fans",
+  "xpValue": 100,
+  "category": "FANS"
+}, {
+  "key": "MAIN_EVENT_DRAW",
+  "name": "Main Event Draw",
+  "description": "Accumulate 100,000 total fans",
+  "xpValue": 500,
+  "category": "FANS"
+}, {
+  "key": "GLOBAL_ICON",
+  "name": "Global Icon",
+  "description": "Accumulate 1,000,000 total fans",
+  "xpValue": 5000,
+  "category": "FANS"
+}, {
+  "key": "FIRST_CHAMPION",
+  "name": "Gold Rush",
+  "description": "Have a wrestler win a championship",
+  "xpValue": 250,
+  "category": "CHAMPIONSHIP"
+}, {
+  "key": "GRAND_SLAM",
+  "name": "Grand Slam",
+  "description": "Have wrestlers hold every active title type",
+  "xpValue": 2000,
+  "category": "CHAMPIONSHIP"
+}, {
+  "key": "BOOKER_OF_THE_YEAR",
+  "name": "Booker of the Year",
+  "description": "Book 50 shows",
+  "xpValue": 500,
+  "category": "BOOKING"
+}, {
+  "key": "FIVE_STAR_CLASSIC",
+  "name": "5-Star Classic",
+  "description": "Book a match with a perfect 5-star rating",
+  "xpValue": 1000,
+  "category": "BOOKING"
+}, {
+  "key": "PARTICIPATE_CAGE",
+  "name": "Inside the Steel",
+  "description": "Participate in your first Cage match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_CAGE",
+  "name": "Escape the Cage",
+  "description": "Win your first Cage match",
+  "xpValue": 250,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "PARTICIPATE_CASKET",
+  "name": "Graveyard Shift",
+  "description": "Participate in your first Casket match",
+  "xpValue": 100,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "WIN_CASKET",
+  "name": "Rest in Peace",
+  "description": "Win your first Casket match",
+  "xpValue": 250,
+  "category": "MATCH_TYPE"
+}, {
+  "key": "MAIN_EVENT",
+  "name": "Headliner",
+  "description": "Main event a weekly show",
+  "xpValue": 150,
+  "category": "BOOKING"
+}, {
+  "key": "MAIN_EVENT_PLE",
+  "name": "Brightest Lights",
+  "description": "Main event a Premium Live Event",
+  "xpValue": 500,
+  "category": "BOOKING"
+}, {
+  "key": "RUMBLE_WINNER",
+  "name": "The One",
+  "description": "Win an Abu Dhabi Rumble match",
+  "xpValue": 2500,
+  "category": "SPECIAL_EVENT"
+} ]

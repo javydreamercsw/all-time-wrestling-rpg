@@ -21,7 +21,8 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AchievementType;
+import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -89,6 +90,7 @@ public class PlayerView extends VerticalLayout {
   private final SegmentService segmentService;
   private final NewsService newsService;
   private final TransactionTemplate transactionTemplate;
+  private final AchievementRepository achievementRepository;
 
   private Wrestler playerWrestler;
 
@@ -102,7 +104,8 @@ public class PlayerView extends VerticalLayout {
       @Qualifier("managementAccountService") AccountService accountService,
       SegmentService segmentService,
       NewsService newsService,
-      TransactionTemplate transactionTemplate) {
+      TransactionTemplate transactionTemplate,
+      AchievementRepository achievementRepository) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;
@@ -112,6 +115,7 @@ public class PlayerView extends VerticalLayout {
     this.segmentService = segmentService;
     this.newsService = newsService;
     this.transactionTemplate = transactionTemplate;
+    this.achievementRepository = achievementRepository;
 
     setHeightFull();
     setPadding(false);
@@ -320,7 +324,7 @@ public class PlayerView extends VerticalLayout {
     Grid<Segment> upcomingMatchesGrid = createUpcomingMatchesGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
     Grid<InboxItem> inboxGrid = createInboxGrid();
-    Grid<AchievementType> achievementsGrid = createAchievementsGrid();
+    Grid<Achievement> achievementsGrid = createAchievementsGrid();
 
     pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid, achievementsGrid);
     rivalriesGrid.setVisible(false);
@@ -429,16 +433,16 @@ public class PlayerView extends VerticalLayout {
     return grid;
   }
 
-  private Grid<AchievementType> createAchievementsGrid() {
-    Grid<AchievementType> grid = new Grid<>();
+  private Grid<Achievement> createAchievementsGrid() {
+    Grid<Achievement> grid = new Grid<>();
     grid.setId("achievements-grid");
 
     grid.addComponentColumn(
-            type -> {
+            achievement -> {
               Icon icon = VaadinIcon.MEDAL.create();
               boolean earned =
                   playerWrestler.getAccount().getAchievements().stream()
-                      .anyMatch(a -> a.getType() == type);
+                      .anyMatch(a -> a.getKey().equals(achievement.getKey()));
               if (earned) {
                 icon.setColor("var(--lumo-success-color)");
               } else {
@@ -451,11 +455,11 @@ public class PlayerView extends VerticalLayout {
         .setFlexGrow(0)
         .setWidth("50px");
 
-    grid.addColumn(AchievementType::getDisplayName).setHeader("Achievement").setSortable(true);
-    grid.addColumn(AchievementType::getDescription).setHeader("Requirement");
-    grid.addColumn(type -> type.getXpValue() + " XP").setHeader("Reward").setSortable(true);
+    grid.addColumn(Achievement::getName).setHeader("Achievement").setSortable(true);
+    grid.addColumn(Achievement::getDescription).setHeader("Requirement");
+    grid.addColumn(a -> a.getXpValue() + " XP").setHeader("Reward").setSortable(true);
 
-    grid.setItems(java.util.Arrays.asList(AchievementType.values()));
+    grid.setItems(achievementRepository.findAll());
     grid.setSizeFull();
     return grid;
   }

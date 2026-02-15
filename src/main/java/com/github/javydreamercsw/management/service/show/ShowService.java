@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
@@ -34,6 +35,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -72,6 +74,8 @@ public class ShowService {
   private final GameSettingService gameSettingService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final NewsGenerationService newsGenerationService;
+  private final LegacyService legacyService;
+  private final SecurityUtils securityUtils;
 
   ShowService(
       ShowRepository showRepository,
@@ -87,7 +91,9 @@ public class ShowService {
       WrestlerRepository wrestlerRepository,
       GameSettingService gameSettingService,
       CommentaryTeamRepository commentaryTeamRepository,
-      NewsGenerationService newsGenerationService) {
+      NewsGenerationService newsGenerationService,
+      LegacyService legacyService,
+      SecurityUtils securityUtils) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -102,6 +108,8 @@ public class ShowService {
     this.gameSettingService = gameSettingService;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.newsGenerationService = newsGenerationService;
+    this.legacyService = legacyService;
+    this.securityUtils = securityUtils;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -503,6 +511,10 @@ public class ShowService {
 
     // Roll for a random rumor after the show news is processed
     newsGenerationService.rollForRumor();
+
+    securityUtils
+        .getAuthenticatedUser()
+        .ifPresent(details -> legacyService.incrementShowsBooked(details.getAccount()));
 
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }

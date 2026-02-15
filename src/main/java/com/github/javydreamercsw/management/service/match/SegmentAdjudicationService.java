@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -58,6 +59,7 @@ public class SegmentAdjudicationService {
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
       leagueRosterRepository;
+  private final LegacyService legacyService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -70,7 +72,8 @@ public class SegmentAdjudicationService {
       MatchRewardService matchRewardService,
       MatchFulfillmentRepository matchFulfillmentRepository,
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-          leagueRosterRepository) {
+          leagueRosterRepository,
+      LegacyService legacyService) {
     this(
         rivalryService,
         wrestlerService,
@@ -80,6 +83,7 @@ public class SegmentAdjudicationService {
         matchRewardService,
         matchFulfillmentRepository,
         leagueRosterRepository,
+        legacyService,
         new Random());
   }
 
@@ -93,6 +97,7 @@ public class SegmentAdjudicationService {
       MatchFulfillmentRepository matchFulfillmentRepository,
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
           leagueRosterRepository,
+      LegacyService legacyService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -102,6 +107,7 @@ public class SegmentAdjudicationService {
     this.matchRewardService = matchRewardService;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRosterRepository = leagueRosterRepository;
+    this.legacyService = legacyService;
     this.random = random;
   }
 
@@ -244,6 +250,26 @@ public class SegmentAdjudicationService {
             attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(i));
           }
           break;
+      }
+    }
+
+    // Trigger Achievements
+    String keySuffix = segment.getSegmentType().getName().toUpperCase().replace(" ", "_");
+    for (Wrestler participant : segment.getWrestlers()) {
+      if (participant.getAccount() != null) {
+        legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
+        if (winners.contains(participant)) {
+          legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
+          if (segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+            legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
+          }
+        }
+        if (segment.isMainEvent()) {
+          legacyService.unlockAchievement(participant.getAccount(), "MAIN_EVENT");
+          if (segment.getShow().isPremiumLiveEvent()) {
+            legacyService.unlockAchievement(participant.getAccount(), "MAIN_EVENT_PLE");
+          }
+        }
       }
     }
   }

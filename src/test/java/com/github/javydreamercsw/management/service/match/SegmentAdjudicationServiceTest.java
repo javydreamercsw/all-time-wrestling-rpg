@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -65,6 +66,8 @@ class SegmentAdjudicationServiceTest {
   private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
       leagueRosterRepository;
 
+  @Mock private LegacyService legacyService;
+
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
@@ -79,6 +82,7 @@ class SegmentAdjudicationServiceTest {
             matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
+            legacyService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));

@@ -1,11 +1,15 @@
 CREATE TABLE achievement (
     achievement_id BIGINT AUTO_INCREMENT NOT NULL,
-    type VARCHAR(50) NOT NULL,
+    achievement_key VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(1000) NOT NULL,
+    xp_value INT NOT NULL,
+    category VARCHAR(50) NOT NULL,
     icon_url VARCHAR(512),
     external_id VARCHAR(255),
     last_sync DATETIME,
     CONSTRAINT pk_achievement PRIMARY KEY (achievement_id),
-    CONSTRAINT uc_achievement_type UNIQUE (type),
+    CONSTRAINT uc_achievement_key UNIQUE (achievement_key),
     CONSTRAINT uc_achievement_external_id UNIQUE (external_id)
 ) ENGINE=InnoDB;
 

@@ -22,7 +22,6 @@ import com.github.javydreamercsw.base.Initializable;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
-import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
@@ -195,16 +194,35 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadAchievements() {
-    log.info("Loading achievements...");
-    for (AchievementType type : AchievementType.values()) {
-      if (achievementRepository.findByType(type).isEmpty()) {
-        Achievement achievement = new Achievement();
-        achievement.setType(type);
-        achievementRepository.save(achievement);
-        log.debug("Loaded achievement: {}", type.getDisplayName());
+    ClassPathResource resource = new ClassPathResource("achievements.json");
+    if (resource.exists()) {
+      log.info("Loading achievements from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var achievementsFromFile = mapper.readValue(is, new TypeReference<List<Achievement>>() {});
+        for (Achievement a : achievementsFromFile) {
+          Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
+          if (existingOpt.isPresent()) {
+            Achievement existing = existingOpt.get();
+            existing.setName(a.getName());
+            existing.setDescription(a.getDescription());
+            existing.setXpValue(a.getXpValue());
+            existing.setCategory(a.getCategory());
+            achievementRepository.save(existing);
+            log.debug("Updated existing achievement: {}", existing.getName());
+          } else {
+            achievementRepository.save(a);
+            log.debug("Saved new achievement: {}", a.getName());
+          }
+        }
+        log.info(
+            "Achievement loading completed - {} achievements loaded", achievementsFromFile.size());
+      } catch (IOException e) {
+        log.error("Error loading achievements from file", e);
       }
+    } else {
+      log.warn("Achievements file not found: {}", resource.getPath());
     }
-    log.info("Achievement loading completed.");
   }
 
   private void syncCommentatorsFromFile() {

@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
-import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
@@ -79,29 +78,41 @@ public class LegacyService {
       long totalFans,
       long currentTitlesHeld) {
     if (!wrestlers.isEmpty()) {
-      unlockAchievement(account, AchievementType.FIRST_WRESTLER);
+      unlockAchievement(account, "FIRST_WRESTLER");
     }
     if (wrestlers.size() >= 10) {
-      unlockAchievement(account, AchievementType.ROSTER_BUILDER);
+      unlockAchievement(account, "ROSTER_BUILDER");
     }
     if (totalFans >= 10_000) {
-      unlockAchievement(account, AchievementType.CROWD_PLEASER);
+      unlockAchievement(account, "CROWD_PLEASER");
     }
     if (totalFans >= 100_000) {
-      unlockAchievement(account, AchievementType.MAIN_EVENT_DRAW);
+      unlockAchievement(account, "MAIN_EVENT_DRAW");
     }
     if (totalFans >= 1_000_000) {
-      unlockAchievement(account, AchievementType.GLOBAL_ICON);
+      unlockAchievement(account, "GLOBAL_ICON");
     }
     if (currentTitlesHeld > 0) {
-      unlockAchievement(account, AchievementType.FIRST_CHAMPION);
+      unlockAchievement(account, "FIRST_CHAMPION");
     }
   }
 
   @Transactional
-  public void unlockAchievement(@NonNull Account account, @NonNull AchievementType type) {
+  public void incrementShowsBooked(@NonNull Account account) {
+    account.setShowsBooked(account.getShowsBooked() + 1);
+    accountRepository.save(account);
+    log.info("Account {} has now booked {} shows", account.getUsername(), account.getShowsBooked());
+
+    if (account.getShowsBooked() >= 50) {
+      unlockAchievement(account, "BOOKER_OF_THE_YEAR");
+    }
+    updateLegacyScore(account);
+  }
+
+  @Transactional
+  public void unlockAchievement(@NonNull Account account, @NonNull String key) {
     achievementRepository
-        .findByType(type)
+        .findByKey(key)
         .ifPresent(
             achievement -> {
               if (!account.getAchievements().contains(achievement)) {
@@ -112,7 +123,7 @@ public class LegacyService {
                 updateLegacyScore(account);
                 log.info(
                     "Unlocked achievement '{}' for {}",
-                    type.getDisplayName(),
+                    achievement.getName(),
                     account.getUsername());
               }
             });

@@ -21,8 +21,8 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementCategory;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
-import com.github.javydreamercsw.base.domain.account.AchievementType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
@@ -75,11 +75,12 @@ class LegacyServiceTest {
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1));
 
     Achievement achievement = new Achievement();
+    achievement.setKey("CROWD_PLEASER");
+    achievement.setName("Crowd Pleaser");
+    achievement.setXpValue(100);
+    achievement.setCategory(AchievementCategory.FANS);
 
-    achievement.setType(AchievementType.CROWD_PLEASER);
-
-    when(achievementRepository.findByType(AchievementType.CROWD_PLEASER))
-        .thenReturn(Optional.of(achievement));
+    when(achievementRepository.findByKey("CROWD_PLEASER")).thenReturn(Optional.of(achievement));
 
     legacyService.updateLegacyScore(account);
 

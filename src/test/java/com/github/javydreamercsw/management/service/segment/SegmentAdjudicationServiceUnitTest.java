@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -61,6 +62,8 @@ class SegmentAdjudicationServiceUnitTest {
   private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
       leagueRosterRepository;
 
+  @Mock private LegacyService legacyService;
+
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
   private Segment promoSegment;
@@ -80,6 +83,7 @@ class SegmentAdjudicationServiceUnitTest {
             matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
+            legacyService,
             random);
 
     wrestler1 = Wrestler.builder().build();

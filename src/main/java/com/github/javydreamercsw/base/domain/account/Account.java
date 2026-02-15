@@ -85,6 +85,9 @@ public class Account {
   @Column(nullable = false)
   private Long prestige = 0L;
 
+  @Column(nullable = false)
+  private Integer showsBooked = 0;
+
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(
       name = "account_achievement",

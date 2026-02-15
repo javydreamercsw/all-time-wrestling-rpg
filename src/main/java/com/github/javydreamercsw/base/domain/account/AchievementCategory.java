@@ -16,11 +16,20 @@
 */
 package com.github.javydreamercsw.base.domain.account;
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import lombok.Getter;
 
-@Repository
-public interface AchievementRepository extends JpaRepository<Achievement, Long> {
-  Optional<Achievement> findByKey(String key);
+@Getter
+public enum AchievementCategory {
+  COLLECTION("Collection"),
+  FANS("Fans"),
+  CHAMPIONSHIP("Championship"),
+  MATCH_TYPE("Match Type"),
+  BOOKING("Booking"),
+  SPECIAL_EVENT("Special Event");
+
+  private final String displayName;
+
+  AchievementCategory(String displayName) {
+    this.displayName = displayName;
+  }
 }
