@@ -1,28 +1,29 @@
-# Specification: Wrestler Career Legacy & Hall of Fame
+# Specification: Player Career Legacy & Hall of Fame
 
 ## Goal
 
-Establish a persistent scoring and achievement system that tracks a wrestler's accomplishments across multiple seasons and handles retirement/legend status.
+Establish a persistent scoring and achievement system that tracks a player's (Account) accomplishments across multiple seasons and games, handling retirement and "Legend" status.
 
 ## Requirements
 
 1. **Legacy Score Calculation:**
    - Develop a formula based on:
-     - Days as champion (weighted by title prestige).
-     - Number of 5-star matches (per narration feedback).
-     - Main Event appearances.
-     - Total Fans accumulated.
+     - Cumulative Fans earned across all wrestlers.
+     - Total Titles won by wrestlers managed by the account.
+     - Number of 5-star matches achieved.
+     - Successful events booked (if Booker).
 2. **Career Milestones:**
-   - Track "First Time" achievements (e.g., Triple Crown Winner, Grand Slam).
+   - Track "First Time" achievements (e.g., First World Champion, 100 Wins).
+   - "Badges" or "Trophies" displayed on the Player Profile.
 3. **Retirement & Legends:**
-   - Logic to transition active wrestlers into "Legends."
-   - Legends provide buffs to their factions or apprentices.
+   - Accounts accumulate "Prestige" that persists even if wrestlers retire.
+   - "Hall of Fame" induction for Accounts that reach a certain Legacy Score.
 4. **Hall of Fame UI:**
-   - A dedicated "Hall of Fame" view displaying retired legends sorted by Legacy Score.
+   - A dedicated "Hall of Fame" view displaying top-ranking Player Accounts.
 
 ## Success Criteria
 
-- Legacy Score is visible on the Wrestler Profile.
-- Successful transition of a wrestler to "Legend" status.
-- Hall of Fame displays historical records accurately.
+- Legacy Score is visible on the Player Dashboard.
+- Successful tracking of achievements linked to the Account.
+- Hall of Fame displays historical records of top players.
 
