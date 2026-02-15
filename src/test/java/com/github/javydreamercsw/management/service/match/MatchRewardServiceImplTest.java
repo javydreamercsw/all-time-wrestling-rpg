@@ -55,7 +55,6 @@ class MatchRewardServiceImplTest {
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Match");
     when(wrestler.getId()).thenReturn(1L);
-    when(wrestler.getAccount()).thenReturn(account);
 
     // Default mock behavior for wrestlerService
     lenient()
