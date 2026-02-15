@@ -110,7 +110,7 @@ jobs:
         cache: maven
 
     - name: Run Notion Integration Tests
-      run: mvn -B verify -Pnotion-integration-test
+      run: mvn -B verify -Pnotion-it
 
     - name: Upload notion integration test coverage data
       uses: actions/upload-artifact@v4
@@ -168,7 +168,7 @@ jobs:
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v1
     - name: Run Notion E2E Tests
-      run: mvn -B verify -Pnotion-e2e-test
+      run: mvn -B verify -Pnotion-e2e
     - name: Upload Notion E2E test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v4
