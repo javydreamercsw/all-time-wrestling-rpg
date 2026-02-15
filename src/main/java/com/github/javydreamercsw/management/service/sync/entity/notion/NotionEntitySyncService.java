@@ -28,4 +28,15 @@ public interface NotionEntitySyncService {
    * @return Result of the sync.
    */
   SyncResult syncToNotion(@NonNull String operationId);
+
+  /**
+   * Sync specific entities to Notion
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @param ids Collection of entity IDs to sync. If null or empty, syncs all.
+   * @return Result of the sync.
+   */
+  default SyncResult syncToNotion(@NonNull String operationId, java.util.Collection<Long> ids) {
+    return syncToNotion(operationId);
+  }
 }

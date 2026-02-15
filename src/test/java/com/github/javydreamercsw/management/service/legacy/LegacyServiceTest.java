@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationEventPublisher;
 
 class LegacyServiceTest {
 
@@ -39,6 +40,7 @@ class LegacyServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
   @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private LegacyService legacyService;
 
@@ -50,6 +52,7 @@ class LegacyServiceTest {
   @Test
   void testUpdateLegacyScore_Fans() {
     Account account = new Account();
+    account.setId(1L);
     account.setUsername("testuser");
 
     Wrestler w1 = new Wrestler();
@@ -57,6 +60,7 @@ class LegacyServiceTest {
     Wrestler w2 = new Wrestler();
     w2.setFans(2500L);
 
+    when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1, w2));
 
     legacyService.updateLegacyScore(account);
@@ -68,11 +72,13 @@ class LegacyServiceTest {
   @Test
   void testAchievementUnlocking() {
     Account account = new Account();
+    account.setId(1L);
     account.setUsername("testuser");
 
     Wrestler w1 = new Wrestler();
     w1.setFans(10000L);
 
+    when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1));
 
     Achievement achievement = new Achievement();

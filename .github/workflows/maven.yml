@@ -86,7 +86,7 @@ jobs:
         cache: maven
 
     - name: Run Integration Tests
-      run: mvn -B verify -Pintegration-test
+      run: mvn -B verify -Pintegration-test,coverage
 
     - name: Upload integration test coverage data
       uses: actions/upload-artifact@v4
@@ -110,13 +110,14 @@ jobs:
         cache: maven
 
     - name: Run Notion Integration Tests
-      run: mvn -B verify -Pnotion-it
+      run: mvn -B verify -Pnotion-it,coverage
 
     - name: Upload notion integration test coverage data
       uses: actions/upload-artifact@v4
       with:
         name: jacoco-notion-it-exec
         path: target/jacoco-notion-it.exec
+        if-no-files-found: ignore
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -136,7 +137,7 @@ jobs:
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v1
     - name: Run E2E Tests
-      run: mvn -B verify -Pe2e
+      run: mvn -B verify -Pe2e,coverage
     - name: Upload E2E test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v4
@@ -148,6 +149,7 @@ jobs:
       with:
         name: jacoco-e2e-exec
         path: target/jacoco-e2e.exec
+        if-no-files-found: ignore
   
   notion-e2e-tests:
     runs-on: ubuntu-latest
@@ -168,7 +170,7 @@ jobs:
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v1
     - name: Run Notion E2E Tests
-      run: mvn -B verify -Pnotion-e2e
+      run: mvn -B verify -Pnotion-e2e,coverage
     - name: Upload Notion E2E test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v4
@@ -180,6 +182,7 @@ jobs:
       with:
         name: jacoco-notion-e2e-exec
         path: target/jacoco-notion-e2e.exec
+        if-no-files-found: ignore
 
   coverage-and-analysis:
     runs-on: ubuntu-latest
@@ -199,18 +202,21 @@ jobs:
       with:
         name: jacoco-exec
         path: target/
+        if-no-files-found: ignore
 
     - name: Download integration test coverage data
       uses: actions/download-artifact@v4
       with:
         name: jacoco-it-exec
         path: target/
+        if-no-files-found: ignore
 
     - name: Download E2E test coverage data
       uses: actions/download-artifact@v4
       with:
         name: jacoco-e2e-exec
         path: target/
+        if-no-files-found: ignore
 
     - name: Download Notion integration test coverage data
       if: needs.check-paths.outputs.notion_changed == 'true'
@@ -218,6 +224,7 @@ jobs:
       with:
         name: jacoco-notion-it-exec
         path: target/
+        if-no-files-found: ignore
 
     - name: Download Notion E2E test coverage data
       if: needs.check-paths.outputs.notion_changed == 'true'
@@ -225,6 +232,7 @@ jobs:
       with:
         name: jacoco-notion-e2e-exec
         path: target/
+        if-no-files-found: ignore
 
     - name: Ensure classes are compiled
       run: mvn -B compile -Pcoverage

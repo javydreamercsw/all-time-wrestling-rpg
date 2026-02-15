@@ -144,30 +144,40 @@ public class NotionHandler {
     try {
       log.debug("Starting database search in Notion workspace");
 
-      // Search for all databases in the workspace
-      SearchRequest.SearchFilter searchFilter =
-          new SearchRequest.SearchFilter("database", "object");
-      SearchRequest searchRequest = new SearchRequest("", searchFilter);
-      SearchResults searchResults = NotionUtil.executeWithRetry(() -> client.search(searchRequest));
-
-      log.debug("Found {} database results from Notion API", searchResults.getResults().size());
-
-      // Clear the map before populating it
+      String nextCursor = null;
+      boolean hasMore = true;
       databaseMap.clear();
 
-      searchResults
-          .getResults()
-          .forEach(
-              result -> {
-                DatabaseSearchResult database = result.asDatabase();
-                String name = database.getTitle().get(0).getPlainText();
-                String id = database.getId();
+      while (hasMore) {
+        final String cursor = nextCursor;
+        // Search for all databases in the workspace
+        SearchRequest.SearchFilter searchFilter =
+            new SearchRequest.SearchFilter("database", "object");
+        SearchRequest searchRequest = new SearchRequest("", searchFilter, null, cursor, null);
+        SearchResults searchResults =
+            NotionUtil.executeWithRetry(() -> client.search(searchRequest));
 
-                // Store in map for later reference
-                databaseMap.put(name, id);
+        log.debug("Found {} database results from Notion API", searchResults.getResults().size());
 
-                log.debug("Loaded database: '{}' -> {}", name, id);
-              });
+        searchResults
+            .getResults()
+            .forEach(
+                result -> {
+                  DatabaseSearchResult database = result.asDatabase();
+                  if (database.getTitle() != null && !database.getTitle().isEmpty()) {
+                    String name = database.getTitle().get(0).getPlainText();
+                    String id = database.getId();
+
+                    // Store in map for later reference
+                    databaseMap.put(name, id);
+
+                    log.debug("Loaded database: '{}' -> {}", name, id);
+                  }
+                });
+
+        hasMore = searchResults.getHasMore();
+        nextCursor = searchResults.getNextCursor();
+      }
 
       log.debug("Database loading completed. Total databases loaded: {}", databaseMap.size());
 
@@ -243,6 +253,9 @@ public class NotionHandler {
    * @return The database ID, or null if not found
    */
   public String getDatabaseId(@NonNull String databaseName) {
+    if (databaseMap.isEmpty() && isNotionTokenAvailable()) {
+      initializeDatabases();
+    }
     log.debug("Looking up database ID for: '{}'", databaseName);
     String id = databaseMap.get(databaseName);
     if (id != null) {

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class AchievementSystemTest {
@@ -66,6 +68,7 @@ class AchievementSystemTest {
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private TitleRepository titleRepository;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   private LegacyService legacyService;
   private SegmentAdjudicationService segmentAdjudicationService;
@@ -77,7 +80,11 @@ class AchievementSystemTest {
   void setUp() {
     legacyService =
         new LegacyService(
-            accountRepository, wrestlerRepository, achievementRepository, titleRepository);
+            accountRepository,
+            wrestlerRepository,
+            achievementRepository,
+            titleRepository,
+            eventPublisher);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -92,8 +99,11 @@ class AchievementSystemTest {
             new Random());
 
     account = new Account();
+    account.setId(1L);
     account.setUsername("testuser");
     account.setPrestige(0L);
+
+    lenient().when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
     wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
@@ -127,6 +137,7 @@ class AchievementSystemTest {
     wrestlers.add(wrestler);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("FIRST_WRESTLER");
+    verify(eventPublisher).publishEvent(any(AchievementUnlockedEvent.class));
 
     // 10 wrestlers
     for (int i = 0; i < 9; i++) {
@@ -134,6 +145,7 @@ class AchievementSystemTest {
     }
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("ROSTER_BUILDER");
+    verify(eventPublisher, atLeastOnce()).publishEvent(any(AchievementUnlockedEvent.class));
   }
 
   @Test

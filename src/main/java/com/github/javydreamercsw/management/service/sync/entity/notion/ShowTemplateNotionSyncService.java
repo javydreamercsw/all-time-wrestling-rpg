@@ -60,6 +60,13 @@ public class ShowTemplateNotionSyncService implements NotionEntitySyncService {
   @Override
   @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
+    return syncToNotion(operationId, null);
+  }
+
+  @Override
+  @Transactional
+  public BaseSyncService.SyncResult syncToNotion(
+      @NonNull String operationId, java.util.Collection<Long> ids) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
@@ -70,7 +77,10 @@ public class ShowTemplateNotionSyncService implements NotionEntitySyncService {
           int updated = 0;
           int errors = 0;
           progressTracker.startOperation(operationId, "Sync Show Templates", 1);
-          List<ShowTemplate> showTemplates = showTemplateRepository.findAll();
+          List<ShowTemplate> showTemplates =
+              (ids == null || ids.isEmpty())
+                  ? showTemplateRepository.findAll()
+                  : showTemplateRepository.findAllById(ids);
           for (ShowTemplate entity : showTemplates) {
             if (processedCount % 5 == 0) {
               progressTracker.updateProgress(

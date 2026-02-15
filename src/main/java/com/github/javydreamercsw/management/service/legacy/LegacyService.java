@@ -24,12 +24,14 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,7 @@ public class LegacyService {
   private final WrestlerRepository wrestlerRepository;
   private final AchievementRepository achievementRepository;
   private final TitleRepository titleRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * Recalculates the legacy score for an account based on their managed wrestlers. Formula: - 1
@@ -52,7 +55,13 @@ public class LegacyService {
    */
   @Transactional
   public void updateLegacyScore(@NonNull Account account) {
-    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    Account managedAccount =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + account.getId()));
+
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(managedAccount);
 
     long totalFans = wrestlers.stream().mapToLong(Wrestler::getFans).sum();
     long currentTitlesHeld =
@@ -61,13 +70,13 @@ public class LegacyService {
             .filter(com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign)
             .count();
 
-    long score = calculateScore(account, totalFans, currentTitlesHeld);
+    long score = calculateScore(managedAccount, totalFans, currentTitlesHeld);
 
-    account.setLegacyScore(score);
-    accountRepository.save(account);
-    log.info("Updated legacy score for {}: {}", account.getUsername(), score);
+    managedAccount.setLegacyScore(score);
+    accountRepository.save(managedAccount);
+    log.info("Updated legacy score for {}: {}", managedAccount.getUsername(), score);
 
-    checkAchievements(account, wrestlers, totalFans, currentTitlesHeld);
+    checkAchievements(managedAccount, wrestlers, totalFans, currentTitlesHeld);
   }
 
   private long calculateScore(Account account, long totalFans, long currentTitlesHeld) {
@@ -127,28 +136,43 @@ public class LegacyService {
 
   @Transactional
   public void incrementShowsBooked(@NonNull Account account) {
-    account.setShowsBooked(account.getShowsBooked() + 1);
-    accountRepository.save(account);
-    log.info("Account {} has now booked {} shows", account.getUsername(), account.getShowsBooked());
+    Account managedAccount =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + account.getId()));
 
-    if (account.getShowsBooked() >= 50) {
-      unlockAchievement(account, "BOOKER_OF_THE_YEAR");
+    managedAccount.setShowsBooked(managedAccount.getShowsBooked() + 1);
+    accountRepository.save(managedAccount);
+    log.info(
+        "Account {} has now booked {} shows",
+        managedAccount.getUsername(),
+        managedAccount.getShowsBooked());
+
+    if (managedAccount.getShowsBooked() >= 50) {
+      unlockAchievement(managedAccount, "BOOKER_OF_THE_YEAR");
     }
-    updateLegacyScore(account);
+    updateLegacyScore(managedAccount);
   }
 
   @Transactional
   public void unlockAchievement(@NonNull Account account, @NonNull String key) {
+    Account managedAccount =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + account.getId()));
+
     achievementRepository
         .findByKey(key)
         .ifPresent(
             achievement -> {
-              if (!account.getAchievements().contains(achievement)) {
-                account.getAchievements().add(achievement);
-                account.setPrestige(account.getPrestige() + achievement.getXpValue());
+              if (!managedAccount.getAchievements().contains(achievement)) {
+                managedAccount.getAchievements().add(achievement);
+                managedAccount.setPrestige(managedAccount.getPrestige() + achievement.getXpValue());
 
                 // Recalculate score without re-triggering achievement checks
-                List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+                List<Wrestler> wrestlers = wrestlerRepository.findByAccount(managedAccount);
                 long totalFans = wrestlers.stream().mapToLong(Wrestler::getFans).sum();
                 long currentTitlesHeld =
                     wrestlers.stream()
@@ -158,13 +182,17 @@ public class LegacyService {
                                 ::isCurrentReign)
                         .count();
 
-                account.setLegacyScore(calculateScore(account, totalFans, currentTitlesHeld));
-                accountRepository.save(account);
+                managedAccount.setLegacyScore(
+                    calculateScore(managedAccount, totalFans, currentTitlesHeld));
+                accountRepository.save(managedAccount);
+
+                eventPublisher.publishEvent(
+                    new AchievementUnlockedEvent(this, managedAccount, achievement));
 
                 log.info(
                     "Unlocked achievement '{}' for {}",
                     achievement.getName(),
-                    account.getUsername());
+                    managedAccount.getUsername());
               }
             });
   }
