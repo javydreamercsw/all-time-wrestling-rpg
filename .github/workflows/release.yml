@@ -104,6 +104,9 @@ jobs:
         env:
           BASE_URL: /${{ github.event.repository.name }}/
 
+      - name: Format
+        run: mvn spotless:apply
+
       - name: Commit documentation changes
         run: |
           git add docs/manifest.json docs/screenshots/*.png src/main/resources/META-INF/resources/docs/*
