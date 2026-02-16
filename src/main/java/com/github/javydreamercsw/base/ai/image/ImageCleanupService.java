@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.image;
 
+import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -25,7 +26,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,19 +47,18 @@ public class ImageCleanupService {
   private final WrestlerRepository wrestlerRepository;
   private final NpcRepository npcRepository;
   private final ShowTemplateRepository showTemplateRepository;
-  private final String imageDir;
+  private final StorageProperties storageProperties;
 
   @Autowired
   public ImageCleanupService(
       WrestlerRepository wrestlerRepository,
       NpcRepository npcRepository,
       ShowTemplateRepository showTemplateRepository,
-      @Value("${image.storage.directory:src/main/resources/META-INF/resources/images/generated}")
-          String imageDir) {
+      StorageProperties storageProperties) {
     this.wrestlerRepository = wrestlerRepository;
     this.npcRepository = npcRepository;
     this.showTemplateRepository = showTemplateRepository;
-    this.imageDir = imageDir;
+    this.storageProperties = storageProperties;
   }
 
   /**
@@ -72,9 +70,9 @@ public class ImageCleanupService {
    */
   @PreAuthorize("hasRole('ADMIN')")
   public int cleanupUnusedImages() throws IOException {
-    Path directory = Paths.get(imageDir);
+    Path directory = storageProperties.getResolvedImageDir();
     if (!Files.exists(directory)) {
-      log.info("Image directory does not exist: {}", imageDir);
+      log.info("Image directory does not exist: {}", directory);
       return 0;
     }
 

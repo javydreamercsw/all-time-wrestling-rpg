@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ai.image;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -44,6 +45,7 @@ class ImageCleanupServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcRepository npcRepository;
   @Mock private ShowTemplateRepository showTemplateRepository;
+  @Mock private StorageProperties storageProperties;
 
   private ImageCleanupService imageCleanupService;
 
@@ -51,9 +53,10 @@ class ImageCleanupServiceTest {
 
   @BeforeEach
   void setUp() throws IOException {
+    when(storageProperties.getResolvedImageDir()).thenReturn(tempDir);
     imageCleanupService =
         new ImageCleanupService(
-            wrestlerRepository, npcRepository, showTemplateRepository, tempDir.toString());
+            wrestlerRepository, npcRepository, showTemplateRepository, storageProperties);
   }
 
   @Test

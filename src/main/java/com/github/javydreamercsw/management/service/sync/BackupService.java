@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.StorageProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +38,16 @@ import org.springframework.stereotype.Service;
 public class BackupService {
 
   private final NotionSyncProperties syncProperties;
+  private final StorageProperties storageProperties;
+  private final ResourceLoader resourceLoader;
 
-  public BackupService(NotionSyncProperties syncProperties) {
+  public BackupService(
+      NotionSyncProperties syncProperties,
+      StorageProperties storageProperties,
+      ResourceLoader resourceLoader) {
     this.syncProperties = syncProperties;
+    this.storageProperties = storageProperties;
+    this.resourceLoader = resourceLoader;
   }
 
   /**
@@ -48,16 +58,15 @@ public class BackupService {
    */
   @PreAuthorize("hasRole('ADMIN')")
   public void createBackup(@NonNull String fileName) throws IOException {
-    Path originalFile = Paths.get("src/main/resources/" + fileName);
+    Path originalFile = resolveSourceFile(fileName);
 
-    if (!Files.exists(originalFile)) {
+    if (originalFile == null || !Files.exists(originalFile)) {
       log.debug("Original file {} does not exist, skipping backup", fileName);
       return;
     }
 
     // Create backup directory
-    Path backupDir = Paths.get(syncProperties.getBackup().getDirectory());
-    Files.createDirectories(backupDir);
+    Path backupDir = storageProperties.getResolvedBackupDir();
 
     // Create backup file with timestamp
     String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -72,6 +81,26 @@ public class BackupService {
     cleanupOldBackups(fileName);
   }
 
+  private Path resolveSourceFile(String fileName) {
+    // 1. Try relative to working directory (dev)
+    Path devPath = Paths.get("src/main/resources/" + fileName);
+    if (Files.exists(devPath)) {
+      return devPath;
+    }
+
+    // 2. Try as classpath resource (prod)
+    Resource resource = resourceLoader.getResource("classpath:" + fileName);
+    if (resource.exists()) {
+      try {
+        return resource.getFile().toPath();
+      } catch (IOException e) {
+        log.warn("Resource exists but cannot be accessed as a file: {}", fileName);
+      }
+    }
+
+    return null;
+  }
+
   /**
    * Removes old backup files, keeping only the configured maximum number.
    *
@@ -79,7 +108,7 @@ public class BackupService {
    */
   private void cleanupOldBackups(@NonNull String fileName) {
     try {
-      Path backupDir = Paths.get(syncProperties.getBackup().getDirectory());
+      Path backupDir = storageProperties.getResolvedBackupDir();
       if (!Files.exists(backupDir)) {
         return;
       }

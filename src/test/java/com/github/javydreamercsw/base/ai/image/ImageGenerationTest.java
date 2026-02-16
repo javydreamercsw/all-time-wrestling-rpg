@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.base.ai.image;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 
+import com.github.javydreamercsw.base.config.StorageProperties;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
 class ImageGenerationTest {
@@ -35,13 +36,16 @@ class ImageGenerationTest {
   private ImageGenerationServiceFactory factory;
   private ImageStorageService storageService;
   private MockImageGenerationService mockService;
-  @Mock private Environment environment;
+  @Mock private StorageProperties storageProperties;
+
+  @TempDir Path tempDir;
 
   @BeforeEach
   void setUp() {
     mockService = new MockImageGenerationService();
     factory = new ImageGenerationServiceFactory(List.of(mockService));
-    storageService = new ImageStorageService("src/test/resources/images/generated", environment);
+    lenient().when(storageProperties.getResolvedImageDir()).thenReturn(tempDir);
+    storageService = new ImageStorageService(storageProperties);
   }
 
   @Test

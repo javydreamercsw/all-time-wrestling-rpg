@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.image;
 
+import com.github.javydreamercsw.base.config.StorageProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -26,13 +27,10 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /** Service for storing generated images locally. */
@@ -40,18 +38,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ImageStorageService {
 
-  private final String imageDir;
-  private final Environment environment;
+  private final StorageProperties storageProperties;
 
   private static final String PUBLIC_PATH = "images/generated/";
 
   @Autowired
-  public ImageStorageService(
-      @Value("${image.storage.directory:src/main/resources/META-INF/resources/images/generated}")
-          String imageDir,
-      Environment environment) {
-    this.imageDir = imageDir;
-    this.environment = environment;
+  public ImageStorageService(StorageProperties storageProperties) {
+    this.storageProperties = storageProperties;
   }
 
   /**
@@ -63,10 +56,7 @@ public class ImageStorageService {
    * @throws IOException If saving fails.
    */
   public String saveImage(String imageData, boolean isBase64) throws IOException {
-    Path sourceDirectory = Paths.get(imageDir);
-    if (!Files.exists(sourceDirectory)) {
-      Files.createDirectories(sourceDirectory);
-    }
+    Path sourceDirectory = storageProperties.getResolvedImageDir();
 
     String filename = UUID.randomUUID() + ".png";
     Path sourceFilePath = sourceDirectory.resolve(filename);
@@ -77,32 +67,11 @@ public class ImageStorageService {
       Files.write(sourceFilePath, imageBytes);
     } else {
       downloadImage(imageData, sourceFilePath);
-      // Read back bytes if we need them for the target copy and didn't have them in memory
-      imageBytes = Files.readAllBytes(sourceFilePath);
     }
 
     log.info("Saved generated image to: {}", sourceFilePath);
 
-    // Also write to target directory if we are in a development environment
-    // This makes images available immediately without a restart or re-sync
-    if (!isProduction()) {
-      String targetDir = imageDir.replace("src/main/resources", "target/classes");
-      Path targetPath = Paths.get(targetDir);
-      if (Files.exists(targetPath.getParent())) {
-        if (!Files.exists(targetPath)) {
-          Files.createDirectories(targetPath);
-        }
-        Path targetFilePath = targetPath.resolve(filename);
-        Files.write(targetFilePath, imageBytes);
-        log.info("Saved generated image to dev target: {}", targetFilePath);
-      }
-    }
-
     return PUBLIC_PATH + filename;
-  }
-
-  private boolean isProduction() {
-    return environment.acceptsProfiles(org.springframework.core.env.Profiles.of("prod"));
   }
 
   private void downloadImage(String url, Path destination) throws IOException {
