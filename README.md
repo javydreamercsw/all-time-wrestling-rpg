@@ -200,7 +200,7 @@ The application will be available at `http://localhost:8080/atw-rpg`.
 
 ### Native Desktop Installers
 
-For non-technical users, you can generate native installers (DMG for macOS, DEB for Linux) that bundle a minimal Java runtime.
+For non-technical users, you can generate native installers (DMG for macOS, DEB for Linux, MSI for Windows) that bundle a minimal Java runtime.
 
 1.  **Build the Installer**:
 	```bash
