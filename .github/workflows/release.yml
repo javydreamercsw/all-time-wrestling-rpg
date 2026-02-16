@@ -62,13 +62,13 @@ jobs:
       
       - name: Update migration metadata
         run: |
-          LATEST_H2=\$(ls src/main/resources/db/migration/h2/V*__*.sql | grep -o 'V[0-9]*' | sort -V | tail -n 1)
-          LATEST_MYSQL=\$(ls src/main/resources/db/migration/mysql/V*__*.sql | grep -o 'V[0-9]*' | sort -V | tail -n 1)
-          echo "\$LATEST_H2" > src/main/resources/db/migration/h2/.released
-          echo "\$LATEST_MYSQL" > src/main/resources/db/migration/mysql/.released
+          LATEST_H2=$(ls src/main/resources/db/migration/h2/V*__*.sql | grep -o 'V[0-9]*' | sort -V | tail -n 1)
+          LATEST_MYSQL=$(ls src/main/resources/db/migration/mysql/V*__*.sql | grep -o 'V[0-9]*' | sort -V | tail -n 1)
+          echo "$LATEST_H2" > src/main/resources/db/migration/h2/.released
+          echo "$LATEST_MYSQL" > src/main/resources/db/migration/mysql/.released
           git add src/main/resources/db/migration/h2/.released src/main/resources/db/migration/mysql/.released
           if ! git diff-index --quiet --cached HEAD; then
-            git commit -m "chore: Update migration metadata to \$LATEST_H2/\$LATEST_MYSQL"
+            git commit -m "chore: Update migration metadata to $LATEST_H2/$LATEST_MYSQL"
           fi
 
       - name: Push changes
