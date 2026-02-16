@@ -117,11 +117,12 @@ public class MainLayout extends AppLayout {
   }
 
   private Div createFooter() {
-    Span versionSpan;
+    Span versionSpan = new Span();
+    versionSpan.setId("version-span");
     if (buildProperties != null) { // Needed for tests
-      versionSpan = new Span("Version: " + buildProperties.getVersion());
+      versionSpan.setText("Version: " + buildProperties.getVersion());
     } else {
-      versionSpan = new Span("Version: N/A");
+      versionSpan.setText("Version: N/A");
     }
     versionSpan.addClassNames(
         FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);

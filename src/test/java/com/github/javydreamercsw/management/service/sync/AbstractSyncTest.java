@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -43,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.test.context.support.WithMockUser;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +54,9 @@ public abstract class AbstractSyncTest {
 
   @Mock protected NotionHandler notionHandler;
   @Mock protected NotionSyncProperties syncProperties;
+  @Mock protected StorageProperties storageProperties;
+  @Mock protected ResourceLoader resourceLoader;
+  @Mock protected BackupService backupService;
   @Mock protected SyncProgressTracker progressTracker;
   @Mock protected SyncHealthMonitor healthMonitor;
   @Mock protected ObjectMapper objectMapper;
@@ -112,6 +117,9 @@ public abstract class AbstractSyncTest {
             rateLimitService,
             entitySyncConfig,
             syncProperties,
+            storageProperties,
+            resourceLoader,
+            backupService,
             notionHandler,
             notionPageDataExtractor,
             syncSessionManager,

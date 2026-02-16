@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
@@ -31,6 +32,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,7 +46,10 @@ public class SyncServiceDependencies {
   private final SyncTransactionManager syncTransactionManager;
   private final DataIntegrityChecker integrityChecker;
   private final NotionRateLimitService rateLimitService;
-  private final NotionSyncProperties notionSyncProperties; // New field
+  private final NotionSyncProperties notionSyncProperties;
+  private final StorageProperties storageProperties;
+  private final ResourceLoader resourceLoader;
+  private final BackupService backupService;
   private final EntitySyncConfiguration entitySyncConfig;
   private final NotionHandler notionHandler;
   private final NotionPageDataExtractor notionPageDataExtractor;
@@ -68,7 +73,10 @@ public class SyncServiceDependencies {
       @NonNull DataIntegrityChecker integrityChecker,
       @NonNull NotionRateLimitService rateLimitService,
       @NonNull EntitySyncConfiguration entitySyncConfig,
-      @NonNull NotionSyncProperties notionSyncProperties, // New parameter
+      @NonNull NotionSyncProperties notionSyncProperties,
+      @NonNull StorageProperties storageProperties,
+      @NonNull ResourceLoader resourceLoader,
+      @NonNull BackupService backupService,
       @NonNull NotionHandler notionHandler,
       @NonNull NotionPageDataExtractor notionPageDataExtractor,
       @NonNull SyncSessionManager syncSessionManager,
@@ -88,7 +96,10 @@ public class SyncServiceDependencies {
     this.integrityChecker = integrityChecker;
     this.rateLimitService = rateLimitService;
     this.entitySyncConfig = entitySyncConfig;
-    this.notionSyncProperties = notionSyncProperties; // Initialize new field
+    this.notionSyncProperties = notionSyncProperties;
+    this.storageProperties = storageProperties;
+    this.resourceLoader = resourceLoader;
+    this.backupService = backupService;
     this.notionHandler = notionHandler;
     this.notionPageDataExtractor = notionPageDataExtractor;
     this.syncSessionManager = syncSessionManager;

@@ -38,10 +38,11 @@ import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class SeasonNotionSyncService implements NotionSyncService {
+public class SeasonNotionSyncService implements NotionEntitySyncService {
 
   private final SeasonRepository seasonRepository;
   private final NotionHandler notionHandler;
@@ -56,7 +57,15 @@ public class SeasonNotionSyncService implements NotionSyncService {
   }
 
   @Override
+  @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
+    return syncToNotion(operationId, null);
+  }
+
+  @Override
+  @Transactional
+  public BaseSyncService.SyncResult syncToNotion(
+      @NonNull String operationId, java.util.Collection<Long> ids) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
@@ -68,7 +77,10 @@ public class SeasonNotionSyncService implements NotionSyncService {
           int updated = 0;
           int errors = 0;
           progressTracker.startOperation(operationId, "Sync Seasons", 1);
-          List<Season> seasons = seasonRepository.findAll();
+          List<Season> seasons =
+              (ids == null || ids.isEmpty())
+                  ? seasonRepository.findAll()
+                  : seasonRepository.findAllById(ids);
           for (Season entity : seasons) {
             if (processedCount % 5 == 0) {
               progressTracker.updateProgress(

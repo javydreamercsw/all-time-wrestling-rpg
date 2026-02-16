@@ -16,11 +16,13 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -44,6 +46,7 @@ public class WrestlerDialog extends Dialog {
   private final WrestlerService wrestlerService;
   private final AccountService accountService;
   private final NpcService npcService;
+  private final ImageStorageService imageStorageService;
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
   private final SecurityUtils securityUtils;
@@ -52,12 +55,14 @@ public class WrestlerDialog extends Dialog {
       @NonNull WrestlerService wrestlerService,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull NpcService npcService,
+      @NonNull ImageStorageService imageStorageService,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this(
         wrestlerService,
         accountService,
         npcService,
+        imageStorageService,
         createDefaultWrestler(),
         onSave,
         securityUtils);
@@ -86,12 +91,14 @@ public class WrestlerDialog extends Dialog {
       @NonNull WrestlerService wrestlerService,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull NpcService npcService,
+      @NonNull ImageStorageService imageStorageService,
       @NonNull Wrestler wrestler,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
     this.accountService = accountService;
     this.npcService = npcService;
+    this.imageStorageService = imageStorageService;
     this.wrestler = wrestler;
     this.securityUtils = securityUtils;
 
@@ -139,7 +146,21 @@ public class WrestlerDialog extends Dialog {
 
     TextField imageUrlField = new TextField("Image URL");
     imageUrlField.setId("wrestler-dialog-image-url-field");
-    imageUrlField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+    imageUrlField.setReadOnly(true);
+
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(
+            imageStorageService,
+            url -> {
+              imageUrlField.setValue(url);
+            });
+    imageUpload.setUploadButtonText("Upload");
+    imageUpload.setVisible(securityUtils.canEdit(this.wrestler));
+
+    HorizontalLayout imageEditLayout = new HorizontalLayout(imageUrlField, imageUpload);
+    imageEditLayout.setAlignItems(
+        com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.BASELINE);
+    imageEditLayout.setWidthFull();
 
     Checkbox isPlayerField = new Checkbox("Is Player");
     isPlayerField.setId("wrestler-dialog-is-player-field");
@@ -181,10 +202,11 @@ public class WrestlerDialog extends Dialog {
         startingStaminaField,
         lowStaminaField,
         descriptionField,
-        imageUrlField,
+        imageEditLayout,
         isPlayerField,
         activeField,
         accountComboBox);
+    formLayout.setColspan(imageEditLayout, 2);
 
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
@@ -200,7 +222,6 @@ public class WrestlerDialog extends Dialog {
         .bind(Wrestler::getStartingStamina, Wrestler::setStartingStamina);
     binder.forField(lowStaminaField).bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
     binder.forField(descriptionField).bind(Wrestler::getDescription, Wrestler::setDescription);
-    binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
     binder.forField(isPlayerField).bind(Wrestler::getIsPlayer, Wrestler::setIsPlayer);
     binder.forField(activeField).bind(Wrestler::getActive, Wrestler::setActive);
 

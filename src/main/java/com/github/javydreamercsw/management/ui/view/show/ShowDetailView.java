@@ -16,14 +16,16 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
-import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
-import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -33,7 +35,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -59,6 +60,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
@@ -89,8 +91,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.core.env.Environment;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -107,7 +107,6 @@ public class ShowDetailView extends Main
   private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
   private final SegmentTypeRepository segmentTypeRepository;
-  private final WrestlerRepository wrestlerRepository;
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
@@ -116,14 +115,12 @@ public class ShowDetailView extends Main
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
   private final RivalryService rivalryService;
-  private final LocalAIStatusService localAIStatusService;
-  private final LocalAIConfigProperties localAIConfigProperties;
-  private final SegmentNarrationConfig segmentNarrationConfig;
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
-  private final WebClient.Builder webClientBuilder;
-  private final Environment env;
   private final SegmentNarrationController segmentNarrationController;
   private final ShowController showController;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final LeagueRepository leagueRepository;
+  private final CommentaryTeamRepository commentaryTeamRepository;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -137,7 +134,6 @@ public class ShowDetailView extends Main
       SegmentService segmentService,
       SegmentRepository segmentRepository,
       SegmentTypeRepository segmentTypeRepository,
-      WrestlerRepository wrestlerRepository,
       NpcService npcService,
       WrestlerService wrestlerService,
       TitleService titleService,
@@ -146,19 +142,16 @@ public class ShowDetailView extends Main
       SeasonService seasonService,
       ShowTemplateService showTemplateService,
       RivalryService rivalryService,
-      LocalAIStatusService localAIStatusService,
-      LocalAIConfigProperties localAIConfigProperties,
-      SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
-      WebClient.Builder webClientBuilder,
       SegmentNarrationController segmentNarrationController,
       ShowController showController,
-      Environment env) {
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      LeagueRepository leagueRepository,
+      CommentaryTeamRepository commentaryTeamRepository) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
     this.segmentTypeRepository = segmentTypeRepository;
-    this.wrestlerRepository = wrestlerRepository;
     this.npcService = npcService;
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
@@ -167,14 +160,12 @@ public class ShowDetailView extends Main
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
     this.rivalryService = rivalryService;
-    this.localAIStatusService = localAIStatusService;
-    this.localAIConfigProperties = localAIConfigProperties;
-    this.segmentNarrationConfig = segmentNarrationConfig;
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
-    this.webClientBuilder = webClientBuilder;
-    this.env = env;
     this.segmentNarrationController = segmentNarrationController;
     this.showController = showController;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.leagueRepository = leagueRepository;
+    this.commentaryTeamRepository = commentaryTeamRepository;
     initializeComponents();
   }
 
@@ -217,7 +208,7 @@ public class ShowDetailView extends Main
             .getQueryParameters()
             .getParameters()
             .getOrDefault("ref", List.of("shows"))
-            .get(0);
+            .getFirst();
 
     updateBackButton(referrer);
     this.currentShowId = showId; // Store the showId
@@ -258,7 +249,7 @@ public class ShowDetailView extends Main
   private void loadShow(@NonNull Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
-      currentShow = showOpt.get(); // Store the show object
+      currentShow = showOpt.get();
       displayShow(currentShow);
     } else {
       showNotFound();
@@ -333,7 +324,23 @@ public class ShowDetailView extends Main
           LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
     }
 
-    HorizontalLayout titleLayout = new HorizontalLayout(title, editNameButton, typeBadge);
+    Image templateImage = new Image();
+    if (show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
+    } else {
+      templateImage.setSrc("https://via.placeholder.com/150");
+    }
+    templateImage.setHeight("100px");
+    templateImage.setWidth("100px");
+    templateImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Right.MEDIUM);
+
+    VerticalLayout titleInfo = new VerticalLayout(title, typeBadge);
+    titleInfo.setSpacing(false);
+    titleInfo.setPadding(false);
+
+    HorizontalLayout titleLayout = new HorizontalLayout(templateImage, titleInfo, editNameButton);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
 
@@ -361,11 +368,7 @@ public class ShowDetailView extends Main
       HorizontalLayout dateLayout =
           createDetailRow(
               "Show Date:",
-              show.getShowDate()
-                  .format(
-                      DateTimeFormatter.ofPattern(
-                          "EEEE, MMMM d, yyyy"))); // Corrected: Removed unnecessary escaping of
-      // double quotes within the pattern string.
+              show.getShowDate().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")));
       detailsLayout.add(dateLayout);
     } else {
       HorizontalLayout dateLayout = createDetailRow("Show Date:", "Not scheduled");
@@ -392,6 +395,15 @@ public class ShowDetailView extends Main
             show.getTemplate() != null ? show.getTemplate().getName() : "No template assigned");
     detailsLayout.add(templateLayout);
 
+    // Commentary Team
+    HorizontalLayout commentaryLayout =
+        createDetailRow(
+            "Commentary Team:",
+            show.getCommentaryTeam() != null
+                ? show.getCommentaryTeam().getName()
+                : "No commentary team assigned");
+    detailsLayout.add(commentaryLayout);
+
     // Show ID
     assert show.getId() != null;
     HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());
@@ -413,11 +425,7 @@ public class ShowDetailView extends Main
               "Created:",
               show.getCreationDate()
                   .atZone(java.time.ZoneId.systemDefault())
-                  .format(
-                      DateTimeFormatter.ofPattern(
-                          "MMM d, yyyy 'at' h:mm a"))); // Corrected: Removed unnecessary escaping
-      // of double quotes within the pattern
-      // string.
+                  .format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a")));
       detailsLayout.add(createdLayout);
     }
 
@@ -440,7 +448,13 @@ public class ShowDetailView extends Main
         e -> {
           EditShowDetailsDialog dialog =
               new EditShowDetailsDialog(
-                  showService, showTypeService, seasonService, showTemplateService, show);
+                  showService,
+                  showTypeService,
+                  seasonService,
+                  showTemplateService,
+                  leagueRepository,
+                  commentaryTeamRepository,
+                  show);
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
@@ -485,10 +499,7 @@ public class ShowDetailView extends Main
     Div descriptionContent = new Div();
     descriptionContent
         .getElement()
-        .setProperty(
-            "innerHTML",
-            show.getDescription()
-                .replace("\n", "<br>")); // Corrected: Replaced \n with <br> for HTML rendering.
+        .setProperty("innerHTML", show.getDescription().replace("\n", "<br>"));
     descriptionContent.addClassNames(LumoUtility.TextColor.BODY);
 
     card.add(descriptionTitle, descriptionContent);
@@ -554,6 +565,7 @@ public class ShowDetailView extends Main
 
     Button adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    adjudicateButton.setId("adjudicate-show-btn");
     adjudicateButton.addClickListener(e -> adjudicateShow(show));
 
     // Check if there are any pending segments
@@ -567,6 +579,7 @@ public class ShowDetailView extends Main
 
     Button addSegmentBtn = new Button("Add Segment", new Icon(VaadinIcon.PLUS));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    addSegmentBtn.setId("add-segment-btn");
     addSegmentBtn.addClickListener(e -> openAddSegmentDialog(show));
 
     header.add(segmentsTitle, adjudicateButton, addSegmentBtn);
@@ -583,16 +596,16 @@ public class ShowDetailView extends Main
 
     // Always initialize segmentsGrid and its wrapper
     segmentsGrid = createSegmentsGrid(segments);
-    segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+    segmentsGrid.setHeight("400px");
     segmentsGrid.setId("segments-grid");
 
     // Wrap the grid in a Div to enable horizontal scrolling
     Div gridWrapper = new Div(segmentsGrid);
     gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-    gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+    gridWrapper.getStyle().set("flex-grow", "4");
     gridWrapper.setId("segments-grid-wrapper");
     segmentsLayout.add(gridWrapper);
-    segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
+    segmentsLayout.setFlexGrow(4, gridWrapper);
 
     Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
     noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
@@ -666,7 +679,7 @@ public class ShowDetailView extends Main
             })
         .setHeader("Participants")
         .setSortable(false)
-        .setFlexGrow(4); // Give more space to participants
+        .setFlexGrow(4);
 
     // Winner column
     grid.addColumn(
@@ -678,6 +691,16 @@ public class ShowDetailView extends Main
         .setHeader("Winner(s)")
         .setSortable(false)
         .setFlexGrow(2);
+
+    // League Status column
+    grid.addColumn(
+            segment ->
+                matchFulfillmentRepository
+                    .findBySegment(segment)
+                    .map(f -> f.getStatus().toString())
+                    .orElse("N/A"))
+        .setHeader("League Status")
+        .setFlexGrow(1);
 
     // Segment date column
     grid.addColumn(
@@ -735,7 +758,7 @@ public class ShowDetailView extends Main
       otherSegment.setSegmentOrder(currentOrder);
       segmentRepository.save(segment);
       segmentRepository.save(otherSegment);
-      refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+      refreshSegmentsGrid();
     }
   }
 
@@ -747,7 +770,7 @@ public class ShowDetailView extends Main
         e -> {
           segment.setMainEvent(e.getValue());
           segmentRepository.save(segment);
-          refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+          refreshSegmentsGrid();
         });
     return checkbox;
   }
@@ -775,10 +798,8 @@ public class ShowDetailView extends Main
                   segmentService,
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
-                  localAIStatusService,
-                  localAIConfigProperties,
                   segmentNarrationController,
-                  segmentNarrationServiceFactory); // Pass the factory
+                  segmentNarrationServiceFactory);
           dialog.open();
         });
 
@@ -800,9 +821,6 @@ public class ShowDetailView extends Main
   private void generateSummary(@NonNull Segment segment) {
     if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      if (localAIStatusService.getStatus() != LocalAIStatusService.Status.READY) {
-        reason = "LocalAI is still initializing: " + localAIStatusService.getMessage();
-      }
       Notification.show(reason, 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;
@@ -857,16 +875,46 @@ public class ShowDetailView extends Main
     rulesCombo.setId("segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
+    // Alignment and Gender Filters
+    ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
+    alignmentFilter.setItems(AlignmentType.values());
+    alignmentFilter.setClearButtonVisible(true);
+    alignmentFilter.setPlaceholder("All alignments");
+    alignmentFilter.setWidthFull();
+    alignmentFilter.setId("add-alignment-filter-combo-box");
+
+    ComboBox<Gender> genderFilter = new ComboBox<>("Gender Filter");
+    genderFilter.setItems(Gender.values());
+    genderFilter.setClearButtonVisible(true);
+    genderFilter.setPlaceholder("All genders");
+    genderFilter.setWidthFull();
+    Gender defaultGender =
+        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+    genderFilter.setValue(defaultGender);
+    genderFilter.setId("add-gender-filter-combo-box");
+
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(
-        wrestlerService.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
     wrestlersCombo.setId("wrestlers-combo-box");
+
+    // Filter logic helper
+
+    java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
+        (selected) -> {
+          AlignmentType alignment = alignmentFilter.getValue();
+
+          Gender gender = genderFilter.getValue();
+
+          wrestlersCombo.setItems(wrestlerService.findAllFiltered(alignment, gender, selected));
+        };
+
+    refreshWrestlers.accept(new HashSet<>());
+
+    alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
+    genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
     // Winner selection (will be populated based on selected wrestlers)
     ComboBox<Wrestler> winnerCombo = new ComboBox<>("Winner (Optional)");
@@ -893,7 +941,7 @@ public class ShowDetailView extends Main
             .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
-    titleMultiSelectComboBox.setVisible(false); // Initially hidden
+    titleMultiSelectComboBox.setVisible(false);
     titleMultiSelectComboBox.setId("title-multi-select-combo-box");
 
     // Add checkbox to indicate if it's a title segment
@@ -903,7 +951,7 @@ public class ShowDetailView extends Main
         event -> {
           titleMultiSelectComboBox.setVisible(event.getValue());
           if (!event.getValue()) {
-            titleMultiSelectComboBox.clear(); // Clear selection if not a title segment
+            titleMultiSelectComboBox.clear();
           }
         });
 
@@ -922,6 +970,8 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        alignmentFilter,
+        genderFilter,
         wrestlersCombo,
         winnerCombo,
         isTitleSegmentCheckbox,
@@ -965,9 +1015,9 @@ public class ShowDetailView extends Main
                   wrestlersCombo.getValue(),
                   winners,
                   rulesCombo.getValue(),
-                  newSegment)) { // Pass the new segment object
+                  newSegment)) {
                 dialog.close();
-                refreshSegmentsGrid(); // Call refreshSegmentsGrid
+                refreshSegmentsGrid();
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -1025,17 +1075,49 @@ public class ShowDetailView extends Main
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
+    // Alignment and Gender Filters
+    ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
+    alignmentFilter.setItems(AlignmentType.values());
+    alignmentFilter.setClearButtonVisible(true);
+    alignmentFilter.setPlaceholder("All alignments");
+    alignmentFilter.setWidthFull();
+    alignmentFilter.setId("edit-alignment-filter-combo-box");
+
+    ComboBox<Gender> genderFilter = new ComboBox<>("Gender Filter");
+    genderFilter.setItems(Gender.values());
+    genderFilter.setClearButtonVisible(true);
+    genderFilter.setPlaceholder("All genders");
+    genderFilter.setWidthFull();
+    Gender defaultGender =
+        (segment.getShow() != null && segment.getShow().getTemplate() != null)
+            ? segment.getShow().getTemplate().getGenderConstraint()
+            : null;
+    genderFilter.setValue(defaultGender);
+    genderFilter.setId("edit-gender-filter-combo-box");
+
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(
-        wrestlerService.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
-    wrestlersCombo.setValue(segment.getWrestlers());
     wrestlersCombo.setId("edit-wrestlers-combo-box");
+
+    // Filter logic helper
+    java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
+        (selected) -> {
+          AlignmentType alignment = alignmentFilter.getValue();
+
+          Gender gender = genderFilter.getValue();
+
+          wrestlersCombo.setItems(wrestlerService.findAllFiltered(alignment, gender, selected));
+        };
+
+    // Initial population: set items FIRST, then value
+    refreshWrestlers.accept(new HashSet<>(segment.getWrestlers()));
+    wrestlersCombo.setValue(new HashSet<>(segment.getWrestlers()));
+
+    alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
+    genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
     // Winner selection (multi-select)
     MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
@@ -1072,8 +1154,6 @@ public class ShowDetailView extends Main
     narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
-    // ... other fields ...
-
     // Title selection (multi-select) - only visible if segment is a title segment
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
     titleMultiSelectComboBox.setItems(
@@ -1082,8 +1162,8 @@ public class ShowDetailView extends Main
             .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
-    titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment()); // Control visibility
-    titleMultiSelectComboBox.setValue(segment.getTitles()); // Set initial value
+    titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment());
+    titleMultiSelectComboBox.setValue(segment.getTitles());
     titleMultiSelectComboBox.setId("edit-title-multi-select-combo-box");
 
     // Add checkbox to indicate if it's a title segment
@@ -1094,13 +1174,15 @@ public class ShowDetailView extends Main
         event -> {
           titleMultiSelectComboBox.setVisible(event.getValue());
           if (!event.getValue()) {
-            titleMultiSelectComboBox.clear(); // Clear selection if not a title segment
+            titleMultiSelectComboBox.clear();
           }
         });
 
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        alignmentFilter,
+        genderFilter,
         wrestlersCombo,
         winnersCombo,
         isTitleSegmentCheckbox,
@@ -1128,9 +1210,9 @@ public class ShowDetailView extends Main
                   wrestlersCombo.getValue(),
                   winnersCombo.getValue(),
                   rulesCombo.getValue(),
-                  segment)) { // Pass the segment to update
+                  segment)) {
                 dialog.close();
-                refreshSegmentsGrid(); // Call refreshSegmentsGrid
+                refreshSegmentsGrid();
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -1168,7 +1250,7 @@ public class ShowDetailView extends Main
                         "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 confirmDialog.close();
-                refreshSegmentsGrid(); // Call refreshSegmentsGrid
+                refreshSegmentsGrid();
               } catch (Exception e) {
                 Notification.show(
                         "Error deleting segment: " + e.getMessage(),
@@ -1236,18 +1318,29 @@ public class ShowDetailView extends Main
 
     try {
       Segment segment;
-      if (segmentToUpdate != null) {
+      if (segmentToUpdate != null && segmentToUpdate.getId() != null) {
         segment = segmentToUpdate;
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
         log.info("Updating existing segment: {}", segment.getId());
       } else {
-        segment = new Segment();
-        segment.setShow(show);
-        segment.setSegmentDate(java.time.Instant.now());
-        segment.setIsTitleSegment(false);
-        segment.setIsNpcGenerated(false);
+        // Use the passed object if present (for new segments with data), or create new
+        segment = (segmentToUpdate != null) ? segmentToUpdate : new Segment();
+
+        if (segment.getShow() == null) {
+          segment.setShow(show);
+        }
+        if (segment.getSegmentDate() == null) {
+          segment.setSegmentDate(java.time.Instant.now());
+        }
+        if (segment.getIsTitleSegment() == null) {
+          segment.setIsTitleSegment(false);
+        }
+        if (segment.getIsNpcGenerated() == null) {
+          segment.setIsNpcGenerated(false);
+        }
+
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         log.info("Creating new segment for show: {}", show.getName());
@@ -1260,15 +1353,16 @@ public class ShowDetailView extends Main
       }
 
       // Save or update the segment
-      segmentRepository.save(segment);
-      log.info("Segment saved successfully: {}", segment.getId());
-      if (segmentToUpdate != null) {
+      if (segment.getId() != null) {
+        segmentService.updateSegment(segment);
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       } else {
+        segmentService.saveSegment(segment);
         Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
+      log.info("Segment saved successfully: {}", segment.getId());
       return true;
     } catch (Exception e) {
       log.error("Error saving segment: {}", e.getMessage(), e);
@@ -1320,11 +1414,7 @@ public class ShowDetailView extends Main
       // Re-enable/disable adjudicate button based on new segment status
       boolean hasPendingSegments =
           updatedSegments.stream()
-              .anyMatch(
-                  segment ->
-                      segment.getAdjudicationStatus()
-                          == com.github.javydreamercsw.management.domain.AdjudicationStatus
-                              .PENDING);
+              .anyMatch(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING);
       // Find the adjudicate button and update its enabled state
       contentLayout
           .getChildren()
@@ -1368,13 +1458,13 @@ public class ShowDetailView extends Main
       // Check if the completed show is the one currently being viewed
       assert adjudicationCompletedEvent.getShow().getId() != null;
       if (adjudicationCompletedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid)); // Call refreshSegmentsGrid
+        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid));
       }
     } else if (event instanceof SegmentsApprovedEvent segmentsApprovedEvent) {
       // Check if the completed show is the one currently being viewed
       assert segmentsApprovedEvent.getShow().getId() != null;
       if (segmentsApprovedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid)); // Call refreshSegmentsGrid
+        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid));
       }
     }
   }

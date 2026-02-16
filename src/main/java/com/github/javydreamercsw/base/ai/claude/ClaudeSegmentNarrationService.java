@@ -144,6 +144,17 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
 
+      // Record token usage if available
+      if (getPerformanceMonitoringService() != null && response.containsKey("usage")) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> usage = (Map<String, Object>) response.get("usage");
+        if (usage != null) {
+          int input = (int) usage.getOrDefault("input_tokens", 0);
+          int output = (int) usage.getOrDefault("output_tokens", 0);
+          getPerformanceMonitoringService().recordTokenUsage(getProviderName(), input, output);
+        }
+      }
+
       @SuppressWarnings("unchecked")
       List<Map<String, Object>> content = (List<Map<String, Object>>) response.get("content");
 

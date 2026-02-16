@@ -94,7 +94,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     ShowType showType = showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 5, 2);
     Show show =
         showService.createShow(
-            "Test Show", "Test Show", showType.getId(), null, season.getId(), null);
+            "Test Show", "Test Show", showType.getId(), null, season.getId(), null, null, null);
 
     // Create some segments
     SegmentType matchType = segmentTypeService.findByName("One on One").get();

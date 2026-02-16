@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.component;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -44,8 +45,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.RouteParameters;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+@Slf4j
 public class WrestlerActionMenu extends MenuBar {
   private final AccountService accountService;
 
@@ -58,8 +61,10 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull Runnable refreshProvider,
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService) {
+      @NonNull @Qualifier("baseAccountService") AccountService accountService,
+      @NonNull ImageStorageService imageStorageService) {
     this.accountService = accountService;
+
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
     SubMenu subMenu = menuItem.getSubMenu();
@@ -97,6 +102,7 @@ public class WrestlerActionMenu extends MenuBar {
                       wrestlerService,
                       accountService,
                       npcService,
+                      imageStorageService,
                       wrestler,
                       refreshProvider,
                       securityUtils);

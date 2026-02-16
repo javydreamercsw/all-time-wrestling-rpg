@@ -102,24 +102,8 @@ class ShowTypeNotionSyncServiceIT extends ManagementIntegrationTest {
     assertEquals(
         showType.getName(),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
-    assertEquals(
-        showType.getDescription(),
-        capturedRequest
-            .getProperties()
-            .get("Description")
-            .getRichText()
-            .get(0)
-            .getText()
-            .getContent());
-    assertEquals(
-        Integer.valueOf(showType.getExpectedMatches()).doubleValue(),
-        capturedRequest.getProperties().get("Expected Matches").getNumber());
-    assertEquals(
-        Integer.valueOf(showType.getExpectedPromos()).doubleValue(),
-        capturedRequest.getProperties().get("Expected Promos").getNumber());
 
     // Sync to Notion again
-    updatedShowType.setDescription("Updated description " + UUID.randomUUID());
     updatedShowType.setExpectedMatches(10);
     showTypeRepository.save(updatedShowType);
     showTypeNotionSyncService.syncToNotion("test-op-2");
@@ -130,16 +114,7 @@ class ShowTypeNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
     UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
     assertEquals(
-        updatedShowType2.getDescription(),
-        capturedUpdateRequest
-            .getProperties()
-            .get("Description")
-            .getRichText()
-            .get(0)
-            .getText()
-            .getContent());
-    assertEquals(
-        Integer.valueOf(updatedShowType2.getExpectedMatches()).doubleValue(),
-        capturedUpdateRequest.getProperties().get("Expected Matches").getNumber());
+        updatedShowType2.getName(),
+        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
   }
 }

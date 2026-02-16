@@ -19,6 +19,10 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.Initializable;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
@@ -27,6 +31,8 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -45,10 +51,14 @@ import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
+import com.github.javydreamercsw.management.dto.commentator.CommentaryTeamImportDTO;
+import com.github.javydreamercsw.management.dto.commentator.CommentatorImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
+import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -60,7 +70,9 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,6 +81,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -100,7 +113,11 @@ public class DataInitializer implements Initializable {
   private final TeamService teamService;
   private final TeamRepository teamRepository;
   private final CampaignAbilityCardService campaignAbilityCardService;
+  private final CommentaryService commentaryService;
+  private final CampaignUpgradeService campaignUpgradeService;
   private final Environment env;
+  private final AchievementRepository achievementRepository;
+  private final AccountRepository accountRepository;
 
   @Autowired
   public DataInitializer(
@@ -121,7 +138,11 @@ public class DataInitializer implements Initializable {
       TeamService teamService,
       TeamRepository teamRepository,
       CampaignAbilityCardService campaignAbilityCardService,
-      Environment env) {
+      CommentaryService commentaryService,
+      CampaignUpgradeService campaignUpgradeService,
+      Environment env,
+      AchievementRepository achievementRepository,
+      AccountRepository accountRepository) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -139,7 +160,11 @@ public class DataInitializer implements Initializable {
     this.teamService = teamService;
     this.teamRepository = teamRepository;
     this.campaignAbilityCardService = campaignAbilityCardService;
+    this.commentaryService = commentaryService;
+    this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
+    this.achievementRepository = achievementRepository;
+    this.accountRepository = accountRepository;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -161,6 +186,89 @@ public class DataInitializer implements Initializable {
       syncFactionsFromFile();
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();
+      campaignUpgradeService.loadUpgrades();
+      syncCommentatorsFromFile();
+      syncCommentaryTeamsFromFile();
+      loadAchievements();
+    }
+  }
+
+  private void loadAchievements() {
+    ClassPathResource resource = new ClassPathResource("achievements.json");
+    if (resource.exists()) {
+      log.info("Loading achievements from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var achievementsFromFile = mapper.readValue(is, new TypeReference<List<Achievement>>() {});
+        for (Achievement a : achievementsFromFile) {
+          Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
+          if (existingOpt.isPresent()) {
+            Achievement existing = existingOpt.get();
+            existing.setName(a.getName());
+            existing.setDescription(a.getDescription());
+            existing.setXpValue(a.getXpValue());
+            existing.setCategory(a.getCategory());
+            achievementRepository.save(existing);
+            log.debug("Updated existing achievement: {}", existing.getName());
+          } else {
+            achievementRepository.save(a);
+            log.debug("Saved new achievement: {}", a.getName());
+          }
+        }
+        log.info(
+            "Achievement loading completed - {} achievements loaded", achievementsFromFile.size());
+      } catch (IOException e) {
+        log.error("Error loading achievements from file", e);
+      }
+    } else {
+      log.warn("Achievements file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncCommentatorsFromFile() {
+    ClassPathResource resource = new ClassPathResource("commentators.json");
+    if (resource.exists()) {
+      log.info("Loading commentators from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<CommentatorImportDTO>>() {});
+        for (CommentatorImportDTO cDto : dtos) {
+          commentaryService.createOrUpdateCommentator(
+              cDto.getNpcName(),
+              cDto.getGender(),
+              cDto.getAlignment(),
+              cDto.getDescription(),
+              cDto.getStyle(),
+              cDto.getCatchphrase(),
+              cDto.getPersonaDescription());
+          log.debug("Loaded commentator: {}", cDto.getNpcName());
+        }
+        log.info("Commentator loading completed - {} commentators loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading commentators from file", e);
+      }
+    } else {
+      log.warn("Commentators file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncCommentaryTeamsFromFile() {
+    ClassPathResource resource = new ClassPathResource("commentary_teams.json");
+    if (resource.exists()) {
+      log.info("Loading commentary teams from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<CommentaryTeamImportDTO>>() {});
+        for (CommentaryTeamImportDTO teamDto : dtos) {
+          commentaryService.createOrUpdateTeam(teamDto.getTeamName(), teamDto.getMemberNames());
+          log.debug("Loaded commentary team: {}", teamDto.getTeamName());
+        }
+        log.info("Commentary team loading completed - {} teams loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading commentary teams from file", e);
+      }
+    } else {
+      log.warn("Commentary teams file not found: {}", resource.getPath());
     }
   }
 
@@ -177,6 +285,7 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_OPENAI_API_KEY", null);
     syncSetting("AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo");
     syncSetting("AI_OPENAI_PREMIUM_MODEL", "gpt-4");
+    syncSetting("AI_OPENAI_IMAGE_MODEL", "dall-e-3");
     syncSetting("AI_OPENAI_MAX_TOKENS", "1000");
     syncSetting("AI_OPENAI_TEMPERATURE", "0.7");
 
@@ -192,35 +301,79 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_GEMINI_API_KEY", null);
     syncSetting("AI_GEMINI_MODEL_NAME", "gemini-2.5-flash");
 
-    // LocalAI
-    syncSetting("AI_LOCALAI_ENABLED", "false");
-    syncSetting("AI_LOCALAI_BASE_URL", "http://localhost:8088");
-    syncSetting("AI_LOCALAI_MODEL", "llama-3.2-1b-instruct:q4_k_m");
-    syncSetting("AI_LOCALAI_MODEL_URL", null);
-
     boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");
     boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
     boolean geminiEnabled = isSettingEnabled("AI_GEMINI_ENABLED");
-    boolean localAiEnabled = isSettingEnabled("AI_LOCALAI_ENABLED");
 
-    if (!openAiEnabled && !claudeEnabled && !geminiEnabled && !localAiEnabled) {
-      log.info("All AI providers are disabled. Enabling LocalAI.");
-      gameSettingService.save("AI_LOCALAI_ENABLED", "true");
+    if (!openAiEnabled && !claudeEnabled && !geminiEnabled) {
+      log.info("All AI providers are disabled. Enabling Gemini.");
+      // Only set if missing so we don't flip a user's explicit DB config.
+      saveIfMissing("AI_GEMINI_ENABLED", "true");
     }
 
     log.info("AI settings synchronization complete.");
   }
 
-  private void syncSetting(String key, String defaultValue) {
+  private void syncSetting(@NonNull String key, String defaultValue) {
     String envValue = env.getProperty(key);
+    boolean forceOverride =
+        Boolean.parseBoolean(env.getProperty("data.initializer.aiSettings.forceOverride", "false"));
+
+    // Prefer NOT overwriting DB values unless explicitly forced.
     if (envValue != null) {
-      gameSettingService.save(key, envValue);
-    } else if (gameSettingService.findById(key).isEmpty() && defaultValue != null) {
-      gameSettingService.save(key, defaultValue);
+      if (forceOverride) {
+        log.debug(
+            "AI setting sync: overriding '{}' from environment (forceOverride=true): {}",
+            key,
+            maskIfSecret(key, envValue));
+        gameSettingService.save(key, envValue);
+      } else {
+        if (gameSettingService.findById(key).isPresent()) {
+          log.debug(
+              "AI setting sync: skipping '{}' from environment because DB already has a value: {}",
+              key,
+              maskIfSecret(key, envValue));
+        } else {
+          log.debug(
+              "AI setting sync: saving missing '{}' from environment: {}",
+              key,
+              maskIfSecret(key, envValue));
+          saveIfMissing(key, envValue);
+        }
+      }
+      return;
+    }
+
+    // No env value: seed defaults only if missing.
+    if (defaultValue != null) {
+      if (gameSettingService.findById(key).isPresent()) {
+        log.debug("AI setting sync: '{}' already present in DB; default not applied.", key);
+      } else {
+        log.debug(
+            "AI setting sync: seeding missing '{}' with default: {}",
+            key,
+            maskIfSecret(key, defaultValue));
+        saveIfMissing(key, defaultValue);
+      }
+    } else {
+      log.debug("AI setting sync: '{}' has no env value and no default; leaving as-is.", key);
     }
   }
 
-  private boolean isSettingEnabled(String key) {
+  private String maskIfSecret(String key, String value) {
+    if (key != null && key.toUpperCase().contains("KEY")) {
+      return "********";
+    }
+    return value;
+  }
+
+  private void saveIfMissing(@NonNull String key, @NonNull String value) {
+    if (gameSettingService.findById(key).isEmpty()) {
+      gameSettingService.save(key, value);
+    }
+  }
+
+  private boolean isSettingEnabled(@NonNull String key) {
     return gameSettingService
         .findById(key)
         .map(gs -> Boolean.parseBoolean(gs.getValue()))
@@ -362,9 +515,27 @@ public class DataInitializer implements Initializable {
         var templatesFromFile = mapper.readValue(is, new TypeReference<List<ShowTemplateDTO>>() {});
 
         for (ShowTemplateDTO dto : templatesFromFile) {
-          var template =
+          ShowTemplate template =
               showTemplateService.createOrUpdateTemplate(
-                  dto.getName(), dto.getDescription(), dto.getShowTypeName(), dto.getNotionUrl());
+                  dto.getName(),
+                  dto.getDescription(),
+                  dto.getShowTypeName(),
+                  dto.getNotionUrl(),
+                  null,
+                  dto.getCommentaryTeamName(),
+                  dto.getExpectedMatches(),
+                  dto.getExpectedPromos(),
+                  dto.getDurationDays(),
+                  dto.getRecurrenceType() != null
+                      ? RecurrenceType.valueOf(dto.getRecurrenceType())
+                      : null,
+                  dto.getDayOfWeek() != null ? DayOfWeek.valueOf(dto.getDayOfWeek()) : null,
+                  dto.getDayOfMonth(),
+                  dto.getWeekOfMonth(),
+                  dto.getMonth() != null ? Month.valueOf(dto.getMonth()) : null,
+                  dto.getGenderConstraint() != null
+                      ? Gender.valueOf(dto.getGenderConstraint())
+                      : null);
           if (template != null) {
             log.debug(
                 "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());
@@ -610,7 +781,7 @@ public class DataInitializer implements Initializable {
               // Check if the title is already held by these champions
               boolean matchesCurrent =
                   title.getCurrentChampions().size() == champions.size()
-                      && title.getCurrentChampions().containsAll(champions);
+                      && new HashSet<>(title.getCurrentChampions()).containsAll(champions);
 
               if (!matchesCurrent) {
                 titleService.awardTitleTo(title, champions);
@@ -662,7 +833,7 @@ public class DataInitializer implements Initializable {
           List<Deck> byWrestler = deckService.findByWrestler(wrestler);
           Deck deck;
           if (!byWrestler.isEmpty()) {
-            deck = byWrestler.get(0); // Get the existing deck
+            deck = byWrestler.getFirst(); // Get the existing deck
           } else {
             deck = deckService.createDeck(wrestler);
           }

@@ -72,6 +72,14 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @BeforeEach
   void setUp() {
     // Clear all relevant repositories to ensure a clean state for each test
+    cleanupLeagues();
+    titleReignRepository
+        .findAll()
+        .forEach(
+            reign -> {
+              reign.setWonAtSegment(null);
+              titleReignRepository.save(reign);
+            });
     titleReignRepository.deleteAll();
     titleRepository
         .findAll()
@@ -208,6 +216,8 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName("Weekly").get().getId(),
             null,
             season.getId(),
+            null,
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();
@@ -288,6 +298,8 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName("Weekly").get().getId(),
             null,
             season.getId(),
+            null,
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();

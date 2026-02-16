@@ -1,9 +1,0 @@
-{
-  "name": "Stability & Quality Hardening",
-  "goal": "Eliminate flaky tests, ensure bulletproof CI pipeline, and improve overall code quality and test coverage.",
-  "context": "The application is functional but suffers from flaky E2E tests (DataIntegrityViolation, Timeouts) and lacks unit test coverage for recent Campaign features. This track focuses on technical debt reduction and reliability.",
-  "links": [ {
-    "label": "Main Issue (Beads)",
-    "url": "all-time-wrestling-rpg-cyz"
-  } ]
-}

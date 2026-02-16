@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.base.ai.claude.ClaudeConfigProperties;
 import com.github.javydreamercsw.base.ai.gemini.GeminiConfigProperties;
-import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.openai.OpenAIConfigProperties;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.security.WithMockAdmin;
@@ -41,7 +40,6 @@ class AIProviderConfigTest {
   @Autowired private GeminiConfigProperties geminiConfigProperties;
   @Autowired private ClaudeConfigProperties claudeConfigProperties;
   @Autowired private OpenAIConfigProperties openAIConfigProperties;
-  @Autowired private LocalAIConfigProperties localAIConfigProperties;
 
   @Test
   void testBaseAiConfig() {
@@ -70,12 +68,5 @@ class AIProviderConfigTest {
     assertNotNull(openAIConfigProperties);
     assertEquals("https://api.openai.com/v1/chat/completions", openAIConfigProperties.getApiUrl());
     assertEquals("gpt-3.5-turbo", openAIConfigProperties.getDefaultModel());
-  }
-
-  @Test
-  void testLocalAIConfig() {
-    assertNotNull(localAIConfigProperties);
-    assertEquals("http://localhost:8088", localAIConfigProperties.getBaseUrl());
-    assertEquals("llama-3.2-1b-instruct:q4_k_m", localAIConfigProperties.getModel());
   }
 }

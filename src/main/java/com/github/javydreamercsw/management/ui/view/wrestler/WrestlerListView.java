@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -59,6 +60,7 @@ public class WrestlerListView extends Main {
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
+  private final ImageStorageService imageStorageService;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
@@ -68,7 +70,8 @@ public class WrestlerListView extends Main {
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils,
-      @NonNull CampaignService campaignService) {
+      @NonNull CampaignService campaignService,
+      @NonNull ImageStorageService imageStorageService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
@@ -76,6 +79,7 @@ public class WrestlerListView extends Main {
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
+    this.imageStorageService = imageStorageService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -146,7 +150,8 @@ public class WrestlerListView extends Main {
                       this::reloadGrid,
                       false,
                       securityUtils,
-                      accountService);
+                      accountService,
+                      imageStorageService);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })
@@ -179,7 +184,12 @@ public class WrestlerListView extends Main {
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(
-                      wrestlerService, accountService, npcService, this::reloadGrid, securityUtils);
+                      wrestlerService,
+                      accountService,
+                      npcService,
+                      imageStorageService,
+                      this::reloadGrid,
+                      securityUtils);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -189,6 +199,15 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
-    wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+    if (securityUtils.isAdmin() || securityUtils.isBooker()) {
+      wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+    } else {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                wrestlerGrid.setItems(wrestlerService.findAllByAccount(user.getAccount()));
+              });
+    }
   }
 }

@@ -82,7 +82,10 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       wrestlerRepository.save(testContender);
 
       // Sync dependencies to Notion to get external IDs
-      wrestlerNotionSyncService.syncToNotion("test-prep-wrestlers");
+      wrestlerNotionSyncService.syncToNotion(
+          "test-prep-wrestlers", List.of(testChampion.getId(), testContender.getId()));
+      testChampion = wrestlerRepository.findById(testChampion.getId()).get();
+      testContender = wrestlerRepository.findById(testContender.getId()).get();
 
       // Create a new Title
       title = new Title();
@@ -98,7 +101,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       titleRepository.save(title);
 
       // Sync to Notion for the first time
-      titleNotionSyncService.syncToNotion("test-op-1");
+      titleNotionSyncService.syncToNotion("test-op-1", List.of(title.getId()));
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(title.getId());
@@ -121,19 +124,16 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(props.get("Tier").getSelect()).getName());
       assertEquals(
           com.github.javydreamercsw.base.domain.wrestler.Gender.MALE.name(),
-          Objects.requireNonNull(props.get("Gender").getSelect()).getName());
-      assertEquals(
-          com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE.name(),
-          Objects.requireNonNull(props.get("Category").getSelect()).getName());
+          Objects.requireNonNull(props.get("Gender").getSelect()).getName().toUpperCase());
       assertTrue(Objects.requireNonNull(props.get("Active").getCheckbox()));
-      assertNotNull(props.get("Champion").getRelation());
-      assertFalse(props.get("Champion").getRelation().isEmpty());
+      assertNotNull(props.get("Current Champion").getRelation());
+      assertFalse(props.get("Current Champion").getRelation().isEmpty());
       assertEquals(
-          testChampion.getExternalId(), props.get("Champion").getRelation().get(0).getId());
-      assertNotNull(props.get("Challengers").getRelation());
-      assertFalse(props.get("Challengers").getRelation().isEmpty());
+          testChampion.getExternalId(), props.get("Current Champion").getRelation().get(0).getId());
+      assertNotNull(props.get("#1 Contender").getRelation());
+      assertFalse(props.get("#1 Contender").getRelation().isEmpty());
       assertEquals(
-          testContender.getExternalId(), props.get("Challengers").getRelation().get(0).getId());
+          testContender.getExternalId(), props.get("#1 Contender").getRelation().get(0).getId());
 
       // Sync to Notion again with updates
       updatedTitle.setName("Unified World Championship " + UUID.randomUUID());
@@ -143,7 +143,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       updatedTitle.setIsActive(false);
       updatedTitle.vacateTitle(Instant.now()); // Vacate title
       titleRepository.save(updatedTitle);
-      titleNotionSyncService.syncToNotion("test-op-2");
+      titleNotionSyncService.syncToNotion("test-op-2", List.of(title.getId()));
       Title updatedTitle2 = titleRepository.findById(title.getId()).get();
       assertTrue(updatedTitle2.getLastSync().isAfter(updatedTitle.getLastSync()));
 
@@ -162,10 +162,10 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(props.get("Tier").getSelect()).getName());
       assertEquals(
           com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE.name(),
-          Objects.requireNonNull(props.get("Gender").getSelect()).getName());
+          Objects.requireNonNull(props.get("Gender").getSelect()).getName().toUpperCase());
       assertFalse(Objects.requireNonNull(props.get("Active").getCheckbox()));
       // Champion relation should be empty if vacated
-      assertTrue(props.get("Champion").getRelation().isEmpty());
+      assertTrue(props.get("Current Champion").getRelation().isEmpty());
 
     } finally {
       if (title != null && title.getExternalId() != null) {

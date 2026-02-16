@@ -16,7 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.show;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -31,8 +35,9 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -59,40 +64,52 @@ public class ShowService {
   private final ShowTypeRepository showTypeRepository;
   private final SeasonRepository seasonRepository;
   private final ShowTemplateRepository showTemplateRepository;
+  private final LeagueRepository leagueRepository;
   private final Clock clock;
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
   private final ApplicationEventPublisher eventPublisher;
-  private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
+  private final CommentaryTeamRepository commentaryTeamRepository;
+  private final NewsGenerationService newsGenerationService;
+  private final LegacyService legacyService;
+  private final SecurityUtils securityUtils;
 
   ShowService(
       ShowRepository showRepository,
       ShowTypeRepository showTypeRepository,
       SeasonRepository seasonRepository,
       ShowTemplateRepository showTemplateRepository,
+      LeagueRepository leagueRepository,
       Clock clock,
       SegmentAdjudicationService segmentAdjudicationService,
       SegmentRepository segmentRepository,
       ApplicationEventPublisher eventPublisher,
-      RivalryService rivalryService,
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
-      GameSettingService gameSettingService) {
+      GameSettingService gameSettingService,
+      CommentaryTeamRepository commentaryTeamRepository,
+      NewsGenerationService newsGenerationService,
+      LegacyService legacyService,
+      SecurityUtils securityUtils) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
     this.showTemplateRepository = showTemplateRepository;
+    this.leagueRepository = leagueRepository;
     this.clock = clock;
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
     this.eventPublisher = eventPublisher;
-    this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.gameSettingService = gameSettingService;
+    this.commentaryTeamRepository = commentaryTeamRepository;
+    this.newsGenerationService = newsGenerationService;
+    this.legacyService = legacyService;
+    this.securityUtils = securityUtils;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -277,7 +294,9 @@ public class ShowService {
       Long showTypeId,
       LocalDate showDate,
       Long seasonId,
-      Long templateId) {
+      Long templateId,
+      Long leagueId,
+      Long commentaryTeamId) {
 
     Show show = new Show();
     show.setName(name);
@@ -310,6 +329,26 @@ public class ShowService {
       show.setTemplate(template);
     }
 
+    // Set league (optional)
+    if (leagueId != null) {
+      League league =
+          leagueRepository
+              .findById(leagueId)
+              .orElseThrow(() -> new IllegalArgumentException("League not found: " + leagueId));
+      show.setLeague(league);
+    }
+
+    // Set commentary team (optional)
+    if (commentaryTeamId != null) {
+      show.setCommentaryTeam(
+          commentaryTeamRepository
+              .findById(commentaryTeamId)
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          "Commentary team not found: " + commentaryTeamId)));
+    }
+
     return showRepository.saveAndFlush(show);
   }
 
@@ -323,6 +362,7 @@ public class ShowService {
    * @param showDate Show date (optional)
    * @param seasonId Season ID (optional)
    * @param templateId Template ID (optional)
+   * @param leagueId League ID (optional)
    * @return Updated show if found
    */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -339,7 +379,9 @@ public class ShowService {
       Long showTypeId,
       LocalDate showDate,
       Long seasonId,
-      Long templateId) {
+      Long templateId,
+      Long leagueId,
+      Long commentaryTeamId) {
 
     return showRepository
         .findById(id)
@@ -380,6 +422,29 @@ public class ShowService {
                 show.setTemplate(template);
               } else {
                 show.setTemplate(null);
+              }
+
+              if (leagueId != null) {
+                League league =
+                    leagueRepository
+                        .findById(leagueId)
+                        .orElseThrow(
+                            () -> new IllegalArgumentException("League not found: " + leagueId));
+                show.setLeague(league);
+              } else {
+                show.setLeague(null);
+              }
+
+              if (commentaryTeamId != null) {
+                show.setCommentaryTeam(
+                    commentaryTeamRepository
+                        .findById(commentaryTeamId)
+                        .orElseThrow(
+                            () ->
+                                new IllegalArgumentException(
+                                    "Commentary team not found: " + commentaryTeamId)));
+              } else {
+                show.setCommentaryTeam(null);
               }
 
               return showRepository.saveAndFlush(show);
@@ -440,11 +505,27 @@ public class ShowService {
 
     gameSettingService.saveCurrentGameDate(show.getShowDate());
 
+    if ("SHOW".equals(gameSettingService.getNewsStrategy())) {
+      newsGenerationService.generateNewsForShow(show);
+    }
+
+    // Roll for a random rumor after the show news is processed
+    newsGenerationService.rollForRumor();
+
+    securityUtils
+        .getAuthenticatedUser()
+        .ifPresent(details -> legacyService.incrementShowsBooked(details.getAccount()));
+
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
   @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Show> getShowsByLeague(@NonNull League league) {
+    return showRepository.findByLeague(league);
   }
 }

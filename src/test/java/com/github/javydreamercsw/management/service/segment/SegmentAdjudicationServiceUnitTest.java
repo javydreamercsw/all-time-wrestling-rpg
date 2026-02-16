@@ -16,10 +16,12 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -27,12 +29,14 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +56,13 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private Random random;
   @Mock private TitleService titleService;
   @Mock private MatchRewardService matchRewardService;
+  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+      leagueRosterRepository;
+
+  @Mock private LegacyService legacyService;
 
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
@@ -70,6 +81,9 @@ class SegmentAdjudicationServiceUnitTest {
             feudService,
             titleService,
             matchRewardService,
+            matchFulfillmentRepository,
+            leagueRosterRepository,
+            legacyService,
             random);
 
     wrestler1 = Wrestler.builder().build();
@@ -101,6 +115,11 @@ class SegmentAdjudicationServiceUnitTest {
     show.setType(showType);
     promoSegment.setShow(show);
     matchSegment.setShow(show);
+
+    // Default mock behavior
+    org.mockito.Mockito.lenient()
+        .when(matchFulfillmentRepository.findBySegment(any(Segment.class)))
+        .thenReturn(Optional.empty());
   }
 
   @Test

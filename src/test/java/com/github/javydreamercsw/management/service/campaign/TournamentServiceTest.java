@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -52,112 +53,133 @@ class TournamentServiceTest {
 
   @InjectMocks private TournamentService tournamentService;
 
-  @Test
-  void testInitializeTournament_FullRoster() {
-    Campaign campaign = createCampaign();
-    List<Wrestler> roster = createRoster(15); // 15 + player = 16 (Full Bracket)
+  private Campaign campaign;
+  private Wrestler player;
 
+  @BeforeEach
+  void setUp() {
+    player = new Wrestler();
+    player.setId(1L);
+    player.setName("Player One");
+
+    CampaignState state = new CampaignState();
+
+    campaign = new Campaign();
+    campaign.setWrestler(player);
+    campaign.setState(state);
+  }
+
+  @Test
+  void testInitializeTournament() {
+    List<Wrestler> roster = new ArrayList<>();
+    // Adding 4 wrestlers + Player = 5 total.
+    // Next power of 2 is 8.
+    // Rounds = log2(8) = 3.
+    // Matches = 4 + 2 + 1 = 7.
+    for (long i = 2; i <= 5; i++) {
+      Wrestler w = new Wrestler();
+      w.setId(i);
+      w.setName("Wrestler " + i);
+      roster.add(w);
+    }
     when(wrestlerRepository.findAll()).thenReturn(roster);
 
     tournamentService.initializeTournament(campaign);
 
-    verify(campaignStateRepository).save(any(CampaignState.class));
     TournamentDTO tournament = tournamentService.getTournamentState(campaign);
     assertThat(tournament).isNotNull();
-    assertThat(tournament.getTotalRounds()).isEqualTo(4); // log2(16) = 4
-    assertThat(tournament.getMatches()).hasSize(15); // 8 (R1) + 4 (R2) + 2 (R3) + 1 (R4) = 15
-  }
-
-  @Test
-  void testInitializeTournament_SmallRoster_WithByes() {
-    Campaign campaign = createCampaign();
-    List<Wrestler> roster = createRoster(5); // 5 + player = 6 (Needs size 8)
-
-    when(wrestlerRepository.findAll()).thenReturn(roster);
-
-    tournamentService.initializeTournament(campaign);
+    assertThat(tournament.getTotalRounds()).isEqualTo(3);
+    assertThat(tournament.getMatches()).hasSize(7);
 
     verify(campaignStateRepository).save(any(CampaignState.class));
-    TournamentDTO tournament = tournamentService.getTournamentState(campaign);
-    assertThat(tournament).isNotNull();
-    assertThat(tournament.getTotalRounds()).isEqualTo(3); // log2(8) = 3
-    // Check if byes were handled (winners propagated)
-    long resolvedMatches =
-        tournament.getMatches().stream().filter(m -> m.getWinnerId() != null).count();
-    assertThat(resolvedMatches).isGreaterThan(0);
   }
 
   @Test
-  void testGetCurrentPlayerMatch() {
-    Campaign campaign = createCampaign();
-    // Manually inject a tournament state where player is in R1-M1
-    TournamentDTO dto = new TournamentDTO();
-    TournamentDTO.TournamentMatch match = new TournamentDTO.TournamentMatch();
-    match.setId("R1-M1");
-    match.setPlayerMatch(true);
-    dto.setMatches(List.of(match));
+  void testInitializeTournament_AlreadyInitialized() throws Exception {
+    TournamentDTO existing = new TournamentDTO();
+    String json = "{\"tournamentState\":" + objectMapper.writeValueAsString(existing) + "}";
+    campaign.getState().setFeatureData(json);
 
-    saveState(campaign, dto);
+    tournamentService.initializeTournament(campaign);
 
-    TournamentDTO.TournamentMatch found = tournamentService.getCurrentPlayerMatch(campaign);
-    assertThat(found).isNotNull();
-    assertThat(found.getId()).isEqualTo("R1-M1");
+    // Should not call save if already initialized
+    verify(campaignStateRepository, org.mockito.Mockito.never()).save(any(CampaignState.class));
   }
 
   @Test
-  void testAdvanceTournament_PlayerWin() {
-    Campaign campaign = createCampaign();
-    List<Wrestler> roster = createRoster(15);
+  void testAdvanceTournament() {
+    // Setup a simple 2-man tournament (Player vs Opponent)
+    List<Wrestler> roster = new ArrayList<>();
+    Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
+    opponent.setName("Opponent");
+    roster.add(opponent);
+
     when(wrestlerRepository.findAll()).thenReturn(roster);
 
     tournamentService.initializeTournament(campaign);
 
+    // There should be 1 match in round 1
+    TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+    assertThat(tournament.getMatches()).hasSize(3); // 4 slots forced, so 2 matches R1, 1 match R2.
+    // Wait, dynamic sizing: 2 participants -> bracketSize 4?
+    // Code says: if (bracketSize < 4) bracketSize = 4;
+    // So yes, 4 slots. Player vs Opponent, Bye vs Bye (or similar).
+
+    // Let's verify the player match exists
     TournamentDTO.TournamentMatch playerMatch = tournamentService.getCurrentPlayerMatch(campaign);
     assertThat(playerMatch).isNotNull();
+    assertThat(playerMatch.getRound()).isEqualTo(1);
 
+    // Advance - Player Wins
     tournamentService.advanceTournament(campaign, true, null);
 
-    TournamentDTO updatedState = tournamentService.getTournamentState(campaign);
-    TournamentDTO.TournamentMatch executedMatch =
-        updatedState.getMatches().stream()
+    tournament = tournamentService.getTournamentState(campaign);
+    TournamentDTO.TournamentMatch updatedMatch =
+        tournament.getMatches().stream()
             .filter(m -> m.getId().equals(playerMatch.getId()))
             .findFirst()
             .orElseThrow();
 
-    assertThat(executedMatch.getWinnerId()).isEqualTo(campaign.getWrestler().getId());
+    assertThat(updatedMatch.getWinnerId()).isEqualTo(player.getId());
+
+    // Check next round propagation
+    TournamentDTO.TournamentMatch nextMatch =
+        tournament.getMatches().stream()
+            .filter(m -> m.getId().equals(updatedMatch.getNextMatchId()))
+            .findFirst()
+            .orElseThrow();
+
+    // Should have propagated the player to the next match
+    boolean playerInNext =
+        (nextMatch.getWrestler1Id() != null && nextMatch.getWrestler1Id().equals(player.getId()))
+            || (nextMatch.getWrestler2Id() != null
+                && nextMatch.getWrestler2Id().equals(player.getId()));
+    assertThat(playerInNext).isTrue();
   }
 
-  private Campaign createCampaign() {
-    Wrestler player = new Wrestler();
-    player.setId(999L);
-    player.setName("Player One");
+  @Test
+  void testIsPlayerChampion() {
+    // Manually construct a completed tournament state where player won finals
+    TournamentDTO tournament = new TournamentDTO();
+    tournament.setTotalRounds(1);
 
-    CampaignState state = new CampaignState();
-    state.setFeatureData("{}");
+    TournamentDTO.TournamentMatch finalMatch = new TournamentDTO.TournamentMatch();
+    finalMatch.setId("R1-M1");
+    finalMatch.setRound(1);
+    finalMatch.setWrestler1Id(player.getId());
+    finalMatch.setWrestler2Id(2L);
+    finalMatch.setWinnerId(player.getId());
 
-    Campaign campaign = new Campaign();
-    campaign.setWrestler(player);
-    campaign.setState(state);
-    return campaign;
-  }
+    tournament.setMatches(List.of(finalMatch));
 
-  private List<Wrestler> createRoster(int count) {
-    List<Wrestler> roster = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
-      Wrestler w = new Wrestler();
-      w.setId((long) i);
-      w.setName("Wrestler " + i);
-      roster.add(w);
-    }
-    return roster;
-  }
-
-  private void saveState(Campaign campaign, TournamentDTO dto) {
     try {
-      String json = objectMapper.writeValueAsString(java.util.Map.of("tournamentState", dto));
+      String json = "{\"tournamentState\":" + objectMapper.writeValueAsString(tournament) + "}";
       campaign.getState().setFeatureData(json);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+
+    assertThat(tournamentService.isPlayerChampion(campaign)).isTrue();
   }
 }

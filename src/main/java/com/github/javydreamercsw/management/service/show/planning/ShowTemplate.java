@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import lombok.Data;
 
 @Data
@@ -24,4 +25,5 @@ public class ShowTemplate {
   private String description;
   private int expectedMatches;
   private int expectedPromos;
+  private Gender genderConstraint;
 }

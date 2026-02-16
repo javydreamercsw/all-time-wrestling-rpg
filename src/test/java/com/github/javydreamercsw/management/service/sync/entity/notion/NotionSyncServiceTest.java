@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -35,6 +36,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.BackupService;
 import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
 import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
@@ -54,6 +56,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.core.io.ResourceLoader;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
@@ -80,6 +83,9 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;
+  @Mock private StorageProperties storageProperties;
+  @Mock private ResourceLoader resourceLoader;
+  @Mock private BackupService backupService;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
@@ -121,6 +127,9 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             rateLimitService,
             entitySyncConfig,
             syncProperties,
+            storageProperties,
+            resourceLoader,
+            backupService,
             notionHandler,
             notionPageDataExtractor,
             syncSessionManager,
