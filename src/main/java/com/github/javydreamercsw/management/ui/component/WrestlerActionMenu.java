@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.component;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -60,7 +61,8 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull Runnable refreshProvider,
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService) {
+      @NonNull @Qualifier("baseAccountService") AccountService accountService,
+      @NonNull ImageStorageService imageStorageService) {
     this.accountService = accountService;
 
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
@@ -100,6 +102,7 @@ public class WrestlerActionMenu extends MenuBar {
                       wrestlerService,
                       accountService,
                       npcService,
+                      imageStorageService,
                       wrestler,
                       refreshProvider,
                       securityUtils);

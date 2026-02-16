@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcType;
@@ -108,10 +109,22 @@ public class NpcListView extends Main {
         .setEditorComponent(npcTypeField)
         .setSortable(true);
     TextField imageUrlField = new TextField();
+    imageUrlField.setReadOnly(true);
+
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(
+            storageService,
+            url -> {
+              imageUrlField.setValue(url);
+            });
+    imageUpload.setUploadButtonText("Upload");
+    HorizontalLayout imageEditLayout = new HorizontalLayout(imageUrlField, imageUpload);
+    imageEditLayout.setSpacing(true);
+
     npcGrid
         .addColumn(Npc::getImageUrl)
         .setHeader("Image URL")
-        .setEditorComponent(imageUrlField)
+        .setEditorComponent(imageEditLayout)
         .setSortable(true);
 
     npcGrid

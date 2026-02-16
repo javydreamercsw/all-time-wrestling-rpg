@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
@@ -65,6 +66,7 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout biographyLayout = new VerticalLayout();
   private final Image npcImage = new Image();
   private final Button generateImageButton = new Button("Generate Image");
+  private final ImageUploadComponent uploadComponent;
 
   @Autowired
   public NpcProfileView(
@@ -101,6 +103,16 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
               .open();
         });
 
+    uploadComponent =
+        new ImageUploadComponent(
+            imageStorageService,
+            url -> {
+              npc.setImageUrl(url);
+              npcService.save(npc);
+              updateView();
+            });
+    uploadComponent.setUploadButtonText("Upload Image");
+
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -113,7 +125,7 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
     VerticalLayout nameAndDetailsLayout = new VerticalLayout();
     nameAndDetailsLayout.add(npcName, npcDetails);
 
-    VerticalLayout imageLayout = new VerticalLayout(npcImage, generateImageButton);
+    VerticalLayout imageLayout = new VerticalLayout(npcImage, generateImageButton, uploadComponent);
     imageLayout.setAlignItems(Alignment.CENTER);
     imageLayout.setPadding(false);
     imageLayout.setSpacing(true);
@@ -162,6 +174,7 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
       }
 
       generateImageButton.setVisible(securityUtils.canEdit());
+      uploadComponent.setVisible(securityUtils.canEdit());
     }
   }
 }

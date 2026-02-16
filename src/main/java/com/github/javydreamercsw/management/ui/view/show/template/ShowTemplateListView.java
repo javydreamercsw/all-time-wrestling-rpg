@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -91,6 +92,7 @@ public class ShowTemplateListView extends Main {
   private ComboBox<ShowType> editShowType;
   private ComboBox<CommentaryTeam> editCommentaryTeam;
   private TextField editNotionUrl;
+  private TextField editImageUrl;
   private IntegerField editExpectedMatches;
   private IntegerField editExpectedPromos;
   private IntegerField editDurationDays;
@@ -307,6 +309,7 @@ public class ShowTemplateListView extends Main {
         (imageUrl) -> {
           template.setImageUrl(imageUrl);
           showTemplateService.save(template);
+          editImageUrl.setValue(imageUrl);
           refreshGrid();
         };
 
@@ -355,6 +358,22 @@ public class ShowTemplateListView extends Main {
     editNotionUrl = new TextField("Notion URL");
     editNotionUrl.setWidthFull();
     editNotionUrl.setPlaceholder("https://notion.so/...");
+
+    editImageUrl = new TextField("Image URL");
+    editImageUrl.setWidthFull();
+    editImageUrl.setReadOnly(true);
+
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(
+            imageStorageService,
+            url -> {
+              editImageUrl.setValue(url);
+            });
+    imageUpload.setUploadButtonText("Upload Art");
+
+    HorizontalLayout imageEditLayout = new HorizontalLayout(editImageUrl, imageUpload);
+    imageEditLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
+    imageEditLayout.setWidthFull();
 
     editExpectedMatches = new IntegerField("Expected Matches");
     editExpectedMatches.setWidthFull();
@@ -458,6 +477,7 @@ public class ShowTemplateListView extends Main {
         editShowType,
         editCommentaryTeam,
         editNotionUrl,
+        imageEditLayout,
         editExpectedMatches,
         editExpectedPromos,
         editDurationDays,
@@ -470,6 +490,7 @@ public class ShowTemplateListView extends Main {
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
+    formLayout.setColspan(imageEditLayout, 2);
 
     HorizontalLayout buttonLayout = new HorizontalLayout(generateArtDialogBtn, saveBtn, cancelBtn);
     buttonLayout.setWidthFull();
@@ -501,6 +522,7 @@ public class ShowTemplateListView extends Main {
         .forField(editCommentaryTeam)
         .bind(ShowTemplate::getCommentaryTeam, ShowTemplate::setCommentaryTeam);
     binder.forField(editNotionUrl).bind(ShowTemplate::getNotionUrl, ShowTemplate::setNotionUrl);
+    binder.forField(editImageUrl).bind(ShowTemplate::getImageUrl, ShowTemplate::setImageUrl);
     binder
         .forField(editExpectedMatches)
         .bind(ShowTemplate::getExpectedMatches, ShowTemplate::setExpectedMatches);
