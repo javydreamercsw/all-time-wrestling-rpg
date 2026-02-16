@@ -123,6 +123,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install root dependencies
+        run: npm install --legacy-peer-deps
+
       - name: Install dependencies
         run: |
           cd docs/site
@@ -162,6 +165,14 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Build with Maven
         run: mvn spotless:apply -B package -DskipTests --file pom.xml
@@ -203,6 +214,14 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Build and Publish Docker Image
         run: mvn clean spotless:apply package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }} -DskipTests

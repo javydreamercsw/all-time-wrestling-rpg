@@ -1418,6 +1418,45 @@
       </build>
     </profile>
     <profile>
+      <id>generate-docs</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{failsafeArgLine} -Dgenerate.docs=true</argLine>
+              <includes>
+                <include>**/*DocsE2ETest.java</include>
+              </includes>
+              <systemPropertyVariables>
+                <headless>${headless}</headless>
+              </systemPropertyVariables>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>remote-deploy</id>
       <build>
         <plugins>
