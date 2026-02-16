@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -54,7 +55,11 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
             Math.abs(event.getFanChange()),
             event.getWrestler().getFans());
 
-    inboxService.createInboxItem(fanAdjudication, message, event.getWrestler().getId().toString());
+    inboxService.createInboxItem(
+        fanAdjudication,
+        message,
+        event.getWrestler().getId().toString(),
+        InboxItemTarget.TargetType.WRESTLER);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

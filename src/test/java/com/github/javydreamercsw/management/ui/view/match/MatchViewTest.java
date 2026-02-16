@@ -19,22 +19,31 @@ package com.github.javydreamercsw.management.ui.view.match;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
+import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -64,7 +73,11 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private SegmentNarrationServiceFactory narrationServiceFactory;
   @Mock private NpcService npcService;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
-  @Mock private LocalAIStatusService localAIStatus;
+  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private MatchFulfillmentService matchFulfillmentService;
+  @Mock private PromoService promoService;
+  @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private NarrationParserService narrationParserService;
   private MatchView matchView;
 
   @BeforeEach
@@ -79,7 +92,11 @@ class MatchViewTest extends AbstractViewTest {
             narrationServiceFactory,
             npcService,
             segmentAdjudicationService,
-            localAIStatus);
+            matchFulfillmentRepository,
+            matchFulfillmentService,
+            promoService,
+            commentaryTeamRepository,
+            narrationParserService);
   }
 
   @Test
@@ -147,5 +164,56 @@ class MatchViewTest extends AbstractViewTest {
 
     assertEquals(1, segment.getWinners().size());
     assertEquals(wrestler1, segment.getWinners().get(0));
+  }
+
+  @Test
+  void testPlayerRestrictionsForNonCampaignMatch() {
+    Segment segment = new Segment();
+    segment.setId(1L);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match");
+    segment.setSegmentType(segmentType);
+
+    Wrestler wrestler1 = new Wrestler();
+    wrestler1.setName("Test Wrestler 1");
+    wrestler1.setId(1L);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(userDetails.getWrestler()).thenReturn(wrestler1);
+    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event); // Simulate navigation
+
+    // Verify button text
+    Button saveWinnersButton = _get(Button.class, spec -> spec.withId("save-winners-button"));
+    assertEquals("Save Results", saveWinnersButton.getText());
+
+    // Verify AI button hidden
+    assertTrue(
+        UI.getCurrent()
+            .getChildren()
+            .noneMatch(
+                c ->
+                    c instanceof Button
+                        && "ai-generate-narration-button".equals(c.getId().orElse(""))));
+
+    // Simulate clicking save winners
+    _click(saveWinnersButton);
+
+    // Verify adjudicateMatch was NOT called
+    verify(segmentAdjudicationService, never()).adjudicateMatch(any());
+    // Verify updateSegment WAS called (to save winners)
+    verify(segmentService, times(1)).updateSegment(any(Segment.class));
   }
 }

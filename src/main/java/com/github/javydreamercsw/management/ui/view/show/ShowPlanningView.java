@@ -20,7 +20,6 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -33,11 +32,13 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -52,6 +53,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -70,15 +72,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowService showService;
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
+  private final WrestlerService wrestlerService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final LocalAIStatusService localAIStatus;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
   private final Button viewDetailsButton;
   private final TextArea contextArea;
   private final Grid<ProposedSegment> proposedSegmentsGrid;
+  private final Image templateImage;
   private final Button approveButton;
   private final Button proposeSegmentsButton;
   private final Editor<ProposedSegment> editor;
@@ -88,20 +91,30 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowService showService,
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
+      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
       ObjectMapper objectMapper,
-      SegmentNarrationServiceFactory aiFactory,
-      LocalAIStatusService localAIStatus) {
+      SegmentNarrationServiceFactory aiFactory) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
+    this.wrestlerService = wrestlerService;
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
-    this.localAIStatus = localAIStatus;
+
+    templateImage = new Image();
+
+    templateImage.setHeight("150px");
+
+    templateImage.setWidth("150px");
+
+    templateImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
+
+    templateImage.setVisible(false);
 
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setId("select-show-combo-box");
@@ -123,6 +136,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         event -> {
           loadContextButton.setEnabled(event.getValue() != null);
           viewDetailsButton.setEnabled(event.getValue() != null);
+          updateTemplateImage(event.getValue());
         });
 
     contextArea = new TextArea("Show Planning Context");
@@ -168,13 +182,21 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           Button editButton = new Button("Edit");
           editButton.addClickListener(
               e -> {
+                Show selectedShow = showComboBox.getValue();
+                com.github.javydreamercsw.base.domain.wrestler.Gender constraint =
+                    (selectedShow != null && selectedShow.getTemplate() != null)
+                        ? selectedShow.getTemplate().getGenderConstraint()
+                        : null;
+
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,
                         wrestlerRepository,
+                        wrestlerService,
                         titleService,
                         segmentTypeRepository,
                         segmentRuleRepository,
+                        constraint,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });
@@ -198,6 +220,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     VerticalLayout layout =
         new VerticalLayout(
+            templateImage,
             showComboBox,
             loadContextButton,
             viewDetailsButton, // Added here
@@ -206,6 +229,18 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             proposedSegmentsGrid,
             approveButton);
     add(layout);
+  }
+
+  private void updateTemplateImage(Show show) {
+    if (show != null
+        && show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
+      templateImage.setVisible(true);
+    } else {
+      templateImage.setVisible(false);
+    }
   }
 
   private void navigateToShowDetails() {
@@ -233,9 +268,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private void proposeSegments() {
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      if (localAIStatus.getStatus() != LocalAIStatusService.Status.READY) {
-        reason = "LocalAI is still initializing: " + localAIStatus.getMessage();
-      }
       Notification.show(reason, 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;
@@ -307,6 +339,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           .ifPresent(
               show -> {
                 showComboBox.setValue(show);
+                updateTemplateImage(show);
                 loadContext();
               });
     }

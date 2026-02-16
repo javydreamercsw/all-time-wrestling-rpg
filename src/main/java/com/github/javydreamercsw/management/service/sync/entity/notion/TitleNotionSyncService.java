@@ -38,10 +38,11 @@ import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class TitleNotionSyncService implements NotionSyncService {
+public class TitleNotionSyncService implements NotionEntitySyncService {
 
   private final TitleRepository titleRepository;
   private final NotionHandler notionHandler;
@@ -54,6 +55,7 @@ public class TitleNotionSyncService implements NotionSyncService {
   }
 
   @Override
+  @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
     if (notionHandler != null) {
       Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
@@ -100,14 +102,6 @@ public class TitleNotionSyncService implements NotionSyncService {
                       NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
                 }
 
-                // Map Championship Type (Select)
-                if (entity.getChampionshipType() != null) {
-                  properties.put(
-                      "Category",
-                      NotionPropertyBuilder.createSelectProperty(
-                          entity.getChampionshipType().name()));
-                }
-
                 // Map Is Active (Checkbox)
                 if (entity.getIsActive() != null) {
                   properties.put(
@@ -116,33 +110,30 @@ public class TitleNotionSyncService implements NotionSyncService {
                 }
 
                 // Map Champion (Relation)
-                if (entity.getCurrentChampions() != null
-                    && !entity.getCurrentChampions().isEmpty()) {
-                  List<String> externalIds =
+                List<String> championIds = new java.util.ArrayList<>();
+                if (entity.getCurrentChampions() != null) {
+                  championIds.addAll(
                       entity.getCurrentChampions().stream()
                           .map(wrestler -> wrestler.getExternalId())
                           .filter(java.util.Objects::nonNull)
-                          .collect(Collectors.toList());
-                  if (!externalIds.isEmpty()) {
-                    properties.put(
-                        "Champion", // Assuming Notion property is "Champion"
-                        NotionPropertyBuilder.createRelationProperty(externalIds));
-                  }
+                          .collect(Collectors.toList()));
                 }
+                properties.put(
+                    "Current Champion", // Assuming Notion property is "Current Champion"
+                    NotionPropertyBuilder.createRelationProperty(championIds));
 
                 // Map Challengers (Relation)
-                if (entity.getChallengers() != null && !entity.getChallengers().isEmpty()) {
-                  List<String> externalIds =
+                List<String> challengerIds = new java.util.ArrayList<>();
+                if (entity.getChallengers() != null) {
+                  challengerIds.addAll(
                       entity.getChallengers().stream()
                           .map(wrestler -> wrestler.getExternalId())
                           .filter(java.util.Objects::nonNull)
-                          .collect(Collectors.toList());
-                  if (!externalIds.isEmpty()) {
-                    properties.put(
-                        "Challengers", // Assuming Notion property is "Challengers"
-                        NotionPropertyBuilder.createRelationProperty(externalIds));
-                  }
+                          .collect(Collectors.toList()));
                 }
+                properties.put(
+                    "#1 Contender", // Assuming Notion property is "#1 Contender"
+                    NotionPropertyBuilder.createRelationProperty(challengerIds));
 
                 if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                   // Update existing page

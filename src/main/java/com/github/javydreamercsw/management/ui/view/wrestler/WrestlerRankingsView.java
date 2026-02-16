@@ -83,6 +83,7 @@ public class WrestlerRankingsView extends Main {
 
     add(createToolbar());
     configureGrid();
+    grid.setId("wrestler-rankings-grid");
     VerticalLayout content = new VerticalLayout(grid);
     content.setSizeFull();
     content.setFlexGrow(1, grid);

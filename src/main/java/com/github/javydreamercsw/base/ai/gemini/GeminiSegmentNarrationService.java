@@ -215,6 +215,17 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
 
+      // Record token usage if available
+      if (getPerformanceMonitoringService() != null && response.containsKey("usageMetadata")) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> usage = (Map<String, Object>) response.get("usageMetadata");
+        if (usage != null) {
+          int input = (int) usage.getOrDefault("promptTokenCount", 0);
+          int output = (int) usage.getOrDefault("candidatesTokenCount", 0);
+          getPerformanceMonitoringService().recordTokenUsage(getProviderName(), input, output);
+        }
+      }
+
       @SuppressWarnings("unchecked")
       List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
 

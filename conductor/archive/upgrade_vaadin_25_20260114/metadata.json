@@ -1,8 +1,0 @@
-{
-  "track_id": "upgrade_vaadin_25_20260114",
-  "type": "chore",
-  "status": "new",
-  "created_at": "2026-01-14T09:40:00Z",
-  "updated_at": "2026-01-14T09:40:00Z",
-  "description": "Upgrade to Vaadin 25"
-}

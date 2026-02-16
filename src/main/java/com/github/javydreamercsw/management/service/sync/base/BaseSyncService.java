@@ -23,11 +23,6 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -91,29 +86,7 @@ public abstract class BaseSyncService {
    * @throws IOException if backup creation fails
    */
   protected void createBackup(@NonNull String fileName) throws IOException {
-    Path originalFile = Paths.get("src/main/resources/" + fileName);
-
-    if (!Files.exists(originalFile)) {
-      log.debug("Original file {} does not exist, skipping backup", fileName);
-      return;
-    }
-
-    // Create backup directory
-    Path backupDir =
-        Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
-    Files.createDirectories(backupDir);
-
-    // Create backup file with timestamp
-    String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-    String backupFileName = fileName.replace(".json", "_" + timestamp + ".json");
-    Path backupFile = backupDir.resolve(backupFileName);
-
-    // Copy original file to backup location
-    Files.copy(originalFile, backupFile);
-    log.info("Created backup: {}", backupFile);
-
-    // Clean up old backups
-    cleanupOldBackups(fileName);
+    syncServiceDependencies.getBackupService().createBackup(fileName);
   }
 
   /**
@@ -122,37 +95,7 @@ public abstract class BaseSyncService {
    * @param fileName The base file name to clean up backups for
    */
   private void cleanupOldBackups(@NonNull String fileName) {
-    try {
-      Path backupDir =
-          Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
-      if (!Files.exists(backupDir)) {
-        return;
-      }
-
-      String baseFileName = fileName.replace(".json", "");
-      List<Path> backupFiles =
-          Files.list(backupDir)
-              .filter(path -> path.getFileName().toString().startsWith(baseFileName + "_"))
-              .sorted(
-                  (p1, p2) ->
-                      p2.getFileName()
-                          .toString()
-                          .compareTo(p1.getFileName().toString())) // Newest first
-              .toList();
-
-      int maxFiles = syncServiceDependencies.getNotionSyncProperties().getBackup().getMaxFiles();
-      if (backupFiles.size() > maxFiles) {
-        List<Path> filesToDelete = backupFiles.subList(maxFiles, backupFiles.size());
-        for (Path fileToDelete : filesToDelete) {
-          Files.delete(fileToDelete);
-          log.debug("Deleted old backup: {}", fileToDelete);
-        }
-        log.info("Cleaned up {} old backup files for {}", filesToDelete.size(), fileName);
-      }
-
-    } catch (IOException e) {
-      log.warn("Failed to cleanup old backups for {}: {}", fileName, e.getMessage());
-    }
+    // Logic now handled within BackupService.createBackup
   }
 
   /** Extracts name from any NotionPage type using raw properties. */

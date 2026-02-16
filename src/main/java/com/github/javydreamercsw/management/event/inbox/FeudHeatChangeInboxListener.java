@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.stream.Collectors;
@@ -64,7 +65,8 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
             event.getNewHeat(),
             event.getReason());
 
-    inboxService.createInboxItem(feudHeatChange, message, event.getFeudId().toString());
+    inboxService.createInboxItem(
+        feudHeatChange, message, event.getFeudId().toString(), InboxItemTarget.TargetType.FEUD);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

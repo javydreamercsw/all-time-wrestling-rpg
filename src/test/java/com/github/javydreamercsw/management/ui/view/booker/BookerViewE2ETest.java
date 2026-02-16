@@ -23,7 +23,6 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -40,6 +39,11 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowService showService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    cleanupLeagues();
+  }
 
   @Test
   public void testBookerViewLoads() {
@@ -66,20 +70,15 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(opponent.getId());
     rivalryService.createRivalry(wrestler.getId(), opponent.getId(), "Test Rivalry");
 
-    // Ensure ShowType exists
-    if (showTypeRepository.count() == 0) {
-      ShowType st = new ShowType();
-      st.setName("Weekly Show");
-      st.setDescription("Weekly Show");
-      showTypeRepository.save(st);
-    }
+    // Ensure Weekly show type exists
+    showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 4, 2);
 
     // Create a show
     Show show = new Show();
     show.setName("Test Show");
     show.setDescription("Test Show Description");
     show.setShowDate(LocalDate.now().plusDays(1));
-    show.setType(showTypeService.findAll().get(0));
+    show.setType(showTypeService.findByName("Weekly").get());
     showService.save(show);
 
     // Navigate to the BookerView

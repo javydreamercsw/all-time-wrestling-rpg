@@ -4,31 +4,31 @@
 
 ## Archived Tracks
 
-### [x] Track: Upgrade to Vaadin 25
+### [x] Track: Enhanced Filtering Controls (Alignment & Gender)
 
-*Link: [./conductor/archive/upgrade_vaadin_25_20260114/](./conductor/archive/upgrade_vaadin_25_20260114/)*
+*Link: [./conductor/archive/enhanced_filtering_controls_20260214/](./conductor/archive/enhanced_filtering_controls_20260214/)*
+*Status: Completed (2026-02-14)*
 
-### [x] Track: ATW Solo Campaign "All or Nothing"
+### [x] Track: Wrestler Career Legacy & Hall of Fame
 
-*Link: [./conductor/archive/atw_solo_campaign_20260119/](./conductor/archive/atw_solo_campaign_20260119/)*
+*Link: [./conductor/archive/wrestler_career_legacy_20260214/index.md](./conductor/archive/wrestler_career_legacy_20260214/index.md)*
+*Status: Completed (2026-02-14)*
 
-### [x] Track: Advanced Campaign Chapters (Fighting Champion, Gang Warfare, Authority Feud)
+### [x] Track: Data-Driven Achievements
 
-*Link: [./conductor/archive/advanced_campaign_chapters_20260124/](./conductor/archive/advanced_campaign_chapters_20260124/)*
-
-### [x] Track: Automated Game Guide Screenshots
-
-*Link: [./conductor/archive/game_guide_screenshots_20260124/](./conductor/archive/game_guide_screenshots_20260124/)*
-
-### [x] Track: Docs-as-Code System
-
-*Link: [./conductor/archive/docs_as_code_system_20260124/](./conductor/archive/docs_as_code_system_20260124/)*
-
-### [x] Track: On-demand Theme Changes
-
-*Link: [./conductor/archive/on_demand_themes_20260125/](./conductor/archive/on_demand_themes_20260125/)*
+*Link: [./conductor/archive/data_driven_achievements_20260214/spec.md](./conductor/archive/data_driven_achievements_20260214/spec.md)*
+*Status: Completed (2026-02-14)*
 
 ---
 
 ## Active Tracks
 
+### [ ] Track: Inbox Visibility Fix
+
+*Link: [./conductor/tracks/inbox_visibility_fix/spec.md](./conductor/tracks/inbox_visibility_fix/spec.md)*
+*Status: Active (2026-02-15)*
+
+### [ ] Track: Pollinations AI Video Generation
+
+*Link: [./conductor/tracks/pollinations_video_generation_20260215/](./conductor/tracks/pollinations_video_generation_20260215/)*
+*Status: Active (2026-02-15)*

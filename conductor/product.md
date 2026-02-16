@@ -13,8 +13,8 @@ To provide an AI-powered storytelling platform for wrestling events.
 
 The core gameplay mechanics and features of All Time Wrestling RPG include:
 
-* **Show Management:** Users can manage wrestling shows, including ordering segments and designating main events.
-* **AI Narration:** An AI narration service generates context-aware and compelling narrations for matches, building on events from earlier in the show.
+* **Show Management:** Users can manage wrestling shows, including ordering segments and designating main events. Features automatic scheduling of empty show "shells" for entire seasons based on recurrence rules.
+* **AI Narration & Planning:** An AI narration service generates context-aware narrations. Enhanced "Smart Book" logic automates show planning, ensuring 100% roster participation, respecting title defense frequencies, and prioritizing active feuds.
 * **Dynamic Ranking System:** Wrestlers are ranked based on fan count, with a refined fan acquisition and loss system that adds consequence to match outcomes.
 * **Season Management:** Options for "soft reset" of roster fan standings and tier definitions at the end of each season, including fan recalibration and tier boundary resets.
 * **Segment Rules with Bump Addition:** Configurable segment rules to automatically add bumps to participants based on winners, losers, or all participants.
@@ -22,6 +22,11 @@ The core gameplay mechanics and features of All Time Wrestling RPG include:
 * **Multi-Database Support & Migration:** Support for multiple database engines (H2, MySQL) with a built-in data transfer wizard for seamless migration between environments.
 * **Title History & Lineal tracking:** Comprehensive visualization of championship histories and wrestler accomplishments through chronological timelines and detailed reign records.
 * **Solo Campaign Mode:** A persistent, narrative-driven single-player experience ("All or Nothing") featuring character progression, alignment tracking (Face/Heel), backstage actions, and AI-driven story branching.
+* **League Management:** Multiplayer-focused league system supporting snake drafts, automated standings, match reporting, and season history tracking.
+* **Interactive Promos:** Role-playing elements where players can cut promos to influence feud heat, alignment, and match hype, with AI providing dynamic feedback and rewards.
+* **Match Narration Feedback:** Players can rate and provide specific feedback on AI-generated match narration to train the system for better future storytelling.
+* **On-Demand Theme Switching:** User-configurable UI themes allowing instant switching between Light, Dark, and custom color presets.
+* **AI Image Generation:** Integrated generation of wrestler, NPC, and show template visual assets using local or remote AI models.
 
 ## Technical Considerations
 

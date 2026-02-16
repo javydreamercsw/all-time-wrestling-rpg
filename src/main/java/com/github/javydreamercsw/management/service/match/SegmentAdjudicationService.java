@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -25,6 +27,7 @@ import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -53,6 +56,10 @@ public class SegmentAdjudicationService {
   private final Random random;
   private final TitleService titleService;
   private final MatchRewardService matchRewardService;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
+  private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+      leagueRosterRepository;
+  private final LegacyService legacyService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -62,7 +69,11 @@ public class SegmentAdjudicationService {
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
       TitleService titleService,
-      MatchRewardService matchRewardService) {
+      MatchRewardService matchRewardService,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+          leagueRosterRepository,
+      LegacyService legacyService) {
     this(
         rivalryService,
         wrestlerService,
@@ -70,6 +81,9 @@ public class SegmentAdjudicationService {
         feudService,
         titleService,
         matchRewardService,
+        matchFulfillmentRepository,
+        leagueRosterRepository,
+        legacyService,
         new Random());
   }
 
@@ -80,6 +94,10 @@ public class SegmentAdjudicationService {
       MultiWrestlerFeudService feudService,
       TitleService titleService,
       MatchRewardService matchRewardService,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+          leagueRosterRepository,
+      LegacyService legacyService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -87,6 +105,9 @@ public class SegmentAdjudicationService {
     this.feudService = feudService;
     this.titleService = titleService;
     this.matchRewardService = matchRewardService;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.leagueRosterRepository = leagueRosterRepository;
+    this.legacyService = legacyService;
     this.random = random;
   }
 
@@ -97,9 +118,58 @@ public class SegmentAdjudicationService {
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
+    // Check for league fulfillment
+    matchFulfillmentRepository
+        .findBySegment(segment)
+        .ifPresent(
+            fulfillment -> {
+              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
+                segment.setWinners(List.of(fulfillment.getReportedWinner()));
+              }
+              fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
+              matchFulfillmentRepository.save(fulfillment);
+            });
+
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
+
+    // Update League Stats if applicable
+    if (segment.getShow().getLeague() != null) {
+      com.github.javydreamercsw.management.domain.league.League league =
+          segment.getShow().getLeague();
+      if (winners.isEmpty()) {
+        // Draw
+        for (Wrestler w : segment.getWrestlers()) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setDraws(roster.getDraws() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+      } else {
+        for (Wrestler w : winners) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setWins(roster.getWins() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+        for (Wrestler w : losers) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setLosses(roster.getLosses() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+      }
+    }
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);
@@ -180,6 +250,42 @@ public class SegmentAdjudicationService {
             attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(i));
           }
           break;
+      }
+    }
+
+    // Trigger Achievements
+    List<String> achievementKeys = new ArrayList<>();
+    achievementKeys.add(segment.getSegmentType().getName());
+    segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
+
+    for (Wrestler participant : segment.getWrestlers()) {
+
+      if (participant.getAccount() != null) {
+
+        for (String baseKey : achievementKeys) {
+
+          String keySuffix =
+              baseKey.toUpperCase().replaceAll("[^A-Z0-9 ]", "").trim().replace(" ", "_");
+
+          legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
+
+          if (winners.contains(participant)) {
+
+            legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
+          }
+        }
+
+        if (winners.contains(participant)
+            && segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+          legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
+        }
+
+        if (segment.isMainEvent()) {
+          legacyService.unlockAchievement(participant.getAccount(), "MAIN_EVENT");
+          if (segment.getShow().isPremiumLiveEvent()) {
+            legacyService.unlockAchievement(participant.getAccount(), "MAIN_EVENT_PLE");
+          }
+        }
       }
     }
   }

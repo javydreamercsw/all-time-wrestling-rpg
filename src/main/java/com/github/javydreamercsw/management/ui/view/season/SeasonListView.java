@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -42,6 +43,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +70,8 @@ public class SeasonListView extends Main {
   private TextArea editDescription;
   private IntegerField editShowsPerPpv;
   private Checkbox editIsActive;
+  private DatePicker editStartDate;
+  private DatePicker editEndDate;
   private Season editingSeason;
   private Binder<Season> binder;
 
@@ -193,9 +197,16 @@ public class SeasonListView extends Main {
 
     editIsActive = new Checkbox("Active");
 
+    editStartDate = new DatePicker("Start Date");
+    editStartDate.setWidthFull();
+
+    editEndDate = new DatePicker("End Date");
+    editEndDate.setWidthFull();
+
     // Form layout
     FormLayout formLayout = new FormLayout();
-    formLayout.add(editName, editDescription, editShowsPerPpv, editIsActive);
+    formLayout.add(
+        editName, editDescription, editShowsPerPpv, editIsActive, editStartDate, editEndDate);
 
     // Buttons
     Button saveBtn = new Button("Save", e -> saveSeason());
@@ -225,6 +236,28 @@ public class SeasonListView extends Main {
         .asRequired("Shows per PPV is required")
         .bind(Season::getShowsPerPpv, Season::setShowsPerPpv);
     binder.forField(editIsActive).bind(Season::getIsActive, Season::setIsActive);
+
+    binder
+        .forField(editStartDate)
+        .withConverter(
+            localDate ->
+                localDate != null
+                    ? localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                    : null,
+            instant ->
+                instant != null ? instant.atZone(ZoneId.systemDefault()).toLocalDate() : null)
+        .bind(Season::getStartDate, Season::setStartDate);
+
+    binder
+        .forField(editEndDate)
+        .withConverter(
+            localDate ->
+                localDate != null
+                    ? localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                    : null,
+            instant ->
+                instant != null ? instant.atZone(ZoneId.systemDefault()).toLocalDate() : null)
+        .bind(Season::getEndDate, Season::setEndDate);
   }
 
   private void openEditDialog(Season season) {
@@ -253,8 +286,13 @@ public class SeasonListView extends Main {
 
       if (editingSeason == null) {
         // Creating new season
-        seasonService.createSeason(
-            season.getName(), season.getDescription(), season.getShowsPerPpv());
+        Season newSeason =
+            seasonService.createSeason(
+                season.getName(), season.getDescription(), season.getShowsPerPpv());
+        newSeason.setStartDate(season.getStartDate());
+        newSeason.setEndDate(season.getEndDate());
+        newSeason.setIsActive(season.getIsActive());
+        seasonService.save(newSeason);
         showSuccessNotification("Season created successfully");
       } else {
         // Updating existing season

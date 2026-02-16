@@ -18,8 +18,11 @@ package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
-import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -53,7 +56,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 
 @Slf4j
 public class BookerJourneyE2ETest extends AbstractE2ETest {
@@ -61,40 +63,33 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
 
-  @Autowired private CacheManager cacheManager;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentService segmentService;
-  @Autowired private DataInitializer dataInitializer;
-
   @Autowired private CampaignRepository campaignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   @BeforeEach
   public void setupTestData() {
+    cleanupLeagues();
     wrestlerAlignmentRepository.deleteAllInBatch();
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
+    titleReignRepository
+        .findAll()
+        .forEach(
+            reign -> {
+              reign.setWonAtSegment(null);
+              titleReignRepository.save(reign);
+            });
     titleReignRepository.deleteAll();
     titleRepository
         .findAll()
@@ -230,7 +225,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
       List<Show> matchingShows = showService.findByName(showName);
       Assertions.assertEquals(1, matchingShows.size());
-      Show show = matchingShows.get(0);
+      Show show = matchingShows.getFirst();
 
       // Click on the newly created show in the grid to navigate to its detail page
       log.info("Navigating to show detail page");
@@ -301,7 +296,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
               + serverPort
               + getContextPath()
               + "/show-detail/"
-              + showService.findByName(showName).get(0).getId());
+              + showService.findByName(showName).getFirst().getId());
 
       // Verify navigation to the show detail view
       log.info("Waiting for show detail URL again");
@@ -362,7 +357,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
               + serverPort
               + getContextPath()
               + "/show-detail/"
-              + showService.findByName(showName).get(0).getId());
+              + showService.findByName(showName).getFirst().getId());
 
       // Verify the description has been updated
       log.info("Verifying description update");
@@ -385,7 +380,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName(SHOW_TYPE_NAME).get().getId(),
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
-            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId());
+            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
+            null);
 
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -402,11 +399,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     mainEventSegment.setIsTitleSegment(true);
     mainEventSegment.setIsNpcGenerated(false);
     mainEventSegment.syncParticipants(Arrays.asList(wrestlers.get(2), wrestlers.get(3)));
-    mainEventSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    mainEventSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
     mainEventSegment.setWinners(Arrays.asList(wrestlers.get(3)));
     HashSet<Title> titles = new HashSet<>();
     if (!titleService.getActiveTitles().isEmpty()) {
-      titles.add(titleService.getActiveTitles().get(0));
+      titles.add(titleService.getActiveTitles().getFirst());
     }
     mainEventSegment.setTitles(titles);
     segmentService.updateSegment(mainEventSegment);
@@ -423,7 +420,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
@@ -478,7 +475,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName(SHOW_TYPE_NAME).get().getId(),
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
-            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId());
+            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
+            null);
 
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -495,7 +494,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
@@ -556,7 +555,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
     Assertions.assertNotNull(cells);
-    Assertions.assertEquals(22, cells.size()); // 11 headers, 1 rows
+    Assertions.assertEquals(24, cells.size()); // 11 headers, 1 rows (columns increased)
   }
 
   @Test
@@ -568,7 +567,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName(SHOW_TYPE_NAME).get().getId(),
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
-            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId());
+            showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
+            null);
 
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -585,7 +586,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 

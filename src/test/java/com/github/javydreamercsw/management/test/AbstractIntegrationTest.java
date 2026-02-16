@@ -27,7 +27,14 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
+import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
+import com.github.javydreamercsw.management.domain.league.DraftRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -65,6 +72,7 @@ import org.springframework.test.context.ActiveProfiles;
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
+  @Autowired protected InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired protected WrestlerRepository wrestlerRepository;
   @Autowired protected MultiWrestlerFeudService multiWrestlerFeudService;
   @Autowired protected SeasonRepository seasonRepository;
@@ -86,6 +94,47 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected AccountRepository accountRepository;
   @Autowired protected RoleRepository roleRepository;
   @Autowired protected PasswordEncoder passwordEncoder;
+  @Autowired protected LeagueRepository leagueRepository;
+  @Autowired protected LeagueRosterRepository leagueRosterRepository;
+  @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
+  @Autowired protected DraftRepository draftRepository;
+  @Autowired protected DraftPickRepository draftPickRepository;
+  @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+      backstageActionHistoryRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+      campaignEncounterRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
+  @Autowired protected com.github.javydreamercsw.management.domain.npc.NpcRepository npcRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+
+  @Autowired protected com.github.javydreamercsw.management.DatabaseCleanup databaseCleanup;
+  @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
+      titleReignRepository;
 
   @Autowired(required = false)
   protected org.springframework.cache.CacheManager cacheManager;
@@ -158,5 +207,27 @@ public abstract class AbstractIntegrationTest {
         "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
 
     return context;
+  }
+
+  protected void cleanupLeagues() {
+    log.info("Cleaning up database using DatabaseCleanup...");
+    databaseCleanup.clearRepositories();
+
+    if (cacheManager != null) {
+      log.info("Clearing all caches...");
+      cacheManager
+          .getCacheNames()
+          .forEach(
+              cacheName -> {
+                var cache = cacheManager.getCache(cacheName);
+                if (cache != null) {
+                  cache.clear();
+                }
+              });
+    }
+
+    log.info("Re-initializing data using DataInitializer...");
+    dataInitializer.init();
+    log.info("Database reset complete.");
   }
 }

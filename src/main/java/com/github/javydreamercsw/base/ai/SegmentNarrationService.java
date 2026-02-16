@@ -92,6 +92,7 @@ public interface SegmentNarrationService {
     private List<SegmentNarrationContext> previousSegments; // List of previous segments in the show
     private String narration; // The narration of the segment
     private CampaignContext campaignContext; // Campaign specific context
+    private List<CommentatorContext> commentators; // Commentators for this segment
   }
 
   /** Context for campaign status. */
@@ -105,6 +106,20 @@ public interface SegmentNarrationService {
     private String currentRival;
     private int bumps;
     private List<String> activeInjuries;
+  }
+
+  /** Context for commentators. */
+  @Setter
+  @Getter
+  @ToString
+  class CommentatorContext {
+    private String name;
+    private String gender;
+    private String alignment;
+    private String style;
+    private String catchphrase;
+    private String personaDescription;
+    private String description;
   }
 
   /** Context for wrestling titles. */
@@ -127,6 +142,7 @@ public interface SegmentNarrationService {
     private String description;
     private String team;
     private String gender;
+    private String alignment;
     private String tier;
     private String managerName;
     private MoveSet moveSet;

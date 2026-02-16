@@ -1,0 +1,8 @@
+DELETE FROM game_setting
+WHERE setting_key IN (
+    'AI_LOCALAI_ENABLED',
+    'AI_LOCALAI_BASE_URL',
+    'AI_LOCALAI_MODEL',
+    'AI_LOCALAI_MODEL_URL',
+    'AI_LOCALAI_IMAGE_MODEL'
+);
