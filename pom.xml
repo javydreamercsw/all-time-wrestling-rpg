@@ -531,12 +531,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.31</version>
+      <version>1.5.32</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.31</version>
+      <version>1.5.32</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -1108,7 +1108,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.6.3</version>
         <executions>
           <execution>
             <id>sync-vaadin-frontend-versions</id>
@@ -1156,7 +1156,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>3.5.1</version>
+            <version>3.6.3</version>
             <executions>
               <execution>
                 <id>sync-vaadin-npm-overrides</id>
@@ -1463,7 +1463,7 @@
           <plugin>
             <groupId>org.codehaus.cargo</groupId>
             <artifactId>cargo-maven3-plugin</artifactId>
-            <version>1.10.18</version>
+            <version>1.10.26</version>
             <configuration>
               <container>
                 <containerId>tomcat11x</containerId>
