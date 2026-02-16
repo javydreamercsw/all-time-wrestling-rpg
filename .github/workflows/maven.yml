@@ -66,6 +66,9 @@ jobs:
     - name: Run unit tests with coverage
       run: mvn -B test -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
 
+    - name: Verify WAR packaging
+      run: mvn -B package -Pwar -DskipTests
+
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v4
       with:
