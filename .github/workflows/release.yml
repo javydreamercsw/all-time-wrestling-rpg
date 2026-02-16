@@ -53,8 +53,8 @@ jobs:
             echo "Branch release/${{ github.event.inputs.version }} exists, checking it out."
             git checkout "release/${{ github.event.inputs.version }}"
           else
-            echo "Branch release/${{ github.event.inputs.version }} does not exist, creating it from main."
-            git checkout -b "release/${{ github.event.inputs.version }}" "origin/main"
+            echo "Branch release/${{ github.event.inputs.version }} does not exist, creating it from the current branch."
+            git checkout -b "release/${{ github.event.inputs.version }}"
           fi
 
       - name: Update POM version
