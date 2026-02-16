@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.ui.component;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -32,14 +33,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ImageUploadComponent extends Composite<Div> {
 
-  private final ImageStorageService imageStorageService;
-  private final Consumer<String> onImageSaved;
   private final Upload upload;
 
   public ImageUploadComponent(
       ImageStorageService imageStorageService, Consumer<String> onImageSaved) {
-    this.imageStorageService = imageStorageService;
-    this.onImageSaved = onImageSaved;
 
     this.upload = new Upload();
     this.upload.setUploadHandler(
@@ -86,6 +83,6 @@ public class ImageUploadComponent extends Composite<Div> {
    * @param text The button text.
    */
   public void setUploadButtonText(String text) {
-    upload.setUploadButton(new com.vaadin.flow.component.button.Button(text));
+    upload.setUploadButton(new Button(text));
   }
 }
