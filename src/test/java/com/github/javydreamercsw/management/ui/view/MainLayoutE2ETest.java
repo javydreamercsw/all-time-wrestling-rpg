@@ -17,17 +17,23 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import java.time.Duration;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 
 class MainLayoutE2ETest extends AbstractE2ETest {
+
+  @Autowired private Optional<BuildProperties> buildProperties;
 
   @Test
   void testGithubLink() {
@@ -48,5 +54,29 @@ class MainLayoutE2ETest extends AbstractE2ETest {
     // Assert that the href is correct
     assertEquals(
         "https://github.com/javydreamercsw/all-time-wrestling-rpg", link.getAttribute("href"));
+  }
+
+  @Test
+  void testVersionDisplay() {
+    driver.get("http://localhost:" + serverPort + getContextPath());
+    waitForVaadinClientToLoad();
+
+    // Find the version span
+    WebElement versionSpan = driver.findElement(By.id("version-span"));
+
+    // Assert that the version is visible
+    assertTrue(versionSpan.isDisplayed());
+
+    String versionText = versionSpan.getText();
+    // Assert that it's NOT "Version: N/A"
+    assertNotEquals("Version: N/A", versionText, "Version should not be N/A");
+
+    // It should contain the version from the POM
+    assertTrue(buildProperties.isPresent(), "BuildProperties should be present");
+    String expectedVersion = buildProperties.get().getVersion();
+    assert expectedVersion != null;
+    assertTrue(
+        versionText.contains(expectedVersion),
+        "Version should contain " + expectedVersion + ", but was: " + versionText);
   }
 }
