@@ -4,6 +4,16 @@
 
 ## Archived Tracks
 
+### [x] Track: Inbox Visibility Fix
+
+*Link: [./conductor/archive/inbox_visibility_fix_20260216/plan.md](./conductor/archive/inbox_visibility_fix_20260216/plan.md)*
+*Status: Completed (2026-02-16)*
+
+### [x] Track: Achievement Notifications
+
+*Link: [./conductor/archive/achievement_notifications_20260216/plan.md](./conductor/archive/achievement_notifications_20260216/plan.md)*
+*Status: Completed (2026-02-16)*
+
 ### [x] Track: Enhanced Filtering Controls (Alignment & Gender)
 
 *Link: [./conductor/archive/enhanced_filtering_controls_20260214/](./conductor/archive/enhanced_filtering_controls_20260214/)*
@@ -22,11 +32,6 @@
 ---
 
 ## Active Tracks
-
-### [ ] Track: Inbox Visibility Fix
-
-*Link: [./conductor/tracks/inbox_visibility_fix/spec.md](./conductor/tracks/inbox_visibility_fix/spec.md)*
-*Status: Active (2026-02-15)*
 
 ### [ ] Track: Pollinations AI Video Generation
 
