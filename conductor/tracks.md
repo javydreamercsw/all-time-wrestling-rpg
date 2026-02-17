@@ -4,6 +4,15 @@
 
 ## Archived Tracks
 
+### [x] Track: Native Desktop Packaging with JPackage
+
+*Link: [./conductor/tracks/native_desktop_packaging/index.md](./conductor/tracks/native_desktop_packaging/index.md)*
+*Status: Completed (2026-02-16)*
+
+### [ ] Track: Pollinations AI Video Generation
+
+*Status: Canceled (2026-02-16)*
+
 ### [x] Track: Inbox Visibility Fix
 
 *Link: [./conductor/archive/inbox_visibility_fix_20260216/plan.md](./conductor/archive/inbox_visibility_fix_20260216/plan.md)*
@@ -33,7 +42,4 @@
 
 ## Active Tracks
 
-### [ ] Track: Pollinations AI Video Generation
-
-*Link: [./conductor/tracks/pollinations_video_generation_20260215/](./conductor/tracks/pollinations_video_generation_20260215/)*
-*Status: Active (2026-02-15)*
+*(None)*
