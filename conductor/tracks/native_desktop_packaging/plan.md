@@ -34,3 +34,4 @@
 - [x] Run local verification of Native Installer (macOS DMG).
 - [x] Run E2E tests against the executable JAR.
 - [x] Verify WAR deployment still works (Local verification done, CI will also verify).
+
