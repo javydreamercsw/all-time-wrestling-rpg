@@ -45,4 +45,4 @@ replay_pid*
 /.run/
 /models/
 src/main/resources/META-INF/resources/images/generated/
-conductor/archive/
+.vaadin-node-tasks.lock

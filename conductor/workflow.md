@@ -72,6 +72,15 @@ All tasks follow a strict lifecycle:
     - **Action:** Stage the modified `plan.md` file.
     - **Action:** Commit this change with a descriptive message (e.g., `conductor(plan): Mark task 'Create user model' as complete`).
 
+### Track Archiving
+
+When a track is completed or canceled, it must be archived to maintain a clean workspace while preserving history.
+
+1. **Move Track Folder:** Move the track's directory from `conductor/tracks/<track_id>/` to `conductor/archive/<track_id>_<date>/`.
+2. **Update Registry:** Update `conductor/tracks.md` to move the track from "Active Tracks" to "Archived Tracks" and update its link.
+3. **Prune Archive:** To keep the repository size manageable, only the **last 3 archived tracks** should be kept. Delete any older archived tracks from the `conductor/archive/` directory.
+4. **Commit Archival:** Commit the move and registry update with a message like `chore(conductor): Archive track '<track_name>'`.
+
 ### Phase Completion Verification and Checkpointing Protocol
 
 **Trigger:** This protocol is executed immediately after a task is completed that also concludes a phase in `plan.md`.
@@ -360,4 +369,3 @@ A task is complete when:
 - Document lessons learned
 - Optimize for user happiness
 - Keep things simple and maintainable
-
