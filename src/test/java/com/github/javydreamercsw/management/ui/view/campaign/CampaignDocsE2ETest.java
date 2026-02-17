@@ -251,6 +251,61 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
         "wrestler-profile");
   }
 
+  @Test
+  @Order(9)
+  void testCapturePromoChoicesView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    // Mock AI gives "The crowd is buzzing" as opener
+    waitForPageSourceToContain("The crowd is buzzing");
+
+    documentFeature(
+        "Campaign",
+        "Smart Promo Hooks",
+        "The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your"
+            + " wrestler's personality and current rivalries. Choose your strategy to connect"
+            + " with the audience or draw heat.",
+        "campaign-promo-hooks");
+  }
+
+  @Test
+  @Order(10)
+  void testCapturePromoOutcomeView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
+    waitForVaadinClientToLoad();
+
+    // 3. Perform Action (Click a hook)
+    waitForPageSourceToContain("The crowd is buzzing");
+    org.openqa.selenium.WebElement hookButton =
+        waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-hook-cheap-heat"));
+    clickElement(hookButton);
+    waitForVaadinClientToLoad();
+
+    // 4. Verify & Capture
+    waitForPageSourceToContain("Promo SUCCESSFUL");
+    documentFeature(
+        "Campaign",
+        "Smart Promo Outcome",
+        "Your choices have consequences. The crowd reaction, opponent retorts, and alignment"
+            + " shifts are all dynamically calculated, affecting your wrestler's momentum and"
+            + " reputation.",
+        "campaign-promo-outcome");
+  }
+
   private Wrestler getOrCreateWrestler(Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {

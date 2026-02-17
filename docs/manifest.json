@@ -1,5 +1,19 @@
 {
   "features": [ {
+    "id": "campaign-campaign-promo-hooks",
+    "category": "Campaign",
+    "title": "Smart Promo Hooks",
+    "description": "The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your wrestler's personality and current rivalries. Choose your strategy to connect with the audience or draw heat.",
+    "imagePath": "screenshots/campaign-promo-hooks.png",
+    "order": 80
+  }, {
+    "id": "campaign-campaign-promo-outcome",
+    "category": "Campaign",
+    "title": "Smart Promo Outcome",
+    "description": "Your choices have consequences. The crowd reaction, opponent retorts, and alignment shifts are all dynamically calculated, affecting your wrestler's momentum and reputation.",
+    "imagePath": "screenshots/campaign-promo-outcome.png",
+    "order": 90
+  }, {
     "id": "player-dashboard-player-achievements",
     "category": "Player Dashboard",
     "title": "Medals & Achievements",
