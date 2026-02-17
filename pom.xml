@@ -1617,6 +1617,7 @@
               </goals>
               <profiles>
                 <profile>production</profile>
+                <profile>war</profile>
               </profiles>
             </configuration>
             <executions>

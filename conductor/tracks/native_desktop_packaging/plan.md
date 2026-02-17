@@ -16,10 +16,12 @@
 
 - [x] Update `.github/workflows/maven.yml`:
   - [x] Ensure CI runs for the new JAR-based build.
+  - [x] Update `docker-it` job to generate WAR file for Dockerfile compatibility.
+  - [x] Optimize workflow by removing unnecessary dependencies.
 - [x] Update `.github/workflows/release.yml`:
   - [x] Adjust artifact naming/paths if necessary.
   - [x] Ensure both JAR and WAR (if needed) are considered for release.
-  - [x] Add matrix job for Native Installers (Linux/macOS).
+  - [x] Add matrix job for Native Installers (Linux/macOS/Windows).
 
 ## Phase 3: Documentation
 
@@ -30,6 +32,5 @@
 
 - [x] Run local verification of executable JAR.
 - [x] Run local verification of Native Installer (macOS DMG).
-- [ ] Run E2E tests against the executable JAR (Optional but recommended).
-- [ ] Verify WAR deployment still works (Local verification done, CI will also verify).
-
+- [x] Run E2E tests against the executable JAR.
+- [x] Verify WAR deployment still works (Local verification done, CI will also verify).
