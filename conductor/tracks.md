@@ -23,8 +23,56 @@
 *Link: [./conductor/archive/achievement_notifications_20260216/plan.md](./conductor/archive/achievement_notifications_20260216/plan.md)*
 *Status: Completed (2026-02-16)*
 
+### [x] Track: AI-Driven "Smart Promo" Response System
+
+*Link: [./conductor/tracks/smart_promo/plan.md](./conductor/tracks/smart_promo/plan.md)*
+*Status: Completed (2026-02-17)*
+
 ---
 
 ## Active Tracks
 
-*(None)*
+### [~] Track: Dynamic Faction Chemistry & Synergies
+
+*Link: [./conductor/tracks/faction_synergy/plan.md](./conductor/tracks/faction_synergy/plan.md)*
+*Status: Planning*
+
+### [ ] Track: Visual Arena Customizer (AI-Assisted)
+
+*Link: [./conductor/tracks/arena_customizer/plan.md](./conductor/tracks/arena_customizer/plan.md)*
+*Status: Planning*
+
+### [ ] Track: Persistent "Wear & Tear" & Career Longevity
+
+*Link: [./conductor/tracks/career_longevity/plan.md](./conductor/tracks/career_longevity/plan.md)*
+*Status: Planning*
+
+### [ ] Track: Interactive Backstage "Dialogue Tree" Events
+
+*Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
+*Status: Planning*
+
+### [ ] Track: AI-Generated "Wrestling World" News Feed
+
+*Link: [./conductor/tracks/news_feed/plan.md](./conductor/tracks/news_feed/plan.md)*
+*Status: Planning*
+
+### [ ] Track: Match Interference & Manager Mechanics
+
+*Link: [./conductor/tracks/interference_mechanics/plan.md](./conductor/tracks/interference_mechanics/plan.md)*
+*Status: Planning*
+
+### [ ] Track: Booker's Budget & Economic Simulation
+
+*Link: [./conductor/tracks/booker_economics/plan.md](./conductor/tracks/booker_economics/plan.md)*
+*Status: Planning*
+
+### [ ] Track: AI Storyline "Director" with Branching Milestones
+
+*Link: [./conductor/tracks/ai_storyline_director/plan.md](./conductor/tracks/ai_storyline_director/plan.md)*
+*Status: Planning*
+
+### [ ] Track: Enhanced "Hall of Fame" & Career Retrospectives
+
+*Link: [./conductor/tracks/legacy_dashboard/plan.md](./conductor/tracks/legacy_dashboard/plan.md)*
+*Status: Planning*

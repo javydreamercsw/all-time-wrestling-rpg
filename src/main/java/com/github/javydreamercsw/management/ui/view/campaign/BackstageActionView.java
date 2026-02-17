@@ -269,6 +269,10 @@ public class BackstageActionView extends VerticalLayout {
     actionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
     actionBtn.addClickListener(
         e -> {
+          if (type == BackstageActionType.PROMO) {
+            UI.getCurrent().navigate(PromoView.class);
+            return;
+          }
           var outcome = backstageActionService.performAction(currentCampaign, type, attrValue);
           if (outcome.successes() > 0) {
             Notification.show("Success! " + outcome.description())

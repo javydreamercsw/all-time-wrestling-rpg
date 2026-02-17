@@ -14,17 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto;
+package com.github.javydreamercsw.management.dto.segment.promo;
 
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class FactionImportDTO {
-  private String name;
-  private String description;
-  private String leader;
-  private String manager;
-  private List<String> members;
-  private int affinity;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PromoOutcomeDTO {
+  private String retort; // Opponent's response
+  private String crowdReaction; // Description of fan response
+  private boolean success; // Result of the check
+  private int alignmentShift; // Final applied shift
+  private int momentumBonus; // Reward for next match
+  private String finalNarration; // Combined text for segment record
 }

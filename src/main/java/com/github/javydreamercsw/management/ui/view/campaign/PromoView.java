@@ -1,0 +1,294 @@
+/*
+* Copyright (C) 2026 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.ui.view.campaign;
+
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
+import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
+import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.segment.SmartPromoService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
+import com.vaadin.flow.router.BeforeEvent;
+import com.vaadin.flow.router.HasUrlParameter;
+import com.vaadin.flow.router.OptionalParameter;
+import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.PermitAll;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+@Route(value = "campaign/promo", layout = MainLayout.class)
+@PageTitle("Interactive Promo")
+@PermitAll
+@Slf4j
+public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
+
+  private final SmartPromoService smartPromoService;
+  private final CampaignRepository campaignRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final CampaignService campaignService;
+  private final SecurityUtils securityUtils;
+
+  private Campaign currentCampaign;
+  private Wrestler opponent;
+  private Long opponentId;
+
+  private VerticalLayout narrativeContainer;
+  private HorizontalLayout choicesContainer;
+  private ProgressBar progressBar;
+
+  @Autowired
+  public PromoView(
+      SmartPromoService smartPromoService,
+      CampaignRepository campaignRepository,
+      WrestlerRepository wrestlerRepository,
+      CampaignService campaignService,
+      SecurityUtils securityUtils) {
+    this.smartPromoService = smartPromoService;
+    this.campaignRepository = campaignRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.campaignService = campaignService;
+    this.securityUtils = securityUtils;
+
+    setSpacing(true);
+    setPadding(true);
+    setAlignItems(FlexComponent.Alignment.CENTER);
+
+    initUI();
+  }
+
+  @Override
+  public void setParameter(BeforeEvent event, @OptionalParameter Long parameter) {
+    this.opponentId = parameter;
+    if (opponentId != null) {
+      wrestlerRepository.findById(opponentId).ifPresent(w -> opponent = w);
+    }
+    loadCampaign();
+  }
+
+  private void loadCampaign() {
+    securityUtils
+        .getAuthenticatedUser()
+        .ifPresent(
+            user -> {
+              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
+              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              Wrestler active =
+                  wrestlers.stream()
+                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                      .findFirst()
+                      .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
+
+              if (active != null) {
+                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
+              }
+            });
+  }
+
+  private void initUI() {
+    H2 title = new H2("Cutting a Promo");
+    title.setId("promo-view-title");
+    add(title);
+
+    narrativeContainer = new VerticalLayout();
+    narrativeContainer.setId("narrative-container");
+    narrativeContainer.setWidthFull();
+    narrativeContainer.setMaxWidth("800px");
+    narrativeContainer.addClassNames(
+        LumoUtility.Background.CONTRAST_5,
+        LumoUtility.Padding.LARGE,
+        LumoUtility.BorderRadius.LARGE,
+        LumoUtility.BoxShadow.MEDIUM);
+
+    choicesContainer = new HorizontalLayout();
+    choicesContainer.setId("choices-container");
+    choicesContainer.setSpacing(true);
+    choicesContainer.setPadding(true);
+    choicesContainer.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+
+    progressBar = new ProgressBar();
+    progressBar.setId("promo-progress-bar");
+    progressBar.setIndeterminate(true);
+    progressBar.setVisible(false);
+    progressBar.setWidth("300px");
+
+    add(narrativeContainer, progressBar, choicesContainer);
+  }
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    if (currentCampaign != null && narrativeContainer.getComponentCount() == 0) {
+      startPromo();
+    }
+  }
+
+  private void startPromo() {
+    showLoading(true);
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
+
+    UI ui = UI.getCurrent();
+    SecurityContext context = SecurityContextHolder.getContext();
+
+    Runnable backgroundTask =
+        () -> {
+          try {
+            SmartPromoResponseDTO promoContext =
+                smartPromoService.generatePromoContext(currentCampaign, opponent);
+            ui.access(
+                () -> {
+                  displayPromoContext(promoContext);
+                  showLoading(false);
+                });
+          } catch (Exception e) {
+            log.error("Failed to start promo", e);
+            ui.access(
+                () -> {
+                  Notification.show("Failed to connect to the Promo Director.")
+                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                  showLoading(false);
+                  addBackButton();
+                });
+          }
+        };
+
+    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+  }
+
+  private void displayPromoContext(SmartPromoResponseDTO context) {
+    Paragraph p = new Paragraph(context.getOpener());
+    p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
+    narrativeContainer.add(p);
+
+    for (PromoHookDTO hook : context.getHooks()) {
+      Button hookBtn = new Button(hook.getLabel());
+      hookBtn.setId("promo-hook-" + hook.getLabel().replace(" ", "-").toLowerCase());
+      hookBtn.setTooltipText(hook.getHook() + ": " + hook.getText());
+      hookBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      hookBtn.addClickListener(e -> handleHookChoice(hook));
+      choicesContainer.add(hookBtn);
+    }
+  }
+
+  private void handleHookChoice(PromoHookDTO hook) {
+    showLoading(true);
+    choicesContainer.removeAll();
+
+    UI ui = UI.getCurrent();
+    SecurityContext context = SecurityContextHolder.getContext();
+
+    Runnable backgroundTask =
+        () -> {
+          try {
+            PromoOutcomeDTO outcome =
+                smartPromoService.processPromoHook(currentCampaign, opponent, hook);
+            ui.access(
+                () -> {
+                  displayOutcome(hook, outcome);
+                  showLoading(false);
+                });
+          } catch (Exception e) {
+            log.error("Failed to process promo hook", e);
+            ui.access(
+                () -> {
+                  Notification.show("Failed to resolve the promo.")
+                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                  showLoading(false);
+                  addBackButton();
+                });
+          }
+        };
+
+    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+  }
+
+  private void displayOutcome(PromoHookDTO hook, PromoOutcomeDTO outcome) {
+    VerticalLayout resultLayout = new VerticalLayout();
+    resultLayout.setPadding(false);
+    resultLayout.setSpacing(true);
+
+    Span chosenText = new Span("\"" + hook.getText() + "\"");
+    chosenText.getStyle().set("font-style", "italic");
+    chosenText.addClassNames(LumoUtility.TextColor.PRIMARY);
+    resultLayout.add(chosenText);
+
+    if (outcome.getRetort() != null && !outcome.getRetort().isBlank()) {
+      Paragraph retort = new Paragraph(outcome.getRetort());
+      retort.addClassNames(LumoUtility.FontWeight.BOLD);
+      resultLayout.add(new Span("Opponent's retort:"), retort);
+    }
+
+    Paragraph reaction = new Paragraph(outcome.getCrowdReaction());
+    reaction.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+    resultLayout.add(new Span("Crowd Reaction:"), reaction);
+
+    String status = outcome.isSuccess() ? "SUCCESSFUL" : "FAILED";
+    Span outcomeSpan = new Span("Promo " + status);
+    outcomeSpan.setId("promo-outcome-status");
+    outcomeSpan.addClassNames(
+        LumoUtility.FontWeight.BOLD,
+        outcome.isSuccess() ? LumoUtility.TextColor.SUCCESS : LumoUtility.TextColor.ERROR);
+    resultLayout.add(outcomeSpan);
+
+    narrativeContainer.add(resultLayout);
+
+    Button finishBtn =
+        new Button("Finish Promo", e -> UI.getCurrent().navigate("campaign/actions"));
+    finishBtn.setId("finish-promo-button");
+    finishBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    choicesContainer.add(finishBtn);
+  }
+
+  private void showLoading(boolean loading) {
+    progressBar.setVisible(loading);
+    choicesContainer.setVisible(!loading);
+  }
+
+  private void addBackButton() {
+    Button backBtn =
+        new Button("Back to Actions", e -> UI.getCurrent().navigate("campaign/actions"));
+    choicesContainer.add(backBtn);
+  }
+
+  private void addRetryButton() {
+    Button retryBtn = new Button("Retry Promo", e -> startPromo());
+    choicesContainer.add(retryBtn);
+  }
+}
