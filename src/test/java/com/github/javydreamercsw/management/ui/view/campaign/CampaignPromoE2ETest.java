@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Duration;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -34,6 +35,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Slf4j
 class CampaignPromoE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -90,18 +92,22 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
     takeSequencedScreenshot("promo-view-loaded");
 
     // 4. Verify mock hook is present (Cheap Heat)
+    log.info("Waiting for hook button...");
     WebElement hookButton = waitForVaadinElement(driver, By.id("promo-hook-cheap-heat"));
 
     // 5. Click the hook
-    clickElement(hookButton);
+    log.info("Clicking hook button...");
+    hookButton.click(); // Use direct click instead of JS dispatch
     waitForVaadinClientToLoad();
 
     // 6. Verify outcome
+    log.info("Waiting for outcome text...");
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("narrative-container"), "Promo SUCCESSFUL"));
 
     waitForText("SUCCESSFUL");
+    log.info("Outcome verified.");
     takeSequencedScreenshot("promo-outcome");
 
     // 7. Click Finish

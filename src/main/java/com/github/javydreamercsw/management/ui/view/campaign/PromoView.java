@@ -191,20 +191,27 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
     Runnable backgroundTask =
         () -> {
+          log.info("Starting background task for promo initialization");
           GeneralSecurityUtils.runAsAdmin(
               () -> {
                 try {
                   SmartPromoResponseDTO promoContext =
                       smartPromoService.generatePromoContext(
                           playerWrestler, opponent, currentCampaign);
+                  log.info("Promo context generated successfully");
                   ui.access(
                       () -> {
-                        displayPromoContext(promoContext);
-                        showLoading(false);
-                        ui.push();
+                        try {
+                          displayPromoContext(promoContext);
+                          showLoading(false);
+                          ui.push();
+                          log.info("Promo UI updated with context");
+                        } catch (Exception e) {
+                          log.error("Failed to update UI with promo context", e);
+                        }
                       });
                 } catch (Exception e) {
-                  log.error("Failed to start promo", e);
+                  log.error("Failed to start promo in background", e);
                   ui.access(
                       () -> {
                         Notification.show("Failed to connect to the Promo Director.")
@@ -235,6 +242,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   private void handleHookChoice(PromoHookDTO hook) {
+    log.info("Hook chosen: {}", hook.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
 
@@ -243,20 +251,27 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
     Runnable backgroundTask =
         () -> {
+          log.info("Starting background task for hook processing: {}", hook.getLabel());
           GeneralSecurityUtils.runAsAdmin(
               () -> {
                 try {
                   PromoOutcomeDTO outcome =
                       smartPromoService.processPromoHook(
                           playerWrestler, opponent, hook, currentCampaign);
+                  log.info("Promo hook processed successfully. Success: {}", outcome.isSuccess());
                   ui.access(
                       () -> {
-                        displayOutcome(hook, outcome);
-                        showLoading(false);
-                        ui.push();
+                        try {
+                          displayOutcome(hook, outcome);
+                          showLoading(false);
+                          ui.push();
+                          log.info("Promo UI updated with outcome");
+                        } catch (Exception e) {
+                          log.error("Failed to update UI with promo outcome", e);
+                        }
                       });
                 } catch (Exception e) {
-                  log.error("Failed to process promo hook", e);
+                  log.error("Failed to process promo hook in background", e);
                   ui.access(
                       () -> {
                         Notification.show("Failed to resolve the promo.")

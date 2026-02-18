@@ -540,11 +540,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(driver.findElement(selector));
   }
 
-  /**
-   * Scrolls the given WebElement into view and clicks it using JavaScript.
-   *
-   * @param element the WebElement to scroll into view and click
-   */
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
     takeSequencedScreenshot("before-click");
@@ -562,13 +557,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       log.warn("Could not ensure drawer was closed", e);
     }
 
-    // Use JavaScript to click to bypass potential interception by other elements (like the drawer
-    // or overlays).
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true,"
-                + " cancelable: true}));",
-            element);
+    try {
+      // Attempt native Selenium click first
+      element.click();
+    } catch (Exception e) {
+      log.warn("Native click failed, falling back to JS events: {}", e.getMessage());
+      // Use JavaScript to click with a more complete event sequence to bypass potential
+      // interception
+      ((JavascriptExecutor) driver)
+          .executeScript(
+              "const el = arguments[0];"
+                  + "const opts = {view: window, bubbles: true, cancelable: true};"
+                  + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
+                  + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
+                  + "el.dispatchEvent(new MouseEvent('click', opts));",
+              element);
+    }
     takeSequencedScreenshot("after-click");
   }
 

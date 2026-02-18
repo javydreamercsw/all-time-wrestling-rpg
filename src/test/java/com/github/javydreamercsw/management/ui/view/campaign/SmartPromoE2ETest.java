@@ -75,6 +75,26 @@ class SmartPromoE2ETest extends AbstractE2ETest {
 
     if (!campaignService.hasActiveCampaign(player)) {
       campaignService.startCampaign(player);
+    } else {
+      // Ensure alignment exists if campaign already exists (since we deleted it earlier)
+      final Wrestler finalPlayer = player;
+      wrestlerAlignmentRepository
+          .findByWrestler(player)
+          .orElseGet(
+              () -> {
+                com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment
+                    newAlignment =
+                        com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment
+                            .builder()
+                            .wrestler(finalPlayer)
+                            .alignmentType(
+                                com.github.javydreamercsw.management.domain.campaign.AlignmentType
+                                    .NEUTRAL)
+                            .level(0)
+                            .campaign(campaignRepository.findActiveByWrestler(finalPlayer).get())
+                            .build();
+                return wrestlerAlignmentRepository.save(newAlignment);
+              });
     }
 
     // Force unlock promo and ensure we are in BACKSTAGE phase

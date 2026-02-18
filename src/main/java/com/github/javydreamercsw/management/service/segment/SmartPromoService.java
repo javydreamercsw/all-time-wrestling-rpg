@@ -105,6 +105,7 @@ public class SmartPromoService {
    */
   public SmartPromoResponseDTO generatePromoContext(
       Wrestler player, Wrestler opponent, Campaign campaign) {
+    log.info("Generating promo context for player: {} (id: {})", player.getName(), player.getId());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
     Wrestler loadedOpponent =
@@ -120,7 +121,9 @@ public class SmartPromoService {
 
     String prompt = buildContextPrompt(loadedPlayer, loadedOpponent);
     try {
+      log.debug("Sending context prompt to AI provider: {}", aiService.getProviderName());
       String aiResponse = aiService.generateText(PROMO_CONTEXT_SYSTEM_PROMPT + "\n\n" + prompt);
+      log.debug("Received context response from AI");
       return parseJsonResponse(aiResponse, SmartPromoResponseDTO.class);
     } catch (Exception e) {
       log.error("Failed to generate promo context", e);
@@ -139,6 +142,7 @@ public class SmartPromoService {
    */
   public PromoOutcomeDTO processPromoHook(
       Wrestler player, Wrestler opponent, PromoHookDTO chosenHook, Campaign campaign) {
+    log.info("Processing promo hook: {} for player: {}", chosenHook.getLabel(), player.getName());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
     Wrestler loadedOpponent =
@@ -154,11 +158,14 @@ public class SmartPromoService {
 
     String prompt = buildOutcomePrompt(loadedPlayer, loadedOpponent, chosenHook);
     try {
+      log.debug("Sending outcome prompt to AI provider: {}", aiService.getProviderName());
       String aiResponse = aiService.generateText(PROMO_OUTCOME_SYSTEM_PROMPT + "\n\n" + prompt);
+      log.debug("Received outcome response from AI");
       PromoOutcomeDTO outcome = parseJsonResponse(aiResponse, PromoOutcomeDTO.class);
 
       // Record the outcome if in a campaign
       if (loadedCampaign != null) {
+        log.info("Recording promo outcome for campaign: {}", loadedCampaign.getId());
         recordOutcome(loadedCampaign, loadedPlayer, loadedOpponent, outcome);
       }
 
@@ -172,9 +179,14 @@ public class SmartPromoService {
   private void recordOutcome(
       Campaign campaign, Wrestler player, Wrestler opponent, PromoOutcomeDTO outcome) {
     var state = campaign.getState();
+    log.debug(
+        "Updating campaign state: VP={}, actionsTaken={}",
+        state.getVictoryPoints(),
+        state.getActionsTaken());
 
     // 1. Update alignment
     if (outcome.getAlignmentShift() != 0) {
+      log.info("Applying alignment shift: {}", outcome.getAlignmentShift());
       campaignService.shiftAlignment(campaign, outcome.getAlignmentShift());
     }
 
@@ -184,11 +196,14 @@ public class SmartPromoService {
     state.setLastActionSuccess(outcome.isSuccess());
     state.setMomentumBonus(state.getMomentumBonus() + outcome.getMomentumBonus());
     campaignStateRepository.save(state);
+    log.debug("Campaign state updated and saved");
 
     // 3. Create Segment
+    log.info("Creating promo segment");
     createPromoSegment(campaign, player, opponent, outcome);
 
     // 4. Save History
+    log.info("Saving action history");
     BackstageActionHistory history =
         BackstageActionHistory.builder()
             .campaign(campaign)
@@ -199,6 +214,7 @@ public class SmartPromoService {
             .outcomeDescription(outcome.getFinalNarration())
             .build();
     actionHistoryRepository.save(history);
+    log.info("Promo outcome recorded successfully");
   }
 
   private void createPromoSegment(
