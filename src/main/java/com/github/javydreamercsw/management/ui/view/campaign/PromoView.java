@@ -26,8 +26,10 @@ import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.SmartPromoService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.match.MatchView;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -65,10 +67,13 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   private final WrestlerRepository wrestlerRepository;
   private final CampaignService campaignService;
   private final SecurityUtils securityUtils;
+  private final SegmentService segmentService;
 
   private Campaign currentCampaign;
+  private Wrestler playerWrestler;
   private Wrestler opponent;
   private Long opponentId;
+  private Long segmentId;
 
   private VerticalLayout narrativeContainer;
   private HorizontalLayout choicesContainer;
@@ -80,12 +85,14 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       CampaignService campaignService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      SegmentService segmentService) {
     this.smartPromoService = smartPromoService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.campaignService = campaignService;
     this.securityUtils = securityUtils;
+    this.segmentService = segmentService;
 
     setSpacing(true);
     setPadding(true);
@@ -100,26 +107,40 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     if (opponentId != null) {
       wrestlerRepository.findById(opponentId).ifPresent(w -> opponent = w);
     }
+
+    var queryParams = event.getLocation().getQueryParameters();
+    if (queryParams.getParameters().containsKey("segment")) {
+      this.segmentId = Long.valueOf(queryParams.getParameters().get("segment").get(0));
+    }
+
+    if (queryParams.getParameters().containsKey("playerWrestler")) {
+      Long pwId = Long.valueOf(queryParams.getParameters().get("playerWrestler").get(0));
+      wrestlerRepository.findById(pwId).ifPresent(w -> playerWrestler = w);
+    }
+
     loadCampaign();
   }
 
   private void loadCampaign() {
-    securityUtils
-        .getAuthenticatedUser()
-        .ifPresent(
-            user -> {
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-              Wrestler active =
-                  wrestlers.stream()
-                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
-                      .findFirst()
-                      .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
+    if (playerWrestler == null) {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
+                java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+                Wrestler active =
+                    wrestlers.stream()
+                        .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                        .findFirst()
+                        .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
+                playerWrestler = active;
+              });
+    }
 
-              if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
-              }
-            });
+    if (playerWrestler != null) {
+      campaignRepository.findActiveByWrestler(playerWrestler).ifPresent(c -> currentCampaign = c);
+    }
   }
 
   private void initUI() {
@@ -155,7 +176,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   @Override
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
-    if (currentCampaign != null && narrativeContainer.getComponentCount() == 0) {
+    if (playerWrestler != null && narrativeContainer.getComponentCount() == 0) {
       startPromo();
     }
   }
@@ -174,7 +195,8 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
               () -> {
                 try {
                   SmartPromoResponseDTO promoContext =
-                      smartPromoService.generatePromoContext(currentCampaign, opponent);
+                      smartPromoService.generatePromoContext(
+                          playerWrestler, opponent, currentCampaign);
                   ui.access(
                       () -> {
                         displayPromoContext(promoContext);
@@ -224,7 +246,8 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
               () -> {
                 try {
                   PromoOutcomeDTO outcome =
-                      smartPromoService.processPromoHook(currentCampaign, opponent, hook);
+                      smartPromoService.processPromoHook(
+                          playerWrestler, opponent, hook, currentCampaign);
                   ui.access(
                       () -> {
                         displayOutcome(hook, outcome);
@@ -276,8 +299,31 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
     narrativeContainer.add(resultLayout);
 
+    if (segmentId != null) {
+      // Save to segment narration
+      segmentService
+          .findById(segmentId)
+          .ifPresent(
+              s -> {
+                s.setNarration(outcome.getFinalNarration());
+                segmentService.updateSegment(s);
+              });
+    }
+
     Button finishBtn =
-        new Button("Finish Promo", e -> UI.getCurrent().navigate("campaign/actions"));
+        new Button(
+            "Finish Promo",
+            e -> {
+              if (segmentId != null) {
+                UI.getCurrent()
+                    .navigate(
+                        MatchView.class,
+                        new com.vaadin.flow.router.RouteParameters(
+                            "matchId", segmentId.toString()));
+              } else {
+                UI.getCurrent().navigate("campaign/actions");
+              }
+            });
     finishBtn.setId("finish-promo-button");
     finishBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     choicesContainer.add(finishBtn);

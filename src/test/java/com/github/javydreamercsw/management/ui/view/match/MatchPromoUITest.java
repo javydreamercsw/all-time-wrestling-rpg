@@ -152,4 +152,50 @@ class MatchPromoUITest extends AbstractViewTest {
     Button autoGenBtn = _get(Button.class, spec -> spec.withId("ai-generate-narration-button"));
     org.junit.jupiter.api.Assertions.assertEquals("Auto-Generate Promo (AI)", autoGenBtn.getText());
   }
+
+  @Test
+  void testPromoOptionsDisplayedForPlayerWithoutCampaign() {
+    // 1. Setup Segment
+    Segment segment = new Segment();
+    segment.setId(2L);
+    Show show = new Show();
+    show.setName("League Show");
+    segment.setShow(show);
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    segment.setSegmentType(promoType);
+
+    // 2. Setup User and Wrestler
+    Account account = new Account();
+    account.setId(101L);
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(3L);
+    playerWrestler.setName("League Player");
+    playerWrestler.setAccount(account);
+
+    segment.addParticipant(playerWrestler);
+
+    // 4. Mock Security and Repositories
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(101L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+
+    when(segmentService.findByIdWithShow(2L)).thenReturn(Optional.of(segment));
+    // No campaign
+    when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.empty());
+    when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+
+    // 5. Navigate to View
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "2"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // 6. Verify Buttons still visible
+    _assertOne(Button.class, spec -> spec.withId("go-smart-promo-hooks-button"));
+    _assertOne(Button.class, spec -> spec.withId("go-interactive-promo-button"));
+  }
 }

@@ -94,55 +94,60 @@ public class SmartPromoService {
   /**
    * Generates the initial context for a promo, including an opening narrative and rhetorical hooks.
    *
-   * @param campaign The current campaign.
+   * @param player The wrestler performing the promo.
    * @param opponent The wrestler being addressed (optional).
+   * @param campaign The current campaign (optional).
    * @return The promo context.
    */
-  public SmartPromoResponseDTO generatePromoContext(Campaign campaign, Wrestler opponent) {
+  public SmartPromoResponseDTO generatePromoContext(
+      Wrestler player, Wrestler opponent, Campaign campaign) {
     var aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo generation.");
-      return createFallbackResponse(campaign, opponent);
+      return createFallbackResponse(player, opponent);
     }
 
-    String prompt = buildContextPrompt(campaign, opponent);
+    String prompt = buildContextPrompt(player, opponent);
     try {
       String aiResponse = aiService.generateText(PROMO_CONTEXT_SYSTEM_PROMPT + "\n\n" + prompt);
       return parseJsonResponse(aiResponse, SmartPromoResponseDTO.class);
     } catch (Exception e) {
       log.error("Failed to generate promo context", e);
-      return createFallbackResponse(campaign, opponent);
+      return createFallbackResponse(player, opponent);
     }
   }
 
   /**
    * Processes the chosen hook, determines success, and generates the final outcome.
    *
-   * @param campaign The current campaign.
+   * @param player The wrestler performing the promo.
    * @param opponent The wrestler being addressed (optional).
    * @param chosenHook The hook selected by the player.
+   * @param campaign The current campaign (optional).
    * @return The promo outcome.
    */
   public PromoOutcomeDTO processPromoHook(
-      Campaign campaign, Wrestler opponent, PromoHookDTO chosenHook) {
+      Wrestler player, Wrestler opponent, PromoHookDTO chosenHook, Campaign campaign) {
     var aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo outcome.");
-      return createFallbackOutcome(campaign, opponent, chosenHook);
+      return createFallbackOutcome(player, opponent, chosenHook);
     }
 
-    String prompt = buildOutcomePrompt(campaign, opponent, chosenHook);
+    String prompt = buildOutcomePrompt(player, opponent, chosenHook);
     try {
       String aiResponse = aiService.generateText(PROMO_OUTCOME_SYSTEM_PROMPT + "\n\n" + prompt);
       PromoOutcomeDTO outcome = parseJsonResponse(aiResponse, PromoOutcomeDTO.class);
 
-      // Record the outcome
-      recordOutcome(campaign, opponent, outcome);
+      // Record the outcome if in a campaign
+      if (campaign != null) {
+        recordOutcome(campaign, opponent, outcome);
+      }
 
       return outcome;
     } catch (Exception e) {
       log.error("Failed to generate promo outcome", e);
-      return createFallbackOutcome(campaign, opponent, chosenHook);
+      return createFallbackOutcome(player, opponent, chosenHook);
     }
   }
 
@@ -212,15 +217,13 @@ public class SmartPromoService {
     }
   }
 
-  private String buildContextPrompt(Campaign campaign, Wrestler opponent) {
+  private String buildContextPrompt(Wrestler player, Wrestler opponent) {
     StringBuilder sb = new StringBuilder();
     sb.append("PLAYER:\n");
-    sb.append("- Name: ").append(campaign.getWrestler().getName()).append("\n");
-    sb.append("- Bio: ").append(campaign.getWrestler().getDescription()).append("\n");
-    if (campaign.getWrestler().getAlignment() != null) {
-      sb.append("- Alignment: ")
-          .append(campaign.getWrestler().getAlignment().getAlignmentType())
-          .append("\n");
+    sb.append("- Name: ").append(player.getName()).append("\n");
+    sb.append("- Bio: ").append(player.getDescription()).append("\n");
+    if (player.getAlignment() != null) {
+      sb.append("- Alignment: ").append(player.getAlignment().getAlignmentType()).append("\n");
     }
 
     if (opponent != null) {
@@ -233,7 +236,7 @@ public class SmartPromoService {
 
       // Include Rivalry context
       rivalryService
-          .getRivalryBetweenWrestlers(campaign.getWrestler().getId(), opponent.getId())
+          .getRivalryBetweenWrestlers(player.getId(), opponent.getId())
           .ifPresent(
               rivalry -> {
                 sb.append("\nACTIVE RIVALRY:\n");
@@ -247,7 +250,7 @@ public class SmartPromoService {
               });
 
       // Include common Feuds
-      var playerFeuds = feudService.getActiveFeudsForWrestler(campaign.getWrestler().getId());
+      var playerFeuds = feudService.getActiveFeudsForWrestler(player.getId());
       var commonFeuds =
           playerFeuds.stream()
               .filter(f -> f.hasParticipant(opponent))
@@ -269,9 +272,9 @@ public class SmartPromoService {
     return sb.toString();
   }
 
-  private String buildOutcomePrompt(Campaign campaign, Wrestler opponent, PromoHookDTO chosenHook) {
+  private String buildOutcomePrompt(Wrestler player, Wrestler opponent, PromoHookDTO chosenHook) {
     StringBuilder sb = new StringBuilder();
-    sb.append("PLAYER: ").append(campaign.getWrestler().getName()).append("\n");
+    sb.append("PLAYER: ").append(player.getName()).append("\n");
     if (opponent != null) {
       sb.append("OPPONENT: ").append(opponent.getName()).append("\n");
     }
@@ -294,7 +297,7 @@ public class SmartPromoService {
     return objectMapper.readValue(json, clazz);
   }
 
-  private SmartPromoResponseDTO createFallbackResponse(Campaign campaign, Wrestler opponent) {
+  private SmartPromoResponseDTO createFallbackResponse(Wrestler player, Wrestler opponent) {
     return SmartPromoResponseDTO.builder()
         .opener("You step into the ring, ready to speak your mind.")
         .hooks(
@@ -311,7 +314,7 @@ public class SmartPromoService {
   }
 
   private PromoOutcomeDTO createFallbackOutcome(
-      Campaign campaign, Wrestler opponent, PromoHookDTO hook) {
+      Wrestler player, Wrestler opponent, PromoHookDTO hook) {
     return PromoOutcomeDTO.builder()
         .retort(opponent != null ? "Whatever you say." : null)
         .crowdReaction("The crowd reacts with mild interest.")

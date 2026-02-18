@@ -117,7 +117,8 @@ class SmartPromoServiceTest {
 
     when(aiService.generateText(anyString())).thenReturn(aiJsonResponse);
 
-    SmartPromoResponseDTO result = smartPromoService.generatePromoContext(campaign, opponent);
+    SmartPromoResponseDTO result =
+        smartPromoService.generatePromoContext(player, opponent, campaign);
 
     assertNotNull(result);
     assertEquals("You walk out to a chorus of boos.", result.getOpener());
@@ -158,7 +159,7 @@ class SmartPromoServiceTest {
 
     when(aiService.generateText(anyString())).thenReturn(aiJsonResponse);
 
-    smartPromoService.generatePromoContext(campaign, opponent);
+    smartPromoService.generatePromoContext(player, opponent, campaign);
 
     // Verify prompt contains rivalry info
     verify(aiService)
@@ -217,7 +218,8 @@ class SmartPromoServiceTest {
         .thenReturn(
             new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType());
 
-    PromoOutcomeDTO result = smartPromoService.processPromoHook(campaign, opponent, chosenHook);
+    PromoOutcomeDTO result =
+        smartPromoService.processPromoHook(player, opponent, chosenHook, campaign);
 
     assertNotNull(result);
     assertEquals("How dare you speak about our team like that!", result.getRetort());

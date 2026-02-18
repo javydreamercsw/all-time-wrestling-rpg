@@ -44,7 +44,6 @@ import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
-import com.github.javydreamercsw.management.ui.view.campaign.PromoView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -522,29 +521,33 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     boolean isPlayerParticipant = finalPlayerWrestler != null;
 
     if (isPromo && isPlayerParticipant) {
-      // 1. Full Smart Promo (Hooks/Choices) - Only if in an active campaign
-      var campaignOpt = campaignRepository.findActiveByWrestler(finalPlayerWrestler);
-      if (campaignOpt.isPresent()) {
-        Button hooksBtn =
-            new Button(
-                "Use Smart Promo (Hooks)",
-                e -> {
-                  Wrestler opponent =
-                      segment.getWrestlers().stream()
-                          .filter(w -> !w.getId().equals(finalPlayerWrestler.getId()))
-                          .findFirst()
-                          .orElse(null);
-                  if (opponent != null) {
-                    UI.getCurrent().navigate(PromoView.class, opponent.getId());
-                  } else {
-                    UI.getCurrent().navigate(PromoView.class);
-                  }
-                });
-        hooksBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        hooksBtn.setId("go-smart-promo-hooks-button");
-        hooksBtn.setTooltipText("Switch to the choice-based Smart Promo system.");
-        narrationButtons.add(hooksBtn);
-      }
+      // 1. Full Smart Promo (Hooks/Choices)
+      Button hooksBtn =
+          new Button(
+              "Use Smart Promo (Hooks)",
+              e -> {
+                Wrestler opponent =
+                    segment.getWrestlers().stream()
+                        .filter(w -> w != null && !w.getId().equals(finalPlayerWrestler.getId()))
+                        .findFirst()
+                        .orElse(null);
+
+                String route = "campaign/promo";
+                if (opponent != null) {
+                  route += "/" + opponent.getId();
+                }
+
+                java.util.Map<String, List<String>> params = new java.util.HashMap<>();
+                params.put("playerWrestler", List.of(finalPlayerWrestler.getId().toString()));
+                params.put("segment", List.of(segment.getId().toString()));
+
+                UI.getCurrent().navigate(route, new com.vaadin.flow.router.QueryParameters(params));
+              });
+      hooksBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      hooksBtn.setId("go-smart-promo-hooks-button");
+      hooksBtn.setTooltipText(
+          "Switch to the choice-based Smart Promo system. Story progression only in Campaigns.");
+      narrationButtons.add(hooksBtn);
 
       // 2. Interactive Chat (Free-form)
       Button interactiveBtn =
