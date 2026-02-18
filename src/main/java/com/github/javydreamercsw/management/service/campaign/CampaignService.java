@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -91,6 +92,7 @@ public class CampaignService {
   private final CampaignChapterService chapterService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
+  private final ShowRepository showRepository;
   private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
   private final SegmentRuleRepository segmentRuleRepository;
@@ -712,7 +714,7 @@ public class CampaignService {
     final String finalShowName = showName;
     final Long finalTemplateId = templateId;
     final java.time.LocalDate finalDate = date;
-    return showService.findByName(finalShowName).stream()
+    return showRepository.findByName(finalShowName).stream()
         .filter(s -> s.getShowDate().equals(finalDate))
         .findFirst()
         .orElseGet(

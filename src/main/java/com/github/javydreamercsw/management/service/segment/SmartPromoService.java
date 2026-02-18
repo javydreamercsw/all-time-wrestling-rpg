@@ -159,7 +159,7 @@ public class SmartPromoService {
 
       // Record the outcome if in a campaign
       if (loadedCampaign != null) {
-        recordOutcome(loadedCampaign, loadedOpponent, outcome);
+        recordOutcome(loadedCampaign, loadedPlayer, loadedOpponent, outcome);
       }
 
       return outcome;
@@ -169,7 +169,8 @@ public class SmartPromoService {
     }
   }
 
-  private void recordOutcome(Campaign campaign, Wrestler opponent, PromoOutcomeDTO outcome) {
+  private void recordOutcome(
+      Campaign campaign, Wrestler player, Wrestler opponent, PromoOutcomeDTO outcome) {
     var state = campaign.getState();
 
     // 1. Update alignment
@@ -185,7 +186,7 @@ public class SmartPromoService {
     campaignStateRepository.save(state);
 
     // 3. Create Segment
-    createPromoSegment(campaign, opponent, outcome);
+    createPromoSegment(campaign, player, opponent, outcome);
 
     // 4. Save History
     BackstageActionHistory history =
@@ -200,7 +201,8 @@ public class SmartPromoService {
     actionHistoryRepository.save(history);
   }
 
-  private void createPromoSegment(Campaign campaign, Wrestler opponent, PromoOutcomeDTO outcome) {
+  private void createPromoSegment(
+      Campaign campaign, Wrestler player, Wrestler opponent, PromoOutcomeDTO outcome) {
     try {
       var show = campaignService.getOrCreateCampaignShow(campaign);
       var promoType = campaignService.getPromoSegmentType();
@@ -216,13 +218,13 @@ public class SmartPromoService {
           com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
 
       // Add participants
-      segment.addParticipant(campaign.getWrestler());
+      segment.addParticipant(player);
       if (opponent != null) {
         segment.addParticipant(opponent);
       }
 
       if (outcome.isSuccess()) {
-        segment.setWinners(java.util.List.of(campaign.getWrestler()));
+        segment.setWinners(java.util.List.of(player));
       }
 
       // Add "Promo" rule
