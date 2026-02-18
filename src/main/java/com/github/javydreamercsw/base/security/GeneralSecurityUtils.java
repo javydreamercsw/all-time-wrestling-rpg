@@ -22,7 +22,6 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,6 +29,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 
 /** A utility class for general security-related operations. */
 public final class GeneralSecurityUtils {
@@ -58,10 +58,6 @@ public final class GeneralSecurityUtils {
             });
   }
 
-  public static <T> T runAsAdmin(@NonNull Callable<T> callable) {
-    return runAsAdmin((Callable<T>) () -> callable.call());
-  }
-
   /**
    * Runs the given {@link Supplier} with the credentials and roles provided.
    *
@@ -74,9 +70,10 @@ public final class GeneralSecurityUtils {
       @NonNull String username,
       @NonNull String password,
       @NonNull String role) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+    SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
+    SecurityContext originalContext = strategy.getContext();
     try {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      SecurityContext context = strategy.createEmptyContext();
 
       // Create a mock account and role for the principal
       Account account = new Account(username, password, username + "@example.com");
@@ -97,10 +94,10 @@ public final class GeneralSecurityUtils {
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
-      SecurityContextHolder.setContext(context);
+      strategy.setContext(context);
       return supplier.get();
     } finally {
-      SecurityContextHolder.setContext(originalContext);
+      strategy.setContext(originalContext);
     }
   }
 }

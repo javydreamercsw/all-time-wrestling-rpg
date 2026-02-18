@@ -19,6 +19,8 @@
 
 - [x] Implement feedback loop for crowd reaction.
 
+- [x] Enhance AI context with rivalry and feud history.
+
 ## Phase 4: Testing
 
 - [x] Unit tests for prompt generation.
