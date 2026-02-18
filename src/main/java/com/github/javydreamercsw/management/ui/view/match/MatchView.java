@@ -144,9 +144,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       String matchId = event.getRouteParameters().get("matchId").orElse(null);
       log.info("Entering MatchView for matchId: {}", matchId);
       if (matchId != null) {
-        Optional<Segment> foundSegment = segmentService.findByIdWithShow(Long.valueOf(matchId));
-        if (foundSegment.isPresent()) {
-          segment = foundSegment.get();
+        Long id = Long.valueOf(matchId);
+        // Try finding as a fulfillment first to get full context
+        Optional<MatchFulfillment> fulfillment = matchFulfillmentRepository.findByIdWithDetails(id);
+        if (fulfillment.isPresent()) {
+          segment = fulfillment.get().getSegment();
+        } else {
+          // Fallback to direct segment lookup
+          segment = segmentService.findByIdWithShow(id).orElse(null);
+        }
+
+        if (segment != null) {
           List<Wrestler> wrestlers = segment.getWrestlers();
           log.info(
               "Found segment: {} with {} wrestlers",
@@ -303,6 +311,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
             segment.setNarration(narrationArea.getValue());
             segmentService.updateSegment(segment);
+            UI.getCurrent().push();
           }
         });
 
@@ -713,12 +722,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
 
       if (generated != null && !generated.isEmpty()) {
-        narrationArea.setValue(generated);
-        segment.setNarration(generated);
-        segmentService.updateSegment(segment);
-        updateCommentaryDisplay();
-        Notification.show("Narration generated!")
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        getUI()
+            .ifPresent(
+                ui ->
+                    ui.access(
+                        () -> {
+                          narrationArea.setValue(generated);
+                          segment.setNarration(generated);
+                          segmentService.updateSegment(segment);
+                          updateCommentaryDisplay();
+                          Notification.show("Narration generated!")
+                              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                          ui.push();
+                        }));
       }
     } catch (Exception e) {
       log.error("Failed to generate AI narration", e);

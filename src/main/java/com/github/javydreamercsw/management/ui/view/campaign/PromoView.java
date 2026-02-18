@@ -201,6 +201,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                       () -> {
                         displayPromoContext(promoContext);
                         showLoading(false);
+                        ui.push();
                       });
                 } catch (Exception e) {
                   log.error("Failed to start promo", e);
@@ -252,6 +253,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                       () -> {
                         displayOutcome(hook, outcome);
                         showLoading(false);
+                        ui.push();
                       });
                 } catch (Exception e) {
                   log.error("Failed to process promo hook", e);

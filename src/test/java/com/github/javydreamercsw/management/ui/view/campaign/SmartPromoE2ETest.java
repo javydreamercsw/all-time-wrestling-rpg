@@ -99,7 +99,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     takeSequencedScreenshot("smart-promo-actions-initial");
 
     // 2. Click Promo action
-    WebElement promoButton = waitForVaadinElement(driver, By.id("action-button-PROMO"));
+    WebElement promoButton = waitForVaadinElement(driver, By.id("action-button-PROMO-INTERACTIVE"));
     clickElement(promoButton);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("smart-promo-view-initial");

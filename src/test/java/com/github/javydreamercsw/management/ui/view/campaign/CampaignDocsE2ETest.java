@@ -296,7 +296,12 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     waitForVaadinClientToLoad();
 
     // 4. Verify & Capture
-    waitForPageSourceToContain("Promo SUCCESSFUL");
+    waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-outcome-status"));
+    org.openqa.selenium.WebElement status =
+        driver.findElement(org.openqa.selenium.By.id("promo-outcome-status"));
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
+        .until(d -> status.getText().contains("SUCCESSFUL"));
+
     documentFeature(
         "Campaign",
         "Smart Promo Outcome",
