@@ -22,9 +22,11 @@ import com.github.javydreamercsw.management.domain.campaign.BackstageActionHisto
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
@@ -46,8 +48,10 @@ public class SmartPromoService {
   private final SegmentNarrationServiceFactory aiFactory;
   private final ObjectMapper objectMapper;
   private final CampaignService campaignService;
+  private final CampaignRepository campaignRepository;
   private final CampaignStateRepository campaignStateRepository;
   private final BackstageActionHistoryRepository actionHistoryRepository;
+  private final WrestlerRepository wrestlerRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final RivalryService rivalryService;
   private final MultiWrestlerFeudService feudService;
@@ -101,19 +105,26 @@ public class SmartPromoService {
    */
   public SmartPromoResponseDTO generatePromoContext(
       Wrestler player, Wrestler opponent, Campaign campaign) {
+    // Reload entities to ensure they are attached to the current transaction
+    Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
+    Wrestler loadedOpponent =
+        opponent != null ? wrestlerRepository.findById(opponent.getId()).orElse(null) : null;
+    Campaign loadedCampaign =
+        campaign != null ? campaignRepository.findById(campaign.getId()).orElse(null) : null;
+
     var aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo generation.");
-      return createFallbackResponse(player, opponent);
+      return createFallbackResponse(loadedPlayer, loadedOpponent);
     }
 
-    String prompt = buildContextPrompt(player, opponent);
+    String prompt = buildContextPrompt(loadedPlayer, loadedOpponent);
     try {
       String aiResponse = aiService.generateText(PROMO_CONTEXT_SYSTEM_PROMPT + "\n\n" + prompt);
       return parseJsonResponse(aiResponse, SmartPromoResponseDTO.class);
     } catch (Exception e) {
       log.error("Failed to generate promo context", e);
-      return createFallbackResponse(player, opponent);
+      return createFallbackResponse(loadedPlayer, loadedOpponent);
     }
   }
 
@@ -128,26 +139,33 @@ public class SmartPromoService {
    */
   public PromoOutcomeDTO processPromoHook(
       Wrestler player, Wrestler opponent, PromoHookDTO chosenHook, Campaign campaign) {
+    // Reload entities to ensure they are attached to the current transaction
+    Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
+    Wrestler loadedOpponent =
+        opponent != null ? wrestlerRepository.findById(opponent.getId()).orElse(null) : null;
+    Campaign loadedCampaign =
+        campaign != null ? campaignRepository.findById(campaign.getId()).orElse(null) : null;
+
     var aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo outcome.");
-      return createFallbackOutcome(player, opponent, chosenHook);
+      return createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
     }
 
-    String prompt = buildOutcomePrompt(player, opponent, chosenHook);
+    String prompt = buildOutcomePrompt(loadedPlayer, loadedOpponent, chosenHook);
     try {
       String aiResponse = aiService.generateText(PROMO_OUTCOME_SYSTEM_PROMPT + "\n\n" + prompt);
       PromoOutcomeDTO outcome = parseJsonResponse(aiResponse, PromoOutcomeDTO.class);
 
       // Record the outcome if in a campaign
-      if (campaign != null) {
-        recordOutcome(campaign, opponent, outcome);
+      if (loadedCampaign != null) {
+        recordOutcome(loadedCampaign, loadedOpponent, outcome);
       }
 
       return outcome;
     } catch (Exception e) {
       log.error("Failed to generate promo outcome", e);
-      return createFallbackOutcome(player, opponent, chosenHook);
+      return createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
     }
   }
 

@@ -50,7 +50,11 @@ class SmartPromoServiceTest {
   private ObjectMapper objectMapper;
   private CampaignService campaignService;
   private CampaignStateRepository campaignStateRepository;
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
   private BackstageActionHistoryRepository actionHistoryRepository;
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
+      wrestlerRepository;
   private SegmentRuleRepository segmentRuleRepository;
   private com.github.javydreamercsw.management.service.rivalry.RivalryService rivalryService;
   private com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService feudService;
@@ -64,8 +68,12 @@ class SmartPromoServiceTest {
 
     objectMapper = new ObjectMapper();
     campaignService = mock(CampaignService.class);
+    campaignRepository =
+        mock(com.github.javydreamercsw.management.domain.campaign.CampaignRepository.class);
     campaignStateRepository = mock(CampaignStateRepository.class);
     actionHistoryRepository = mock(BackstageActionHistoryRepository.class);
+    wrestlerRepository =
+        mock(com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository.class);
     segmentRuleRepository = mock(SegmentRuleRepository.class);
     rivalryService =
         mock(com.github.javydreamercsw.management.service.rivalry.RivalryService.class);
@@ -77,8 +85,10 @@ class SmartPromoServiceTest {
             aiFactory,
             objectMapper,
             campaignService,
+            campaignRepository,
             campaignStateRepository,
             actionHistoryRepository,
+            wrestlerRepository,
             segmentRuleRepository,
             rivalryService,
             feudService);
@@ -87,8 +97,10 @@ class SmartPromoServiceTest {
   @Test
   void testGeneratePromoContext() throws Exception {
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     campaign.setState(new CampaignState());
     Wrestler player = new Wrestler();
+    player.setId(1L);
     player.setName("Player One");
     player.setAlignment(
         com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment.builder()
@@ -97,11 +109,16 @@ class SmartPromoServiceTest {
     campaign.setWrestler(player);
 
     Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
     opponent.setName("The Heel");
     opponent.setAlignment(
         com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment.builder()
             .alignmentType(com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL)
             .build());
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(player));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(opponent));
 
     String aiJsonResponse =
         """
@@ -129,6 +146,7 @@ class SmartPromoServiceTest {
   @Test
   void testGeneratePromoContextWithRivalry() throws Exception {
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     campaign.setState(new CampaignState());
     Wrestler player = new Wrestler();
     player.setId(1L);
@@ -138,6 +156,10 @@ class SmartPromoServiceTest {
     Wrestler opponent = new Wrestler();
     opponent.setId(2L);
     opponent.setName("The Heel");
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(player));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(opponent));
 
     var rivalry = new com.github.javydreamercsw.management.domain.rivalry.Rivalry();
     rivalry.setHeat(25);
@@ -174,8 +196,10 @@ class SmartPromoServiceTest {
   @Test
   void testProcessPromoHook() throws Exception {
     Campaign campaign = new Campaign();
+    campaign.setId(1L);
     campaign.setState(new CampaignState());
     Wrestler player = new Wrestler();
+    player.setId(1L);
     player.setName("Player One");
     player.setAlignment(
         com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment.builder()
@@ -184,11 +208,16 @@ class SmartPromoServiceTest {
     campaign.setWrestler(player);
 
     Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
     opponent.setName("The Heel");
     opponent.setAlignment(
         com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment.builder()
             .alignmentType(com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL)
             .build());
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(player));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(opponent));
 
     PromoHookDTO chosenHook =
         PromoHookDTO.builder()
