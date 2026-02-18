@@ -29,6 +29,8 @@ import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,8 @@ public class SmartPromoService {
   private final CampaignStateRepository campaignStateRepository;
   private final BackstageActionHistoryRepository actionHistoryRepository;
   private final SegmentRuleRepository segmentRuleRepository;
+  private final RivalryService rivalryService;
+  private final MultiWrestlerFeudService feudService;
 
   private static final String PROMO_CONTEXT_SYSTEM_PROMPT =
       """
@@ -225,6 +229,39 @@ public class SmartPromoService {
       sb.append("- Bio: ").append(opponent.getDescription()).append("\n");
       if (opponent.getAlignment() != null) {
         sb.append("- Alignment: ").append(opponent.getAlignment().getAlignmentType()).append("\n");
+      }
+
+      // Include Rivalry context
+      rivalryService
+          .getRivalryBetweenWrestlers(campaign.getWrestler().getId(), opponent.getId())
+          .ifPresent(
+              rivalry -> {
+                sb.append("\nACTIVE RIVALRY:\n");
+                sb.append("- Intensity: ")
+                    .append(rivalry.getIntensity().getDisplayName())
+                    .append("\n");
+                sb.append("- Heat Level: ").append(rivalry.getHeat()).append("\n");
+                if (rivalry.getStorylineNotes() != null && !rivalry.getStorylineNotes().isBlank()) {
+                  sb.append("- Storyline Notes: ").append(rivalry.getStorylineNotes()).append("\n");
+                }
+              });
+
+      // Include common Feuds
+      var playerFeuds = feudService.getActiveFeudsForWrestler(campaign.getWrestler().getId());
+      var commonFeuds =
+          playerFeuds.stream()
+              .filter(f -> f.hasParticipant(opponent))
+              .collect(java.util.stream.Collectors.toList());
+
+      if (!commonFeuds.isEmpty()) {
+        sb.append("\nSHARED FEUDS:\n");
+        for (var feud : commonFeuds) {
+          sb.append("- Feud Name: ").append(feud.getName()).append("\n");
+          sb.append("- Feud Heat: ").append(feud.getHeat()).append("\n");
+          if (feud.getStorylineNotes() != null && !feud.getStorylineNotes().isBlank()) {
+            sb.append("- Feud Notes: ").append(feud.getStorylineNotes()).append("\n");
+          }
+        }
       }
     }
 

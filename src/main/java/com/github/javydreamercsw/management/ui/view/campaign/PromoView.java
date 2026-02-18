@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -169,24 +170,27 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
     Runnable backgroundTask =
         () -> {
-          try {
-            SmartPromoResponseDTO promoContext =
-                smartPromoService.generatePromoContext(currentCampaign, opponent);
-            ui.access(
-                () -> {
-                  displayPromoContext(promoContext);
-                  showLoading(false);
-                });
-          } catch (Exception e) {
-            log.error("Failed to start promo", e);
-            ui.access(
-                () -> {
-                  Notification.show("Failed to connect to the Promo Director.")
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                  showLoading(false);
-                  addBackButton();
-                });
-          }
+          GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                try {
+                  SmartPromoResponseDTO promoContext =
+                      smartPromoService.generatePromoContext(currentCampaign, opponent);
+                  ui.access(
+                      () -> {
+                        displayPromoContext(promoContext);
+                        showLoading(false);
+                      });
+                } catch (Exception e) {
+                  log.error("Failed to start promo", e);
+                  ui.access(
+                      () -> {
+                        Notification.show("Failed to connect to the Promo Director.")
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                        showLoading(false);
+                        addBackButton();
+                      });
+                }
+              });
         };
 
     new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
@@ -216,24 +220,27 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
     Runnable backgroundTask =
         () -> {
-          try {
-            PromoOutcomeDTO outcome =
-                smartPromoService.processPromoHook(currentCampaign, opponent, hook);
-            ui.access(
-                () -> {
-                  displayOutcome(hook, outcome);
-                  showLoading(false);
-                });
-          } catch (Exception e) {
-            log.error("Failed to process promo hook", e);
-            ui.access(
-                () -> {
-                  Notification.show("Failed to resolve the promo.")
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                  showLoading(false);
-                  addBackButton();
-                });
-          }
+          GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                try {
+                  PromoOutcomeDTO outcome =
+                      smartPromoService.processPromoHook(currentCampaign, opponent, hook);
+                  ui.access(
+                      () -> {
+                        displayOutcome(hook, outcome);
+                        showLoading(false);
+                      });
+                } catch (Exception e) {
+                  log.error("Failed to process promo hook", e);
+                  ui.access(
+                      () -> {
+                        Notification.show("Failed to resolve the promo.")
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                        showLoading(false);
+                        addBackButton();
+                      });
+                }
+              });
         };
 
     new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();

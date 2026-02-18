@@ -38,6 +38,8 @@ import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,6 +52,8 @@ class SmartPromoServiceTest {
   private CampaignStateRepository campaignStateRepository;
   private BackstageActionHistoryRepository actionHistoryRepository;
   private SegmentRuleRepository segmentRuleRepository;
+  private com.github.javydreamercsw.management.service.rivalry.RivalryService rivalryService;
+  private com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService feudService;
 
   @BeforeEach
   void setUp() {
@@ -63,6 +67,10 @@ class SmartPromoServiceTest {
     campaignStateRepository = mock(CampaignStateRepository.class);
     actionHistoryRepository = mock(BackstageActionHistoryRepository.class);
     segmentRuleRepository = mock(SegmentRuleRepository.class);
+    rivalryService =
+        mock(com.github.javydreamercsw.management.service.rivalry.RivalryService.class);
+    feudService =
+        mock(com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService.class);
 
     smartPromoService =
         new SmartPromoService(
@@ -71,7 +79,9 @@ class SmartPromoServiceTest {
             campaignService,
             campaignStateRepository,
             actionHistoryRepository,
-            segmentRuleRepository);
+            segmentRuleRepository,
+            rivalryService,
+            feudService);
   }
 
   @Test
@@ -113,6 +123,51 @@ class SmartPromoServiceTest {
     assertEquals("You walk out to a chorus of boos.", result.getOpener());
     assertEquals(2, result.getHooks().size());
     assertEquals("Cheap Heat", result.getHooks().get(0).getLabel());
+  }
+
+  @Test
+  void testGeneratePromoContextWithRivalry() throws Exception {
+    Campaign campaign = new Campaign();
+    campaign.setState(new CampaignState());
+    Wrestler player = new Wrestler();
+    player.setId(1L);
+    player.setName("Player One");
+    campaign.setWrestler(player);
+
+    Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
+    opponent.setName("The Heel");
+
+    var rivalry = new com.github.javydreamercsw.management.domain.rivalry.Rivalry();
+    rivalry.setHeat(25);
+    rivalry.setStorylineNotes("You stole my title!");
+
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.of(rivalry));
+    when(feudService.getActiveFeudsForWrestler(1L)).thenReturn(List.of());
+
+    String aiJsonResponse =
+        """
+        {
+          "opener": "The tension is thick.",
+          "hooks": [
+            { "hook": "Demand rematch", "label": "Rematch", "text": "I want my title back!", "alignmentShift": 1, "difficulty": 5 }
+          ],
+          "opponentName": "The Heel"
+        }
+        """;
+
+    when(aiService.generateText(anyString())).thenReturn(aiJsonResponse);
+
+    smartPromoService.generatePromoContext(campaign, opponent);
+
+    // Verify prompt contains rivalry info
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("ACTIVE RIVALRY:")
+                        && prompt.contains("Heat Level: 25")
+                        && prompt.contains("You stole my title!")));
   }
 
   @Test
