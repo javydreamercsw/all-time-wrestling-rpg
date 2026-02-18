@@ -68,7 +68,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockPromoContext(prompt);
     }
 
-    if (prompt.contains("chosen rhetorical hook")) {
+    if (prompt.contains("CHOSEN HOOK:")) {
       return generateMockPromoOutcome(prompt);
     }
 
