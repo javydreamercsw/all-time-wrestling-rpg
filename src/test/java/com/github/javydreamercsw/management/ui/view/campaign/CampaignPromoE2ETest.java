@@ -98,6 +98,11 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
     // 5. Click the hook
     log.info("Clicking hook button...");
     hookButton.click(); // Use direct click instead of JS dispatch
+
+    // Wait for async processing to complete (progress bar disappears)
+    log.info("Waiting for promo processing to complete...");
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("promo-progress-bar")));
+
     waitForVaadinClientToLoad();
 
     // 6. Verify outcome

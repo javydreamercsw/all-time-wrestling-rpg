@@ -30,10 +30,13 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class SmartPromoE2ETest extends AbstractE2ETest {
@@ -136,6 +139,10 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     WebElement hookBtn = waitForVaadinElement(driver, By.id("promo-hook-cheap-heat"));
     clickElement(hookBtn);
     takeSequencedScreenshot("smart-promo-processing-hook");
+
+    // Wait for async processing to complete (progress bar disappears)
+    new WebDriverWait(driver, Duration.ofSeconds(60))
+        .until(ExpectedConditions.invisibilityOfElementLocated(By.id("promo-progress-bar")));
 
     // 6. Wait for outcome
     waitForVaadinElement(driver, By.id("promo-outcome-status"));
