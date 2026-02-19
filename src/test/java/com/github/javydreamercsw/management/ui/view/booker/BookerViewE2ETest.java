@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class BookerViewE2ETest extends AbstractE2ETest {
@@ -90,11 +91,13 @@ public class BookerViewE2ETest extends AbstractE2ETest {
 
           // Click on the "Upcoming Shows" tab
           click("vaadin-tab", "Upcoming Shows");
+          waitForVaadinElementVisible(By.id("upcoming-shows-grid"));
           assertFalse(getGridRows("upcoming-shows-grid").isEmpty());
           assertGridContains("upcoming-shows-grid", "Test Show");
 
           // Click on the "Active Rivalries" tab
           click("vaadin-tab", "Active Rivalries");
+          waitForVaadinElementVisible(By.id("active-rivalries-grid"));
           assertFalse(getGridRows("active-rivalries-grid").isEmpty());
           assertGridContains(
               "active-rivalries-grid", "Test Wrestler vs Opponent (0 heat - Simmering)");
