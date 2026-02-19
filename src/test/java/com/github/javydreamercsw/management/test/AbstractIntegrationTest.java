@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.test;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -61,13 +60,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, TestNotionConfiguration.class})
+@Import({TestNotionConfiguration.class})
 @Slf4j
 public abstract class AbstractIntegrationTest {
 
@@ -138,6 +138,11 @@ public abstract class AbstractIntegrationTest {
 
   @Autowired(required = false)
   protected org.springframework.cache.CacheManager cacheManager;
+
+  @org.springframework.context.annotation.Configuration
+  @Import(com.github.javydreamercsw.base.config.TestSecurityConfig.class)
+  @Profile("test & !e2e")
+  static class TestSecurityImportConfig {}
 
   protected Wrestler createTestWrestler(@NonNull String name) {
     return TestUtils.createWrestler(name);

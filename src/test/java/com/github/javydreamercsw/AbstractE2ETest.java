@@ -58,7 +58,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(UITestWatcher.class)
@@ -66,9 +65,8 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
-@ActiveProfiles(value = "e2e", inheritProfiles = false)
+@ActiveProfiles("e2e")
 @Import(TestE2ESecurityConfig.class)
-@WithMockUser(username = "admin", roles = "ADMIN")
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;

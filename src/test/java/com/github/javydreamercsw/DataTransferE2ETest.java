@@ -32,7 +32,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.testcontainers.mysql.MySQLContainer;
 
 public class DataTransferE2ETest extends AbstractE2ETest {
@@ -48,7 +47,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testNavigateToDataTransferView() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement dataTransferWizard = waitForVaadinElement(driver, By.id("data-transfer-wizard"));
@@ -56,7 +54,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testConnectionConfigurationView() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
@@ -75,7 +72,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testConnectionParametersValidation() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
@@ -103,7 +99,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testDataTransferProcessView() throws SQLException {
     System.setProperty("simulateFailure", "false");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
@@ -167,7 +162,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testRollbackMechanism() {
     System.setProperty("simulateFailure", "true");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
@@ -205,7 +199,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testRollbackFailureMechanism() {
     System.setProperty("simulateFailure", "true"); // Simulate data transfer failure first
     System.setProperty("simulateRollbackFailure", "true"); // Simulate rollback failure
@@ -247,7 +240,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testCancelButton() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement cancelButton = waitForVaadinElement(driver, By.id("cancel-button"));
@@ -261,7 +253,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testBackButton() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
 
@@ -281,7 +272,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testDataTransferWithNonBlankPassword() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
