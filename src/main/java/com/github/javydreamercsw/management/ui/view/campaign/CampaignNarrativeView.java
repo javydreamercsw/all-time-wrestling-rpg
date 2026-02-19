@@ -39,12 +39,9 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.shared.communication.PushMode;
-import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
@@ -58,7 +55,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Route(value = "campaign/narrative", layout = MainLayout.class)
 @PageTitle("Story Narrative")
 @PermitAll
-@Push(value = PushMode.AUTOMATIC, transport = Transport.WEBSOCKET_XHR)
 @Slf4j
 public class CampaignNarrativeView extends VerticalLayout {
 
