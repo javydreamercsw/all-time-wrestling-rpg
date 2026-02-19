@@ -295,8 +295,13 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
         waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-hook-cheap-heat"));
     clickElement(hookButton);
 
-    // Wait for async processing to complete (progress bar disappears)
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(60))
+    // Wait for async processing: first wait for progress bar to appear, then disappear
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
+        .until(
+            org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
+                org.openqa.selenium.By.id("promo-progress-bar")));
+
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(120))
         .until(
             org.openqa.selenium.support.ui.ExpectedConditions.invisibilityOfElementLocated(
                 org.openqa.selenium.By.id("promo-progress-bar")));

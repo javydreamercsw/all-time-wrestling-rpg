@@ -140,9 +140,15 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     clickElement(hookBtn);
     takeSequencedScreenshot("smart-promo-processing-hook");
 
-    // Wait for async processing to complete (progress bar disappears)
-    new WebDriverWait(driver, Duration.ofSeconds(60))
+    // Wait for async processing: first wait for progress bar to appear, then disappear
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(ExpectedConditions.visibilityOfElementLocated(By.id("promo-progress-bar")));
+
+    new WebDriverWait(driver, Duration.ofSeconds(120))
         .until(ExpectedConditions.invisibilityOfElementLocated(By.id("promo-progress-bar")));
+
+    // Give Vaadin time to push UI updates to client
+    waitForVaadinClientToLoad();
 
     // 6. Wait for outcome
     waitForVaadinElement(driver, By.id("promo-outcome-status"));

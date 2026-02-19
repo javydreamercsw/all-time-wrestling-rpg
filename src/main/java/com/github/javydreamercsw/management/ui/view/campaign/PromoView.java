@@ -48,6 +48,8 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.communication.PushMode;
+import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +61,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Route(value = "campaign/promo", layout = MainLayout.class)
 @PageTitle("Interactive Promo")
 @PermitAll
+@com.vaadin.flow.component.page.Push(
+    value = PushMode.AUTOMATIC,
+    transport = Transport.WEBSOCKET_XHR)
 @Slf4j
 public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
