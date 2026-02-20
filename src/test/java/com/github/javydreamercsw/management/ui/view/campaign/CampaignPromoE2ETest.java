@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Duration;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,17 +41,14 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
-  @Autowired private CampaignRepository campaignRepository;
-
-  private Wrestler player;
 
   @BeforeEach
   void setupCampaign() {
-    // Manually setup a wrestler for the admin account to avoid brittle UI steps
+    // Manually set up a wrestler for the admin account to avoid brittle UI steps
     Account admin = accountRepository.findByUsername("admin").get();
 
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
+    Wrestler player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     if (player == null) {
       Wrestler w =

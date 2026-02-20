@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.test;
 
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -34,8 +33,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
-@Import(TestSecurityConfig.class)
+@Import({
+  com.github.javydreamercsw.base.config.TestSecurityConfig.class,
+  com.github.javydreamercsw.management.config.TestNotionConfiguration.class
+})
+@ActiveProfiles("test")
 @DirtiesContext
 public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {
 

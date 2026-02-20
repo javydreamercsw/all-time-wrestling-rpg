@@ -49,13 +49,10 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.Scroller;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.shared.Registration;
-import com.vaadin.flow.shared.communication.PushMode;
-import com.vaadin.flow.shared.ui.Transport;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
@@ -65,7 +62,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
 @PermitAll
-@Push(value = PushMode.AUTOMATIC, transport = Transport.WEBSOCKET_XHR)
 public class MainLayout extends AppLayout {
 
   private MenuService menuService;

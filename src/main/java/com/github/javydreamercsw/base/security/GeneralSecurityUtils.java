@@ -95,9 +95,11 @@ public final class GeneralSecurityUtils {
           new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
       strategy.setContext(context);
+      SecurityContextHolder.setContext(context); // Also set on the static holder for safety
       return supplier.get();
     } finally {
       strategy.setContext(originalContext);
+      SecurityContextHolder.setContext(originalContext);
     }
   }
 }

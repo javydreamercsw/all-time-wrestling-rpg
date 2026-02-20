@@ -18,8 +18,10 @@ package com.github.javydreamercsw.base.ui.view;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.shared.communication.PushMode;
+import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.theme.Theme;
 
-@Push
+@Push(value = PushMode.AUTOMATIC, transport = Transport.WEBSOCKET_XHR)
 @Theme("default")
 public class AppShell implements AppShellConfigurator {}
