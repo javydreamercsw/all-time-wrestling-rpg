@@ -198,14 +198,23 @@ public class SegmentAdjudicationService {
     }
 
     List<Wrestler> participants = segment.getWrestlers();
-    for (int i = 0; i < participants.size(); i++) {
-      for (int j = i + 1; j < participants.size(); j++) {
-        rivalryService.addHeatBetweenWrestlers(
-            participants.get(i).getId(),
-            participants.get(j).getId(),
-            heat,
-            "From segment: " + segment.getSegmentType().getName());
+    // Skip all-pairs heat addition for Rumbles to avoid performance issues,
+    // excessive rivalry creation, and because determining eliminations from
+    // narration is complex. Bookers can manage these rivalries manually.
+    if (!segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+      for (int i = 0; i < participants.size(); i++) {
+        for (int j = i + 1; j < participants.size(); j++) {
+          rivalryService.addHeatBetweenWrestlers(
+              participants.get(i).getId(),
+              participants.get(j).getId(),
+              heat,
+              "From segment: " + segment.getSegmentType().getName());
+        }
       }
+    } else {
+      log.info(
+          "Skipping automatic rivalry processing for Rumble segment: {}",
+          segment.getShow().getName());
     }
 
     // Add heat to feuds
