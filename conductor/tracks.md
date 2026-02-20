@@ -72,7 +72,7 @@
 *Link: [./conductor/tracks/ai_storyline_director/plan.md](./conductor/tracks/ai_storyline_director/plan.md)*
 *Status: Planning*
 
-### [ ] Track: Enhanced "Hall of Fame" & Career Retrospectives
+### [ ] Track: Add Season summary to player dashboard
 
-*Link: [./conductor/tracks/legacy_dashboard/plan.md](./conductor/tracks/legacy_dashboard/plan.md)*
-*Status: Planning*
+*Link: [./tracks/season_summary_20260219/](./tracks/season_summary_20260219/)*
+*Status: New*
