@@ -49,6 +49,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
   @BeforeEach
   void setupCampaign() {
@@ -57,6 +58,8 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
+
+    dataInitializer.init();
 
     Account admin = accountRepository.findByUsername("admin").get();
 

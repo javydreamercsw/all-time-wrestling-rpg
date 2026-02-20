@@ -45,6 +45,12 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private TournamentService tournamentService;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleService titleService;
+  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setup() {
+    dataInitializer.init();
+  }
 
   @Test
   @Order(1)
