@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -64,6 +65,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 @Slf4j
+@WithCustomMockUser(roles = {"ADMIN"})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
