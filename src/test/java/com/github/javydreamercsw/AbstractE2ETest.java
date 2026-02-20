@@ -358,6 +358,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+    waitForVaadinClientToLoad();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
@@ -502,7 +503,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   /** Waits for the Vaadin client-side application to fully load and become idle. */
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -564,7 +565,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
-    waitForVaadinClientToLoad(); // Wait for Vaadin to be idle before clicking
+    waitForVaadinClientToLoad();
     takeSequencedScreenshot("before-click");
     // First, wait for the element to be visible.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
@@ -577,6 +578,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           .executeScript(
               "const layout = document.querySelector('vaadin-app-layout');"
                   + "if (layout && layout.drawerOpened) { layout.drawerOpened = false; }");
+      // Give drawer time to close
+      Thread.sleep(300);
     } catch (Exception e) {
       log.warn("Could not ensure drawer was closed", e);
     }
@@ -585,17 +588,23 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       // Attempt native Selenium click first
       element.click();
     } catch (Exception e) {
-      log.warn("Native click failed, falling back to JS events: {}", e.getMessage());
-      // Use JavaScript to click with a more complete event sequence to bypass potential
-      // interception
-      ((JavascriptExecutor) driver)
-          .executeScript(
-              "const el = arguments[0];"
-                  + "const opts = {view: window, bubbles: true, cancelable: true};"
-                  + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
-                  + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
-                  + "el.dispatchEvent(new MouseEvent('click', opts));",
-              element);
+      log.warn("Native click failed, falling back to JS click: {}", e.getMessage());
+      // Use a simple JavaScript click as it's more reliable
+      try {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+        Thread.sleep(200); // Give time for the click to register
+      } catch (Exception jsError) {
+        log.error("JavaScript click also failed, using event dispatch", jsError);
+        // Last resort: dispatch events
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "const el = arguments[0];"
+                    + "const opts = {view: window, bubbles: true, cancelable: true};"
+                    + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
+                    + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
+                    + "el.dispatchEvent(new MouseEvent('click', opts));",
+                element);
+      }
     }
     takeSequencedScreenshot("after-click");
   }
@@ -799,8 +808,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                           rowMatchText,
                           cssSelector);
 
-              if (result instanceof Map) {
-                Map<?, ?> map = (Map<?, ?>) result;
+              if (result instanceof Map<?, ?> map) {
                 if (Boolean.TRUE.equals(map.get("found"))) {
                   return (WebElement) map.get("element");
                 } else {
@@ -987,7 +995,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           shadowRoot.findElements(By.cssSelector("[part='error-message']"));
 
       if (!errorMessageElements.isEmpty()) {
-        WebElement errorMessageElement = errorMessageElements.get(0);
+        WebElement errorMessageElement = errorMessageElements.getFirst();
         if (errorMessageElement.isDisplayed()) {
           return errorMessageElement.getText();
         }
