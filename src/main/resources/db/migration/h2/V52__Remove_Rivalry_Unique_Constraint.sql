@@ -4,25 +4,43 @@
 
 CREATE ALIAS IF NOT EXISTS DROP_RIVALRY_UNIQUE_CONSTRAINT AS $$
 import java.sql.*;
+import java.util.*;
 @CODE
 void dropRivalryUnique(Connection conn) throws SQLException {
-    // Find the unique constraint name for the rivalry table on columns (wrestler1_id, wrestler2_id)
-    // H2 2.x information_schema.constraints is the most reliable way.
-    String query = "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.CONSTRAINTS " +
-                   "WHERE TABLE_NAME='RIVALRY' " +
-                   "AND COLUMN_LIST='WRESTLER1_ID,WRESTLER2_ID' " +
-                   "AND CONSTRAINT_TYPE='UNIQUE'";
+    DatabaseMetaData meta = conn.getMetaData();
+    String tableName = "RIVALRY";
     
-    try (Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery(query)) {
-        if (rs.next()) {
-            String constraintName = rs.getString("CONSTRAINT_NAME");
-            // Use CASCADE to handle any internal dependencies (like auto-generated indexes)
-            stmt.execute("ALTER TABLE RIVALRY DROP CONSTRAINT " + constraintName);
+    // Map to store unique index names and their columns
+    Map<String, List<String>> indexColumns = new HashMap<>();
+    
+    // Get unique indexes for the table
+    try (ResultSet rs = meta.getIndexInfo(null, null, tableName, true, false)) {
+        while (rs.next()) {
+            String indexName = rs.getString("INDEX_NAME");
+            String columnName = rs.getString("COLUMN_NAME");
+            if (indexName != null && columnName != null) {
+                indexColumns.computeIfAbsent(indexName, k -> new ArrayList<>()).add(columnName.toUpperCase());
+            }
         }
-    } catch (SQLException e) {
-        // If it fails, log it but don't stop the migration as the JPA entity will handle new schemas
-        System.err.println("Warning: Could not drop rivalry unique constraint: " + e.getMessage());
+    }
+    
+    // Look for the index that covers exactly (WRESTLER1_ID, WRESTLER2_ID)
+    for (Map.Entry<String, List<String>> entry : indexColumns.entrySet()) {
+        List<String> columns = entry.getValue();
+        if (columns.size() == 2 && columns.contains("WRESTLER1_ID") && columns.contains("WRESTLER2_ID")) {
+            String name = entry.getKey();
+            try (Statement stmt = conn.createStatement()) {
+                // In H2, unique constraints often manifest as both a constraint and an index.
+                // We attempt to drop it as a constraint first.
+                try {
+                    stmt.execute("ALTER TABLE " + tableName + " DROP CONSTRAINT " + name);
+                } catch (SQLException e) {
+                    // Fallback to dropping as an index if constraint drop fails
+                    stmt.execute("DROP INDEX IF EXISTS " + name);
+                }
+                return;
+            }
+        }
     }
 }
 $$;
