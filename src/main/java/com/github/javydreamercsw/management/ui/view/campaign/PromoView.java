@@ -25,7 +25,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
-import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.SmartPromoService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -65,14 +64,12 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   private final SmartPromoService smartPromoService;
   private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
-  private final CampaignService campaignService;
   private final SecurityUtils securityUtils;
   private final SegmentService segmentService;
 
   private Campaign currentCampaign;
   private Wrestler playerWrestler;
   private Wrestler opponent;
-  private Long opponentId;
   private Long segmentId;
 
   private VerticalLayout narrativeContainer;
@@ -84,13 +81,11 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
       SmartPromoService smartPromoService,
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
-      CampaignService campaignService,
       SecurityUtils securityUtils,
       SegmentService segmentService) {
     this.smartPromoService = smartPromoService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
-    this.campaignService = campaignService;
     this.securityUtils = securityUtils;
     this.segmentService = segmentService;
 
@@ -103,18 +98,17 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
   @Override
   public void setParameter(BeforeEvent event, @OptionalParameter Long parameter) {
-    this.opponentId = parameter;
-    if (opponentId != null) {
-      wrestlerRepository.findById(opponentId).ifPresent(w -> opponent = w);
+    if (parameter != null) {
+      wrestlerRepository.findById(parameter).ifPresent(w -> opponent = w);
     }
 
     var queryParams = event.getLocation().getQueryParameters();
     if (queryParams.getParameters().containsKey("segment")) {
-      this.segmentId = Long.valueOf(queryParams.getParameters().get("segment").get(0));
+      this.segmentId = Long.valueOf(queryParams.getParameters().get("segment").getFirst());
     }
 
     if (queryParams.getParameters().containsKey("playerWrestler")) {
-      Long pwId = Long.valueOf(queryParams.getParameters().get("playerWrestler").get(0));
+      Long pwId = Long.valueOf(queryParams.getParameters().get("playerWrestler").getFirst());
       wrestlerRepository.findById(pwId).ifPresent(w -> playerWrestler = w);
     }
 
@@ -129,12 +123,11 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
               user -> {
                 com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
                 java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-                Wrestler active =
+                playerWrestler =
                     wrestlers.stream()
                         .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
                         .findFirst()
                         .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
-                playerWrestler = active;
               });
     }
 
