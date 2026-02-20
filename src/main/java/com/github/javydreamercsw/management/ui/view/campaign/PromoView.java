@@ -293,20 +293,25 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   private void displayOutcome(PromoHookDTO hook, PromoOutcomeDTO outcome) {
     log.info("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
 
+    // Create a result layout to hold all outcome components atomically
+    VerticalLayout resultLayout = new VerticalLayout();
+    resultLayout.setPadding(false);
+    resultLayout.setSpacing(true);
+
     Span chosenText = new Span("\"" + hook.getText() + "\"");
     chosenText.getStyle().set("font-style", "italic");
     chosenText.addClassNames(LumoUtility.TextColor.PRIMARY);
-    narrativeContainer.add(chosenText);
+    resultLayout.add(chosenText);
 
     if (outcome.getRetort() != null && !outcome.getRetort().isBlank()) {
       Paragraph retort = new Paragraph(outcome.getRetort());
       retort.addClassNames(LumoUtility.FontWeight.BOLD);
-      narrativeContainer.add(new Span("Opponent's retort:"), retort);
+      resultLayout.add(new Span("Opponent's retort:"), retort);
     }
 
     Paragraph reaction = new Paragraph(outcome.getCrowdReaction());
     reaction.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
-    narrativeContainer.add(new Span("Crowd Reaction:"), reaction);
+    resultLayout.add(new Span("Crowd Reaction:"), reaction);
 
     String status = outcome.isSuccess() ? "SUCCESSFUL" : "FAILED";
     Span outcomeSpan = new Span("Promo " + status);
@@ -314,7 +319,10 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     outcomeSpan.addClassNames(
         LumoUtility.FontWeight.BOLD,
         outcome.isSuccess() ? LumoUtility.TextColor.SUCCESS : LumoUtility.TextColor.ERROR);
-    narrativeContainer.add(outcomeSpan);
+    resultLayout.add(outcomeSpan);
+
+    // Add the complete result layout to the narrative container in one operation
+    narrativeContainer.add(resultLayout);
 
     if (segmentId != null) {
       log.info("Updating segment {} with final narration", segmentId);
