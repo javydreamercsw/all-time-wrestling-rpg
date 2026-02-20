@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "player-dashboard-player-season-summary",
+    "category": "Player Dashboard",
+    "title": "Season Summary",
+    "description": "The Season Summary component provides a snapshot of your wrestler's performance during the currently active season, including their win-loss record, fan growth progress, and any championships or accolades earned.",
+    "imagePath": "screenshots/player-season-summary.png",
+    "order": 0
+  }, {
     "id": "campaign-campaign-promo-hooks",
     "category": "Campaign",
     "title": "Smart Promo Hooks",

@@ -650,9 +650,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       input = comboBox;
     }
 
+    // Determine the correct modifier key for the current OS
+    String os = System.getProperty("os.name").toLowerCase();
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
     // Clear and type
     input.click();
-    input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
+    input.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
     input.sendKeys(itemText);
 
     // Wait for the overlay to appear and the item to be clickable

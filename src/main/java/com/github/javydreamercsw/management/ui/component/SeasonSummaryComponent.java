@@ -43,6 +43,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
         LumoUtility.Padding.MEDIUM);
 
     seasonSelector = new ComboBox<>("Select Season");
+    seasonSelector.setId("season-selector");
     seasonSelector.setItems(seasons);
     seasonSelector.setItemLabelGenerator(Season::getName);
     seasonSelector.setWidthFull();
@@ -54,6 +55,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
         });
 
     statsLayout = new VerticalLayout();
+    statsLayout.setId("season-stats-layout");
     statsLayout.setPadding(false);
     statsLayout.setSpacing(true);
 
@@ -64,20 +66,25 @@ public class SeasonSummaryComponent extends VerticalLayout {
     statsLayout.removeAll();
 
     if (stats == null) {
-      statsLayout.add(new Span("No data available for this season."));
+      Span noData = new Span("No data available for this season.");
+      noData.setId("no-season-data");
+      statsLayout.add(noData);
       return;
     }
 
     H4 title = new H4(stats.getSeasonName() + " Summary");
+    title.setId("season-summary-title");
     title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
 
     Span record =
         new Span(
             String.format(
                 "Record: %d-%d-%d", stats.getWins(), stats.getLosses(), stats.getDraws()));
+    record.setId("season-record");
     record.addClassNames(LumoUtility.FontSize.MEDIUM, LumoUtility.FontWeight.BOLD);
 
     VerticalLayout fanGrowthLayout = new VerticalLayout();
+    fanGrowthLayout.setId("fan-growth-layout");
     fanGrowthLayout.setPadding(false);
     fanGrowthLayout.setSpacing(false);
 
@@ -87,11 +94,13 @@ public class SeasonSummaryComponent extends VerticalLayout {
     long growth = stats.getFanGrowth();
     String growthText = (growth >= 0 ? "+" : "") + growth + " fans";
     Span growthSpan = new Span(growthText);
+    growthSpan.setId("fan-growth-text");
     growthSpan.addClassNames(
         LumoUtility.FontSize.SMALL,
         growth >= 0 ? LumoUtility.TextColor.SUCCESS : LumoUtility.TextColor.ERROR);
 
     ProgressBar fanProgress = new ProgressBar();
+    fanProgress.setId("fan-growth-progress");
     // Assuming a max growth goal of 1000 for the progress bar visualization
     double progress = Math.min(1.0, Math.max(0.0, growth / 1000.0));
     fanProgress.setValue(progress);
@@ -102,6 +111,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
 
     if (stats.getAccolades() != null && !stats.getAccolades().isEmpty()) {
       Span accoladesTitle = new Span("Accolades: " + String.join(", ", stats.getAccolades()));
+      accoladesTitle.setId("season-accolades");
       accoladesTitle.addClassNames(
           LumoUtility.FontSize.SMALL, LumoUtility.Margin.Top.SMALL, LumoUtility.FontWeight.MEDIUM);
       statsLayout.add(accoladesTitle);
