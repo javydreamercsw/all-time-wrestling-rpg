@@ -263,21 +263,25 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                       () -> {
                         try {
                           displayOutcome(hook, outcome);
-                          showLoading(false);
-                          ui.push();
                           log.info("Promo UI updated with outcome");
                         } catch (Exception e) {
                           log.error("Failed to update UI with promo outcome", e);
+                          Notification.show("Error displaying promo outcome.")
+                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                        } finally {
+                          showLoading(false);
+                          ui.push();
                         }
                       });
                 } catch (Exception e) {
                   log.error("Failed to process promo hook in background", e);
                   ui.access(
                       () -> {
-                        Notification.show("Failed to resolve the promo.")
+                        Notification.show("Failed to resolve the promo: " + e.getMessage())
                             .addThemeVariants(NotificationVariant.LUMO_ERROR);
                         showLoading(false);
                         addBackButton();
+                        ui.push();
                       });
                 }
               });
@@ -287,24 +291,22 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   private void displayOutcome(PromoHookDTO hook, PromoOutcomeDTO outcome) {
-    VerticalLayout resultLayout = new VerticalLayout();
-    resultLayout.setPadding(false);
-    resultLayout.setSpacing(true);
+    log.info("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
 
     Span chosenText = new Span("\"" + hook.getText() + "\"");
     chosenText.getStyle().set("font-style", "italic");
     chosenText.addClassNames(LumoUtility.TextColor.PRIMARY);
-    resultLayout.add(chosenText);
+    narrativeContainer.add(chosenText);
 
     if (outcome.getRetort() != null && !outcome.getRetort().isBlank()) {
       Paragraph retort = new Paragraph(outcome.getRetort());
       retort.addClassNames(LumoUtility.FontWeight.BOLD);
-      resultLayout.add(new Span("Opponent's retort:"), retort);
+      narrativeContainer.add(new Span("Opponent's retort:"), retort);
     }
 
     Paragraph reaction = new Paragraph(outcome.getCrowdReaction());
     reaction.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
-    resultLayout.add(new Span("Crowd Reaction:"), reaction);
+    narrativeContainer.add(new Span("Crowd Reaction:"), reaction);
 
     String status = outcome.isSuccess() ? "SUCCESSFUL" : "FAILED";
     Span outcomeSpan = new Span("Promo " + status);
@@ -312,19 +314,20 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     outcomeSpan.addClassNames(
         LumoUtility.FontWeight.BOLD,
         outcome.isSuccess() ? LumoUtility.TextColor.SUCCESS : LumoUtility.TextColor.ERROR);
-    resultLayout.add(outcomeSpan);
-
-    narrativeContainer.add(resultLayout);
+    narrativeContainer.add(outcomeSpan);
 
     if (segmentId != null) {
+      log.info("Updating segment {} with final narration", segmentId);
       // Save to segment narration
       segmentService
           .findById(segmentId)
-          .ifPresent(
+          .ifPresentOrElse(
               s -> {
                 s.setNarration(outcome.getFinalNarration());
                 segmentService.updateSegment(s);
-              });
+                log.info("Segment {} updated successfully", segmentId);
+              },
+              () -> log.warn("Segment {} not found for update", segmentId));
     }
 
     Button finishBtn =
@@ -344,6 +347,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     finishBtn.setId("finish-promo-button");
     finishBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     choicesContainer.add(finishBtn);
+    log.info("Outcome display complete");
   }
 
   private void showLoading(boolean loading) {
