@@ -30,15 +30,19 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.season.SeasonStatsService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.SeasonSummaryComponent;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignDashboardView;
@@ -68,6 +72,7 @@ import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -91,8 +96,11 @@ public class PlayerView extends VerticalLayout {
   private final NewsService newsService;
   private final TransactionTemplate transactionTemplate;
   private final AchievementRepository achievementRepository;
+  private final SeasonStatsService seasonStatsService;
+  private final SeasonRepository seasonRepository;
 
   private Wrestler playerWrestler;
+  private SeasonSummaryComponent seasonSummary;
 
   @Autowired
   public PlayerView(
@@ -105,7 +113,9 @@ public class PlayerView extends VerticalLayout {
       SegmentService segmentService,
       NewsService newsService,
       TransactionTemplate transactionTemplate,
-      AchievementRepository achievementRepository) {
+      AchievementRepository achievementRepository,
+      SeasonStatsService seasonStatsService,
+      SeasonRepository seasonRepository) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;
@@ -116,6 +126,8 @@ public class PlayerView extends VerticalLayout {
     this.newsService = newsService;
     this.transactionTemplate = transactionTemplate;
     this.achievementRepository = achievementRepository;
+    this.seasonStatsService = seasonStatsService;
+    this.seasonRepository = seasonRepository;
 
     setHeightFull();
     setPadding(false);
@@ -186,12 +198,40 @@ public class PlayerView extends VerticalLayout {
   private void buildDashboard() {
     Component profileCard = createProfileCard();
     NewsTickerComponent newsTicker = new NewsTickerComponent(newsService);
+
+    List<Season> wrestlerSeasons = seasonRepository.findByWrestler(playerWrestler);
+    seasonSummary =
+        new SeasonSummaryComponent(
+            wrestlerSeasons,
+            season -> {
+              seasonSummary.updateStats(seasonStatsService.calculateStats(playerWrestler, season));
+            });
+
+    // Default to active season if available
+    seasonRepository
+        .findActiveSeason()
+        .ifPresent(
+            activeSeason -> {
+              if (wrestlerSeasons.contains(activeSeason)) {
+                seasonSummary.setSelectedSeason(activeSeason);
+                seasonSummary.updateStats(
+                    seasonStatsService.calculateStats(playerWrestler, activeSeason));
+              }
+            });
+
+    HorizontalLayout topLayout = new HorizontalLayout(profileCard, seasonSummary);
+    topLayout.setWidthFull();
+    topLayout.setFlexGrow(1, profileCard);
+    topLayout.setFlexGrow(0, seasonSummary);
+    topLayout.setAlignItems(FlexComponent.Alignment.STRETCH);
+    topLayout.addClassNames(LumoUtility.FlexWrap.WRAP);
+
     Component tabsComponent = createTabs();
 
-    add(profileCard, newsTicker, tabsComponent);
-    setFlexGrow(0, profileCard); // Profile card doesn't grow
+    add(topLayout, newsTicker, tabsComponent);
+    setFlexGrow(0, topLayout);
     setFlexGrow(0, newsTicker);
-    setFlexGrow(1, tabsComponent); // Tabs component grows to fill space
+    setFlexGrow(1, tabsComponent);
     getStyle().set("padding", "1em");
   }
 
