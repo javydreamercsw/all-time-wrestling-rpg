@@ -49,7 +49,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testNavigateToDataTransferView() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
     WebElement dataTransferWizard = waitForVaadinElement(driver, By.id("data-transfer-wizard"));
     assertNotNull(dataTransferWizard);
   }
@@ -57,12 +57,12 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testConnectionConfigurationView() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
 
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
 
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
     assertNotNull(hostField);
@@ -79,13 +79,13 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testConnectionParametersValidation() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
 
     // Wait for the config step to become visible
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
     waitForVaadinElementVisible(By.id("connection-config-step"));
 
     // Clear the host field to trigger validation error
@@ -110,12 +110,12 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testDataTransferProcessView() throws SQLException {
     System.setProperty("simulateFailure", "false");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
 
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
 
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
@@ -124,7 +124,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
     portField.sendKeys(MYSQL_CONTAINER.getFirstMappedPort().toString());
     WebElement targetDatabaseField = waitForVaadinElement(driver, By.id("target-database-field"));
-    clearField(targetDatabaseField); // Clear default "test"
+    clearField(targetDatabaseField);
     targetDatabaseField.sendKeys(MYSQL_CONTAINER.getDatabaseName());
     WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
     usernameField.sendKeys(MYSQL_CONTAINER.getUsername());
@@ -177,12 +177,12 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testRollbackMechanism() {
     System.setProperty("simulateFailure", "true");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
 
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
 
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
@@ -216,15 +216,15 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   public void testRollbackFailureMechanism() {
-    System.setProperty("simulateFailure", "true"); // Simulate data transfer failure first
-    System.setProperty("simulateRollbackFailure", "true"); // Simulate rollback failure
+    System.setProperty("simulateFailure", "true");
+    System.setProperty("simulateRollbackFailure", "true");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
 
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
 
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
@@ -262,7 +262,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testCancelButton() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
-    waitForVaadinClientToLoad(); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement cancelButton = waitForVaadinElement(driver, By.id("cancel-button"));
     clickElement(cancelButton);
@@ -282,7 +282,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton); // To Connection Config
 
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
 
     WebElement backButton = waitForVaadinElement(driver, By.id("back-button"));
     assertTrue(backButton.isEnabled(), "Back button should be enabled on step 1");
@@ -304,7 +304,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
 
-    waitForVaadinClientToLoad(); // Wait for wizard step transition
+    waitForVaadinClientToLoad();
 
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
     hostField.sendKeys(MYSQL_CONTAINER.getHost());
