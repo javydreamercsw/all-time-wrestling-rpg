@@ -44,6 +44,7 @@
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
     <selenium.version>4.40.0</selenium.version>
+    <surefire.skip>false</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.3</testcontainers.version>
     <vaadin.version>25.0.4</vaadin.version>
@@ -766,8 +767,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
+          <skipTests>${surefire.skip}</skipTests>
           <!-- Enable parallel execution for unit tests -->
           <parallel>classes</parallel>
+
           <threadCount>4</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
@@ -1324,6 +1327,7 @@
       <id>integration-test</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1381,6 +1385,10 @@
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
               <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
                 <webdriver.chrome.whitelistedIps/>
@@ -1421,6 +1429,7 @@
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
         <jacoco.it.destFile>${jacoco.notion.it.destFile}</jacoco.it.destFile>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1432,6 +1441,13 @@
                 <include>**/*Notion*IT.java</include>
                 <include>**/Notion*IT.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*E2ETest.java</exclude>
+                <exclude>**/DockerPackageIT.java</exclude>
+                <!-- Exclude non-Notion ITs -->
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
             </configuration>
           </plugin>
           <plugin>
@@ -1459,6 +1475,7 @@
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
         <jacoco.it.destFile>${jacoco.notion.e2e.destFile}</jacoco.it.destFile>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1469,6 +1486,12 @@
               <includes>
                 <include>**/*Notion*E2ETest.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+                <!-- Exclude non-Notion E2Es -->
+                <exclude>**/*E2ETest.java</exclude>
+              </excludes>
               <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
                 <webdriver.chrome.whitelistedIps/>
@@ -1501,16 +1524,10 @@
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
@@ -1519,6 +1536,12 @@
               <includes>
                 <include>**/*DocsE2ETest.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+                <!-- Exclude non-Docs E2Es -->
+                <exclude>**/*E2ETest.java</exclude>
+              </excludes>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
               </systemPropertyVariables>
@@ -1601,6 +1624,7 @@
       <id>docker-it</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1633,18 +1657,17 @@
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
                 <include>**/DockerPackageIT.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*E2ETest.java</exclude>
+                <!-- Exclude other ITs -->
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
             </configuration>
             <executions>
               <execution>
