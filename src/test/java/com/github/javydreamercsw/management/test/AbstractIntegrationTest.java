@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.test;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -26,6 +27,8 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.config.TestAIConfiguration;
+import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -60,12 +63,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
+@ActiveProfiles("test")
+@Import({TestSecurityConfig.class, TestAIConfiguration.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;

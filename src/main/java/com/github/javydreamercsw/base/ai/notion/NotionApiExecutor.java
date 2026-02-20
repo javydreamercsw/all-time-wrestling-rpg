@@ -45,7 +45,7 @@ public class NotionApiExecutor {
     this.rateLimitService = rateLimitService;
     this.syncProperties = syncProperties;
     this.syncExecutorService =
-        Executors.newFixedThreadPool(this.syncProperties.getParallelThreads());
+        Executors.newFixedThreadPool(Math.max(1, this.syncProperties.getParallelThreads()));
   }
 
   /** Execute a Notion API call with proper rate limiting. */

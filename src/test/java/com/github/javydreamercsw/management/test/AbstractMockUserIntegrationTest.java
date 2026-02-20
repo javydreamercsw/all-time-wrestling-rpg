@@ -26,20 +26,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
-@Import({
-  com.github.javydreamercsw.base.config.TestSecurityConfig.class,
-  com.github.javydreamercsw.management.config.TestNotionConfiguration.class
-})
-@ActiveProfiles("test")
 @DirtiesContext
 public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {
 
