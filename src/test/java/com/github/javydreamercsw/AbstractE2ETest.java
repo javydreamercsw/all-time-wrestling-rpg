@@ -344,12 +344,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Waits for the Vaadin components to load by checking for the presence of a vaadin-grid element.
+   * Waits for the Vaadin components to load and become idle.
    *
    * @param driver the WebDriver instance
    */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    waitForVaadinClientToLoad();
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
@@ -500,10 +500,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         });
   }
 
-  /** Waits for the Vaadin client-side application to fully load. */
+  /** Waits for the Vaadin client-side application to fully load and become idle. */
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait =
-        new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout for Vaadin client
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -512,8 +511,28 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
                 "complete"));
 
-    // Wait for the main Vaadin app layout element to be present
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
+    // Wait for Vaadin to be present and idle
+    wait.until(
+        webDriver -> {
+          try {
+            return (Boolean)
+                ((JavascriptExecutor) webDriver)
+                    .executeScript(
+                        "return !!(window.Vaadin && window.Vaadin.Flow &&"
+                            + " window.Vaadin.Flow.clients &&"
+                            + " Object.values(window.Vaadin.Flow.clients).every(client =>"
+                            + " !client.isActive()));");
+          } catch (Exception e) {
+            return false;
+          }
+        });
+
+    // Wait for the main Vaadin app layout element to be present (best effort)
+    try {
+      wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
+    } catch (Exception ignored) {
+      // Not all pages might have vaadin-app-layout
+    }
   }
 
   protected void toggleVaadinCheckbox(@NonNull By selector) {
@@ -545,10 +564,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
+    waitForVaadinClientToLoad(); // Wait for Vaadin to be idle before clicking
     takeSequencedScreenshot("before-click");
     // First, wait for the element to be visible.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(ExpectedConditions.visibilityOf(element));
+    wait.until(ExpectedConditions.elementToBeClickable(element));
 
     // Ensure the drawer is closed if it might intercept clicks
     try {
