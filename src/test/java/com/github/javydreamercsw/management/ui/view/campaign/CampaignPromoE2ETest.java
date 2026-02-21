@@ -124,26 +124,12 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
     log.info("Clicking hook button...");
     clickElement(hookButton);
 
-    // Wait for the UI to acknowledge the click by showing the processing text
-    wait.until(
-        ExpectedConditions.textToBePresentInElementLocated(
-            By.id("narrative-container"), "Processing choice"));
-
-    // Wait for async processing: first wait for progress bar to appear, then disappear
-    log.info("Waiting for progress bar to appear...");
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("promo-progress-bar")));
-
-    log.info("Waiting for promo processing to complete...");
-    new WebDriverWait(driver, Duration.ofSeconds(120))
-        .until(ExpectedConditions.invisibilityOfElementLocated(By.id("promo-progress-bar")));
-
-    waitForVaadinClientToLoad();
-
-    // 6. Verify outcome
+    // 6. Verify outcome (synchronous processing may take a few seconds due to Mock AI sleep)
     log.info("Waiting for outcome text...");
-    wait.until(
-        ExpectedConditions.textToBePresentInElementLocated(
-            By.id("narrative-container"), "Promo SUCCESSFUL"));
+    new WebDriverWait(driver, Duration.ofSeconds(120))
+        .until(
+            ExpectedConditions.textToBePresentInElementLocated(
+                By.id("narrative-container"), "Promo SUCCESSFUL"));
 
     waitForText("SUCCESSFUL");
     log.info("Outcome verified.");

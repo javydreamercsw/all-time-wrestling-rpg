@@ -52,9 +52,6 @@ import jakarta.annotation.security.PermitAll;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(value = "campaign/promo", layout = MainLayout.class)
 @PageTitle("Interactive Promo")
@@ -180,52 +177,22 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
-    UI ui = UI.getCurrent();
-    SecurityContext context = SecurityContextHolder.getContext();
-
-    Runnable backgroundTask =
+    GeneralSecurityUtils.runAsAdmin(
         () -> {
-          log.info("Starting background task for promo initialization");
-          GeneralSecurityUtils.runAsAdmin(
-              () -> {
-                try {
-                  log.debug("Calling smartPromoService.generatePromoContext in background");
-                  SmartPromoResponseDTO promoContext =
-                      smartPromoService.generatePromoContext(playerWrestler, opponent);
-                  log.info("Promo context generated successfully");
-                  ui.access(
-                      () -> {
-                        try {
-                          log.debug("Updating UI with promo context in ui.access");
-                          displayPromoContext(promoContext);
-                          log.info("Promo UI updated with context");
-                        } catch (Exception e) {
-                          log.error("Failed to update UI with promo context", e);
-                        } finally {
-                          log.debug("Hiding loading bar and pushing UI changes");
-                          showLoading(false);
-                          ui.push();
-                        }
-                      });
-                } catch (Exception e) {
-                  log.error("Failed to start promo in background", e);
-                  ui.access(
-                      () -> {
-                        try {
-                          Notification.show("Failed to connect to the Promo Director.")
-                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                          addBackButton();
-                        } finally {
-                          log.debug("Hiding loading bar after error in initializePromo");
-                          showLoading(false);
-                          ui.push();
-                        }
-                      });
-                }
-              });
-        };
-
-    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+          try {
+            log.info("Generating promo context synchronously");
+            SmartPromoResponseDTO promoContext =
+                smartPromoService.generatePromoContext(playerWrestler, opponent);
+            displayPromoContext(promoContext);
+          } catch (Exception e) {
+            log.error("Failed to start promo", e);
+            Notification.show("Failed to connect to the Promo Director.")
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            addBackButton();
+          } finally {
+            showLoading(false);
+          }
+        });
   }
 
   private void displayPromoContext(@NonNull SmartPromoResponseDTO context) {
@@ -251,60 +218,23 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     showLoading(true);
     choicesContainer.removeAll();
     narrativeContainer.removeAll();
-    Span processingSpan = new Span("Processing choice: " + hook.getLabel() + "...");
-    processingSpan.getStyle().set("font-style", "italic");
-    processingSpan.addClassNames(LumoUtility.TextColor.SECONDARY);
-    narrativeContainer.add(processingSpan);
 
-    UI ui = UI.getCurrent();
-    SecurityContext context = SecurityContextHolder.getContext();
-
-    Runnable backgroundTask =
+    GeneralSecurityUtils.runAsAdmin(
         () -> {
-          log.info("Starting background task for hook processing: {}", hook.getLabel());
-          GeneralSecurityUtils.runAsAdmin(
-              () -> {
-                try {
-                  log.debug("Calling smartPromoService.processPromoHook in background");
-                  PromoOutcomeDTO outcome =
-                      smartPromoService.processPromoHook(
-                          playerWrestler, opponent, hook, currentCampaign);
-                  log.info("Promo hook processed successfully. Success: {}", outcome.isSuccess());
-                  ui.access(
-                      () -> {
-                        try {
-                          log.debug("Updating UI with outcome in ui.access");
-                          displayOutcome(hook, outcome);
-                          log.info("Promo UI updated with outcome");
-                        } catch (Exception e) {
-                          log.error("Failed to update UI with promo outcome", e);
-                          Notification.show("Error displaying promo outcome.")
-                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                        } finally {
-                          log.debug("Hiding loading bar and pushing UI changes");
-                          showLoading(false);
-                          ui.push();
-                        }
-                      });
-                } catch (Exception e) {
-                  log.error("Failed to process promo hook in background", e);
-                  ui.access(
-                      () -> {
-                        try {
-                          Notification.show("Failed to resolve the promo: " + e.getMessage())
-                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                          log.debug("Hiding loading bar after error");
-                          showLoading(false);
-                          addBackButton();
-                        } finally {
-                          ui.push();
-                        }
-                      });
-                }
-              });
-        };
-
-    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+          try {
+            log.info("Processing promo hook synchronously: {}", hook.getLabel());
+            PromoOutcomeDTO outcome =
+                smartPromoService.processPromoHook(playerWrestler, opponent, hook, currentCampaign);
+            displayOutcome(hook, outcome);
+          } catch (Exception e) {
+            log.error("Failed to process promo hook synchronously", e);
+            Notification.show("Failed to resolve the promo: " + e.getMessage())
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            addBackButton();
+          } finally {
+            showLoading(false);
+          }
+        });
   }
 
   private void displayOutcome(@NonNull PromoHookDTO hook, @NonNull PromoOutcomeDTO outcome) {

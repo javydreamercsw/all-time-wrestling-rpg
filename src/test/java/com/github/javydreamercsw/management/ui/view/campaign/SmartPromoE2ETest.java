@@ -30,13 +30,10 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class SmartPromoE2ETest extends AbstractE2ETest {
@@ -143,23 +140,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     clickElement(hookBtn);
     takeSequencedScreenshot("smart-promo-processing-hook");
 
-    // Wait for the UI to acknowledge the click
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            ExpectedConditions.textToBePresentInElementLocated(
-                By.id("narrative-container"), "Processing choice"));
-
-    // Wait for async processing: first wait for progress bar to appear, then disappear
-    new WebDriverWait(driver, Duration.ofSeconds(10))
-        .until(ExpectedConditions.visibilityOfElementLocated(By.id("promo-progress-bar")));
-
-    new WebDriverWait(driver, Duration.ofSeconds(120))
-        .until(ExpectedConditions.invisibilityOfElementLocated(By.id("promo-progress-bar")));
-
-    // Give Vaadin time to push UI updates to client
-    waitForVaadinClientToLoad();
-
-    // 6. Wait for outcome
+    // Wait for outcome (synchronous processing may take a few seconds due to Mock AI sleep)
     waitForVaadinElement(driver, By.id("promo-outcome-status"));
     assertTrue(
         driver.getPageSource().contains("SUCCESSFUL") || driver.getPageSource().contains("FAILED"));

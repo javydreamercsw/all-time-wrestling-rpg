@@ -49,9 +49,6 @@ import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(value = "campaign/narrative", layout = MainLayout.class)
 @PageTitle("Story Narrative")
@@ -177,49 +174,22 @@ public class CampaignNarrativeView extends VerticalLayout {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
-    // Use a background thread for AI generation to keep UI responsive
-    UI ui = UI.getCurrent();
-    SecurityContext context = SecurityContextHolder.getContext();
-
-    Runnable backgroundTask =
+    GeneralSecurityUtils.runAsAdmin(
         () -> {
-          GeneralSecurityUtils.runAsAdmin(
-              () -> {
-                try {
-                  log.debug("Generating encounter in background");
-                  CampaignEncounterResponseDTO encounter =
-                      encounterService.generateEncounter(currentCampaign);
-                  ui.access(
-                      () -> {
-                        try {
-                          log.debug("Updating UI with encounter");
-                          displayEncounter(encounter);
-                        } finally {
-                          log.debug("Hiding loading bar and pushing UI changes");
-                          showLoading(false);
-                          ui.push();
-                        }
-                      });
-                } catch (Exception e) {
-                  log.error("Failed to generate encounter", e);
-                  ui.access(
-                      () -> {
-                        try {
-                          Notification.show(
-                                  "Failed to connect to the Story Director. Please try again.")
-                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                          addRetryButton();
-                        } finally {
-                          showLoading(false);
-                          ui.push();
-                        }
-                      });
-                }
-              });
-        };
-
-    // Wrap the task to propagate the security context
-    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+          try {
+            log.info("Generating encounter synchronously");
+            CampaignEncounterResponseDTO encounter =
+                encounterService.generateEncounter(currentCampaign);
+            displayEncounter(encounter);
+          } catch (Exception e) {
+            log.error("Failed to generate encounter", e);
+            Notification.show("Failed to connect to the Story Director. Please try again.")
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            addRetryButton();
+          } finally {
+            showLoading(false);
+          }
+        });
   }
 
   private void displayEncounter(CampaignEncounterResponseDTO encounter) {
