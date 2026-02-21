@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,6 +33,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 
 /** A utility class for general security-related operations. */
+@Slf4j
 public final class GeneralSecurityUtils {
 
   private GeneralSecurityUtils() {
@@ -45,7 +47,7 @@ public final class GeneralSecurityUtils {
    * @param supplier The supplier to run.
    * @return The result of the supplier.
    */
-  public static <T> T runAsAdmin(Supplier<T> supplier) {
+  public static <T> T runAsAdmin(@NonNull Supplier<T> supplier) {
     return runAs(supplier, "admin", "password", "ADMIN");
   }
 
@@ -66,7 +68,7 @@ public final class GeneralSecurityUtils {
    * @return The result of the supplier.
    */
   public static <T> T runAs(
-      Supplier<T> supplier,
+      @NonNull Supplier<T> supplier,
       @NonNull String username,
       @NonNull String password,
       @NonNull String role) {
@@ -77,29 +79,63 @@ public final class GeneralSecurityUtils {
 
       // Create a mock account and role for the principal
       Account account = new Account(username, password, username + "@example.com");
+      // Set ID to 1L to match WithCustomMockUserSecurityContextFactory
+      account.setId(1L);
       try {
         RoleName roleName = RoleName.valueOf(role);
         Role r = new Role(roleName, roleName.name() + " role");
+        r.setId((long) roleName.ordinal() + 100);
         account.setRoles(Collections.singleton(r));
       } catch (IllegalArgumentException e) {
-        // Fallback for custom roles not in enum if needed, or just skip
+        log.warn("Invalid role provided: {}", role);
       }
 
       CustomUserDetails userDetails = new CustomUserDetails(account, null);
 
+      // Spring Security 6 works best when authorities are consistent with UserDetails
       List<SimpleGrantedAuthority> authorities = new ArrayList<>();
       authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+      // Add the raw role as well for compatibility with different annotation styles
       authorities.add(new SimpleGrantedAuthority(role));
 
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
+
+      log.debug(
+          "Setting SecurityContext for user '{}' with role '{}' in thread '{}'",
+          username,
+          role,
+          Thread.currentThread().getName());
       strategy.setContext(context);
-      SecurityContextHolder.setContext(context); // Also set on the static holder for safety
+      SecurityContextHolder.setContext(context);
+
+      // Verification log to catch immediate failure
+      Authentication currentAuth = strategy.getContext().getAuthentication();
+      if (currentAuth == null) {
+        log.error(
+            "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
+            username,
+            Thread.currentThread().getName());
+      } else {
+        log.debug(
+            "SecurityContext successfully set for '{}' with authorities: {}",
+            username,
+            currentAuth.getAuthorities());
+      }
+
       return supplier.get();
     } finally {
-      strategy.setContext(originalContext);
-      SecurityContextHolder.setContext(originalContext);
+      if (originalContext != null && originalContext.getAuthentication() != null) {
+        log.trace(
+            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
+        strategy.setContext(originalContext);
+        SecurityContextHolder.setContext(originalContext);
+      } else {
+        log.trace("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+        strategy.clearContext();
+        SecurityContextHolder.clearContext();
+      }
     }
   }
 }

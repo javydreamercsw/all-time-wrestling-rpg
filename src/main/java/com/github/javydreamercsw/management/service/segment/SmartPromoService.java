@@ -110,7 +110,7 @@ public class SmartPromoService {
    * @param opponent The wrestler being addressed (optional).
    * @return The promo context.
    */
-  public SmartPromoResponseDTO generatePromoContext(Wrestler player, Wrestler opponent) {
+  public SmartPromoResponseDTO generatePromoContext(@NonNull Wrestler player, Wrestler opponent) {
     log.info("Generating promo context for player: {} (id: {})", player.getName(), player.getId());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
@@ -120,7 +120,7 @@ public class SmartPromoService {
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo generation.");
-      return createFallbackResponse(loadedPlayer, loadedOpponent);
+      return createFallbackResponse(loadedOpponent);
     }
 
     String prompt = buildContextPrompt(loadedPlayer, loadedOpponent);
@@ -131,7 +131,7 @@ public class SmartPromoService {
       return parseJsonResponse(aiResponse, SmartPromoResponseDTO.class);
     } catch (Exception e) {
       log.error("Failed to generate promo context", e);
-      return createFallbackResponse(loadedPlayer, loadedOpponent);
+      return createFallbackResponse(loadedOpponent);
     }
   }
 
@@ -145,7 +145,10 @@ public class SmartPromoService {
    * @return The promo outcome.
    */
   public PromoOutcomeDTO processPromoHook(
-      Wrestler player, Wrestler opponent, PromoHookDTO chosenHook, Campaign campaign) {
+      @NonNull Wrestler player,
+      Wrestler opponent,
+      @NonNull PromoHookDTO chosenHook,
+      Campaign campaign) {
     log.info("Processing promo hook: {} for player: {}", chosenHook.getLabel(), player.getName());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
@@ -158,7 +161,7 @@ public class SmartPromoService {
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo outcome.");
-      outcome = createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
+      outcome = createFallbackOutcome(loadedOpponent, chosenHook);
     } else {
       String prompt = buildOutcomePrompt(loadedPlayer, loadedOpponent, chosenHook);
       try {
@@ -168,7 +171,7 @@ public class SmartPromoService {
         outcome = parseJsonResponse(aiResponse, PromoOutcomeDTO.class);
       } catch (Exception e) {
         log.error("Failed to generate promo outcome via AI, using fallback", e);
-        outcome = createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
+        outcome = createFallbackOutcome(loadedOpponent, chosenHook);
       }
     }
 
@@ -337,8 +340,7 @@ public class SmartPromoService {
     return objectMapper.readValue(json, clazz);
   }
 
-  private SmartPromoResponseDTO createFallbackResponse(
-      @NonNull Wrestler player, Wrestler opponent) {
+  private SmartPromoResponseDTO createFallbackResponse(Wrestler opponent) {
     return SmartPromoResponseDTO.builder()
         .opener("You step into the ring, ready to speak your mind.")
         .hooks(
@@ -354,8 +356,7 @@ public class SmartPromoService {
         .build();
   }
 
-  private PromoOutcomeDTO createFallbackOutcome(
-      @NonNull Wrestler player, Wrestler opponent, PromoHookDTO hook) {
+  private PromoOutcomeDTO createFallbackOutcome(Wrestler opponent, @NonNull PromoHookDTO hook) {
     return PromoOutcomeDTO.builder()
         .retort(opponent != null ? "Whatever you say." : null)
         .crowdReaction("The crowd reacts with mild interest.")

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -182,24 +183,28 @@ public class CampaignNarrativeView extends VerticalLayout {
 
     Runnable backgroundTask =
         () -> {
-          try {
-            CampaignEncounterResponseDTO encounter =
-                encounterService.generateEncounter(currentCampaign);
-            ui.access(
-                () -> {
-                  displayEncounter(encounter);
-                  showLoading(false);
-                });
-          } catch (Exception e) {
-            log.error("Failed to generate encounter", e);
-            ui.access(
-                () -> {
-                  Notification.show("Failed to connect to the Story Director. Please try again.")
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                  showLoading(false);
-                  addRetryButton();
-                });
-          }
+          GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                try {
+                  CampaignEncounterResponseDTO encounter =
+                      encounterService.generateEncounter(currentCampaign);
+                  ui.access(
+                      () -> {
+                        displayEncounter(encounter);
+                        showLoading(false);
+                      });
+                } catch (Exception e) {
+                  log.error("Failed to generate encounter", e);
+                  ui.access(
+                      () -> {
+                        Notification.show(
+                                "Failed to connect to the Story Director. Please try again.")
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                        showLoading(false);
+                        addRetryButton();
+                      });
+                }
+              });
         };
 
     // Wrap the task to propagate the security context
