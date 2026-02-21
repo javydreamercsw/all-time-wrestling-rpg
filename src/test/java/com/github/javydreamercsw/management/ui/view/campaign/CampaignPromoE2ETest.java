@@ -122,7 +122,12 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
 
     // 5. Click the hook
     log.info("Clicking hook button...");
-    hookButton.click(); // Use direct click instead of JS dispatch
+    clickElement(hookButton);
+
+    // Wait for the UI to acknowledge the click by showing the processing text
+    wait.until(
+        ExpectedConditions.textToBePresentInElementLocated(
+            By.id("narrative-container"), "Processing choice"));
 
     // Wait for async processing: first wait for progress bar to appear, then disappear
     log.info("Waiting for progress bar to appear...");

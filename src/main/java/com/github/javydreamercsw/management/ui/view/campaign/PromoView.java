@@ -189,28 +189,37 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
           GeneralSecurityUtils.runAsAdmin(
               () -> {
                 try {
+                  log.debug("Calling smartPromoService.generatePromoContext in background");
                   SmartPromoResponseDTO promoContext =
                       smartPromoService.generatePromoContext(playerWrestler, opponent);
                   log.info("Promo context generated successfully");
                   ui.access(
                       () -> {
                         try {
+                          log.debug("Updating UI with promo context in ui.access");
                           displayPromoContext(promoContext);
-                          showLoading(false);
-                          ui.push();
                           log.info("Promo UI updated with context");
                         } catch (Exception e) {
                           log.error("Failed to update UI with promo context", e);
+                        } finally {
+                          log.debug("Hiding loading bar and pushing UI changes");
+                          showLoading(false);
+                          ui.push();
                         }
                       });
                 } catch (Exception e) {
                   log.error("Failed to start promo in background", e);
                   ui.access(
                       () -> {
-                        Notification.show("Failed to connect to the Promo Director.")
-                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                        showLoading(false);
-                        addBackButton();
+                        try {
+                          Notification.show("Failed to connect to the Promo Director.")
+                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                          addBackButton();
+                        } finally {
+                          log.debug("Hiding loading bar after error in initializePromo");
+                          showLoading(false);
+                          ui.push();
+                        }
                       });
                 }
               });
@@ -220,6 +229,9 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   private void displayPromoContext(@NonNull SmartPromoResponseDTO context) {
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
+
     Paragraph p = new Paragraph(context.getOpener());
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);
@@ -238,6 +250,11 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     log.info("Hook chosen: {}", hook.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
+    narrativeContainer.removeAll();
+    Span processingSpan = new Span("Processing choice: " + hook.getLabel() + "...");
+    processingSpan.getStyle().set("font-style", "italic");
+    processingSpan.addClassNames(LumoUtility.TextColor.SECONDARY);
+    narrativeContainer.add(processingSpan);
 
     UI ui = UI.getCurrent();
     SecurityContext context = SecurityContextHolder.getContext();
@@ -248,6 +265,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
           GeneralSecurityUtils.runAsAdmin(
               () -> {
                 try {
+                  log.debug("Calling smartPromoService.processPromoHook in background");
                   PromoOutcomeDTO outcome =
                       smartPromoService.processPromoHook(
                           playerWrestler, opponent, hook, currentCampaign);
@@ -255,6 +273,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                   ui.access(
                       () -> {
                         try {
+                          log.debug("Updating UI with outcome in ui.access");
                           displayOutcome(hook, outcome);
                           log.info("Promo UI updated with outcome");
                         } catch (Exception e) {
@@ -262,6 +281,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                           Notification.show("Error displaying promo outcome.")
                               .addThemeVariants(NotificationVariant.LUMO_ERROR);
                         } finally {
+                          log.debug("Hiding loading bar and pushing UI changes");
                           showLoading(false);
                           ui.push();
                         }
@@ -270,11 +290,15 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                   log.error("Failed to process promo hook in background", e);
                   ui.access(
                       () -> {
-                        Notification.show("Failed to resolve the promo: " + e.getMessage())
-                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                        showLoading(false);
-                        addBackButton();
-                        ui.push();
+                        try {
+                          Notification.show("Failed to resolve the promo: " + e.getMessage())
+                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                          log.debug("Hiding loading bar after error");
+                          showLoading(false);
+                          addBackButton();
+                        } finally {
+                          ui.push();
+                        }
                       });
                 }
               });
@@ -285,6 +309,10 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
   private void displayOutcome(@NonNull PromoHookDTO hook, @NonNull PromoOutcomeDTO outcome) {
     log.info("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
+
+    // Clear containers to ensure a clean state for the outcome
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
 
     // Create a result layout to hold all outcome components atomically
     VerticalLayout resultLayout = new VerticalLayout();

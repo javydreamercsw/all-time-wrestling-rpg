@@ -143,6 +143,12 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     clickElement(hookBtn);
     takeSequencedScreenshot("smart-promo-processing-hook");
 
+    // Wait for the UI to acknowledge the click
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            ExpectedConditions.textToBePresentInElementLocated(
+                By.id("narrative-container"), "Processing choice"));
+
     // Wait for async processing: first wait for progress bar to appear, then disappear
     new WebDriverWait(driver, Duration.ofSeconds(10))
         .until(ExpectedConditions.visibilityOfElementLocated(By.id("promo-progress-bar")));

@@ -186,22 +186,33 @@ public class CampaignNarrativeView extends VerticalLayout {
           GeneralSecurityUtils.runAsAdmin(
               () -> {
                 try {
+                  log.debug("Generating encounter in background");
                   CampaignEncounterResponseDTO encounter =
                       encounterService.generateEncounter(currentCampaign);
                   ui.access(
                       () -> {
-                        displayEncounter(encounter);
-                        showLoading(false);
+                        try {
+                          log.debug("Updating UI with encounter");
+                          displayEncounter(encounter);
+                        } finally {
+                          log.debug("Hiding loading bar and pushing UI changes");
+                          showLoading(false);
+                          ui.push();
+                        }
                       });
                 } catch (Exception e) {
                   log.error("Failed to generate encounter", e);
                   ui.access(
                       () -> {
-                        Notification.show(
-                                "Failed to connect to the Story Director. Please try again.")
-                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                        showLoading(false);
-                        addRetryButton();
+                        try {
+                          Notification.show(
+                                  "Failed to connect to the Story Director. Please try again.")
+                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                          addRetryButton();
+                        } finally {
+                          showLoading(false);
+                          ui.push();
+                        }
                       });
                 }
               });
@@ -212,6 +223,9 @@ public class CampaignNarrativeView extends VerticalLayout {
   }
 
   private void displayEncounter(CampaignEncounterResponseDTO encounter) {
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
+
     Paragraph p = new Paragraph(encounter.getNarrative());
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);
