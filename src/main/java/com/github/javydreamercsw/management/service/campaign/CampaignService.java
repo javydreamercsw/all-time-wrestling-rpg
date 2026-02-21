@@ -722,7 +722,18 @@ public class CampaignService {
               ShowType weekly =
                   showTypeRepository
                       .findByName("Weekly")
-                      .orElseGet(() -> showTypeRepository.findAll().get(0));
+                      .orElseGet(
+                          () -> {
+                            var all = showTypeRepository.findAll();
+                            if (!all.isEmpty()) {
+                              return all.get(0);
+                            }
+                            // Last resort: create it
+                            ShowType st = new ShowType();
+                            st.setName("Weekly");
+                            st.setDescription("Default Weekly Show");
+                            return showTypeRepository.save(st);
+                          });
 
               return showService.createShow(
                   finalShowName,
@@ -743,7 +754,18 @@ public class CampaignService {
             () ->
                 segmentTypeRepository
                     .findByName("One on One")
-                    .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
+                    .orElseGet(
+                        () -> {
+                          var all = segmentTypeRepository.findAll();
+                          if (!all.isEmpty()) {
+                            return all.get(0);
+                          }
+                          // Last resort: create it
+                          SegmentType st = new SegmentType();
+                          st.setName("Promo");
+                          st.setDescription("Standard Promo");
+                          return segmentTypeRepository.save(st);
+                        }));
   }
 
   public void saveSegment(@NonNull Segment segment) {

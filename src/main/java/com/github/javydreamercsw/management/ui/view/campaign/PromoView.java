@@ -291,7 +291,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     resultLayout.setPadding(false);
     resultLayout.setSpacing(true);
 
-    Span chosenText = new Span("\"" + hook.getText() + "\"");
+    Span chosenText = new Span("\"" + (hook.getText() != null ? hook.getText() : "") + "\"");
     chosenText.getStyle().set("font-style", "italic");
     chosenText.addClassNames(LumoUtility.TextColor.PRIMARY);
     resultLayout.add(chosenText);
@@ -302,9 +302,11 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
       resultLayout.add(new Span("Opponent's retort:"), retort);
     }
 
-    Paragraph reaction = new Paragraph(outcome.getCrowdReaction());
-    reaction.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
-    resultLayout.add(new Span("Crowd Reaction:"), reaction);
+    if (outcome.getCrowdReaction() != null && !outcome.getCrowdReaction().isBlank()) {
+      Paragraph reaction = new Paragraph(outcome.getCrowdReaction());
+      reaction.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+      resultLayout.add(new Span("Crowd Reaction:"), reaction);
+    }
 
     String status = outcome.isSuccess() ? "SUCCESSFUL" : "FAILED";
     Span outcomeSpan = new Span("Promo " + status);
