@@ -4,11 +4,6 @@
 
 ## Archived Tracks
 
-### [x] Track: Native Desktop Packaging with JPackage
-
-*Link: [./conductor/archive/native_desktop_packaging_20260216/index.md](./conductor/archive/native_desktop_packaging_20260216/index.md)*
-*Status: Completed (2026-02-16)*
-
 ### [ ] Track: Pollinations AI Video Generation
 
 *Status: Canceled (2026-02-16)*
@@ -23,14 +18,19 @@
 *Link: [./conductor/archive/achievement_notifications_20260216/plan.md](./conductor/archive/achievement_notifications_20260216/plan.md)*
 *Status: Completed (2026-02-16)*
 
-### [x] Track: AI-Driven "Smart Promo" Response System
+### [ ] Track: Add Season summary to player dashboard
 
-*Link: [./conductor/tracks/smart_promo/plan.md](./conductor/tracks/smart_promo/plan.md)*
-*Status: Completed (2026-02-17)*
+*Link: [./archive/season_summary_20260219/plan.md](./archive/season_summary_20260219/plan.md)*
+*Status: Archived (2026-02-21)*
 
 ---
 
 ## Active Tracks
+
+### [~] Track: AI-Driven "Smart Promo" Response System
+
+*Link: [./conductor/tracks/smart_promo/plan.md](./conductor/tracks/smart_promo/plan.md)*
+*Status: In Progress*
 
 ### [~] Track: Dynamic Faction Chemistry & Synergies
 
@@ -52,6 +52,11 @@
 *Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
 *Status: Planning*
 
+### [ ] Track: AI Storyline "Director" with Branching Milestones
+
+*Link: [./conductor/tracks/ai_storyline_director/plan.md](./conductor/tracks/ai_storyline_director/plan.md)*
+*Status: Planning*
+
 ### [ ] Track: AI-Generated "Wrestling World" News Feed
 
 *Link: [./conductor/tracks/news_feed/plan.md](./conductor/tracks/news_feed/plan.md)*
@@ -66,13 +71,3 @@
 
 *Link: [./conductor/tracks/booker_economics/plan.md](./conductor/tracks/booker_economics/plan.md)*
 *Status: Planning*
-
-### [ ] Track: AI Storyline "Director" with Branching Milestones
-
-*Link: [./conductor/tracks/ai_storyline_director/plan.md](./conductor/tracks/ai_storyline_director/plan.md)*
-*Status: Planning*
-
-### [ ] Track: Add Season summary to player dashboard
-
-*Link: [./tracks/season_summary_20260219/](./tracks/season_summary_20260219/)*
-*Status: New*
