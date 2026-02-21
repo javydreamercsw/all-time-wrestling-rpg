@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -182,24 +183,39 @@ public class CampaignNarrativeView extends VerticalLayout {
 
     Runnable backgroundTask =
         () -> {
-          try {
-            CampaignEncounterResponseDTO encounter =
-                encounterService.generateEncounter(currentCampaign);
-            ui.access(
-                () -> {
-                  displayEncounter(encounter);
-                  showLoading(false);
-                });
-          } catch (Exception e) {
-            log.error("Failed to generate encounter", e);
-            ui.access(
-                () -> {
-                  Notification.show("Failed to connect to the Story Director. Please try again.")
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                  showLoading(false);
-                  addRetryButton();
-                });
-          }
+          GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                try {
+                  log.debug("Generating encounter in background");
+                  CampaignEncounterResponseDTO encounter =
+                      encounterService.generateEncounter(currentCampaign);
+                  ui.access(
+                      () -> {
+                        try {
+                          log.debug("Updating UI with encounter");
+                          displayEncounter(encounter);
+                        } finally {
+                          log.debug("Hiding loading bar and pushing UI changes");
+                          showLoading(false);
+                          ui.push();
+                        }
+                      });
+                } catch (Exception e) {
+                  log.error("Failed to generate encounter", e);
+                  ui.access(
+                      () -> {
+                        try {
+                          Notification.show(
+                                  "Failed to connect to the Story Director. Please try again.")
+                              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                          addRetryButton();
+                        } finally {
+                          showLoading(false);
+                          ui.push();
+                        }
+                      });
+                }
+              });
         };
 
     // Wrap the task to propagate the security context
@@ -207,6 +223,9 @@ public class CampaignNarrativeView extends VerticalLayout {
   }
 
   private void displayEncounter(CampaignEncounterResponseDTO encounter) {
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
+
     Paragraph p = new Paragraph(encounter.getNarrative());
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);

@@ -396,4 +396,22 @@ public class FactionService {
   public long count() {
     return factionRepository.count();
   }
+
+  /** Add affinity points to a faction. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void addAffinity(@NonNull Long factionId, int points) {
+    factionRepository
+        .findById(factionId)
+        .ifPresent(
+            faction -> {
+              int oldAffinity = faction.getAffinity();
+              faction.setAffinity(oldAffinity + points);
+              factionRepository.saveAndFlush(faction);
+              log.info(
+                  "Added {} affinity to faction: {} (Total: {})",
+                  points,
+                  faction.getName(),
+                  faction.getAffinity());
+            });
+  }
 }

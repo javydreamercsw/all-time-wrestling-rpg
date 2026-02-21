@@ -25,6 +25,9 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
@@ -66,9 +69,10 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import({TestSecurityConfig.class, TestNotionConfiguration.class})
 @Slf4j
+@WithCustomMockUser(roles = {"ADMIN"})
+@ActiveProfiles("test")
+@Import({TestSecurityConfig.class, TestAIConfiguration.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
@@ -210,24 +214,27 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void cleanupLeagues() {
-    log.info("Cleaning up database using DatabaseCleanup...");
-    databaseCleanup.clearRepositories();
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          log.info("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
 
-    if (cacheManager != null) {
-      log.info("Clearing all caches...");
-      cacheManager
-          .getCacheNames()
-          .forEach(
-              cacheName -> {
-                var cache = cacheManager.getCache(cacheName);
-                if (cache != null) {
-                  cache.clear();
-                }
-              });
-    }
+          if (cacheManager != null) {
+            log.info("Clearing all caches...");
+            cacheManager
+                .getCacheNames()
+                .forEach(
+                    cacheName -> {
+                      var cache = cacheManager.getCache(cacheName);
+                      if (cache != null) {
+                        cache.clear();
+                      }
+                    });
+          }
 
-    log.info("Re-initializing data using DataInitializer...");
-    dataInitializer.init();
-    log.info("Database reset complete.");
+          log.info("Re-initializing data using DataInitializer...");
+          dataInitializer.init();
+          log.info("Database reset complete.");
+        });
   }
 }

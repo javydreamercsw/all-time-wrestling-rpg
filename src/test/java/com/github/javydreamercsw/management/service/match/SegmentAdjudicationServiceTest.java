@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAdditio
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
@@ -67,6 +68,7 @@ class SegmentAdjudicationServiceTest {
       leagueRosterRepository;
 
   @Mock private LegacyService legacyService;
+  @Mock private FactionService factionService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -83,6 +85,7 @@ class SegmentAdjudicationServiceTest {
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
+            factionService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));

@@ -1,0 +1,7 @@
+{
+  "title": "Booker's Budget & Economic Simulation",
+  "description": "Financial management layer for shows, talent costs, and revenue.",
+  "status": "Planning",
+  "priority": "Low",
+  "labels": [ "Simulation", "Booker Mode", "Economy" ]
+}

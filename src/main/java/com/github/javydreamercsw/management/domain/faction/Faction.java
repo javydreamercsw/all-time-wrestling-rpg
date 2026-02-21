@@ -95,6 +95,10 @@ public class Faction extends AbstractEntity<Long> {
   @Column(name = "last_sync")
   private Instant lastSync;
 
+  @Column(name = "affinity", nullable = false)
+  @Builder.Default
+  private int affinity = 0;
+
   // Faction members
   @OneToMany(
       mappedBy = "faction",

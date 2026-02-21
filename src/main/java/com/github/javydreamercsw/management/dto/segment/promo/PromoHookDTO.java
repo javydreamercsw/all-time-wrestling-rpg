@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,21 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.security;
+package com.github.javydreamercsw.management.dto.segment.promo;
 
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@TestConfiguration
-public class TestSecurityConfig {
-
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PromoHookDTO {
+  private String hook; // Rhetorical strategy (e.g., "Insult local team")
+  private String label; // Short label for UI buttons
+  private String text; // Suggested dialogue for the player
+  private int alignmentShift; // Impact on Face/Heel track
+  private int difficulty; // Target number for success
 }

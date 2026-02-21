@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
@@ -33,8 +34,10 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -60,6 +63,7 @@ public class SegmentAdjudicationService {
   private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
       leagueRosterRepository;
   private final LegacyService legacyService;
+  private final FactionService factionService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -73,7 +77,8 @@ public class SegmentAdjudicationService {
       MatchFulfillmentRepository matchFulfillmentRepository,
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
           leagueRosterRepository,
-      LegacyService legacyService) {
+      LegacyService legacyService,
+      FactionService factionService) {
     this(
         rivalryService,
         wrestlerService,
@@ -84,6 +89,7 @@ public class SegmentAdjudicationService {
         matchFulfillmentRepository,
         leagueRosterRepository,
         legacyService,
+        factionService,
         new Random());
   }
 
@@ -98,6 +104,7 @@ public class SegmentAdjudicationService {
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
           leagueRosterRepository,
       LegacyService legacyService,
+      FactionService factionService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -108,6 +115,7 @@ public class SegmentAdjudicationService {
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRosterRepository = leagueRosterRepository;
     this.legacyService = legacyService;
+    this.factionService = factionService;
     this.random = random;
   }
 
@@ -189,6 +197,27 @@ public class SegmentAdjudicationService {
         }
       }
     }
+
+    // Faction Affinity Logic
+    Map<Long, Integer> factionMemberCount = new HashMap<>();
+    for (Wrestler participant : segment.getWrestlers()) {
+      if (participant.getFaction() != null) {
+        Long factionId = participant.getFaction().getId();
+        factionMemberCount.put(factionId, factionMemberCount.getOrDefault(factionId, 0) + 1);
+      }
+    }
+
+    // Reward factions for having multiple members in the same segment
+    factionMemberCount.forEach(
+        (factionId, count) -> {
+          if (count > 1) {
+            int affinityGain = (count - 1) * (segment.isMainEvent() ? 2 : 1);
+            if (segment.getShow().isPremiumLiveEvent()) {
+              affinityGain *= 2;
+            }
+            factionService.addAffinity(factionId, affinityGain);
+          }
+        });
 
     // Add heat to rivalries
     int heat = 1;
