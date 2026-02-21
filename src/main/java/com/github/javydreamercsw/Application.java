@@ -73,7 +73,7 @@ public class Application extends SpringBootServletInitializer {
     return args -> {
       log.info("Initializing data on startup...");
       // Create a system authentication context
-      var auth =
+      UsernamePasswordAuthenticationToken auth =
           new UsernamePasswordAuthenticationToken(
               "system",
               null,

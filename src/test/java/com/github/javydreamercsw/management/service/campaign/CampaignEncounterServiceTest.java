@@ -54,6 +54,7 @@ class CampaignEncounterServiceTest {
   @Mock private CampaignStateRepository stateRepository;
   @Mock private CampaignChapterService chapterService;
   @Mock private CampaignService campaignService;
+  @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TeamRepository teamRepository;
   @Mock private FactionRepository factionRepository;
@@ -73,6 +74,7 @@ class CampaignEncounterServiceTest {
             stateRepository,
             chapterService,
             campaignService,
+            storylineDirectorService,
             wrestlerRepository,
             teamRepository,
             factionRepository,

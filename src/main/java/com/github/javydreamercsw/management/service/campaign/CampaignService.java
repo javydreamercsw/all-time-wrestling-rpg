@@ -109,6 +109,7 @@ public class CampaignService {
   private final SegmentAdjudicationService adjudicationService;
   private final MatchRewardService matchRewardService;
   private final NewsGenerationService newsGenerationService;
+  private final StorylineDirectorService storylineDirectorService;
   private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
@@ -222,7 +223,9 @@ public class CampaignService {
 
     updateAbilityCards(campaign);
 
-    return campaignRepository.save(campaign);
+    campaign = campaignRepository.save(campaign);
+
+    return campaign;
   }
 
   /**
@@ -622,6 +625,9 @@ public class CampaignService {
 
     state.setCurrentPhase(CampaignPhase.POST_MATCH);
 
+    // Evaluate storyline progress
+    storylineDirectorService.evaluateProgress(campaign, won);
+
     // Unlock backstage actions after first match
     if (state.getMatchesPlayed() == 1 && state.getCompletedChapterIds().isEmpty()) {
       WrestlerAlignment alignment =
@@ -815,8 +821,17 @@ public class CampaignService {
       log.info("Advanced to chapter: {}", state.getCurrentChapterId());
       return Optional.of(newChapterId);
     } else {
-      completeCampaign(campaign);
-      return Optional.empty();
+      // No predefined chapter found, so create an AI-driven storyline to bridge.
+      log.info("No predefined next chapter found. Initializing AI-driven storyline.");
+      // First, ensure any old storyline is completed/abandoned
+      if (state.getActiveStoryline() != null) {
+        storylineDirectorService.abandonStoryline(state.getActiveStoryline());
+      }
+      CampaignStoryline newStoryline = storylineDirectorService.initializeStoryline(campaign);
+      state.setActiveStoryline(newStoryline);
+      state.setCurrentChapterId(newStoryline.getTitle()); // Use storyline title as a pseudo-chapter ID
+      campaignStateRepository.save(state);
+      return Optional.of(newStoryline.getTitle());
     }
   }
 

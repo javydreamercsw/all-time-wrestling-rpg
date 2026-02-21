@@ -54,6 +54,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       Thread.currentThread().interrupt();
     }
 
+    if (prompt.contains("generate a structured Storyline Arc")) {
+      return generateMockStorylineArc(prompt);
+    }
+
     if (prompt.contains("Summarize the following segment narration")) {
       return "This is a mock summary.";
     }
@@ -95,6 +99,50 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
     return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
         + " walking away.";
+  }
+
+  private String generateMockStorylineArc(String prompt) {
+    try {
+      var m1 =
+          Map.of(
+              "title",
+              "The First Beat",
+              "description",
+              "Initial contact and tension building.",
+              "narrativeGoal",
+              "Establish the core conflict of the arc.",
+              "order",
+              0,
+              "nextOnSuccessIndex",
+              1,
+              "nextOnFailureIndex",
+              1);
+      var m2 =
+          Map.of(
+              "title",
+              "The Climax",
+              "description",
+              "Final showdown and resolution.",
+              "narrativeGoal",
+              "Conclude the arc based on performance.",
+              "order",
+              1,
+              "nextOnSuccessIndex",
+              null,
+              "nextOnFailureIndex",
+              null);
+
+      var response =
+          Map.of(
+              "title", "Mock AI Arc",
+              "description", "A mock arc generated for testing purposes.",
+              "milestones", List.of(m1, m2));
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock storyline arc", e);
+      return "{}";
+    }
   }
 
   private String generateMockNews(String prompt) {

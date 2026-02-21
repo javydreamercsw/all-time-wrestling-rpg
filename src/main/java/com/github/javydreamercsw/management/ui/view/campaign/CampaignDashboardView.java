@@ -50,6 +50,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -80,6 +81,8 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignChapterService chapterService;
   private final TitleService titleService;
   private final com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  private final StorylineDirectorService storylineDirectorService;
+  private final StorylineExportService storylineExportService;
 
   private Campaign currentCampaign;
 
@@ -95,7 +98,9 @@ public class CampaignDashboardView extends VerticalLayout {
       com.fasterxml.jackson.databind.ObjectMapper objectMapper,
       CampaignChapterService chapterService,
       TitleService titleService,
-      com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository) {
+      com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository,
+      StorylineDirectorService storylineDirectorService,
+      StorylineExportService storylineExportService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -107,6 +112,8 @@ public class CampaignDashboardView extends VerticalLayout {
     this.chapterService = chapterService;
     this.titleService = titleService;
     this.titleRepository = titleRepository;
+    this.storylineDirectorService = storylineDirectorService;
+    this.storylineExportService = storylineExportService;
 
     setSpacing(true);
     setPadding(true);
@@ -278,6 +285,9 @@ public class CampaignDashboardView extends VerticalLayout {
     leftColumn.setSpacing(true);
     leftColumn.setWidth("50%");
 
+    // Storyline Section
+    addStorylineSection(state, leftColumn);
+
     // Right Column
     VerticalLayout rightColumn = new VerticalLayout();
     rightColumn.setPadding(false);
@@ -428,6 +438,74 @@ public class CampaignDashboardView extends VerticalLayout {
     }
   }
 
+  private void addStorylineSection(CampaignState state, VerticalLayout parent) {
+    if (state.getActiveStoryline() == null) return;
+
+    com.github.javydreamercsw.management.domain.campaign.CampaignStoryline storyline =
+        state.getActiveStoryline();
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(true);
+    section.setSpacing(false);
+    section.addClassNames(
+        LumoUtility.Background.CONTRAST_10,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Margin.Bottom.MEDIUM);
+
+    H4 title = new H4("Active Storyline: " + storyline.getTitle());
+    title.addClassNames(
+        LumoUtility.Margin.Top.NONE,
+        LumoUtility.Margin.Bottom.XSMALL,
+        LumoUtility.TextColor.PRIMARY);
+    section.add(title);
+
+    Span desc = new Span(storyline.getDescription());
+    desc.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.Margin.Bottom.SMALL);
+    section.add(desc);
+
+    VerticalLayout milestoneList = new VerticalLayout();
+    milestoneList.setPadding(false);
+    milestoneList.setSpacing(true);
+
+    for (com.github.javydreamercsw.management.domain.campaign.StorylineMilestone milestone :
+        storyline.getMilestones()) {
+      HorizontalLayout item = new HorizontalLayout();
+      item.setAlignItems(Alignment.CENTER);
+      item.setSpacing(true);
+
+      Span icon = new Span(getMilestoneIcon(milestone.getStatus()));
+      Span mTitle = new Span(milestone.getTitle());
+      mTitle.addClassNames(LumoUtility.FontSize.SMALL);
+
+      if (milestone.getStatus()
+          == com.github.javydreamercsw.management.domain.campaign.StorylineMilestone.MilestoneStatus
+              .ACTIVE) {
+        mTitle.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.HEADER);
+        Tooltip.forComponent(item).setText("CURRENT GOAL: " + milestone.getNarrativeGoal());
+      } else if (milestone.getStatus()
+          == com.github.javydreamercsw.management.domain.campaign.StorylineMilestone.MilestoneStatus
+              .PENDING) {
+        mTitle.addClassNames(LumoUtility.TextColor.SECONDARY);
+      }
+
+      item.add(icon, mTitle);
+      milestoneList.add(item);
+    }
+
+    section.add(milestoneList);
+    parent.add(section);
+  }
+
+  private String getMilestoneIcon(
+      com.github.javydreamercsw.management.domain.campaign.StorylineMilestone.MilestoneStatus
+          status) {
+    return switch (status) {
+      case COMPLETED -> "✅";
+      case FAILED -> "❌";
+      case ACTIVE -> "🎯";
+      case PENDING -> "⚪";
+    };
+  }
+
   private void addPendingPicksSection(@NonNull Campaign campaign, VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getPendingL1Picks() <= 0
@@ -509,7 +587,7 @@ public class CampaignDashboardView extends VerticalLayout {
 
     available.removeIf(u -> ownedTypes.contains(u.getType()));
 
-    for (var upgrade : available) {
+    for (com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade upgrade : available) {
       Button buyButton =
           new Button(
               upgrade.getName(),
@@ -725,6 +803,19 @@ public class CampaignDashboardView extends VerticalLayout {
             });
     chapterLayout.add(chapterSelect, jumpButton);
     debugContent.add(chapterLayout);
+
+    // --- Storyline Export ---
+    Button exportStorylineButton = new Button("Export Active Storyline as Chapter", e -> {
+      if (currentCampaign != null && currentCampaign.getState().getActiveStoryline() != null) {
+        String chapterJson = storylineExportService.exportStorylineAsChapter(currentCampaign.getState().getActiveStoryline());
+        UI.getCurrent().getPage().executeJs("prompt('Copy AI Storyline Chapter JSON:', $0);", chapterJson);
+        Notification.show("Storyline JSON copied to clipboard/prompt.");
+      } else {
+        Notification.show("No active storyline to export.");
+      }
+    });
+    exportStorylineButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    debugContent.add(exportStorylineButton);
 
     // --- State & Flags (Entry Point Simulator) ---
     H4 stateHeader = new H4("State & Flags");
