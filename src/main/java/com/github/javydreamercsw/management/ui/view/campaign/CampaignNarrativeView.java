@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -48,9 +49,6 @@ import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(value = "campaign/narrative", layout = MainLayout.class)
 @PageTitle("Story Narrative")
@@ -176,37 +174,28 @@ public class CampaignNarrativeView extends VerticalLayout {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
-    // Use a background thread for AI generation to keep UI responsive
-    UI ui = UI.getCurrent();
-    SecurityContext context = SecurityContextHolder.getContext();
-
-    Runnable backgroundTask =
+    GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
+            log.info("Generating encounter synchronously");
             CampaignEncounterResponseDTO encounter =
                 encounterService.generateEncounter(currentCampaign);
-            ui.access(
-                () -> {
-                  displayEncounter(encounter);
-                  showLoading(false);
-                });
+            displayEncounter(encounter);
           } catch (Exception e) {
             log.error("Failed to generate encounter", e);
-            ui.access(
-                () -> {
-                  Notification.show("Failed to connect to the Story Director. Please try again.")
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                  showLoading(false);
-                  addRetryButton();
-                });
+            Notification.show("Failed to connect to the Story Director. Please try again.")
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            addRetryButton();
+          } finally {
+            showLoading(false);
           }
-        };
-
-    // Wrap the task to propagate the security context
-    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+        });
   }
 
   private void displayEncounter(CampaignEncounterResponseDTO encounter) {
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
+
     Paragraph p = new Paragraph(encounter.getNarrative());
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);

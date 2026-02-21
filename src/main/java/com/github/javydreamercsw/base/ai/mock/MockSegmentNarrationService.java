@@ -64,6 +64,14 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockCampaignEncounter(prompt);
     }
 
+    if (prompt.contains("Rhetorical Hooks")) {
+      return generateMockPromoContext(prompt);
+    }
+
+    if (prompt.contains("CHOSEN HOOK:")) {
+      return generateMockPromoOutcome(prompt);
+    }
+
     if (prompt.contains("Respond directly to them with a short, impactful retort")) {
       return "You think you can just step into my ring and talk like that? I've retired legends"
           + " while you were still learning to tie your boots. When the bell rings, the"
@@ -265,6 +273,88 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return objectMapper.writeValueAsString(response);
     } catch (Exception e) {
       log.error("Error generating mock campaign encounter", e);
+      return "{}";
+    }
+  }
+
+  private String generateMockPromoContext(String prompt) {
+    try {
+      var hook1 =
+          Map.of(
+              "hook",
+              "Insult the City",
+              "label",
+              "Cheap Heat",
+              "text",
+              "I've been all over the world, but I've never seen a more pathetic group of"
+                  + " losers than the people in this arena tonight!",
+              "alignmentShift",
+              -1,
+              "difficulty",
+              4);
+      var hook2 =
+          Map.of(
+              "hook",
+              "Pander to Fans",
+              "label",
+              "Pop the Crowd",
+              "text",
+              "It's an honor to be here tonight! There's no place I'd rather be than right"
+                  + " here, in front of the best fans in the business!",
+              "alignmentShift",
+              1,
+              "difficulty",
+              4);
+      var hook3 =
+          Map.of(
+              "hook",
+              "Challenge Honor",
+              "label",
+              "Call Out",
+              "text",
+              "I didn't come here to talk. I came here to fight. If anyone in that locker room"
+                  + " has the guts, come down here and face me!",
+              "alignmentShift",
+              0,
+              "difficulty",
+              5);
+
+      Map<String, Object> response = new java.util.HashMap<>();
+      response.put(
+          "opener",
+          "The crowd is buzzing as you step through the ropes and signal for a microphone. You"
+              + " stand in the center of the ring, soaking in the atmosphere.");
+      response.put("hooks", List.of(hook1, hook2, hook3));
+      response.put("opponentName", prompt.contains("OPPONENT:") ? "Mock Opponent" : null);
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock promo context", e);
+      return "{}";
+    }
+  }
+
+  private String generateMockPromoOutcome(String prompt) {
+    try {
+      var response =
+          Map.of(
+              "retort",
+              "You think you're so special? You're just another talker in a business full of them!",
+              "crowdReaction",
+              "The crowd erupted in a mix of cheers and boos, creating a chaotic atmosphere.",
+              "success",
+              true,
+              "alignmentShift",
+              prompt.contains("Insult the City") ? -1 : 1,
+              "momentumBonus",
+              2,
+              "finalNarration",
+              "The player delivered a passionate promo that really connected with the fans, setting"
+                  + " the stage for their next encounter.");
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock promo outcome", e);
       return "{}";
     }
   }

@@ -35,7 +35,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.test.context.support.WithMockUser;
 
 public class AccountE2ETest extends AbstractE2ETest {
   @Autowired
@@ -53,7 +52,6 @@ public class AccountE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
   public void testEditAccount() {
     String username = "edit_me_" + System.currentTimeMillis();
     Account testAccount =
@@ -107,7 +105,6 @@ public class AccountE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = {"ADMIN"})
   public void testDeleteAccount() {
     // Create an account to delete
     String username = "delete_me_" + System.currentTimeMillis();
@@ -141,7 +138,6 @@ public class AccountE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @WithMockUser(roles = {"ADMIN"})
   public void testCreateAccount() {
     String username = "new_account_" + System.currentTimeMillis();
     // Navigate to the AccountListView

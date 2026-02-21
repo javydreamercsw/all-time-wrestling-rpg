@@ -61,7 +61,7 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
-@PermitAll // When security is enabled, allow all authenticated users
+@PermitAll
 public class MainLayout extends AppLayout {
 
   private MenuService menuService;

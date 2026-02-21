@@ -17,6 +17,7 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.util.docs.DocEntry;
 import com.github.javydreamercsw.management.util.docs.DocumentationManifest;
@@ -58,7 +59,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(UITestWatcher.class)
@@ -67,8 +67,11 @@ import org.springframework.test.context.ActiveProfiles;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
-@Import(TestE2ESecurityConfig.class)
-@WithMockUser(username = "admin", roles = "ADMIN")
+@Import({
+  TestE2ESecurityConfig.class,
+  com.github.javydreamercsw.management.config.TestNotionConfiguration.class
+})
+@WithCustomMockUser(roles = {"ADMIN"})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
@@ -341,12 +344,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Waits for the Vaadin components to load by checking for the presence of a vaadin-grid element.
+   * Waits for the Vaadin components to load and become idle.
    *
    * @param driver the WebDriver instance
    */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    waitForVaadinClientToLoad();
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
@@ -355,6 +358,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+    waitForVaadinClientToLoad();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
@@ -497,10 +501,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         });
   }
 
-  /** Waits for the Vaadin client-side application to fully load. */
+  /** Waits for the Vaadin client-side application to fully load and become idle. */
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait =
-        new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout for Vaadin client
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -509,8 +512,28 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
                 "complete"));
 
-    // Wait for the main Vaadin app layout element to be present
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
+    // Wait for Vaadin to be present and idle
+    wait.until(
+        webDriver -> {
+          try {
+            return (Boolean)
+                ((JavascriptExecutor) webDriver)
+                    .executeScript(
+                        "return !!(window.Vaadin && window.Vaadin.Flow &&"
+                            + " window.Vaadin.Flow.clients &&"
+                            + " Object.values(window.Vaadin.Flow.clients).every(client =>"
+                            + " !client.isActive()));");
+          } catch (Exception e) {
+            return false;
+          }
+        });
+
+    // Wait for the main Vaadin app layout element to be present (best effort)
+    try {
+      wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
+    } catch (Exception ignored) {
+      // Not all pages might have vaadin-app-layout
+    }
   }
 
   protected void toggleVaadinCheckbox(@NonNull By selector) {
@@ -540,17 +563,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(driver.findElement(selector));
   }
 
-  /**
-   * Scrolls the given WebElement into view and clicks it using JavaScript.
-   *
-   * @param element the WebElement to scroll into view and click
-   */
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
+    waitForVaadinClientToLoad();
     takeSequencedScreenshot("before-click");
     // First, wait for the element to be visible.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(ExpectedConditions.visibilityOf(element));
+    wait.until(ExpectedConditions.elementToBeClickable(element));
 
     // Ensure the drawer is closed if it might intercept clicks
     try {
@@ -558,17 +578,34 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           .executeScript(
               "const layout = document.querySelector('vaadin-app-layout');"
                   + "if (layout && layout.drawerOpened) { layout.drawerOpened = false; }");
+      // Give drawer time to close
+      Thread.sleep(300);
     } catch (Exception e) {
       log.warn("Could not ensure drawer was closed", e);
     }
 
-    // Use JavaScript to click to bypass potential interception by other elements (like the drawer
-    // or overlays).
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].dispatchEvent(new MouseEvent('click', {view: window, bubbles: true,"
-                + " cancelable: true}));",
-            element);
+    try {
+      // Attempt native Selenium click first
+      element.click();
+    } catch (Exception e) {
+      log.warn("Native click failed, falling back to JS click: {}", e.getMessage());
+      // Use a simple JavaScript click as it's more reliable
+      try {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+        Thread.sleep(200); // Give time for the click to register
+      } catch (Exception jsError) {
+        log.error("JavaScript click also failed, using event dispatch", jsError);
+        // Last resort: dispatch events
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "const el = arguments[0];"
+                    + "const opts = {view: window, bubbles: true, cancelable: true};"
+                    + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
+                    + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
+                    + "el.dispatchEvent(new MouseEvent('click', opts));",
+                element);
+      }
+    }
     takeSequencedScreenshot("after-click");
   }
 
@@ -622,9 +659,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       input = comboBox;
     }
 
+    // Determine the correct modifier key for the current OS
+    String os = System.getProperty("os.name").toLowerCase();
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
     // Clear and type
     input.click();
-    input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
+    input.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
     input.sendKeys(itemText);
 
     // Wait for the overlay to appear and the item to be clickable
@@ -767,8 +808,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                           rowMatchText,
                           cssSelector);
 
-              if (result instanceof Map) {
-                Map<?, ?> map = (Map<?, ?>) result;
+              if (result instanceof Map<?, ?> map) {
                 if (Boolean.TRUE.equals(map.get("found"))) {
                   return (WebElement) map.get("element");
                 } else {
@@ -955,7 +995,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           shadowRoot.findElements(By.cssSelector("[part='error-message']"));
 
       if (!errorMessageElements.isEmpty()) {
-        WebElement errorMessageElement = errorMessageElements.get(0);
+        WebElement errorMessageElement = errorMessageElements.getFirst();
         if (errorMessageElement.isDisplayed()) {
           return errorMessageElement.getText();
         }

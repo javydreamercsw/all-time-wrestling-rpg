@@ -105,6 +105,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private CommentaryComponent commentaryComponent;
+  private DashboardCard narrationCard;
 
   @Autowired
   public MatchView(
@@ -143,9 +144,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       String matchId = event.getRouteParameters().get("matchId").orElse(null);
       log.info("Entering MatchView for matchId: {}", matchId);
       if (matchId != null) {
-        Optional<Segment> foundSegment = segmentService.findByIdWithShow(Long.valueOf(matchId));
-        if (foundSegment.isPresent()) {
-          segment = foundSegment.get();
+        Long id = Long.valueOf(matchId);
+        // Try finding as a fulfillment first to get full context
+        Optional<MatchFulfillment> fulfillment = matchFulfillmentRepository.findByIdWithDetails(id);
+        if (fulfillment.isPresent()) {
+          segment = fulfillment.get().getSegment();
+        } else {
+          // Fallback to direct segment lookup
+          segment = segmentService.findByIdWithShow(id).orElse(null);
+        }
+
+        if (segment != null) {
           List<Wrestler> wrestlers = segment.getWrestlers();
           log.info(
               "Found segment: {} with {} wrestlers",
@@ -174,20 +183,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     buildHeader(playerWrestler);
 
+    boolean isPromo =
+        segment.getSegmentType() != null
+            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+
     // Initialize narrationArea
-    narrationArea = new TextArea("Match Story");
+    narrationArea = new TextArea(isPromo ? "Promo Transcript" : "Match Story");
     narrationArea.setWidthFull();
     narrationArea.setMinHeight("200px");
-    narrationArea.setPlaceholder("The story of the match will appear here...");
+    narrationArea.setPlaceholder("The story will appear here...");
     narrationArea.setValue(segment.getNarration() == null ? "" : segment.getNarration());
     narrationArea.setId("narration-area");
 
-    if (segment.getSegmentType() != null
-        && "Promo".equalsIgnoreCase(segment.getSegmentType().getName())) {
-      buildPromoInterface(playerWrestler);
-    } else {
-      buildMatchInterface(playerWrestler);
-    }
+    buildMatchInterface(playerWrestler);
   }
 
   private void buildHeader(Wrestler playerWrestler) {
@@ -243,8 +251,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
   }
 
-  private void buildPromoInterface(Wrestler playerWrestler) {
-    DashboardCard promoCard = new DashboardCard("Interactive Promo");
+  private void showInteractivePromoInterface(Wrestler playerWrestler) {
+    DashboardCard promoCard = new DashboardCard("Interactive Promo Chat");
+    promoCard.setId("interactive-promo-chat-card");
     VerticalLayout promoLayout = new VerticalLayout();
     promoLayout.setPadding(false);
     promoLayout.setSpacing(true);
@@ -256,13 +265,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     // Populate existing narration if any
     if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
-      // Simple parsing: assuming lines are separated by newlines
-      // In a real scenario, we might want structured data
       String[] lines = segment.getNarration().split("\n");
       List<MessageListItem> items = new ArrayList<>();
       for (String line : lines) {
         if (!line.isBlank()) {
-          // Determine user based on prefix if possible, else default
           items.add(new MessageListItem(line, java.time.Instant.now(), "History"));
         }
       }
@@ -283,7 +289,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           messageList.setItems(items);
 
           // Generate Retort
-          // Find opponent (anyone not the player)
           Wrestler opponent =
               segment.getWrestlers().stream()
                   .filter(w -> !w.equals(playerWrestler))
@@ -306,20 +311,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
             segment.setNarration(narrationArea.getValue());
             segmentService.updateSegment(segment);
+            UI.getCurrent().push();
           }
         });
 
-    promoLayout.add(messageList, messageInput);
-    promoCard.add(promoLayout);
-    add(promoCard);
+    Button closeChatBtn =
+        new Button(
+            "Close Chat Mode",
+            event -> {
+              remove(promoCard);
+              narrationCard.setVisible(true);
+              updateCommentaryDisplay();
+            });
+    closeChatBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-    // Also add the Save Transcript button for manual saves/viewing
-    DashboardCard transcriptCard = new DashboardCard("Transcript");
-    transcriptCard.add(narrationArea);
-    Button saveButton = new Button("Save Transcript", event -> saveNarration());
-    saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-    transcriptCard.add(saveButton);
-    add(transcriptCard);
+    promoLayout.add(messageList, messageInput, closeChatBtn);
+    promoCard.add(promoLayout);
+
+    // Insert before narration card or at the end
+    add(promoCard);
   }
 
   private void buildMatchInterface(Wrestler playerWrestler) {
@@ -439,27 +449,35 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     mainContent.add(participantsCol, sideCol);
     add(mainContent);
 
+    boolean isPromo =
+        segment.getSegmentType() != null
+            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+
     // Full Width: Narration Section
-    DashboardCard narrationCard = new DashboardCard("Match Narration");
+    narrationCard = new DashboardCard(isPromo ? "Promo Narration" : "Match Narration");
     narrationCard.setMaxWidth("1200px");
     VerticalLayout narrationContent = new VerticalLayout();
     narrationContent.setPadding(false);
 
-    feedbackArea = new TextArea("Generation Feedback");
+    feedbackArea = new TextArea(isPromo ? "Promo Notes" : "Generation Feedback");
     feedbackArea.setWidthFull();
     feedbackArea.setPlaceholder(
-        "Provide specific details about the match (key spots, interference, etc.) to guide the"
-            + " AI...");
+        isPromo
+            ? "Provide bullet points or a general idea of the promo content..."
+            : "Provide specific details about the match (key spots, interference, etc.) to guide"
+                + " the AI...");
     feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();
     narrationButtons.setWidthFull();
 
-    Button aiGenerateButton = new Button("Generate with Feedback", event -> generateAiNarration());
+    String generateLabel = isPromo ? "Auto-Generate Promo (AI)" : "Generate Match Narration (AI)";
+    Button aiGenerateButton = new Button(generateLabel, event -> generateAiNarration());
     aiGenerateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     aiGenerateButton.setId("ai-generate-narration-button");
 
-    Button saveButton = new Button("Save Narration", event -> saveNarration());
+    Button saveButton =
+        new Button(isPromo ? "Save Transcript" : "Save Narration", event -> saveNarration());
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.setId("save-narration-button");
 
@@ -493,6 +511,67 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (showGenerateButton) {
       narrationButtons.add(aiGenerateButton);
     }
+
+    Long currentAccountId = securityUtils.getCurrentAccountId().orElse(null);
+    Wrestler roleplayWrestler = playerWrestler;
+    if (roleplayWrestler == null && currentAccountId != null) {
+      roleplayWrestler =
+          segment.getWrestlers().stream()
+              .filter(
+                  w ->
+                      w != null
+                          && w.getAccount() != null
+                          && w.getAccount().getId().equals(currentAccountId))
+              .findFirst()
+              .orElse(null);
+    }
+
+    final Wrestler finalPlayerWrestler = roleplayWrestler;
+    boolean isPlayerParticipant = finalPlayerWrestler != null;
+
+    if (isPromo && isPlayerParticipant) {
+      // 1. Full Smart Promo (Hooks/Choices)
+      Button hooksBtn =
+          new Button(
+              "Use Smart Promo (Hooks)",
+              e -> {
+                Wrestler opponent =
+                    segment.getWrestlers().stream()
+                        .filter(w -> w != null && !w.getId().equals(finalPlayerWrestler.getId()))
+                        .findFirst()
+                        .orElse(null);
+
+                String route = "campaign/promo";
+                if (opponent != null) {
+                  route += "/" + opponent.getId();
+                }
+
+                java.util.Map<String, List<String>> params = new java.util.HashMap<>();
+                params.put("playerWrestler", List.of(finalPlayerWrestler.getId().toString()));
+                params.put("segment", List.of(segment.getId().toString()));
+
+                UI.getCurrent().navigate(route, new com.vaadin.flow.router.QueryParameters(params));
+              });
+      hooksBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      hooksBtn.setId("go-smart-promo-hooks-button");
+      hooksBtn.setTooltipText(
+          "Switch to the choice-based Smart Promo system. Story progression only in Campaigns.");
+      narrationButtons.add(hooksBtn);
+
+      // 2. Interactive Chat (Free-form)
+      Button interactiveBtn =
+          new Button(
+              "Start Interactive Chat",
+              e -> {
+                narrationCard.setVisible(false);
+                showInteractivePromoInterface(finalPlayerWrestler);
+              });
+      interactiveBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+      interactiveBtn.setId("go-interactive-promo-button");
+      interactiveBtn.setTooltipText("Switch to real-time chat with AI opponent.");
+      narrationButtons.add(interactiveBtn);
+    }
+
     narrationButtons.add(saveButton);
 
     if (showGenerateButton) {
@@ -615,15 +694,24 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       }
 
       String feedback = feedbackArea.getValue();
+      String segmentType = segment.getSegmentType().getName();
+      boolean isPromo = "Promo".equalsIgnoreCase(segmentType);
+
       String instructions =
-          "Narrate a compelling wrestling match based on the provided wrestlers and rules. The"
-              + " match should be narrated as a conversation between the commentary team members"
-              + " provided in the context. Each commentator has a distinct persona (Alignment,"
-              + " Style, Catchphrase) that MUST be respected. Ensure the narration flows as dynamic"
-              + " dialogue, capturing their different perspectives on the match. IMPORTANT: You"
-              + " MUST ONLY use the wrestlers, commentators and NPCs provided in the context. Do"
-              + " NOT invent new characters, announcers, or managers. Stick strictly to the All"
-              + " Time Wrestling roster provided.";
+          "Narrate a compelling "
+              + (isPromo ? "wrestling promo transcript" : "wrestling match")
+              + " based on the provided wrestlers and rules. "
+              + (isPromo
+                  ? "The transcript should focus on the dialogue and character work of the"
+                      + " wrestlers involved, with occasional descriptive flair. Include some"
+                      + " reactions from the commentary team to ground it in the broadcast. "
+                  : "The match should be narrated as a conversation between the commentary team"
+                      + " members provided in the context. ")
+              + "Each commentator has a distinct persona (Alignment, Style, Catchphrase) that MUST"
+              + " be respected. Ensure the narration flows as dynamic dialogue, capturing their"
+              + " different perspectives. IMPORTANT: You MUST ONLY use the wrestlers, commentators"
+              + " and NPCs provided in the context. Do NOT invent new characters, announcers, or"
+              + " managers. Stick strictly to the All Time Wrestling roster provided.";
 
       if (feedback != null && !feedback.isBlank()) {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
@@ -634,12 +722,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
 
       if (generated != null && !generated.isEmpty()) {
-        narrationArea.setValue(generated);
-        segment.setNarration(generated);
-        segmentService.updateSegment(segment);
-        updateCommentaryDisplay();
-        Notification.show("Narration generated!")
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        getUI()
+            .ifPresent(
+                ui ->
+                    ui.access(
+                        () -> {
+                          narrationArea.setValue(generated);
+                          segment.setNarration(generated);
+                          segmentService.updateSegment(segment);
+                          updateCommentaryDisplay();
+                          Notification.show("Narration generated!")
+                              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                          ui.push();
+                        }));
       }
     } catch (Exception e) {
       log.error("Failed to generate AI narration", e);

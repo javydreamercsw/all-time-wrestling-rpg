@@ -66,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @NpmPackage(value = "@webcomponents/shadycss", version = "1.11.2")
 @NpmPackage(value = "onecolor", version = "4.1.0")
-@NpmPackage(value = "apexcharts", version = "3.45.1")
+@NpmPackage(value = "apexcharts", version = "3.49.0")
 public class SystemObservabilityView extends VerticalLayout {
 
   private final PerformanceMonitoringService performanceService;

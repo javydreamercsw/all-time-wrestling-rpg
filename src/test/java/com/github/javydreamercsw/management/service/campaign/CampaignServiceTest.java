@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -78,6 +79,7 @@ class CampaignServiceTest {
   @Mock private CampaignChapterService chapterService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ShowService showService;
+  @Mock private ShowRepository showRepository;
   @Mock private SegmentService segmentService;
   @Mock private SeasonRepository seasonRepository;
   @Mock private SegmentTypeRepository segmentTypeRepository;
