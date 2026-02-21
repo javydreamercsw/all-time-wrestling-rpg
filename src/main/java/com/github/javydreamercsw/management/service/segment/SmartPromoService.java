@@ -17,14 +17,21 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistory;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
@@ -34,6 +41,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.LocalDateTime;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -100,20 +108,16 @@ public class SmartPromoService {
    *
    * @param player The wrestler performing the promo.
    * @param opponent The wrestler being addressed (optional).
-   * @param campaign The current campaign (optional).
    * @return The promo context.
    */
-  public SmartPromoResponseDTO generatePromoContext(
-      Wrestler player, Wrestler opponent, Campaign campaign) {
+  public SmartPromoResponseDTO generatePromoContext(Wrestler player, Wrestler opponent) {
     log.info("Generating promo context for player: {} (id: {})", player.getName(), player.getId());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
     Wrestler loadedOpponent =
         opponent != null ? wrestlerRepository.findById(opponent.getId()).orElse(null) : null;
-    Campaign loadedCampaign =
-        campaign != null ? campaignRepository.findById(campaign.getId()).orElse(null) : null;
 
-    var aiService = aiFactory.getBestAvailableService();
+    SegmentNarrationService aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo generation.");
       return createFallbackResponse(loadedPlayer, loadedOpponent);
@@ -150,35 +154,39 @@ public class SmartPromoService {
     Campaign loadedCampaign =
         campaign != null ? campaignRepository.findById(campaign.getId()).orElse(null) : null;
 
-    var aiService = aiFactory.getBestAvailableService();
+    PromoOutcomeDTO outcome;
+    SegmentNarrationService aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo outcome.");
-      return createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
-    }
-
-    String prompt = buildOutcomePrompt(loadedPlayer, loadedOpponent, chosenHook);
-    try {
-      log.debug("Sending outcome prompt to AI provider: {}", aiService.getProviderName());
-      String aiResponse = aiService.generateText(PROMO_OUTCOME_SYSTEM_PROMPT + "\n\n" + prompt);
-      log.debug("Received outcome response from AI");
-      PromoOutcomeDTO outcome = parseJsonResponse(aiResponse, PromoOutcomeDTO.class);
-
-      // Record the outcome if in a campaign
-      if (loadedCampaign != null) {
-        log.info("Recording promo outcome for campaign: {}", loadedCampaign.getId());
-        recordOutcome(loadedCampaign, loadedPlayer, loadedOpponent, outcome);
+      outcome = createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
+    } else {
+      String prompt = buildOutcomePrompt(loadedPlayer, loadedOpponent, chosenHook);
+      try {
+        log.debug("Sending outcome prompt to AI provider: {}", aiService.getProviderName());
+        String aiResponse = aiService.generateText(PROMO_OUTCOME_SYSTEM_PROMPT + "\n\n" + prompt);
+        log.debug("Received outcome response from AI");
+        outcome = parseJsonResponse(aiResponse, PromoOutcomeDTO.class);
+      } catch (Exception e) {
+        log.error("Failed to generate promo outcome via AI, using fallback", e);
+        outcome = createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
       }
-
-      return outcome;
-    } catch (Exception e) {
-      log.error("Failed to generate promo outcome", e);
-      return createFallbackOutcome(loadedPlayer, loadedOpponent, chosenHook);
     }
+
+    // Record the outcome if in a campaign - this part is critical and should propagate exceptions
+    if (loadedCampaign != null) {
+      log.info("Recording promo outcome for campaign: {}", loadedCampaign.getId());
+      recordOutcome(loadedCampaign, loadedPlayer, loadedOpponent, outcome);
+    }
+
+    return outcome;
   }
 
   private void recordOutcome(
-      Campaign campaign, Wrestler player, Wrestler opponent, PromoOutcomeDTO outcome) {
-    var state = campaign.getState();
+      @NonNull Campaign campaign,
+      @NonNull Wrestler player,
+      Wrestler opponent,
+      @NonNull PromoOutcomeDTO outcome) {
+    CampaignState state = campaign.getState();
     log.debug(
         "Updating campaign state: VP={}, actionsTaken={}",
         state.getVictoryPoints(),
@@ -218,42 +226,39 @@ public class SmartPromoService {
   }
 
   private void createPromoSegment(
-      Campaign campaign, Wrestler player, Wrestler opponent, PromoOutcomeDTO outcome) {
-    try {
-      var show = campaignService.getOrCreateCampaignShow(campaign);
-      var promoType = campaignService.getPromoSegmentType();
+      @NonNull Campaign campaign,
+      @NonNull Wrestler player,
+      Wrestler opponent,
+      @NonNull PromoOutcomeDTO outcome) {
+    Show show = campaignService.getOrCreateCampaignShow(campaign);
+    SegmentType promoType = campaignService.getPromoSegmentType();
 
-      var segment = new com.github.javydreamercsw.management.domain.show.segment.Segment();
-      segment.setShow(show);
-      segment.setSegmentType(promoType);
-      segment.setSegmentDate(java.time.Instant.now());
-      segment.setNarration(outcome.getFinalNarration());
-      segment.setStatus(
-          com.github.javydreamercsw.management.domain.show.segment.SegmentStatus.COMPLETED);
-      segment.setAdjudicationStatus(
-          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(promoType);
+    segment.setSegmentDate(java.time.Instant.now());
+    segment.setNarration(outcome.getFinalNarration());
+    segment.setStatus(SegmentStatus.COMPLETED);
+    segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
 
-      // Add participants
-      segment.addParticipant(player);
-      if (opponent != null) {
-        segment.addParticipant(opponent);
-      }
-
-      if (outcome.isSuccess()) {
-        segment.setWinners(java.util.List.of(player));
-      }
-
-      // Add "Promo" rule
-      segmentRuleRepository.findByName("Promo").ifPresent(segment::addSegmentRule);
-
-      campaignService.saveSegment(segment);
-      log.info("Created smart promo segment for campaign {}", campaign.getId());
-    } catch (Exception e) {
-      log.error("Failed to create promo segment", e);
+    // Add participants
+    segment.addParticipant(player);
+    if (opponent != null) {
+      segment.addParticipant(opponent);
     }
+
+    if (outcome.isSuccess()) {
+      segment.setWinners(java.util.List.of(player));
+    }
+
+    // Add "Promo" rule
+    segmentRuleRepository.findByName("Promo").ifPresent(segment::addSegmentRule);
+
+    campaignService.saveSegment(segment);
+    log.info("Created smart promo segment for campaign {}", campaign.getId());
   }
 
-  private String buildContextPrompt(Wrestler player, Wrestler opponent) {
+  private String buildContextPrompt(@NonNull Wrestler player, Wrestler opponent) {
     StringBuilder sb = new StringBuilder();
     sb.append("PLAYER:\n");
     sb.append("- Name: ").append(player.getName()).append("\n");
@@ -287,10 +292,7 @@ public class SmartPromoService {
 
       // Include common Feuds
       var playerFeuds = feudService.getActiveFeudsForWrestler(player.getId());
-      var commonFeuds =
-          playerFeuds.stream()
-              .filter(f -> f.hasParticipant(opponent))
-              .collect(java.util.stream.Collectors.toList());
+      var commonFeuds = playerFeuds.stream().filter(f -> f.hasParticipant(opponent)).toList();
 
       if (!commonFeuds.isEmpty()) {
         sb.append("\nSHARED FEUDS:\n");
@@ -308,7 +310,8 @@ public class SmartPromoService {
     return sb.toString();
   }
 
-  private String buildOutcomePrompt(Wrestler player, Wrestler opponent, PromoHookDTO chosenHook) {
+  private String buildOutcomePrompt(
+      @NonNull Wrestler player, Wrestler opponent, @NonNull PromoHookDTO chosenHook) {
     StringBuilder sb = new StringBuilder();
     sb.append("PLAYER: ").append(player.getName()).append("\n");
     if (opponent != null) {
@@ -323,7 +326,8 @@ public class SmartPromoService {
     return sb.toString();
   }
 
-  private <T> T parseJsonResponse(String aiResponse, Class<T> clazz) throws Exception {
+  private <T> T parseJsonResponse(@NonNull String aiResponse, @NonNull Class<T> clazz)
+      throws Exception {
     int start = aiResponse.indexOf('{');
     int end = aiResponse.lastIndexOf('}');
     if (start == -1 || end == -1) {
@@ -333,7 +337,8 @@ public class SmartPromoService {
     return objectMapper.readValue(json, clazz);
   }
 
-  private SmartPromoResponseDTO createFallbackResponse(Wrestler player, Wrestler opponent) {
+  private SmartPromoResponseDTO createFallbackResponse(
+      @NonNull Wrestler player, Wrestler opponent) {
     return SmartPromoResponseDTO.builder()
         .opener("You step into the ring, ready to speak your mind.")
         .hooks(
@@ -350,7 +355,7 @@ public class SmartPromoService {
   }
 
   private PromoOutcomeDTO createFallbackOutcome(
-      Wrestler player, Wrestler opponent, PromoHookDTO hook) {
+      @NonNull Wrestler player, Wrestler opponent, PromoHookDTO hook) {
     return PromoOutcomeDTO.builder()
         .retort(opponent != null ? "Whatever you say." : null)
         .crowdReaction("The crowd reacts with mild interest.")

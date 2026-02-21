@@ -134,8 +134,7 @@ class SmartPromoServiceTest {
 
     when(aiService.generateText(anyString())).thenReturn(aiJsonResponse);
 
-    SmartPromoResponseDTO result =
-        smartPromoService.generatePromoContext(player, opponent, campaign);
+    SmartPromoResponseDTO result = smartPromoService.generatePromoContext(player, opponent);
 
     assertNotNull(result);
     assertEquals("You walk out to a chorus of boos.", result.getOpener());
@@ -181,7 +180,7 @@ class SmartPromoServiceTest {
 
     when(aiService.generateText(anyString())).thenReturn(aiJsonResponse);
 
-    smartPromoService.generatePromoContext(player, opponent, campaign);
+    smartPromoService.generatePromoContext(player, opponent);
 
     // Verify prompt contains rivalry info
     verify(aiService)

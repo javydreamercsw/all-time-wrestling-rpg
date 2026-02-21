@@ -49,6 +49,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
@@ -189,8 +190,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
               () -> {
                 try {
                   SmartPromoResponseDTO promoContext =
-                      smartPromoService.generatePromoContext(
-                          playerWrestler, opponent, currentCampaign);
+                      smartPromoService.generatePromoContext(playerWrestler, opponent);
                   log.info("Promo context generated successfully");
                   ui.access(
                       () -> {
@@ -219,7 +219,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
   }
 
-  private void displayPromoContext(SmartPromoResponseDTO context) {
+  private void displayPromoContext(@NonNull SmartPromoResponseDTO context) {
     Paragraph p = new Paragraph(context.getOpener());
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);
@@ -234,7 +234,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     }
   }
 
-  private void handleHookChoice(PromoHookDTO hook) {
+  private void handleHookChoice(@NonNull PromoHookDTO hook) {
     log.info("Hook chosen: {}", hook.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
@@ -283,7 +283,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
   }
 
-  private void displayOutcome(PromoHookDTO hook, PromoOutcomeDTO outcome) {
+  private void displayOutcome(@NonNull PromoHookDTO hook, @NonNull PromoOutcomeDTO outcome) {
     log.info("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
 
     // Create a result layout to hold all outcome components atomically
@@ -362,10 +362,5 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     Button backBtn =
         new Button("Back to Actions", e -> UI.getCurrent().navigate("campaign/actions"));
     choicesContainer.add(backBtn);
-  }
-
-  private void addRetryButton() {
-    Button retryBtn = new Button("Retry Promo", e -> startPromo());
-    choicesContainer.add(retryBtn);
   }
 }
