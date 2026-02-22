@@ -83,6 +83,13 @@ public class CampaignChapterService {
   public List<CampaignChapterDTO> findAvailableChapters(@NonNull CampaignState state) {
     return chapters.stream()
         .filter(c -> !state.getCompletedChapterIds().contains(c.getId())) // Not already completed
+        // Exclude "beginning" chapter if any other chapter has been completed.
+        // This prevents re-entering the tutorial chapter after progression.
+        .filter(
+            c ->
+                !("beginning".equals(c.getId())
+                    && state.getCompletedChapterIds().stream()
+                        .anyMatch(id -> !id.equals("beginning"))))
         .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
         .toList();
   }

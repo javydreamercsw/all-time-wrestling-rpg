@@ -72,6 +72,14 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired
+  private com.github.javydreamercsw.management.service.campaign.StorylineDirectorService
+      storylineDirectorService;
+
+  @Autowired
+  private com.github.javydreamercsw.management.service.campaign.StorylineExportService
+      storylineExportService;
+
+  @Autowired
   private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
       chapterService;
 
@@ -167,7 +175,9 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
             objectMapper,
             chapterService,
             titleService,
-            titleRepository);
+            titleRepository,
+            storylineDirectorService,
+            storylineExportService);
 
     UI.getCurrent().add(dashboard);
 
@@ -212,7 +222,9 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
               objectMapper,
               chapterService,
               titleService,
-              titleRepository);
+              titleRepository,
+              storylineDirectorService,
+              storylineExportService);
       UI.getCurrent().add(dashboard);
 
       if (round < expectedRounds) {

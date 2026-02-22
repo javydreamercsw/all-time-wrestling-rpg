@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
@@ -55,6 +56,7 @@ public class BackstageActionView extends VerticalLayout {
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final SecurityUtils securityUtils;
+  private final CampaignService campaignService;
 
   private Campaign currentCampaign;
 
@@ -64,12 +66,14 @@ public class BackstageActionView extends VerticalLayout {
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       WrestlerService wrestlerService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      CampaignService campaignService) {
     this.backstageActionService = backstageActionService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
+    this.campaignService = campaignService;
 
     setSpacing(true);
     setPadding(true);
@@ -94,7 +98,7 @@ public class BackstageActionView extends VerticalLayout {
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
               if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
+                campaignService.getCampaignForWrestler(active).ifPresent(c -> currentCampaign = c);
               }
             });
   }

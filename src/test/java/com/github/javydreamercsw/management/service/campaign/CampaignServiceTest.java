@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStorylineRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -88,6 +89,7 @@ class CampaignServiceTest {
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private TournamentService tournamentService;
+  @Mock private CampaignStorylineRepository storylineRepository;
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private TitleReignRepository titleReignRepository;
@@ -96,6 +98,8 @@ class CampaignServiceTest {
   @Mock private SegmentAdjudicationService adjudicationService;
   @Mock private MatchRewardService matchRewardService;
   @Mock private NewsGenerationService newsGenerationService;
+  @Mock private StorylineDirectorService storylineDirectorService;
+  @Mock private StorylineExportService storylineExportService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignService campaignService;
@@ -231,8 +235,10 @@ class CampaignServiceTest {
     Show show = new Show();
     show.setId(1L);
 
+    state.setCurrentChapterId("test-chapter");
+
     when(seasonRepository.findByName("Campaign Mode")).thenReturn(Optional.of(season));
-    when(chapterService.getChapter(any()))
+    when(chapterService.getChapter("test-chapter"))
         .thenReturn(Optional.of(CampaignChapterDTO.builder().id("test-chapter").build()));
 
     SegmentType matchType = new SegmentType();
@@ -298,10 +304,11 @@ class CampaignServiceTest {
     state.setVictoryPoints(0);
     state.setMatchesPlayed(0);
     state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("test-chapter");
     campaign.setState(state);
 
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-    when(chapterService.getChapter(any()))
+    when(chapterService.getChapter("test-chapter"))
         .thenReturn(
             Optional.of(
                 CampaignChapterDTO.builder()

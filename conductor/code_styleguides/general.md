@@ -6,6 +6,7 @@ This document outlines general coding principles that apply across all languages
 
 - Code should be easy to read and understand by humans.
 - Avoid overly clever or obscure constructs.
+- **Explicit Typing**: Avoid using type inference (e.g., `var` in Java or C#). Always use explicit type declarations to make the code easier to follow and understand without IDE assistance.
 
 ## Consistency
 
