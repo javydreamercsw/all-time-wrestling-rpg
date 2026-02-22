@@ -82,10 +82,18 @@ public class NewsView extends Main {
           new com.vaadin.flow.component.button.Button(
               "Generate Monthly Synthesis",
               e -> {
-                newsGenerationService.generateMonthlySynthesis();
+                boolean success = newsGenerationService.generateMonthlySynthesis();
                 reloadGrid();
-                com.vaadin.flow.component.notification.Notification.show(
-                    "Monthly synthesis generated.");
+                if (success) {
+                  com.vaadin.flow.component.notification.Notification.show(
+                      "Monthly synthesis generated.");
+                } else {
+                  com.vaadin.flow.component.notification.Notification notification =
+                      com.vaadin.flow.component.notification.Notification.show(
+                          "AI news generation is disabled or unavailable. No synthesis generated.");
+                  notification.addThemeVariants(
+                      com.vaadin.flow.component.notification.NotificationVariant.LUMO_WARNING);
+                }
               });
       synthButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
 

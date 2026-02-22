@@ -101,11 +101,11 @@ public class NewsGenerationService {
       """;
 
   @Transactional
-  public void generateMonthlySynthesis() {
-    if (!gameSettingService.isAiNewsEnabled()) return;
+  public boolean generateMonthlySynthesis() {
+    if (!gameSettingService.isAiNewsEnabled()) return false;
 
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
-    if (aiService == null || !aiService.isAvailable()) return;
+    if (aiService == null || !aiService.isAvailable()) return false;
 
     EventAggregationService.MonthlySummary summary = aggregationService.getMonthlySummary();
     String context = aggregationService.formatMonthlySummary(summary);
@@ -115,8 +115,10 @@ public class NewsGenerationService {
           aiService.generateText(
               MONTHLY_SYSTEM_PROMPT + "\n\nMonthly Summary Context:\n" + context);
       parseAndCreateNews(response);
+      return true;
     } catch (Exception e) {
       log.error("Failed to generate monthly synthesis news", e);
+      return false;
     }
   }
 
