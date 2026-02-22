@@ -12,13 +12,15 @@
 
 ## Phase 3: Implementation
 
-- [~] Update `Faction` entity to track affinity.
-- [ ] Implement affinity gain logic in `SegmentService`.
-- [ ] Implement buff application in `MatchEngine`.
-- [ ] Add UI indicators for active faction buffs.
+- [x] Update `Faction` entity to track affinity.
+- [x] Implement affinity bonus in `NPCSegmentResolutionService` (win probability boost).
+- [x] Cap faction affinity at 100 in `FactionService`.
+- [x] Implement affinity gain logic in `SegmentAdjudicationService`.
+- [x] Add UI indicators for active faction buffs in `FactionListView`.
 
 ## Phase 4: Testing
 
-- [ ] Unit tests for affinity calculation.
-- [ ] Integration tests for buff application in matches.
+- [x] Unit tests for synergy bonus calculation in `NPCSegmentResolutionService`.
+- [x] Unit tests for affinity gain in `SegmentAdjudicationService`.
+- [x] Integration tests for synergy bonus impact in `NPCSegmentResolutionServiceTest`.
 

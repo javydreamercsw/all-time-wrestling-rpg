@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.match;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -108,5 +109,28 @@ class SegmentAdjudicationServiceTest {
     segmentAdjudicationService.adjudicateMatch(segment);
 
     verify(matchRewardService, times(1)).processRewards(segment, 1.0);
+  }
+
+  @Test
+  void testAffinityGainOnVictory() {
+    com.github.javydreamercsw.management.domain.faction.Faction faction =
+        mock(com.github.javydreamercsw.management.domain.faction.Faction.class);
+    when(faction.getId()).thenReturn(100L);
+
+    Wrestler w1 = mock(Wrestler.class);
+    Wrestler w2 = mock(Wrestler.class);
+    when(w1.getFaction()).thenReturn(faction);
+    when(w2.getFaction()).thenReturn(faction);
+    when(w1.getId()).thenReturn(10L);
+    when(w2.getId()).thenReturn(11L);
+
+    when(segment.getWrestlers()).thenReturn(List.of(w1, w2, loser));
+    when(segment.getWinners()).thenReturn(List.of(w1, w2));
+    when(segment.isMainEvent()).thenReturn(false);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Calculation: (2-1) [participation] + 2 [victory bonus] = 3
+    verify(factionService).addAffinity(100L, 3);
   }
 }

@@ -298,6 +298,65 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @Transactional
+  @DisplayName("Should favor faction with high affinity in tag matches")
+  void shouldFavorFactionWithHighAffinity() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+
+      // Given - Create a high affinity faction
+      com.github.javydreamercsw.management.domain.faction.Faction highAffinityFaction =
+          com.github.javydreamercsw.management.domain.faction.Faction.builder()
+              .name("High Affinity")
+              .affinity(100)
+              .isActive(true)
+              .build();
+      highAffinityFaction = factionRepository.save(highAffinityFaction);
+
+      Wrestler f1 =
+          wrestlerService.createWrestler("Faction Member 1", true, null, WrestlerTier.MIDCARDER);
+      Wrestler f2 =
+          wrestlerService.createWrestler("Faction Member 2", true, null, WrestlerTier.MIDCARDER);
+      f1.setFaction(highAffinityFaction);
+      f2.setFaction(highAffinityFaction);
+      wrestlerRepository.saveAll(List.of(f1, f2));
+
+      // Create a low affinity faction (or just independent midcarders)
+      Wrestler i1 =
+          wrestlerService.createWrestler("Independent 1", true, null, WrestlerTier.MIDCARDER);
+      Wrestler i2 =
+          wrestlerService.createWrestler("Independent 2", true, null, WrestlerTier.MIDCARDER);
+
+      SegmentTeam highAffinityTeam = new SegmentTeam(List.of(f1, f2), "Team Alpha");
+      SegmentTeam independentTeam = new SegmentTeam(List.of(i1, i2), "Team Beta");
+
+      // When - Simulate matches
+      int factionWins = 0;
+      int totalMatches = 200;
+
+      for (int i = 0; i < totalMatches; i++) {
+        Segment result =
+            npcSegmentResolutionService.resolveTeamSegment(
+                highAffinityTeam, independentTeam, tagTeamType, testShow, "Synergy Test " + i);
+        if (result.getWinners().contains(f1)) {
+          factionWins++;
+        }
+      }
+
+      // Then - Faction should win more than 50% (base is equal, bonus is +10 weight)
+      double winRate = (double) factionWins / totalMatches;
+      assertThat(winRate)
+          .isGreaterThan(0.52)
+          .describedAs(
+              "Faction with 100 affinity should have clear advantage over independents (found "
+                  + winRate
+                  + ")");
+    }
+  }
+
+  @Test
   @DisplayName("Should save segment with rule")
   void shouldSaveMatchWithStipulation() {
     try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =

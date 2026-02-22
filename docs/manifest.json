@@ -1,5 +1,54 @@
 {
   "features": [ {
+    "id": "admin-admin-season-settings-before-generation",
+    "category": "Admin",
+    "title": "Season Settings - Before Schedule Generation",
+    "description": "The Season Settings tab showing the 'Generate Season Schedule' button, before execution.",
+    "imagePath": "screenshots/admin-season-settings-before-generation.png",
+    "order": 60
+  }, {
+    "id": "admin-admin-season-settings-after-generation",
+    "category": "Admin",
+    "title": "Season Settings - After Schedule Generation",
+    "description": "The Season Settings tab after successfully generating the season schedule.",
+    "imagePath": "screenshots/admin-season-settings-after-generation.png",
+    "order": 70
+  }, {
+    "id": "news-news-grid",
+    "category": "News",
+    "title": "News & Rumors",
+    "description": "Keep track of everything happening in the wrestling world. Review match results, injuries, and contract updates in a structured grid. Authorized users can trigger a comprehensive Monthly Synthesis to wrap up major story arcs.",
+    "imagePath": "screenshots/news-grid.png",
+    "order": 250
+  }, {
+    "id": "news-news-social-feed",
+    "category": "News",
+    "title": "Wrestling World Feed",
+    "description": "Immerse yourself in the narrative with the Social Feed. See real-time reactions from wrestlers and commentators, and download the monthly Newsletter for a deep-dive analytical summary of the latest events.",
+    "imagePath": "screenshots/news-social-feed.png",
+    "order": 260
+  }, {
+    "id": "campaign-campaign-story-journal",
+    "category": "Campaign",
+    "title": "Story Journal",
+    "description": "Your AI-generated adventures are preserved in the Story Journal. Here you can review past storyline arcs and download them as JSON chapter files to share or preserve.",
+    "imagePath": "screenshots/campaign-story-journal.png",
+    "order": 380
+  }, {
+    "id": "game-mechanics-mechanic-faction-synergy",
+    "category": "Game Mechanics",
+    "title": "Faction Synergy",
+    "description": "Factions grow stronger as members work together. Affinity builds through shared matches and victories, unlocking powerful synergy buffs like stamina recovery, finisher damage, and resilience bonuses. High-affinity factions have a mechanical advantage in match outcomes.",
+    "imagePath": "screenshots/mechanic-faction-synergy.png",
+    "order": 440
+  }, {
+    "id": "player-dashboard-player-season-history",
+    "category": "Player Dashboard",
+    "title": "Historical Season Performance",
+    "description": "Review your past glory by switching between seasons. The dashboard stores historical data, allowing you to track your wrestler's career trajectory and milestones over time.",
+    "imagePath": "screenshots/player-season-history.png",
+    "order": 560
+  }, {
     "id": "player-dashboard-player-season-summary",
     "category": "Player Dashboard",
     "title": "Season Summary",
