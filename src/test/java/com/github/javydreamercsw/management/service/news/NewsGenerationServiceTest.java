@@ -51,6 +51,7 @@ class NewsGenerationServiceTest {
   private GameSettingService gameSettingService;
   private InjuryRepository injuryRepository;
   private SegmentRepository segmentRepository;
+  private EventAggregationService aggregationService;
 
   @BeforeEach
   void setUp() {
@@ -60,6 +61,7 @@ class NewsGenerationServiceTest {
     gameSettingService = mock(GameSettingService.class);
     injuryRepository = mock(InjuryRepository.class);
     segmentRepository = mock(SegmentRepository.class);
+    aggregationService = mock(EventAggregationService.class);
     objectMapper = new ObjectMapper();
     newsGenerationService =
         new NewsGenerationService(
@@ -68,7 +70,8 @@ class NewsGenerationServiceTest {
             objectMapper,
             gameSettingService,
             injuryRepository,
-            segmentRepository);
+            segmentRepository,
+            aggregationService);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);

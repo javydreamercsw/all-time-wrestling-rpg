@@ -42,6 +42,13 @@ public class NewsService {
     return newsRepository.findAllByOrderByPublishDateDesc();
   }
 
+  @Transactional(readOnly = true)
+  public java.util.Optional<NewsItem> getLatestMonthlyAnalysis() {
+    return newsRepository.findAllByOrderByPublishDateDesc().stream()
+        .filter(item -> item.getCategory() == NewsCategory.ANALYSIS && item.getImportance() == 5)
+        .findFirst();
+  }
+
   @Transactional
   public NewsItem createNewsItem(
       String headline, String content, NewsCategory category, boolean isRumor, int importance) {

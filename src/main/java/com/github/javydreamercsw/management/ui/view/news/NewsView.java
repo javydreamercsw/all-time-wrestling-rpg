@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.news;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
@@ -44,12 +45,17 @@ import lombok.NonNull;
 public class NewsView extends Main {
 
   private final NewsService newsService;
+  private final NewsGenerationService newsGenerationService;
   private final Grid<NewsItem> newsGrid;
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
-  public NewsView(@NonNull NewsService newsService, @NonNull SecurityUtils securityUtils) {
+  public NewsView(
+      @NonNull NewsService newsService,
+      @NonNull NewsGenerationService newsGenerationService,
+      @NonNull SecurityUtils securityUtils) {
     this.newsService = newsService;
+    this.newsGenerationService = newsGenerationService;
     this.newsGrid = new Grid<>();
 
     setSizeFull();
@@ -71,7 +77,19 @@ public class NewsView extends Main {
                 dialog.open();
               });
       createButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
-      add(new com.vaadin.flow.component.orderedlayout.HorizontalLayout(createButton));
+
+      com.vaadin.flow.component.button.Button synthButton =
+          new com.vaadin.flow.component.button.Button(
+              "Generate Monthly Synthesis",
+              e -> {
+                newsGenerationService.generateMonthlySynthesis();
+                reloadGrid();
+                com.vaadin.flow.component.notification.Notification.show(
+                    "Monthly synthesis generated.");
+              });
+      synthButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+
+      add(new com.vaadin.flow.component.orderedlayout.HorizontalLayout(createButton, synthButton));
     }
 
     setupGrid();

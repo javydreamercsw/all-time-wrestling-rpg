@@ -58,8 +58,9 @@ import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinService;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
@@ -813,17 +814,26 @@ public class CampaignDashboardView extends VerticalLayout {
       // Download Button
       String fileName =
           storyline.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "_") + "_chapter.json";
-      StreamResource resource =
-          new StreamResource(
-              fileName,
-              () -> {
-                String json = storylineExportService.exportStorylineAsChapter(storyline);
-                return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-              });
 
-      Anchor downloadAnchor = new Anchor(resource, "");
+      Anchor downloadAnchor =
+          new Anchor(
+              DownloadHandler.fromInputStream(
+                  (event) -> {
+                    try {
+                      String json = storylineExportService.exportStorylineAsChapter(storyline);
+                      byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
+                      return new DownloadResponse(
+                          new ByteArrayInputStream(jsonBytes),
+                          fileName,
+                          "application/json",
+                          jsonBytes.length);
+                    } catch (Exception e) {
+                      return DownloadResponse.error(500);
+                    }
+                  }),
+              "");
+
       downloadAnchor.setId("download-json-anchor-" + storyline.getId());
-      downloadAnchor.getElement().setAttribute("download", true);
       Button downloadBtn = new Button("Download JSON", e -> {});
       downloadBtn.setId("download-json-button-" + storyline.getId());
       downloadBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);

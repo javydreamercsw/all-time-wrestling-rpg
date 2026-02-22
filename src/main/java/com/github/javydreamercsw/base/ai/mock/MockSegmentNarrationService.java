@@ -62,6 +62,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return "This is a mock summary.";
     }
 
+    if (prompt.contains("Lead Analyst for the Wrestling World")) {
+      return generateMockMonthlyAnalysis(prompt);
+    }
+
     if (prompt.contains(
             "Generate a professional wrestling narrative segment appropriate for chapter")
         || prompt.contains("Generate a 'Post-Match' narrative segment")) {
@@ -99,6 +103,33 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
     return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
         + " walking away.";
+  }
+
+  private String generateMockMonthlyAnalysis(String prompt) {
+    try {
+      var response =
+          Map.of(
+              "headline",
+              "THE MONTHLY RECAP: A New Era of Dominance",
+              "content",
+              "This past month has seen a seismic shift in the wrestling landscape. "
+                  + "With multiple title changes and the emergence of unexpected rivalries, "
+                  + "the hierarchy of the roster is being completely rewritten. "
+                  + "The recent PLE served as a perfect climax, providing fans with moments "
+                  + "that will be discussed for years to come. As we look ahead, one question "
+                  + "remains: who has the resilience to stay at the top?",
+              "category",
+              "ANALYSIS",
+              "isRumor",
+              false,
+              "importance",
+              5);
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock monthly analysis", e);
+      return "{}";
+    }
   }
 
   private String generateMockStorylineArc(String prompt) {
