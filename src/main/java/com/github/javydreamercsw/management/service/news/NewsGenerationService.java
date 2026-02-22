@@ -217,7 +217,7 @@ public class NewsGenerationService {
         try {
           String rosterContext =
               Stream.concat(
-                      wrestlerRepository.findAll().stream().map(Wrestler::getName),
+                      wrestlerRepository.findAllByActiveTrue().stream().map(Wrestler::getName),
                       npcRepository.findAll().stream().map(Npc::getName))
                   .collect(Collectors.joining(", "));
 

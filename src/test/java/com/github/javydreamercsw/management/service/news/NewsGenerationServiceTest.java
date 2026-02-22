@@ -90,8 +90,8 @@ class NewsGenerationServiceTest {
   @Test
   void testRollForRumor_WithRosterAndNpcContext() {
     when(gameSettingService.getNewsRumorChance()).thenReturn(100);
-    Wrestler w1 = Wrestler.builder().name("Star A").build();
-    when(wrestlerRepository.findAll()).thenReturn(List.of(w1));
+    Wrestler w1 = Wrestler.builder().name("Star A").active(true).build();
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of(w1));
 
     Npc n1 = new Npc();
     n1.setName("Official X");
@@ -113,6 +113,29 @@ class NewsGenerationServiceTest {
                         && prompt.contains("Official X")
                         && prompt.contains("IMPORTANT INSTRUCTIONS FOR RUMORS")
                         && prompt.contains("ONLY use the names")));
+  }
+
+  @Test
+  void testRollForRumor_ExcludesInactiveWrestlers() {
+    when(gameSettingService.getNewsRumorChance()).thenReturn(100);
+    Wrestler activeWrestler = Wrestler.builder().name("Active Star").active(true).build();
+    Wrestler inactiveWrestler = Wrestler.builder().name("Retired Legend").active(false).build();
+
+    // Only active ones should be returned by this call in the real service
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of(activeWrestler));
+    when(npcRepository.findAll()).thenReturn(List.of());
+
+    String aiResponse =
+        "{\"headline\": \"Rumor\", \"content\": \"Content\", \"category\": \"RUMOR\", \"isRumor\":"
+            + " true, \"importance\": 2}";
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.rollForRumor();
+
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt -> prompt.contains("Active Star") && !prompt.contains("Retired Legend")));
   }
 
   @Test
