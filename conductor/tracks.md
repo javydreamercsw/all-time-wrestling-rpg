@@ -14,8 +14,7 @@
 
 ### [x] Track: Achievement Notifications
 
-*Link: [./conductor/archive/achievement_notifications_20260216/plan.md](./conductor/archive/achievement_notifications_20260216/plan.md)*
-*Status: Completed (2026-02-16)*
+*Status: Completed (2026-02-16) (Pruned)*
 
 ### [ ] Track: Add Season summary to player dashboard
 
@@ -25,6 +24,11 @@
 ### [x] Track: AI-Driven "Smart Promo" Response System
 
 *Link: [./conductor/archive/smart_promo_20260221/plan.md](./conductor/archive/smart_promo_20260221/plan.md)*
+*Status: Completed (2026-02-21)*
+
+### [x] Track: AI Storyline "Director" with Branching Milestones
+
+*Link: [./conductor/archive/ai_storyline_director_20260221/plan.md](./conductor/archive/ai_storyline_director_20260221/plan.md)*
 *Status: Completed (2026-02-21)*
 
 ---
@@ -50,11 +54,6 @@
 
 *Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
 *Status: Planning*
-
-### [~] Track: AI Storyline "Director" with Branching Milestones
-
-*Link: [./conductor/tracks/ai_storyline_director/plan.md](./conductor/tracks/ai_storyline_director/plan.md)*
-*Status: In Progress*
 
 ### [ ] Track: AI-Generated "Wrestling World" News Feed
 
