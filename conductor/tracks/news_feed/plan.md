@@ -1,23 +1,26 @@
 # AI-Generated "Wrestling World" News Feed - Plan
 
-## Phase 1: Analysis
+## Phase 1: Analysis & Infrastructure
 
-- [ ] Review event logging system.
-- [ ] Check UI layout for ticker placement.
+- [x] Review existing `NewsItem` and `NewsGenerationService`.
+- [ ] Implement `EventAggregationService` to gather monthly data (match results, title changes, alignment shifts).
+- [ ] Define `MonthlyWrapUp` logic in `NewsGenerationService`.
 
-## Phase 2: Design
+## Phase 2: Monthly PLE Synthesis
 
-- [ ] Define `NewsItem` entity (headline, body, source).
-- [ ] Design `NewsFeedService` interface.
+- [ ] Create a trigger for Monthly News generation (manual debug button + automatic post-PLE logic).
+- [ ] Design AI prompt for holistic monthly analysis.
+- [ ] Store large-form monthly reports as a special `NewsItem` category.
 
-## Phase 3: Implementation
+## Phase 3: Social Media & UI
 
-- [ ] Implement AI summarization of `MatchResult` events.
-- [ ] Create `NewsTickerComponent` for the dashboard.
-- [ ] Add `SocialMediaView` for detailed feed.
+- [ ] Enhance `NewsTickerComponent` with smoother transitions.
+- [ ] Implement `SocialMediaView` (`/news/feed`) with a "X/Twitter" style aesthetic.
+- [ ] Add "Wrestler Reactions" (mock posts) to the feed based on match outcomes.
 
-## Phase 4: Testing
+## Phase 4: Export & Polish
 
-- [ ] Verify news generation from game events.
-- [ ] Test UI responsiveness.
+- [ ] Add JSON/Text export for Monthly Wrap-Ups.
+- [ ] Integration tests for monthly aggregation.
+- [ ] Documentation E2E test for the News Feed.
 

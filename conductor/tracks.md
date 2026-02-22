@@ -55,10 +55,10 @@
 *Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
 *Status: Planning*
 
-### [ ] Track: AI-Generated "Wrestling World" News Feed
+### [~] Track: AI-Generated "Wrestling World" News Feed
 
 *Link: [./conductor/tracks/news_feed/plan.md](./conductor/tracks/news_feed/plan.md)*
-*Status: Planning*
+*Status: In Progress*
 
 ### [ ] Track: Match Interference & Manager Mechanics
 

@@ -47,6 +47,7 @@ public class NewsGenerationService {
   private final GameSettingService gameSettingService;
   private final InjuryRepository injuryRepository;
   private final SegmentRepository segmentRepository;
+  private final EventAggregationService aggregationService;
   private final Random random = new Random();
 
   private static final String SYSTEM_PROMPT =
@@ -63,6 +64,44 @@ public class NewsGenerationService {
       - isRumor: Boolean, true if this is speculative or backstage gossip.
       - importance: Integer 1-5, where 5 is a major event like a title change or injury.
       """;
+
+  private static final String MONTHLY_SYSTEM_PROMPT =
+      """
+      You are the Lead Analyst for the Wrestling World.
+      You have been provided with a summary of the entire month's major events, including title changes and key match results.
+
+      Your task is to write a 'Monthly State of the World' report. This should be a long-form, analytical piece that synthesizes these events into a cohesive narrative.
+
+      - What were the defining moments?
+      - Who are the rising stars?
+      - What is the current landscape of the championships?
+
+      Output MUST be a valid JSON object with the following fields:
+      - headline: A formal, powerful headline for the monthly report (e.g., 'THE JANUARY RECAP: A Month of Betrayal and New Kings').
+      - content: A comprehensive, multi-paragraph analysis (max 2000 chars).
+      - category: 'ANALYSIS'.
+      - isRumor: false.
+      - importance: 5.
+      """;
+
+  public void generateMonthlySynthesis() {
+    if (!gameSettingService.isAiNewsEnabled()) return;
+
+    SegmentNarrationService aiService = aiFactory.getBestAvailableService();
+    if (aiService == null || !aiService.isAvailable()) return;
+
+    EventAggregationService.MonthlySummary summary = aggregationService.getMonthlySummary();
+    String context = aggregationService.formatMonthlySummary(summary);
+
+    try {
+      String response =
+          aiService.generateText(
+              MONTHLY_SYSTEM_PROMPT + "\n\nMonthly Summary Context:\n" + context);
+      parseAndCreateNews(response);
+    } catch (Exception e) {
+      log.error("Failed to generate monthly synthesis news", e);
+    }
+  }
 
   public void generateNewsForSegment(@NonNull Segment segment) {
     if (!gameSettingService.isAiNewsEnabled()) {
