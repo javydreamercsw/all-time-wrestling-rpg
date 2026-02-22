@@ -30,6 +30,8 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
+import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
@@ -37,10 +39,12 @@ import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -54,11 +58,15 @@ import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -152,8 +160,8 @@ public class CampaignDashboardView extends VerticalLayout {
 
               if (active != null) {
                 log.info("Wrestler found: {}", active.getName());
-                campaignRepository
-                    .findActiveByWrestler(active)
+                campaignService
+                    .getCampaignForWrestler(active)
                     .ifPresentOrElse(
                         campaign -> {
                           log.info("Active campaign found: {}", campaign.getId());
@@ -230,8 +238,11 @@ public class CampaignDashboardView extends VerticalLayout {
     add(new H2("Campaign: All or Nothing (Season 1)"));
     add(new H3("Wrestler: " + wrestler.getName()));
 
-    var chapter = campaignService.getCurrentChapter(currentCampaign);
-    Span chapterLabel = new Span("Chapter: " + chapter.getTitle());
+    Optional<CampaignChapterDTO> chapterOpt = campaignService.getCurrentChapter(currentCampaign);
+    String chapterTitle = chapterOpt.map(CampaignChapterDTO::getTitle).orElse("Dynamic Story");
+    boolean isTournament = chapterOpt.map(CampaignChapterDTO::isTournament).orElse(false);
+
+    Span chapterLabel = new Span("Chapter: " + chapterTitle);
     chapterLabel.addClassNames(
         LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.PRIMARY);
     chapterLabel.setId("campaign-chapter-title");
@@ -248,7 +259,7 @@ public class CampaignDashboardView extends VerticalLayout {
     mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
 
     // 3. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
-    if (chapter.isTournament()) {
+    if (isTournament) {
       VerticalLayout tournamentSection = new VerticalLayout();
       tournamentSection.setPadding(false);
       tournamentSection.setSpacing(true);
@@ -431,6 +442,9 @@ public class CampaignDashboardView extends VerticalLayout {
 
     // Global Card Library
     addGlobalCardLibrary();
+
+    // Story Journal
+    addStoryJournalSection();
 
     // Debug Section
     if (!VaadinService.getCurrent().getDeploymentConfiguration().isProductionMode()) {
@@ -757,6 +771,75 @@ public class CampaignDashboardView extends VerticalLayout {
     add(libraryDetails);
   }
 
+  private void addStoryJournalSection() {
+    List<com.github.javydreamercsw.management.domain.campaign.CampaignStoryline> history =
+        campaignService.getStorylineHistory(currentCampaign);
+
+    if (history.isEmpty()) return;
+
+    VerticalLayout journalContent = new VerticalLayout();
+    journalContent.setPadding(true);
+    journalContent.setSpacing(true);
+
+    for (com.github.javydreamercsw.management.domain.campaign.CampaignStoryline storyline :
+        history) {
+      HorizontalLayout row = new HorizontalLayout();
+      row.setId("story-journal-row-" + storyline.getId());
+      row.setWidthFull();
+      row.setAlignItems(Alignment.CENTER);
+      row.addClassNames(
+          LumoUtility.Padding.SMALL,
+          LumoUtility.Border.BOTTOM,
+          LumoUtility.BorderColor.CONTRAST_10);
+
+      VerticalLayout info = new VerticalLayout();
+      info.setPadding(false);
+      info.setSpacing(false);
+
+      String statusLabel =
+          storyline.getStatus()
+                  == com.github.javydreamercsw.management.domain.campaign.CampaignStoryline
+                      .StorylineStatus.ACTIVE
+              ? " (Active)"
+              : "";
+      Span title = new Span(storyline.getTitle() + statusLabel);
+      title.addClassNames(LumoUtility.FontWeight.BOLD);
+
+      Span desc = new Span(storyline.getDescription());
+      desc.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
+
+      info.add(title, desc);
+
+      // Download Button
+      String fileName =
+          storyline.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "_") + "_chapter.json";
+      StreamResource resource =
+          new StreamResource(
+              fileName,
+              () -> {
+                String json = storylineExportService.exportStorylineAsChapter(storyline);
+                return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+              });
+
+      Anchor downloadAnchor = new Anchor(resource, "");
+      downloadAnchor.setId("download-json-anchor-" + storyline.getId());
+      downloadAnchor.getElement().setAttribute("download", true);
+      Button downloadBtn = new Button("Download JSON", e -> {});
+      downloadBtn.setId("download-json-button-" + storyline.getId());
+      downloadBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+      downloadAnchor.add(downloadBtn);
+
+      row.add(info, downloadAnchor);
+      row.expand(info);
+      journalContent.add(row);
+    }
+
+    Details journalDetails = new Details("📜 Story Journal (AI Storylines)", journalContent);
+    journalDetails.setId("story-journal-details");
+    journalDetails.addClassNames(LumoUtility.Width.FULL, LumoUtility.Margin.Top.MEDIUM);
+    add(journalDetails);
+  }
+
   private void addDebugSection() {
     VerticalLayout debugContent = new VerticalLayout();
     debugContent.setPadding(true);
@@ -805,15 +888,23 @@ public class CampaignDashboardView extends VerticalLayout {
     debugContent.add(chapterLayout);
 
     // --- Storyline Export ---
-    Button exportStorylineButton = new Button("Export Active Storyline as Chapter", e -> {
-      if (currentCampaign != null && currentCampaign.getState().getActiveStoryline() != null) {
-        String chapterJson = storylineExportService.exportStorylineAsChapter(currentCampaign.getState().getActiveStoryline());
-        UI.getCurrent().getPage().executeJs("prompt('Copy AI Storyline Chapter JSON:', $0);", chapterJson);
-        Notification.show("Storyline JSON copied to clipboard/prompt.");
-      } else {
-        Notification.show("No active storyline to export.");
-      }
-    });
+    Button exportStorylineButton =
+        new Button(
+            "Export Active Storyline as Chapter",
+            e -> {
+              if (currentCampaign != null
+                  && currentCampaign.getState().getActiveStoryline() != null) {
+                String chapterJson =
+                    storylineExportService.exportStorylineAsChapter(
+                        currentCampaign.getState().getActiveStoryline());
+                UI.getCurrent()
+                    .getPage()
+                    .executeJs("prompt('Copy AI Storyline Chapter JSON:', $0);", chapterJson);
+                Notification.show("Storyline JSON copied to clipboard/prompt.");
+              } else {
+                Notification.show("No active storyline to export.");
+              }
+            });
     exportStorylineButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     debugContent.add(exportStorylineButton);
 

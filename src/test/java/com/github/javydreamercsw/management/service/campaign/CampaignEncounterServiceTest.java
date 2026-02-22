@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -58,6 +59,7 @@ class CampaignEncounterServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TeamRepository teamRepository;
   @Mock private FactionRepository factionRepository;
+  @Mock private CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignEncounterService encounterService;
@@ -78,6 +80,7 @@ class CampaignEncounterServiceTest {
             wrestlerRepository,
             teamRepository,
             factionRepository,
+            commentatorRepository,
             objectMapper);
 
     Wrestler wrestler = new Wrestler();
@@ -104,7 +107,7 @@ class CampaignEncounterServiceTest {
 
   @Test
   void testGenerateEncounter() throws Exception {
-    when(chapterService.getChapter("beginning")).thenReturn(Optional.of(chapter));
+    when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
     when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
         .thenReturn(new ArrayList<>());
 

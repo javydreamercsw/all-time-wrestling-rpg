@@ -26,6 +26,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
+import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -52,6 +54,7 @@ public class CampaignEncounterService {
   private final WrestlerRepository wrestlerRepository;
   private final TeamRepository teamRepository;
   private final FactionRepository factionRepository;
+  private final CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper;
 
   public CampaignEncounterService(
@@ -64,6 +67,7 @@ public class CampaignEncounterService {
       WrestlerRepository wrestlerRepository,
       TeamRepository teamRepository,
       FactionRepository factionRepository,
+      CommentatorRepository commentatorRepository,
       ObjectMapper objectMapper) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
@@ -74,6 +78,7 @@ public class CampaignEncounterService {
     this.wrestlerRepository = wrestlerRepository;
     this.teamRepository = teamRepository;
     this.factionRepository = factionRepository;
+    this.commentatorRepository = commentatorRepository;
     this.objectMapper = objectMapper;
   }
 
@@ -81,8 +86,8 @@ public class CampaignEncounterService {
   public CampaignEncounterResponseDTO generateEncounter(Campaign campaign) {
     CampaignState state = campaign.getState();
     CampaignChapterDTO chapter =
-        chapterService
-            .getChapter(state.getCurrentChapterId())
+        campaignService
+            .getCurrentChapter(campaign)
             .orElseThrow(
                 () ->
                     new IllegalStateException("Chapter not found: " + state.getCurrentChapterId()));
@@ -167,6 +172,24 @@ public class CampaignEncounterService {
 
     if (campaign.getState().getRival() != null) {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
+    }
+
+    // Official ATW Commentators
+    List<Commentator> commentators = commentatorRepository.findAll();
+    if (!commentators.isEmpty()) {
+      sb.append("\nOFFICIAL ATW COMMENTARY TEAM:\n");
+      for (Commentator c : commentators) {
+        sb.append("- ")
+            .append(c.getNpc().getName())
+            .append(" (")
+            .append(c.getNpc().getAlignment())
+            .append("): ")
+            .append(c.getNpc().getDescription())
+            .append("\n");
+      }
+      sb.append(
+          "Use these commentators for post-match analysis or to frame the story narrative where"
+              + " appropriate.\n");
     }
 
     // Check for partner ID in feature data

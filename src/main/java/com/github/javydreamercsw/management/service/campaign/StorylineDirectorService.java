@@ -30,14 +30,12 @@ import com.github.javydreamercsw.management.dto.campaign.StorylineArcDTO;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class StorylineDirectorService {
 
   private final SegmentNarrationServiceFactory aiFactory;
@@ -45,7 +43,25 @@ public class StorylineDirectorService {
   private final StorylineMilestoneRepository milestoneRepository;
   private final CampaignStateRepository stateRepository;
   private final CampaignChapterService chapterService;
+  private final CampaignService campaignService;
   private final ObjectMapper objectMapper;
+
+  public StorylineDirectorService(
+      SegmentNarrationServiceFactory aiFactory,
+      CampaignStorylineRepository storylineRepository,
+      StorylineMilestoneRepository milestoneRepository,
+      CampaignStateRepository stateRepository,
+      CampaignChapterService chapterService,
+      @org.springframework.context.annotation.Lazy CampaignService campaignService,
+      ObjectMapper objectMapper) {
+    this.aiFactory = aiFactory;
+    this.storylineRepository = storylineRepository;
+    this.milestoneRepository = milestoneRepository;
+    this.stateRepository = stateRepository;
+    this.chapterService = chapterService;
+    this.campaignService = campaignService;
+    this.objectMapper = objectMapper;
+  }
 
   private static final String STORYLINE_SYSTEM_PROMPT =
       """
@@ -77,20 +93,23 @@ public class StorylineDirectorService {
       """;
 
   @Transactional
-  public CampaignStoryline initializeStoryline(Campaign campaign) {
+  public CampaignStoryline initializeStoryline(
+      Campaign campaign, CampaignChapterDTO contextChapter) {
     log.info("Initializing new storyline arc for campaign: {}", campaign.getId());
     CampaignState state = campaign.getState();
-    CampaignChapterDTO chapter =
-        chapterService.getChapter(state.getCurrentChapterId()).orElseThrow();
+
+    String chapterTitle = contextChapter != null ? contextChapter.getTitle() : "Unknown Chapter";
+    String chapterIntro =
+        contextChapter != null ? contextChapter.getIntroText() : "The journey continues.";
 
     String prompt =
         String.format(
             "Generate a storyline arc for Chapter: %s. Player Alignment: %s. Chapter Intro: %s",
-            chapter.getTitle(),
+            chapterTitle,
             campaign.getWrestler().getAlignment() != null
                 ? campaign.getWrestler().getAlignment().getAlignmentType()
                 : "NEUTRAL",
-            chapter.getIntroText());
+            chapterIntro);
 
     try {
       String aiResponse = aiFactory.generateText(STORYLINE_SYSTEM_PROMPT + "\n\n" + prompt);
@@ -207,13 +226,14 @@ public class StorylineDirectorService {
     storyline.setStatus(CampaignStoryline.StorylineStatus.ABANDONED);
     storyline.setEndedAt(LocalDateTime.now());
     storylineRepository.save(storyline);
-    
+
     // Clear the active storyline from campaign state
     CampaignState campaignState = storyline.getCampaign().getState();
-    if (campaignState != null && campaignState.getActiveStoryline() != null && 
-        campaignState.getActiveStoryline().equals(storyline)) {
-        campaignState.setActiveStoryline(null);
-        stateRepository.save(campaignState);
+    if (campaignState != null
+        && campaignState.getActiveStoryline() != null
+        && campaignState.getActiveStoryline().equals(storyline)) {
+      campaignState.setActiveStoryline(null);
+      stateRepository.save(campaignState);
     }
   }
 

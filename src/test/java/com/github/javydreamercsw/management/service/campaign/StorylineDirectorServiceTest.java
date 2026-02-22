@@ -50,6 +50,7 @@ class StorylineDirectorServiceTest {
   private StorylineMilestoneRepository milestoneRepository;
   private CampaignStateRepository stateRepository;
   private CampaignChapterService chapterService;
+  private CampaignService campaignService;
   private ObjectMapper objectMapper;
 
   @BeforeEach
@@ -63,6 +64,7 @@ class StorylineDirectorServiceTest {
     milestoneRepository = mock(StorylineMilestoneRepository.class);
     stateRepository = mock(CampaignStateRepository.class);
     chapterService = mock(CampaignChapterService.class);
+    campaignService = mock(CampaignService.class);
     objectMapper = new ObjectMapper();
 
     storylineDirectorService =
@@ -72,6 +74,7 @@ class StorylineDirectorServiceTest {
             milestoneRepository,
             stateRepository,
             chapterService,
+            campaignService,
             objectMapper);
   }
 
@@ -94,6 +97,7 @@ class StorylineDirectorServiceTest {
             .build();
 
     when(chapterService.getChapter("beginning")).thenReturn(Optional.of(chapter));
+    when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
     when(storylineRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
     when(milestoneRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
@@ -125,7 +129,7 @@ class StorylineDirectorServiceTest {
 
     when(aiFactory.generateText(any())).thenReturn(aiJsonResponse);
 
-    CampaignStoryline result = storylineDirectorService.initializeStoryline(campaign);
+    CampaignStoryline result = storylineDirectorService.initializeStoryline(campaign, chapter);
 
     assertNotNull(result);
     assertEquals("The Rookie Sensation", result.getTitle());

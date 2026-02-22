@@ -21,9 +21,11 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -46,6 +48,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,7 +116,7 @@ public class CampaignNarrativeView extends VerticalLayout {
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
               if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
+                campaignService.getCampaignForWrestler(active).ifPresent(c -> currentCampaign = c);
               }
             });
   }
@@ -125,7 +128,25 @@ public class CampaignNarrativeView extends VerticalLayout {
       return;
     }
 
-    add(new H2("Story: " + campaignService.getCurrentChapter(currentCampaign).getTitle()));
+    String narrativeTitle = "Story Narrative";
+    String narrativeDescription = "";
+
+    Optional<CampaignChapterDTO> chapterOpt = campaignService.getCurrentChapter(currentCampaign);
+
+    if (currentCampaign.getState().getActiveStoryline() != null) {
+      CampaignStoryline activeStoryline = currentCampaign.getState().getActiveStoryline();
+      narrativeTitle = "Storyline: " + activeStoryline.getTitle();
+      narrativeDescription = activeStoryline.getDescription();
+    } else if (chapterOpt.isPresent()) {
+      CampaignChapterDTO chapter = chapterOpt.get();
+      narrativeTitle = "Story: " + chapter.getTitle();
+      narrativeDescription = chapter.getShortDescription();
+    }
+
+    add(new H2(narrativeTitle));
+    if (narrativeDescription != null && !narrativeDescription.isEmpty()) {
+      add(new Paragraph(narrativeDescription));
+    }
 
     narrativeContainer = new VerticalLayout();
     narrativeContainer.setWidthFull();
