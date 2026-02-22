@@ -99,6 +99,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final PromoService promoService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final NarrationParserService narrationParserService;
+  private final com.github.javydreamercsw.management.service.interference.InterferenceService
+      interferenceService;
+  private final com.github.javydreamercsw.management.service.interference.InterferenceAiService
+      interferenceAiService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -121,7 +125,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       MatchFulfillmentService matchFulfillmentService,
       PromoService promoService,
       CommentaryTeamRepository commentaryTeamRepository,
-      NarrationParserService narrationParserService) {
+      NarrationParserService narrationParserService,
+      com.github.javydreamercsw.management.service.interference.InterferenceService
+          interferenceService,
+      com.github.javydreamercsw.management.service.interference.InterferenceAiService
+          interferenceAiService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -135,6 +143,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.promoService = promoService;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.narrationParserService = narrationParserService;
+    this.interferenceService = interferenceService;
+    this.interferenceAiService = interferenceAiService;
   }
 
   @Override
@@ -333,6 +343,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   private void buildMatchInterface(Wrestler playerWrestler) {
+    boolean isPromo =
+        segment.getSegmentType() != null
+            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+
     // Main Content Grid
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setWidthFull();
@@ -418,6 +432,57 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
     sideCol.add(infoCard);
 
+    // Interference Section
+    if (!isPromo) {
+      final com.github.javydreamercsw.management.ui.component.InterferenceComponent[]
+          interferenceComponentWrapper =
+              new com.github.javydreamercsw.management.ui.component.InterferenceComponent[1];
+
+      interferenceComponentWrapper[0] =
+          new com.github.javydreamercsw.management.ui.component.InterferenceComponent(
+              interferenceService,
+              segment,
+              playerWrestler,
+              result -> {
+                if (result.success()) {
+                  // Add interference to feedback for next generation
+                  String currentFeedback = feedbackArea.getValue();
+                  if (currentFeedback == null) currentFeedback = "";
+                  feedbackArea.setValue(currentFeedback + "\nIncorporate successful interference.");
+                }
+
+                // Chance for NPC opponent to retaliate if they have a manager or faction member
+                segment.getWrestlers().stream()
+                    .filter(w -> w != null && !w.equals(playerWrestler))
+                    .forEach(
+                        opponent -> {
+                          if (opponent.getManager() != null) {
+                            interferenceAiService
+                                .evaluateInterference(segment, opponent.getManager(), opponent)
+                                .ifPresent(
+                                    npcResult -> {
+                                      Notification.show(
+                                              "Opponent Retaliation: " + npcResult.message())
+                                          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+                                      if (npcResult.success()) {
+                                        String currentFeedback = feedbackArea.getValue();
+                                        feedbackArea.setValue(
+                                            (currentFeedback == null ? "" : currentFeedback)
+                                                + "\n"
+                                                + "Incorporate successful opponent manager"
+                                                + " interference.");
+                                      }
+                                      // Update UI to reflect new awareness level
+                                      if (interferenceComponentWrapper[0] != null) {
+                                        interferenceComponentWrapper[0].updateUI();
+                                      }
+                                    });
+                          }
+                        });
+              });
+      sideCol.add(new DashboardCard("Interference", interferenceComponentWrapper[0]));
+    }
+
     // Winners Section
     DashboardCard winnersCard = new DashboardCard("Match Result");
     winnersComboBox = new MultiSelectComboBox<>("Select Winner(s)");
@@ -448,10 +513,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     mainContent.add(participantsCol, sideCol);
     add(mainContent);
-
-    boolean isPromo =
-        segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
 
     // Full Width: Narration Section
     narrationCard = new DashboardCard(isPromo ? "Promo Narration" : "Match Narration");

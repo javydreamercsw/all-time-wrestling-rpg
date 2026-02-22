@@ -53,6 +53,10 @@ public class NPCSegmentResolutionService {
   @Autowired private Clock clock;
   @Autowired protected Random random;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.interference.InterferenceService
+      interferenceService;
+
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
    * segment types: singles (1v1), tag team (2v2), handicap (1v2), and complex multi-team scenarios.
@@ -408,7 +412,36 @@ public class NPCSegmentResolutionService {
           team.getTeamName(),
           baseWeight,
           synergyBonus);
-      return baseWeight + synergyBonus;
+
+      // Factor in Manager Interference
+      int interferenceBonus = 0;
+      for (Wrestler w : team.getMembers()) {
+        if (w.getManager() != null) {
+          // 20% base chance for manager to attempt interference in simulation
+          if (random.nextDouble() < 0.20) {
+            // Pick a random interference type
+            com.github.javydreamercsw.management.service.interference.InterferenceType type =
+                com.github.javydreamercsw.management.service.interference.InterferenceType.values()[
+                    random.nextInt(
+                        com.github.javydreamercsw.management.service.interference.InterferenceType
+                            .values()
+                            .length)];
+
+            // Success chance: 70% base for simulation interferences
+            if (random.nextDouble() < 0.70) {
+              interferenceBonus += type.getBaseImpact();
+              log.debug(
+                  "Manager {} successfully interfered ({}) for {}: +{} weight",
+                  w.getManager().getName(),
+                  type.getDisplayName(),
+                  w.getName(),
+                  type.getBaseImpact());
+            }
+          }
+        }
+      }
+
+      return baseWeight + synergyBonus + interferenceBonus;
     }
 
     /** Calculate average tier bonus for the team. */

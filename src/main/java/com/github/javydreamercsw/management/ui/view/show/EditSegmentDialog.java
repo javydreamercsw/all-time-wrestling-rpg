@@ -49,10 +49,12 @@ public class EditSegmentDialog extends Dialog {
   private final TitleService titleService;
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRuleRepository segmentRuleRepository;
+  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
 
+  private final ComboBox<com.github.javydreamercsw.management.domain.npc.Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
   private final ComboBox<AlignmentType> alignmentFilter;
 
@@ -76,6 +78,7 @@ public class EditSegmentDialog extends Dialog {
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
+      com.github.javydreamercsw.management.service.npc.NpcService npcService,
       Gender defaultGenderConstraint,
       Runnable onSave) {
     this.segment = segment;
@@ -84,6 +87,7 @@ public class EditSegmentDialog extends Dialog {
     this.titleService = titleService;
     this.segmentTypeRepository = segmentTypeRepository;
     this.segmentRuleRepository = segmentRuleRepository;
+    this.npcService = npcService;
     this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
@@ -110,6 +114,17 @@ public class EditSegmentDialog extends Dialog {
     segmentTypeCombo.setRequired(true);
     segmentTypeRepository.findByName(segment.getType()).ifPresent(segmentTypeCombo::setValue);
     segmentTypeCombo.setId("edit-segment-type-combo-box");
+
+    refereeCombo = new ComboBox<>("Referee");
+    refereeCombo.setItems(npcService.findAllByType("Referee"));
+    refereeCombo.setItemLabelGenerator(
+        com.github.javydreamercsw.management.domain.npc.Npc::getName);
+    refereeCombo.setWidthFull();
+    if (segment.getRefereeName() != null) {
+      npcService.findByName(segment.getRefereeName());
+      refereeCombo.setValue(npcService.findByName(segment.getRefereeName()));
+    }
+    refereeCombo.setId("edit-referee-combo-box");
 
     rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(
@@ -234,6 +249,7 @@ public class EditSegmentDialog extends Dialog {
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        refereeCombo,
         alignmentFilter,
         genderFilter,
         participantsCombo,
@@ -300,6 +316,11 @@ public class EditSegmentDialog extends Dialog {
         rulesCombo.getValue().stream().map(SegmentRule::getName).collect(Collectors.toList()));
     segment.setIsTitleSegment(isTitleSegmentCheckbox.getValue());
     segment.setTitles(titleMultiSelectComboBox.getValue());
+    if (refereeCombo.getValue() != null) {
+      segment.setRefereeName(refereeCombo.getValue().getName());
+    } else {
+      segment.setRefereeName(null);
+    }
     onSave.run();
     close();
   }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,58 +18,83 @@ package com.github.javydreamercsw.management.service.npc;
 
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class NpcService {
 
-  @Autowired private NpcRepository npcRepository;
+  private final NpcRepository npcRepository;
 
-  @PreAuthorize("isAuthenticated()")
-  public List<Npc> findAll() {
-    return npcRepository.findAll();
-  }
+  public static final String ATTRIBUTE_AWARENESS = "awareness";
 
-  @PreAuthorize("isAuthenticated()")
-  public Page<Npc> findAll(Pageable pageable) {
-    return npcRepository.findAll(pageable);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<Npc> findAllByType(String type) {
-    return npcRepository.findAllByNpcType(type);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Npc> findById(Long id) {
-    return npcRepository.findById(id);
-  }
-
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Npc save(Npc npc) {
-    return npcRepository.save(npc);
-  }
-
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void delete(Npc npc) {
-    npcRepository.delete(npc);
-  }
-
-  @PreAuthorize("isAuthenticated()")
   public Npc findByName(String name) {
     return npcRepository.findByName(name).orElse(null);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  public Npc save(Npc npc) {
+    return npcRepository.save(npc);
+  }
+
   public Npc findByExternalId(String externalId) {
     return npcRepository.findByExternalId(externalId);
+  }
+
+  public Npc findById(Long id) {
+    return npcRepository.findById(id).orElse(null);
+  }
+
+  public java.util.List<Npc> findAllByType(String npcType) {
+    return npcRepository.findAllByNpcType(npcType);
+  }
+
+  public java.util.List<Npc> findAll() {
+    return npcRepository.findAll();
+  }
+
+  public org.springframework.data.domain.Page<Npc> findAll(
+      org.springframework.data.domain.Pageable pageable) {
+    return npcRepository.findAll(pageable);
+  }
+
+  public void delete(Npc npc) {
+    npcRepository.delete(npc);
+  }
+
+  /**
+   * Gets the awareness level of a referee NPC.
+   *
+   * @param npc The NPC to check.
+   * @return The awareness level (0-100), defaults to 50 if not set.
+   */
+  public int getAwareness(Npc npc) {
+    if (npc == null || npc.getAttributes() == null) {
+      return 50;
+    }
+    Object val = npc.getAttributes().get(ATTRIBUTE_AWARENESS);
+    if (val instanceof Number) {
+      return ((Number) val).intValue();
+    }
+    return 50;
+  }
+
+  /**
+   * Sets the awareness level of a referee NPC.
+   *
+   * @param npc The NPC to update.
+   * @param awareness The awareness level (0-100).
+   */
+  @Transactional
+  public void setAwareness(Npc npc, int awareness) {
+    if (npc == null) {
+      return;
+    }
+    Map<String, Object> attrs = npc.getAttributes();
+    attrs.put(ATTRIBUTE_AWARENESS, Math.max(0, Math.min(100, awareness)));
+    npc.setAttributes(attrs);
+    npcRepository.save(npc);
   }
 }

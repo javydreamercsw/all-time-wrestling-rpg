@@ -144,6 +144,13 @@ public class Segment extends AbstractEntity<Long> {
   @JsonIgnore
   private Set<Title> titles = new HashSet<>();
 
+  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "referee_id")
+  private com.github.javydreamercsw.management.domain.npc.Npc referee;
+
+  @Column(name = "referee_awareness_level", nullable = false)
+  private int refereeAwarenessLevel = 0; // The "Detection Meter" (0-100)
+
   @Override
   public @Nullable Long getId() {
     return id;

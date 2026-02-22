@@ -41,6 +41,31 @@ High-affinity factions also receive a significant boost to their win probability
 
 ---
 
+## Match Interference
+
+Matches in ATW RPG are dynamic and often influenced by characters at ringside. Managers and faction members can actively interfere to swing the momentum.
+
+### Ringside Actions
+If a wrestler has a manager or a stablemate at ringside, they can perform several actions:
+*   **Referee Distraction:** Pause the opponent's momentum or buy time for an illegal recovery.
+*   **Weapon Slide:** Provide a foreign object, significantly boosting attack damage for a short duration.
+*   **Trip/Ankle Pull:** Directly reduce the opponent's stamina or interrupt an aerial move.
+*   **Cheap Shot:** A direct strike from the outside that deals damage and can stun the opponent.
+
+### Referee Awareness & Risk
+Every interference attempt is a gamble. The match tracks a **Referee Awareness** meter (0-100%):
+*   **Detection:** Each action increases the meter based on its "Risk" level.
+*   **Suspicion:** As the meter grows, the chance of success for future interferences decreases.
+*   **Ejection (80%):** If the referee becomes too suspicious, the interferer is ejected from ringside.
+*   **Disqualification (100%):** Blatant or repeated interference will result in an immediate DQ loss for the beneficiary.
+
+### Strategic Influence
+*   **Faction Affinity:** High-affinity factions are better at timing their interference, which reduces the amount of "Awareness" generated per action.
+*   **Alignment:** Heel managers are more aggressive and proficient at high-impact interference, while Face managers typically only interfere to counter an opponent's dirty tactics.
+*   **AI Retaliation:** In interactive matches, the AI will intelligently decide when to counter-interfere based on the referee's state and their own alignment.
+
+---
+
 ## AI Commentary & Narration
 
 The **Story Director** brings every match to life using advanced AI to generate a detailed, structured transcript of the action.

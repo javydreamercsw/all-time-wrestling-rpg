@@ -73,6 +73,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
   private final WrestlerService wrestlerService;
+  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
 
@@ -96,6 +97,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
+      com.github.javydreamercsw.management.service.npc.NpcService npcService,
       ObjectMapper objectMapper,
       SegmentNarrationServiceFactory aiFactory) {
 
@@ -103,6 +105,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
     this.wrestlerService = wrestlerService;
+    this.npcService = npcService;
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
 
@@ -196,6 +199,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                         titleService,
                         segmentTypeRepository,
                         segmentRuleRepository,
+                        npcService,
                         constraint,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();

@@ -122,6 +122,22 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
         "mechanic-faction-synergy");
   }
 
+  @Test
+  void testCaptureMatchInterference() {
+    // Navigate to a match. We'll use segment 1 which is usually created by DataInitializer
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/1");
+    waitForVaadinClientToLoad();
+    waitForText("Interference");
+
+    documentFeature(
+        "Game Mechanics",
+        "Match Interference",
+        "Managers and faction members can swing the match in your favor. Perform ringside actions"
+            + " like distracting the referee or sliding in a weapon, but be careful - too much"
+            + " interference will lead to ejections or disqualification!",
+        "mechanic-match-interference");
+  }
+
   private void waitForText(String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
