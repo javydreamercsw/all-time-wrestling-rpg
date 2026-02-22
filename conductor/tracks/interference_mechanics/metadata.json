@@ -1,7 +1,7 @@
 {
+  "id": "interference_mechanics",
   "title": "Match Interference & Manager Mechanics",
-  "description": "System for allies/managers to influence matches via ability cards.",
-  "status": "Planning",
-  "priority": "Medium",
-  "labels": [ "Gameplay", "Mechanics", "Cards" ]
+  "description": "Mechanics for ringside interference by managers and faction members.",
+  "status": "in_progress",
+  "priority": 2
 }

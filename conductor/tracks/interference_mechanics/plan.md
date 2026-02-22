@@ -1,23 +1,25 @@
 # Match Interference & Manager Mechanics - Plan
 
-## Phase 1: Analysis
+## Phase 1: Infrastructure & State
+- [ ] Define `InterferenceType` enum (Distraction, Weapon, Trip, Strike).
+- [ ] Create `InterferenceService` to handle the logic of interference attempts and results.
+- [ ] Extend match state logic to include `refereeAwareness` (0-100).
 
-- [ ] Review `MatchEngine` and `AbilityCard` system.
-- [ ] Check `Segment` participants structure.
+## Phase 2: Core Logic
+- [ ] Implement calculation logic for interference success vs. detection.
+- [ ] Integrate Faction Affinity bonus into interference success rates.
+- [ ] Add DQ and Ejection triggers based on awareness levels.
 
-## Phase 2: Design
+## Phase 3: Match View Integration
+- [ ] Add "Ringside Actions" panel to `MatchView`.
+- [ ] Implement buttons for active interference when conditions are met (manager present or faction member at ringside).
+- [ ] Add visual feedback (notifications/banners) for interference results.
 
-- [ ] Add `Manager` slot to `Match` context.
-- [ ] Define `Interference` card type and effects.
+## Phase 4: NPC AI & Automated Matches
+- [ ] Implement `InterferenceAiService` to decide when NPCs should interfere.
+- [ ] Update `NPCSegmentResolutionService` to factor in potential interference during simulations.
 
-## Phase 3: Implementation
-
-- [ ] Update `MatchEngine` to handle external interference.
-- [ ] Implement new ability card logic (e.g., `distractRef()`).
-- [ ] Add UI for assigning managers.
-
-## Phase 4: Testing
-
-- [ ] Unit tests for interference card effects.
-- [ ] Integration tests for manager ejection logic.
-
+## Phase 5: Testing & Documentation
+- [ ] Unit tests for `InterferenceService` detection logic.
+- [ ] Integration tests for DQ/Ejection scenarios.
+- [ ] Document interference mechanics in the Game Guide.

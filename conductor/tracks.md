@@ -60,10 +60,10 @@
 *Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
 *Status: Planning*
 
-### [ ] Track: Match Interference & Manager Mechanics
+### [~] Track: Match Interference & Manager Mechanics
 
 *Link: [./conductor/tracks/interference_mechanics/plan.md](./conductor/tracks/interference_mechanics/plan.md)*
-*Status: Planning*
+*Status: In Progress*
 
 ### [ ] Track: Booker's Budget & Economic Simulation
 
