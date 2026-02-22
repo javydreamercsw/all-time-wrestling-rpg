@@ -36,14 +36,14 @@
 *Link: [./conductor/archive/news_feed_20260222/plan.md](./conductor/archive/news_feed_20260222/plan.md)*
 *Status: Completed (2026-02-22)*
 
+### [x] Track: Dynamic Faction Chemistry & Synergies
+
+*Link: [./conductor/archive/faction_synergy_20260222/plan.md](./conductor/archive/faction_synergy_20260222/plan.md)*
+*Status: Completed (2026-02-22)*
+
 ---
 
 ## Active Tracks
-
-### [~] Track: Dynamic Faction Chemistry & Synergies
-
-*Link: [./conductor/tracks/faction_synergy/plan.md](./conductor/tracks/faction_synergy/plan.md)*
-*Status: Planning*
 
 ### [ ] Track: Visual Arena Customizer (AI-Assisted)
 
