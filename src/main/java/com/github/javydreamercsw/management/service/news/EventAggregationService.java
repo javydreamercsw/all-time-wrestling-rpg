@@ -73,6 +73,7 @@ public class EventAggregationService {
         .build();
   }
 
+  @Transactional(readOnly = true)
   public String formatMonthlySummary(MonthlySummary summary) {
     StringBuilder sb = new StringBuilder();
     sb.append("PERIOD: ")

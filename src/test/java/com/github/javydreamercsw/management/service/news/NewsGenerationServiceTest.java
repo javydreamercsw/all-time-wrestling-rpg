@@ -31,11 +31,14 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
+import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +55,8 @@ class NewsGenerationServiceTest {
   private InjuryRepository injuryRepository;
   private SegmentRepository segmentRepository;
   private EventAggregationService aggregationService;
+  private WrestlerRepository wrestlerRepository;
+  private NpcRepository npcRepository;
 
   @BeforeEach
   void setUp() {
@@ -62,6 +67,8 @@ class NewsGenerationServiceTest {
     injuryRepository = mock(InjuryRepository.class);
     segmentRepository = mock(SegmentRepository.class);
     aggregationService = mock(EventAggregationService.class);
+    wrestlerRepository = mock(WrestlerRepository.class);
+    npcRepository = mock(NpcRepository.class);
     objectMapper = new ObjectMapper();
     newsGenerationService =
         new NewsGenerationService(
@@ -71,11 +78,41 @@ class NewsGenerationServiceTest {
             gameSettingService,
             injuryRepository,
             segmentRepository,
-            aggregationService);
+            aggregationService,
+            wrestlerRepository,
+            npcRepository);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
     when(gameSettingService.isAiNewsEnabled()).thenReturn(true);
+  }
+
+  @Test
+  void testRollForRumor_WithRosterAndNpcContext() {
+    when(gameSettingService.getNewsRumorChance()).thenReturn(100);
+    Wrestler w1 = Wrestler.builder().name("Star A").build();
+    when(wrestlerRepository.findAll()).thenReturn(List.of(w1));
+
+    Npc n1 = new Npc();
+    n1.setName("Official X");
+    when(npcRepository.findAll()).thenReturn(List.of(n1));
+
+    String aiResponse =
+        "{\"headline\": \"Rumor\", \"content\": \"Content\", \"category\": \"RUMOR\", \"isRumor\":"
+            + " true, \"importance\": 2}";
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.rollForRumor();
+
+    // Verify the prompt contains the wrestler, NPC names, and strict instructions
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("Star A")
+                        && prompt.contains("Official X")
+                        && prompt.contains("IMPORTANT INSTRUCTIONS FOR RUMORS")
+                        && prompt.contains("ONLY use the names")));
   }
 
   @Test
