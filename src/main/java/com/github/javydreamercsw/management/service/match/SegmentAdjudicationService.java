@@ -199,23 +199,46 @@ public class SegmentAdjudicationService {
     }
 
     // Faction Affinity Logic
-    Map<Long, Integer> factionMemberCount = new HashMap<>();
+    Map<Long, Integer> factionParticipants = new HashMap<>();
+    Map<Long, Integer> factionWinners = new HashMap<>();
+
     for (Wrestler participant : segment.getWrestlers()) {
       if (participant.getFaction() != null) {
         Long factionId = participant.getFaction().getId();
-        factionMemberCount.put(factionId, factionMemberCount.getOrDefault(factionId, 0) + 1);
+        factionParticipants.put(factionId, factionParticipants.getOrDefault(factionId, 0) + 1);
+        if (winners.contains(participant)) {
+          factionWinners.put(factionId, factionWinners.getOrDefault(factionId, 0) + 1);
+        }
       }
     }
 
-    // Reward factions for having multiple members in the same segment
-    factionMemberCount.forEach(
+    // Reward factions for participation and victory
+    factionParticipants.forEach(
         (factionId, count) -> {
           if (count > 1) {
-            int affinityGain = (count - 1) * (segment.isMainEvent() ? 2 : 1);
+            int affinityGain = (count - 1); // Base participation gain
+
+            // Victory bonus: +2 if multiple members from the same faction won
+            if (factionWinners.getOrDefault(factionId, 0) > 1) {
+              affinityGain += 2;
+            }
+
+            // Context multipliers
+            if (segment.isMainEvent()) {
+              affinityGain *= 2;
+            }
             if (segment.getShow().isPremiumLiveEvent()) {
               affinityGain *= 2;
             }
-            factionService.addAffinity(factionId, affinityGain);
+
+            // Promo bonus: +1 for shared spotlight
+            if (segment.getSegmentType().getName().equals("Promo")) {
+              affinityGain += 1;
+            }
+
+            if (affinityGain > 0) {
+              factionService.addAffinity(factionId, affinityGain);
+            }
           }
         });
 

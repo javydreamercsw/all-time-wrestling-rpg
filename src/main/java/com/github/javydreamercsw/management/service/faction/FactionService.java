@@ -405,7 +405,8 @@ public class FactionService {
         .ifPresent(
             faction -> {
               int oldAffinity = faction.getAffinity();
-              faction.setAffinity(oldAffinity + points);
+              int newAffinity = Math.min(100, oldAffinity + points);
+              faction.setAffinity(newAffinity);
               factionRepository.saveAndFlush(faction);
               log.info(
                   "Added {} affinity to faction: {} (Total: {})",

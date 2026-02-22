@@ -67,6 +67,7 @@ public class EditSegmentDialog extends Dialog {
   private final MultiSelectComboBox<Wrestler> winnersCombo;
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
+  private final com.vaadin.flow.component.html.Span synergyBonusLabel;
 
   public EditSegmentDialog(
       ProposedSegment segment,
@@ -91,6 +92,13 @@ public class EditSegmentDialog extends Dialog {
     FormLayout formLayout = new FormLayout();
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
+
+    synergyBonusLabel = new com.vaadin.flow.component.html.Span("Synergy Bonus: +0");
+    synergyBonusLabel.addClassNames(
+        com.vaadin.flow.theme.lumo.LumoUtility.FontSize.SMALL,
+        com.vaadin.flow.theme.lumo.LumoUtility.TextColor.SUCCESS,
+        com.vaadin.flow.theme.lumo.LumoUtility.FontWeight.BOLD);
+    synergyBonusLabel.setId("edit-synergy-bonus-label");
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
     segmentTypeCombo.setItems(
@@ -174,9 +182,9 @@ public class EditSegmentDialog extends Dialog {
               .collect(Collectors.toSet()));
     }
 
-    // Update winner options when wrestlers change
     participantsCombo.addValueChangeListener(
         e -> {
+          updateSynergyBonus(e.getValue());
           winnersCombo.setItems(
               e.getValue().stream()
                   .sorted(Comparator.comparing(Wrestler::getName))
@@ -187,6 +195,8 @@ public class EditSegmentDialog extends Dialog {
                   .filter(e.getValue()::contains)
                   .collect(Collectors.toSet()));
         });
+
+    updateSynergyBonus(existingParticipants);
 
     summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
@@ -227,6 +237,7 @@ public class EditSegmentDialog extends Dialog {
         alignmentFilter,
         genderFilter,
         participantsCombo,
+        synergyBonusLabel,
         winnersCombo,
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
@@ -238,6 +249,31 @@ public class EditSegmentDialog extends Dialog {
 
     getFooter().add(cancelButton, saveButton);
     add(new VerticalLayout(formLayout));
+  }
+
+  private void updateSynergyBonus(java.util.Collection<Wrestler> wrestlers) {
+    int totalBonus = 0;
+    java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
+    java.util.Map<Long, Integer> factionAffinity = new java.util.HashMap<>();
+
+    for (Wrestler w : wrestlers) {
+      if (w.getFaction() != null) {
+        Long fid = w.getFaction().getId();
+        factionCounts.put(fid, factionCounts.getOrDefault(fid, 0) + 1);
+        factionAffinity.put(fid, w.getFaction().getAffinity());
+      }
+    }
+
+    for (java.util.Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
+      int count = entry.getValue();
+      if (count > 1) {
+        int affinity = factionAffinity.get(entry.getKey());
+        totalBonus += (count - 1) * (affinity / 10);
+      }
+    }
+
+    synergyBonusLabel.setText("Faction Synergy Bonus: +" + totalBonus + " weight");
+    synergyBonusLabel.setVisible(totalBonus > 0);
   }
 
   private void refreshParticipantsList(java.util.Set<Wrestler> selectedWrestlers) {
