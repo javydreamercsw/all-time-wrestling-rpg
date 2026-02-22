@@ -106,6 +106,22 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
         "dashboard-calendar");
   }
 
+  @Test
+  void testCaptureFactionSynergy() {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
+    waitForVaadinClientToLoad();
+    waitForText("Synergy");
+
+    documentFeature(
+        "Game Mechanics",
+        "Faction Synergy",
+        "Factions grow stronger as members work together. Affinity builds through shared matches"
+            + " and victories, unlocking powerful synergy buffs like stamina recovery, finisher"
+            + " damage, and resilience bonuses. High-affinity factions have a mechanical advantage"
+            + " in match outcomes.",
+        "mechanic-faction-synergy");
+  }
+
   private void waitForText(String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
