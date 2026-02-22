@@ -37,7 +37,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
@@ -120,25 +121,31 @@ public class SocialMediaView extends VerticalLayout {
         .getLatestMonthlyAnalysis()
         .ifPresent(
             item -> {
-              StreamResource resource =
-                  new StreamResource(
-                      "monthly_wrapup.json",
-                      () -> {
-                        try {
-                          String json =
-                              objectMapper
-                                  .writerWithDefaultPrettyPrinter()
-                                  .writeValueAsString(item);
-                          return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-                        } catch (Exception e) {
-                          return new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
-                        }
-                      });
-              Anchor downloadAnchor = new Anchor(resource, "");
-              downloadAnchor.getElement().setAttribute("download", true);
+              Anchor downloadAnchor =
+                  new Anchor(
+                      DownloadHandler.fromInputStream(
+                          (event) -> {
+                            try {
+                              String json =
+                                  objectMapper
+                                      .writerWithDefaultPrettyPrinter()
+                                      .writeValueAsString(item);
+                              byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
+                              return new DownloadResponse(
+                                  new ByteArrayInputStream(jsonBytes),
+                                  "monthly_wrapup.json",
+                                  "application/json",
+                                  jsonBytes.length);
+                            } catch (Exception e) {
+                              return DownloadResponse.error(500);
+                            }
+                          }),
+                      "");
+
               Button downloadBtn = new Button("Download Latest", VaadinIcon.DOWNLOAD.create());
               downloadBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
               downloadAnchor.add(downloadBtn);
+
               newsletter.add(downloadAnchor);
             });
 
