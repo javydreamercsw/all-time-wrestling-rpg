@@ -23,18 +23,15 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
-import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RingsideActionService {
 
@@ -43,8 +40,22 @@ public class RingsideActionService {
   private final NpcService npcService;
   private final FactionService factionService;
   private final TeamService teamService;
-  private final CampaignService campaignService;
   private final AlignmentService alignmentService;
+
+  public RingsideActionService(
+      SegmentRepository segmentRepository,
+      WrestlerRepository wrestlerRepository,
+      NpcService npcService,
+      FactionService factionService,
+      TeamService teamService,
+      AlignmentService alignmentService) {
+    this.segmentRepository = segmentRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.npcService = npcService;
+    this.factionService = factionService;
+    this.teamService = teamService;
+    this.alignmentService = alignmentService;
+  }
 
   public static final int EJECTION_THRESHOLD = 80;
   public static final int DQ_THRESHOLD = 100;
