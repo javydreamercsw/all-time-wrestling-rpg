@@ -41,6 +41,8 @@ public class RingsideActionService {
   private final NpcService npcService;
   private final FactionService factionService;
   private final TeamService teamService;
+  private final com.github.javydreamercsw.management.service.campaign.CampaignService
+      campaignService;
 
   public static final int EJECTION_THRESHOLD = 80;
   public static final int DQ_THRESHOLD = 100;
@@ -171,6 +173,19 @@ public class RingsideActionService {
     int newMeter = Math.min(100, currentMeter + detectionIncrease);
     segment.setRefereeAwarenessLevel(newMeter);
     segmentRepository.save(segment);
+
+    // Apply alignment shifts if beneficiary is in a campaign
+    if (success
+        && beneficiary.getAlignment() != null
+        && beneficiary.getAlignment().getCampaign() != null) {
+      if (action.getAlignment()
+          == com.github.javydreamercsw.management.domain.campaign.AlignmentType.FACE) {
+        campaignService.shiftAlignment(beneficiary.getAlignment().getCampaign(), 1);
+      } else if (action.getAlignment()
+          == com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL) {
+        campaignService.shiftAlignment(beneficiary.getAlignment().getCampaign(), -1);
+      }
+    }
 
     boolean ejected = action.getType().isIncreasesAwareness() && newMeter >= EJECTION_THRESHOLD;
     boolean disqualified =

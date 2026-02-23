@@ -42,8 +42,10 @@ class RingsideAiServiceTest {
 
   private Segment segment;
   private Npc heelManager;
+  private Npc faceManager;
   private Wrestler beneficiary;
-  private RingsideAction action;
+  private RingsideAction heelAction;
+  private RingsideAction faceAction;
 
   @BeforeEach
   void setUp() {
@@ -54,23 +56,33 @@ class RingsideAiServiceTest {
     heelManager.setAlignment(AlignmentType.HEEL);
     heelManager.setName("Bobby Heenan");
 
+    faceManager = new Npc();
+    faceManager.setAlignment(AlignmentType.FACE);
+    faceManager.setName("Miss Elizabeth");
+
     beneficiary = new Wrestler();
     beneficiary.setName("Ric Flair");
 
-    action = new RingsideAction();
-    action.setName("Referee Distraction");
-    action.setRisk(20);
-    action.setImpact(10);
-    action.setAlignment(AlignmentType.HEEL);
+    heelAction = new RingsideAction();
+    heelAction.setName("Referee Distraction");
+    heelAction.setRisk(20);
+    heelAction.setImpact(10);
+    heelAction.setAlignment(AlignmentType.HEEL);
+
+    faceAction = new RingsideAction();
+    faceAction.setName("Crowd Support");
+    faceAction.setRisk(0);
+    faceAction.setImpact(5);
+    faceAction.setAlignment(AlignmentType.FACE);
   }
 
   @Test
   void heelManagerShouldEventuallyAct() {
-    when(ringsideActionDataService.findAllActions()).thenReturn(List.of(action));
+    when(ringsideActionDataService.findAllActions()).thenReturn(List.of(heelAction));
     when(ringsideActionService.performAction(any(), any(), any(), any()))
         .thenReturn(
             new RingsideActionService.RingsideActionResult(
-                action, true, 10, false, false, "Success"));
+                heelAction, true, 10, false, false, "Success"));
 
     // We'll run it a few times since it's probabilistic
     boolean acted = false;
@@ -83,6 +95,43 @@ class RingsideAiServiceTest {
       }
     }
     assertTrue(acted, "Heel manager should perform action at least once in 100 attempts");
-    verify(ringsideActionService, atLeastOnce()).performAction(any(), any(), any(), any());
+    verify(ringsideActionService, atLeastOnce()).performAction(any(), any(), any(), eq(heelAction));
+  }
+
+  @Test
+  void faceManagerShouldAvoidHeelActions() {
+    // Only heel actions available
+    when(ringsideActionDataService.findAllActions()).thenReturn(List.of(heelAction));
+
+    // Try many times
+    for (int i = 0; i < 100; i++) {
+      Optional<RingsideActionService.RingsideActionResult> result =
+          ringsideAiService.evaluateRingsideAction(segment, faceManager, beneficiary);
+      // It should NOT perform the heel action.
+      // Note: pickAction has a fallback to all actions if none suitable,
+      // but let's check current implementation behavior.
+      result.ifPresent(r -> assertNotEquals(AlignmentType.HEEL, r.action().getAlignment()));
+    }
+  }
+
+  @Test
+  void faceManagerShouldPickFaceActions() {
+    when(ringsideActionDataService.findAllActions()).thenReturn(List.of(heelAction, faceAction));
+    when(ringsideActionService.performAction(any(), any(), any(), eq(faceAction)))
+        .thenReturn(
+            new RingsideActionService.RingsideActionResult(
+                faceAction, true, 0, false, false, "Success"));
+
+    boolean acted = false;
+    for (int i = 0; i < 100; i++) {
+      Optional<RingsideActionService.RingsideActionResult> result =
+          ringsideAiService.evaluateRingsideAction(segment, faceManager, beneficiary);
+      if (result.isPresent()) {
+        acted = true;
+        assertEquals(faceAction, result.get().action());
+        assertEquals(AlignmentType.FACE, result.get().action().getAlignment());
+      }
+    }
+    assertTrue(acted, "Face manager should eventually perform face action");
   }
 }

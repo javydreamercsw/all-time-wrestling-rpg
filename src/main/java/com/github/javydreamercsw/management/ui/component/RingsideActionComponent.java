@@ -145,7 +145,19 @@ public class RingsideActionComponent extends VerticalLayout {
       buttons.setSpacing(true);
 
       List<RingsideAction> actions = ringsideActionDataService.findAllActions();
-      for (RingsideAction action : actions) {
+
+      // Filter by alignment: Heels can do anything, Faces/Neutral prefer non-Heel actions
+      AlignmentType targetAlignment = getWrestlerAlignment(activeTarget);
+      List<RingsideAction> suitableActions =
+          actions.stream()
+              .filter(
+                  a -> {
+                    if (targetAlignment == AlignmentType.HEEL) return true;
+                    return a.getAlignment() != AlignmentType.HEEL;
+                  })
+              .toList();
+
+      for (RingsideAction action : suitableActions) {
         Button btn = new Button(action.getName(), e -> performAction(activeTarget, action));
         btn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
         btn.setTooltipText(action.getDescription());
@@ -170,6 +182,13 @@ public class RingsideActionComponent extends VerticalLayout {
       noSupport.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Top.SMALL);
       actionsLayout.add(noSupport);
     }
+  }
+
+  private AlignmentType getWrestlerAlignment(Wrestler wrestler) {
+    if (wrestler != null && wrestler.getAlignment() != null) {
+      return wrestler.getAlignment().getAlignmentType();
+    }
+    return AlignmentType.NEUTRAL;
   }
 
   private void performAction(Wrestler target, RingsideAction action) {
