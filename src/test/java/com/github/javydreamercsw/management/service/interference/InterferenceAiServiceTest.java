@@ -56,6 +56,11 @@ class InterferenceAiServiceTest {
 
   @Test
   void heelManagerShouldEventuallyInterfere() {
+    when(interferenceService.attemptInterference(any(), any(), any(), any()))
+        .thenReturn(
+            new InterferenceService.InterferenceResult(
+                InterferenceType.REF_DISTRACTION, true, 10, false, false, "Success"));
+
     // We'll run it a few times since it's probabilistic
     boolean interfered = false;
     for (int i = 0; i < 100; i++) {

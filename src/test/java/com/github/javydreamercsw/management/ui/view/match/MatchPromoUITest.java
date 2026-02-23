@@ -34,6 +34,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.interference.InterferenceAiService;
+import com.github.javydreamercsw.management.service.interference.InterferenceService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -70,13 +72,9 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.interference.InterferenceService
-      interferenceService;
+  @Mock private InterferenceService interferenceService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.interference.InterferenceAiService
-      interferenceAiService;
+  @Mock private InterferenceAiService interferenceAiService;
 
   private MatchView matchView;
 

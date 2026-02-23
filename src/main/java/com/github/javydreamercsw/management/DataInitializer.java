@@ -422,11 +422,16 @@ public class DataInitializer implements Initializable {
 
         for (SegmentRuleDTO dto : segmentRulesFromFile) {
           segmentRuleService.createOrUpdateRule(
-              dto.getName(), dto.getDescription(), dto.isRequiresHighHeat(), dto.getBumpAddition());
+              dto.getName(),
+              dto.getDescription(),
+              dto.isRequiresHighHeat(),
+              dto.isNoDq(),
+              dto.getBumpAddition());
           log.info(
-              "Loaded segment rule: {} (High Heat: {}, Bump Addition: {})",
+              "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
               dto.getName(),
               dto.isRequiresHighHeat(),
+              dto.isNoDq(),
               dto.getBumpAddition());
         }
         log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());

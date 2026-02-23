@@ -105,4 +105,23 @@ class InterferenceServiceTest {
     assertTrue(result.disqualified());
     assertTrue(result.message().contains("DISQUALIFICATION"));
   }
+
+  @Test
+  void shouldNotDisqualifyInNoDqMatch() {
+    when(npcService.getAwareness(referee)).thenReturn(50);
+    com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule noDqRule =
+        new com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule();
+    noDqRule.setName("No DQ");
+    noDqRule.setNoDq(true);
+    segment.getSegmentRules().add(noDqRule);
+    segment.setRefereeAwarenessLevel(90);
+
+    InterferenceService.InterferenceResult result =
+        interferenceService.attemptInterference(
+            segment, interferer, beneficiary, InterferenceType.CHEAP_SHOT);
+
+    assertTrue(result.ejected());
+    assertFalse(result.disqualified(), "Should not be disqualified in a No DQ match");
+    assertFalse(result.message().contains("DISQUALIFICATION"));
+  }
 }

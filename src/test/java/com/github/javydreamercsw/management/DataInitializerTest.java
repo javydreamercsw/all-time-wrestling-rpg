@@ -166,14 +166,15 @@ class DataInitializerTest {
     lenient()
         .when(
             segmentRuleService.createOrUpdateRule(
-                anyString(), anyString(), anyBoolean(), any(BumpAddition.class)))
+                anyString(), anyString(), anyBoolean(), anyBoolean(), any(BumpAddition.class)))
         .thenAnswer(
             invocation -> {
               SegmentRule rule = new SegmentRule();
               rule.setName(invocation.getArgument(0));
               rule.setDescription(invocation.getArgument(1));
               rule.setRequiresHighHeat(invocation.getArgument(2));
-              rule.setBumpAddition(invocation.getArgument(3));
+              rule.setNoDq(invocation.getArgument(3));
+              rule.setBumpAddition(invocation.getArgument(4));
               return rule;
             });
     lenient()

@@ -31,14 +31,15 @@ import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
 import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
-import java.util.function.Consumer;
 
 public class InterferenceComponent extends VerticalLayout {
 
   private final InterferenceService interferenceService;
   private final Segment segment;
   private final Wrestler playerWrestler;
-  private final Consumer<InterferenceService.InterferenceResult> onInterference;
+  private final java.util.function.BiConsumer<
+          InterferenceType, InterferenceService.InterferenceResult>
+      onInterference;
 
   private ProgressBar awarenessBar;
   private Span awarenessLabel;
@@ -48,7 +49,8 @@ public class InterferenceComponent extends VerticalLayout {
       InterferenceService interferenceService,
       Segment segment,
       Wrestler playerWrestler,
-      Consumer<InterferenceService.InterferenceResult> onInterference) {
+      java.util.function.BiConsumer<InterferenceType, InterferenceService.InterferenceResult>
+          onInterference) {
     this.interferenceService = interferenceService;
     this.segment = segment;
     this.playerWrestler = playerWrestler;
@@ -132,7 +134,7 @@ public class InterferenceComponent extends VerticalLayout {
     }
 
     if (onInterference != null) {
-      onInterference.accept(result);
+      onInterference.accept(type, result);
     }
   }
 

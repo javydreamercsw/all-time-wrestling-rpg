@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ public class InterferenceService {
 
   /** Result of an interference attempt. */
   public record InterferenceResult(
+      InterferenceType type,
       boolean success,
       int detectionIncrease,
       boolean ejected,
@@ -58,7 +60,10 @@ public class InterferenceService {
    */
   @Transactional
   public InterferenceResult attemptInterference(
-      Segment segment, Object interferer, Wrestler beneficiary, InterferenceType type) {
+      @NonNull Segment segment,
+      @NonNull Object interferer,
+      @NonNull Wrestler beneficiary,
+      @NonNull InterferenceType type) {
 
     Npc referee = segment.getReferee();
     int baseAwareness = npcService.getAwareness(referee);
@@ -91,11 +96,17 @@ public class InterferenceService {
     segmentRepository.save(segment);
 
     boolean ejected = newMeter >= EJECTION_THRESHOLD;
-    boolean disqualified = newMeter >= DQ_THRESHOLD;
+    boolean disqualified = newMeter >= DQ_THRESHOLD && !isNoDqMatch(segment);
 
     String message = buildResultMessage(type, success, ejected, disqualified);
 
-    return new InterferenceResult(success, detectionIncrease, ejected, disqualified, message);
+    return new InterferenceResult(type, success, detectionIncrease, ejected, disqualified, message);
+  }
+
+  private boolean isNoDqMatch(@NonNull Segment segment) {
+    return segment.getSegmentRules().stream()
+        .anyMatch(
+            com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule::getNoDq);
   }
 
   private String buildResultMessage(

@@ -458,12 +458,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               interferenceService,
               segment,
               playerWrestler,
-              result -> {
+              (type, result) -> {
                 if (result.success()) {
                   // Add interference to feedback for next generation
                   String currentFeedback = feedbackArea.getValue();
                   if (currentFeedback == null) currentFeedback = "";
-                  feedbackArea.setValue(currentFeedback + "\nIncorporate successful interference.");
+                  feedbackArea.setValue(
+                      currentFeedback + "\nIncorporate successful " + type.getDisplayName() + ".");
                 }
 
                 // Chance for NPC opponent to retaliate if they have a manager or faction member
@@ -484,8 +485,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                                         feedbackArea.setValue(
                                             (currentFeedback == null ? "" : currentFeedback)
                                                 + "\n"
-                                                + "Incorporate successful opponent manager"
-                                                + " interference.");
+                                                + "Incorporate successful opponent manager "
+                                                + npcResult.type().getDisplayName()
+                                                + ".");
                                       }
                                       // Update UI to reflect new awareness level
                                       if (interferenceComponentWrapper[0] != null) {
