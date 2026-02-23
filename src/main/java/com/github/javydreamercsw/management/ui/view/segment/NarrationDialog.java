@@ -223,6 +223,9 @@ public class NarrationDialog extends Dialog {
       narrationDisplay.setText(segment.getNarration());
       saveButton.setEnabled(true);
     }
+    if (segment.getReferee() != null) {
+      refereeField.setValue(segment.getReferee());
+    }
     for (Wrestler wrestler : segment.getWrestlers()) {
       addTeamSelector(new WrestlerDTO(wrestler));
     }
@@ -670,6 +673,9 @@ public class NarrationDialog extends Dialog {
   private void saveNarration() {
     try {
       segment.setNarration(narrationDisplay.getText());
+      if (refereeField.getValue() != null) {
+        segment.setReferee(refereeField.getValue());
+      }
       segmentService.updateSegment(segment);
 
       getUI()

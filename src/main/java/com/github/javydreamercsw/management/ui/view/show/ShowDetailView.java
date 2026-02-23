@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -875,6 +876,16 @@ public class ShowDetailView extends Main
     rulesCombo.setId("segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
+    // Referee selection
+    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
+    refereeCombo.setItems(
+        npcService.findAllByType("Referee").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
+    refereeCombo.setItemLabelGenerator(Npc::getName);
+    refereeCombo.setWidthFull();
+    refereeCombo.setId("add-referee-combo-box");
+
     // Alignment and Gender Filters
     ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
     alignmentFilter.setItems(AlignmentType.values());
@@ -970,6 +981,7 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        refereeCombo,
         alignmentFilter,
         genderFilter,
         wrestlersCombo,
@@ -1003,6 +1015,7 @@ public class ShowDetailView extends Main
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
               newSegment.setSegmentType(segmentTypeCombo.getValue());
               newSegment.setWinners(new ArrayList<>(winners));
+              newSegment.setReferee(refereeCombo.getValue());
 
               // If it's a title segment, set the selected titles
               if (isTitleSegment) {
@@ -1074,6 +1087,17 @@ public class ShowDetailView extends Main
     rulesCombo.setValue(segment.getSegmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
+
+    // Referee selection
+    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
+    refereeCombo.setItems(
+        npcService.findAllByType("Referee").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
+    refereeCombo.setItemLabelGenerator(Npc::getName);
+    refereeCombo.setWidthFull();
+    refereeCombo.setValue(segment.getReferee());
+    refereeCombo.setId("edit-referee-combo-box");
 
     // Alignment and Gender Filters
     ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
@@ -1181,6 +1205,7 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        refereeCombo,
         alignmentFilter,
         genderFilter,
         wrestlersCombo,
@@ -1197,6 +1222,7 @@ public class ShowDetailView extends Main
             e -> {
               segment.setNarration(narrationArea.getValue());
               segment.setSummary(summaryArea.getValue());
+              segment.setReferee(refereeCombo.getValue());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
               segment.setIsTitleSegment(isTitleSegment);
