@@ -69,6 +69,15 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private PromoService promoService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.interference.InterferenceService
+      interferenceService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.interference.InterferenceAiService
+      interferenceAiService;
+
   private MatchView matchView;
 
   @BeforeEach
@@ -87,7 +96,9 @@ class MatchPromoUITest extends AbstractViewTest {
             matchFulfillmentService,
             promoService,
             commentaryTeamRepository,
-            narrationParserService);
+            narrationParserService,
+            interferenceService,
+            interferenceAiService);
   }
 
   @Test

@@ -32,9 +32,12 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
@@ -64,6 +67,9 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
   private final H2 npcName = new H2();
   private final Paragraph npcDetails = new Paragraph();
   private final VerticalLayout biographyLayout = new VerticalLayout();
+  private final TextArea biographyEditor = new TextArea("Edit Biography");
+  private final Button editBiographyButton = new Button("Edit Biography");
+  private final Button saveBiographyButton = new Button("Save Biography");
   private final Image npcImage = new Image();
   private final Button generateImageButton = new Button("Generate Image");
   private final ImageUploadComponent uploadComponent;
@@ -88,6 +94,38 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
     npcImage.setAlt("NPC Image");
     npcImage.setId("npc-image");
     npcImage.setMaxWidth("300px");
+
+    biographyEditor.setWidthFull();
+    biographyEditor.setMinHeight("200px");
+    biographyEditor.setVisible(false);
+
+    editBiographyButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    editBiographyButton.addClickListener(
+        e -> {
+          biographyEditor.setValue(npc.getDescription() != null ? npc.getDescription() : "");
+          biographyEditor.setVisible(true);
+          saveBiographyButton.setVisible(true);
+          editBiographyButton.setVisible(false);
+          // Hide existing text
+          biographyLayout
+              .getChildren()
+              .filter(c -> c instanceof Paragraph)
+              .forEach(c -> c.setVisible(false));
+        });
+
+    saveBiographyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+    saveBiographyButton.setVisible(false);
+    saveBiographyButton.addClickListener(
+        e -> {
+          npc.setDescription(biographyEditor.getValue());
+          npcService.save(npc);
+          biographyEditor.setVisible(false);
+          saveBiographyButton.setVisible(false);
+          editBiographyButton.setVisible(true);
+          updateView();
+          Notification.show("Biography updated!")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
 
     generateImageButton.setId("generate-image-button");
     generateImageButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -133,6 +171,10 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
     HorizontalLayout header = new HorizontalLayout(imageLayout, nameAndDetailsLayout);
     header.setAlignItems(Alignment.CENTER);
 
+    biographyLayout.setPadding(false);
+    biographyLayout.add(
+        new H3("Biography"), editBiographyButton, biographyEditor, saveBiographyButton);
+
     add(header, biographyLayout);
   }
 
@@ -165,16 +207,23 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
         npcImage.setSrc("https://via.placeholder.com/150");
       }
 
-      biographyLayout.removeAll();
-      biographyLayout.add(new H3("Biography"));
+      // Remove existing paragraphs but keep header and buttons
+      biographyLayout
+          .getChildren()
+          .filter(c -> c instanceof Paragraph)
+          .forEach(biographyLayout::remove);
+
       if (npc.getDescription() != null && !npc.getDescription().isEmpty()) {
-        biographyLayout.add(new Paragraph(npc.getDescription()));
+        Paragraph p = new Paragraph(npc.getDescription());
+        biographyLayout.addComponentAtIndex(1, p);
       } else {
-        biographyLayout.add(new Paragraph("No biography available."));
+        Paragraph p = new Paragraph("No biography available.");
+        biographyLayout.addComponentAtIndex(1, p);
       }
 
       generateImageButton.setVisible(securityUtils.canEdit());
       uploadComponent.setVisible(securityUtils.canEdit());
+      editBiographyButton.setVisible(securityUtils.canEdit() && !biographyEditor.isVisible());
     }
   }
 }

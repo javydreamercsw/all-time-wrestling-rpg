@@ -108,6 +108,21 @@ public class NpcListView extends Main {
         .setHeader("Type")
         .setEditorComponent(npcTypeField)
         .setSortable(true);
+
+    com.vaadin.flow.component.textfield.NumberField awarenessField =
+        new com.vaadin.flow.component.textfield.NumberField();
+    awarenessField.setMin(0);
+    awarenessField.setMax(100);
+    awarenessField.setStepButtonsVisible(true);
+
+    npcGrid
+        .addColumn(
+            npc ->
+                "Referee".equalsIgnoreCase(npc.getNpcType()) ? npcService.getAwareness(npc) : null)
+        .setHeader("Awareness")
+        .setEditorComponent(awarenessField)
+        .setSortable(true);
+
     TextField imageUrlField = new TextField();
     imageUrlField.setReadOnly(true);
 
@@ -192,6 +207,15 @@ public class NpcListView extends Main {
     binder.forField(nameField).bind("name");
     binder.forField(npcTypeField).bind("npcType");
     binder.forField(imageUrlField).bind("imageUrl");
+    binder
+        .forField(awarenessField)
+        .bind(
+            npc -> (double) npcService.getAwareness(npc),
+            (npc, val) -> {
+              if (val != null) {
+                npcService.setAwareness(npc, val.intValue());
+              }
+            });
 
     editor.addSaveListener(
         event -> {

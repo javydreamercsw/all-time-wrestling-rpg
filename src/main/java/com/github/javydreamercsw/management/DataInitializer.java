@@ -947,6 +947,9 @@ public class DataInitializer implements Initializable {
           }
           npc.setDescription(dto.getDescription());
           npc.setNpcType(dto.getType());
+          if (dto.getAwareness() != null) {
+            npcService.setAwareness(npc, dto.getAwareness());
+          }
           npcService.save(npc);
           log.debug("Loaded npc: {}", dto.getName());
         }
