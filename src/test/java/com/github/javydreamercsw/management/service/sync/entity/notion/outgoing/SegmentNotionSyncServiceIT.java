@@ -196,7 +196,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         Instant.parse(capturedRequest.getProperties().get("Date").getDate().getStart())
             .truncatedTo(java.time.temporal.ChronoUnit.MILLIS));
     assertEquals(
-        segment.getSegmentRules().get(0).getExternalId(),
+        segment.getSegmentRules().iterator().next().getExternalId(),
         capturedRequest.getProperties().get("Rules").getRelation().get(0).getId());
     assertEquals(
         segment.getNarration(),

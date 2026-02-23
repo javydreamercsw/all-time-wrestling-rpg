@@ -150,7 +150,7 @@ class MatchPromoUITest extends AbstractViewTest {
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(100L));
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
-    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
     // 5. Navigate to View
@@ -198,7 +198,7 @@ class MatchPromoUITest extends AbstractViewTest {
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(101L));
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
-    when(segmentService.findByIdWithShow(2L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(2L)).thenReturn(Optional.of(segment));
     // No campaign
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.empty());
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());

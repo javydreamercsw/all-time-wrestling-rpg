@@ -167,8 +167,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         if (fulfillment.isPresent()) {
           segment = fulfillment.get().getSegment();
         } else {
-          // Fallback to direct segment lookup
-          segment = segmentService.findByIdWithShow(id).orElse(null);
+          // Fallback to direct segment lookup with all details
+          segment = segmentService.findByIdWithDetails(id).orElse(null);
         }
 
         if (segment != null) {
@@ -464,7 +464,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           new com.github.javydreamercsw.management.ui.component.RingsideActionComponent(
               ringsideActionService,
               ringsideActionDataService,
-              teamService,
               segment,
               playerWrestler,
               (action, result) -> {
@@ -494,7 +493,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                                         feedbackArea.setValue(
                                             (currentFeedback == null ? "" : currentFeedback)
                                                 + "\n"
-                                                + "Incorporate successful opponent manager "
+                                                + "Incorporate successful opponent ringside action:"
+                                                + " "
                                                 + npcResult.action().getName()
                                                 + ".");
                                       }

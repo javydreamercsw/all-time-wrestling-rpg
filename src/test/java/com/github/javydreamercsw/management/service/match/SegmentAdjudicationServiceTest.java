@@ -104,7 +104,7 @@ class SegmentAdjudicationServiceTest {
   void testProcessRewardsCalled() {
     SegmentRule rule = new SegmentRule();
     rule.setBumpAddition(BumpAddition.WINNERS);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 

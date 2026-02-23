@@ -21,8 +21,10 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +37,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class RingsideActionService {
 
   private final SegmentRepository segmentRepository;
+  private final WrestlerRepository wrestlerRepository;
   private final NpcService npcService;
   private final FactionService factionService;
+  private final TeamService teamService;
 
   public static final int EJECTION_THRESHOLD = 80;
   public static final int DQ_THRESHOLD = 100;
@@ -49,6 +53,71 @@ public class RingsideActionService {
       boolean ejected,
       boolean disqualified,
       String message) {}
+
+  @Transactional(readOnly = true)
+  public boolean hasSupportAtRingside(Segment segment, Wrestler wrestler) {
+    if (wrestler == null || segment == null) return false;
+
+    // Refresh/Reattach to ensure session is open for lazy loading
+    Segment attachedSegment = segmentRepository.findById(segment.getId()).orElse(segment);
+    Wrestler attachedWrestler = wrestlerRepository.findById(wrestler.getId()).orElse(wrestler);
+
+    // Check for direct manager
+    if (attachedWrestler.getManager() != null) return true;
+
+    // Check for faction manager or other members
+    if (attachedWrestler.getFaction() != null) {
+      if (attachedWrestler.getFaction().getManager() != null) return true;
+
+      boolean otherFactionMembersExist =
+          attachedWrestler.getFaction().getMembers().stream()
+              .anyMatch(m -> !attachedSegment.getWrestlers().contains(m));
+      if (otherFactionMembersExist) return true;
+    }
+
+    // Check for team members not in the match
+    boolean otherTeamMembersExist =
+        teamService.getActiveTeamsByWrestler(attachedWrestler).stream()
+            .anyMatch(
+                t -> !attachedSegment.getWrestlers().contains(t.getPartner(attachedWrestler)));
+    if (otherTeamMembersExist) return true;
+
+    return false;
+  }
+
+  @Transactional(readOnly = true)
+  public Object getBestSupporter(Segment segment, Wrestler wrestler) {
+    if (wrestler == null || segment == null) return null;
+
+    Segment attachedSegment = segmentRepository.findById(segment.getId()).orElse(segment);
+    Wrestler attachedWrestler = wrestlerRepository.findById(wrestler.getId()).orElse(wrestler);
+
+    // 1. Direct Manager
+    if (attachedWrestler.getManager() != null) return attachedWrestler.getManager();
+
+    // 2. Faction Manager
+    if (attachedWrestler.getFaction() != null
+        && attachedWrestler.getFaction().getManager() != null) {
+      return attachedWrestler.getFaction().getManager();
+    }
+
+    // 3. Faction Members (not in match)
+    if (attachedWrestler.getFaction() != null) {
+      Wrestler otherMember =
+          attachedWrestler.getFaction().getMembers().stream()
+              .filter(m -> !attachedSegment.getWrestlers().contains(m))
+              .findFirst()
+              .orElse(null);
+      if (otherMember != null) return otherMember;
+    }
+
+    // 4. Team Partner (not in match)
+    return teamService.getActiveTeamsByWrestler(attachedWrestler).stream()
+        .map(t -> t.getPartner(attachedWrestler))
+        .filter(m -> !attachedSegment.getWrestlers().contains(m))
+        .findFirst()
+        .orElse(null);
+  }
 
   /**
    * Processes a ringside action attempt.

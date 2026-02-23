@@ -153,7 +153,7 @@ class MatchViewTest extends AbstractViewTest {
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
-    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     when(wrestlerService.findByIdWithInjuries(1L)).thenReturn(Optional.of(wrestler1));
     when(wrestlerService.findByIdWithInjuries(2L)).thenReturn(Optional.of(wrestler2));
 
@@ -206,7 +206,7 @@ class MatchViewTest extends AbstractViewTest {
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.isAdmin()).thenReturn(false);
     when(userDetails.getWrestler()).thenReturn(wrestler1);
-    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));

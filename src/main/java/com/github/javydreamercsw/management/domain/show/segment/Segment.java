@@ -99,7 +99,7 @@ public class Segment extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "segment_id"),
       inverseJoinColumns = @JoinColumn(name = "segment_rule_id"))
   @JsonIgnoreProperties({"description", "creationDate"})
-  private List<SegmentRule> segmentRules = new ArrayList<>();
+  private Set<SegmentRule> segmentRules = new HashSet<>();
 
   @Lob
   @Column(name = "narration")
@@ -134,7 +134,7 @@ public class Segment extends AbstractEntity<Long> {
       orphanRemoval = true,
       fetch = FetchType.EAGER)
   @JsonIgnoreProperties({"segment"})
-  private List<SegmentParticipant> participants = new ArrayList<>();
+  private Set<SegmentParticipant> participants = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
@@ -209,8 +209,8 @@ public class Segment extends AbstractEntity<Long> {
         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
-  public List<SegmentRule> getSegmentRules() {
-    if (segmentRules == null) segmentRules = new ArrayList<>();
+  public Set<SegmentRule> getSegmentRules() {
+    if (segmentRules == null) segmentRules = new HashSet<>();
     return segmentRules;
   }
 
@@ -220,7 +220,7 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   public void setWinners(List<Wrestler> winners) {
-    if (participants == null) participants = new ArrayList<>();
+    if (participants == null) participants = new HashSet<>();
     if (winners == null || winners.isEmpty()) {
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(false);

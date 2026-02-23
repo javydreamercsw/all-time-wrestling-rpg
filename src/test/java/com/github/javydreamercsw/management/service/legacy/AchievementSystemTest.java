@@ -236,7 +236,7 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("One on One");
     when(rule.getName()).thenReturn("Normal");
@@ -266,7 +266,7 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(Collections.emptyList());
+    when(segment.getSegmentRules()).thenReturn(java.util.Collections.emptySet());
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("Abu Dhabi Rumble");
     when(show.isPremiumLiveEvent()).thenReturn(true);

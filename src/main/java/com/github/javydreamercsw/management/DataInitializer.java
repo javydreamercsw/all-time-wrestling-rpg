@@ -184,10 +184,10 @@ public class DataInitializer implements Initializable {
       loadShowTemplatesFromFile();
       syncSetsFromFile();
       syncCardsFromFile();
+      syncNpcsFromFile();
       syncWrestlersFromFile();
       syncChampionshipsFromFile();
       syncDecksFromFile();
-      syncNpcsFromFile();
       syncFactionsFromFile();
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();

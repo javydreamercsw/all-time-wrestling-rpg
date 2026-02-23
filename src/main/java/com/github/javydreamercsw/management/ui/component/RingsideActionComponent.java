@@ -22,7 +22,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
-import com.github.javydreamercsw.management.service.team.TeamService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
@@ -31,6 +30,7 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
 import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
@@ -42,7 +42,6 @@ public class RingsideActionComponent extends VerticalLayout {
 
   private final RingsideActionService ringsideActionService;
   private final RingsideActionDataService ringsideActionDataService;
-  private final TeamService teamService;
   private final Segment segment;
   private final Wrestler playerWrestler;
   private final BiConsumer<RingsideAction, RingsideActionService.RingsideActionResult>
@@ -51,17 +50,16 @@ public class RingsideActionComponent extends VerticalLayout {
   private ProgressBar awarenessBar;
   private Span awarenessLabel;
   private VerticalLayout actionsLayout;
+  private Select<Wrestler> targetWrestlerSelect;
 
   public RingsideActionComponent(
       RingsideActionService ringsideActionService,
       RingsideActionDataService ringsideActionDataService,
-      TeamService teamService,
       Segment segment,
       Wrestler playerWrestler,
       BiConsumer<RingsideAction, RingsideActionService.RingsideActionResult> onActionPerformed) {
     this.ringsideActionService = ringsideActionService;
     this.ringsideActionDataService = ringsideActionDataService;
-    this.teamService = teamService;
     this.segment = segment;
     this.playerWrestler = playerWrestler;
     this.onActionPerformed = onActionPerformed;
@@ -104,8 +102,42 @@ public class RingsideActionComponent extends VerticalLayout {
     actionsLayout.setPadding(false);
     actionsLayout.setSpacing(true);
 
-    if (hasSupportAtRingside()) {
-      Span actionsTitle = new Span("Take Action");
+    if (playerWrestler == null) {
+      // Admin/Booker mode - show target selector
+      targetWrestlerSelect = new Select<>();
+      targetWrestlerSelect.setLabel("Wrestler to Assist");
+      List<Wrestler> supportedWrestlers =
+          segment.getWrestlers().stream()
+              .filter(w -> ringsideActionService.hasSupportAtRingside(segment, w))
+              .toList();
+      targetWrestlerSelect.setItems(supportedWrestlers);
+      targetWrestlerSelect.setItemLabelGenerator(Wrestler::getName);
+      targetWrestlerSelect.addValueChangeListener(e -> refreshActionButtons());
+      if (!supportedWrestlers.isEmpty()) {
+        targetWrestlerSelect.setValue(supportedWrestlers.get(0));
+      }
+      actionsLayout.add(targetWrestlerSelect);
+    }
+
+    refreshActionButtons();
+    add(actionsLayout);
+  }
+
+  private void refreshActionButtons() {
+    // Clear previous buttons but keep selector if it exists
+    actionsLayout
+        .getChildren()
+        .filter(
+            c ->
+                c instanceof HorizontalLayout
+                    || (c instanceof Span && !c.equals(targetWrestlerSelect)))
+        .forEach(actionsLayout::remove);
+
+    Wrestler activeTarget =
+        playerWrestler != null ? playerWrestler : targetWrestlerSelect.getValue();
+
+    if (activeTarget != null && ringsideActionService.hasSupportAtRingside(segment, activeTarget)) {
+      Span actionsTitle = new Span("Take Action for " + activeTarget.getName());
       actionsTitle.addClassNames(FontSize.XSMALL, FontWeight.MEDIUM, Margin.Top.SMALL);
       actionsLayout.add(actionsTitle);
 
@@ -114,7 +146,7 @@ public class RingsideActionComponent extends VerticalLayout {
 
       List<RingsideAction> actions = ringsideActionDataService.findAllActions();
       for (RingsideAction action : actions) {
-        Button btn = new Button(action.getName(), e -> performAction(action));
+        Button btn = new Button(action.getName(), e -> performAction(activeTarget, action));
         btn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
         btn.setTooltipText(action.getDescription());
 
@@ -129,41 +161,27 @@ public class RingsideActionComponent extends VerticalLayout {
       }
 
       actionsLayout.add(buttons);
-    } else {
+    } else if (playerWrestler != null) {
       Span noSupport = new Span("No manager or faction members at ringside to assist.");
       noSupport.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Top.SMALL);
       actionsLayout.add(noSupport);
+    } else if (targetWrestlerSelect != null && targetWrestlerSelect.isEmpty()) {
+      Span noSupport = new Span("No participants have ringside support available.");
+      noSupport.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Top.SMALL);
+      actionsLayout.add(noSupport);
     }
-
-    add(actionsLayout);
   }
 
-  private boolean hasSupportAtRingside() {
-    if (playerWrestler == null) return false;
-
-    // Check for manager
-    if (playerWrestler.getManager() != null) return true;
-
-    // Check for faction members not in the match
-    if (playerWrestler.getFaction() != null) {
-      boolean otherFactionMembersExist =
-          playerWrestler.getFaction().getMembers().stream()
-              .anyMatch(m -> !segment.getWrestlers().contains(m));
-      if (otherFactionMembersExist) return true;
+  private void performAction(Wrestler target, RingsideAction action) {
+    Object supporter = ringsideActionService.getBestSupporter(segment, target);
+    if (supporter == null) {
+      Notification.show("No one is currently available at ringside to help " + target.getName())
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
     }
 
-    // Check for team members not in the match
-    boolean otherTeamMembersExist =
-        teamService.getActiveTeamsByWrestler(playerWrestler).stream()
-            .anyMatch(t -> !segment.getWrestlers().contains(t.getPartner(playerWrestler)));
-    if (otherTeamMembersExist) return true;
-
-    return false;
-  }
-
-  private void performAction(RingsideAction action) {
     RingsideActionService.RingsideActionResult result =
-        ringsideActionService.performAction(segment, playerWrestler, playerWrestler, action);
+        ringsideActionService.performAction(segment, supporter, target, action);
 
     updateUI();
 
