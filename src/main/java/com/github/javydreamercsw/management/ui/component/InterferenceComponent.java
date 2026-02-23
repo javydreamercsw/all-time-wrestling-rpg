@@ -72,7 +72,8 @@ public class InterferenceComponent extends VerticalLayout {
     labelLayout.setWidthFull();
     labelLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-    Span title = new Span("Referee Awareness");
+    String refName = segment.getReferee() != null ? segment.getReferee().getName() : "Referee";
+    Span title = new Span(refName + " Awareness");
     title.addClassNames(FontSize.SMALL, FontWeight.BOLD);
 
     awarenessLabel = new Span(segment.getRefereeAwarenessLevel() + "%");

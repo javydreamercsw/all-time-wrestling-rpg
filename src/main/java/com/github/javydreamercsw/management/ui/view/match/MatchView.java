@@ -414,6 +414,21 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           });
     }
 
+    infoCard.add(new Span("Referee"));
+    if (segment.getReferee() != null) {
+      Span p = new Span("⚖️ " + segment.getReferee().getName());
+      p.addClassNames(FontSize.SMALL, FontWeight.BOLD, Margin.Left.MEDIUM);
+      infoCard.add(p);
+
+      Span awareness = new Span("Awareness: " + segment.getRefereeAwarenessLevel() + "%");
+      awareness.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Left.LARGE);
+      infoCard.add(awareness);
+    } else {
+      Span p = new Span("None assigned");
+      p.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Left.MEDIUM);
+      infoCard.add(p);
+    }
+
     infoCard.add(new Span("Titles Contested"));
     var titles = segment.getTitles();
     if (titles == null || titles.isEmpty()) {
@@ -776,6 +791,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
       if (feedback != null && !feedback.isBlank()) {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
+      }
+
+      if (segment.getReferee() != null) {
+        instructions +=
+            "\n\nThe assigned referee for this match is: " + segment.getReferee().getName() + ".";
       }
 
       context.setInstructions(instructions);
