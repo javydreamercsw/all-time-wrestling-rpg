@@ -41,6 +41,11 @@
 *Link: [./conductor/archive/faction_synergy_20260222/plan.md](./conductor/archive/faction_synergy_20260222/plan.md)*
 *Status: Completed (2026-02-22)*
 
+### [x] Track: Match Interference & Manager Mechanics
+
+*Link: [./conductor/archive/interference_mechanics_20260222/plan.md](./conductor/archive/interference_mechanics_20260222/plan.md)*
+*Status: Completed (2026-02-22)*
+
 ---
 
 ## Active Tracks
@@ -59,11 +64,6 @@
 
 *Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
 *Status: Planning*
-
-### [~] Track: Match Interference & Manager Mechanics
-
-*Link: [./conductor/tracks/interference_mechanics/plan.md](./conductor/tracks/interference_mechanics/plan.md)*
-*Status: In Progress*
 
 ### [ ] Track: Booker's Budget & Economic Simulation
 
