@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
@@ -76,6 +77,7 @@ class CampaignServiceTest {
 
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignStateRepository campaignStateRepository;
+  @Mock private CampaignAbilityCardRepository campaignAbilityCardRepository;
   @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Mock private CampaignChapterService chapterService;
   @Mock private WrestlerRepository wrestlerRepository;
@@ -100,6 +102,7 @@ class CampaignServiceTest {
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
+  @Mock private AlignmentService alignmentService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignService campaignService;
@@ -161,13 +164,10 @@ class CampaignServiceTest {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
 
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    // Stubbing not needed, logic now in AlignmentService
 
     campaignService.shiftAlignment(campaign, 1);
-
-    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.FACE);
-    assertThat(alignment.getLevel()).isEqualTo(1);
-    verify(wrestlerAlignmentRepository).save(alignment);
+    verify(alignmentService).shiftAlignment(campaign, 1);
   }
 
   @Test
@@ -184,13 +184,10 @@ class CampaignServiceTest {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
 
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    // Stubbing not needed, logic now in AlignmentService
 
     campaignService.shiftAlignment(campaign, -1);
-
-    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.NEUTRAL);
-    assertThat(alignment.getLevel()).isZero();
-    verify(wrestlerAlignmentRepository).save(alignment);
+    verify(alignmentService).shiftAlignment(campaign, -1);
   }
 
   @Test
@@ -207,13 +204,10 @@ class CampaignServiceTest {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
 
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    // Stubbing not needed, logic now in AlignmentService
 
     campaignService.shiftAlignment(campaign, -1);
-
-    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.HEEL);
-    assertThat(alignment.getLevel()).isEqualTo(1);
-    verify(wrestlerAlignmentRepository).save(alignment);
+    verify(alignmentService).shiftAlignment(campaign, -1);
   }
 
   @Test
@@ -323,8 +317,6 @@ class CampaignServiceTest {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
     when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    campaignService.processMatchResult(campaign, true); // Win 1
 
     assertThat(state.getWins()).isEqualTo(1);
     assertThat(state.getVictoryPoints()).isEqualTo(2);

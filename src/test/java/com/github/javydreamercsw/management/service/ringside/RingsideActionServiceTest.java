@@ -36,6 +36,8 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -58,8 +60,8 @@ class RingsideActionServiceTest {
   @Mock private FactionService factionService;
   @Mock private TeamService teamService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.CampaignService campaignService;
+  @Mock private CampaignService campaignService;
+  @Mock private AlignmentService alignmentService;
 
   @InjectMocks private RingsideActionService ringsideActionService;
 
@@ -136,7 +138,7 @@ class RingsideActionServiceTest {
 
     // Test Face shift
     ringsideActionService.performAction(segment, otherWrestler, wrestler, coachAction);
-    verify(campaignService).shiftAlignment(campaign, 1);
+    verify(alignmentService).shiftAlignment(campaign, 1);
 
     // Test Heel shift
     // We need to ensure success for the heel action (probabilistic)
@@ -152,7 +154,7 @@ class RingsideActionServiceTest {
 
     // Run performAction until it succeeds (usually 100% since currentMeter is 0)
     ringsideActionService.performAction(segment, otherWrestler, wrestler, weaponAction);
-    verify(campaignService).shiftAlignment(campaign, -1);
+    verify(alignmentService).shiftAlignment(campaign, -1);
   }
 
   @Test

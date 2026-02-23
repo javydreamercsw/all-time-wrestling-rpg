@@ -39,6 +39,8 @@ import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -78,6 +80,8 @@ class AchievementSystemTest {
   private Wrestler wrestler;
 
   @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
 
   @BeforeEach
   void setUp() {
@@ -100,6 +104,8 @@ class AchievementSystemTest {
             leagueRosterRepository,
             legacyService,
             factionService,
+            ringsideActionService,
+            ringsideAiService,
             new Random());
 
     account = new Account();

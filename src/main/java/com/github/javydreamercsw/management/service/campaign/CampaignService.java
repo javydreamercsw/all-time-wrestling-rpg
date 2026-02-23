@@ -92,6 +92,7 @@ public class CampaignService {
   private final CampaignAbilityCardRepository campaignAbilityCardRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignChapterService chapterService;
+  private final AlignmentService alignmentService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
   private final ShowRepository showRepository;
@@ -394,54 +395,7 @@ public class CampaignService {
    * @param amount The shift amount.
    */
   public void shiftAlignment(@NonNull Campaign campaign, int amount) {
-    if (amount == 0) {
-      return;
-    }
-
-    WrestlerAlignment alignment =
-        wrestlerAlignmentRepository
-            .findByWrestler(campaign.getWrestler())
-            .orElseThrow(() -> new IllegalStateException("Alignment not found"));
-
-    int oldLevel = alignment.getLevel();
-    AlignmentType oldType = alignment.getAlignmentType();
-
-    // Logic for bidirectional shift
-    if (oldType == AlignmentType.NEUTRAL) {
-      if (amount > 0) {
-        alignment.setAlignmentType(AlignmentType.FACE);
-        alignment.setLevel(amount);
-      } else {
-        alignment.setAlignmentType(AlignmentType.HEEL);
-        alignment.setLevel(Math.abs(amount));
-      }
-    } else if (oldType == AlignmentType.FACE) {
-      int newLevel = oldLevel + amount;
-      if (newLevel <= 0) {
-        alignment.setAlignmentType(AlignmentType.NEUTRAL);
-        alignment.setLevel(0);
-      } else {
-        alignment.setLevel(Math.min(5, newLevel));
-      }
-    } else { // HEEL
-      // amount > 0 moves toward Neutral (reduces level)
-      // amount < 0 moves further toward Heel (increases level)
-      int newLevel = oldLevel - amount;
-      if (newLevel <= 0) {
-        alignment.setAlignmentType(AlignmentType.NEUTRAL);
-        alignment.setLevel(0);
-      } else {
-        alignment.setLevel(Math.min(5, newLevel));
-      }
-    }
-
-    wrestlerAlignmentRepository.save(alignment);
-    handleLevelChange(campaign, oldLevel, alignment.getLevel());
-
-    // If type changed (e.g. turned), update ability cards
-    if (alignment.getAlignmentType() != oldType) {
-      updateAbilityCards(campaign);
-    }
+    alignmentService.shiftAlignment(campaign, amount);
   }
 
   public Optional<CampaignChapterDTO> getCurrentChapter(@NonNull Campaign campaign) {

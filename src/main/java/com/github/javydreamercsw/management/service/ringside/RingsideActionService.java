@@ -22,6 +22,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -41,8 +43,8 @@ public class RingsideActionService {
   private final NpcService npcService;
   private final FactionService factionService;
   private final TeamService teamService;
-  private final com.github.javydreamercsw.management.service.campaign.CampaignService
-      campaignService;
+  private final CampaignService campaignService;
+  private final AlignmentService alignmentService;
 
   public static final int EJECTION_THRESHOLD = 80;
   public static final int DQ_THRESHOLD = 100;
@@ -180,10 +182,10 @@ public class RingsideActionService {
         && beneficiary.getAlignment().getCampaign() != null) {
       if (action.getAlignment()
           == com.github.javydreamercsw.management.domain.campaign.AlignmentType.FACE) {
-        campaignService.shiftAlignment(beneficiary.getAlignment().getCampaign(), 1);
+        alignmentService.shiftAlignment(beneficiary.getAlignment().getCampaign(), 1);
       } else if (action.getAlignment()
           == com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL) {
-        campaignService.shiftAlignment(beneficiary.getAlignment().getCampaign(), -1);
+        alignmentService.shiftAlignment(beneficiary.getAlignment().getCampaign(), -1);
       }
     }
 

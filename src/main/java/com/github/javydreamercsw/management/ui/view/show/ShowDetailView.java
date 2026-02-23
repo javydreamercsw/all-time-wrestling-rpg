@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -122,6 +123,7 @@ public class ShowDetailView extends Main
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final LeagueRepository leagueRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
+  private final RingsideActionService ringsideActionService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -148,7 +150,8 @@ public class ShowDetailView extends Main
       ShowController showController,
       MatchFulfillmentRepository matchFulfillmentRepository,
       LeagueRepository leagueRepository,
-      CommentaryTeamRepository commentaryTeamRepository) {
+      CommentaryTeamRepository commentaryTeamRepository,
+      RingsideActionService ringsideActionService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -167,6 +170,7 @@ public class ShowDetailView extends Main
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRepository = leagueRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
+    this.ringsideActionService = ringsideActionService;
     initializeComponents();
   }
 
@@ -800,7 +804,8 @@ public class ShowDetailView extends Main
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   segmentNarrationController,
-                  segmentNarrationServiceFactory);
+                  segmentNarrationServiceFactory,
+                  ringsideActionService);
           dialog.open();
         });
 

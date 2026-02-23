@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -70,6 +71,7 @@ public class NarrationDialog extends Dialog {
   private final ShowService showService;
   private final SegmentService segmentService;
   private final RivalryService rivalryService;
+  private final RingsideActionService ringsideActionService;
   private final SegmentNarrationServiceFactory aiFactory;
 
   private final ProgressBar progressBar;
@@ -97,7 +99,8 @@ public class NarrationDialog extends Dialog {
       Consumer<Segment> onSaveCallback,
       RivalryService rivalryService,
       SegmentNarrationController segmentNarrationController,
-      SegmentNarrationServiceFactory aiFactory) {
+      SegmentNarrationServiceFactory aiFactory,
+      RingsideActionService ringsideActionService) {
     this.segment = segment;
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
@@ -107,6 +110,7 @@ public class NarrationDialog extends Dialog {
     this.rivalryService = rivalryService;
     this.segmentNarrationController = segmentNarrationController;
     this.aiFactory = aiFactory;
+    this.ringsideActionService = ringsideActionService;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -453,8 +457,14 @@ public class NarrationDialog extends Dialog {
             .findByName(wrestler.getName())
             .ifPresent(
                 w -> {
-                  if (w.getManager() != null) {
-                    wc.setManagerName(w.getManager().getName());
+                  Object supporter = ringsideActionService.getBestSupporter(segment, w);
+                  if (supporter != null) {
+                    if (supporter
+                        instanceof com.github.javydreamercsw.management.domain.npc.Npc n) {
+                      wc.setManagerName(n.getName());
+                    } else if (supporter instanceof Wrestler other) {
+                      wc.setManagerName(other.getName());
+                    }
                   }
                 });
         wc.setTeam("Team " + (i + 1));
