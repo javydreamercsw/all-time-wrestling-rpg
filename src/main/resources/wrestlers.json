@@ -1,5 +1,6 @@
 [ {
   "name": "Rob Van Dam",
+  "alignment": "FACE",
   "deckSize": 16,
   "startingHealth": 15,
   "lowHealth": 4,
@@ -13,6 +14,7 @@
   "gender": "MALE"
 }, {
   "name": "Rey Jaguar",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 13,
   "lowHealth": 2,
@@ -26,6 +28,7 @@
   "gender": "MALE"
 }, {
   "name": "Kurt Angle",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 4,
@@ -39,6 +42,7 @@
   "gender": "MALE"
 }, {
   "name": "Oda Tsurugi",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 4,
@@ -48,10 +52,11 @@
   "resilience": 3,
   "charisma": 1,
   "brawl": 2,
-  "description": "From criminal to hero to villain to he-who-must not be named, Oda Tsuguri is one of the most controversial wrestlers to have ever lived. Born in 2361 AD in Osaka Japan as a member of the legendary Oda clan, he grew up as a street criminal before joining the Yakuza, rising rapidly through their ranks. By the age of 24, he was already anointed as their next leader.\n\nBut something strange happened a year later. Oda came across a burning building and rushed into danger, saving 18 souls. Amid the fire, he saw a vision of his ancestors and vowed he would bring honor to them. Leaving his criminal life behind, he began training in jujitsu, earning a black belt and winning several world titles. He then set his sights on pro-wrestling and became fixated with creating a legacy that would crown him as the best ever. Fans quickly took to him, inspired by his redemption story. But despite his enormous popularity and incredible success as a 7-time world champion, Oda was not able to establish his legacy as the best wrestler of his generation, let alone the best wrestler of all time. For he was unlucky enough to wrestle during the reign of the “Great Okada”. For years he worked day and night to outperform his rival, but he was never able to transcend his shadow.\n\nYears of frustration pushed him to the edge. One night, he snapped, piledriving Okada on a concrete slab and retiring him forever, and thus becoming the most hated man in wrestling. But it was a little too late for Oda; he just turned 44 and his prime years were behind him. He was slowly overshadowed by a new generation of young and hungry wrestlers. Determined to fulfill his destiny as the all-time best, he sought to reverse his aging and found a mad scientist who promised to make him whole once more. The scientist used banned technology that turned Oda into a genetically modified cyborg with immense strength, speed and resilience.\n\nNow fully enhanced, he spent a year on a rampage, destroying every... [truncated]",
+  "description": "From criminal to hero to villain to he-who-must not be named, Oda Tsuguri is one of the most controversial wrestlers to have ever lived. Born in 2361 AD in Osaka Japan as a member of the legendary Oda clan, he grew up as a street criminal before joining the Yakuza, rising rapidly through their ranks. By the age of 24, he was already anointed as their next leader.\n\nBut something strange happened a year later. Oda came across a burning building and rushed into danger, saving 18 souls. Amid the fire, he saw a vision of his ancestors and vowed he would bring honor to them. Leaving his criminal life behind, he began training in jujitsu, earning a black belt and winning several world titles. He then set his sights on pro-wrestling and became fixated with creating a legacy that would crown him as the best ever. Fans quickly took to him, inspired by his redemption story. But despite his enormous popularity and incredible success as a 7-time world champion, Oda was not able to establish his legacy as the best wrestler of his generation, let alone the best wrestler of all time. For he was unlucky enough to wrestle during the reign of the “Great Okada”. For years he worked day and night to outperform his rival, but he was never able to transcend his shadow.\n\nYears of frustration pushed him to the edge. One night, he snapped, piledriving Okada on a concrete slab and retiring him forever, and thus becoming the most hated man in wrestling. But it was a little too late for Oda; he just turned 44 and his prime years were behind him. He was slowly overshadowed by a new generation of young and hungry wrestlers. Determined to fulfill his destiny as the all-time best, he sought to reverse his aging and found a mad scientist who promised to make him whole once more. The scientist used banned technology that turned Oda into a genetically modified cyborg with immense strength, speed and resilience.\n\nNow fully enhanced, he spent a year on a rampage, destroying every promotion in Japan, before leaving the country to conquer the world. He has no honor. He has no soul. He only has a mission: to be the best ever, at any cost. And he will succeed.",
   "gender": "MALE"
 }, {
   "name": "André the Giant",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 20,
   "lowHealth": 3,
@@ -65,6 +70,7 @@
   "gender": "MALE"
 }, {
   "name": "Randy Savage",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 4,
@@ -78,6 +84,7 @@
   "gender": "MALE"
 }, {
   "name": "Jax Felix",
+  "alignment": "FACE",
   "deckSize": 16,
   "startingHealth": 13,
   "lowHealth": 3,
@@ -91,6 +98,7 @@
   "gender": "MALE"
 }, {
   "name": "Mukundi Shumba",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 18,
   "lowHealth": 4,
@@ -104,6 +112,7 @@
   "gender": "MALE"
 }, {
   "name": "The British Bulldog",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 4,
@@ -117,6 +126,8 @@
   "gender": "MALE"
 }, {
   "name": "Sgt. Slaughter",
+  "alignment": "HEEL",
+  "manager": "Colonel Mustafa",
   "deckSize": 16,
   "startingHealth": 15,
   "lowHealth": 4,
@@ -126,11 +137,11 @@
   "resilience": 2,
   "charisma": 3,
   "brawl": 2,
-  "manager": "Colonel Mustafa",
   "description": "Sgt. Slaughter is not only a wrestling hall of famer and a former world heavyweight champion, but he is one of the most iconic figures of the 80s and early 90s, not just in the wrestling industry, but the entire world.\n\nHis rise to iconic status began as a villain, known for brutally assaulting his opponents in the ring. The “Cobra Clutch”, his finisher, was, and still is, one of the most feared maneuvers in all of pro wrestling that few wrestlers ever escaped. But Sgt. Slaughter’s real rise came when he defended his country against The Iron Shaikh. Arguably, he was the most popular wrestler in the world at that time, so popular that he was immortalized as a character in the G.I Joe comics and toy lines to this very day.\n\nBut that would not be the only period of his career where he met success. During the Iraq war, Sgt. Slaughter portrayed an Iraqi Sympathizer who loved Saddam Hussain’s brutality. He went from being one of the most loved wrestlers of his generation, to the most hated, winning a World Title in the process.\n\nOff course, Sgt. Slaughter would later redeem himself, establishing himself as a fan favorite and American hero once more before retiring after a legendary career. Now, 200 years into the future, Sgt. Slaughter has awoken to a new world. A world where only the strong can survive. A world where real competition exists. A world that values passion and principles. A world he likes. “Listen up Maggots – it is time to win the All Time Championship. And that is an Orrrrderrr!”",
   "gender": "MALE"
 }, {
   "name": "Daemon",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 13,
   "lowHealth": 1,
@@ -144,6 +155,7 @@
   "gender": "MALE"
 }, {
   "name": "Raven",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 14,
   "lowHealth": 4,
@@ -157,6 +169,7 @@
   "gender": "MALE"
 }, {
   "name": "Brian Pillman",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 15,
   "lowHealth": 4,
@@ -170,6 +183,7 @@
   "gender": "MALE"
 }, {
   "name": "Sabu",
+  "alignment": "NEUTRAL",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 3,
@@ -183,6 +197,7 @@
   "gender": "MALE"
 }, {
   "name": "Dynamite Kid",
+  "alignment": "FACE",
   "deckSize": 16,
   "startingHealth": 14,
   "lowHealth": 4,
@@ -196,6 +211,7 @@
   "gender": "MALE"
 }, {
   "name": "Gilgamesh",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 4,
@@ -209,6 +225,7 @@
   "gender": "MALE"
 }, {
   "name": "Nick Aldis",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 16,
   "lowHealth": 3,
@@ -222,6 +239,7 @@
   "gender": "MALE"
 }, {
   "name": "Junkyard Dog",
+  "alignment": "FACE",
   "deckSize": 15,
   "startingHealth": 15,
   "lowHealth": 4,
@@ -235,6 +253,7 @@
   "gender": "MALE"
 }, {
   "name": "Eddie Guerrero",
+  "alignment": "FACE",
   "deckSize": 16,
   "startingHealth": 15,
   "lowHealth": 4,
@@ -248,6 +267,7 @@
   "gender": "MALE"
 }, {
   "name": "Matt Cardona",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 15,
   "lowHealth": 4,
@@ -261,6 +281,7 @@
   "gender": "MALE"
 }, {
   "name": "OMZ",
+  "alignment": "HEEL",
   "deckSize": 15,
   "startingHealth": 14,
   "lowHealth": 4,
@@ -274,6 +295,7 @@
   "gender": "MALE"
 }, {
   "name": "Kamala",
+  "alignment": "HEEL",
   "deckSize": 16,
   "startingHealth": 17,
   "lowHealth": 4,
@@ -287,6 +309,7 @@
   "gender": "MALE"
 }, {
   "name": "Johnny All Time",
+  "alignment": "FACE",
   "deckSize": 16,
   "startingHealth": 14,
   "lowHealth": 4,

@@ -722,6 +722,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
+                    
+                    // Set manager/supporter context
+                    Object supporter = ringsideActionService.getBestSupporter(segment, w);
+                    if (supporter != null) {
+                      if (supporter instanceof com.github.javydreamercsw.management.domain.npc.Npc n) {
+                        wc.setManagerName(n.getName());
+                      } else if (supporter instanceof Wrestler other) {
+                        wc.setManagerName(other.getName());
+                      }
+                    }
+                    
                     return wc;
                   })
               .toList());

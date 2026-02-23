@@ -88,6 +88,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,6 +122,7 @@ public class DataInitializer implements Initializable {
   private final AccountRepository accountRepository;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
+  private final ResourcePatternResolver resourcePatternResolver;
 
   @Autowired
   public DataInitializer(
@@ -146,7 +149,8 @@ public class DataInitializer implements Initializable {
       AchievementRepository achievementRepository,
       AccountRepository accountRepository,
       com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-          ringsideActionDataService) {
+          ringsideActionDataService,
+      ResourcePatternResolver resourcePatternResolver) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -170,6 +174,7 @@ public class DataInitializer implements Initializable {
     this.achievementRepository = achievementRepository;
     this.accountRepository = accountRepository;
     this.ringsideActionDataService = ringsideActionDataService;
+    this.resourcePatternResolver = resourcePatternResolver;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -709,109 +714,116 @@ public class DataInitializer implements Initializable {
   }
 
   protected void syncWrestlersFromFile() {
-    ClassPathResource resource = new ClassPathResource("wrestlers.json");
-    if (resource.exists()) {
-      log.info("Loading wrestlers from file: {}", resource.getPath());
-      // Load wrestlers from JSON file
-      ObjectMapper mapper = new ObjectMapper();
-      try (var is = resource.getInputStream()) {
-        var wrestlersFromFile =
-            mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
-        // Map existing wrestlers by name (handle duplicates by keeping the first one)
-        Map<String, Wrestler> existing =
-            wrestlerRepository.findAll().stream()
-                .collect(
-                    Collectors.toMap(
-                        Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
-        for (WrestlerImportDTO w : wrestlersFromFile) {
-          // Smart duplicate handling - prefer external ID, fallback to name
-          Wrestler existingWrestler = null;
-          if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
-            existingWrestler = wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
-          }
-          if (existingWrestler == null) {
-            existingWrestler = existing.get(w.getName());
-          }
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
+      for (Resource resource : resources) {
+        if (resource.exists()) {
+          log.info("Loading wrestlers from file: {}", resource.getFilename());
+          // Load wrestlers from JSON file
+          ObjectMapper mapper = new ObjectMapper();
+          try (var is = resource.getInputStream()) {
+            var wrestlersFromFile =
+                mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
+            // Map existing wrestlers by name (handle duplicates by keeping the first one)
+            Map<String, Wrestler> existing =
+                wrestlerRepository.findAll().stream()
+                    .collect(
+                        Collectors.toMap(
+                            Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
+            for (WrestlerImportDTO w : wrestlersFromFile) {
+              // Smart duplicate handling - prefer external ID, fallback to name
+              Wrestler existingWrestler = null;
+              if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
+                existingWrestler =
+                    wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
+              }
+              if (existingWrestler == null) {
+                existingWrestler = existing.get(w.getName());
+              }
 
-          if (existingWrestler != null) {
-            // Update fields
-            existingWrestler.setDeckSize(w.getDeckSize());
-            existingWrestler.setStartingHealth(w.getStartingHealth());
-            existingWrestler.setLowHealth(w.getLowHealth());
-            existingWrestler.setStartingStamina(w.getStartingStamina());
-            existingWrestler.setLowStamina(w.getLowStamina());
-            existingWrestler.setDescription(w.getDescription());
-            existingWrestler.setGender(w.getGender());
+              if (existingWrestler != null) {
+                // Update fields
+                existingWrestler.setDeckSize(w.getDeckSize());
+                existingWrestler.setStartingHealth(w.getStartingHealth());
+                existingWrestler.setLowHealth(w.getLowHealth());
+                existingWrestler.setStartingStamina(w.getStartingStamina());
+                existingWrestler.setLowStamina(w.getLowStamina());
+                existingWrestler.setDescription(w.getDescription());
+                existingWrestler.setGender(w.getGender());
 
-            if (w.getFans() != null) {
-              if (w.getFans() > existingWrestler.getFans()) {
-                existingWrestler.setFans(w.getFans());
+                if (w.getFans() != null) {
+                  if (w.getFans() > existingWrestler.getFans()) {
+                    existingWrestler.setFans(w.getFans());
+                  }
+                }
+
+                if (w.getBumps() != null) {
+                  if (w.getBumps() > existingWrestler.getBumps()) {
+                    existingWrestler.setBumps(w.getBumps());
+                  }
+                }
+
+                if (w.getImageUrl() != null) {
+                  existingWrestler.setImageUrl(w.getImageUrl());
+                }
+
+                if (w.getExternalId() != null) {
+                  existingWrestler.setExternalId(w.getExternalId());
+                }
+
+                if (w.getManager() != null) {
+                  Npc manager = npcService.findByName(w.getManager());
+                  if (manager != null) {
+                    existingWrestler.setManager(manager);
+                  }
+                }
+
+                if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
+                if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
+                if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
+                if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
+
+                wrestlerRepository.save(existingWrestler);
+                log.debug("Updated existing wrestler: {}", existingWrestler.getName());
+              } else {
+                Wrestler newWrestler = new Wrestler();
+                newWrestler.setName(w.getName());
+                newWrestler.setDeckSize(w.getDeckSize());
+                newWrestler.setStartingHealth(w.getStartingHealth());
+                newWrestler.setLowHealth(w.getLowHealth());
+                newWrestler.setStartingStamina(w.getStartingStamina());
+                newWrestler.setLowStamina(w.getLowStamina());
+                newWrestler.setDescription(w.getDescription());
+                newWrestler.setGender(w.getGender());
+                newWrestler.setFans(w.getFans());
+                newWrestler.setBumps(w.getBumps());
+                newWrestler.setImageUrl(w.getImageUrl());
+                newWrestler.setTier(WrestlerTier.ROOKIE);
+                if (w.getExternalId() != null) {
+                  newWrestler.setExternalId(w.getExternalId());
+                }
+                if (w.getManager() != null) {
+                  Npc manager = npcService.findByName(w.getManager());
+                  if (manager != null) {
+                    newWrestler.setManager(manager);
+                  }
+                }
+                if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
+                if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
+                if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
+                if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
+
+                wrestlerRepository.save(newWrestler);
+                log.debug("Saved new wrestler: {}", newWrestler.getName());
               }
             }
-
-            if (w.getBumps() != null) {
-              if (w.getBumps() > existingWrestler.getBumps()) {
-                existingWrestler.setBumps(w.getBumps());
-              }
-            }
-
-            if (w.getImageUrl() != null) {
-              existingWrestler.setImageUrl(w.getImageUrl());
-            }
-
-            if (w.getExternalId() != null) {
-              existingWrestler.setExternalId(w.getExternalId());
-            }
-
-            if (w.getManager() != null) {
-              Npc manager = npcService.findByName(w.getManager());
-              if (manager != null) {
-                existingWrestler.setManager(manager);
-              }
-            }
-
-            if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
-            if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
-            if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
-            if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
-
-            wrestlerRepository.save(existingWrestler);
-            log.debug("Updated existing wrestler: {}", existingWrestler.getName());
-          } else {
-            Wrestler newWrestler = new Wrestler();
-            newWrestler.setName(w.getName());
-            newWrestler.setDeckSize(w.getDeckSize());
-            newWrestler.setStartingHealth(w.getStartingHealth());
-            newWrestler.setLowHealth(w.getLowHealth());
-            newWrestler.setStartingStamina(w.getStartingStamina());
-            newWrestler.setLowStamina(w.getLowStamina());
-            newWrestler.setDescription(w.getDescription());
-            newWrestler.setGender(w.getGender());
-            newWrestler.setFans(w.getFans());
-            newWrestler.setBumps(w.getBumps());
-            newWrestler.setImageUrl(w.getImageUrl());
-            newWrestler.setTier(WrestlerTier.ROOKIE);
-            if (w.getExternalId() != null) {
-              newWrestler.setExternalId(w.getExternalId());
-            }
-            if (w.getManager() != null) {
-              Npc manager = npcService.findByName(w.getManager());
-              if (manager != null) {
-                newWrestler.setManager(manager);
-              }
-            }
-            if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
-            if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
-            if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
-            if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
-
-            wrestlerRepository.save(newWrestler);
-            log.debug("Saved new wrestler: {}", newWrestler.getName());
+          } catch (IOException e) {
+            log.error("Error loading wrestlers from file", e);
           }
         }
-      } catch (IOException e) {
-        log.error("Error loading wrestlers from file", e);
       }
+    } catch (IOException e) {
+      log.error("Error resolving wrestler resources", e);
     }
   }
 
