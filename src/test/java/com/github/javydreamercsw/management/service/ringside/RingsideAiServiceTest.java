@@ -14,15 +14,17 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.interference;
+package com.github.javydreamercsw.management.service.ringside;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,14 +34,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class InterferenceAiServiceTest {
+class RingsideAiServiceTest {
 
-  @Mock private InterferenceService interferenceService;
-  @InjectMocks private InterferenceAiService interferenceAiService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideActionDataService ringsideActionDataService;
+  @InjectMocks private RingsideAiService ringsideAiService;
 
   private Segment segment;
   private Npc heelManager;
   private Wrestler beneficiary;
+  private RingsideAction action;
 
   @BeforeEach
   void setUp() {
@@ -52,26 +56,33 @@ class InterferenceAiServiceTest {
 
     beneficiary = new Wrestler();
     beneficiary.setName("Ric Flair");
+
+    action = new RingsideAction();
+    action.setName("Referee Distraction");
+    action.setRisk(20);
+    action.setImpact(10);
+    action.setAlignment(AlignmentType.HEEL);
   }
 
   @Test
-  void heelManagerShouldEventuallyInterfere() {
-    when(interferenceService.attemptInterference(any(), any(), any(), any()))
+  void heelManagerShouldEventuallyAct() {
+    when(ringsideActionDataService.findAllActions()).thenReturn(List.of(action));
+    when(ringsideActionService.performAction(any(), any(), any(), any()))
         .thenReturn(
-            new InterferenceService.InterferenceResult(
-                InterferenceType.REF_DISTRACTION, true, 10, false, false, "Success"));
+            new RingsideActionService.RingsideActionResult(
+                action, true, 10, false, false, "Success"));
 
     // We'll run it a few times since it's probabilistic
-    boolean interfered = false;
+    boolean acted = false;
     for (int i = 0; i < 100; i++) {
-      Optional<InterferenceService.InterferenceResult> result =
-          interferenceAiService.evaluateInterference(segment, heelManager, beneficiary);
+      Optional<RingsideActionService.RingsideActionResult> result =
+          ringsideAiService.evaluateRingsideAction(segment, heelManager, beneficiary);
       if (result.isPresent()) {
-        interfered = true;
+        acted = true;
         break;
       }
     }
-    assertTrue(interfered, "Heel manager should interfere at least once in 100 attempts");
-    verify(interferenceService, atLeastOnce()).attemptInterference(any(), any(), any(), any());
+    assertTrue(acted, "Heel manager should perform action at least once in 100 attempts");
+    verify(ringsideActionService, atLeastOnce()).performAction(any(), any(), any(), any());
   }
 }

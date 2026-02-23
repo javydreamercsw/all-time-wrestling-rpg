@@ -16,10 +16,13 @@
 */
 package com.github.javydreamercsw.management.ui.component;
 
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.interference.InterferenceService;
-import com.github.javydreamercsw.management.service.interference.InterferenceType;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
@@ -31,35 +34,42 @@ import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
 import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
+import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
+import java.util.List;
+import java.util.function.BiConsumer;
 
-public class InterferenceComponent extends VerticalLayout {
+public class RingsideActionComponent extends VerticalLayout {
 
-  private final InterferenceService interferenceService;
+  private final RingsideActionService ringsideActionService;
+  private final RingsideActionDataService ringsideActionDataService;
+  private final TeamService teamService;
   private final Segment segment;
   private final Wrestler playerWrestler;
-  private final java.util.function.BiConsumer<
-          InterferenceType, InterferenceService.InterferenceResult>
-      onInterference;
+  private final BiConsumer<RingsideAction, RingsideActionService.RingsideActionResult>
+      onActionPerformed;
 
   private ProgressBar awarenessBar;
   private Span awarenessLabel;
   private VerticalLayout actionsLayout;
 
-  public InterferenceComponent(
-      InterferenceService interferenceService,
+  public RingsideActionComponent(
+      RingsideActionService ringsideActionService,
+      RingsideActionDataService ringsideActionDataService,
+      TeamService teamService,
       Segment segment,
       Wrestler playerWrestler,
-      java.util.function.BiConsumer<InterferenceType, InterferenceService.InterferenceResult>
-          onInterference) {
-    this.interferenceService = interferenceService;
+      BiConsumer<RingsideAction, RingsideActionService.RingsideActionResult> onActionPerformed) {
+    this.ringsideActionService = ringsideActionService;
+    this.ringsideActionDataService = ringsideActionDataService;
+    this.teamService = teamService;
     this.segment = segment;
     this.playerWrestler = playerWrestler;
-    this.onInterference = onInterference;
+    this.onActionPerformed = onActionPerformed;
 
     setPadding(true);
     setSpacing(true);
     setWidthFull();
-    addClassName("interference-component");
+    addClassName("ringside-action-component");
 
     buildUI();
   }
@@ -94,33 +104,66 @@ public class InterferenceComponent extends VerticalLayout {
     actionsLayout.setPadding(false);
     actionsLayout.setSpacing(true);
 
-    Span actionsTitle = new Span("Ringside Interference");
-    actionsTitle.addClassNames(FontSize.XSMALL, FontWeight.MEDIUM, Margin.Top.SMALL);
-    actionsLayout.add(actionsTitle);
+    if (hasSupportAtRingside()) {
+      Span actionsTitle = new Span("Take Action");
+      actionsTitle.addClassNames(FontSize.XSMALL, FontWeight.MEDIUM, Margin.Top.SMALL);
+      actionsLayout.add(actionsTitle);
 
-    HorizontalLayout buttons = new HorizontalLayout();
-    buttons.setSpacing(true);
+      HorizontalLayout buttons = new HorizontalLayout();
+      buttons.setSpacing(true);
 
-    for (InterferenceType type : InterferenceType.values()) {
-      Button btn = new Button(type.getDisplayName(), e -> performInterference(type));
-      btn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-      btn.setTooltipText(type.getDescription());
-      buttons.add(btn);
+      List<RingsideAction> actions = ringsideActionDataService.findAllActions();
+      for (RingsideAction action : actions) {
+        Button btn = new Button(action.getName(), e -> performAction(action));
+        btn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+        btn.setTooltipText(action.getDescription());
+
+        // Add color coding for alignment
+        if (action.getAlignment() == AlignmentType.HEEL) {
+          btn.addClassNames(TextColor.ERROR);
+        } else if (action.getAlignment() == AlignmentType.FACE) {
+          btn.addClassNames(TextColor.SUCCESS);
+        }
+
+        buttons.add(btn);
+      }
+
+      actionsLayout.add(buttons);
+    } else {
+      Span noSupport = new Span("No manager or faction members at ringside to assist.");
+      noSupport.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Top.SMALL);
+      actionsLayout.add(noSupport);
     }
 
-    actionsLayout.add(buttons);
     add(actionsLayout);
-
-    // Only show actions if player is in the match or is a booker
-    // For now, let's assume if this component is shown, the user has permission to interfere
   }
 
-  private void performInterference(InterferenceType type) {
-    // Determine interferer: for now, we'll just say "Faction Member" or use the manager if
-    // available
-    // In a real scenario, we'd pick a specific character at ringside
-    InterferenceService.InterferenceResult result =
-        interferenceService.attemptInterference(segment, playerWrestler, playerWrestler, type);
+  private boolean hasSupportAtRingside() {
+    if (playerWrestler == null) return false;
+
+    // Check for manager
+    if (playerWrestler.getManager() != null) return true;
+
+    // Check for faction members not in the match
+    if (playerWrestler.getFaction() != null) {
+      boolean otherFactionMembersExist =
+          playerWrestler.getFaction().getMembers().stream()
+              .anyMatch(m -> !segment.getWrestlers().contains(m));
+      if (otherFactionMembersExist) return true;
+    }
+
+    // Check for team members not in the match
+    boolean otherTeamMembersExist =
+        teamService.getActiveTeamsByWrestler(playerWrestler).stream()
+            .anyMatch(t -> !segment.getWrestlers().contains(t.getPartner(playerWrestler)));
+    if (otherTeamMembersExist) return true;
+
+    return false;
+  }
+
+  private void performAction(RingsideAction action) {
+    RingsideActionService.RingsideActionResult result =
+        ringsideActionService.performAction(segment, playerWrestler, playerWrestler, action);
 
     updateUI();
 
@@ -133,8 +176,8 @@ public class InterferenceComponent extends VerticalLayout {
       n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
-    if (onInterference != null) {
-      onInterference.accept(type, result);
+    if (onActionPerformed != null) {
+      onActionPerformed.accept(action, result);
     }
   }
 

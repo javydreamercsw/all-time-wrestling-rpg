@@ -118,6 +118,8 @@ public class DataInitializer implements Initializable {
   private final Environment env;
   private final AchievementRepository achievementRepository;
   private final AccountRepository accountRepository;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
 
   @Autowired
   public DataInitializer(
@@ -142,7 +144,9 @@ public class DataInitializer implements Initializable {
       CampaignUpgradeService campaignUpgradeService,
       Environment env,
       AchievementRepository achievementRepository,
-      AccountRepository accountRepository) {
+      AccountRepository accountRepository,
+      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+          ringsideActionDataService) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -165,6 +169,7 @@ public class DataInitializer implements Initializable {
     this.env = env;
     this.achievementRepository = achievementRepository;
     this.accountRepository = accountRepository;
+    this.ringsideActionDataService = ringsideActionDataService;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -190,6 +195,66 @@ public class DataInitializer implements Initializable {
       syncCommentatorsFromFile();
       syncCommentaryTeamsFromFile();
       loadAchievements();
+      syncRingsideActions();
+    }
+  }
+
+  private void syncRingsideActions() {
+    syncRingsideActionTypesFromFile();
+    syncRingsideActionsFromFile();
+  }
+
+  private void syncRingsideActionTypesFromFile() {
+    ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
+    if (resource.exists()) {
+      log.info("Loading ringside action types from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos =
+            mapper.readValue(
+                is,
+                new TypeReference<
+                    List<com.github.javydreamercsw.management.dto.RingsideActionTypeDTO>>() {});
+        for (com.github.javydreamercsw.management.dto.RingsideActionTypeDTO dto : dtos) {
+          ringsideActionDataService.createOrUpdateType(
+              dto.getName(),
+              dto.isIncreasesAwareness(),
+              dto.isCanCauseDq(),
+              dto.getBaseRiskMultiplier());
+          log.debug("Loaded ringside action type: {}", dto.getName());
+        }
+        log.info("Ringside action type loading completed - {} types loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading ringside action types from file", e);
+      }
+    }
+  }
+
+  private void syncRingsideActionsFromFile() {
+    ClassPathResource resource = new ClassPathResource("ringside_actions.json");
+    if (resource.exists()) {
+      log.info("Loading ringside actions from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos =
+            mapper.readValue(
+                is,
+                new TypeReference<
+                    List<com.github.javydreamercsw.management.dto.RingsideActionDTO>>() {});
+        for (com.github.javydreamercsw.management.dto.RingsideActionDTO dto : dtos) {
+          ringsideActionDataService.createOrUpdateAction(
+              dto.getName(),
+              dto.getType(),
+              dto.getDescription(),
+              dto.getImpact(),
+              dto.getRisk(),
+              dto.getAlignment());
+          log.debug("Loaded ringside action: {}", dto.getName());
+        }
+        log.info("Ringside action loading completed - {} actions loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading ringside actions from file", e);
+      }
     }
   }
 

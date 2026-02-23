@@ -34,14 +34,16 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
-import com.github.javydreamercsw.management.service.interference.InterferenceAiService;
-import com.github.javydreamercsw.management.service.interference.InterferenceService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -72,9 +74,12 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
 
-  @Mock private InterferenceService interferenceService;
+  @Mock private RingsideActionService ringsideActionService;
 
-  @Mock private InterferenceAiService interferenceAiService;
+  @Mock private RingsideAiService ringsideAiService;
+
+  @Mock private RingsideActionDataService ringsideActionDataService;
+  @Mock private TeamService teamService;
 
   private MatchView matchView;
 
@@ -95,8 +100,10 @@ class MatchPromoUITest extends AbstractViewTest {
             promoService,
             commentaryTeamRepository,
             narrationParserService,
-            interferenceService,
-            interferenceAiService);
+            ringsideActionService,
+            ringsideAiService,
+            ringsideActionDataService,
+            teamService);
   }
 
   @Test

@@ -99,10 +99,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final PromoService promoService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final NarrationParserService narrationParserService;
-  private final com.github.javydreamercsw.management.service.interference.InterferenceService
-      interferenceService;
-  private final com.github.javydreamercsw.management.service.interference.InterferenceAiService
-      interferenceAiService;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      ringsideActionService;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideAiService
+      ringsideAiService;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+  private final com.github.javydreamercsw.management.service.team.TeamService teamService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -126,10 +129,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       PromoService promoService,
       CommentaryTeamRepository commentaryTeamRepository,
       NarrationParserService narrationParserService,
-      com.github.javydreamercsw.management.service.interference.InterferenceService
-          interferenceService,
-      com.github.javydreamercsw.management.service.interference.InterferenceAiService
-          interferenceAiService) {
+      com.github.javydreamercsw.management.service.ringside.RingsideActionService
+          ringsideActionService,
+      com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService,
+      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+          ringsideActionDataService,
+      com.github.javydreamercsw.management.service.team.TeamService teamService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -143,8 +148,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.promoService = promoService;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.narrationParserService = narrationParserService;
-    this.interferenceService = interferenceService;
-    this.interferenceAiService = interferenceAiService;
+    this.ringsideActionService = ringsideActionService;
+    this.ringsideAiService = ringsideAiService;
+    this.ringsideActionDataService = ringsideActionDataService;
+    this.teamService = teamService;
   }
 
   @Override
@@ -447,24 +454,26 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
     sideCol.add(infoCard);
 
-    // Interference Section
+    // Ringside Actions Section
     if (!isPromo) {
-      final com.github.javydreamercsw.management.ui.component.InterferenceComponent[]
-          interferenceComponentWrapper =
-              new com.github.javydreamercsw.management.ui.component.InterferenceComponent[1];
+      final com.github.javydreamercsw.management.ui.component.RingsideActionComponent[]
+          actionComponentWrapper =
+              new com.github.javydreamercsw.management.ui.component.RingsideActionComponent[1];
 
-      interferenceComponentWrapper[0] =
-          new com.github.javydreamercsw.management.ui.component.InterferenceComponent(
-              interferenceService,
+      actionComponentWrapper[0] =
+          new com.github.javydreamercsw.management.ui.component.RingsideActionComponent(
+              ringsideActionService,
+              ringsideActionDataService,
+              teamService,
               segment,
               playerWrestler,
-              (type, result) -> {
+              (action, result) -> {
                 if (result.success()) {
-                  // Add interference to feedback for next generation
+                  // Add action to feedback for next generation
                   String currentFeedback = feedbackArea.getValue();
                   if (currentFeedback == null) currentFeedback = "";
                   feedbackArea.setValue(
-                      currentFeedback + "\nIncorporate successful " + type.getDisplayName() + ".");
+                      currentFeedback + "\nIncorporate successful " + action.getName() + ".");
                 }
 
                 // Chance for NPC opponent to retaliate if they have a manager or faction member
@@ -473,8 +482,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     .forEach(
                         opponent -> {
                           if (opponent.getManager() != null) {
-                            interferenceAiService
-                                .evaluateInterference(segment, opponent.getManager(), opponent)
+                            ringsideAiService
+                                .evaluateRingsideAction(segment, opponent.getManager(), opponent)
                                 .ifPresent(
                                     npcResult -> {
                                       Notification.show(
@@ -486,18 +495,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                                             (currentFeedback == null ? "" : currentFeedback)
                                                 + "\n"
                                                 + "Incorporate successful opponent manager "
-                                                + npcResult.type().getDisplayName()
+                                                + npcResult.action().getName()
                                                 + ".");
                                       }
                                       // Update UI to reflect new awareness level
-                                      if (interferenceComponentWrapper[0] != null) {
-                                        interferenceComponentWrapper[0].updateUI();
+                                      if (actionComponentWrapper[0] != null) {
+                                        actionComponentWrapper[0].updateUI();
                                       }
                                     });
                           }
                         });
               });
-      sideCol.add(new DashboardCard("Interference", interferenceComponentWrapper[0]));
+      sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
     }
 
     // Winners Section
@@ -542,8 +551,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     feedbackArea.setPlaceholder(
         isPromo
             ? "Provide bullet points or a general idea of the promo content..."
-            : "Provide specific details about the match (key spots, interference, etc.) to guide"
-                + " the AI...");
+            : "Provide specific details about the match (key spots, ringside actions, etc.) to"
+                + " guide the AI...");
     feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();

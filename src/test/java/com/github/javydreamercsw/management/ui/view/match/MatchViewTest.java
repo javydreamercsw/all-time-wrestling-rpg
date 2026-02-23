@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -80,12 +81,17 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private NarrationParserService narrationParserService;
 
   @Mock
-  private com.github.javydreamercsw.management.service.interference.InterferenceService
-      interferenceService;
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      ringsideActionService;
 
   @Mock
-  private com.github.javydreamercsw.management.service.interference.InterferenceAiService
-      interferenceAiService;
+  private com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+
+  @Mock private TeamService teamService;
 
   private MatchView matchView;
 
@@ -106,8 +112,10 @@ class MatchViewTest extends AbstractViewTest {
             promoService,
             commentaryTeamRepository,
             narrationParserService,
-            interferenceService,
-            interferenceAiService);
+            ringsideActionService,
+            ringsideAiService,
+            ringsideActionDataService,
+            teamService);
   }
 
   @Test

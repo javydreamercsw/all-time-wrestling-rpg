@@ -114,6 +114,10 @@ class DataInitializerTest {
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+
   @BeforeEach
   void setUp() {
     // Manually instantiate DataInitializer with mocked dependencies
@@ -140,7 +144,8 @@ class DataInitializerTest {
             campaignUpgradeService,
             env,
             achievementRepository,
-            accountRepository);
+            accountRepository,
+            ringsideActionDataService);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);

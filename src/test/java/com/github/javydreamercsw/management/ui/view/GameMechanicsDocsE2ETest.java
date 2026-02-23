@@ -149,21 +149,21 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
-  void testCaptureMatchInterference() {
+  void testCaptureRingsideActions() {
     // Navigate to a match.
     Segment segment = segmentRepository.findAll().stream().findFirst().orElse(null);
     if (segment != null) {
       driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
       waitForVaadinClientToLoad();
-      waitForText("Interference");
+      waitForText("Ringside Actions");
 
       documentFeature(
           "Game Mechanics",
-          "Match Interference",
+          "Ringside Actions",
           "Managers and faction members can swing the match in your favor. Perform ringside actions"
-              + " like distracting the referee or sliding in a weapon, but be careful - too much"
-              + " interference will lead to ejections or disqualification!",
-          "mechanic-match-interference");
+              + " like coaching, distracting the referee, or sliding in a weapon, but be careful -"
+              + " too much illegal interference will lead to ejections or disqualification!",
+          "mechanic-ringside-actions");
     }
   }
 
