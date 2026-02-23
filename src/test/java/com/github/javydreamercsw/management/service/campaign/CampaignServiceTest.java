@@ -18,11 +18,9 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -301,7 +299,6 @@ class CampaignServiceTest {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
     when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-    doNothing().when(alignmentService).shiftAlignment(any(Campaign.class), anyInt());
 
     campaignService.processMatchResult(campaign, true); // Win 1
 
@@ -399,7 +396,6 @@ class CampaignServiceTest {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
     when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-    doNothing().when(alignmentService).shiftAlignment(any(Campaign.class), anyInt());
 
     campaignService.processMatchResult(campaign, true);
 
