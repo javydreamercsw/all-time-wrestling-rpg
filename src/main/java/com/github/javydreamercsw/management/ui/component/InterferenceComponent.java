@@ -102,7 +102,7 @@ public class InterferenceComponent extends VerticalLayout {
     for (InterferenceType type : InterferenceType.values()) {
       Button btn = new Button(type.getDisplayName(), e -> performInterference(type));
       btn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-      btn.setTooltipText("Impact: +" + type.getBaseImpact() + ", Risk: " + type.getBaseRisk());
+      btn.setTooltipText(type.getDescription());
       buttons.add(btn);
     }
 
