@@ -69,7 +69,7 @@ public class InterferenceAiService {
     if (random.nextDouble() < interferenceChance) {
       // Pick an action based on risk vs awareness
       InterferenceType type = pickAction(alignment, awareness);
-      return Optional.of(
+      return Optional.ofNullable(
           interferenceService.attemptInterference(segment, interferer, beneficiary, type));
     }
 
