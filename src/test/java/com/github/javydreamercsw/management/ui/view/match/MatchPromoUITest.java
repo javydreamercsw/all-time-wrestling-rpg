@@ -37,9 +37,13 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -69,6 +73,14 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private PromoService promoService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
+
+  @Mock private RingsideActionService ringsideActionService;
+
+  @Mock private RingsideAiService ringsideAiService;
+
+  @Mock private RingsideActionDataService ringsideActionDataService;
+  @Mock private TeamService teamService;
+
   private MatchView matchView;
 
   @BeforeEach
@@ -87,7 +99,11 @@ class MatchPromoUITest extends AbstractViewTest {
             matchFulfillmentService,
             promoService,
             commentaryTeamRepository,
-            narrationParserService);
+            narrationParserService,
+            ringsideActionService,
+            ringsideAiService,
+            ringsideActionDataService,
+            teamService);
   }
 
   @Test
@@ -134,7 +150,7 @@ class MatchPromoUITest extends AbstractViewTest {
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(100L));
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
-    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
     // 5. Navigate to View
@@ -182,7 +198,7 @@ class MatchPromoUITest extends AbstractViewTest {
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(101L));
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
-    when(segmentService.findByIdWithShow(2L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(2L)).thenReturn(Optional.of(segment));
     // No campaign
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.empty());
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());

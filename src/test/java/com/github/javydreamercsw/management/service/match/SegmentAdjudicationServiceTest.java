@@ -32,6 +32,8 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -70,6 +72,8 @@ class SegmentAdjudicationServiceTest {
 
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -87,6 +91,8 @@ class SegmentAdjudicationServiceTest {
             leagueRosterRepository,
             legacyService,
             factionService,
+            ringsideActionService,
+            ringsideAiService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
@@ -104,7 +110,7 @@ class SegmentAdjudicationServiceTest {
   void testProcessRewardsCalled() {
     SegmentRule rule = new SegmentRule();
     rule.setBumpAddition(BumpAddition.WINNERS);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 

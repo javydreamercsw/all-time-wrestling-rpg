@@ -206,4 +206,20 @@ public interface SegmentRepository
 
   @Query("SELECT s FROM Segment s JOIN FETCH s.show WHERE s.id = :id")
   Optional<Segment> findByIdWithShow(@Param("id") Long id);
+
+  @Query(
+      """
+      SELECT s FROM Segment s
+      JOIN FETCH s.show sh
+      JOIN FETCH s.segmentType st
+      LEFT JOIN FETCH s.segmentRules sr
+      LEFT JOIN FETCH s.titles t
+      LEFT JOIN FETCH s.referee r
+      LEFT JOIN FETCH s.participants p
+      LEFT JOIN FETCH p.wrestler w
+      LEFT JOIN FETCH w.manager m
+      LEFT JOIN FETCH w.faction f
+      WHERE s.id = :id
+      """)
+  Optional<Segment> findByIdWithDetails(@Param("id") Long id);
 }

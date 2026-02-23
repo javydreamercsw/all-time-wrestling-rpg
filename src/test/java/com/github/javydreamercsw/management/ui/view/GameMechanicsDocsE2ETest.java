@@ -18,9 +18,16 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +36,9 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
 
   @BeforeEach
   void setup() {
@@ -47,6 +57,22 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
       show2.setShowDate(LocalDate.now().plusDays(6));
       show2.setType(ple);
       showRepository.save(show2);
+    }
+
+    if (segmentRepository.count() == 0) {
+      Show show = showRepository.findAll().get(0);
+      SegmentType matchType = segmentTypeRepository.findByName("One on One").get();
+      List<Wrestler> wrestlers = wrestlerRepository.findAll();
+
+      if (wrestlers.size() >= 2) {
+        Segment segment = new Segment();
+        segment.setShow(show);
+        segment.setSegmentType(matchType);
+        segment.setSegmentDate(java.time.Instant.now());
+        segment.addParticipant(wrestlers.get(0));
+        segment.addParticipant(wrestlers.get(1));
+        segmentRepository.save(segment);
+      }
     }
   }
 
@@ -120,6 +146,25 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
             + " damage, and resilience bonuses. High-affinity factions have a mechanical advantage"
             + " in match outcomes.",
         "mechanic-faction-synergy");
+  }
+
+  @Test
+  void testCaptureRingsideActions() {
+    // Navigate to a match.
+    Segment segment = segmentRepository.findAll().stream().findFirst().orElse(null);
+    if (segment != null) {
+      driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
+      waitForVaadinClientToLoad();
+      waitForText("Ringside Actions");
+
+      documentFeature(
+          "Game Mechanics",
+          "Ringside Actions",
+          "Managers and faction members can swing the match in your favor. Perform ringside actions"
+              + " like coaching, distracting the referee, or sliding in a weapon, but be careful -"
+              + " too much illegal interference will lead to ejections or disqualification!",
+          "mechanic-ringside-actions");
+    }
   }
 
   private void waitForText(String text) {

@@ -53,6 +53,14 @@ public class NPCSegmentResolutionService {
   @Autowired private Clock clock;
   @Autowired protected Random random;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      ringsideActionService;
+
+  @Autowired
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
    * segment types: singles (1v1), tag team (2v2), handicap (1v2), and complex multi-team scenarios.
@@ -408,7 +416,36 @@ public class NPCSegmentResolutionService {
           team.getTeamName(),
           baseWeight,
           synergyBonus);
-      return baseWeight + synergyBonus;
+
+      // Factor in Ringside Actions
+      int ringsideBonus = 0;
+      List<com.github.javydreamercsw.management.domain.show.segment.RingsideAction> allActions =
+          ringsideActionDataService.findAllActions();
+      if (!allActions.isEmpty()) {
+        for (Wrestler w : team.getMembers()) {
+          if (w.getManager() != null) {
+            // 20% base chance for manager to attempt an action in simulation
+            if (random.nextDouble() < 0.20) {
+              // Pick a random ringside action
+              com.github.javydreamercsw.management.domain.show.segment.RingsideAction action =
+                  allActions.get(random.nextInt(allActions.size()));
+
+              // Success chance: 70% base for simulation ringside actions
+              if (random.nextDouble() < 0.70) {
+                ringsideBonus += action.getImpact();
+                log.debug(
+                    "Manager {} successfully performed action ({}) for {}: +{} weight",
+                    w.getManager().getName(),
+                    action.getName(),
+                    w.getName(),
+                    action.getImpact());
+              }
+            }
+          }
+        }
+      }
+
+      return baseWeight + synergyBonus + ringsideBonus;
     }
 
     /** Calculate average tier bonus for the team. */

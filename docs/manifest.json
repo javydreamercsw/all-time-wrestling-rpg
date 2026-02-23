@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "game-mechanics-mechanic-match-interference",
+    "category": "Game Mechanics",
+    "title": "Match Interference",
+    "description": "Managers and faction members can swing the match in your favor. Perform ringside actions like distracting the referee or sliding in a weapon, but be careful - too much interference will lead to ejections or disqualification!",
+    "imagePath": "screenshots/mechanic-match-interference.png",
+    "order": 20
+  }, {
     "id": "admin-admin-season-settings-before-generation",
     "category": "Admin",
     "title": "Season Settings - Before Schedule Generation",

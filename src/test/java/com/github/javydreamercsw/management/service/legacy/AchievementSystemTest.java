@@ -39,6 +39,8 @@ import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -78,6 +80,8 @@ class AchievementSystemTest {
   private Wrestler wrestler;
 
   @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
 
   @BeforeEach
   void setUp() {
@@ -100,6 +104,8 @@ class AchievementSystemTest {
             leagueRosterRepository,
             legacyService,
             factionService,
+            ringsideActionService,
+            ringsideAiService,
             new Random());
 
     account = new Account();
@@ -236,7 +242,7 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("One on One");
     when(rule.getName()).thenReturn("Normal");
@@ -266,7 +272,7 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(Collections.emptyList());
+    when(segment.getSegmentRules()).thenReturn(java.util.Collections.emptySet());
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("Abu Dhabi Rumble");
     when(show.isPremiumLiveEvent()).thenReturn(true);

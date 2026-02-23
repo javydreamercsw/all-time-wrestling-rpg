@@ -29,6 +29,8 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -64,6 +66,8 @@ public class SegmentAdjudicationService {
       leagueRosterRepository;
   private final LegacyService legacyService;
   private final FactionService factionService;
+  private final RingsideActionService ringsideActionService;
+  private final RingsideAiService ringsideAiService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -78,7 +82,9 @@ public class SegmentAdjudicationService {
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
           leagueRosterRepository,
       LegacyService legacyService,
-      FactionService factionService) {
+      FactionService factionService,
+      RingsideActionService ringsideActionService,
+      RingsideAiService ringsideAiService) {
     this(
         rivalryService,
         wrestlerService,
@@ -90,6 +96,8 @@ public class SegmentAdjudicationService {
         leagueRosterRepository,
         legacyService,
         factionService,
+        ringsideActionService,
+        ringsideAiService,
         new Random());
   }
 
@@ -105,6 +113,8 @@ public class SegmentAdjudicationService {
           leagueRosterRepository,
       LegacyService legacyService,
       FactionService factionService,
+      RingsideActionService ringsideActionService,
+      RingsideAiService ringsideAiService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -116,6 +126,8 @@ public class SegmentAdjudicationService {
     this.leagueRosterRepository = leagueRosterRepository;
     this.legacyService = legacyService;
     this.factionService = factionService;
+    this.ringsideActionService = ringsideActionService;
+    this.ringsideAiService = ringsideAiService;
     this.random = random;
   }
 
@@ -181,6 +193,16 @@ public class SegmentAdjudicationService {
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);
+
+    // Automated Ringside Actions
+    if (!segment.getSegmentType().getName().equals("Promo")) {
+      for (Wrestler w : segment.getWrestlers()) {
+        Object supporter = ringsideActionService.getBestSupporter(segment, w);
+        if (supporter != null) {
+          ringsideAiService.evaluateRingsideAction(segment, supporter, w);
+        }
+      }
+    }
 
     if (!segment.getSegmentType().getName().equals("Promo")) {
       if (segment.getIsTitleSegment()) {

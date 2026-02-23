@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
@@ -62,6 +63,7 @@ class StorylineIntegrationTest {
 
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignStateRepository campaignStateRepository;
+  @Mock private CampaignAbilityCardRepository campaignAbilityCardRepository;
   @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Mock private CampaignChapterService chapterService;
   @Mock private WrestlerRepository wrestlerRepository;
@@ -86,6 +88,7 @@ class StorylineIntegrationTest {
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
+  @Mock private AlignmentService alignmentService;
   private ObjectMapper objectMapper = new ObjectMapper();
 
   private CampaignService campaignService;
@@ -96,9 +99,10 @@ class StorylineIntegrationTest {
         new CampaignService(
             campaignRepository,
             campaignStateRepository,
-            null, // campaignAbilityCardRepository
+            campaignAbilityCardRepository,
             wrestlerAlignmentRepository,
             chapterService,
+            alignmentService,
             wrestlerRepository,
             showService,
             showRepository,

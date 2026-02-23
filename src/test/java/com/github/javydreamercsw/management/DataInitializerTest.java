@@ -71,6 +71,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -84,6 +85,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -114,8 +116,14 @@ class DataInitializerTest {
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+
+  @Mock private org.springframework.core.io.support.ResourcePatternResolver resourcePatternResolver;
+
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     // Manually instantiate DataInitializer with mocked dependencies
     dataInitializer =
         new DataInitializer(
@@ -140,9 +148,14 @@ class DataInitializerTest {
             campaignUpgradeService,
             env,
             achievementRepository,
-            accountRepository);
+            accountRepository,
+            ringsideActionDataService,
+            resourcePatternResolver);
 
     // Mock count methods to prevent issues during init()
+    lenient()
+        .when(resourcePatternResolver.getResources(anyString()))
+        .thenReturn(new org.springframework.core.io.Resource[0]);
     lenient().when(wrestlerService.count()).thenReturn(0L);
     lenient().when(cardSetService.count()).thenReturn(0L);
     lenient().when(cardService.count()).thenReturn(0L);
@@ -166,14 +179,15 @@ class DataInitializerTest {
     lenient()
         .when(
             segmentRuleService.createOrUpdateRule(
-                anyString(), anyString(), anyBoolean(), any(BumpAddition.class)))
+                anyString(), anyString(), anyBoolean(), anyBoolean(), any(BumpAddition.class)))
         .thenAnswer(
             invocation -> {
               SegmentRule rule = new SegmentRule();
               rule.setName(invocation.getArgument(0));
               rule.setDescription(invocation.getArgument(1));
               rule.setRequiresHighHeat(invocation.getArgument(2));
-              rule.setBumpAddition(invocation.getArgument(3));
+              rule.setNoDq(invocation.getArgument(3));
+              rule.setBumpAddition(invocation.getArgument(4));
               return rule;
             });
     lenient()
@@ -413,7 +427,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncWrestlersFromFile_existingWrestler() {
+  void testSyncWrestlersFromFile_existingWrestler() throws IOException {
     // Given
     Wrestler existingWrestler = new Wrestler();
     existingWrestler.setName("Rob Van Dam");
@@ -425,6 +439,10 @@ class DataInitializerTest {
         .when(wrestlerRepository.findByName("Rob Van Dam"))
         .thenReturn(Optional.of(existingWrestler));
     lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
+
+    Resource wrestlersResource = new ClassPathResource("wrestlers.json");
+    when(resourcePatternResolver.getResources("classpath*:wrestlers*.json"))
+        .thenReturn(new Resource[] {wrestlersResource});
 
     // When
     dataInitializer.syncWrestlersFromFile();

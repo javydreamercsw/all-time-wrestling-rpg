@@ -33,6 +33,8 @@ import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudServic
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -65,6 +67,8 @@ class SegmentAdjudicationServiceUnitTest {
 
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
 
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
@@ -87,6 +91,8 @@ class SegmentAdjudicationServiceUnitTest {
             leagueRosterRepository,
             legacyService,
             factionService,
+            ringsideActionService,
+            ringsideAiService,
             random);
 
     wrestler1 = Wrestler.builder().build();

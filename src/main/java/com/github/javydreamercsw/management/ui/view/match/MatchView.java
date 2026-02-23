@@ -99,6 +99,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final PromoService promoService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final NarrationParserService narrationParserService;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      ringsideActionService;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideAiService
+      ringsideAiService;
+  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+  private final com.github.javydreamercsw.management.service.team.TeamService teamService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -121,7 +128,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       MatchFulfillmentService matchFulfillmentService,
       PromoService promoService,
       CommentaryTeamRepository commentaryTeamRepository,
-      NarrationParserService narrationParserService) {
+      NarrationParserService narrationParserService,
+      com.github.javydreamercsw.management.service.ringside.RingsideActionService
+          ringsideActionService,
+      com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService,
+      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+          ringsideActionDataService,
+      com.github.javydreamercsw.management.service.team.TeamService teamService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -135,6 +148,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.promoService = promoService;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.narrationParserService = narrationParserService;
+    this.ringsideActionService = ringsideActionService;
+    this.ringsideAiService = ringsideAiService;
+    this.ringsideActionDataService = ringsideActionDataService;
+    this.teamService = teamService;
   }
 
   @Override
@@ -150,8 +167,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         if (fulfillment.isPresent()) {
           segment = fulfillment.get().getSegment();
         } else {
-          // Fallback to direct segment lookup
-          segment = segmentService.findByIdWithShow(id).orElse(null);
+          // Fallback to direct segment lookup with all details
+          segment = segmentService.findByIdWithDetails(id).orElse(null);
         }
 
         if (segment != null) {
@@ -333,6 +350,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   private void buildMatchInterface(Wrestler playerWrestler) {
+    boolean isPromo =
+        segment.getSegmentType() != null
+            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+
     // Main Content Grid
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setWidthFull();
@@ -400,6 +421,21 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           });
     }
 
+    infoCard.add(new Span("Referee"));
+    if (segment.getReferee() != null) {
+      Span p = new Span("⚖️ " + segment.getReferee().getName());
+      p.addClassNames(FontSize.SMALL, FontWeight.BOLD, Margin.Left.MEDIUM);
+      infoCard.add(p);
+
+      Span awareness = new Span("Awareness: " + segment.getRefereeAwarenessLevel() + "%");
+      awareness.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Left.LARGE);
+      infoCard.add(awareness);
+    } else {
+      Span p = new Span("None assigned");
+      p.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Left.MEDIUM);
+      infoCard.add(p);
+    }
+
     infoCard.add(new Span("Titles Contested"));
     var titles = segment.getTitles();
     if (titles == null || titles.isEmpty()) {
@@ -417,6 +453,61 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           });
     }
     sideCol.add(infoCard);
+
+    // Ringside Actions Section
+    if (!isPromo) {
+      final com.github.javydreamercsw.management.ui.component.RingsideActionComponent[]
+          actionComponentWrapper =
+              new com.github.javydreamercsw.management.ui.component.RingsideActionComponent[1];
+
+      actionComponentWrapper[0] =
+          new com.github.javydreamercsw.management.ui.component.RingsideActionComponent(
+              ringsideActionService,
+              ringsideActionDataService,
+              segment,
+              playerWrestler,
+              (action, result) -> {
+                if (result.success()) {
+                  // Add action to feedback for next generation
+                  String currentFeedback = feedbackArea.getValue();
+                  if (currentFeedback == null) currentFeedback = "";
+                  feedbackArea.setValue(
+                      currentFeedback + "\nIncorporate successful " + action.getName() + ".");
+                }
+
+                // Chance for NPC opponent to retaliate if they have a manager or faction member
+                segment.getWrestlers().stream()
+                    .filter(w -> w != null && !w.equals(playerWrestler))
+                    .forEach(
+                        opponent -> {
+                          if (opponent.getManager() != null) {
+                            ringsideAiService
+                                .evaluateRingsideAction(segment, opponent.getManager(), opponent)
+                                .ifPresent(
+                                    npcResult -> {
+                                      Notification.show(
+                                              "Opponent Retaliation: " + npcResult.message())
+                                          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+                                      if (npcResult.success()) {
+                                        String currentFeedback = feedbackArea.getValue();
+                                        feedbackArea.setValue(
+                                            (currentFeedback == null ? "" : currentFeedback)
+                                                + "\n"
+                                                + "Incorporate successful opponent ringside action:"
+                                                + " "
+                                                + npcResult.action().getName()
+                                                + ".");
+                                      }
+                                      // Update UI to reflect new awareness level
+                                      if (actionComponentWrapper[0] != null) {
+                                        actionComponentWrapper[0].updateUI();
+                                      }
+                                    });
+                          }
+                        });
+              });
+      sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
+    }
 
     // Winners Section
     DashboardCard winnersCard = new DashboardCard("Match Result");
@@ -449,10 +540,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     mainContent.add(participantsCol, sideCol);
     add(mainContent);
 
-    boolean isPromo =
-        segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
-
     // Full Width: Narration Section
     narrationCard = new DashboardCard(isPromo ? "Promo Narration" : "Match Narration");
     narrationCard.setMaxWidth("1200px");
@@ -464,8 +551,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     feedbackArea.setPlaceholder(
         isPromo
             ? "Provide bullet points or a general idea of the promo content..."
-            : "Provide specific details about the match (key spots, interference, etc.) to guide"
-                + " the AI...");
+            : "Provide specific details about the match (key spots, ringside actions, etc.) to"
+                + " guide the AI...");
     feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();
@@ -635,6 +722,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
+
+                    // Set manager/supporter context
+                    Object supporter = ringsideActionService.getBestSupporter(segment, w);
+                    if (supporter != null) {
+                      if (supporter
+                          instanceof com.github.javydreamercsw.management.domain.npc.Npc n) {
+                        wc.setManagerName(n.getName());
+                      } else if (supporter instanceof Wrestler other) {
+                        wc.setManagerName(other.getName());
+                      }
+                    }
+
                     return wc;
                   })
               .toList());
@@ -715,6 +814,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
       if (feedback != null && !feedback.isBlank()) {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
+      }
+
+      if (segment.getReferee() != null) {
+        instructions +=
+            "\n\nThe assigned referee for this match is: " + segment.getReferee().getName() + ".";
       }
 
       context.setInstructions(instructions);
