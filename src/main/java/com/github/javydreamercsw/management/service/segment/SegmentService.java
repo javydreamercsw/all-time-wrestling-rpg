@@ -347,6 +347,18 @@ public class SegmentService {
   }
 
   /**
+   * Finds a match by ID with all details eagerly fetched.
+   *
+   * @param id The match ID
+   * @return Optional containing the Segment if found
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Segment> findByIdWithDetails(@NonNull Long id) {
+    return segmentRepository.findByIdWithDetails(id);
+  }
+
+  /**
    * Gets all matches with pagination.
    *
    * @param pageable Pagination information

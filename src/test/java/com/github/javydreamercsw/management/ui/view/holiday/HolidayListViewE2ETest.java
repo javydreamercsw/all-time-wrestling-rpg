@@ -55,6 +55,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     click("vaadin-tab", "Holidays");
+    waitForVaadinElementVisible(By.id("holiday-grid"));
 
     long initialSize = holidayService.findAll().size();
 
@@ -108,6 +109,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     click("vaadin-tab", "Holidays");
+    waitForVaadinElementVisible(By.id("holiday-grid"));
 
     long initialSize = holidayService.findAll().size();
 
@@ -171,6 +173,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     click("vaadin-tab", "Holidays");
+    waitForVaadinElementVisible(By.id("holiday-grid"));
 
     // Find the edit button for the holiday
     WebElement editButton =
@@ -222,6 +225,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     click("vaadin-tab", "Holidays");
+    waitForVaadinElementVisible(By.id("holiday-grid"));
 
     long initialSize = holidayService.findAll().size();
 

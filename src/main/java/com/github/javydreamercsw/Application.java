@@ -45,6 +45,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Slf4j
 public class Application extends SpringBootServletInitializer {
 
+  static {
+    // Enable InheritableThreadLocal to ensure background threads (like AI generation)
+    // inherit the security context from the parent UI thread.
+    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+  }
+
   @Override
   protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
     return application.sources(Application.class);
@@ -67,7 +73,7 @@ public class Application extends SpringBootServletInitializer {
     return args -> {
       log.info("Initializing data on startup...");
       // Create a system authentication context
-      var auth =
+      UsernamePasswordAuthenticationToken auth =
           new UsernamePasswordAuthenticationToken(
               "system",
               null,

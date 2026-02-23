@@ -26,6 +26,8 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -50,6 +52,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -71,6 +74,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private TitleRepository titleChampionRepository;
+  @Autowired private SeasonRepository seasonRepository;
 
   @Autowired
   private com.github.javydreamercsw.management.domain.title.TitleReignRepository
@@ -233,10 +237,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertGridContains("upcoming-matches-grid", "Test Show 2");
 
           click("vaadin-tab", "Rivalries");
+          waitForVaadinElementVisible(By.id("active-rivalries-grid"));
           assertEquals(1, getGridRows("active-rivalries-grid").size());
           assertGridContains("active-rivalries-grid", "Opponent");
 
           click("vaadin-tab", "Inbox");
+          waitForVaadinElementVisible(By.id("inbox-grid"));
           assertEquals(1, getGridRows("inbox-grid").size());
           assertGridContains("inbox-grid", "Test Message");
         });
@@ -307,6 +313,80 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertEquals(
               segment.getSegmentType().getName(),
               waitForVaadinElement(driver, By.id("match-type")).getText());
+        });
+  }
+
+  @Test
+  public void testSeasonSummaryVisibleOnDashboard() {
+    // Get player account
+    Account playerAccount = accountService.findByUsername("player").get();
+
+    // Create a wrestler and assign it to the player
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Season Wrestler")
+            .isPlayer(true)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.MIDCARDER)
+            .account(playerAccount)
+            .fans(500L)
+            .build();
+    wrestlerService.save(wrestler);
+
+    // Create a season
+    Season season = new Season();
+    season.setName("Test Season 2026");
+    season.setStartDate(Instant.now().minusSeconds(86400 * 30)); // 30 days ago
+    season.setIsActive(true);
+    seasonRepository.save(season);
+
+    // Create a show in this season
+    if (showTypeRepository.count() == 0) {
+      ShowType st = new ShowType();
+      st.setName("Weekly Show");
+      st.setDescription("Weekly Show");
+      showTypeRepository.save(st);
+    }
+    Show show = new Show();
+    show.setName("Season Show");
+    show.setDescription("Test Show Description");
+    show.setShowDate(LocalDate.now());
+    show.setType(showTypeService.findAll().get(0));
+    show.setSeason(season);
+    showService.save(show);
+
+    // Create a winning segment
+    if (segmentTypeRepository.count() == 0) {
+      SegmentType st = new SegmentType();
+      st.setName("One on One");
+      segmentTypeRepository.save(st);
+    }
+    SegmentType oneOnOne = segmentTypeRepository.findByName("One on One").get();
+    Segment segment = segmentService.createSegment(show, oneOnOne, Instant.now(), new HashSet<>());
+    segment.addParticipant(wrestler);
+    segment.setWinners(List.of(wrestler));
+    segmentService.updateSegment(segment);
+
+    login("player", "player123");
+
+    // Navigate to the PlayerView
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    waitForVaadinToLoad(driver);
+
+    assertDoesNotThrow(
+        () -> {
+          WebElement summaryTitle =
+              waitForVaadinElement(
+                  driver, By.xpath("//h4[contains(text(), 'Test Season 2026 Summary')]"));
+          assertNotNull(summaryTitle);
+
+          WebElement recordSpan =
+              waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Record: 1-0-0')]"));
+          assertNotNull(recordSpan);
+
+          WebElement fanGrowth =
+              waitForVaadinElement(driver, By.xpath("//span[contains(text(), '0 fans')]"));
+          assertNotNull(fanGrowth);
         });
   }
 }

@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -95,6 +96,7 @@ class ShowDetailViewTest {
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRepository leagueRepository;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private RingsideActionService ringsideActionService;
 
   @BeforeEach
   void setUp() {
@@ -156,7 +158,8 @@ class ShowDetailViewTest {
               showController,
               matchFulfillmentRepository,
               leagueRepository,
-              commentaryTeamRepository);
+              commentaryTeamRepository,
+              ringsideActionService);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -232,7 +235,8 @@ class ShowDetailViewTest {
               showController,
               matchFulfillmentRepository,
               leagueRepository,
-              commentaryTeamRepository);
+              commentaryTeamRepository,
+              ringsideActionService);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));

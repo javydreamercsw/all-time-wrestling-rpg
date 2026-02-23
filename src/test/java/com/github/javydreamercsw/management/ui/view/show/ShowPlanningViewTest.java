@@ -64,6 +64,7 @@ class ShowPlanningViewTest {
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private ObjectMapper objectMapper;
   private SegmentNarrationServiceFactory aiFactory;
 
@@ -81,6 +82,7 @@ class ShowPlanningViewTest {
             titleService,
             segmentTypeRepository,
             segmentRuleRepository,
+            npcService,
             objectMapper,
             aiFactory);
     // Mock the UI since we are not in a Vaadin environment

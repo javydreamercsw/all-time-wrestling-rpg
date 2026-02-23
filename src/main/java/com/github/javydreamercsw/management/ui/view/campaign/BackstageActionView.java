@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
@@ -55,6 +56,7 @@ public class BackstageActionView extends VerticalLayout {
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final SecurityUtils securityUtils;
+  private final CampaignService campaignService;
 
   private Campaign currentCampaign;
 
@@ -64,12 +66,14 @@ public class BackstageActionView extends VerticalLayout {
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       WrestlerService wrestlerService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      CampaignService campaignService) {
     this.backstageActionService = backstageActionService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
+    this.campaignService = campaignService;
 
     setSpacing(true);
     setPadding(true);
@@ -94,7 +98,7 @@ public class BackstageActionView extends VerticalLayout {
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
               if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
+                campaignService.getCampaignForWrestler(active).ifPresent(c -> currentCampaign = c);
               }
             });
   }
@@ -184,13 +188,7 @@ public class BackstageActionView extends VerticalLayout {
             actionsAvailable && needsRecovery));
 
     if (state.isPromoUnlocked()) {
-      actionsList.add(
-          createActionButton(
-              "🎤 Promo",
-              "Build your hype. Roll 1d6 + Charisma vs Difficulty 4.",
-              BackstageActionType.PROMO,
-              wrestler.getCharisma(),
-              actionsAvailable));
+      actionsList.add(createPromoActionGroup(wrestler.getCharisma(), actionsAvailable));
     }
 
     if (state.isAttackUnlocked()) {
@@ -269,6 +267,10 @@ public class BackstageActionView extends VerticalLayout {
     actionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
     actionBtn.addClickListener(
         e -> {
+          if (type == BackstageActionType.PROMO) {
+            UI.getCurrent().navigate(PromoView.class);
+            return;
+          }
           var outcome = backstageActionService.performAction(currentCampaign, type, attrValue);
           if (outcome.successes() > 0) {
             Notification.show("Success! " + outcome.description())
@@ -281,6 +283,58 @@ public class BackstageActionView extends VerticalLayout {
         });
 
     row.add(textPart, actionBtn);
+    row.expand(textPart);
+    return row;
+  }
+
+  private HorizontalLayout createPromoActionGroup(int attrValue, boolean enabled) {
+    HorizontalLayout row = new HorizontalLayout();
+    row.setWidthFull();
+    row.setAlignItems(Alignment.CENTER);
+    row.addClassNames(Padding.SMALL, Border.BOTTOM, BorderColor.CONTRAST_10);
+
+    VerticalLayout textPart = new VerticalLayout();
+    textPart.setPadding(false);
+    textPart.setSpacing(false);
+
+    Span name = new Span("🎤 Promo");
+    name.addClassNames(FontWeight.BOLD);
+
+    Span desc =
+        new Span("Build your hype. Choose between a quick roll or an AI-driven interactive promo.");
+    desc.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
+
+    textPart.add(name, desc);
+
+    Button standardBtn = new Button("Quick Promo (Dice)");
+    standardBtn.setId("action-button-PROMO-STANDARD");
+    standardBtn.setEnabled(enabled);
+    standardBtn.setTooltipText("Standard dice-based promo. No AI required. Saves tokens.");
+    standardBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    standardBtn.addClickListener(
+        e -> {
+          var outcome =
+              backstageActionService.performAction(
+                  currentCampaign, BackstageActionType.PROMO, attrValue);
+          if (outcome.successes() > 0) {
+            Notification.show("Success! " + outcome.description())
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } else {
+            Notification.show("Failure... " + outcome.description())
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+          refreshUI();
+        });
+
+    Button interactiveBtn = new Button("Interactive Story (AI)");
+    interactiveBtn.setId("action-button-PROMO-INTERACTIVE");
+    interactiveBtn.setEnabled(enabled);
+    interactiveBtn.setTooltipText(
+        "Deep AI-driven promo with choices and character growth. Highly engaging.");
+    interactiveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+    interactiveBtn.addClickListener(e -> UI.getCurrent().navigate(PromoView.class));
+
+    row.add(textPart, standardBtn, interactiveBtn);
     row.expand(textPart);
     return row;
   }

@@ -150,10 +150,10 @@ class ShowPlanningServiceTest {
     assertEquals(1, capturedSegment.getTitles().size());
     assertEquals("World Championship", capturedSegment.getTitles().iterator().next().getName());
     assertEquals(1, capturedSegment.getSegmentRules().size());
-    assertEquals("Rule 1", capturedSegment.getSegmentRules().get(0).getName());
+    assertEquals("Rule 1", capturedSegment.getSegmentRules().iterator().next().getName());
     assertEquals(2, capturedSegment.getParticipants().size());
     assertEquals(1, capturedSegment.getWinners().size());
-    assertEquals("Wrestler A", capturedSegment.getWinners().get(0).getName());
+    assertEquals("Wrestler A", capturedSegment.getWinners().iterator().next().getName());
   }
 
   @Test

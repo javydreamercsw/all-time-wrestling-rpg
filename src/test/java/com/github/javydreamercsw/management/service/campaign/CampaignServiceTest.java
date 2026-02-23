@@ -28,17 +28,20 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStorylineRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -74,10 +77,12 @@ class CampaignServiceTest {
 
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignStateRepository campaignStateRepository;
+  @Mock private CampaignAbilityCardRepository campaignAbilityCardRepository;
   @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Mock private CampaignChapterService chapterService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ShowService showService;
+  @Mock private ShowRepository showRepository;
   @Mock private SegmentService segmentService;
   @Mock private SeasonRepository seasonRepository;
   @Mock private SegmentTypeRepository segmentTypeRepository;
@@ -86,6 +91,7 @@ class CampaignServiceTest {
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private TournamentService tournamentService;
+  @Mock private CampaignStorylineRepository storylineRepository;
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private TitleReignRepository titleReignRepository;
@@ -94,6 +100,9 @@ class CampaignServiceTest {
   @Mock private SegmentAdjudicationService adjudicationService;
   @Mock private MatchRewardService matchRewardService;
   @Mock private NewsGenerationService newsGenerationService;
+  @Mock private StorylineDirectorService storylineDirectorService;
+  @Mock private StorylineExportService storylineExportService;
+  @Mock private AlignmentService alignmentService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignService campaignService;
@@ -151,17 +160,8 @@ class CampaignServiceTest {
     state.setActiveCards(new ArrayList<>());
     campaign.setState(state);
 
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.NEUTRAL);
-    alignment.setLevel(0);
-
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
     campaignService.shiftAlignment(campaign, 1);
-
-    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.FACE);
-    assertThat(alignment.getLevel()).isEqualTo(1);
-    verify(wrestlerAlignmentRepository).save(alignment);
+    verify(alignmentService).shiftAlignment(campaign, 1);
   }
 
   @Test
@@ -174,17 +174,8 @@ class CampaignServiceTest {
     state.setActiveCards(new ArrayList<>());
     campaign.setState(state);
 
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.FACE);
-    alignment.setLevel(1);
-
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
     campaignService.shiftAlignment(campaign, -1);
-
-    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.NEUTRAL);
-    assertThat(alignment.getLevel()).isZero();
-    verify(wrestlerAlignmentRepository).save(alignment);
+    verify(alignmentService).shiftAlignment(campaign, -1);
   }
 
   @Test
@@ -197,17 +188,8 @@ class CampaignServiceTest {
     state.setActiveCards(new ArrayList<>());
     campaign.setState(state);
 
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.NEUTRAL);
-    alignment.setLevel(0);
-
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
     campaignService.shiftAlignment(campaign, -1);
-
-    assertThat(alignment.getAlignmentType()).isEqualTo(AlignmentType.HEEL);
-    assertThat(alignment.getLevel()).isEqualTo(1);
-    verify(wrestlerAlignmentRepository).save(alignment);
+    verify(alignmentService).shiftAlignment(campaign, -1);
   }
 
   @Test
@@ -229,8 +211,10 @@ class CampaignServiceTest {
     Show show = new Show();
     show.setId(1L);
 
+    state.setCurrentChapterId("test-chapter");
+
     when(seasonRepository.findByName("Campaign Mode")).thenReturn(Optional.of(season));
-    when(chapterService.getChapter(any()))
+    when(chapterService.getChapter("test-chapter"))
         .thenReturn(Optional.of(CampaignChapterDTO.builder().id("test-chapter").build()));
 
     SegmentType matchType = new SegmentType();
@@ -296,10 +280,11 @@ class CampaignServiceTest {
     state.setVictoryPoints(0);
     state.setMatchesPlayed(0);
     state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("test-chapter");
     campaign.setState(state);
 
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-    when(chapterService.getChapter(any()))
+    when(chapterService.getChapter("test-chapter"))
         .thenReturn(
             Optional.of(
                 CampaignChapterDTO.builder()

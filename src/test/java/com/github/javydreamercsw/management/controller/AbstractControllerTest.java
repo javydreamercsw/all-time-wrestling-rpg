@@ -20,12 +20,10 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationScheduler;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -35,17 +33,13 @@ import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@Import({TestSecurityConfig.class, TestAIConfiguration.class})
-@ActiveProfiles("test")
 @WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
 public abstract class AbstractControllerTest extends AbstractIntegrationTest {

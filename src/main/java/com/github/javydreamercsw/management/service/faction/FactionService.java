@@ -396,4 +396,44 @@ public class FactionService {
   public long count() {
     return factionRepository.count();
   }
+
+  /** Add affinity points to a faction. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void addAffinity(@NonNull Long factionId, int points) {
+    factionRepository
+        .findById(factionId)
+        .ifPresent(
+            faction -> {
+              int oldAffinity = faction.getAffinity();
+              int newAffinity = Math.min(100, oldAffinity + points);
+              faction.setAffinity(newAffinity);
+              factionRepository.saveAndFlush(faction);
+              log.info(
+                  "Added {} affinity to faction: {} (Total: {})",
+                  points,
+                  faction.getName(),
+                  faction.getAffinity());
+            });
+  }
+
+  /**
+   * Gets the shared faction affinity between two wrestlers.
+   *
+   * @param w1 First wrestler.
+   * @param w2 Second wrestler.
+   * @return Shared affinity (0-100), or 0 if they share no active faction.
+   */
+  @Transactional(readOnly = true)
+  public int getAffinityBetween(Wrestler w1, Wrestler w2) {
+    if (w1 == null || w2 == null) {
+      return 0;
+    }
+    Optional<Faction> f1 = factionRepository.findActiveFactionByMember(w1);
+    Optional<Faction> f2 = factionRepository.findActiveFactionByMember(w2);
+
+    if (f1.isPresent() && f2.isPresent() && f1.get().equals(f2.get())) {
+      return f1.get().getAffinity();
+    }
+    return 0;
+  }
 }

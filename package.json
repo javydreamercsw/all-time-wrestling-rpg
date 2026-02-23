@@ -77,12 +77,15 @@
     "@vaadin/vertical-layout": "25.0.3",
     "@vaadin/virtual-list": "25.0.3",
     "@webcomponents/shadycss": "1.11.2",
-    "apexcharts": "3.45.1",
+    "apexcharts": "3.49.0",
     "date-fns": "4.1.0",
     "lit": "3.3.2",
     "moment": "2.30.1",
     "moment-timezone": "0.6.0",
-    "onecolor": "4.1.0"
+    "onecolor": "4.1.0",
+    "react-dom": "19.2.3",
+    "react": "19.2.3",
+    "react-router": "7.12.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -99,7 +102,9 @@
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vite-plugin-checker": "0.12.0",
-    "workbox-build": "7.4.0"
+    "workbox-build": "7.4.0",
+    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.7"
   },
   "overrides": {
     "@vaadin/vaadin-development-mode-detector": "2.0.7",
@@ -107,7 +112,23 @@
     "@vaadin/common-frontend": "0.0.19",
     "@vaadin/aura": "25.0.3",
     "@vaadin/vaadin-lumo-styles": "25.0.3",
-    "@vaadin/vaadin-themable-mixin": "25.0.3"
+    "@vaadin/vaadin-themable-mixin": "25.0.3",
+    "@fullcalendar/core": "$@fullcalendar/core",
+    "@fullcalendar/daygrid": "$@fullcalendar/daygrid",
+    "@fullcalendar/interaction": "$@fullcalendar/interaction",
+    "@fullcalendar/list": "$@fullcalendar/list",
+    "@fullcalendar/moment": "$@fullcalendar/moment",
+    "@fullcalendar/moment-timezone": "$@fullcalendar/moment-timezone",
+    "@fullcalendar/multimonth": "$@fullcalendar/multimonth",
+    "@fullcalendar/timegrid": "$@fullcalendar/timegrid",
+    "@webcomponents/shadycss": "$@webcomponents/shadycss",
+    "apexcharts": "$apexcharts",
+    "date-fns": "$date-fns",
+    "lit": "$lit",
+    "moment": "$moment",
+    "moment-timezone": "$moment-timezone",
+    "onecolor": "$onecolor",
+    "@vaadin/react-components": "25.0.3"
   },
   "vaadin": {
     "dependencies": {
@@ -185,12 +206,15 @@
       "@vaadin/vertical-layout": "25.0.3",
       "@vaadin/virtual-list": "25.0.3",
       "@webcomponents/shadycss": "1.11.2",
-      "apexcharts": "3.45.1",
+      "apexcharts": "3.49.0",
       "date-fns": "4.1.0",
       "lit": "3.3.2",
       "moment": "2.30.1",
       "moment-timezone": "0.6.0",
-      "onecolor": "4.1.0"
+      "onecolor": "4.1.0",
+      "react-dom": "19.2.3",
+      "react": "19.2.3",
+      "react-router": "7.12.0"
     },
     "devDependencies": {
       "@babel/preset-react": "7.28.5",
@@ -207,8 +231,10 @@
       "typescript": "5.9.3",
       "vite": "7.3.1",
       "vite-plugin-checker": "0.12.0",
-      "workbox-build": "7.4.0"
+      "workbox-build": "7.4.0",
+      "@types/react-dom": "19.2.3",
+      "@types/react": "19.2.7"
     },
-    "hash": "166873ea8976901286316d328060449eabe09f5bd034f53497afbb38e7c7579e"
+    "hash": "e06b29e8d8bd4b59f8ffe4936108b83003fac6c445e03f124aae86aa667a9206"
   }
 }

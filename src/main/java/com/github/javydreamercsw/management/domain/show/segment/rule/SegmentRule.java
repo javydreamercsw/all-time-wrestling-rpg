@@ -62,6 +62,9 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "requires_high_heat", nullable = false)
   private Boolean requiresHighHeat = false;
 
+  @Column(name = "no_dq", nullable = false)
+  private Boolean noDq = false;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "bump_addition", nullable = false)
   private BumpAddition bumpAddition = BumpAddition.NONE;
@@ -83,6 +86,9 @@ public class SegmentRule extends AbstractEntity<Long> {
 
     if (requiresHighHeat == null) {
       requiresHighHeat = false;
+    }
+    if (noDq == null) {
+      noDq = false;
     }
     if (bumpAddition == null) {
       bumpAddition = BumpAddition.NONE;

@@ -29,14 +29,12 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.test.context.support.WithMockUser;
 
 public class AccountFormE2ETest extends AbstractE2ETest {
   @Autowired
   @Qualifier("managementAccountService") private AccountService accountService;
 
   @Test
-  @WithMockUser(roles = {"ADMIN"})
   public void testDeleteAccount() {
     // Create an account to delete with a unique name
     String username = "delete_me_" + System.currentTimeMillis();

@@ -49,10 +49,12 @@ public class EditSegmentDialog extends Dialog {
   private final TitleService titleService;
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRuleRepository segmentRuleRepository;
+  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
 
+  private final ComboBox<com.github.javydreamercsw.management.domain.npc.Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
   private final ComboBox<AlignmentType> alignmentFilter;
 
@@ -67,6 +69,7 @@ public class EditSegmentDialog extends Dialog {
   private final MultiSelectComboBox<Wrestler> winnersCombo;
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
+  private final com.vaadin.flow.component.html.Span synergyBonusLabel;
 
   public EditSegmentDialog(
       ProposedSegment segment,
@@ -75,6 +78,7 @@ public class EditSegmentDialog extends Dialog {
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
+      com.github.javydreamercsw.management.service.npc.NpcService npcService,
       Gender defaultGenderConstraint,
       Runnable onSave) {
     this.segment = segment;
@@ -83,6 +87,7 @@ public class EditSegmentDialog extends Dialog {
     this.titleService = titleService;
     this.segmentTypeRepository = segmentTypeRepository;
     this.segmentRuleRepository = segmentRuleRepository;
+    this.npcService = npcService;
     this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
@@ -91,6 +96,13 @@ public class EditSegmentDialog extends Dialog {
     FormLayout formLayout = new FormLayout();
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
+
+    synergyBonusLabel = new com.vaadin.flow.component.html.Span("Synergy Bonus: +0");
+    synergyBonusLabel.addClassNames(
+        com.vaadin.flow.theme.lumo.LumoUtility.FontSize.SMALL,
+        com.vaadin.flow.theme.lumo.LumoUtility.TextColor.SUCCESS,
+        com.vaadin.flow.theme.lumo.LumoUtility.FontWeight.BOLD);
+    synergyBonusLabel.setId("edit-synergy-bonus-label");
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
     segmentTypeCombo.setItems(
@@ -102,6 +114,17 @@ public class EditSegmentDialog extends Dialog {
     segmentTypeCombo.setRequired(true);
     segmentTypeRepository.findByName(segment.getType()).ifPresent(segmentTypeCombo::setValue);
     segmentTypeCombo.setId("edit-segment-type-combo-box");
+
+    refereeCombo = new ComboBox<>("Referee");
+    refereeCombo.setItems(npcService.findAllByType("Referee"));
+    refereeCombo.setItemLabelGenerator(
+        com.github.javydreamercsw.management.domain.npc.Npc::getName);
+    refereeCombo.setWidthFull();
+    if (segment.getRefereeName() != null) {
+      npcService.findByName(segment.getRefereeName());
+      refereeCombo.setValue(npcService.findByName(segment.getRefereeName()));
+    }
+    refereeCombo.setId("edit-referee-combo-box");
 
     rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(
@@ -174,9 +197,9 @@ public class EditSegmentDialog extends Dialog {
               .collect(Collectors.toSet()));
     }
 
-    // Update winner options when wrestlers change
     participantsCombo.addValueChangeListener(
         e -> {
+          updateSynergyBonus(e.getValue());
           winnersCombo.setItems(
               e.getValue().stream()
                   .sorted(Comparator.comparing(Wrestler::getName))
@@ -187,6 +210,8 @@ public class EditSegmentDialog extends Dialog {
                   .filter(e.getValue()::contains)
                   .collect(Collectors.toSet()));
         });
+
+    updateSynergyBonus(existingParticipants);
 
     summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
@@ -224,9 +249,11 @@ public class EditSegmentDialog extends Dialog {
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        refereeCombo,
         alignmentFilter,
         genderFilter,
         participantsCombo,
+        synergyBonusLabel,
         winnersCombo,
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
@@ -238,6 +265,31 @@ public class EditSegmentDialog extends Dialog {
 
     getFooter().add(cancelButton, saveButton);
     add(new VerticalLayout(formLayout));
+  }
+
+  private void updateSynergyBonus(java.util.Collection<Wrestler> wrestlers) {
+    int totalBonus = 0;
+    java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
+    java.util.Map<Long, Integer> factionAffinity = new java.util.HashMap<>();
+
+    for (Wrestler w : wrestlers) {
+      if (w.getFaction() != null) {
+        Long fid = w.getFaction().getId();
+        factionCounts.put(fid, factionCounts.getOrDefault(fid, 0) + 1);
+        factionAffinity.put(fid, w.getFaction().getAffinity());
+      }
+    }
+
+    for (java.util.Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
+      int count = entry.getValue();
+      if (count > 1) {
+        int affinity = factionAffinity.get(entry.getKey());
+        totalBonus += (count - 1) * (affinity / 10);
+      }
+    }
+
+    synergyBonusLabel.setText("Faction Synergy Bonus: +" + totalBonus + " weight");
+    synergyBonusLabel.setVisible(totalBonus > 0);
   }
 
   private void refreshParticipantsList(java.util.Set<Wrestler> selectedWrestlers) {
@@ -264,6 +316,11 @@ public class EditSegmentDialog extends Dialog {
         rulesCombo.getValue().stream().map(SegmentRule::getName).collect(Collectors.toList()));
     segment.setIsTitleSegment(isTitleSegmentCheckbox.getValue());
     segment.setTitles(titleMultiSelectComboBox.getValue());
+    if (refereeCombo.getValue() != null) {
+      segment.setRefereeName(refereeCombo.getValue().getName());
+    } else {
+      segment.setRefereeName(null);
+    }
     onSave.run();
     close();
   }

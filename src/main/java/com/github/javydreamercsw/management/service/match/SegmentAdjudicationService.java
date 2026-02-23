@@ -25,16 +25,21 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -60,6 +65,9 @@ public class SegmentAdjudicationService {
   private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
       leagueRosterRepository;
   private final LegacyService legacyService;
+  private final FactionService factionService;
+  private final RingsideActionService ringsideActionService;
+  private final RingsideAiService ringsideAiService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -73,7 +81,10 @@ public class SegmentAdjudicationService {
       MatchFulfillmentRepository matchFulfillmentRepository,
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
           leagueRosterRepository,
-      LegacyService legacyService) {
+      LegacyService legacyService,
+      FactionService factionService,
+      RingsideActionService ringsideActionService,
+      RingsideAiService ringsideAiService) {
     this(
         rivalryService,
         wrestlerService,
@@ -84,6 +95,9 @@ public class SegmentAdjudicationService {
         matchFulfillmentRepository,
         leagueRosterRepository,
         legacyService,
+        factionService,
+        ringsideActionService,
+        ringsideAiService,
         new Random());
   }
 
@@ -98,6 +112,9 @@ public class SegmentAdjudicationService {
       com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
           leagueRosterRepository,
       LegacyService legacyService,
+      FactionService factionService,
+      RingsideActionService ringsideActionService,
+      RingsideAiService ringsideAiService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -108,6 +125,9 @@ public class SegmentAdjudicationService {
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRosterRepository = leagueRosterRepository;
     this.legacyService = legacyService;
+    this.factionService = factionService;
+    this.ringsideActionService = ringsideActionService;
+    this.ringsideAiService = ringsideAiService;
     this.random = random;
   }
 
@@ -174,6 +194,16 @@ public class SegmentAdjudicationService {
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);
 
+    // Automated Ringside Actions
+    if (!segment.getSegmentType().getName().equals("Promo")) {
+      for (Wrestler w : segment.getWrestlers()) {
+        Object supporter = ringsideActionService.getBestSupporter(segment, w);
+        if (supporter != null) {
+          ringsideAiService.evaluateRingsideAction(segment, supporter, w);
+        }
+      }
+    }
+
     if (!segment.getSegmentType().getName().equals("Promo")) {
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
@@ -190,6 +220,50 @@ public class SegmentAdjudicationService {
       }
     }
 
+    // Faction Affinity Logic
+    Map<Long, Integer> factionParticipants = new HashMap<>();
+    Map<Long, Integer> factionWinners = new HashMap<>();
+
+    for (Wrestler participant : segment.getWrestlers()) {
+      if (participant.getFaction() != null) {
+        Long factionId = participant.getFaction().getId();
+        factionParticipants.put(factionId, factionParticipants.getOrDefault(factionId, 0) + 1);
+        if (winners.contains(participant)) {
+          factionWinners.put(factionId, factionWinners.getOrDefault(factionId, 0) + 1);
+        }
+      }
+    }
+
+    // Reward factions for participation and victory
+    factionParticipants.forEach(
+        (factionId, count) -> {
+          if (count > 1) {
+            int affinityGain = (count - 1); // Base participation gain
+
+            // Victory bonus: +2 if multiple members from the same faction won
+            if (factionWinners.getOrDefault(factionId, 0) > 1) {
+              affinityGain += 2;
+            }
+
+            // Context multipliers
+            if (segment.isMainEvent()) {
+              affinityGain *= 2;
+            }
+            if (segment.getShow().isPremiumLiveEvent()) {
+              affinityGain *= 2;
+            }
+
+            // Promo bonus: +1 for shared spotlight
+            if (segment.getSegmentType().getName().equals("Promo")) {
+              affinityGain += 1;
+            }
+
+            if (affinityGain > 0) {
+              factionService.addAffinity(factionId, affinityGain);
+            }
+          }
+        });
+
     // Add heat to rivalries
     int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
@@ -198,14 +272,23 @@ public class SegmentAdjudicationService {
     }
 
     List<Wrestler> participants = segment.getWrestlers();
-    for (int i = 0; i < participants.size(); i++) {
-      for (int j = i + 1; j < participants.size(); j++) {
-        rivalryService.addHeatBetweenWrestlers(
-            participants.get(i).getId(),
-            participants.get(j).getId(),
-            heat,
-            "From segment: " + segment.getSegmentType().getName());
+    // Skip all-pairs heat addition for Rumbles to avoid performance issues,
+    // excessive rivalry creation, and because determining eliminations from
+    // narration is complex. Bookers can manage these rivalries manually.
+    if (!segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+      for (int i = 0; i < participants.size(); i++) {
+        for (int j = i + 1; j < participants.size(); j++) {
+          rivalryService.addHeatBetweenWrestlers(
+              participants.get(i).getId(),
+              participants.get(j).getId(),
+              heat,
+              "From segment: " + segment.getSegmentType().getName());
+        }
       }
+    } else {
+      log.info(
+          "Skipping automatic rivalry processing for Rumble segment: {}",
+          segment.getShow().getName());
     }
 
     // Add heat to feuds

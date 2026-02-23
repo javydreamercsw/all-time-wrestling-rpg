@@ -53,6 +53,14 @@ public class NPCSegmentResolutionService {
   @Autowired private Clock clock;
   @Autowired protected Random random;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      ringsideActionService;
+
+  @Autowired
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
    * segment types: singles (1v1), tag team (2v2), handicap (1v2), and complex multi-team scenarios.
@@ -310,7 +318,17 @@ public class NPCSegmentResolutionService {
     int fanWeight = wrestler.getFanWeight();
     int tierBonus = getTierBonus(wrestler.getTier());
     int healthPenalty = getHealthPenalty(wrestler);
-    int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty);
+
+    // Individual bonus if they have a manager from the same faction
+    int synergyBonus = 0;
+    if (wrestler.getManager() != null && wrestler.getFaction() != null) {
+      // Check if manager is part of the faction (some managers might be NPCs in factions)
+      // For now, let's keep it simple: if you have a manager and a faction, you get a small boost
+      // based on affinity.
+      synergyBonus = wrestler.getFaction().getAffinity() / 20; // Max +5 at 100 affinity
+    }
+
+    int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty + synergyBonus);
 
     return new WrestlerWeight(wrestler, totalWeight, fanWeight, tierBonus, healthPenalty);
   }
@@ -356,15 +374,78 @@ public class NPCSegmentResolutionService {
 
     /** Calculate total team weight based on individual wrestler stats. */
     public int calculateTeamWeight(@NonNull SegmentTeam team) {
-      return team.getMembers().stream()
-          .mapToInt(
-              wrestler -> {
-                int fanWeight = wrestler.getFanWeight();
-                int tierBonus = getTierBonus(wrestler.getTier());
-                int healthPenalty = getHealthPenalty(wrestler);
-                return Math.max(1, fanWeight + tierBonus - healthPenalty);
-              })
-          .sum();
+      int baseWeight =
+          team.getMembers().stream()
+              .mapToInt(
+                  wrestler -> {
+                    int fanWeight = wrestler.getFanWeight();
+                    int tierBonus = getTierBonus(wrestler.getTier());
+                    int healthPenalty = getHealthPenalty(wrestler);
+                    return Math.max(1, fanWeight + tierBonus - healthPenalty);
+                  })
+              .sum();
+
+      // Add Faction Synergy Bonus
+      int synergyBonus = 0;
+      java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
+      for (Wrestler w : team.getMembers()) {
+        if (w.getFaction() != null) {
+          Long fid = w.getFaction().getId();
+          factionCounts.put(fid, factionCounts.getOrDefault(fid, 0) + 1);
+        }
+      }
+
+      for (java.util.Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
+        int count = entry.getValue();
+        if (count > 1) {
+          // Bonus formula: (count - 1) * (Affinity / 10)
+          // Example: 2 members with 50 affinity = (1) * 5 = +5 weight
+          final Long fid = entry.getKey();
+          int affinity =
+              team.getMembers().stream()
+                  .filter(w -> w.getFaction() != null && w.getFaction().getId().equals(fid))
+                  .findFirst()
+                  .map(w -> w.getFaction().getAffinity())
+                  .orElse(0);
+          synergyBonus += (count - 1) * (affinity / 10);
+        }
+      }
+
+      log.debug(
+          "Team {} base weight: {}, synergy bonus: {}",
+          team.getTeamName(),
+          baseWeight,
+          synergyBonus);
+
+      // Factor in Ringside Actions
+      int ringsideBonus = 0;
+      List<com.github.javydreamercsw.management.domain.show.segment.RingsideAction> allActions =
+          ringsideActionDataService.findAllActions();
+      if (!allActions.isEmpty()) {
+        for (Wrestler w : team.getMembers()) {
+          if (w.getManager() != null) {
+            // 20% base chance for manager to attempt an action in simulation
+            if (random.nextDouble() < 0.20) {
+              // Pick a random ringside action
+              com.github.javydreamercsw.management.domain.show.segment.RingsideAction action =
+                  allActions.get(random.nextInt(allActions.size()));
+
+              // Success chance: 70% base for simulation ringside actions
+              if (random.nextDouble() < 0.70) {
+                ringsideBonus += action.getImpact();
+                log.debug(
+                    "Manager {} successfully performed action ({}) for {}: +{} weight",
+                    w.getManager().getName(),
+                    action.getName(),
+                    w.getName(),
+                    action.getImpact());
+              }
+            }
+          }
+        }
+      }
+
+      return baseWeight + synergyBonus + ringsideBonus;
     }
 
     /** Calculate average tier bonus for the team. */

@@ -42,7 +42,7 @@ public class CampaignDramaService {
 
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
-  private final CampaignChapterService chapterService;
+  private final CampaignService campaignService;
   private final Random random;
 
   /**
@@ -55,8 +55,7 @@ public class CampaignDramaService {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
-    CampaignChapterDTO chapter =
-        chapterService.getChapter(state.getCurrentChapterId()).orElse(null);
+    CampaignChapterDTO chapter = campaignService.getCurrentChapter(campaign).orElse(null);
     if (chapter == null) return Optional.empty();
 
     // Tournament Chapter: Rivalry

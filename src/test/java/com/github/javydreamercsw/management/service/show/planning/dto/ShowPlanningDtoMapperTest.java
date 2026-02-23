@@ -30,9 +30,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,9 +71,9 @@ class ShowPlanningDtoMapperTest {
     when(participant2.getWrestler()).thenReturn(wrestler2);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Promo");
-    when(segment.getSegmentRules()).thenReturn(List.of(segmentRule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(segmentRule));
     when(segmentRule.getName()).thenReturn(PromoType.CONFRONTATION_PROMO.getDisplayName());
-    when(segment.getParticipants()).thenReturn(Arrays.asList(participant1, participant2));
+    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1, participant2));
     when(participant1.getIsWinner()).thenReturn(true);
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Promo summary");
@@ -99,9 +96,9 @@ class ShowPlanningDtoMapperTest {
     when(participant1.getWrestler()).thenReturn(wrestler1);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Promo");
-    when(segment.getSegmentRules()).thenReturn(List.of(segmentRule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(segmentRule));
     when(segmentRule.getName()).thenReturn(PromoType.SOLO_PROMO.getDisplayName());
-    when(segment.getParticipants()).thenReturn(Collections.singletonList(participant1));
+    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1));
     when(participant1.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Solo promo summary");
     when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
@@ -125,7 +122,7 @@ class ShowPlanningDtoMapperTest {
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Match");
     when(segment.getSegmentRulesAsString()).thenReturn("Standard Match Rules");
-    when(segment.getParticipants()).thenReturn(Arrays.asList(participant1, participant2));
+    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1, participant2));
     when(participant1.getIsWinner()).thenReturn(true); // Added this line
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Match summary");
@@ -151,7 +148,7 @@ class ShowPlanningDtoMapperTest {
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Match");
     when(segment.getSegmentRulesAsString()).thenReturn("Standard Match Rules");
-    when(segment.getParticipants()).thenReturn(Arrays.asList(participant1, participant2));
+    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1, participant2));
     when(participant1.getIsWinner()).thenReturn(false);
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Match summary");

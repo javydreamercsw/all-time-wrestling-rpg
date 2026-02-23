@@ -17,12 +17,15 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -45,12 +48,10 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(value = "campaign/narrative", layout = MainLayout.class)
 @PageTitle("Story Narrative")
@@ -115,7 +116,7 @@ public class CampaignNarrativeView extends VerticalLayout {
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
               if (active != null) {
-                campaignRepository.findActiveByWrestler(active).ifPresent(c -> currentCampaign = c);
+                campaignService.getCampaignForWrestler(active).ifPresent(c -> currentCampaign = c);
               }
             });
   }
@@ -127,7 +128,25 @@ public class CampaignNarrativeView extends VerticalLayout {
       return;
     }
 
-    add(new H2("Story: " + campaignService.getCurrentChapter(currentCampaign).getTitle()));
+    String narrativeTitle = "Story Narrative";
+    String narrativeDescription = "";
+
+    Optional<CampaignChapterDTO> chapterOpt = campaignService.getCurrentChapter(currentCampaign);
+
+    if (currentCampaign.getState().getActiveStoryline() != null) {
+      CampaignStoryline activeStoryline = currentCampaign.getState().getActiveStoryline();
+      narrativeTitle = "Storyline: " + activeStoryline.getTitle();
+      narrativeDescription = activeStoryline.getDescription();
+    } else if (chapterOpt.isPresent()) {
+      CampaignChapterDTO chapter = chapterOpt.get();
+      narrativeTitle = "Story: " + chapter.getTitle();
+      narrativeDescription = chapter.getShortDescription();
+    }
+
+    add(new H2(narrativeTitle));
+    if (narrativeDescription != null && !narrativeDescription.isEmpty()) {
+      add(new Paragraph(narrativeDescription));
+    }
 
     narrativeContainer = new VerticalLayout();
     narrativeContainer.setWidthFull();
@@ -176,37 +195,28 @@ public class CampaignNarrativeView extends VerticalLayout {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
-    // Use a background thread for AI generation to keep UI responsive
-    UI ui = UI.getCurrent();
-    SecurityContext context = SecurityContextHolder.getContext();
-
-    Runnable backgroundTask =
+    GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
+            log.info("Generating encounter synchronously");
             CampaignEncounterResponseDTO encounter =
                 encounterService.generateEncounter(currentCampaign);
-            ui.access(
-                () -> {
-                  displayEncounter(encounter);
-                  showLoading(false);
-                });
+            displayEncounter(encounter);
           } catch (Exception e) {
             log.error("Failed to generate encounter", e);
-            ui.access(
-                () -> {
-                  Notification.show("Failed to connect to the Story Director. Please try again.")
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                  showLoading(false);
-                  addRetryButton();
-                });
+            Notification.show("Failed to connect to the Story Director. Please try again.")
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            addRetryButton();
+          } finally {
+            showLoading(false);
           }
-        };
-
-    // Wrap the task to propagate the security context
-    new Thread(new DelegatingSecurityContextRunnable(backgroundTask, context)).start();
+        });
   }
 
   private void displayEncounter(CampaignEncounterResponseDTO encounter) {
+    narrativeContainer.removeAll();
+    choicesContainer.removeAll();
+
     Paragraph p = new Paragraph(encounter.getNarrative());
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);

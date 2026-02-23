@@ -40,7 +40,7 @@ import org.jspecify.annotations.Nullable;
 @Entity
 @Table(
     name = "rivalry",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"wrestler1_id", "wrestler2_id"}))
+    indexes = {@Index(name = "idx_rivalry_wrestlers", columnList = "wrestler1_id, wrestler2_id")})
 @Getter
 @Setter
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")

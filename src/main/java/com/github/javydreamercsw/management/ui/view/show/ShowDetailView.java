@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -38,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -121,6 +123,7 @@ public class ShowDetailView extends Main
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final LeagueRepository leagueRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
+  private final RingsideActionService ringsideActionService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -147,7 +150,8 @@ public class ShowDetailView extends Main
       ShowController showController,
       MatchFulfillmentRepository matchFulfillmentRepository,
       LeagueRepository leagueRepository,
-      CommentaryTeamRepository commentaryTeamRepository) {
+      CommentaryTeamRepository commentaryTeamRepository,
+      RingsideActionService ringsideActionService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -166,6 +170,7 @@ public class ShowDetailView extends Main
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRepository = leagueRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
+    this.ringsideActionService = ringsideActionService;
     initializeComponents();
   }
 
@@ -799,7 +804,8 @@ public class ShowDetailView extends Main
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   segmentNarrationController,
-                  segmentNarrationServiceFactory);
+                  segmentNarrationServiceFactory,
+                  ringsideActionService);
           dialog.open();
         });
 
@@ -874,6 +880,16 @@ public class ShowDetailView extends Main
     rulesCombo.setWidthFull();
     rulesCombo.setId("segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
+
+    // Referee selection
+    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
+    refereeCombo.setItems(
+        npcService.findAllByType("Referee").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
+    refereeCombo.setItemLabelGenerator(Npc::getName);
+    refereeCombo.setWidthFull();
+    refereeCombo.setId("add-referee-combo-box");
 
     // Alignment and Gender Filters
     ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
@@ -970,6 +986,7 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        refereeCombo,
         alignmentFilter,
         genderFilter,
         wrestlersCombo,
@@ -1003,6 +1020,7 @@ public class ShowDetailView extends Main
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
               newSegment.setSegmentType(segmentTypeCombo.getValue());
               newSegment.setWinners(new ArrayList<>(winners));
+              newSegment.setReferee(refereeCombo.getValue());
 
               // If it's a title segment, set the selected titles
               if (isTitleSegment) {
@@ -1074,6 +1092,17 @@ public class ShowDetailView extends Main
     rulesCombo.setValue(segment.getSegmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
+
+    // Referee selection
+    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
+    refereeCombo.setItems(
+        npcService.findAllByType("Referee").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
+    refereeCombo.setItemLabelGenerator(Npc::getName);
+    refereeCombo.setWidthFull();
+    refereeCombo.setValue(segment.getReferee());
+    refereeCombo.setId("edit-referee-combo-box");
 
     // Alignment and Gender Filters
     ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
@@ -1181,6 +1210,7 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
+        refereeCombo,
         alignmentFilter,
         genderFilter,
         wrestlersCombo,
@@ -1197,6 +1227,7 @@ public class ShowDetailView extends Main
             e -> {
               segment.setNarration(narrationArea.getValue());
               segment.setSummary(summaryArea.getValue());
+              segment.setReferee(refereeCombo.getValue());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
               segment.setIsTitleSegment(isTitleSegment);

@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import lombok.NonNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,12 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private TournamentService tournamentService;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleService titleService;
+  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setup() {
+    dataInitializer.init();
+  }
 
   @Test
   @Order(1)
@@ -251,7 +258,72 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
         "wrestler-profile");
   }
 
-  private Wrestler getOrCreateWrestler(Account account) {
+  @Test
+  @Order(9)
+  void testCapturePromoChoicesView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
+    waitForVaadinClientToLoad();
+
+    // 3. Verify & Capture
+    // Mock AI gives "The crowd is buzzing" as opener
+    waitForPageSourceToContain("The crowd is buzzing");
+
+    documentFeature(
+        "Campaign",
+        "Smart Promo Hooks",
+        "The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your"
+            + " wrestler's personality and current rivalries. Choose your strategy to connect"
+            + " with the audience or draw heat.",
+        "campaign-promo-hooks");
+  }
+
+  @Test
+  @Order(10)
+  void testCapturePromoOutcomeView() {
+    // 1. Setup
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
+    waitForVaadinClientToLoad();
+
+    // 3. Perform Action (Click a hook)
+    waitForPageSourceToContain("The crowd is buzzing");
+    org.openqa.selenium.WebElement hookButton =
+        waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-hook-cheap-heat"));
+    clickElement(hookButton);
+
+    // 4. Verify & Capture (synchronous processing may take a few seconds due to Mock AI sleep)
+    waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-outcome-status"));
+    org.openqa.selenium.WebElement status =
+        driver.findElement(org.openqa.selenium.By.id("promo-outcome-status"));
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(d -> status.getText().contains("SUCCESSFUL"));
+
+    // Also verify text in the container
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(
+            org.openqa.selenium.support.ui.ExpectedConditions.textToBePresentInElementLocated(
+                org.openqa.selenium.By.id("narrative-container"), "Promo SUCCESSFUL"));
+
+    documentFeature(
+        "Campaign",
+        "Smart Promo Outcome",
+        "Your choices have consequences. The crowd reaction, opponent retorts, and alignment"
+            + " shifts are all dynamically calculated, affecting your wrestler's momentum and"
+            + " reputation.",
+        "campaign-promo-outcome");
+  }
+
+  private Wrestler getOrCreateWrestler(@NonNull Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -270,7 +342,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     return wrestlerRepository.saveAndFlush(w);
   }
 
-  private Campaign createCampaignInChapter(Wrestler player, String chapterId) {
+  private Campaign createCampaignInChapter(@NonNull Wrestler player, @NonNull String chapterId) {
     if (campaignService.hasActiveCampaign(player)) {
       Campaign existing = campaignRepository.findActiveByWrestler(player).get();
       existing.getState().setCurrentChapterId(chapterId);
@@ -281,7 +353,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     return campaignRepository.save(c);
   }
 
-  private void waitForText(String text) {
+  private void waitForText(@NonNull String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

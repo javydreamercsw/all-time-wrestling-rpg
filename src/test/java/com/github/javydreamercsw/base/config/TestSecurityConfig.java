@@ -37,7 +37,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @TestConfiguration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
-@Profile("test")
+@Profile("test & !e2e")
 @Import(InboxEventTypeConfig.class)
 public class TestSecurityConfig {
 
