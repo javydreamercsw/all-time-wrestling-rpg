@@ -62,7 +62,7 @@ public class BackstageEncounterService {
     CampaignState state = campaign.getState();
 
     // Only trigger if no actions have been taken today
-    if (state.getActionsTaken() != 0) {
+    if (state.getActionsTaken() != 0 || state.getCurrentGameDate() == null) {
       return false;
     }
 
@@ -94,21 +94,23 @@ public class BackstageEncounterService {
     return triggered;
   }
 
-  private void updateLastEncounterDate(CampaignState state) {
-    try {
-      Map<String, Object> data = new HashMap<>();
-      if (state.getFeatureData() != null && !state.getFeatureData().isBlank()) {
-        data =
-            objectMapper.readValue(
-                state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+    private void updateLastEncounterDate(CampaignState state) {
+      if (state.getCurrentGameDate() == null) {
+        log.warn("Cannot update last encounter date: currentGameDate is null");
+        return;
       }
-      data.put("lastBackstageEncounterDate", state.getCurrentGameDate().toString());
-      state.setFeatureData(objectMapper.writeValueAsString(data));
-      stateRepository.save(state);
-    } catch (Exception e) {
-      log.error("Failed to update lastBackstageEncounterDate in featureData", e);
+      try {
+        Map<String, Object> data = new HashMap<>();
+        if (state.getFeatureData() != null && !state.getFeatureData().isBlank()) {
+          data = objectMapper.readValue(state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+        }
+        data.put("lastBackstageEncounterDate", state.getCurrentGameDate().toString());
+        state.setFeatureData(objectMapper.writeValueAsString(data));
+        stateRepository.save(state);
+      } catch (Exception e) {
+        log.error("Failed to update lastBackstageEncounterDate in featureData", e);
+      }
     }
-  }
 
   @Transactional
   public CampaignEncounterResponseDTO generateBackstageEncounter(Campaign campaign) {
