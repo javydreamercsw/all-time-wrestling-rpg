@@ -16,10 +16,12 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -28,7 +30,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
-import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -36,18 +37,16 @@ import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
+class BackstageEncounterE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
   @MockitoBean private BackstageEncounterService backstageEncounterService;
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
   @BeforeEach
   void setup() {
-    dataInitializer.init();
     Account admin = accountRepository.findByUsername("admin").get();
     Wrestler player = getOrCreateWrestler(admin);
     if (!campaignService.hasActiveCampaign(player)) {
@@ -69,7 +68,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
 
     Wrestler w =
         Wrestler.builder()
-            .name("Docs Wrestler")
+            .name("Test E2E Wrestler")
             .startingHealth(100)
             .startingStamina(100)
             .account(account)
@@ -81,7 +80,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
-  void testCaptureBackstageEncounter() {
+  void testRandomEncounterTriggerAndFlow() {
     // 1. Force the random trigger to succeed
     when(backstageEncounterService.shouldTriggerEncounter(any())).thenReturn(true);
 
@@ -103,34 +102,39 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
 
     when(backstageEncounterService.generateBackstageEncounter(any())).thenReturn(response);
 
+    // Mock recordBackstageChoice to do nothing (it's a void method)
+    // and avoid it failing because of missing DB records in the mock context
     doNothing().when(backstageEncounterService).recordBackstageChoice(any(), any());
 
     // 2. Navigate to Backstage Actions - should trigger reroute
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");
     waitForVaadinClientToLoad();
 
-    // 3. Verify & Capture Situation
+    // 3. Verify we are on the situation view
     waitForText("Backstage Situation");
-    documentFeature(
-        "Campaign",
-        "Backstage Encounters",
-        "Random encounters can occur when you visit the backstage area. These interactive"
-            + " dialogue segments force you to make choices that affect your alignment and"
-            + " momentum.",
-        "campaign-backstage-encounter");
+    assertTrue(driver.getCurrentUrl().contains("backstage-situation"));
+
+    // Check mock narrative
+    waitForText("Mock Situation: You are approached by a veteran");
 
     // 4. Click a choice (Respect)
     WebElement respectBtn = waitForVaadinElement(driver, By.id("backstage-choice-respect"));
     clickElement(respectBtn);
 
-    // 5. Verify & Capture Outcome
+    // 5. Verify outcome
     waitForText("Outcome:");
-    documentFeature(
-        "Campaign",
-        "Encounter Outcomes",
-        "Every choice in a backstage encounter has a narrative outcome and mechanical"
-            + " consequences, such as alignment shifts or bonuses for your next match.",
-        "campaign-backstage-encounter-outcome");
+    waitForText("The veteran nods in approval");
+
+    // 6. Finish interaction
+    WebElement finishBtn = waitForVaadinElement(driver, By.id("finish-backstage-situation-button"));
+    ((org.openqa.selenium.JavascriptExecutor) driver)
+        .executeScript("arguments[0].click();", finishBtn);
+    waitForVaadinClientToLoad();
+
+    // 7. Verify we are back in Backstage Actions
+    // The view should show "Backstage Area" title (it's an H2)
+    waitForVaadinElement(driver, By.xpath("//h2[text()='Backstage Area']"));
+    assertTrue(driver.getCurrentUrl().contains("campaign/actions"));
   }
 
   private void waitForText(String text) {
