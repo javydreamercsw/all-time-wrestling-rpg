@@ -48,8 +48,17 @@ class SmartPromoE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
+  @org.springframework.test.context.bean.override.mockito.MockitoBean
+  private com.github.javydreamercsw.management.service.campaign.BackstageEncounterService
+      backstageEncounterService;
+
   @BeforeEach
   void setupCampaign() {
+    // Disable random encounters for this test
+    org.mockito.Mockito.when(
+            backstageEncounterService.shouldTriggerEncounter(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(false);
+
     wrestlerAlignmentRepository.deleteAllInBatch();
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();

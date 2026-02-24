@@ -82,8 +82,9 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureBackstageEncounter() {
-    // 1. Force the random trigger to succeed
-    when(backstageEncounterService.shouldTriggerEncounter(any())).thenReturn(true);
+    // 1. Force the random trigger to succeed on first call, but fail on subsequent calls
+    // to avoid infinite redirect loop if navigating back to campaign/actions.
+    when(backstageEncounterService.shouldTriggerEncounter(any())).thenReturn(true, false);
 
     // Provide a mock encounter when requested
     var choice1 =
