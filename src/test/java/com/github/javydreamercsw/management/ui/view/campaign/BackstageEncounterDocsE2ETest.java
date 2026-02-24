@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
@@ -28,13 +28,12 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
 
@@ -42,7 +41,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
-  @Autowired private BackstageEncounterService backstageEncounterService;
+  @MockitoBean private BackstageEncounterService backstageEncounterService;
   @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
   @BeforeEach
@@ -83,9 +82,25 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void testCaptureBackstageEncounter() {
     // 1. Force the random trigger to succeed
-    Random mockRandom = mock(Random.class);
-    when(mockRandom.nextInt(100)).thenReturn(0); // 0 < 20
-    ReflectionTestUtils.setField(backstageEncounterService, "random", mockRandom);
+    when(backstageEncounterService.shouldTriggerEncounter(any())).thenReturn(true);
+
+    // Provide a mock encounter when requested
+    var choice1 =
+        com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+            .builder()
+            .text("Option A")
+            .label("Respect")
+            .alignmentShift(1)
+            .momentumBonus(1)
+            .outcomeText("The veteran nods in approval.")
+            .nextPhase("BACKSTAGE")
+            .build();
+
+    var response =
+        new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
+            "Mock Situation: You are approached by a veteran", java.util.List.of(choice1));
+
+    when(backstageEncounterService.generateBackstageEncounter(any())).thenReturn(response);
 
     // 2. Navigate to Backstage Actions - should trigger reroute
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");

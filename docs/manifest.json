@@ -1,402 +1,416 @@
 {
-  "features": [ {
-    "id": "game-mechanics-mechanic-match-interference",
-    "category": "Game Mechanics",
-    "title": "Match Interference",
-    "description": "Managers and faction members can swing the match in your favor. Perform ringside actions like distracting the referee or sliding in a weapon, but be careful - too much interference will lead to ejections or disqualification!",
-    "imagePath": "screenshots/mechanic-match-interference.png",
-    "order": 20
+  "features" : [ {
+    "id" : "campaign-campaign-backstage-encounter",
+    "category" : "Campaign",
+    "title" : "Backstage Encounters",
+    "description" : "Random encounters can occur when you visit the backstage area. These interactive dialogue segments force you to make choices that affect your alignment and momentum.",
+    "imagePath" : "screenshots/campaign-backstage-encounter.png",
+    "order" : 0
   }, {
-    "id": "admin-admin-season-settings-before-generation",
-    "category": "Admin",
-    "title": "Season Settings - Before Schedule Generation",
-    "description": "The Season Settings tab showing the 'Generate Season Schedule' button, before execution.",
-    "imagePath": "screenshots/admin-season-settings-before-generation.png",
-    "order": 60
+    "id" : "campaign-campaign-backstage-encounter-outcome",
+    "category" : "Campaign",
+    "title" : "Encounter Outcomes",
+    "description" : "Every choice in a backstage encounter has a narrative outcome and mechanical consequences, such as alignment shifts or bonuses for your next match.",
+    "imagePath" : "screenshots/campaign-backstage-encounter-outcome.png",
+    "order" : 10
   }, {
-    "id": "admin-admin-season-settings-after-generation",
-    "category": "Admin",
-    "title": "Season Settings - After Schedule Generation",
-    "description": "The Season Settings tab after successfully generating the season schedule.",
-    "imagePath": "screenshots/admin-season-settings-after-generation.png",
-    "order": 70
+    "id" : "game-mechanics-mechanic-match-interference",
+    "category" : "Game Mechanics",
+    "title" : "Match Interference",
+    "description" : "Managers and faction members can swing the match in your favor. Perform ringside actions like distracting the referee or sliding in a weapon, but be careful - too much interference will lead to ejections or disqualification!",
+    "imagePath" : "screenshots/mechanic-match-interference.png",
+    "order" : 20
   }, {
-    "id": "news-news-grid",
-    "category": "News",
-    "title": "News & Rumors",
-    "description": "Keep track of everything happening in the wrestling world. Review match results, injuries, and contract updates in a structured grid. Authorized users can trigger a comprehensive Monthly Synthesis to wrap up major story arcs.",
-    "imagePath": "screenshots/news-grid.png",
-    "order": 250
+    "id" : "admin-admin-season-settings-before-generation",
+    "category" : "Admin",
+    "title" : "Season Settings - Before Schedule Generation",
+    "description" : "The Season Settings tab showing the 'Generate Season Schedule' button, before execution.",
+    "imagePath" : "screenshots/admin-season-settings-before-generation.png",
+    "order" : 60
   }, {
-    "id": "news-news-social-feed",
-    "category": "News",
-    "title": "Wrestling World Feed",
-    "description": "Immerse yourself in the narrative with the Social Feed. See real-time reactions from wrestlers and commentators, and download the monthly Newsletter for a deep-dive analytical summary of the latest events.",
-    "imagePath": "screenshots/news-social-feed.png",
-    "order": 260
+    "id" : "admin-admin-season-settings-after-generation",
+    "category" : "Admin",
+    "title" : "Season Settings - After Schedule Generation",
+    "description" : "The Season Settings tab after successfully generating the season schedule.",
+    "imagePath" : "screenshots/admin-season-settings-after-generation.png",
+    "order" : 70
   }, {
-    "id": "campaign-campaign-story-journal",
-    "category": "Campaign",
-    "title": "Story Journal",
-    "description": "Your AI-generated adventures are preserved in the Story Journal. Here you can review past storyline arcs and download them as JSON chapter files to share or preserve.",
-    "imagePath": "screenshots/campaign-story-journal.png",
-    "order": 380
+    "id" : "news-news-grid",
+    "category" : "News",
+    "title" : "News & Rumors",
+    "description" : "Keep track of everything happening in the wrestling world. Review match results, injuries, and contract updates in a structured grid. Authorized users can trigger a comprehensive Monthly Synthesis to wrap up major story arcs.",
+    "imagePath" : "screenshots/news-grid.png",
+    "order" : 250
   }, {
-    "id": "game-mechanics-mechanic-faction-synergy",
-    "category": "Game Mechanics",
-    "title": "Faction Synergy",
-    "description": "Factions grow stronger as members work together. Affinity builds through shared matches and victories, unlocking powerful synergy buffs like stamina recovery, finisher damage, and resilience bonuses. High-affinity factions have a mechanical advantage in match outcomes.",
-    "imagePath": "screenshots/mechanic-faction-synergy.png",
-    "order": 440
+    "id" : "news-news-social-feed",
+    "category" : "News",
+    "title" : "Wrestling World Feed",
+    "description" : "Immerse yourself in the narrative with the Social Feed. See real-time reactions from wrestlers and commentators, and download the monthly Newsletter for a deep-dive analytical summary of the latest events.",
+    "imagePath" : "screenshots/news-social-feed.png",
+    "order" : 260
   }, {
-    "id": "player-dashboard-player-season-history",
-    "category": "Player Dashboard",
-    "title": "Historical Season Performance",
-    "description": "Review your past glory by switching between seasons. The dashboard stores historical data, allowing you to track your wrestler's career trajectory and milestones over time.",
-    "imagePath": "screenshots/player-season-history.png",
-    "order": 560
+    "id" : "campaign-campaign-story-journal",
+    "category" : "Campaign",
+    "title" : "Story Journal",
+    "description" : "Your AI-generated adventures are preserved in the Story Journal. Here you can review past storyline arcs and download them as JSON chapter files to share or preserve.",
+    "imagePath" : "screenshots/campaign-story-journal.png",
+    "order" : 380
   }, {
-    "id": "player-dashboard-player-season-summary",
-    "category": "Player Dashboard",
-    "title": "Season Summary",
-    "description": "The Season Summary component provides a snapshot of your wrestler's performance during the currently active season, including their win-loss record, fan growth progress, and any championships or accolades earned.",
-    "imagePath": "screenshots/player-season-summary.png",
-    "order": 0
+    "id" : "game-mechanics-mechanic-faction-synergy",
+    "category" : "Game Mechanics",
+    "title" : "Faction Synergy",
+    "description" : "Factions grow stronger as members work together. Affinity builds through shared matches and victories, unlocking powerful synergy buffs like stamina recovery, finisher damage, and resilience bonuses. High-affinity factions have a mechanical advantage in match outcomes.",
+    "imagePath" : "screenshots/mechanic-faction-synergy.png",
+    "order" : 440
   }, {
-    "id": "campaign-campaign-promo-hooks",
-    "category": "Campaign",
-    "title": "Smart Promo Hooks",
-    "description": "The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your wrestler's personality and current rivalries. Choose your strategy to connect with the audience or draw heat.",
-    "imagePath": "screenshots/campaign-promo-hooks.png",
-    "order": 80
+    "id" : "player-dashboard-player-season-history",
+    "category" : "Player Dashboard",
+    "title" : "Historical Season Performance",
+    "description" : "Review your past glory by switching between seasons. The dashboard stores historical data, allowing you to track your wrestler's career trajectory and milestones over time.",
+    "imagePath" : "screenshots/player-season-history.png",
+    "order" : 560
   }, {
-    "id": "campaign-campaign-promo-outcome",
-    "category": "Campaign",
-    "title": "Smart Promo Outcome",
-    "description": "Your choices have consequences. The crowd reaction, opponent retorts, and alignment shifts are all dynamically calculated, affecting your wrestler's momentum and reputation.",
-    "imagePath": "screenshots/campaign-promo-outcome.png",
-    "order": 90
+    "id" : "player-dashboard-player-season-summary",
+    "category" : "Player Dashboard",
+    "title" : "Season Summary",
+    "description" : "The Season Summary component provides a snapshot of your wrestler's performance during the currently active season, including their win-loss record, fan growth progress, and any championships or accolades earned.",
+    "imagePath" : "screenshots/player-season-summary.png",
+    "order" : 0
   }, {
-    "id": "player-dashboard-player-achievements",
-    "category": "Player Dashboard",
-    "title": "Medals & Achievements",
-    "description": "Track your progress toward various career milestones in the Achievements tab. Each achievement awards permanent Prestige XP and a unique medal displayed on your profile.",
-    "imagePath": "screenshots/player-achievements.png",
-    "order": 20
+    "id" : "campaign-campaign-promo-hooks",
+    "category" : "Campaign",
+    "title" : "Smart Promo Hooks",
+    "description" : "The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your wrestler's personality and current rivalries. Choose your strategy to connect with the audience or draw heat.",
+    "imagePath" : "screenshots/campaign-promo-hooks.png",
+    "order" : 80
   }, {
-    "id": "dashboards-hall-of-fame",
-    "category": "Dashboards",
-    "title": "Hall of Fame",
-    "description": "The Hall of Fame tracks the top players across the entire ATW RPG ecosystem. Ranking is primarily based on the Legacy Score, which combines cumulative fans earned across all managed wrestlers and points from unlocked achievements.",
-    "imagePath": "screenshots/hall-of-fame.png",
-    "order": 0
+    "id" : "campaign-campaign-promo-outcome",
+    "category" : "Campaign",
+    "title" : "Smart Promo Outcome",
+    "description" : "Your choices have consequences. The crowd reaction, opponent retorts, and alignment shifts are all dynamically calculated, affecting your wrestler's momentum and reputation.",
+    "imagePath" : "screenshots/campaign-promo-outcome.png",
+    "order" : 90
   }, {
-    "id": "player-dashboard-player-career-legacy",
-    "category": "Player Dashboard",
-    "title": "Career Legacy",
-    "description": "Your persistent career progress is tracked at the account level. View your current Legacy Score, Prestige XP, and earned achievement badges directly from your dashboard. These stats persist across seasons and different wrestlers.",
-    "imagePath": "screenshots/player-career-legacy.png",
-    "order": 10
+    "id" : "player-dashboard-player-achievements",
+    "category" : "Player Dashboard",
+    "title" : "Medals & Achievements",
+    "description" : "Track your progress toward various career milestones in the Achievements tab. Each achievement awards permanent Prestige XP and a unique medal displayed on your profile.",
+    "imagePath" : "screenshots/player-achievements.png",
+    "order" : 20
   }, {
-    "id": "dashboards-dashboards-news-feed",
-    "category": "Dashboards",
-    "title": "News & Rumors Feed",
-    "description": "A procedural news system that reacts to in-game events across the promotion.",
-    "imagePath": "screenshots/dashboards-news-feed.png",
-    "order": 0
+    "id" : "dashboards-hall-of-fame",
+    "category" : "Dashboards",
+    "title" : "Hall of Fame",
+    "description" : "The Hall of Fame tracks the top players across the entire ATW RPG ecosystem. Ranking is primarily based on the Legacy Score, which combines cumulative fans earned across all managed wrestlers and points from unlocked achievements.",
+    "imagePath" : "screenshots/hall-of-fame.png",
+    "order" : 0
   }, {
-    "id": "booker-booker-dashboard-news-ticker",
-    "category": "Booker",
-    "title": "Dashboard with News Ticker",
-    "description": "Latest headlines and rumors are visible directly on the booker dashboard.",
-    "imagePath": "screenshots/booker-dashboard-news-ticker.png",
-    "order": 10
+    "id" : "player-dashboard-player-career-legacy",
+    "category" : "Player Dashboard",
+    "title" : "Career Legacy",
+    "description" : "Your persistent career progress is tracked at the account level. View your current Legacy Score, Prestige XP, and earned achievement badges directly from your dashboard. These stats persist across seasons and different wrestlers.",
+    "imagePath" : "screenshots/player-career-legacy.png",
+    "order" : 10
   }, {
-    "id": "ai-features-ai-dynamic-commentary",
-    "category": "AI Features",
-    "title": "Dynamic Commentator Personas",
-    "description": "Experience the match through the eyes of unique commentator teams. Each commentator brings their own alignment, style, and catchphrases to the broadcast, creating an immersive 'sports-entertainment' feel. Face commentators cheer the heroes, while Heel commentators favor the rule-breakers.",
-    "imagePath": "screenshots/ai-dynamic-commentary.png",
-    "order": 410
+    "id" : "dashboards-dashboards-news-feed",
+    "category" : "Dashboards",
+    "title" : "News & Rumors Feed",
+    "description" : "A procedural news system that reacts to in-game events across the promotion.",
+    "imagePath" : "screenshots/dashboards-news-feed.png",
+    "order" : 0
   }, {
-    "id": "entities-entity-teams",
-    "category": "Entities",
-    "title": "Tag Teams",
-    "description": "Track formal tag team partnerships. Teams often have their own specific finishing moves and shared history in the Tag Team division.",
-    "imagePath": "screenshots/entity-teams.png",
-    "order": 0
+    "id" : "booker-booker-dashboard-news-ticker",
+    "category" : "Booker",
+    "title" : "Dashboard with News Ticker",
+    "description" : "Latest headlines and rumors are visible directly on the booker dashboard.",
+    "imagePath" : "screenshots/booker-dashboard-news-ticker.png",
+    "order" : 10
   }, {
-    "id": "entities-entity-seasons",
-    "category": "Entities",
-    "title": "Seasons",
-    "description": "Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.",
-    "imagePath": "screenshots/entity-seasons.png",
-    "order": 10
+    "id" : "ai-features-ai-dynamic-commentary",
+    "category" : "AI Features",
+    "title" : "Dynamic Commentator Personas",
+    "description" : "Experience the match through the eyes of unique commentator teams. Each commentator brings their own alignment, style, and catchphrases to the broadcast, creating an immersive 'sports-entertainment' feel. Face commentators cheer the heroes, while Heel commentators favor the rule-breakers.",
+    "imagePath" : "screenshots/ai-dynamic-commentary.png",
+    "order" : 410
   }, {
-    "id": "entities-entity-titles",
-    "category": "Entities",
-    "title": "Championships",
-    "description": "Manage the various titles across the promotion. From World Championships to regional belts, track current champions and the prestige of each title.",
-    "imagePath": "screenshots/entity-titles.png",
-    "order": 20
+    "id" : "entities-entity-teams",
+    "category" : "Entities",
+    "title" : "Tag Teams",
+    "description" : "Track formal tag team partnerships. Teams often have their own specific finishing moves and shared history in the Tag Team division.",
+    "imagePath" : "screenshots/entity-teams.png",
+    "order" : 0
   }, {
-    "id": "entities-entity-factions",
-    "category": "Entities",
-    "title": "Factions",
-    "description": "Manage powerful wrestling groups. Factions bring together multiple wrestlers under a single banner, creating complex storylines and alliance-based rivalries.",
-    "imagePath": "screenshots/entity-factions.png",
-    "order": 30
+    "id" : "entities-entity-seasons",
+    "category" : "Entities",
+    "title" : "Seasons",
+    "description" : "Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.",
+    "imagePath" : "screenshots/entity-seasons.png",
+    "order" : 10
   }, {
-    "id": "admin-admin-show-template-art-generation",
-    "category": "Admin",
-    "title": "Generate Template Art",
-    "description": "Create unique branding for your show templates using AI. This art will be used in the booking interface and calendar.",
-    "imagePath": "screenshots/admin-show-template-art-generation.png",
-    "order": 50
+    "id" : "entities-entity-titles",
+    "category" : "Entities",
+    "title" : "Championships",
+    "description" : "Manage the various titles across the promotion. From World Championships to regional belts, track current champions and the prestige of each title.",
+    "imagePath" : "screenshots/entity-titles.png",
+    "order" : 20
   }, {
-    "id": "admin-admin-observability-performance",
-    "category": "Admin",
-    "title": "System Performance",
-    "description": "Monitor AI response times and resource usage.",
-    "imagePath": "screenshots/admin-observability-performance.png",
-    "order": 60
+    "id" : "entities-entity-factions",
+    "category" : "Entities",
+    "title" : "Factions",
+    "description" : "Manage powerful wrestling groups. Factions bring together multiple wrestlers under a single banner, creating complex storylines and alliance-based rivalries.",
+    "imagePath" : "screenshots/entity-factions.png",
+    "order" : 30
   }, {
-    "id": "admin-admin-observability-cache",
-    "category": "Admin",
-    "title": "Cache Management",
-    "description": "Monitor and manage application caches.",
-    "imagePath": "screenshots/admin-observability-cache.png",
-    "order": 70
+    "id" : "admin-admin-show-template-art-generation",
+    "category" : "Admin",
+    "title" : "Generate Template Art",
+    "description" : "Create unique branding for your show templates using AI. This art will be used in the booking interface and calendar.",
+    "imagePath" : "screenshots/admin-show-template-art-generation.png",
+    "order" : 50
   }, {
-    "id": "admin-admin-observability-database",
-    "category": "Admin",
-    "title": "Database Management",
-    "description": "Monitor database statistics and optimize performance.",
-    "imagePath": "screenshots/admin-observability-database.png",
-    "order": 80
+    "id" : "admin-admin-observability-performance",
+    "category" : "Admin",
+    "title" : "System Performance",
+    "description" : "Monitor AI response times and resource usage.",
+    "imagePath" : "screenshots/admin-observability-performance.png",
+    "order" : 60
   }, {
-    "id": "admin-admin-observability-pulse",
-    "category": "Admin",
-    "title": "System Pulse",
-    "description": "Real-time health status of the application.",
-    "imagePath": "screenshots/admin-observability-pulse.png",
-    "order": 90
+    "id" : "admin-admin-observability-cache",
+    "category" : "Admin",
+    "title" : "Cache Management",
+    "description" : "Monitor and manage application caches.",
+    "imagePath" : "screenshots/admin-observability-cache.png",
+    "order" : 70
   }, {
-    "id": "admin-admin-tools",
-    "category": "Admin",
-    "title": "Admin Tools",
-    "description": "Perform critical maintenance tasks such as manual tier recalculation and account management.",
-    "imagePath": "screenshots/admin-tools.png",
-    "order": 100
+    "id" : "admin-admin-observability-database",
+    "category" : "Admin",
+    "title" : "Database Management",
+    "description" : "Monitor database statistics and optimize performance.",
+    "imagePath" : "screenshots/admin-observability-database.png",
+    "order" : 80
   }, {
-    "id": "admin-admin-show-templates",
-    "category": "Admin",
-    "title": "Show Templates",
-    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
-    "imagePath": "screenshots/admin-show-templates.png",
-    "order": 110
+    "id" : "admin-admin-observability-pulse",
+    "category" : "Admin",
+    "title" : "System Pulse",
+    "description" : "Real-time health status of the application.",
+    "imagePath" : "screenshots/admin-observability-pulse.png",
+    "order" : 90
   }, {
-    "id": "admin-admin-ai-settings",
-    "category": "Admin",
-    "title": "AI Configuration",
-    "description": "Configure the Artificial Intelligence providers used for match narration, image generation, and creative assistance. You can switch between different LLM providers (OpenAI, Anthropic, Gemini) and configure their specific settings.",
-    "imagePath": "screenshots/admin-ai-settings.png",
-    "order": 120
+    "id" : "admin-admin-tools",
+    "category" : "Admin",
+    "title" : "Admin Tools",
+    "description" : "Perform critical maintenance tasks such as manual tier recalculation and account management.",
+    "imagePath" : "screenshots/admin-tools.png",
+    "order" : 100
   }, {
-    "id": "admin-admin-injury-types",
-    "category": "Admin",
-    "title": "Injury Management",
-    "description": "Define different types of injuries, their severity, and recovery times. These are used to dynamically affect wrestler performance and availability in the campaign and booking modes.",
-    "imagePath": "screenshots/admin-injury-types.png",
-    "order": 130
+    "id" : "admin-admin-show-templates",
+    "category" : "Admin",
+    "title" : "Show Templates",
+    "description" : "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
+    "imagePath" : "screenshots/admin-show-templates.png",
+    "order" : 110
   }, {
-    "id": "admin-admin-wrestler-list",
-    "category": "Admin",
-    "title": "Wrestler Management",
-    "description": "Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images, and manage contract details from this centralized view.",
-    "imagePath": "screenshots/admin-wrestler-list.png",
-    "order": 140
+    "id" : "admin-admin-ai-settings",
+    "category" : "Admin",
+    "title" : "AI Configuration",
+    "description" : "Configure the Artificial Intelligence providers used for match narration, image generation, and creative assistance. You can switch between different LLM providers (OpenAI, Anthropic, Gemini) and configure their specific settings.",
+    "imagePath" : "screenshots/admin-ai-settings.png",
+    "order" : 120
   }, {
-    "id": "leagues-league-creation",
-    "category": "Leagues",
-    "title": "Creating a League",
-    "description": "Commissioners can create new leagues, setting the maximum picks per player and inviting other players.",
-    "imagePath": "screenshots/league-creation.png",
-    "order": 150
+    "id" : "admin-admin-injury-types",
+    "category" : "Admin",
+    "title" : "Injury Management",
+    "description" : "Define different types of injuries, their severity, and recovery times. These are used to dynamically affect wrestler performance and availability in the campaign and booking modes.",
+    "imagePath" : "screenshots/admin-injury-types.png",
+    "order" : 130
   }, {
-    "id": "leagues-league-draft-room",
-    "category": "Leagues",
-    "title": "The Draft Room",
-    "description": "Players participate in a snake draft to build their rosters. The UI shows the current turn and available wrestlers.",
-    "imagePath": "screenshots/league-draft-room.png",
-    "order": 160
+    "id" : "admin-admin-wrestler-list",
+    "category" : "Admin",
+    "title" : "Wrestler Management",
+    "description" : "Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images, and manage contract details from this centralized view.",
+    "imagePath" : "screenshots/admin-wrestler-list.png",
+    "order" : 140
   }, {
-    "id": "leagues-league-match-report",
-    "category": "Leagues",
-    "title": "Match Reporting",
-    "description": "When a league match is booked, players receive a notification to report the results of their matches.",
-    "imagePath": "screenshots/league-match-report.png",
-    "order": 170
+    "id" : "leagues-league-creation",
+    "category" : "Leagues",
+    "title" : "Creating a League",
+    "description" : "Commissioners can create new leagues, setting the maximum picks per player and inviting other players.",
+    "imagePath" : "screenshots/league-creation.png",
+    "order" : 150
   }, {
-    "id": "leagues-league-standings",
-    "category": "Leagues",
-    "title": "League Standings",
-    "description": "The league dashboard displays the current standings, including wins, losses, and draws for each wrestler.",
-    "imagePath": "screenshots/league-standings.png",
-    "order": 180
+    "id" : "leagues-league-draft-room",
+    "category" : "Leagues",
+    "title" : "The Draft Room",
+    "description" : "Players participate in a snake draft to build their rosters. The UI shows the current turn and available wrestlers.",
+    "imagePath" : "screenshots/league-draft-room.png",
+    "order" : 160
   }, {
-    "id": "leagues-league-rosters-tab",
-    "category": "Leagues",
-    "title": "League Rosters",
-    "description": "View the complete rosters for all players in the league.",
-    "imagePath": "screenshots/league-rosters-tab.png",
-    "order": 190
+    "id" : "leagues-league-match-report",
+    "category" : "Leagues",
+    "title" : "Match Reporting",
+    "description" : "When a league match is booked, players receive a notification to report the results of their matches.",
+    "imagePath" : "screenshots/league-match-report.png",
+    "order" : 170
   }, {
-    "id": "leagues-league-history-tab",
-    "category": "Leagues",
-    "title": "League History",
-    "description": "Keep track of all shows and match results that occurred within the league.",
-    "imagePath": "screenshots/league-history-tab.png",
-    "order": 200
+    "id" : "leagues-league-standings",
+    "category" : "Leagues",
+    "title" : "League Standings",
+    "description" : "The league dashboard displays the current standings, including wins, losses, and draws for each wrestler.",
+    "imagePath" : "screenshots/league-standings.png",
+    "order" : 180
   }, {
-    "id": "campaign-campaign-beginning",
-    "category": "Campaign",
-    "title": "The Beginning",
-    "description": "Your journey starts here. Establish your reputation through backstage encounters and initial matches as you find your footing in All Time Wrestling.",
-    "imagePath": "screenshots/campaign-beginning.png",
-    "order": 210
+    "id" : "leagues-league-rosters-tab",
+    "category" : "Leagues",
+    "title" : "League Rosters",
+    "description" : "View the complete rosters for all players in the league.",
+    "imagePath" : "screenshots/league-rosters-tab.png",
+    "order" : 190
   }, {
-    "id": "campaign-campaign-tournament-bracket",
-    "category": "Campaign",
-    "title": "Tournament Bracket",
-    "description": "The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.",
-    "imagePath": "screenshots/campaign-tournament-bracket.png",
-    "order": 220
+    "id" : "leagues-league-history-tab",
+    "category" : "Leagues",
+    "title" : "League History",
+    "description" : "Keep track of all shows and match results that occurred within the league.",
+    "imagePath" : "screenshots/league-history-tab.png",
+    "order" : 200
   }, {
-    "id": "campaign-campaign-tag-team",
-    "category": "Campaign",
-    "title": "Tag Team Redemption",
-    "description": "Experience the power of partnership. Find a compatible partner and dominate the tag team division while rebuilding your momentum.",
-    "imagePath": "screenshots/campaign-tag-team.png",
-    "order": 230
+    "id" : "campaign-campaign-beginning",
+    "category" : "Campaign",
+    "title" : "The Beginning",
+    "description" : "Your journey starts here. Establish your reputation through backstage encounters and initial matches as you find your footing in All Time Wrestling.",
+    "imagePath" : "screenshots/campaign-beginning.png",
+    "order" : 210
   }, {
-    "id": "campaign-campaign-betrayal",
-    "category": "Campaign",
-    "title": "Betrayal",
-    "description": "Trust is a luxury you can no longer afford. Face the consequences of a broken alliance and seek retribution against your former partner.",
-    "imagePath": "screenshots/campaign-betrayal.png",
-    "order": 240
+    "id" : "campaign-campaign-tournament-bracket",
+    "category" : "Campaign",
+    "title" : "Tournament Bracket",
+    "description" : "The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.",
+    "imagePath" : "screenshots/campaign-tournament-bracket.png",
+    "order" : 220
   }, {
-    "id": "campaign-campaign-fighting-champion",
-    "category": "Campaign",
-    "title": "Fighting Champion",
-    "description": "As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.",
-    "imagePath": "screenshots/campaign-fighting-champion.png",
-    "order": 250
+    "id" : "campaign-campaign-tag-team",
+    "category" : "Campaign",
+    "title" : "Tag Team Redemption",
+    "description" : "Experience the power of partnership. Find a compatible partner and dominate the tag team division while rebuilding your momentum.",
+    "imagePath" : "screenshots/campaign-tag-team.png",
+    "order" : 230
   }, {
-    "id": "campaign-campaign-gang-warfare",
-    "category": "Campaign",
-    "title": "Gang Warfare",
-    "description": "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.",
-    "imagePath": "screenshots/campaign-gang-warfare.png",
-    "order": 260
+    "id" : "campaign-campaign-betrayal",
+    "category" : "Campaign",
+    "title" : "Betrayal",
+    "description" : "Trust is a luxury you can no longer afford. Face the consequences of a broken alliance and seek retribution against your former partner.",
+    "imagePath" : "screenshots/campaign-betrayal.png",
+    "order" : 240
   }, {
-    "id": "campaign-campaign-corporate-power-trip",
-    "category": "Campaign",
-    "title": "Corporate Power Trip",
-    "description": "The authorities are against you. Survive impossible odds and unfair stipulations as you challenge the corrupt management's control.",
-    "imagePath": "screenshots/campaign-corporate-power-trip.png",
-    "order": 270
+    "id" : "campaign-campaign-fighting-champion",
+    "category" : "Campaign",
+    "title" : "Fighting Champion",
+    "description" : "As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.",
+    "imagePath" : "screenshots/campaign-fighting-champion.png",
+    "order" : 250
   }, {
-    "id": "campaign-campaign-backstage-actions",
-    "category": "Campaign",
-    "title": "Backstage Actions",
-    "description": "Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.",
-    "imagePath": "screenshots/campaign-backstage-actions.png",
-    "order": 280
+    "id" : "campaign-campaign-gang-warfare",
+    "category" : "Campaign",
+    "title" : "Gang Warfare",
+    "description" : "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.",
+    "imagePath" : "screenshots/campaign-gang-warfare.png",
+    "order" : 260
   }, {
-    "id": "wrestler-wrestler-profile",
-    "category": "Wrestler",
-    "title": "Wrestler Profile",
-    "description": "View detailed information about any wrestler, including their core stats (Drive, Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship history.",
-    "imagePath": "screenshots/wrestler-profile.png",
-    "order": 290
+    "id" : "campaign-campaign-corporate-power-trip",
+    "category" : "Campaign",
+    "title" : "Corporate Power Trip",
+    "description" : "The authorities are against you. Survive impossible odds and unfair stipulations as you challenge the corrupt management's control.",
+    "imagePath" : "screenshots/campaign-corporate-power-trip.png",
+    "order" : 270
   }, {
-    "id": "user-settings-profile-drawer",
-    "category": "User Settings",
-    "title": "Profile Drawer",
-    "description": "Access your personal settings by clicking the Profile button in the top navigation bar. This opens a dedicated drawer on the right side of the screen, allowing you to manage your account without leaving your current context.",
-    "imagePath": "screenshots/profile-drawer.png",
-    "order": 300
+    "id" : "campaign-campaign-backstage-actions",
+    "category" : "Campaign",
+    "title" : "Backstage Actions",
+    "description" : "Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.",
+    "imagePath" : "screenshots/campaign-backstage-actions.png",
+    "order" : 280
   }, {
-    "id": "dashboards-dashboard-calendar",
-    "category": "Dashboards",
-    "title": "Show Calendar",
-    "description": "Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium Live Events at a glance.",
-    "imagePath": "screenshots/dashboard-calendar.png",
-    "order": 310
+    "id" : "wrestler-wrestler-profile",
+    "category" : "Wrestler",
+    "title" : "Wrestler Profile",
+    "description" : "View detailed information about any wrestler, including their core stats (Drive, Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship history.",
+    "imagePath" : "screenshots/wrestler-profile.png",
+    "order" : 290
   }, {
-    "id": "game-mechanics-mechanic-cards",
-    "category": "Game Mechanics",
-    "title": "Cards",
-    "description": "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.",
-    "imagePath": "screenshots/mechanic-cards.png",
-    "order": 320
+    "id" : "user-settings-profile-drawer",
+    "category" : "User Settings",
+    "title" : "Profile Drawer",
+    "description" : "Access your personal settings by clicking the Profile button in the top navigation bar. This opens a dedicated drawer on the right side of the screen, allowing you to manage your account without leaving your current context.",
+    "imagePath" : "screenshots/profile-drawer.png",
+    "order" : 300
   }, {
-    "id": "dashboards-dashboard-rankings",
-    "category": "Dashboards",
-    "title": "Wrestler Rankings",
-    "description": "Track the momentum of every wrestler in the promotion. Rankings determine title eligibility and positioning on show cards.",
-    "imagePath": "screenshots/dashboard-rankings.png",
-    "order": 330
+    "id" : "dashboards-dashboard-calendar",
+    "category" : "Dashboards",
+    "title" : "Show Calendar",
+    "description" : "Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium Live Events at a glance.",
+    "imagePath" : "screenshots/dashboard-calendar.png",
+    "order" : 310
   }, {
-    "id": "game-mechanics-mechanic-decks",
-    "category": "Game Mechanics",
-    "title": "Decks",
-    "description": "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with efficient setup moves and stamina-recovering taunts.",
-    "imagePath": "screenshots/mechanic-decks.png",
-    "order": 340
+    "id" : "game-mechanics-mechanic-cards",
+    "category" : "Game Mechanics",
+    "title" : "Cards",
+    "description" : "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.",
+    "imagePath" : "screenshots/mechanic-cards.png",
+    "order" : 320
   }, {
-    "id": "npc-npc-list",
-    "category": "NPC",
-    "title": "NPC List",
-    "description": "View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers. You can create new NPCs, edit existing ones, and navigate to their profiles.",
-    "imagePath": "screenshots/npc-list.png",
-    "order": 350
+    "id" : "dashboards-dashboard-rankings",
+    "category" : "Dashboards",
+    "title" : "Wrestler Rankings",
+    "description" : "Track the momentum of every wrestler in the promotion. Rankings determine title eligibility and positioning on show cards.",
+    "imagePath" : "screenshots/dashboard-rankings.png",
+    "order" : 330
   }, {
-    "id": "npc-npc-profile",
-    "category": "NPC",
-    "title": "NPC Profile",
-    "description": "Detailed view of an NPC, displaying their image, type, biography, and stats. From here, you can generate a custom image using AI.",
-    "imagePath": "screenshots/npc-profile.png",
-    "order": 360
+    "id" : "game-mechanics-mechanic-decks",
+    "category" : "Game Mechanics",
+    "title" : "Decks",
+    "description" : "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with efficient setup moves and stamina-recovering taunts.",
+    "imagePath" : "screenshots/mechanic-decks.png",
+    "order" : 340
   }, {
-    "id": "npc-npc-image-generation-dialog",
-    "category": "NPC",
-    "title": "Generate NPC Image",
-    "description": "Use the integrated AI tools to generate a unique portrait for your NPC based on their description and type. You can regenerate until you find the perfect look.",
-    "imagePath": "screenshots/npc-image-generation-dialog.png",
-    "order": 370
+    "id" : "npc-npc-list",
+    "category" : "NPC",
+    "title" : "NPC List",
+    "description" : "View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers. You can create new NPCs, edit existing ones, and navigate to their profiles.",
+    "imagePath" : "screenshots/npc-list.png",
+    "order" : 350
   }, {
-    "id": "booker-booker-show-planning",
-    "category": "Booker",
-    "title": "Show Planning",
-    "description": "The Show Planning interface allows you to book matches and segments for an upcoming show. Drag and drop wrestlers to create matches, set stipulations, and define segment types.",
-    "imagePath": "screenshots/booker-show-planning.png",
-    "order": 380
+    "id" : "npc-npc-profile",
+    "category" : "NPC",
+    "title" : "NPC Profile",
+    "description" : "Detailed view of an NPC, displaying their image, type, biography, and stats. From here, you can generate a custom image using AI.",
+    "imagePath" : "screenshots/npc-profile.png",
+    "order" : 360
   }, {
-    "id": "booker-booker-match-narration",
-    "category": "Booker",
-    "title": "Match Narration",
-    "description": "Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action.",
-    "imagePath": "screenshots/booker-match-narration.png",
-    "order": 390
+    "id" : "npc-npc-image-generation-dialog",
+    "category" : "NPC",
+    "title" : "Generate NPC Image",
+    "description" : "Use the integrated AI tools to generate a unique portrait for your NPC based on their description and type. You can regenerate until you find the perfect look.",
+    "imagePath" : "screenshots/npc-image-generation-dialog.png",
+    "order" : 370
   }, {
-    "id": "booker-booker-show-history",
-    "category": "Booker",
-    "title": "Show History",
-    "description": "View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.",
-    "imagePath": "screenshots/booker-show-history.png",
-    "order": 400
+    "id" : "booker-booker-show-planning",
+    "category" : "Booker",
+    "title" : "Show Planning",
+    "description" : "The Show Planning interface allows you to book matches and segments for an upcoming show. Drag and drop wrestlers to create matches, set stipulations, and define segment types.",
+    "imagePath" : "screenshots/booker-show-planning.png",
+    "order" : 380
+  }, {
+    "id" : "booker-booker-match-narration",
+    "category" : "Booker",
+    "title" : "Match Narration",
+    "description" : "Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action.",
+    "imagePath" : "screenshots/booker-match-narration.png",
+    "order" : 390
+  }, {
+    "id" : "booker-booker-show-history",
+    "category" : "Booker",
+    "title" : "Show History",
+    "description" : "View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.",
+    "imagePath" : "screenshots/booker-show-history.png",
+    "order" : 400
   } ]
 }
