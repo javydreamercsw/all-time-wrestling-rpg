@@ -66,6 +66,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockMonthlyAnalysis(prompt);
     }
 
+    if (prompt.contains("Backstage Situation")) {
+      return generateMockBackstageSituation(prompt);
+    }
+
     if (prompt.contains(
             "Generate a professional wrestling narrative segment appropriate for chapter")
         || prompt.contains("Generate a 'Post-Match' narrative segment")) {
@@ -103,6 +107,45 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
     return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
         + " walking away.";
+  }
+
+  private String generateMockBackstageSituation(String prompt) {
+    try {
+      var choice1 =
+          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+              .builder()
+              .text("Shake hands and show respect to the veteran.")
+              .label("Respect")
+              .alignmentShift(1)
+              .momentumBonus(1)
+              .outcomeText("The veteran nods in approval, giving you a boost of confidence.")
+              .nextPhase("BACKSTAGE")
+              .build();
+
+      var choice2 =
+          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+              .builder()
+              .text("Ignore the advice and walk away dismissively.")
+              .label("Dismiss")
+              .alignmentShift(-1)
+              .momentumBonus(0)
+              .outcomeText(
+                  "You leave the veteran shaking their head, but you feel more focused on your own"
+                      + " path.")
+              .nextPhase("BACKSTAGE")
+              .build();
+
+      var response =
+          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
+              "Mock Situation: You are approached by a veteran in the locker room who offers some"
+                  + " unsolicited advice about your upcoming matches.",
+              List.of(choice1, choice2));
+
+      return objectMapper.writeValueAsString(response);
+    } catch (Exception e) {
+      log.error("Error generating mock backstage situation", e);
+      return "{}";
+    }
   }
 
   private String generateMockMonthlyAnalysis(String prompt) {
@@ -324,25 +367,24 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private String generateMockCampaignEncounter(String prompt) {
     try {
       var choice1 =
-          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
-              "Accept the challenge like a hero.",
-              "Accept Heroically",
-              1,
-              5,
-              null,
-              "One on One",
-              null, // segmentRules
-              "MATCH");
+          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+              .builder()
+              .text("Accept the challenge like a hero.")
+              .label("Accept Heroically")
+              .alignmentShift(1)
+              .vpReward(5)
+              .matchType("One on One")
+              .nextPhase("MATCH")
+              .build();
       var choice2 =
-          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice(
-              "Refuse the challenge and mock them.",
-              "Refuse & Mock",
-              -1,
-              0,
-              null,
-              null,
-              null, // segmentRules
-              "BACKSTAGE");
+          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+              .builder()
+              .text("Refuse the challenge and mock them.")
+              .label("Refuse & Mock")
+              .alignmentShift(-1)
+              .vpReward(0)
+              .nextPhase("BACKSTAGE")
+              .build();
 
       var response =
           new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(

@@ -39,6 +39,8 @@ public class CampaignEncounterResponseDTO {
     private String label; // Short label for UI buttons
     private int alignmentShift;
     private int vpReward;
+    private int momentumBonus; // Extra momentum for the next match
+    private String outcomeText; // Immediate narrative feedback after choice
     private String forcedOpponentName;
     private String matchType; // e.g., "One on One", "Triple Threat"
     private List<String> segmentRules; // e.g., ["No DQ", "Cage Match"]
