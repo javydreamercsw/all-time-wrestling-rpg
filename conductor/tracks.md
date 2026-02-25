@@ -56,6 +56,11 @@
 *Link: [./conductor/archive/career_longevity_20260224/plan.md](./conductor/archive/career_longevity_20260224/plan.md)*
 *Status: Completed (2026-02-24)*
 
+### [x] Track: Global Tour & Dynamic Arenas
+
+*Link: [./conductor/archive/world_arenas_20260225/plan.md](./conductor/archive/world_arenas_20260225/plan.md)*
+*Status: Completed (2026-02-25)*
+
 ### [x] Track: Visual Arena Customizer (AI-Assisted)
 
 *Link: [./conductor/archive/arena_customizer_20260224/plan.md](./conductor/archive/arena_customizer_20260224/plan.md)*
@@ -70,7 +75,3 @@
 *Link: [./conductor/tracks/booker_economics/plan.md](./conductor/tracks/booker_economics/plan.md)*
 *Status: Planning*
 
-### [~] Track: Global Tour & Dynamic Arenas
-
-*Link: [./conductor/tracks/world_arenas/plan.md](./conductor/tracks/world_arenas/plan.md)*
-*Status: Planning*
