@@ -1,0 +1,113 @@
+[ {
+  "name": "Neon Serpent Dome",
+  "description": "A dazzling, multi-tiered arena in Neo-Tokyo, famous for its holographic displays and an electrifying atmosphere.",
+  "location": "Neo-Tokyo",
+  "capacity": 25000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "imageUrl": "https://example.com/neon_serpent_dome.jpg",
+  "environmentalTraits": [ "holographic-displays", "urban-decay-vibe" ]
+}, {
+  "name": "The Steel Citadel",
+  "description": "A massive, industrial-themed arena in the heart of Pittsburgh. Home to the most technically sound fans in the world.",
+  "location": "Pittsburgh Citadel",
+  "capacity": 18000,
+  "alignmentBias": "NEUTRAL",
+  "imageUrl": "https://example.com/steel_citadel.jpg",
+  "environmentalTraits": [ "industrial", "technical-focus" ]
+}, {
+  "name": "Oda Clan Fortress",
+  "description": "A high-tech, yakuza-controlled arena in the Osaka Cyber-District. The crowd is intensely loyal to the Oda legacy.",
+  "location": "Osaka Cyber-District",
+  "capacity": 12000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "imageUrl": "https://example.com/oda_fortress.jpg",
+  "environmentalTraits": [ "yakuza-themed", "cybernetic-lighting" ]
+}, {
+  "name": "The Frozen Peak",
+  "description": "A state-of-the-art cryo-arena in Winnipeg. Known for its 'chilly' reception to outsiders and explosive atmosphere.",
+  "location": "Winnipeg Cryo-Hub",
+  "capacity": 15000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/frozen_peak.jpg",
+  "environmentalTraits": [ "cryo-fog", "high-altitude" ]
+}, {
+  "name": "Lion's Roar Sanctuary",
+  "description": "A majestic arena built along the Zambezi River, combining ancient aesthetics with 23rd-century energy technology.",
+  "location": "Zambezi Sanctuary",
+  "capacity": 30000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/lions_roar.jpg",
+  "environmentalTraits": [ "royal-ambiance", "natural-elements" ]
+}, {
+  "name": "The Epic of Uruk",
+  "description": "A breathtaking reconstruction of the ancient Mesopotamian city, serving as a massive open-air wrestling complex.",
+  "location": "Uruk Eternal",
+  "capacity": 50000,
+  "alignmentBias": "ANARCHIC",
+  "imageUrl": "https://example.com/epic_uruk.jpg",
+  "environmentalTraits": [ "ancient-ruins", "mythical-vibe" ]
+}, {
+  "name": "Frost-Bite Octagon",
+  "description": "A brutal, sub-zero fighting cage in the Siberian Outpost. Only the most battle-hardened survive here.",
+  "location": "Siberian Outpost",
+  "capacity": 5000,
+  "alignmentBias": "ANARCHIC",
+  "imageUrl": "https://example.com/frost_bite.jpg",
+  "environmentalTraits": [ "extreme-cold", "barbed-wire-fencing" ]
+}, {
+  "name": "Jaguar's Sun-Stone Plaza",
+  "description": "A massive megaplex in Mexico City, celebrating the rich history of Lucha Libre with cutting-edge holographic masks.",
+  "location": "Mexico City Megaplex",
+  "capacity": 40000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/jaguar_plaza.jpg",
+  "environmentalTraits": [ "lucha-tradition", "vibrant-colors" ]
+}, {
+  "name": "The Palace of Slam",
+  "description": "The personal playground of Johnny All Time. It's more of a high-end nightclub and parkour course than a traditional arena.",
+  "location": "Slamtown",
+  "capacity": 10000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/palace_slam.jpg",
+  "environmentalTraits": [ "parkour-ready", "glamour-lighting" ]
+}, {
+  "name": "Royal Bulldog Hall",
+  "description": "A prestigious arena in Neo-London, preserving the grit and glory of British wrestling tradition.",
+  "location": "Neo-London Spire",
+  "capacity": 8000,
+  "alignmentBias": "NEUTRAL",
+  "imageUrl": "https://example.com/bulldog_hall.jpg",
+  "environmentalTraits": [ "traditional-crowd", "prestige" ]
+}, {
+  "name": "Grand Palace Gardens",
+  "description": "An elegant arena floating above Neo-Paris, where matches are treated as a high-society art form.",
+  "location": "Neo-Paris Sky-Garden",
+  "capacity": 12000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/paris_gardens.jpg",
+  "environmentalTraits": [ "scenic-views", "artistic-crowd" ]
+}, {
+  "name": "Zero-G Octagon",
+  "description": "A cutting-edge arena on Lunar Colony Alpha, where gravity projectors can be manipulated for unique match physics.",
+  "location": "Lunar Colony Alpha",
+  "capacity": 10000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/zero_g_octagon.jpg",
+  "environmentalTraits": [ "low-gravity", "zero-g-grappling" ]
+}, {
+  "name": "Canopy Combat Cage",
+  "description": "A spectacular cage arena suspended high above the Amazon jungle floor, integrated into the massive Bio-Trees.",
+  "location": "Amazonian Canopy-City",
+  "capacity": 12000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "imageUrl": "https://example.com/canopy_combat.jpg",
+  "environmentalTraits": [ "high-altitude", "jungle-environment" ]
+}, {
+  "name": "Aqua Colosseum",
+  "description": "An exquisite underwater arena in Atlantis Reborn, with transparent domes offering views of marine life.",
+  "location": "Atlantis Reborn",
+  "capacity": 15000,
+  "alignmentBias": "NEUTRAL",
+  "imageUrl": "https://example.com/aqua_colosseum.jpg",
+  "environmentalTraits": [ "underwater", "unique-acoustics" ]
+} ]

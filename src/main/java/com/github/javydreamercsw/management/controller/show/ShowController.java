@@ -163,7 +163,8 @@ public class ShowController {
             request.seasonId(),
             request.templateId(),
             request.leagueId(),
-            request.commentaryTeamId());
+            request.commentaryTeamId(),
+            request.arenaId());
     return ResponseEntity.status(HttpStatus.CREATED).body(show);
   }
 
@@ -191,7 +192,8 @@ public class ShowController {
             request.seasonId(),
             request.templateId(),
             request.leagueId(),
-            request.commentaryTeamId());
+            request.commentaryTeamId(),
+            request.arenaId());
 
     return updatedShow.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -236,7 +238,8 @@ public class ShowController {
       Long seasonId,
       Long templateId,
       Long leagueId,
-      Long commentaryTeamId) {}
+      Long commentaryTeamId,
+      Long arenaId) {}
 
   /** Request DTO for updating shows. */
   public record UpdateShowRequest(
@@ -247,5 +250,6 @@ public class ShowController {
       Long seasonId,
       Long templateId,
       Long leagueId,
-      Long commentaryTeamId) {}
+      Long commentaryTeamId,
+      Long arenaId) {}
 }

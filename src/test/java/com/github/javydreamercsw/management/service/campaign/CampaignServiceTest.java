@@ -56,7 +56,6 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -98,7 +97,6 @@ class CampaignServiceTest {
   @Mock private TeamRepository teamRepository;
   @Mock private TitleService titleService;
   @Mock private SegmentAdjudicationService adjudicationService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
@@ -234,7 +232,7 @@ class CampaignServiceTest {
     when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
 
     when(showService.createShow(
-            anyString(), anyString(), anyLong(), any(), anyLong(), any(), any(), any()))
+            anyString(), anyString(), anyLong(), any(), anyLong(), any(), any(), any(), any()))
         .thenReturn(show);
 
     when(segmentService.createSegment(any(Show.class), any(SegmentType.class), any()))

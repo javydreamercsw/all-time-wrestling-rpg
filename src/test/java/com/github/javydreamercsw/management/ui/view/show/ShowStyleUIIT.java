@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
@@ -133,6 +134,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
         mock(ImageGenerationServiceFactory.class);
     ImageStorageService imageStorageService = mock(ImageStorageService.class);
     AiSettingsService aiSettingsService = mock(AiSettingsService.class);
+    ArenaService arenaService = mock(ArenaService.class);
 
     ShowListView showListView =
         new ShowListView(
@@ -145,6 +147,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             imageGenerationServiceFactory,
             imageStorageService,
             aiSettingsService,
+            arenaService,
             clock);
     Grid<Show> grid = showListView.showGrid;
 

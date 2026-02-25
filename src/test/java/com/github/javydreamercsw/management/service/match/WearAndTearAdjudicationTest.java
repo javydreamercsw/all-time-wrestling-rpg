@@ -60,7 +60,6 @@ class WearAndTearAdjudicationTest {
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private RetirementService retirementService;
 
@@ -73,6 +72,8 @@ class WearAndTearAdjudicationTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
+  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -85,7 +86,6 @@ class WearAndTearAdjudicationTest {
             feudResolutionService,
             feudService,
             titleService,
-            matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
@@ -128,6 +128,9 @@ class WearAndTearAdjudicationTest {
 
     SegmentRule extremeRule = mock(SegmentRule.class);
     when(extremeRule.getName()).thenReturn("Extreme");
+    when(extremeRule.getBumpAddition())
+        .thenReturn(
+            com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition.NONE);
     when(segment.getSegmentRules()).thenReturn(Set.of(extremeRule)); // x2
 
     // (3 * 2) + 1 = 7

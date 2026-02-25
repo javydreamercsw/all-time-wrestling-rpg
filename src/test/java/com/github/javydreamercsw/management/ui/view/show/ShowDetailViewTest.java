@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
@@ -97,6 +98,7 @@ class ShowDetailViewTest {
   @Mock private LeagueRepository leagueRepository;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private RingsideActionService ringsideActionService;
+  @Mock private ArenaService arenaService;
 
   @BeforeEach
   void setUp() {
@@ -159,7 +161,8 @@ class ShowDetailViewTest {
               matchFulfillmentRepository,
               leagueRepository,
               commentaryTeamRepository,
-              ringsideActionService);
+              ringsideActionService,
+              arenaService);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -236,7 +239,8 @@ class ShowDetailViewTest {
               matchFulfillmentRepository,
               leagueRepository,
               commentaryTeamRepository,
-              ringsideActionService);
+              ringsideActionService,
+              arenaService);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));

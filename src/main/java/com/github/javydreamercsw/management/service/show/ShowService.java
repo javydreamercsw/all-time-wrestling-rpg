@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -76,6 +77,7 @@ public class ShowService {
   private final NewsGenerationService newsGenerationService;
   private final LegacyService legacyService;
   private final SecurityUtils securityUtils;
+  private final ArenaRepository arenaRepository;
 
   ShowService(
       ShowRepository showRepository,
@@ -93,7 +95,8 @@ public class ShowService {
       CommentaryTeamRepository commentaryTeamRepository,
       NewsGenerationService newsGenerationService,
       LegacyService legacyService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      ArenaRepository arenaRepository) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -110,6 +113,7 @@ public class ShowService {
     this.newsGenerationService = newsGenerationService;
     this.legacyService = legacyService;
     this.securityUtils = securityUtils;
+    this.arenaRepository = arenaRepository;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -296,7 +300,8 @@ public class ShowService {
       Long seasonId,
       Long templateId,
       Long leagueId,
-      Long commentaryTeamId) {
+      Long commentaryTeamId,
+      Long arenaId) {
 
     Show show = new Show();
     show.setName(name);
@@ -349,6 +354,14 @@ public class ShowService {
                           "Commentary team not found: " + commentaryTeamId)));
     }
 
+    // Set arena (optional)
+    if (arenaId != null) {
+      show.setArena(
+          arenaRepository
+              .findById(arenaId)
+              .orElseThrow(() -> new IllegalArgumentException("Arena not found: " + arenaId)));
+    }
+
     return showRepository.saveAndFlush(show);
   }
 
@@ -381,7 +394,8 @@ public class ShowService {
       Long seasonId,
       Long templateId,
       Long leagueId,
-      Long commentaryTeamId) {
+      Long commentaryTeamId,
+      Long arenaId) {
 
     return showRepository
         .findById(id)
@@ -445,6 +459,16 @@ public class ShowService {
                                     "Commentary team not found: " + commentaryTeamId)));
               } else {
                 show.setCommentaryTeam(null);
+              }
+
+              if (arenaId != null) {
+                show.setArena(
+                    arenaRepository
+                        .findById(arenaId)
+                        .orElseThrow(
+                            () -> new IllegalArgumentException("Arena not found: " + arenaId)));
+              } else {
+                show.setArena(null);
               }
 
               return showRepository.saveAndFlush(show);

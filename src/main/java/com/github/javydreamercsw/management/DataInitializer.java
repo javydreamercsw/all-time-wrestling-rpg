@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.Initializable;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -37,13 +36,19 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
+import com.github.javydreamercsw.management.domain.world.Location;
+import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -62,13 +67,13 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -85,7 +90,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -100,7 +104,6 @@ public class DataInitializer implements Initializable {
 
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;
-  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowTypeService showTypeService;
   private final SegmentRuleService segmentRuleService;
@@ -117,18 +120,19 @@ public class DataInitializer implements Initializable {
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final CommentaryService commentaryService;
   private final CampaignUpgradeService campaignUpgradeService;
+  private final LocationRepository locationRepository;
+  private final ArenaRepository arenaRepository;
   private final Environment env;
   private final AchievementRepository achievementRepository;
-  private final AccountRepository accountRepository;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
   private final ResourcePatternResolver resourcePatternResolver;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") boolean enabled,
       ShowTemplateService showTemplateService,
-      @Lazy WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       ShowTypeService showTypeService,
       SegmentRuleService segmentRuleService,
@@ -147,13 +151,13 @@ public class DataInitializer implements Initializable {
       CampaignUpgradeService campaignUpgradeService,
       Environment env,
       AchievementRepository achievementRepository,
-      AccountRepository accountRepository,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-          ringsideActionDataService,
-      ResourcePatternResolver resourcePatternResolver) {
+      RingsideActionDataService ringsideActionDataService,
+      ResourcePatternResolver resourcePatternResolver,
+      LocationRepository locationRepository,
+      ArenaRepository arenaRepository,
+      ObjectMapper objectMapper) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
-    this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.showTypeService = showTypeService;
     this.segmentRuleService = segmentRuleService;
@@ -172,9 +176,11 @@ public class DataInitializer implements Initializable {
     this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
     this.achievementRepository = achievementRepository;
-    this.accountRepository = accountRepository;
     this.ringsideActionDataService = ringsideActionDataService;
     this.resourcePatternResolver = resourcePatternResolver;
+    this.locationRepository = locationRepository;
+    this.arenaRepository = arenaRepository;
+    this.objectMapper = objectMapper;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -190,6 +196,8 @@ public class DataInitializer implements Initializable {
       syncSetsFromFile();
       syncCardsFromFile();
       syncNpcsFromFile();
+      syncLocationsFromFile();
+      syncArenasFromFile();
       syncWrestlersFromFile();
       syncChampionshipsFromFile();
       syncDecksFromFile();
@@ -767,6 +775,10 @@ public class DataInitializer implements Initializable {
                   existingWrestler.setImageUrl(w.getImageUrl());
                 }
 
+                if (w.getHeritageTag() != null) {
+                  existingWrestler.setHeritageTag(w.getHeritageTag());
+                }
+
                 if (w.getExternalId() != null) {
                   existingWrestler.setExternalId(w.getExternalId());
                 }
@@ -798,6 +810,7 @@ public class DataInitializer implements Initializable {
                 newWrestler.setFans(w.getFans());
                 newWrestler.setBumps(w.getBumps());
                 newWrestler.setImageUrl(w.getImageUrl());
+                newWrestler.setHeritageTag(w.getHeritageTag());
                 newWrestler.setTier(WrestlerTier.ROOKIE);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
@@ -1129,6 +1142,111 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Teams file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncLocationsFromFile() {
+    ClassPathResource resource = new ClassPathResource("locations.json");
+    if (resource.exists()) {
+      log.info("Loading locations from file: {}", resource.getPath());
+      try (var is = resource.getInputStream()) {
+        var locationsFromFile =
+            objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+        if (locationsFromFile == null) {
+          log.warn("No locations found in {}", resource.getPath());
+          return;
+        }
+        log.info("Found {} locations in JSON file", locationsFromFile.size());
+        for (LocationImportDTO dto : locationsFromFile) {
+          Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
+          if (existingLocation.isEmpty()) {
+            Location location =
+                Location.builder()
+                    .name(dto.getName())
+                    .description(dto.getDescription())
+                    .imageUrl(dto.getImageUrl())
+                    .culturalTags(dto.getCulturalTags())
+                    .build();
+            locationRepository.save(location);
+            log.info("Saved new location: {}", location.getName());
+          } else {
+            Location existing = existingLocation.get();
+            existing.setDescription(dto.getDescription());
+            existing.setImageUrl(dto.getImageUrl());
+            existing.setCulturalTags(dto.getCulturalTags());
+            locationRepository.save(existing);
+            log.debug("Updated existing location: {}", existing.getName());
+          }
+        }
+        log.info("Location loading completed - {} locations processed", locationsFromFile.size());
+      } catch (IOException e) {
+        log.error("Error loading locations from file", e);
+      }
+    } else {
+      log.warn("Locations file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncArenasFromFile() {
+    ClassPathResource resource = new ClassPathResource("arenas.json");
+    if (resource.exists()) {
+      log.info("Loading arenas from file: {}", resource.getPath());
+      try (var is = resource.getInputStream()) {
+        var arenasFromFile =
+            objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+        if (arenasFromFile == null) {
+          log.warn("No arenas found in {}", resource.getPath());
+          return;
+        }
+        log.info("Found {} arenas in JSON file", arenasFromFile.size());
+        for (ArenaImportDTO dto : arenasFromFile) {
+          Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
+          if (existingArena.isEmpty()) {
+            Optional<Location> location = locationRepository.findByName(dto.getLocation());
+            if (location.isPresent()) {
+              Arena arena =
+                  Arena.builder()
+                      .name(dto.getName())
+                      .description(dto.getDescription())
+                      .location(location.get())
+                      .capacity(dto.getCapacity())
+                      .alignmentBias(dto.getAlignmentBias())
+                      .imageUrl(dto.getImageUrl())
+                      .environmentalTraits(dto.getEnvironmentalTraits())
+                      .build();
+              arenaRepository.save(arena);
+              log.info("Saved new arena: {}", arena.getName());
+            } else {
+              log.warn(
+                  "Location '{}' not found for arena '{}'. Skipping arena.",
+                  dto.getLocation(),
+                  dto.getName());
+            }
+          } else {
+            Arena existing = existingArena.get();
+            existing.setDescription(dto.getDescription());
+            existing.setCapacity(dto.getCapacity());
+            existing.setAlignmentBias(dto.getAlignmentBias());
+            existing.setImageUrl(dto.getImageUrl());
+            existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
+            Optional<Location> location = locationRepository.findByName(dto.getLocation());
+            location.ifPresentOrElse(
+                existing::setLocation,
+                () ->
+                    log.warn(
+                        "Location '{}' not found for existing arena '{}'. Location not updated.",
+                        dto.getLocation(),
+                        dto.getName()));
+            arenaRepository.save(existing);
+            log.debug("Updated existing arena: {}", existing.getName());
+          }
+        }
+        log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());
+      } catch (IOException e) {
+        log.error("Error loading arenas from file", e);
+      }
+    } else {
+      log.warn("Arenas file not found: {}", resource.getPath());
     }
   }
 }

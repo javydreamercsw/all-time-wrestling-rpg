@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -67,6 +69,7 @@ class AbstractMatchNarrationServiceTest {
         .contains("Generate a compelling wrestling narration as a DIALOGUE")
         .contains("The JSON object contains instructions that you must follow.")
         .contains("Each line MUST start with the speaker's name")
+        .contains("ground the narration in the specific venue and city")
         .contains("Here is the JSON context:")
         .contains(jsonContext);
   }
@@ -173,6 +176,22 @@ class AbstractMatchNarrationServiceTest {
         "John Cena wins via Attitude Adjustment to retain the World Heavyweight Championship");
     context.setRecentSegmentNarrations(
         List.of("Previous epic encounter between these two rivals..."));
+
+    // Arena Context
+    ArenaContext arenaContext = new ArenaContext();
+    arenaContext.setName("Neon Serpent Dome");
+    arenaContext.setDescription("A high-tech arena in Neo-Tokyo");
+    arenaContext.setCapacity(25000);
+    arenaContext.setAlignmentBias("Heel Favorable");
+    arenaContext.setEnvironmentalTraits(List.of("Holographic Displays"));
+    context.setArenaContext(arenaContext);
+
+    // Location Context
+    LocationContext locationContext = new LocationContext();
+    locationContext.setName("Neo-Tokyo");
+    locationContext.setDescription("A futuristic metropolis");
+    locationContext.setCulturalTags(List.of("Cyberpunk", "Japan"));
+    context.setLocationContext(locationContext);
 
     return context;
   }

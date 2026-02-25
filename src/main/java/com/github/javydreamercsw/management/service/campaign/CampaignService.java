@@ -59,7 +59,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -111,7 +110,6 @@ public class CampaignService {
   private final TeamRepository teamRepository;
   private final TitleService titleService;
   private final SegmentAdjudicationService adjudicationService;
-  private final MatchRewardService matchRewardService;
   private final NewsGenerationService newsGenerationService;
   private final StorylineDirectorService storylineDirectorService;
   private final StorylineExportService storylineExportService;
@@ -757,6 +755,7 @@ public class CampaignService {
                   finalDate,
                   season.getId(),
                   finalTemplateId,
+                  null,
                   null,
                   null);
             });

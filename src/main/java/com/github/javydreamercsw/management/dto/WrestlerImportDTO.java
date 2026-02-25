@@ -40,6 +40,7 @@ public class WrestlerImportDTO {
   private String alignment;
   private String externalId;
   private String imageUrl;
+  private String heritageTag;
   private Integer drive;
   private Integer resilience;
   private Integer charisma;

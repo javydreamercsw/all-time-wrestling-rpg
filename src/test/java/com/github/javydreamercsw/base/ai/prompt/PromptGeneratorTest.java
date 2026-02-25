@@ -18,6 +18,8 @@ package com.github.javydreamercsw.base.ai.prompt;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
 import java.util.List;
@@ -35,11 +37,24 @@ class PromptGeneratorTest {
     context.setSegmentType(type);
     context.setWrestlers(List.of());
 
+    ArenaContext arena = new ArenaContext();
+    arena.setName("Neon Serpent Dome");
+    context.setArenaContext(arena);
+
+    LocationContext location = new LocationContext();
+    location.setName("Neo-Tokyo");
+    context.setLocationContext(location);
+
     String prompt = generator.generateMatchNarrationPrompt(context);
 
     assertTrue(
         prompt.contains("[SPEAKER:Commentator Name]"),
         "Prompt should contain instructions for SPEAKER tags");
+    assertTrue(
+        prompt.contains("VENUE: The match takes place at 'Neon Serpent Dome'"),
+        "Prompt should contain arena information");
+    assertTrue(
+        prompt.contains("Location: Neo-Tokyo"), "Prompt should contain location information");
     assertTrue(
         prompt.contains("DO NOT include any text that is not part of a tagged dialogue line"),
         "Prompt should contain explicit exclusion instructions");
@@ -52,8 +67,19 @@ class PromptGeneratorTest {
     type.setSegmentType("Singles Match");
     context.setSegmentType(type);
 
+    ArenaContext arena = new ArenaContext();
+    arena.setName("Neon Serpent Dome");
+    context.setArenaContext(arena);
+
+    LocationContext location = new LocationContext();
+    location.setName("Neo-Tokyo");
+    context.setLocationContext(location);
+
     String prompt = generator.generateSimplifiedMatchNarrationPrompt(context);
 
+    assertTrue(
+        prompt.contains("VENUE: Neon Serpent Dome in Neo-Tokyo"),
+        "Simplified prompt should contain venue information");
     assertTrue(
         prompt.contains("Each line MUST start with '[SPEAKER:Commentator Name]:'"),
         "Simplified prompt should contain dialogue instructions");

@@ -105,7 +105,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -115,7 +116,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -125,7 +127,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -135,7 +138,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -145,7 +149,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
   }
 
   @Test
@@ -166,7 +171,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(2L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
     verify(showService, atLeastOnce())
         .createShow(
             eq("Big Event - Night 2"),
@@ -176,7 +182,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(2L),
             any(),
-            any());
+            any(),
+            any()); // Added null for arenaId
   }
 
   @Test
@@ -202,6 +209,6 @@ class ShowSchedulerServiceTest {
 
     // Verify no shows were created
     verify(showService, org.mockito.Mockito.never())
-        .createShow(any(), any(), any(), any(), any(), any(), any(), any());
+        .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any());
   }
 }

@@ -56,16 +56,21 @@
 *Link: [./conductor/archive/career_longevity_20260224/plan.md](./conductor/archive/career_longevity_20260224/plan.md)*
 *Status: Completed (2026-02-24)*
 
+### [x] Track: Visual Arena Customizer (AI-Assisted)
+
+*Link: [./conductor/archive/arena_customizer_20260224/plan.md](./conductor/archive/arena_customizer_20260224/plan.md)*
+*Status: Discarded (2026-02-24)*
+
 ---
 
 ## Active Tracks
 
-### [ ] Track: Visual Arena Customizer (AI-Assisted)
-
-*Link: [./conductor/tracks/arena_customizer/plan.md](./conductor/tracks/arena_customizer/plan.md)*
-*Status: In Progress (2026-02-24)*
-
 ### [ ] Track: Booker's Budget & Economic Simulation
 
 *Link: [./conductor/tracks/booker_economics/plan.md](./conductor/tracks/booker_economics/plan.md)*
+*Status: Planning*
+
+### [~] Track: Global Tour & Dynamic Arenas
+
+*Link: [./conductor/tracks/world_arenas/plan.md](./conductor/tracks/world_arenas/plan.md)*
 *Status: Planning*

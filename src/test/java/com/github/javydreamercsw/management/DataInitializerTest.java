@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -42,12 +43,16 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
+import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -64,6 +69,7 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -86,6 +92,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -115,12 +122,11 @@ class DataInitializerTest {
   @Mock private CampaignUpgradeService campaignUpgradeService;
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
-
-  @Mock private org.springframework.core.io.support.ResourcePatternResolver resourcePatternResolver;
+  @Mock private LocationRepository locationRepository;
+  @Mock private ArenaRepository arenaRepository;
+  @Mock private RingsideActionDataService ringsideActionDataService;
+  @Mock private ResourcePatternResolver resourcePatternResolver;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   void setUp() throws IOException {
@@ -129,7 +135,6 @@ class DataInitializerTest {
         new DataInitializer(
             true, // Enabled parameter
             showTemplateService,
-            wrestlerService,
             wrestlerRepository,
             showTypeService,
             segmentRuleService,
@@ -148,9 +153,11 @@ class DataInitializerTest {
             campaignUpgradeService,
             env,
             achievementRepository,
-            accountRepository,
             ringsideActionDataService,
-            resourcePatternResolver);
+            resourcePatternResolver,
+            locationRepository,
+            arenaRepository,
+            objectMapper);
 
     // Mock count methods to prevent issues during init()
     lenient()
@@ -476,5 +483,25 @@ class DataInitializerTest {
 
     // Should NOT overwrite existing DB value unless forceOverride is enabled
     verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
+  }
+
+  @Test
+  void validateLocationsJson() throws IOException {
+    ClassPathResource resource = new ClassPathResource("locations.json");
+    try (var is = resource.getInputStream()) {
+      var locations = objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+      assertNotNull(locations);
+      assertFalse(locations.isEmpty());
+    }
+  }
+
+  @Test
+  void validateArenasJson() throws IOException {
+    ClassPathResource resource = new ClassPathResource("arenas.json");
+    try (var is = resource.getInputStream()) {
+      var arenas = objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+      assertNotNull(arenas);
+      assertFalse(arenas.isEmpty());
+    }
   }
 }

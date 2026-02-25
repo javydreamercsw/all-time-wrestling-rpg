@@ -258,8 +258,12 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               accountService,
               imageStorageService));
       wrestlerName.setText(wrestler.getName());
-      wrestlerDetails.setText(
-          String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));
+      String details =
+          String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans());
+      if (wrestler.getHeritageTag() != null && !wrestler.getHeritageTag().isEmpty()) {
+        details += String.format(", Heritage: %s", wrestler.getHeritageTag());
+      }
+      wrestlerDetails.setText(details);
 
       if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
         wrestlerImage.setSrc(wrestler.getImageUrl());

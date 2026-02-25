@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.match;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.CommentatorContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
@@ -31,6 +33,8 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
@@ -790,6 +794,28 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       return cc;
                     })
                 .toList());
+      }
+
+      // Arena and Location Context
+      if (segment.getShow().getArena() != null) {
+        Arena arena = segment.getShow().getArena();
+        ArenaContext ac = new ArenaContext();
+        ac.setName(arena.getName());
+        ac.setDescription(arena.getDescription());
+        ac.setCapacity(arena.getCapacity());
+        ac.setAlignmentBias(arena.getAlignmentBias().getDisplayName());
+        ac.setEnvironmentalTraits(List.copyOf(arena.getEnvironmentalTraits()));
+        ac.setImageUrl(arena.getImageUrl());
+        context.setArenaContext(ac);
+
+        if (arena.getLocation() != null) {
+          Location location = arena.getLocation();
+          LocationContext lc = new LocationContext();
+          lc.setName(location.getName());
+          lc.setDescription(location.getDescription());
+          lc.setCulturalTags(List.copyOf(location.getCulturalTags()));
+          context.setLocationContext(lc);
+        }
       }
 
       String feedback = feedbackArea.getValue();

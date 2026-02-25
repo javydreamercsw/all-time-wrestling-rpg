@@ -18,15 +18,12 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -64,7 +61,6 @@ class SegmentAdjudicationServiceTest {
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
 
   @Mock
@@ -80,6 +76,8 @@ class SegmentAdjudicationServiceTest {
   private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
 
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
+  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -93,7 +91,6 @@ class SegmentAdjudicationServiceTest {
             feudResolutionService,
             feudService,
             titleService,
-            matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
@@ -113,18 +110,6 @@ class SegmentAdjudicationServiceTest {
     when(segment.getShow()).thenReturn(show);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
-  }
-
-  @Test
-  void testProcessRewardsCalled() {
-    SegmentRule rule = new SegmentRule();
-    rule.setName("Normal");
-    rule.setBumpAddition(BumpAddition.WINNERS);
-    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
-
-    segmentAdjudicationService.adjudicateMatch(segment);
-
-    verify(matchRewardService, times(1)).processRewards(segment, 1.0);
   }
 
   @Test

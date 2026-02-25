@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
@@ -124,6 +125,7 @@ public class ShowDetailView extends Main
   private final LeagueRepository leagueRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final RingsideActionService ringsideActionService;
+  private final ArenaService arenaService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -151,7 +153,8 @@ public class ShowDetailView extends Main
       MatchFulfillmentRepository matchFulfillmentRepository,
       LeagueRepository leagueRepository,
       CommentaryTeamRepository commentaryTeamRepository,
-      RingsideActionService ringsideActionService) {
+      RingsideActionService ringsideActionService,
+      ArenaService arenaService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -171,6 +174,7 @@ public class ShowDetailView extends Main
     this.leagueRepository = leagueRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.ringsideActionService = ringsideActionService;
+    this.arenaService = arenaService;
     initializeComponents();
   }
 
@@ -259,6 +263,7 @@ public class ShowDetailView extends Main
     } else {
       showNotFound();
     }
+    refreshSegmentsGrid();
   }
 
   private void displayShow(@NonNull Show show) {
@@ -304,7 +309,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  refreshSegmentsGrid();
+                  loadShow(currentShowId);
                 }
               });
           dialog.open();
@@ -329,23 +334,27 @@ public class ShowDetailView extends Main
           LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
     }
 
-    Image templateImage = new Image();
+    Image showImage = new Image();
     if (show.getTemplate() != null
         && show.getTemplate().getImageUrl() != null
         && !show.getTemplate().getImageUrl().isEmpty()) {
-      templateImage.setSrc(show.getTemplate().getImageUrl());
+      showImage.setSrc(show.getTemplate().getImageUrl());
+    } else if (show.getArena() != null
+        && show.getArena().getImageUrl() != null
+        && !show.getArena().getImageUrl().isEmpty()) {
+      showImage.setSrc(show.getArena().getImageUrl());
     } else {
-      templateImage.setSrc("https://via.placeholder.com/150");
+      showImage.setSrc("https://via.placeholder.com/150");
     }
-    templateImage.setHeight("100px");
-    templateImage.setWidth("100px");
-    templateImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Right.MEDIUM);
+    showImage.setHeight("100px");
+    showImage.setWidth("100px");
+    showImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Right.MEDIUM);
 
     VerticalLayout titleInfo = new VerticalLayout(title, typeBadge);
     titleInfo.setSpacing(false);
     titleInfo.setPadding(false);
 
-    HorizontalLayout titleLayout = new HorizontalLayout(templateImage, titleInfo, editNameButton);
+    HorizontalLayout titleLayout = new HorizontalLayout(showImage, titleInfo, editNameButton);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
 
@@ -409,6 +418,22 @@ public class ShowDetailView extends Main
                 : "No commentary team assigned");
     detailsLayout.add(commentaryLayout);
 
+    // Arena
+    HorizontalLayout arenaLayout =
+        createDetailRow(
+            "Arena:",
+            show.getArena() != null
+                ? show.getArena().getName()
+                    + " ("
+                    + show.getArena().getLocation().getName()
+                    + ", Capacity: "
+                    + show.getArena().getCapacity()
+                    + ", Bias: "
+                    + show.getArena().getAlignmentBias().getDisplayName()
+                    + ")"
+                : "No arena assigned");
+    detailsLayout.add(arenaLayout);
+
     // Show ID
     assert show.getId() != null;
     HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());
@@ -459,11 +484,12 @@ public class ShowDetailView extends Main
                   showTemplateService,
                   leagueRepository,
                   commentaryTeamRepository,
+                  arenaService,
                   show);
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  refreshSegmentsGrid();
+                  loadShow(currentShowId);
                 }
               });
           dialog.open();

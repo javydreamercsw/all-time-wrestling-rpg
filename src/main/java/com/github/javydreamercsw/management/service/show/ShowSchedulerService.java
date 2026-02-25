@@ -114,7 +114,8 @@ public class ShowSchedulerService {
                 season.getId(),
                 template.getId(),
                 null, // League ID - might need to be passed in
-                template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null);
+                template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null,
+                null); // arenaId
           }
         }
       }

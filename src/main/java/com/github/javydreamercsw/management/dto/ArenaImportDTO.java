@@ -14,18 +14,25 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.match;
+package com.github.javydreamercsw.management.dto;
 
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
+import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/** Service for calculating and awarding rewards (Fans, Money, Bumps) for matches. */
-public interface MatchRewardService {
-
-  /**
-   * Calculates and applies rewards for a segment.
-   *
-   * @param segment The segment to process.
-   * @param difficultyMultiplier A multiplier for fan awards (1.0 for normal).
-   */
-  void processRewards(Segment segment, double difficultyMultiplier);
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ArenaImportDTO {
+  private String name;
+  private String description;
+  private String location; // Location name
+  private Integer capacity;
+  private AlignmentBias alignmentBias;
+  private String imageUrl;
+  private Set<String> environmentalTraits;
 }

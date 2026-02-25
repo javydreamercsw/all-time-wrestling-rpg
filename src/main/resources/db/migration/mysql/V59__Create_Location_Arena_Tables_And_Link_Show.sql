@@ -1,0 +1,48 @@
+CREATE TABLE location (
+    location_id BIGINT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description LONGTEXT,
+    image_url VARCHAR(255),
+    external_id VARCHAR(255),
+    last_sync DATETIME(6),
+    CONSTRAINT pk_location PRIMARY KEY (location_id)
+);
+
+ALTER TABLE location ADD CONSTRAINT uc_location_name UNIQUE (name);
+ALTER TABLE location ADD CONSTRAINT uc_location_external_id UNIQUE (external_id);
+
+CREATE TABLE location_cultural_tag (
+    location_id BIGINT NOT NULL,
+    cultural_tag VARCHAR(255)
+);
+
+ALTER TABLE location_cultural_tag ADD CONSTRAINT fk_loc_cult_tag_on_location FOREIGN KEY (location_id) REFERENCES location (location_id);
+
+CREATE TABLE arena (
+    arena_id BIGINT AUTO_INCREMENT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description LONGTEXT,
+    location_id BIGINT NOT NULL,
+    capacity INT NOT NULL,
+    alignment_bias VARCHAR(255) NOT NULL,
+    image_url VARCHAR(255),
+    external_id VARCHAR(255),
+    last_sync DATETIME(6),
+    CONSTRAINT pk_arena PRIMARY KEY (arena_id)
+);
+
+ALTER TABLE arena ADD CONSTRAINT uc_arena_name UNIQUE (name);
+ALTER TABLE arena ADD CONSTRAINT uc_arena_external_id UNIQUE (external_id);
+ALTER TABLE arena ADD CONSTRAINT fk_arena_on_location FOREIGN KEY (location_id) REFERENCES location (location_id);
+
+CREATE TABLE arena_environmental_trait (
+    arena_id BIGINT NOT NULL,
+    environmental_trait VARCHAR(255)
+);
+
+ALTER TABLE arena_environmental_trait ADD CONSTRAINT fk_arena_env_trait_on_arena FOREIGN KEY (arena_id) REFERENCES arena (arena_id);
+
+ALTER TABLE wrestling_show ADD arena_id BIGINT;
+ALTER TABLE wrestling_show ADD CONSTRAINT fk_wrestling_show_on_arena FOREIGN KEY (arena_id) REFERENCES arena (arena_id);
+
+ALTER TABLE wrestler ADD heritage_tag VARCHAR(255);
