@@ -420,8 +420,14 @@ public class SegmentAdjudicationService {
         // for winners 2d6 + 3 + (quality bonus) fans
         long baseAward = (wdb.roll() + 3) * 1_000L + matchQualityBonus;
         long finalAward = (long) (baseAward * difficultyMultiplier);
-        GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.awardFans(winner.getId(), finalAward))
-            .ifPresent(w -> log.debug("Awarded {} fans to winner {}", finalAward, w.getName()));
+
+        // Apply Arena & Location Bonuses
+        finalAward = applyVenueBonuses(segment, winner, finalAward);
+
+        final long awardToGrant = finalAward;
+        GeneralSecurityUtils.runAsAdmin(
+                () -> wrestlerService.awardFans(winner.getId(), awardToGrant))
+            .ifPresent(w -> log.debug("Awarded {} fans to winner {}", awardToGrant, w.getName()));
       }
     }
 
@@ -433,15 +439,66 @@ public class SegmentAdjudicationService {
         long baseChange = (ldb.roll() - 4) * 1_000L + matchQualityBonus;
         long finalChange = (long) (baseChange * difficultyMultiplier);
 
+        // Apply Arena & Location Bonuses (only if change is positive)
+        if (finalChange > 0) {
+          finalChange = applyVenueBonuses(segment, loser, finalChange);
+        }
+
+        final long changeToApply = finalChange;
         GeneralSecurityUtils.runAsAdmin(
                 (java.util.function.Supplier<java.util.Optional<Wrestler>>)
-                    () -> wrestlerService.awardFans(loser.getId(), finalChange))
+                    () -> wrestlerService.awardFans(loser.getId(), changeToApply))
             .ifPresent(
-                w -> log.debug("Deducted/awarded {} fans to loser {}", finalChange, w.getName()));
+                w -> log.debug("Deducted/awarded {} fans to loser {}", changeToApply, w.getName()));
       }
     }
 
     assignBumps(segment);
+  }
+
+  private long applyVenueBonuses(Segment segment, Wrestler wrestler, long amount) {
+    double modifier = 1.0;
+
+    // Arena Alignment Bias (+25%)
+    if (segment.getShow().getArena() != null && wrestler.getAlignment() != null) {
+      com.github.javydreamercsw.management.domain.world.Arena arena = segment.getShow().getArena();
+      String wrestlerAlignment = wrestler.getAlignment().getAlignmentType().name();
+
+      boolean matches = false;
+      switch (arena.getAlignmentBias()) {
+        case FACE_FAVORABLE -> matches = "FACE".equals(wrestlerAlignment);
+        case HEEL_FAVORABLE -> matches = "HEEL".equals(wrestlerAlignment);
+        case ANARCHIC -> matches = true; // Everyone gets a boost in anarchy
+        case NEUTRAL -> matches = false;
+      }
+
+      if (matches) {
+        modifier += 0.25;
+        log.debug(
+            "Applying 25% Arena Bias bonus to {}. Arena: {}, Bias: {}",
+            wrestler.getName(), arena.getName(), arena.getAlignmentBias());
+      }
+    }
+
+    // Home Territory Bonus (+10%)
+    if (segment.getShow().getArena() != null
+        && segment.getShow().getArena().getLocation() != null
+        && wrestler.getHeritageTag() != null) {
+      com.github.javydreamercsw.management.domain.world.Location location =
+          segment.getShow().getArena().getLocation();
+      String heritage = wrestler.getHeritageTag().toLowerCase();
+
+      if (location.getName().toLowerCase().contains(heritage)
+          || location.getCulturalTags().stream()
+              .anyMatch(tag -> tag.toLowerCase().contains(heritage))) {
+        modifier += 0.10;
+        log.info(
+            "Applying 10% Home Territory bonus to {} in {}",
+            wrestler.getName(), location.getName());
+      }
+    }
+
+    return (long) (amount * modifier);
   }
 
   private void handlePromoRewards(@NonNull Segment segment, int roll, double difficultyMultiplier) {
@@ -452,12 +509,17 @@ public class SegmentAdjudicationService {
       if (participant.getId() != null) {
         long baseAward = promoQualityBonus * 1_000L;
         long finalAward = (long) (baseAward * difficultyMultiplier);
+
+        // Apply Arena & Location Bonuses
+        finalAward = applyVenueBonuses(segment, participant, finalAward);
+
+        final long awardToGrant = finalAward;
         GeneralSecurityUtils.runAsAdmin(
-                () -> wrestlerService.awardFans(participant.getId(), finalAward))
+                () -> wrestlerService.awardFans(participant.getId(), awardToGrant))
             .ifPresent(
                 w ->
                     log.debug(
-                        "Awarded {} fans to wrestler {} during promo", finalAward, w.getName()));
+                        "Awarded {} fans to wrestler {} during promo", awardToGrant, w.getName()));
       }
     }
   }
