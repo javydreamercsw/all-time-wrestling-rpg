@@ -86,8 +86,11 @@ class AchievementSystemTest {
   @Mock
   private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
 
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+
   @BeforeEach
   void setUp() {
+    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     legacyService =
         new LegacyService(
             accountRepository,
@@ -110,6 +113,7 @@ class AchievementSystemTest {
             ringsideActionService,
             ringsideAiService,
             retirementService,
+            gameSettingService,
             new Random());
 
     account = new Account();

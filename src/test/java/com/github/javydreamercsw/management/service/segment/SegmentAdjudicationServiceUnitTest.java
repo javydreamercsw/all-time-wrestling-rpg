@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -73,6 +74,8 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock
   private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
 
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
   private Segment promoSegment;
@@ -82,6 +85,7 @@ class SegmentAdjudicationServiceUnitTest {
 
   @BeforeEach
   void setUp() {
+    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     adjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -97,6 +101,7 @@ class SegmentAdjudicationServiceUnitTest {
             ringsideActionService,
             ringsideAiService,
             retirementService,
+            gameSettingService,
             random);
 
     wrestler1 = Wrestler.builder().build();

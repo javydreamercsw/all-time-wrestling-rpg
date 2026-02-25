@@ -145,7 +145,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 hpTooltip.append("\nBump Penalty: -").append(wrestlerWithInjuries.getBumps());
               }
 
-              int conditionPenalty = (100 - wrestler.getPhysicalCondition()) / 5;
+              int conditionPenalty = Math.min(5, (100 - wrestler.getPhysicalCondition()) / 5);
               if (conditionPenalty > 0) {
                 hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }

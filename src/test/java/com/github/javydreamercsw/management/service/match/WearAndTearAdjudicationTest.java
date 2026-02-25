@@ -72,6 +72,7 @@ class WearAndTearAdjudicationTest {
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -92,8 +93,10 @@ class WearAndTearAdjudicationTest {
             ringsideActionService,
             ringsideAiService,
             retirementService,
+            gameSettingService,
             random);
 
+    when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     when(wrestler.getId()).thenReturn(1L);
     when(wrestler.getPhysicalCondition()).thenReturn(100);
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));

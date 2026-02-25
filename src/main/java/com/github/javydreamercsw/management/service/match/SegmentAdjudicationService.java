@@ -70,6 +70,7 @@ public class SegmentAdjudicationService {
   private final RingsideActionService ringsideActionService;
   private final RingsideAiService ringsideAiService;
   private final RetirementService retirementService;
+  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -87,7 +88,8 @@ public class SegmentAdjudicationService {
       FactionService factionService,
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
-      RetirementService retirementService) {
+      RetirementService retirementService,
+      com.github.javydreamercsw.management.service.GameSettingService gameSettingService) {
     this(
         rivalryService,
         wrestlerService,
@@ -102,6 +104,7 @@ public class SegmentAdjudicationService {
         ringsideActionService,
         ringsideAiService,
         retirementService,
+        gameSettingService,
         new Random());
   }
 
@@ -120,6 +123,7 @@ public class SegmentAdjudicationService {
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
+      com.github.javydreamercsw.management.service.GameSettingService gameSettingService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -134,6 +138,7 @@ public class SegmentAdjudicationService {
     this.ringsideActionService = ringsideActionService;
     this.ringsideAiService = ringsideAiService;
     this.retirementService = retirementService;
+    this.gameSettingService = gameSettingService;
     this.random = random;
   }
 
@@ -392,7 +397,8 @@ public class SegmentAdjudicationService {
   }
 
   private void applyWearAndTear(@NonNull Segment segment) {
-    if (segment.getSegmentType().getName().equals("Promo")) {
+    if (segment.getSegmentType().getName().equals("Promo")
+        || !gameSettingService.isWearAndTearEnabled()) {
       return;
     }
 

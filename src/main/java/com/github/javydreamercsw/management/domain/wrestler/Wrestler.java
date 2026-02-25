@@ -213,7 +213,8 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
     }
 
     // Physical condition penalty: -1 health for every 5% lost from 100%
-    int conditionPenalty = (100 - physicalCondition) / 5;
+    // Capped at -5 health points.
+    int conditionPenalty = Math.min(5, (100 - physicalCondition) / 5);
 
     int effective =
         startingHealth + bonus - penalty - bumps - getTotalInjuryPenalty() - conditionPenalty;

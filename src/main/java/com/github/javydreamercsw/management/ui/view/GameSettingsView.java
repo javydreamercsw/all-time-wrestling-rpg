@@ -85,6 +85,15 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
+    Checkbox wearAndTearEnabled = new Checkbox("Enable Persistent Wear & Tear");
+    wearAndTearEnabled.setValue(gameSettingService.isWearAndTearEnabled());
+    wearAndTearEnabled.addValueChangeListener(
+        event -> {
+          gameSettingService.setWearAndTearEnabled(event.getValue());
+          Notification.show("Persistent Wear & Tear " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
     IntegerField rumorChance = new IntegerField("Daily Rumor Chance (%)");
 
     rumorChance.setMin(0);
@@ -119,7 +128,12 @@ public class GameSettingsView extends VerticalLayout {
 
     VerticalLayout layout =
         new VerticalLayout(
-            gameDatePicker, defaultThemeSelection, aiNewsEnabled, rumorChance, newsStrategy);
+            gameDatePicker,
+            defaultThemeSelection,
+            aiNewsEnabled,
+            wearAndTearEnabled,
+            rumorChance,
+            newsStrategy);
 
     add(layout);
   }
