@@ -46,6 +46,11 @@
 *Link: [./conductor/archive/interference_mechanics_20260222/plan.md](./conductor/archive/interference_mechanics_20260222/plan.md)*
 *Status: Completed (2026-02-22)*
 
+### [x] Track: Interactive Backstage "Dialogue Tree" Events
+
+*Link: [./conductor/archive/backstage_events_20260224/plan.md](./conductor/archive/backstage_events_20260224/plan.md)*
+*Status: Completed (2026-02-24)*
+
 ---
 
 ## Active Tracks
@@ -59,11 +64,6 @@
 
 *Link: [./conductor/tracks/career_longevity/plan.md](./conductor/tracks/career_longevity/plan.md)*
 *Status: Planning*
-
-### [x] Track: Interactive Backstage "Dialogue Tree" Events
-
-*Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
-*Status: Completed (2026-02-24)*
 
 ### [ ] Track: Booker's Budget & Economic Simulation
 
