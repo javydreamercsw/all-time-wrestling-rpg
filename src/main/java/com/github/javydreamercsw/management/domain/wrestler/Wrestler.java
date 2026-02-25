@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -343,6 +344,14 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
     }
     if (gender == null) {
       gender = Gender.MALE;
+    }
+    if (alignment == null) {
+      alignment =
+          WrestlerAlignment.builder()
+              .wrestler(this)
+              .alignmentType(AlignmentType.NEUTRAL)
+              .level(0)
+              .build();
     }
   }
 

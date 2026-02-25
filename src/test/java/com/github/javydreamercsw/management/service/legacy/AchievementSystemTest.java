@@ -37,7 +37,6 @@ import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
@@ -67,7 +66,6 @@ class AchievementSystemTest {
   @Mock private FeudResolutionService feudResolutionService;
   @Mock private MultiWrestlerFeudService feudService;
   @Mock private TitleService titleService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private TitleRepository titleRepository;
@@ -105,7 +103,6 @@ class AchievementSystemTest {
             feudResolutionService,
             feudService,
             titleService,
-            matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
@@ -254,6 +251,9 @@ class AchievementSystemTest {
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("One on One");
     when(rule.getName()).thenReturn("Normal");
+    when(rule.getBumpAddition())
+        .thenReturn(
+            com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition.NONE);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(segment.isMainEvent()).thenReturn(true);
 

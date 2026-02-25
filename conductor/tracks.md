@@ -70,7 +70,7 @@
 *Link: [./conductor/tracks/booker_economics/plan.md](./conductor/tracks/booker_economics/plan.md)*
 *Status: Planning*
 
-### [ ] Track: Global Tour & Dynamic Arenas
+### [~] Track: Global Tour & Dynamic Arenas
 
 *Link: [./conductor/tracks/world_arenas/plan.md](./conductor/tracks/world_arenas/plan.md)*
 *Status: Planning*

@@ -33,7 +33,7 @@
 
 ## Phase 5: Testing
 
-- [ ] **Unit Tests:** Cover `LocationService`, `ArenaService`, `SegmentAdjudicationService` (new logic), `ShowService` (Arena linking).
+- [~] **Unit Tests:** Cover `LocationService`, `ArenaService`, `SegmentAdjudicationService` (new logic), `ShowService` (Arena linking).
 - [ ] **Integration Tests:** Verify data persistence, JSON initialization, and complex service interactions.
 - [ ] **UI Tests:** Cover `Location` and `Arena` CRUD forms, `ShowPlanningView` changes, `ShowDetailView` display.
 - [ ] **DocsE2E Tests:** Add documentation captures for `Location` and `Arena` views, and potentially an updated `ShowDetailView` showing an Arena.
