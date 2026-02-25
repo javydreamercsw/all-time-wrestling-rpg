@@ -124,6 +124,9 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
   private Integer physicalCondition = 100;
 
+  @Column(name = "heritage_tag")
+  private String heritageTag;
+
   // ==================== CAMPAIGN ATTRIBUTES ====================
   @Column(name = "drive")
   @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default

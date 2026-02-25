@@ -79,6 +79,10 @@ public class Show extends AbstractEntity<Long> {
   @JoinColumn(name = "commentary_team_id")
   private CommentaryTeam commentaryTeam;
 
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "arena_id")
+  private com.github.javydreamercsw.management.domain.world.Arena arena;
+
   @Column(name = "show_date")
   private LocalDate showDate;
 

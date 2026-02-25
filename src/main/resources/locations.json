@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Neo-Tokyo",
+    "description": "A sprawling cyberpunk metropolis, rebuilt after the Great Collapse. Known for its advanced technology and underground fighting circuits.",
+    "culturalTags": ["high-tech", "urban", "cyberpunk"]
+  },
+  {
+    "name": "Lunar Colony Alpha",
+    "description": "Humanity's first permanent settlement on the Moon, a hub for zero-gravity sports and corporate intrigue.",
+    "culturalTags": ["space", "colony", "scientific"]
+  },
+  {
+    "name": "The Martian Dust-Bowl",
+    "description": "A rugged, red wasteland now home to daring prospectors and extreme sports enthusiasts. Gravity is significantly lower.",
+    "culturalTags": ["frontier", "harsh", "low-gravity"]
+  },
+  {
+    "name": "Atlantis Reborn",
+    "description": "A fully submerged city beneath the Atlantic, a marvel of bio-engineering and marine architecture. Known for its serene yet powerful atmosphere.",
+    "culturalTags": ["underwater", "utopian", "mysterious"]
+  }
+]

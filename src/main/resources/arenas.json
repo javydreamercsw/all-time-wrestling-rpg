@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Neon Serpent Dome",
+    "description": "A dazzling, multi-tiered arena in Neo-Tokyo, famous for its holographic displays and an electrifying atmosphere.",
+    "location": "Neo-Tokyo",
+    "capacity": 25000,
+    "alignmentBias": "HEEL_FAVORABLE",
+    "imageUrl": "https://example.com/neon_serpent_dome.jpg",
+    "environmentalTraits": ["holographic-displays", "urban-decay-vibe"]
+  },
+  {
+    "name": "Zero-G Octagon",
+    "description": "A cutting-edge arena on Lunar Colony Alpha, where gravity projectors can be manipulated for unique match physics.",
+    "location": "Lunar Colony Alpha",
+    "capacity": 10000,
+    "alignmentBias": "FACE_FAVORABLE",
+    "imageUrl": "https://example.com/zero_g_octagon.jpg",
+    "environmentalTraits": ["low-gravity", "zero-g-grappling"]
+  },
+  {
+    "name": "Red Sand Pit",
+    "description": "A brutal, open-air pit carved into the Martian landscape, where only the toughest survive. Dust storms are a common hazard.",
+    "location": "The Martian Dust-Bowl",
+    "capacity": 5000,
+    "alignmentBias": "ANARCHIC",
+    "imageUrl": "https://example.com/red_sand_pit.jpg",
+    "environmentalTraits": ["dust-storms", "rugged-terrain"]
+  },
+  {
+    "name": "Aqua Colosseum",
+    "description": "An exquisite underwater arena in Atlantis Reborn, with transparent domes offering views of marine life. Acoustics are unique.",
+    "location": "Atlantis Reborn",
+    "capacity": 15000,
+    "alignmentBias": "NEUTRAL",
+    "imageUrl": "https://example.com/aqua_colosseum.jpg",
+    "environmentalTraits": ["underwater", "unique-acoustics"]
+  },
+  {
+    "name": "The Old School Hall",
+    "description": "A historical arena, preserved from the 20th century. Known for its traditional crowd and classic atmosphere.",
+    "location": "Neo-Tokyo",
+    "capacity": 5000,
+    "alignmentBias": "NEUTRAL",
+    "imageUrl": "https://example.com/old_school_hall.jpg",
+    "environmentalTraits": ["classic-vibe", "no-ai-interference"]
+  }
+]
