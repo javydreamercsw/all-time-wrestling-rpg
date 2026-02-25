@@ -167,6 +167,31 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     }
   }
 
+  @Test
+  void testCaptureWearAndTear() {
+    // Navigate to a wrestler profile to show the physical condition.
+    Wrestler wrestler = wrestlerRepository.findAll().stream().findFirst().orElse(null);
+    if (wrestler != null) {
+      driver.get(
+          "http://localhost:"
+              + serverPort
+              + getContextPath()
+              + "/wrestler-profile/"
+              + wrestler.getId());
+      waitForVaadinClientToLoad();
+      waitForText("Physical Condition");
+
+      documentFeature(
+          "Game Mechanics",
+          "Persistent Wear & Tear",
+          "Matches take a toll on a wrestler's body. Physical condition degrades over time based"
+              + " on match intensity (Extreme matches double the wear) and positioning (Main Events"
+              + " are more demanding). Low condition results in health penalties and potential"
+              + " forced retirement.",
+          "mechanic-wear-and-tear");
+    }
+  }
+
   private void waitForText(String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));

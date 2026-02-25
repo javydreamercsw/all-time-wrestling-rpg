@@ -543,4 +543,19 @@ public class WrestlerService {
     wrestlerRepository.saveAll(wrestlers);
     log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE.");
   }
+
+  /** Resets the physical condition of all wrestlers to 100%. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN')")
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void resetAllWearAndTear() {
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+    for (Wrestler wrestler : wrestlers) {
+      wrestler.setPhysicalCondition(100);
+    }
+    wrestlerRepository.saveAll(wrestlers);
+    log.info("Reset physical condition for all wrestlers to 100%.");
+  }
 }

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
@@ -68,12 +69,14 @@ public class SegmentAdjudicationService {
   private final FactionService factionService;
   private final RingsideActionService ringsideActionService;
   private final RingsideAiService ringsideAiService;
+  private final RetirementService retirementService;
+  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public SegmentAdjudicationService(
-      WrestlerService wrestlerService,
       RivalryService rivalryService,
+      WrestlerService wrestlerService,
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
       TitleService titleService,
@@ -84,7 +87,9 @@ public class SegmentAdjudicationService {
       LegacyService legacyService,
       FactionService factionService,
       RingsideActionService ringsideActionService,
-      RingsideAiService ringsideAiService) {
+      RingsideAiService ringsideAiService,
+      RetirementService retirementService,
+      com.github.javydreamercsw.management.service.GameSettingService gameSettingService) {
     this(
         rivalryService,
         wrestlerService,
@@ -98,6 +103,8 @@ public class SegmentAdjudicationService {
         factionService,
         ringsideActionService,
         ringsideAiService,
+        retirementService,
+        gameSettingService,
         new Random());
   }
 
@@ -115,6 +122,8 @@ public class SegmentAdjudicationService {
       FactionService factionService,
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
+      RetirementService retirementService,
+      com.github.javydreamercsw.management.service.GameSettingService gameSettingService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -128,6 +137,8 @@ public class SegmentAdjudicationService {
     this.factionService = factionService;
     this.ringsideActionService = ringsideActionService;
     this.ringsideAiService = ringsideAiService;
+    this.retirementService = retirementService;
+    this.gameSettingService = gameSettingService;
     this.random = random;
   }
 
@@ -193,6 +204,9 @@ public class SegmentAdjudicationService {
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);
+
+    // Apply wear and tear
+    applyWearAndTear(segment);
 
     // Automated Ringside Actions
     if (!segment.getSegmentType().getName().equals("Promo")) {
@@ -380,5 +394,42 @@ public class SegmentAdjudicationService {
     rivalryBetweenWrestlers.ifPresent(
         rivalry ->
             rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
+  }
+
+  private void applyWearAndTear(@NonNull Segment segment) {
+    if (segment.getSegmentType().getName().equals("Promo")
+        || !gameSettingService.isWearAndTearEnabled()) {
+      return;
+    }
+
+    int baseLoss = 1 + random.nextInt(3); // 1-3% base loss
+    boolean isIntense =
+        segment.getSegmentRules().stream()
+            .anyMatch(
+                r ->
+                    r.getName() != null
+                        && (r.getName().equalsIgnoreCase("Extreme")
+                            || r.getName().equalsIgnoreCase("No DQ")
+                            || r.getName().equalsIgnoreCase("Cage")));
+
+    if (isIntense) {
+      baseLoss *= 2;
+    }
+
+    if (segment.isMainEvent()) {
+      baseLoss += 1;
+    }
+
+    for (Wrestler wrestler : segment.getWrestlers()) {
+      int current = wrestler.getPhysicalCondition();
+      wrestler.setPhysicalCondition(Math.max(0, current - baseLoss));
+      wrestlerService.save(wrestler);
+      log.info(
+          "Applied {}% wear and tear to {}. New condition: {}%",
+          baseLoss, wrestler.getName(), wrestler.getPhysicalCondition());
+
+      // Check for retirement
+      retirementService.checkRetirement(wrestler);
+    }
   }
 }

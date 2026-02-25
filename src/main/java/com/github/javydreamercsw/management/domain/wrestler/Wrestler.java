@@ -120,6 +120,10 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Column(name = "image_url")
   private String imageUrl;
 
+  @Column(name = "physical_condition")
+  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
+  private Integer physicalCondition = 100;
+
   // ==================== CAMPAIGN ATTRIBUTES ====================
   @Column(name = "drive")
   @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
@@ -207,7 +211,13 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
       bonus = alignment.getCampaign().getState().getCampaignHealthBonus();
       penalty = alignment.getCampaign().getState().getHealthPenalty();
     }
-    int effective = startingHealth + bonus - penalty - bumps - getTotalInjuryPenalty();
+
+    // Physical condition penalty: -1 health for every 5% lost from 100%
+    // Capped at -5 health points.
+    int conditionPenalty = Math.min(5, (100 - physicalCondition) / 5);
+
+    int effective =
+        startingHealth + bonus - penalty - bumps - getTotalInjuryPenalty() - conditionPenalty;
     return Math.max(1, effective); // Never go below 1
   }
 
@@ -324,6 +334,9 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
     }
     if (bumps == null) {
       bumps = 0;
+    }
+    if (physicalCondition == null) {
+      physicalCondition = 100;
     }
     if (gender == null) {
       gender = Gender.MALE;
