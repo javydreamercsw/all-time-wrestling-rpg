@@ -60,10 +60,10 @@
 *Link: [./conductor/tracks/career_longevity/plan.md](./conductor/tracks/career_longevity/plan.md)*
 *Status: Planning*
 
-### [ ] Track: Interactive Backstage "Dialogue Tree" Events
+### [x] Track: Interactive Backstage "Dialogue Tree" Events
 
 *Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
-*Status: Planning*
+*Status: Completed (2026-02-24)*
 
 ### [ ] Track: Booker's Budget & Economic Simulation
 

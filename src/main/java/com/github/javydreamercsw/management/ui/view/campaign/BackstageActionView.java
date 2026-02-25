@@ -38,6 +38,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
@@ -49,7 +51,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @PageTitle("Backstage Actions")
 @PermitAll
 @Slf4j
-public class BackstageActionView extends VerticalLayout {
+public class BackstageActionView extends VerticalLayout implements BeforeEnterObserver {
 
   private final BackstageActionService backstageActionService;
   private final CampaignRepository campaignRepository;
@@ -78,8 +80,20 @@ public class BackstageActionView extends VerticalLayout {
     setSpacing(true);
     setPadding(true);
     setAlignItems(Alignment.CENTER);
+  }
 
+  @Override
+  public void beforeEnter(BeforeEnterEvent event) {
     loadCampaign();
+    if (currentCampaign != null) {
+      if (backstageActionService
+          .getBackstageEncounterService()
+          .shouldTriggerEncounter(currentCampaign)) {
+        log.info("Rerouting to backstage encounter situation");
+        event.forwardTo(BackstageEncounterView.class);
+        return;
+      }
+    }
     initUI();
   }
 

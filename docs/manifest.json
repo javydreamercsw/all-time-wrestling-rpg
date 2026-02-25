@@ -1,5 +1,19 @@
 {
   "features": [ {
+    "id": "campaign-campaign-backstage-encounter",
+    "category": "Campaign",
+    "title": "Backstage Encounters",
+    "description": "Random encounters can occur when you visit the backstage area. These interactive dialogue segments force you to make choices that affect your alignment and momentum.",
+    "imagePath": "screenshots/campaign-backstage-encounter.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-backstage-encounter-outcome",
+    "category": "Campaign",
+    "title": "Encounter Outcomes",
+    "description": "Every choice in a backstage encounter has a narrative outcome and mechanical consequences, such as alignment shifts or bonuses for your next match.",
+    "imagePath": "screenshots/campaign-backstage-encounter-outcome.png",
+    "order": 10
+  }, {
     "id": "game-mechanics-mechanic-match-interference",
     "category": "Game Mechanics",
     "title": "Match Interference",

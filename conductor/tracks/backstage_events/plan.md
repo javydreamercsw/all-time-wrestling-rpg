@@ -2,22 +2,22 @@
 
 ## Phase 1: Analysis
 
-- [ ] Review `CampaignService` and `CampaignPhase` flow.
-- [ ] Analyze existing `Event` system.
+- [x] Review `CampaignService` and `CampaignPhase` flow.
+- [x] Analyze existing `Event` system.
 
 ## Phase 2: Design
 
-- [ ] Define `BackstageEncounter` structure (trigger, options, outcomes).
-- [ ] Create AI prompts for generating dialogue.
+- [x] Define `BackstageEncounter` structure (trigger, options, outcomes).
+- [x] Create AI prompts for generating dialogue.
 
 ## Phase 3: Implementation
 
-- [ ] Implement `EncounterGenerationService`.
-- [ ] Create `BackstageView` for interactive dialogue.
-- [ ] Integrate outcomes with `CampaignState`.
+- [x] Implement `EncounterGenerationService`. (Implemented as `BackstageEncounterService`)
+- [x] Create `BackstageView` for interactive dialogue. (Implemented as `BackstageEncounterView`)
+- [x] Integrate outcomes with `CampaignState`.
 
 ## Phase 4: Testing
 
-- [ ] Test random trigger logic.
-- [ ] Verify attribute updates from choices.
+- [x] Test random trigger logic.
+- [x] Verify attribute updates from choices.
 
