@@ -93,7 +93,19 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
             wrestlerWithInjuries -> {
               Span bumps = new Span("Bumps: " + wrestlerWithInjuries.getBumps());
               bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
-              getContent().add(bumps);
+
+              Span condition =
+                  new Span("💪 Physical Condition: " + wrestler.getPhysicalCondition() + "%");
+              condition.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
+              if (wrestler.getPhysicalCondition() < 50) {
+                condition.addClassNames(TextColor.ERROR);
+              } else if (wrestler.getPhysicalCondition() < 80) {
+                condition.addClassNames(TextColor.WARNING);
+              } else {
+                condition.addClassNames(TextColor.SUCCESS);
+              }
+
+              getContent().add(bumps, condition);
 
               // Campaign Modifiers
               // Always show effective HP if we have penalties or bonuses, even if not the player's
@@ -131,6 +143,11 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
               if (wrestlerWithInjuries.getBumps() > 0) {
                 hpTooltip.append("\nBump Penalty: -").append(wrestlerWithInjuries.getBumps());
+              }
+
+              int conditionPenalty = (100 - wrestler.getPhysicalCondition()) / 5;
+              if (conditionPenalty > 0) {
+                hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }
 
               int injuryPenalty = wrestler.getTotalInjuryPenalty();

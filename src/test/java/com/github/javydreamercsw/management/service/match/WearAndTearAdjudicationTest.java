@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,15 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.match;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -36,10 +32,12 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +48,7 @@ import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class SegmentAdjudicationServiceTest {
+class WearAndTearAdjudicationTest {
 
   @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
@@ -58,13 +56,13 @@ class SegmentAdjudicationServiceTest {
   @Mock private MultiWrestlerFeudService feudService;
   @Mock private Random random;
   @Mock private Segment segment;
-  @Mock private Wrestler winner;
-  @Mock private Wrestler loser;
+  @Mock private Wrestler wrestler;
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
   @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private RetirementService retirementService;
 
   @Mock
   private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
@@ -74,9 +72,6 @@ class SegmentAdjudicationServiceTest {
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -98,50 +93,53 @@ class SegmentAdjudicationServiceTest {
             ringsideAiService,
             retirementService,
             random);
-    when(segment.getWinners()).thenReturn(List.of(winner));
-    when(segment.getLosers()).thenReturn(List.of(loser));
-    when(segment.getWrestlers()).thenReturn(List.of(winner, loser));
-    when(winner.getId()).thenReturn(1L);
-    when(loser.getId()).thenReturn(2L);
+
+    when(wrestler.getId()).thenReturn(1L);
+    when(wrestler.getPhysicalCondition()).thenReturn(100);
+    when(segment.getWrestlers()).thenReturn(List.of(wrestler));
+    when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(segmentType);
-    when(segmentType.getName()).thenReturn("Test Match");
+    when(segmentType.getName()).thenReturn("One on One");
     when(segment.getShow()).thenReturn(show);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    when(segment.getSegmentRules()).thenReturn(Set.of());
   }
 
   @Test
-  void testProcessRewardsCalled() {
-    SegmentRule rule = new SegmentRule();
-    rule.setName("Normal");
-    rule.setBumpAddition(BumpAddition.WINNERS);
-    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
-
-    segmentAdjudicationService.adjudicateMatch(segment);
-
-    verify(matchRewardService, times(1)).processRewards(segment, 1.0);
-  }
-
-  @Test
-  void testAffinityGainOnVictory() {
-    com.github.javydreamercsw.management.domain.faction.Faction faction =
-        mock(com.github.javydreamercsw.management.domain.faction.Faction.class);
-    when(faction.getId()).thenReturn(100L);
-
-    Wrestler w1 = mock(Wrestler.class);
-    Wrestler w2 = mock(Wrestler.class);
-    when(w1.getFaction()).thenReturn(faction);
-    when(w2.getFaction()).thenReturn(faction);
-    when(w1.getId()).thenReturn(10L);
-    when(w2.getId()).thenReturn(11L);
-
-    when(segment.getWrestlers()).thenReturn(List.of(w1, w2, loser));
-    when(segment.getWinners()).thenReturn(List.of(w1, w2));
+  void testApplyWearAndTear_StandardMatch() {
+    when(random.nextInt(3)).thenReturn(1); // baseLoss = 1 + 1 = 2
     when(segment.isMainEvent()).thenReturn(false);
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    // Calculation: (2-1) [participation] + 2 [victory bonus] = 3
-    verify(factionService).addAffinity(100L, 3);
+    verify(wrestler).setPhysicalCondition(98);
+    verify(wrestlerService).save(wrestler);
+    verify(retirementService).checkRetirement(wrestler);
+  }
+
+  @Test
+  void testApplyWearAndTear_ExtremeMainEvent() {
+    when(random.nextInt(3)).thenReturn(2); // baseLoss = 1 + 2 = 3
+    when(segment.isMainEvent()).thenReturn(true); // +1
+
+    SegmentRule extremeRule = mock(SegmentRule.class);
+    when(extremeRule.getName()).thenReturn("Extreme");
+    when(segment.getSegmentRules()).thenReturn(Set.of(extremeRule)); // x2
+
+    // (3 * 2) + 1 = 7
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestler).setPhysicalCondition(93);
+    verify(wrestlerService).save(wrestler);
+  }
+
+  @Test
+  void testApplyWearAndTear_PromoSkips() {
+    when(segmentType.getName()).thenReturn("Promo");
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestler, never()).setPhysicalCondition(anyInt());
   }
 }

@@ -70,6 +70,9 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
   private Segment promoSegment;
@@ -93,6 +96,7 @@ class SegmentAdjudicationServiceUnitTest {
             factionService,
             ringsideActionService,
             ringsideAiService,
+            retirementService,
             random);
 
     wrestler1 = Wrestler.builder().build();

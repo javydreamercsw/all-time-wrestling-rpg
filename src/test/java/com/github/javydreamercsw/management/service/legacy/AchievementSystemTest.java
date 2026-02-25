@@ -83,6 +83,9 @@ class AchievementSystemTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+
   @BeforeEach
   void setUp() {
     legacyService =
@@ -106,6 +109,7 @@ class AchievementSystemTest {
             factionService,
             ringsideActionService,
             ringsideAiService,
+            retirementService,
             new Random());
 
     account = new Account();
