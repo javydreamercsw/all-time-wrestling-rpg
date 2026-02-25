@@ -46,6 +46,16 @@
 *Link: [./conductor/archive/interference_mechanics_20260222/plan.md](./conductor/archive/interference_mechanics_20260222/plan.md)*
 *Status: Completed (2026-02-22)*
 
+### [x] Track: Interactive Backstage "Dialogue Tree" Events
+
+*Link: [./conductor/archive/backstage_events_20260224/plan.md](./conductor/archive/backstage_events_20260224/plan.md)*
+*Status: Completed (2026-02-24)*
+
+### [x] Track: Persistent "Wear & Tear" & Career Longevity
+
+*Link: [./conductor/archive/career_longevity_20260224/plan.md](./conductor/archive/career_longevity_20260224/plan.md)*
+*Status: Completed (2026-02-24)*
+
 ---
 
 ## Active Tracks
@@ -53,17 +63,7 @@
 ### [ ] Track: Visual Arena Customizer (AI-Assisted)
 
 *Link: [./conductor/tracks/arena_customizer/plan.md](./conductor/tracks/arena_customizer/plan.md)*
-*Status: Planning*
-
-### [ ] Track: Persistent "Wear & Tear" & Career Longevity
-
-*Link: [./conductor/tracks/career_longevity/plan.md](./conductor/tracks/career_longevity/plan.md)*
-*Status: Planning*
-
-### [x] Track: Interactive Backstage "Dialogue Tree" Events
-
-*Link: [./conductor/tracks/backstage_events/plan.md](./conductor/tracks/backstage_events/plan.md)*
-*Status: Completed (2026-02-24)*
+*Status: In Progress (2026-02-24)*
 
 ### [ ] Track: Booker's Budget & Economic Simulation
 

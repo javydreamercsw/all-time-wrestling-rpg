@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.match;
 
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -75,10 +76,16 @@ class SegmentAdjudicationServiceTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
   void setUp() {
+    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -93,6 +100,8 @@ class SegmentAdjudicationServiceTest {
             factionService,
             ringsideActionService,
             ringsideAiService,
+            retirementService,
+            gameSettingService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
@@ -109,6 +118,7 @@ class SegmentAdjudicationServiceTest {
   @Test
   void testProcessRewardsCalled() {
     SegmentRule rule = new SegmentRule();
+    rule.setName("Normal");
     rule.setBumpAddition(BumpAddition.WINNERS);
     when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
 

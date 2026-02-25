@@ -37,7 +37,23 @@ public class GameSettingService {
   public static final String AI_NEWS_ENABLED_KEY = "ai_news_enabled";
   public static final String NEWS_RUMOR_CHANCE_KEY = "news_rumor_chance";
   public static final String NEWS_STRATEGY_KEY = "news_strategy"; // "SEGMENT" or "SHOW"
+  public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
   private final GameSettingRepository repository;
+
+  @PreAuthorize("permitAll()")
+  public boolean isWearAndTearEnabled() {
+    return repository
+        .findById(WEAR_AND_TEAR_ENABLED_KEY)
+        .map(GameSetting::getValue)
+        .map(Boolean::parseBoolean)
+        .orElse(true); // Enabled by default
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @Transactional
+  public void setWearAndTearEnabled(boolean enabled) {
+    save(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
+  }
 
   @PreAuthorize("permitAll()")
   public boolean isAiNewsEnabled() {

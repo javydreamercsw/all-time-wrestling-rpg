@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,53 +14,55 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.segment;
+package com.github.javydreamercsw.management.service.match;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
-import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
-class SegmentAdjudicationServiceUnitTest {
+@MockitoSettings(strictness = Strictness.LENIENT)
+class WearAndTearAdjudicationTest {
 
   @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
   @Mock private FeudResolutionService feudResolutionService;
   @Mock private MultiWrestlerFeudService feudService;
-
   @Mock private Random random;
+  @Mock private Segment segment;
+  @Mock private Wrestler wrestler;
+  @Mock private SegmentType segmentType;
+  @Mock private Show show;
   @Mock private TitleService titleService;
   @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private RetirementService retirementService;
 
   @Mock
   private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
@@ -70,23 +72,13 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
-
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
-  @InjectMocks private SegmentAdjudicationService adjudicationService;
-
-  private Segment promoSegment;
-  private Segment matchSegment;
-  private Wrestler wrestler1;
-  private Wrestler wrestler2;
+  private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
   void setUp() {
-    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
-    adjudicationService =
+    segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
             wrestlerService,
@@ -104,54 +96,53 @@ class SegmentAdjudicationServiceUnitTest {
             gameSettingService,
             random);
 
-    wrestler1 = Wrestler.builder().build();
-    wrestler1.setId(1L);
-    wrestler1.setName("Wrestler 1");
-
-    wrestler2 = Wrestler.builder().build();
-    wrestler2.setId(2L);
-    wrestler2.setName("Wrestler 2");
-
-    SegmentType promoType = new SegmentType();
-    promoType.setName("Promo");
-
-    promoSegment = new Segment();
-    promoSegment.setSegmentType(promoType);
-    promoSegment.addParticipant(wrestler1);
-    promoSegment.addParticipant(wrestler2);
-
-    SegmentType matchType = new SegmentType();
-    matchType.setName("Match");
-    matchSegment = new Segment();
-    matchSegment.setSegmentType(matchType);
-    matchSegment.addParticipant(wrestler1);
-    matchSegment.addParticipant(wrestler2);
-
-    Show show = new Show();
-    ShowType showType = new ShowType();
-    showType.setName("Weekly Show");
-    show.setType(showType);
-    promoSegment.setShow(show);
-    matchSegment.setShow(show);
-
-    // Default mock behavior
-    org.mockito.Mockito.lenient()
-        .when(matchFulfillmentRepository.findBySegment(any(Segment.class)))
-        .thenReturn(Optional.empty());
+    when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
+    when(wrestler.getId()).thenReturn(1L);
+    when(wrestler.getPhysicalCondition()).thenReturn(100);
+    when(segment.getWrestlers()).thenReturn(List.of(wrestler));
+    when(segment.getWinners()).thenReturn(List.of(wrestler));
+    when(segment.getSegmentType()).thenReturn(segmentType);
+    when(segmentType.getName()).thenReturn("One on One");
+    when(segment.getShow()).thenReturn(show);
+    when(show.isPremiumLiveEvent()).thenReturn(false);
+    when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    when(segment.getSegmentRules()).thenReturn(Set.of());
   }
 
   @Test
-  void testAdjudicateMatch_HeatUpdate() {
-    // Given a match segment
-    // When
-    adjudicationService.adjudicateMatch(matchSegment);
+  void testApplyWearAndTear_StandardMatch() {
+    when(random.nextInt(3)).thenReturn(1); // baseLoss = 1 + 1 = 2
+    when(segment.isMainEvent()).thenReturn(false);
 
-    // Then
-    verify(rivalryService, times(1))
-        .addHeatBetweenWrestlers(
-            Objects.requireNonNull(eq(wrestler1.getId())),
-            Objects.requireNonNull(eq(wrestler2.getId())),
-            eq(1),
-            eq("From segment: Match"));
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestler).setPhysicalCondition(98);
+    verify(wrestlerService).save(wrestler);
+    verify(retirementService).checkRetirement(wrestler);
+  }
+
+  @Test
+  void testApplyWearAndTear_ExtremeMainEvent() {
+    when(random.nextInt(3)).thenReturn(2); // baseLoss = 1 + 2 = 3
+    when(segment.isMainEvent()).thenReturn(true); // +1
+
+    SegmentRule extremeRule = mock(SegmentRule.class);
+    when(extremeRule.getName()).thenReturn("Extreme");
+    when(segment.getSegmentRules()).thenReturn(Set.of(extremeRule)); // x2
+
+    // (3 * 2) + 1 = 7
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestler).setPhysicalCondition(93);
+    verify(wrestlerService).save(wrestler);
+  }
+
+  @Test
+  void testApplyWearAndTear_PromoSkips() {
+    when(segmentType.getName()).thenReturn("Promo");
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestler, never()).setPhysicalCondition(anyInt());
   }
 }
