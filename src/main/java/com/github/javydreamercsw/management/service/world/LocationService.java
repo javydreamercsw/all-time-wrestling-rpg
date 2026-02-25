@@ -38,14 +38,9 @@ public class LocationService {
   private final LocationRepository repository;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Location createLocation(
-      String name, String description, Set<String> culturalTags) {
+  public Location createLocation(String name, String description, Set<String> culturalTags) {
     Location location =
-        Location.builder()
-            .name(name)
-            .description(description)
-            .culturalTags(culturalTags)
-            .build();
+        Location.builder().name(name).description(description).culturalTags(culturalTags).build();
     return repository.save(location);
   }
 
@@ -87,7 +82,7 @@ public class LocationService {
   public void deleteLocation(Long id) {
     repository.deleteById(id);
   }
-  
+
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Location> findByName(String name) {
     return repository.findByName(name);

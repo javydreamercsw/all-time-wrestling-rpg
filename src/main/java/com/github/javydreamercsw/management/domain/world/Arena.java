@@ -77,9 +77,7 @@ public class Arena extends AbstractEntity<Long> {
   private String imageUrl;
 
   @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(
-      name = "arena_environmental_trait",
-      joinColumns = @JoinColumn(name = "arena_id"))
+  @CollectionTable(name = "arena_environmental_trait", joinColumns = @JoinColumn(name = "arena_id"))
   @Column(name = "environmental_trait")
   @Builder.Default
   private Set<String> environmentalTraits = new HashSet<>();

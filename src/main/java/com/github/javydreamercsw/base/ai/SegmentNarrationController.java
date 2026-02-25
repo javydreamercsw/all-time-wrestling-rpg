@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -25,6 +27,8 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeCont
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
+import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Arrays;
@@ -56,6 +60,8 @@ public class SegmentNarrationController {
   private final SegmentNarrationConfig config;
   private final Environment environment;
   private final SegmentOutcomeProvider segmentOutcomeService;
+  private final ArenaService arenaService;
+  private final LocationService locationService;
 
   private SegmentNarrationService getAppropriateService() {
     if (isTestProfile()) {
@@ -353,6 +359,25 @@ public class SegmentNarrationController {
         Arrays.asList(
             "Previous segment saw intense back-and-forth action with multiple near-falls...",
             "Last encounter ended in controversy when Angle used the ropes for leverage..."));
+
+    // Add sample Arena and Location Context
+    ArenaContext arenaContext = new ArenaContext();
+    arenaContext.setName("The Martian Dust-Bowl");
+    arenaContext.setDescription("A brutal, open-air pit carved into the Martian landscape.");
+    arenaContext.setCapacity(5000);
+    arenaContext.setAlignmentBias(
+        com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias.ANARCHIC
+            .getDisplayName());
+    arenaContext.setEnvironmentalTraits(Arrays.asList("dust-storms", "rugged-terrain"));
+    arenaContext.setImageUrl("https://example.com/red_sand_pit.jpg");
+    context.setArenaContext(arenaContext);
+
+    LocationContext locationContext = new LocationContext();
+    locationContext.setName("The Martian Dust-Bowl");
+    locationContext.setDescription("A rugged, red wasteland now home to daring prospectors.");
+    locationContext.setCulturalTags(Arrays.asList("frontier", "harsh", "low-gravity"));
+    context.setLocationContext(locationContext);
+
     return context;
   }
 }

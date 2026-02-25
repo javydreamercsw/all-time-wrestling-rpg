@@ -758,6 +758,7 @@ public class CampaignService {
                   season.getId(),
                   finalTemplateId,
                   null,
+                  null,
                   null);
             });
   }

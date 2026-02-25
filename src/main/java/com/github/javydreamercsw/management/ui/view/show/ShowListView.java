@@ -456,7 +456,8 @@ public class ShowListView extends Main {
         newSeason.getValue() != null ? newSeason.getValue().getId() : null,
         newTemplate.getValue() != null ? newTemplate.getValue().getId() : null,
         newLeague.getValue() != null ? newLeague.getValue().getId() : null,
-        null);
+        null, // commentaryTeamId - not available in this form
+        null); // arenaId - not available in this form
     name.clear();
     newShowType.clear();
     newSeason.clear();

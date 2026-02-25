@@ -45,7 +45,12 @@ public class ArenaService {
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Arena createArena(
-      String name, String description, Long locationId, Integer capacity, AlignmentBias alignmentBias, Set<String> environmentalTraits) {
+      String name,
+      String description,
+      Long locationId,
+      Integer capacity,
+      AlignmentBias alignmentBias,
+      Set<String> environmentalTraits) {
     Location location =
         locationService
             .findById(locationId)
@@ -120,34 +125,40 @@ public class ArenaService {
   public Optional<Arena> findByName(String name) {
     return repository.findByName(name);
   }
-  
+
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<String> generateArenaImage(Long arenaId) {
-    return repository.findById(arenaId)
-        .map(arena -> {
-          String prompt = String.format("A futuristic wrestling arena named '%s' located in '%s'. "
-              + "Description: '%s'. Capacity: %d. Alignment Bias: %s. Environmental Traits: %s. "
-              + "Focus on the unique visual style implied by these characteristics. Science fiction, fantasy art, digital painting.",
-              arena.getName(),
-              arena.getLocation().getName(),
-              arena.getDescription(),
-              arena.getCapacity(),
-              arena.getAlignmentBias().getDisplayName(),
-              String.join(", ", arena.getEnvironmentalTraits()));
+    return repository
+        .findById(arenaId)
+        .map(
+            arena -> {
+              String prompt =
+                  String.format(
+                      "A futuristic wrestling arena named '%s' located in '%s'. Description: '%s'."
+                          + " Capacity: %d. Alignment Bias: %s. Environmental Traits: %s. Focus on"
+                          + " the unique visual style implied by these characteristics. Science"
+                          + " fiction, fantasy art, digital painting.",
+                      arena.getName(),
+                      arena.getLocation().getName(),
+                      arena.getDescription(),
+                      arena.getCapacity(),
+                      arena.getAlignmentBias().getDisplayName(),
+                      String.join(", ", arena.getEnvironmentalTraits()));
 
-          ImageRequest request = ImageRequest.builder()
-              .prompt(prompt)
-              .size("1024x1024") // Standard size
-              .responseFormat("url")
-              .build();
-          
-          String imageUrl = imageGenerationService.generateImage(request);
-          if (imageUrl != null && !imageUrl.isBlank()) {
-            arena.setImageUrl(imageUrl);
-            repository.save(arena);
-            return imageUrl;
-          }
-          return null;
-        });
+              ImageRequest request =
+                  ImageRequest.builder()
+                      .prompt(prompt)
+                      .size("1024x1024") // Standard size
+                      .responseFormat("url")
+                      .build();
+
+              String imageUrl = imageGenerationService.generateImage(request);
+              if (imageUrl != null && !imageUrl.isBlank()) {
+                arena.setImageUrl(imageUrl);
+                repository.save(arena);
+                return imageUrl;
+              }
+              return null;
+            });
   }
 }

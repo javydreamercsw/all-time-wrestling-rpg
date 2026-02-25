@@ -18,9 +18,9 @@
 - [ ] Create `LocationService` (CRUD).
 - [ ] Create `ArenaService` (CRUD, including image generation/upload logic integration).
 - [ ] Update `SegmentAdjudicationService` to apply:
-    - [ ] **Alignment Bias:** Modify Fan Gain based on the winner's alignment vs. Arena bias (Face-Favorable, Heel-Favorable, Anarchic).
-    - [ ] **Capacity Capping:** Ensure Fan Gain doesn't exceed the venue's potential.
-    - [ ] **Heritage Bonus:** Apply bonuses if a wrestler performs in their `heritageTag` region/location.
+  - [ ] **Alignment Bias:** Modify Fan Gain based on the winner's alignment vs. Arena bias (Face-Favorable, Heel-Favorable, Anarchic).
+  - [ ] **Capacity Capping:** Ensure Fan Gain doesn't exceed the venue's potential.
+  - [ ] **Heritage Bonus:** Apply bonuses if a wrestler performs in their `heritageTag` region/location.
 - [ ] Update AI Narration prompts to include Arena Alignment Bias for dynamic crowd descriptions.
 
 ## Phase 4: UI Enhancements & CRUD Views
@@ -37,3 +37,4 @@
 - [ ] **Integration Tests:** Verify data persistence, JSON initialization, and complex service interactions.
 - [ ] **UI Tests:** Cover `Location` and `Arena` CRUD forms, `ShowPlanningView` changes, `ShowDetailView` display.
 - [ ] **DocsE2E Tests:** Add documentation captures for `Location` and `Arena` views, and potentially an updated `ShowDetailView` showing an Arena.
+

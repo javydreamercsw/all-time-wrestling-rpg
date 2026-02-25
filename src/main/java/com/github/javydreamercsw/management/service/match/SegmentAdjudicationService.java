@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
@@ -71,6 +72,8 @@ public class SegmentAdjudicationService {
   private final RingsideAiService ringsideAiService;
   private final RetirementService retirementService;
   private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private final com.github.javydreamercsw.management.service.world.LocationService locationService;
+  private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -89,7 +92,9 @@ public class SegmentAdjudicationService {
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
-      com.github.javydreamercsw.management.service.GameSettingService gameSettingService) {
+      com.github.javydreamercsw.management.service.GameSettingService gameSettingService,
+      com.github.javydreamercsw.management.service.world.LocationService locationService,
+      com.github.javydreamercsw.management.service.world.ArenaService arenaService) {
     this(
         rivalryService,
         wrestlerService,
@@ -105,6 +110,8 @@ public class SegmentAdjudicationService {
         ringsideAiService,
         retirementService,
         gameSettingService,
+        locationService,
+        arenaService,
         new Random());
   }
 
@@ -124,6 +131,8 @@ public class SegmentAdjudicationService {
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
       com.github.javydreamercsw.management.service.GameSettingService gameSettingService,
+      com.github.javydreamercsw.management.service.world.LocationService locationService,
+      com.github.javydreamercsw.management.service.world.ArenaService arenaService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -139,6 +148,8 @@ public class SegmentAdjudicationService {
     this.ringsideAiService = ringsideAiService;
     this.retirementService = retirementService;
     this.gameSettingService = gameSettingService;
+    this.locationService = locationService;
+    this.arenaService = arenaService;
     this.random = random;
   }
 
@@ -204,6 +215,61 @@ public class SegmentAdjudicationService {
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     matchRewardService.processRewards(segment, multiplier);
+
+    // Apply Arena-specific fan adjustments
+    if (segment.getShow() != null && segment.getShow().getArena() != null) {
+      Arena arena = segment.getShow().getArena();
+      int arenaCapacity = arena.getCapacity();
+      Arena.AlignmentBias bias = arena.getAlignmentBias();
+
+      for (Wrestler wrestler : segment.getWrestlers()) {
+        long fanGain =
+            wrestler.getFans()
+                - wrestlerService
+                    .getWrestlerStats(wrestler.getId())
+                    .map(s -> s.getWins() * 1000L)
+                    .orElse(0L); // Placeholder for actual fan gain calculation
+
+        // Apply alignment bias
+        if (bias != Arena.AlignmentBias.NEUTRAL && wrestler.getAlignment() != null) {
+          boolean isFace =
+              wrestler.getAlignment().getAlignmentType()
+                  == com.github.javydreamercsw.management.domain.campaign.AlignmentType.FACE;
+          if (bias == Arena.AlignmentBias.FACE_FAVORABLE && isFace) {
+            fanGain *= 1.25; // 25% bonus for Faces
+          } else if (bias == Arena.AlignmentBias.HEEL_FAVORABLE && !isFace) {
+            fanGain *= 1.25; // 25% bonus for Heels
+          } else if (bias == Arena.AlignmentBias.ANARCHIC) {
+            // Anarchic crowds reward winners with more momentum/fans, punish losers
+            if (winners.contains(wrestler)) {
+              fanGain *= 1.10; // 10% bonus for winners
+            } else {
+              fanGain *= 0.90; // 10% penalty for losers
+            }
+          }
+        }
+
+        // Apply heritage bonus
+        if (wrestler.getHeritageTag() != null && arena.getLocation() != null) {
+          if (arena
+              .getLocation()
+              .getCulturalTags()
+              .contains(wrestler.getHeritageTag().toLowerCase())) {
+            fanGain *= 1.10; // 10% bonus for home territory
+          }
+        }
+
+        // Capacity capping (simplified: ensure fanGain doesn't lead to exceeding capacity too
+        // quickly)
+        // A more complex system would check total show attendance vs. capacity
+        fanGain =
+            Math.min(
+                fanGain,
+                arenaCapacity / 10); // Example: max 10% of capacity per match, can be refined
+
+        wrestlerService.awardFans(wrestler.getId(), fanGain);
+      }
+    }
 
     // Apply wear and tear
     applyWearAndTear(segment);

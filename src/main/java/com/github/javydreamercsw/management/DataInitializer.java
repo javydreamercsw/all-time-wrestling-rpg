@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.Initializable;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -37,12 +36,12 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
@@ -66,13 +65,13 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -89,7 +88,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -104,7 +102,6 @@ public class DataInitializer implements Initializable {
 
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;
-  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowTypeService showTypeService;
   private final SegmentRuleService segmentRuleService;
@@ -125,18 +122,14 @@ public class DataInitializer implements Initializable {
   private final ArenaRepository arenaRepository;
   private final Environment env;
   private final AchievementRepository achievementRepository;
-  private final AccountRepository accountRepository;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
   private final ResourcePatternResolver resourcePatternResolver;
-  private final LocationRepository locationRepository;
-  private final ArenaRepository arenaRepository;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") boolean enabled,
       ShowTemplateService showTemplateService,
-      @Lazy WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       ShowTypeService showTypeService,
       SegmentRuleService segmentRuleService,
@@ -155,15 +148,12 @@ public class DataInitializer implements Initializable {
       CampaignUpgradeService campaignUpgradeService,
       Environment env,
       AchievementRepository achievementRepository,
-      AccountRepository accountRepository,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-          ringsideActionDataService,
+      RingsideActionDataService ringsideActionDataService,
       ResourcePatternResolver resourcePatternResolver,
       LocationRepository locationRepository,
       ArenaRepository arenaRepository) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
-    this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.showTypeService = showTypeService;
     this.segmentRuleService = segmentRuleService;
@@ -182,7 +172,6 @@ public class DataInitializer implements Initializable {
     this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
     this.achievementRepository = achievementRepository;
-    this.accountRepository = accountRepository;
     this.ringsideActionDataService = ringsideActionDataService;
     this.resourcePatternResolver = resourcePatternResolver;
     this.locationRepository = locationRepository;
@@ -1185,13 +1174,17 @@ public class DataInitializer implements Initializable {
         for (Arena arena : arenasFromFile) {
           Optional<Arena> existingArena = arenaRepository.findByName(arena.getName());
           if (existingArena.isEmpty()) {
-            Optional<Location> location = locationRepository.findByName(arena.getLocation().getName());
+            Optional<Location> location =
+                locationRepository.findByName(arena.getLocation().getName());
             if (location.isPresent()) {
               arena.setLocation(location.get());
               arenaRepository.save(arena);
               log.debug("Saved new arena: {}", arena.getName());
             } else {
-              log.warn("Location {} not found for arena {}. Skipping arena.", arena.getLocation().getName(), arena.getName());
+              log.warn(
+                  "Location {} not found for arena {}. Skipping arena.",
+                  arena.getLocation().getName(),
+                  arena.getName());
             }
           } else {
             Arena existing = existingArena.get();
@@ -1200,7 +1193,8 @@ public class DataInitializer implements Initializable {
             existing.setAlignmentBias(arena.getAlignmentBias());
             existing.setImageUrl(arena.getImageUrl());
             existing.setEnvironmentalTraits(arena.getEnvironmentalTraits());
-            Optional<Location> location = locationRepository.findByName(arena.getLocation().getName());
+            Optional<Location> location =
+                locationRepository.findByName(arena.getLocation().getName());
             location.ifPresent(existing::setLocation);
             arenaRepository.save(existing);
             log.debug("Updated existing arena: {}", existing.getName());

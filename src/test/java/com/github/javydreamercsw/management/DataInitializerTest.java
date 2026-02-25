@@ -129,7 +129,6 @@ class DataInitializerTest {
         new DataInitializer(
             true, // Enabled parameter
             showTemplateService,
-            wrestlerService,
             wrestlerRepository,
             showTypeService,
             segmentRuleService,
@@ -148,7 +147,6 @@ class DataInitializerTest {
             campaignUpgradeService,
             env,
             achievementRepository,
-            accountRepository,
             ringsideActionDataService,
             resourcePatternResolver);
 

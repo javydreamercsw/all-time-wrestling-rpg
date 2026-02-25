@@ -93,6 +93,8 @@ public interface SegmentNarrationService {
     private String narration; // The narration of the segment
     private CampaignContext campaignContext; // Campaign specific context
     private List<CommentatorContext> commentators; // Commentators for this segment
+    private ArenaContext arenaContext;
+    private LocationContext locationContext;
   }
 
   /** Context for campaign status. */
@@ -130,6 +132,29 @@ public interface SegmentNarrationService {
     private String name;
     private String currentHolderName;
     private String tier; // e.g., World, Mid-Card, Tag Team
+  }
+
+  /** Context for arena. */
+  @Setter
+  @Getter
+  @ToString
+  class ArenaContext {
+    private String name;
+    private String description;
+    private int capacity;
+    private String alignmentBias;
+    private List<String> environmentalTraits;
+    private String imageUrl;
+  }
+
+  /** Context for location. */
+  @Setter
+  @Getter
+  @ToString
+  class LocationContext {
+    private String name;
+    private String description;
+    private List<String> culturalTags;
   }
 
   /** Context for individual wrestlers in the segment. */
