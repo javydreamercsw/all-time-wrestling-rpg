@@ -75,6 +75,8 @@ class SegmentAdjudicationServiceUnitTest {
   private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
 
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
+  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 

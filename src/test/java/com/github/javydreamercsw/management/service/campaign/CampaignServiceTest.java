@@ -234,7 +234,7 @@ class CampaignServiceTest {
     when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
 
     when(showService.createShow(
-            anyString(), anyString(), anyLong(), any(), anyLong(), any(), any(), any()))
+            anyString(), anyString(), anyLong(), any(), anyLong(), any(), any(), any(), any()))
         .thenReturn(show);
 
     when(segmentService.createSegment(any(Show.class), any(SegmentType.class), any()))

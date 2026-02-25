@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.world;
 
-import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -47,14 +47,12 @@ public class ArenaListView extends Main {
 
   private final ArenaService arenaService;
   private final LocationService locationService;
-  private final SecurityUtils securityUtils;
-  private Grid<Arena> grid = new Grid<>(Arena.class);
+  private final Grid<Arena> grid = new Grid<>(Arena.class);
 
   public ArenaListView(
       ArenaService arenaService, LocationService locationService, SecurityUtils securityUtils) {
     this.arenaService = arenaService;
     this.locationService = locationService;
-    this.securityUtils = securityUtils;
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -64,7 +62,7 @@ public class ArenaListView extends Main {
 
     add(new ViewToolbar("Arenas"));
     add(createGrid());
-    if (securityUtils.hasAnyRole(RoleName.ADMIN_ROLE, RoleName.BOOKER_ROLE)) {
+    if (securityUtils.hasAnyRole(RoleName.ADMIN, RoleName.BOOKER)) {
       add(createToolbar());
     }
     listItems();

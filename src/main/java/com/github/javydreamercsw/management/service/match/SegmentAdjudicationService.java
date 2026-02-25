@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -26,6 +27,7 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -72,8 +74,6 @@ public class SegmentAdjudicationService {
   private final RingsideAiService ringsideAiService;
   private final RetirementService retirementService;
   private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
-  private final com.github.javydreamercsw.management.service.world.LocationService locationService;
-  private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -85,16 +85,13 @@ public class SegmentAdjudicationService {
       TitleService titleService,
       MatchRewardService matchRewardService,
       MatchFulfillmentRepository matchFulfillmentRepository,
-      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-          leagueRosterRepository,
+      LeagueRosterRepository leagueRosterRepository,
       LegacyService legacyService,
       FactionService factionService,
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
-      com.github.javydreamercsw.management.service.GameSettingService gameSettingService,
-      com.github.javydreamercsw.management.service.world.LocationService locationService,
-      com.github.javydreamercsw.management.service.world.ArenaService arenaService) {
+      com.github.javydreamercsw.management.service.GameSettingService gameSettingService) {
     this(
         rivalryService,
         wrestlerService,
@@ -110,8 +107,6 @@ public class SegmentAdjudicationService {
         ringsideAiService,
         retirementService,
         gameSettingService,
-        locationService,
-        arenaService,
         new Random());
   }
 
@@ -123,16 +118,13 @@ public class SegmentAdjudicationService {
       TitleService titleService,
       MatchRewardService matchRewardService,
       MatchFulfillmentRepository matchFulfillmentRepository,
-      com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-          leagueRosterRepository,
+      LeagueRosterRepository leagueRosterRepository,
       LegacyService legacyService,
       FactionService factionService,
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
-      com.github.javydreamercsw.management.service.GameSettingService gameSettingService,
-      com.github.javydreamercsw.management.service.world.LocationService locationService,
-      com.github.javydreamercsw.management.service.world.ArenaService arenaService,
+      GameSettingService gameSettingService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -148,8 +140,6 @@ public class SegmentAdjudicationService {
     this.ringsideAiService = ringsideAiService;
     this.retirementService = retirementService;
     this.gameSettingService = gameSettingService;
-    this.locationService = locationService;
-    this.arenaService = arenaService;
     this.random = random;
   }
 

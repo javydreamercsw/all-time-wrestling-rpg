@@ -80,6 +80,8 @@ class SegmentAdjudicationServiceTest {
   private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
 
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
+  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 

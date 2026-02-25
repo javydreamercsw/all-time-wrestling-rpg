@@ -44,7 +44,8 @@
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
     <selenium.version>4.41.0</selenium.version>
-    <surefire.skip>false</surefire.skip>
+    <skipTests>false</skipTests>
+    <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.3</testcontainers.version>
     <vaadin.version>25.0.4</vaadin.version>

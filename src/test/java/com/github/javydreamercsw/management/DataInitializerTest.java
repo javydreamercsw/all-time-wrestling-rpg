@@ -117,6 +117,11 @@ class DataInitializerTest {
   @Mock private AccountRepository accountRepository;
 
   @Mock
+  private com.github.javydreamercsw.management.domain.world.LocationRepository locationRepository;
+
+  @Mock private com.github.javydreamercsw.management.domain.world.ArenaRepository arenaRepository;
+
+  @Mock
   private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
 
@@ -148,7 +153,9 @@ class DataInitializerTest {
             env,
             achievementRepository,
             ringsideActionDataService,
-            resourcePatternResolver);
+            resourcePatternResolver,
+            locationRepository,
+            arenaRepository);
 
     // Mock count methods to prevent issues during init()
     lenient()

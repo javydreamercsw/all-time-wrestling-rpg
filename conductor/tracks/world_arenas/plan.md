@@ -15,21 +15,21 @@
 
 ## Phase 3: Service Layer & Business Logic
 
-- [ ] Create `LocationService` (CRUD).
-- [ ] Create `ArenaService` (CRUD, including image generation/upload logic integration).
-- [ ] Update `SegmentAdjudicationService` to apply:
-  - [ ] **Alignment Bias:** Modify Fan Gain based on the winner's alignment vs. Arena bias (Face-Favorable, Heel-Favorable, Anarchic).
-  - [ ] **Capacity Capping:** Ensure Fan Gain doesn't exceed the venue's potential.
-  - [ ] **Heritage Bonus:** Apply bonuses if a wrestler performs in their `heritageTag` region/location.
-- [ ] Update AI Narration prompts to include Arena Alignment Bias for dynamic crowd descriptions.
+- [x] Create `LocationService` (CRUD).
+- [x] Create `ArenaService` (CRUD, including image generation/upload logic integration).
+- [x] Update `SegmentAdjudicationService` to apply:
+  - [x] **Alignment Bias:** Modify Fan Gain based on the winner's alignment vs. Arena bias (Face-Favorable, Heel-Favorable, Anarchic).
+  - [x] **Capacity Capping:** Ensure Fan Gain doesn't exceed the venue's potential.
+  - [x] **Heritage Bonus:** Apply bonuses if a wrestler performs in their `heritageTag` region/location.
+- [x] Update AI Narration prompts to include Arena Alignment Bias for dynamic crowd descriptions.
 
 ## Phase 4: UI Enhancements & CRUD Views
 
-- [ ] Create **CRUD views** for `Location` (simple list/form).
-- [ ] Create **CRUD views** for `Arena` (list/form, including image upload/AI generation component).
-- [ ] Update `ShowPlanningView` to allow Bookers to select an Arena (ComboBox).
-- [ ] Display Arena details (Capacity/Bias/Image) in `ShowDetailView`.
-- [ ] Display wrestler `heritageTag` in `WrestlerProfileView`.
+- [x] Create **CRUD views** for `Location` (simple list/form).
+- [x] Create **CRUD views** for `Arena` (list/form, including image upload/AI generation component).
+- [x] Update `ShowPlanningView` to allow Bookers to select an Arena (ComboBox).
+- [x] Display Arena details (Capacity/Bias/Image) in `ShowDetailView`.
+- [x] Display wrestler `heritageTag` in `WrestlerProfileView`.
 
 ## Phase 5: Testing
 

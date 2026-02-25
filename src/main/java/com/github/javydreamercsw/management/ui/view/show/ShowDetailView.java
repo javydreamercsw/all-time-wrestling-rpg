@@ -47,8 +47,8 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -125,7 +125,7 @@ public class ShowDetailView extends Main
   private final LeagueRepository leagueRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final RingsideActionService ringsideActionService;
-  private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
+  private final ArenaService arenaService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -154,7 +154,7 @@ public class ShowDetailView extends Main
       LeagueRepository leagueRepository,
       CommentaryTeamRepository commentaryTeamRepository,
       RingsideActionService ringsideActionService,
-      com.github.javydreamercsw.management.service.world.ArenaService arenaService) {
+      ArenaService arenaService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
