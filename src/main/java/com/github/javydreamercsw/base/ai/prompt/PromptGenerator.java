@@ -90,6 +90,21 @@ public class PromptGenerator {
         prompt.append("   Rules: ").append(String.join(", ", segmentType.getRules())).append(".\n");
       }
     }
+
+    // 4. Venue & Location
+    if (segmentContext.getArenaContext() != null) {
+      prompt
+          .append("4. VENUE: The match takes place at '")
+          .append(segmentContext.getArenaContext().getName())
+          .append("'.\n");
+      if (segmentContext.getLocationContext() != null) {
+        prompt
+            .append("   Location: ")
+            .append(segmentContext.getLocationContext().getName())
+            .append(".\n");
+      }
+    }
+
     prompt.append(
         "Generate a compelling wrestling narration as a DIALOGUE between the commentators provided"
             + " in the JSON.\n");
@@ -193,6 +208,15 @@ public class PromptGenerator {
           .append("OUTCOME (MUST FOLLOW): ")
           .append(segmentContext.getDeterminedOutcome())
           .append("\n");
+    }
+
+    // 6. Venue
+    if (segmentContext.getArenaContext() != null) {
+      prompt.append("VENUE: ").append(segmentContext.getArenaContext().getName());
+      if (segmentContext.getLocationContext() != null) {
+        prompt.append(" in ").append(segmentContext.getLocationContext().getName());
+      }
+      prompt.append("\n");
     }
 
     prompt.append(
