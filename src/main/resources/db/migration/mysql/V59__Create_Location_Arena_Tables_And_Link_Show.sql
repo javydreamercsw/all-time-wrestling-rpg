@@ -2,6 +2,7 @@ CREATE TABLE location (
     location_id BIGINT AUTO_INCREMENT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description LONGTEXT,
+    image_url VARCHAR(255),
     external_id VARCHAR(255),
     last_sync DATETIME(6),
     CONSTRAINT pk_location PRIMARY KEY (location_id)

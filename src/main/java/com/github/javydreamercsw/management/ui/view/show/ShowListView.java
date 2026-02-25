@@ -28,10 +28,12 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -82,6 +84,7 @@ public class ShowListView extends Main {
   private final ShowTemplateService showTemplateService;
   private final LeagueRepository leagueRepository;
   private final SecurityUtils securityUtils;
+  private final ArenaService arenaService;
   private final Clock clock;
   private final ImageGenerationServiceFactory imageGenerationServiceFactory;
   private final ImageStorageService imageStorageService;
@@ -90,6 +93,7 @@ public class ShowListView extends Main {
   private final ComboBox<Season> newSeason;
   private final ComboBox<ShowTemplate> newTemplate; // New field
   private final ComboBox<League> newLeague; // New field
+  private final ComboBox<Arena> newArena;
 
   private Dialog editDialog;
   private TextField editName;
@@ -98,6 +102,7 @@ public class ShowListView extends Main {
   private ComboBox<Season> editSeason;
   private ComboBox<ShowTemplate> editTemplate;
   private ComboBox<League> editLeague;
+  private ComboBox<Arena> editArena;
   private DatePicker editShowDate;
   private Show editingShow;
 
@@ -117,6 +122,7 @@ public class ShowListView extends Main {
       @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
       @NonNull ImageStorageService imageStorageService,
       @NonNull AiSettingsService aiSettingsService,
+      @NonNull ArenaService arenaService,
       Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -124,6 +130,7 @@ public class ShowListView extends Main {
     this.showTemplateService = showTemplateService;
     this.leagueRepository = leagueRepository;
     this.securityUtils = securityUtils;
+    this.arenaService = arenaService;
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
@@ -177,6 +184,16 @@ public class ShowListView extends Main {
     newLeague.setPlaceholder("Select a league (optional)");
     newLeague.setId("league");
 
+    newArena = new ComboBox<>("Arena");
+    newArena.setItems(
+        arenaService.findAll().stream()
+            .sorted(Comparator.comparing(Arena::getName))
+            .collect(Collectors.toList()));
+    newArena.setItemLabelGenerator(Arena::getName);
+    newArena.setClearButtonVisible(true);
+    newArena.setPlaceholder("Select an arena (optional)");
+    newArena.setId("new-arena");
+
     newShowType.addValueChangeListener(
         event -> {
           ShowType selectedShowType = event.getValue();
@@ -204,7 +221,7 @@ public class ShowListView extends Main {
 
     HorizontalLayout formLayout =
         new HorizontalLayout(
-            name, newShowType, newSeason, newTemplate, newLeague, newShowDate, createBtn);
+            name, newShowType, newSeason, newTemplate, newLeague, newArena, newShowDate, createBtn);
     formLayout.setSpacing(true);
     formLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
 
@@ -457,12 +474,13 @@ public class ShowListView extends Main {
         newTemplate.getValue() != null ? newTemplate.getValue().getId() : null,
         newLeague.getValue() != null ? newLeague.getValue().getId() : null,
         null, // commentaryTeamId - not available in this form
-        null); // arenaId - not available in this form
+        newArena.getValue() != null ? newArena.getValue().getId() : null);
     name.clear();
     newShowType.clear();
     newSeason.clear();
     newTemplate.clear();
     newLeague.clear();
+    newArena.clear();
     newShowDate.setValue(LocalDate.now(this.clock)); // Reset to today
     refreshGrid();
     Notification.show("Show created.", 3_000, Notification.Position.BOTTOM_START)
@@ -563,6 +581,16 @@ public class ShowListView extends Main {
     editLeague.setClearButtonVisible(true);
     editLeague.setId("edit-league");
 
+    editArena = new ComboBox<>("Arena");
+    editArena.setItems(
+        arenaService.findAll().stream()
+            .sorted(Comparator.comparing(Arena::getName))
+            .collect(Collectors.toList()));
+    editArena.setItemLabelGenerator(Arena::getName);
+    editArena.setWidthFull();
+    editArena.setClearButtonVisible(true);
+    editArena.setId("edit-arena");
+
     editType.addValueChangeListener(
         event -> {
           ShowType selectedShowType = event.getValue();
@@ -604,6 +632,7 @@ public class ShowListView extends Main {
             editSeason,
             editTemplate,
             editLeague,
+            editArena,
             editShowDate);
     formLayout.setWidthFull();
     formLayout.setSpacing(true);
@@ -624,6 +653,7 @@ public class ShowListView extends Main {
     editSeason.setValue(show.getSeason());
     editTemplate.setValue(show.getTemplate());
     editLeague.setValue(show.getLeague());
+    editArena.setValue(show.getArena());
     editShowDate.setValue(show.getShowDate());
     editDialog.open();
   }
@@ -635,6 +665,7 @@ public class ShowListView extends Main {
     editingShow.setSeason(editSeason.getValue());
     editingShow.setTemplate(editTemplate.getValue());
     editingShow.setLeague(editLeague.getValue());
+    editingShow.setArena(editArena.getValue());
     editingShow.setShowDate(editShowDate.getValue());
     showService.save(editingShow);
     editDialog.close();

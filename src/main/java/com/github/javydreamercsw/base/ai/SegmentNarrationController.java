@@ -336,6 +336,21 @@ public class SegmentNarrationController {
     commentator2.setDescription("Former ECW champion providing expert analysis");
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
+
+    ArenaContext arena = new ArenaContext();
+    arena.setName("Madison Square Garden");
+    arena.setDescription("The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
+    arena.setCapacity(20000);
+    arena.setAlignmentBias("Neutral");
+    arena.setEnvironmentalTraits(Arrays.asList("Historic", "Electric", "Intimate"));
+    context.setArenaContext(arena);
+
+    LocationContext location = new LocationContext();
+    location.setName("New York City");
+    location.setDescription("The concrete jungle where dreams are made of");
+    location.setCulturalTags(Arrays.asList("USA", "Metropolis", "Traditional"));
+    context.setLocationContext(location);
+
     VenueContext venue = new VenueContext();
     venue.setName("Madison Square Garden");
     venue.setLocation("New York City, New York");

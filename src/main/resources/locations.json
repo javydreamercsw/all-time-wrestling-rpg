@@ -1,17 +1,65 @@
 [ {
   "name": "Neo-Tokyo",
-  "description": "A sprawling cyberpunk metropolis, rebuilt after the Great Collapse. Known for its advanced technology and underground fighting circuits.",
-  "culturalTags": [ "high-tech", "urban", "cyberpunk" ]
+  "description": "A sprawling cyberpunk metropolis in the 23rd century, rebuilt after the Great Collapse. A hub for tech and underground fighting.",
+  "culturalTags": [ "high-tech", "urban", "cyberpunk", "japan", "osaka" ]
+}, {
+  "name": "Osaka Cyber-District",
+  "description": "The futuristic birthplace of Oda Tsuguri (born 2361 AD). A neon-drenched district where the Oda clan still holds sway.",
+  "culturalTags": [ "yakuza", "cybernetic", "japan", "osaka", "future" ]
+}, {
+  "name": "Pittsburgh Citadel",
+  "description": "The 23rd-century evolution of the Steel City. Hails the legacy of Kurt Angle. Known for its industrial strength and 'Wrestling Machine' academy.",
+  "culturalTags": [ "industrial", "steel", "pennsylvania", "usa", "pittsburgh", "past-legacy", "michigan", "ohio" ]
+}, {
+  "name": "Winnipeg Cryo-Hub",
+  "description": "A high-tech Canadian city in the 22nd and 23rd centuries. Home to the Felix wrestling dynasty and the Alpha Pack.",
+  "culturalTags": [ "canada", "cold", "prodigy", "alpha-pack", "winnipeg" ]
+}, {
+  "name": "Zambezi Sanctuary",
+  "description": "A lush, technologically advanced kingdom along the Zambezi River, restored to its 10th-century glory by time-displaced technology.",
+  "culturalTags": [ "africa", "lion", "royal", "ancient-future", "zambezi" ]
+}, {
+  "name": "Uruk Eternal",
+  "description": "The ancient city of Mesopotamia, reconstructed in the 23rd century as a living museum and battleground for the Redeemed King, Gilgamesh.",
+  "culturalTags": [ "mesopotamia", "ancient", "king", "epic", "iraq" ]
+}, {
+  "name": "Siberian Outpost",
+  "description": "A harsh, sub-zero prison and training ground in Russia. The birthplace of OMZ's 'Knockout Artist' persona.",
+  "culturalTags": [ "russia", "harsh", "prison", "combat", "siberia" ]
+}, {
+  "name": "Mexico City Megaplex",
+  "description": "The Lucha Libre capital of the 21st through 23rd centuries. Where Rey Jaguar unified the world titles in 2034 AD.",
+  "culturalTags": [ "mexico", "lucha", "jaguar", "tradition", "mexico city" ]
+}, {
+  "name": "Ugandan Wilds",
+  "description": "A protected ecological zone in the 23rd century, echoing the homeland of the Ugandan Giant, Kamala.",
+  "culturalTags": [ "uganda", "jungle", "savage", "giant", "africa" ]
+}, {
+  "name": "Calgary Spire",
+  "description": "The legendary home of the Hart family and the 'Loose Cannon' Brian Pillman. A center for technical brilliance and unpredictable energy.",
+  "culturalTags": [ "canada", "stampede", "loose-cannon", "technical", "calgary" ]
+}, {
+  "name": "Slamtown",
+  "description": "The fictional, yet very real, sovereign state governed by Johnny All Time. A place where gravity is optional.",
+  "culturalTags": [ "slamtown", "mayor", "parkour", "glamour", "usa" ]
+}, {
+  "name": "Neo-London Spire",
+  "description": "A towering vertical city in the UK, preserving the grit and glory of British wrestling tradition.",
+  "culturalTags": [ "uk", "british", "london", "tradition" ]
+}, {
+  "name": "Neo-Paris Sky-Garden",
+  "description": "A floating garden city above the ruins of old Paris, celebrating art, beauty, and the legacy of Andre the Giant.",
+  "culturalTags": [ "france", "europe", "giant", "art" ]
 }, {
   "name": "Lunar Colony Alpha",
   "description": "Humanity's first permanent settlement on the Moon, a hub for zero-gravity sports and corporate intrigue.",
-  "culturalTags": [ "space", "colony", "scientific" ]
+  "culturalTags": [ "space", "colony", "scientific", "moon", "low-gravity" ]
 }, {
-  "name": "The Martian Dust-Bowl",
-  "description": "A rugged, red wasteland now home to daring prospectors and extreme sports enthusiasts. Gravity is significantly lower.",
-  "culturalTags": [ "frontier", "harsh", "low-gravity" ]
+  "name": "Amazonian Canopy-City",
+  "description": "A breathtaking vertical city built within the giant trees of the restored Amazon rainforest. A marvel of ecological engineering.",
+  "culturalTags": [ "brazil", "south-america", "jungle", "ecological", "nature" ]
 }, {
   "name": "Atlantis Reborn",
-  "description": "A fully submerged city beneath the Atlantic, a marvel of bio-engineering and marine architecture. Known for its serene yet powerful atmosphere.",
-  "culturalTags": [ "underwater", "utopian", "mysterious" ]
+  "description": "A fully submerged city beneath the Atlantic, a marvel of bio-engineering and marine architecture.",
+  "culturalTags": [ "underwater", "utopian", "mysterious", "atlantic" ]
 } ]

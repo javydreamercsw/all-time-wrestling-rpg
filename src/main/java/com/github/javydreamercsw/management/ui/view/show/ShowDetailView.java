@@ -263,6 +263,7 @@ public class ShowDetailView extends Main
     } else {
       showNotFound();
     }
+    refreshSegmentsGrid();
   }
 
   private void displayShow(@NonNull Show show) {
@@ -308,7 +309,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  refreshSegmentsGrid();
+                  loadShow(currentShowId);
                 }
               });
           dialog.open();
@@ -488,7 +489,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  refreshSegmentsGrid();
+                  loadShow(currentShowId);
                 }
               });
           dialog.open();

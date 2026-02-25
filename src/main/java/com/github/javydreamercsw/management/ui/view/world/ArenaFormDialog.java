@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.world;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
 import com.github.javydreamercsw.management.domain.world.Location;
@@ -63,14 +65,18 @@ public class ArenaFormDialog extends Dialog {
   private Binder<Arena> binder = new BeanValidationBinder<>(Arena.class);
 
   public ArenaFormDialog(
-      ArenaService arenaService, LocationService locationService, Arena arena, Runnable onSave) {
+      ArenaService arenaService,
+      LocationService locationService,
+      ImageStorageService storageService,
+      Arena arena,
+      Runnable onSave) {
     this.arenaService = arenaService;
     this.locationService = locationService;
     this.arena = arena;
     this.onSave = onSave;
 
     configureBinder();
-    initUI();
+    initUI(storageService);
     populateForm();
   }
 
@@ -114,7 +120,7 @@ public class ArenaFormDialog extends Dialog {
             });
   }
 
-  private void initUI() {
+  private void initUI(ImageStorageService storageService) {
     setHeaderTitle(arena == null ? "Add New Arena" : "Edit Arena");
     setWidth("800px");
 
@@ -137,6 +143,7 @@ public class ArenaFormDialog extends Dialog {
     alignmentBias.setItemLabelGenerator(AlignmentBias::getDisplayName);
 
     imageUrl.setWidthFull();
+    imageUrl.setReadOnly(true);
     imageUrl.setPlaceholder("Enter URL or generate with AI");
     imageUrl.addValueChangeListener(e -> updateImagePreview(e.getValue()));
 
@@ -148,13 +155,24 @@ public class ArenaFormDialog extends Dialog {
     arenaImage.getStyle().set("display", "block");
     updateImagePreview(arena != null ? arena.getImageUrl() : null);
 
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(
+            storageService,
+            url -> {
+              imageUrl.setValue(url);
+            });
+    imageUpload.setUploadButtonText("Upload Image");
+
     Button generateImageButton = new Button("Generate AI Image", e -> generateImage());
     generateImageButton.addThemeVariants(
         com.vaadin.flow.component.button.ButtonVariant.LUMO_CONTRAST);
     generateImageButton.setEnabled(
         arena != null && arena.getId() != null); // Can only generate for existing arena
 
-    VerticalLayout imageLayout = new VerticalLayout(arenaImage, imageUrl, generateImageButton);
+    HorizontalLayout imageButtons = new HorizontalLayout(imageUpload, generateImageButton);
+    imageButtons.setSpacing(true);
+
+    VerticalLayout imageLayout = new VerticalLayout(arenaImage, imageUrl, imageButtons);
     imageLayout.setAlignItems(FlexComponent.Alignment.CENTER);
     imageLayout.setSpacing(true);
     imageLayout.setPadding(false);

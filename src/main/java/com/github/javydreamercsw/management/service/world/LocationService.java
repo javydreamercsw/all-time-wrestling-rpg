@@ -38,21 +38,28 @@ public class LocationService {
   private final LocationRepository repository;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Location createLocation(String name, String description, Set<String> culturalTags) {
+  public Location createLocation(
+      String name, String description, String imageUrl, Set<String> culturalTags) {
     Location location =
-        Location.builder().name(name).description(description).culturalTags(culturalTags).build();
+        Location.builder()
+            .name(name)
+            .description(description)
+            .imageUrl(imageUrl)
+            .culturalTags(culturalTags)
+            .build();
     return repository.save(location);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Location> updateLocation(
-      Long id, String name, String description, Set<String> culturalTags) {
+      Long id, String name, String description, String imageUrl, Set<String> culturalTags) {
     return repository
         .findById(id)
         .map(
             location -> {
               location.setName(name);
               location.setDescription(description);
+              location.setImageUrl(imageUrl);
               location.setCulturalTags(culturalTags);
               return repository.save(location);
             });

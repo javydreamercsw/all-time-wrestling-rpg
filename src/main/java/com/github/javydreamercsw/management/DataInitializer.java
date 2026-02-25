@@ -42,11 +42,13 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -125,6 +127,7 @@ public class DataInitializer implements Initializable {
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
   private final ResourcePatternResolver resourcePatternResolver;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public DataInitializer(
@@ -151,7 +154,8 @@ public class DataInitializer implements Initializable {
       RingsideActionDataService ringsideActionDataService,
       ResourcePatternResolver resourcePatternResolver,
       LocationRepository locationRepository,
-      ArenaRepository arenaRepository) {
+      ArenaRepository arenaRepository,
+      ObjectMapper objectMapper) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerRepository = wrestlerRepository;
@@ -176,6 +180,7 @@ public class DataInitializer implements Initializable {
     this.resourcePatternResolver = resourcePatternResolver;
     this.locationRepository = locationRepository;
     this.arenaRepository = arenaRepository;
+    this.objectMapper = objectMapper;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -770,6 +775,10 @@ public class DataInitializer implements Initializable {
                   existingWrestler.setImageUrl(w.getImageUrl());
                 }
 
+                if (w.getHeritageTag() != null) {
+                  existingWrestler.setHeritageTag(w.getHeritageTag());
+                }
+
                 if (w.getExternalId() != null) {
                   existingWrestler.setExternalId(w.getExternalId());
                 }
@@ -801,6 +810,7 @@ public class DataInitializer implements Initializable {
                 newWrestler.setFans(w.getFans());
                 newWrestler.setBumps(w.getBumps());
                 newWrestler.setImageUrl(w.getImageUrl());
+                newWrestler.setHeritageTag(w.getHeritageTag());
                 newWrestler.setTier(WrestlerTier.ROOKIE);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
@@ -1139,23 +1149,36 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("locations.json");
     if (resource.exists()) {
       log.info("Loading locations from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var locationsFromFile = mapper.readValue(is, new TypeReference<List<Location>>() {});
-        for (Location location : locationsFromFile) {
-          Optional<Location> existingLocation = locationRepository.findByName(location.getName());
+        var locationsFromFile =
+            objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+        if (locationsFromFile == null) {
+          log.warn("No locations found in {}", resource.getPath());
+          return;
+        }
+        log.info("Found {} locations in JSON file", locationsFromFile.size());
+        for (LocationImportDTO dto : locationsFromFile) {
+          Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
           if (existingLocation.isEmpty()) {
+            Location location =
+                Location.builder()
+                    .name(dto.getName())
+                    .description(dto.getDescription())
+                    .imageUrl(dto.getImageUrl())
+                    .culturalTags(dto.getCulturalTags())
+                    .build();
             locationRepository.save(location);
-            log.debug("Saved new location: {}", location.getName());
+            log.info("Saved new location: {}", location.getName());
           } else {
             Location existing = existingLocation.get();
-            existing.setDescription(location.getDescription());
-            existing.setCulturalTags(location.getCulturalTags());
+            existing.setDescription(dto.getDescription());
+            existing.setImageUrl(dto.getImageUrl());
+            existing.setCulturalTags(dto.getCulturalTags());
             locationRepository.save(existing);
             log.debug("Updated existing location: {}", existing.getName());
           }
         }
-        log.info("Location loading completed - {} locations loaded", locationsFromFile.size());
+        log.info("Location loading completed - {} locations processed", locationsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading locations from file", e);
       }
@@ -1168,39 +1191,57 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("arenas.json");
     if (resource.exists()) {
       log.info("Loading arenas from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var arenasFromFile = mapper.readValue(is, new TypeReference<List<Arena>>() {});
-        for (Arena arena : arenasFromFile) {
-          Optional<Arena> existingArena = arenaRepository.findByName(arena.getName());
+        var arenasFromFile =
+            objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+        if (arenasFromFile == null) {
+          log.warn("No arenas found in {}", resource.getPath());
+          return;
+        }
+        log.info("Found {} arenas in JSON file", arenasFromFile.size());
+        for (ArenaImportDTO dto : arenasFromFile) {
+          Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
           if (existingArena.isEmpty()) {
-            Optional<Location> location =
-                locationRepository.findByName(arena.getLocation().getName());
+            Optional<Location> location = locationRepository.findByName(dto.getLocation());
             if (location.isPresent()) {
-              arena.setLocation(location.get());
+              Arena arena =
+                  Arena.builder()
+                      .name(dto.getName())
+                      .description(dto.getDescription())
+                      .location(location.get())
+                      .capacity(dto.getCapacity())
+                      .alignmentBias(dto.getAlignmentBias())
+                      .imageUrl(dto.getImageUrl())
+                      .environmentalTraits(dto.getEnvironmentalTraits())
+                      .build();
               arenaRepository.save(arena);
-              log.debug("Saved new arena: {}", arena.getName());
+              log.info("Saved new arena: {}", arena.getName());
             } else {
               log.warn(
-                  "Location {} not found for arena {}. Skipping arena.",
-                  arena.getLocation().getName(),
-                  arena.getName());
+                  "Location '{}' not found for arena '{}'. Skipping arena.",
+                  dto.getLocation(),
+                  dto.getName());
             }
           } else {
             Arena existing = existingArena.get();
-            existing.setDescription(arena.getDescription());
-            existing.setCapacity(arena.getCapacity());
-            existing.setAlignmentBias(arena.getAlignmentBias());
-            existing.setImageUrl(arena.getImageUrl());
-            existing.setEnvironmentalTraits(arena.getEnvironmentalTraits());
-            Optional<Location> location =
-                locationRepository.findByName(arena.getLocation().getName());
-            location.ifPresent(existing::setLocation);
+            existing.setDescription(dto.getDescription());
+            existing.setCapacity(dto.getCapacity());
+            existing.setAlignmentBias(dto.getAlignmentBias());
+            existing.setImageUrl(dto.getImageUrl());
+            existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
+            Optional<Location> location = locationRepository.findByName(dto.getLocation());
+            location.ifPresentOrElse(
+                existing::setLocation,
+                () ->
+                    log.warn(
+                        "Location '{}' not found for existing arena '{}'. Location not updated.",
+                        dto.getLocation(),
+                        dto.getName()));
             arenaRepository.save(existing);
             log.debug("Updated existing arena: {}", existing.getName());
           }
         }
-        log.info("Arena loading completed - {} arenas loaded", arenasFromFile.size());
+        log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());
       } catch (IOException e) {
         log.error("Error loading arenas from file", e);
       }

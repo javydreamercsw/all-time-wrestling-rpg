@@ -16,11 +16,14 @@
 */
 package com.github.javydreamercsw.management.ui.view.world;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -31,6 +34,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,16 +50,22 @@ public class LocationFormDialog extends Dialog {
   private TextField name = new TextField("Name");
   private TextArea description = new TextArea("Description");
   private TextField culturalTags = new TextField("Cultural Tags (comma-separated)");
+  private TextField imageUrl = new TextField("Image URL");
+  private Image locationImage = new Image();
 
   private Binder<Location> binder = new BeanValidationBinder<>(Location.class);
 
-  public LocationFormDialog(LocationService service, Location location, Runnable onSave) {
+  public LocationFormDialog(
+      LocationService service,
+      ImageStorageService storageService,
+      Location location,
+      Runnable onSave) {
     this.service = service;
     this.location = location;
     this.onSave = onSave;
 
     configureBinder();
-    initUI();
+    initUI(storageService);
     populateForm();
   }
 
@@ -70,6 +80,7 @@ public class LocationFormDialog extends Dialog {
             "Location with this name already exists")
         .bind(Location::getName, Location::setName);
     binder.bind(description, Location::getDescription, Location::setDescription);
+    binder.bind(imageUrl, Location::getImageUrl, Location::setImageUrl);
     binder
         .forField(culturalTags)
         .bind(
@@ -86,9 +97,9 @@ public class LocationFormDialog extends Dialog {
             });
   }
 
-  private void initUI() {
+  private void initUI(ImageStorageService storageService) {
     setHeaderTitle(location == null ? "Add New Location" : "Edit Location");
-    setWidth("600px");
+    setWidth("800px");
 
     name.setWidthFull();
     name.setMaxLength(Location.DESCRIPTION_MAX_LENGTH);
@@ -97,6 +108,29 @@ public class LocationFormDialog extends Dialog {
 
     description.setWidthFull();
     culturalTags.setWidthFull();
+
+    imageUrl.setWidthFull();
+    imageUrl.setReadOnly(true);
+    imageUrl.addValueChangeListener(e -> updateImagePreview(e.getValue()));
+
+    locationImage.setHeight("150px");
+    locationImage.setWidth("150px");
+    locationImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.AUTO);
+    locationImage.getStyle().set("display", "block");
+    updateImagePreview(location != null ? location.getImageUrl() : null);
+
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(
+            storageService,
+            url -> {
+              imageUrl.setValue(url);
+            });
+    imageUpload.setUploadButtonText("Upload Image");
+
+    VerticalLayout imageLayout = new VerticalLayout(locationImage, imageUrl, imageUpload);
+    imageLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+    imageLayout.setSpacing(true);
+    imageLayout.setPadding(false);
 
     FormLayout formLayout = new FormLayout();
     formLayout.add(name, description, culturalTags);
@@ -119,10 +153,20 @@ public class LocationFormDialog extends Dialog {
     buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
     buttons.setWidthFull();
 
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttons);
+    VerticalLayout dialogLayout = new VerticalLayout(formLayout, imageLayout, buttons);
     dialogLayout.setPadding(true);
     dialogLayout.setSpacing(true);
     add(dialogLayout);
+  }
+
+  private void updateImagePreview(String url) {
+    if (url != null && !url.trim().isEmpty()) {
+      locationImage.setSrc(url);
+      locationImage.setVisible(true);
+    } else {
+      locationImage.setSrc("https://via.placeholder.com/150");
+      locationImage.setVisible(true);
+    }
   }
 
   private void populateForm() {
@@ -140,12 +184,16 @@ public class LocationFormDialog extends Dialog {
         binder.writeBean(location);
         if (location.getId() == null) {
           service.createLocation(
-              location.getName(), location.getDescription(), location.getCulturalTags());
+              location.getName(),
+              location.getDescription(),
+              location.getImageUrl(),
+              location.getCulturalTags());
         } else {
           service.updateLocation(
               location.getId(),
               location.getName(),
               location.getDescription(),
+              location.getImageUrl(),
               location.getCulturalTags());
         }
         onSave.run();

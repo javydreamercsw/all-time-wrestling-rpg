@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.world;
 
-import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationService.ImageRequest;
+import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
@@ -41,7 +41,7 @@ public class ArenaService {
 
   private final ArenaRepository repository;
   private final LocationService locationService;
-  private final ImageGenerationService imageGenerationService;
+  private final ImageGenerationServiceFactory imageFactory;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Arena createArena(
@@ -152,7 +152,7 @@ public class ArenaService {
                       .responseFormat("url")
                       .build();
 
-              String imageUrl = imageGenerationService.generateImage(request);
+              String imageUrl = imageFactory.generateImage(request);
               if (imageUrl != null && !imageUrl.isBlank()) {
                 arena.setImageUrl(imageUrl);
                 repository.save(arena);

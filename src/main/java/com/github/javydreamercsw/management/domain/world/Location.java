@@ -58,6 +58,9 @@ public class Location extends AbstractEntity<Long> {
   @Column(name = "description")
   private String description;
 
+  @Column(name = "image_url")
+  private String imageUrl;
+
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "location_cultural_tag", joinColumns = @JoinColumn(name = "location_id"))
   @Column(name = "cultural_tag")

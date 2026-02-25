@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,33 +16,23 @@
 */
 package com.github.javydreamercsw.management.dto;
 
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
+import java.util.Set;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-public class WrestlerImportDTO {
+@AllArgsConstructor
+public class ArenaImportDTO {
   private String name;
-  private Integer deckSize;
-  private Integer startingHealth;
-  private Integer lowHealth;
-  private Integer startingStamina;
-  private Integer lowStamina;
-  private Long fans;
-  private Boolean isPlayer;
-  private Integer bumps;
   private String description;
-  private Gender gender;
-  private String manager;
-  private String alignment;
-  private String externalId;
+  private String location; // Location name
+  private Integer capacity;
+  private AlignmentBias alignmentBias;
   private String imageUrl;
-  private String heritageTag;
-  private Integer drive;
-  private Integer resilience;
-  private Integer charisma;
-  private Integer brawl;
+  private Set<String> environmentalTraits;
 }
