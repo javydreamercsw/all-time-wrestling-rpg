@@ -1590,7 +1590,7 @@
                   <type>war</type>
                   <location>${project.build.directory}/${project.build.finalName}.war</location>
                   <properties>
-                    <context>/all-time-wrestling-rpg</context>
+                    <context>/atw-rpg</context>
                   </properties>
                 </deployable>
               </deployables>
