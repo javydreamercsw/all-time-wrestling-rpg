@@ -70,8 +70,5 @@
 
 ## Active Tracks
 
-### [ ] Track: Booker's Budget & Economic Simulation
-
-*Link: [./conductor/tracks/booker_economics/plan.md](./conductor/tracks/booker_economics/plan.md)*
-*Status: Planning*
+(No active tracks)
 
