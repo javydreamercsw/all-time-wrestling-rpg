@@ -137,6 +137,9 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
   @Autowired
+  protected com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+
+  @Autowired
   protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
       titleReignRepository;
 
