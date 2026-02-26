@@ -25,7 +25,7 @@
 }, {
   "name": "Calgary Spire",
   "description": "The legendary home of the Hart family and the 'Loose Cannon' Brian Pillman. A center for technical brilliance and unpredictable energy.",
-  "culturalTags": [ "canada", "stampede", "loose-cannon", "technical", "calgary" ]
+  "culturalTags": [ "canada", "stampede", "dungeon", "technical", "alberta" ]
 }, {
   "name": "Toronto",
   "description": "A major Canadian hub for wrestling, hosting massive international spectacles and fostering a rich independent scene.",
@@ -102,4 +102,140 @@
   "name": "Jeddah",
   "description": "A historic port city on the Red Sea, now home to some of the world's most unique and technologically advanced sporting venues.",
   "culturalTags": [ "saudi-arabia", "middle-east", "red-sea", "historic-port" ]
+}, {
+  "name": "Dallas",
+  "description": "The home of 'everything's bigger in Texas,' hosting some of the largest wrestling spectacles in North America.",
+  "culturalTags": [ "usa", "texas", "southern", "massive-events" ]
+}, {
+  "name": "Las Vegas",
+  "description": "The 'Entertainment Capital of the World,' where every wrestling event feels like a high-stakes gamble.",
+  "culturalTags": [ "usa", "nevada", "entertainment", "high-stakes" ]
+}, {
+  "name": "Detroit",
+  "description": "The 'Motor City,' a gritty, blue-collar town with a passionate wrestling fanbase known for its intensity.",
+  "culturalTags": [ "usa", "midwest", "blue-collar", "gritty" ]
+}, {
+  "name": "Los Angeles",
+  "description": "The 'City of Angels,' a hub for entertainment and a diverse wrestling scene, from Lucha Libre to Hollywood glamor.",
+  "culturalTags": [ "usa", "california", "hollywood", "diverse" ]
+}, {
+  "name": "Houston",
+  "description": "A major Texas city with a strong wrestling tradition and a history of hosting mega-events.",
+  "culturalTags": [ "usa", "texas", "southern", "mega-events" ]
+}, {
+  "name": "Orlando",
+  "description": "The 'Theme Park Capital of the World,' home to many wrestling promotions and a family-friendly atmosphere.",
+  "culturalTags": [ "usa", "florida", "theme-park", "family-friendly" ]
+}, {
+  "name": "Tampa",
+  "description": "A vibrant Florida city with a growing wrestling scene and a history of hosting major events.",
+  "culturalTags": [ "usa", "florida", "vibrant", "growing-scene" ]
+}, {
+  "name": "East Rutherford",
+  "description": "Home to MetLife Stadium, a colossal venue just outside New York City, built for the biggest spectacles.",
+  "culturalTags": [ "usa", "new-jersey", "east-coast", "spectacle" ]
+}, {
+  "name": "Miami",
+  "description": "A vibrant, multicultural city in Florida, hosting high-energy events with a unique, festive atmosphere.",
+  "culturalTags": [ "usa", "florida", "multicultural", "festive" ]
+}, {
+  "name": "Santa Clara",
+  "description": "Located in Silicon Valley, this California city hosts major tech events and massive sporting spectacles.",
+  "culturalTags": [ "usa", "california", "silicon-valley", "tech-hub" ]
+}, {
+  "name": "Nashville",
+  "description": "The 'Music City,' a cultural hub in Tennessee with a passionate fanbase and a rich history.",
+  "culturalTags": [ "usa", "tennessee", "music-city", "southern" ]
+}, {
+  "name": "Delhi",
+  "description": "The bustling capital of India, a growing market for professional wrestling with a massive potential audience.",
+  "culturalTags": [ "india", "asia", "growing-market", "massive-audience" ]
+}, {
+  "name": "São Paulo",
+  "description": "The largest city in Brazil, a vibrant metropolis with a passionate sports culture and a burgeoning wrestling scene.",
+  "culturalTags": [ "brazil", "south-america", "metropolis", "passionate-fans" ]
+}, {
+  "name": "Boston",
+  "description": "A historic city in Massachusetts with a dedicated sports fanbase and a strong wrestling tradition.",
+  "culturalTags": [ "usa", "massachusetts", "historic", "dedicated-fans" ]
+}, {
+  "name": "Philadelphia",
+  "description": "The 'City of Brotherly Love,' a legendary hub for hardcore and independent wrestling with a fiercely loyal fanbase.",
+  "culturalTags": [ "usa", "pennsylvania", "hardcore", "loyal-fans" ]
+}, {
+  "name": "Montreal",
+  "description": "A vibrant, bilingual city in Quebec, Canada, known for its passionate sports fans and a rich wrestling history.",
+  "culturalTags": [ "canada", "quebec", "bilingual", "passionate-fans" ]
+}, {
+  "name": "Edmonton",
+  "description": "A major city in Alberta, Canada, with a growing sports scene and a strong base of wrestling enthusiasts.",
+  "culturalTags": [ "canada", "alberta", "growing-scene", "enthusiasts" ]
+}, {
+  "name": "Manchester",
+  "description": "A major city in Northern England with a rich industrial history and a strong, vocal wrestling fanbase.",
+  "culturalTags": [ "uk", "england", "industrial", "vocal-fans" ]
+}, {
+  "name": "Glasgow",
+  "description": "A passionate Scottish city known for its rowdy crowds and a thriving independent wrestling scene.",
+  "culturalTags": [ "uk", "scotland", "passionate-fans", "independent-scene" ]
+}, {
+  "name": "Osaka",
+  "description": "Japan's secondary wrestling capital, known for its intense crowds and being the home of many hard-hitting 'Strong Style' battles.",
+  "culturalTags": [ "japan", "strong-style", "osaka", "intense-fans" ]
+}, {
+  "name": "Fukuoka",
+  "description": "A major city on Kyushu Island, Japan, with a rich cultural heritage and a growing appreciation for professional wrestling.",
+  "culturalTags": [ "japan", "kyushu", "cultural", "growing-appreciation" ]
+}, {
+  "name": "Monterrey",
+  "description": "A modern metropolis in Mexico, known for its industrial strength and a vibrant Lucha Libre scene.",
+  "culturalTags": [ "mexico", "industrial", "lucha-libre", "modern" ]
+}, {
+  "name": "Guadalajara",
+  "description": "A historic city in Mexico, the birthplace of mariachi and tequila, with a deep-rooted Lucha Libre tradition.",
+  "culturalTags": [ "mexico", "historic", "lucha-libre", "traditional" ]
+}, {
+  "name": "Berlin",
+  "description": "The capital of Germany, a city with a dynamic cultural scene and a growing European wrestling presence.",
+  "culturalTags": [ "germany", "europe", "dynamic", "growing-presence" ]
+}, {
+  "name": "Hamburg",
+  "description": "A major port city in Germany, known for its vibrant nightlife and a passionate, diverse audience for wrestling.",
+  "culturalTags": [ "germany", "europe", "port-city", "diverse-audience" ]
+}, {
+  "name": "Amsterdam",
+  "description": "The capital of the Netherlands, a cosmopolitan city with a rising interest in professional wrestling.",
+  "culturalTags": [ "netherlands", "europe", "cosmopolitan", "rising-interest" ]
+}, {
+  "name": "Rotterdam",
+  "description": "A major port city in the Netherlands, known for its modern architecture and a passionate sports culture.",
+  "culturalTags": [ "netherlands", "europe", "port-city", "modern" ]
+}, {
+  "name": "Belfast",
+  "description": "The capital of Northern Ireland, a city with a strong sense of identity and a passionate, vocal wrestling fanbase.",
+  "culturalTags": [ "uk", "northern-ireland", "passionate-fans", "vocal-crowd" ]
+}, {
+  "name": "Birmingham",
+  "description": "A major city in the West Midlands, UK, with a diverse population and a growing appetite for wrestling events.",
+  "culturalTags": [ "uk", "england", "diverse", "growing-appetite" ]
+}, {
+  "name": "Newcastle",
+  "description": "A vibrant city in Northeast England, known for its lively atmosphere and dedicated sports and entertainment fans.",
+  "culturalTags": [ "uk", "england", "vibrant", "dedicated-fans" ]
+}, {
+  "name": "Liverpool",
+  "description": "A historic port city in Northwest England, famous for its music, culture, and enthusiastic sports supporters.",
+  "culturalTags": [ "uk", "england", "historic", "enthusiastic-supporters" ]
+}, {
+  "name": "Dublin",
+  "description": "The capital of Ireland, a city with a rich cultural heritage and a rapidly expanding wrestling scene.",
+  "culturalTags": [ "ireland", "europe", "cultural", "expanding-scene" ]
+}, {
+  "name": "Post-Apocalyptic Badlands",
+  "description": "A desolate, lawless region where only the toughest survive, and wrestling is a brutal fight for survival.",
+  "culturalTags": [ "fictional", "wasteland", "dystopian", "brutal" ]
+}, {
+  "name": "Floating City of Shangri-La",
+  "description": "A mythical city floating high above the clouds, where martial arts and wrestling are elevated to an art form.",
+  "culturalTags": [ "fictional", "utopian", "martial-arts", "artistic" ]
 } ]

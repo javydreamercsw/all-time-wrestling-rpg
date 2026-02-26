@@ -229,4 +229,354 @@
   "capacity": 30000,
   "alignmentBias": "FACE_FAVORABLE",
   "environmentalTraits": [ "modern-amenities", "intense-spotlight" ]
+}, {
+  "name": "AT&T Stadium",
+  "description": "A colossal stadium in Dallas, Texas, famous for its massive jumbotron and hosting record-breaking wrestling events.",
+  "location": "Dallas",
+  "capacity": 80000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "massive-scale", "high-tech" ]
+}, {
+  "name": "Allegiant Stadium",
+  "description": "The 'Death Star' of Las Vegas, a sleek, modern stadium built for mega-events and high-octane entertainment.",
+  "location": "Las Vegas",
+  "capacity": 65000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "modern-design", "entertainment-hub" ]
+}, {
+  "name": "Ford Field",
+  "description": "A domed stadium in Detroit, known for its loud crowds and a passionate local fanbase that brings the intensity.",
+  "location": "Detroit",
+  "capacity": 60000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "domed", "blue-collar-crowd" ]
+}, {
+  "name": "SoFi Stadium",
+  "description": "An architectural marvel in Los Angeles, designed for grand spectacles and a luxurious fan experience.",
+  "location": "Los Angeles",
+  "capacity": 70000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "architectural-marvel", "luxury" ]
+}, {
+  "name": "NRG Stadium",
+  "description": "A massive multi-purpose stadium in Houston, a frequent host of major wrestling events with a Texas-sized atmosphere.",
+  "location": "Houston",
+  "capacity": 72000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "massive-scale", "texas-sized" ]
+}, {
+  "name": "Camping World Stadium",
+  "description": "A large outdoor stadium in Orlando, known for its vibrant, family-friendly atmosphere during major events.",
+  "location": "Orlando",
+  "capacity": 65000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "outdoor", "family-friendly" ]
+}, {
+  "name": "Raymond James Stadium",
+  "description": "A Buccaneers-themed stadium in Tampa, host to historic wrestling main events under the Florida sun.",
+  "location": "Tampa",
+  "capacity": 65000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "outdoor", "tropical-vibe" ]
+}, {
+  "name": "MetLife Stadium",
+  "description": "A sprawling outdoor stadium in East Rutherford, just outside NYC, built for the biggest events imaginable.",
+  "location": "East Rutherford",
+  "capacity": 82500,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "massive-scale", "east-coast" ]
+}, {
+  "name": "Hard Rock Stadium",
+  "description": "A lively outdoor stadium in Miami, known for its festive atmosphere and high-energy crowd.",
+  "location": "Miami",
+  "capacity": 65000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "outdoor", "festive-crowd" ]
+}, {
+  "name": "Levi's Stadium",
+  "description": "A modern, high-tech stadium in Santa Clara, representing the cutting edge of sports and entertainment venues.",
+  "location": "Santa Clara",
+  "capacity": 68500,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "high-tech", "silicon-valley" ]
+}, {
+  "name": "Nissan Stadium",
+  "description": "A prominent outdoor stadium in Nashville, blending the city's musical heritage with a passionate sports culture.",
+  "location": "Nashville",
+  "capacity": 69000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "outdoor", "music-city" ]
+}, {
+  "name": "Indira Gandhi Arena",
+  "description": "A massive indoor arena in Delhi, capable of hosting grand-scale wrestling events for a passionate Indian audience.",
+  "location": "Delhi",
+  "capacity": 25000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "massive-scale", "enthusiastic-crowd" ]
+}, {
+  "name": "Allianz Parque",
+  "description": "A modern multi-purpose arena in São Paulo, featuring a vibrant atmosphere and a passionate Brazilian fanbase.",
+  "location": "São Paulo",
+  "capacity": 43000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "modern-amenities", "vibrant-crowd" ]
+}, {
+  "name": "TD Garden",
+  "description": "A classic indoor arena in Boston, known for its intimate feel and a raucous, knowledgeable wrestling crowd.",
+  "location": "Boston",
+  "capacity": 19000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "intimate-feel", "knowledgeable-crowd" ]
+}, {
+  "name": "Wells Fargo Center",
+  "description": "A premier indoor arena in Philadelphia, a city with a deep-rooted history of hardcore wrestling and passionate fans.",
+  "location": "Philadelphia",
+  "capacity": 19500,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "hardcore-tradition", "fierce-fans" ]
+}, {
+  "name": "Bell Centre",
+  "description": "A state-of-the-art arena in Montreal, host to some of the most memorable wrestling events in Canadian history.",
+  "location": "Montreal",
+  "capacity": 21200,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "passionate-fans", "electric-atmosphere" ]
+}, {
+  "name": "Rogers Place",
+  "description": "A modern, sleek arena in Edmonton, providing a fantastic fan experience for major wrestling shows.",
+  "location": "Edmonton",
+  "capacity": 18500,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "modern-amenities", "energetic-crowd" ]
+}, {
+  "name": "AO Arena",
+  "description": "A large indoor arena in Manchester, UK, known for its loud and lively atmosphere during wrestling events.",
+  "location": "Manchester",
+  "capacity": 21000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "loud-crowd", "lively-atmosphere" ]
+}, {
+  "name": "OVO Hydro",
+  "description": "A prominent arena in Glasgow, Scotland, hosting major concerts and wrestling shows with a famously vocal Scottish crowd.",
+  "location": "Glasgow",
+  "capacity": 14300,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "vocal-crowd", "intense-spotlight" ]
+}, {
+  "name": "Osaka-Jo Hall",
+  "description": "A historic multi-purpose arena in Osaka, Japan, a staple for major New Japan Pro-Wrestling events.",
+  "location": "Osaka Cyber-District",
+  "capacity": 16000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "historic-prestige", "respectful-silence" ]
+}, {
+  "name": "Fukuoka Dome",
+  "description": "A large domed stadium in Fukuoka, Japan, capable of hosting grand-scale wrestling events with a unique atmosphere.",
+  "location": "Fukuoka",
+  "capacity": 40000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "domed", "unique-atmosphere" ]
+}, {
+  "name": "Arena Monterrey",
+  "description": "A modern, versatile arena in Monterrey, Mexico, a popular venue for Lucha Libre and international wrestling tours.",
+  "location": "Monterrey",
+  "capacity": 17500,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "modern-amenities", "lucha-tradition" ]
+}, {
+  "name": "Arena Coliseo de Guadalajara",
+  "description": "A traditional Lucha Libre arena in Guadalajara, known for its intimate setting and passionate, vocal fanbase.",
+  "location": "Guadalajara",
+  "capacity": 6000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "intimate-setting", "traditional-crowd" ]
+}, {
+  "name": "Mercedes-Benz Arena (Berlin)",
+  "description": "A modern multi-purpose arena in Berlin, Germany, a key venue for the growing European wrestling scene.",
+  "location": "Berlin",
+  "capacity": 17000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "modern-amenities", "european-hub" ]
+}, {
+  "name": "Barclays Arena (Hamburg)",
+  "description": "A large indoor arena in Hamburg, Germany, hosting major sporting and entertainment events, including wrestling.",
+  "location": "Hamburg",
+  "capacity": 16000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "vocal-crowd", "diverse-audience" ]
+}, {
+  "name": "Ziggo Dome",
+  "description": "A state-of-the-art concert and events arena in Amsterdam, a new destination for international wrestling shows.",
+  "location": "Amsterdam",
+  "capacity": 17000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "modern-design", "cosmopolitan-vibe" ]
+}, {
+  "name": "Ahoy Arena",
+  "description": "A multi-purpose indoor arena in Rotterdam, Netherlands, known for its enthusiastic sports crowds.",
+  "location": "Rotterdam",
+  "capacity": 16000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "energetic-crowd", "modern-amenities" ]
+}, {
+  "name": "SSE Arena Belfast",
+  "description": "A prominent arena in Belfast, Northern Ireland, hosting major wrestling events with a fierce local following.",
+  "location": "Belfast",
+  "capacity": 11000,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "fierce-fans", "intense-spotlight" ]
+}, {
+  "name": "Utilita Arena Birmingham",
+  "description": "A large indoor arena in Birmingham, UK, a key venue for national and international wrestling tours.",
+  "location": "Birmingham",
+  "capacity": 15800,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "diverse-audience", "vocal-crowd" ]
+}, {
+  "name": "Utilita Arena Newcastle",
+  "description": "A popular indoor arena in Newcastle, UK, known for its lively crowds and high-energy atmosphere.",
+  "location": "Newcastle",
+  "capacity": 11000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "lively-atmosphere", "dedicated-fans" ]
+}, {
+  "name": "Echo Arena (Liverpool)",
+  "description": "A modern arena on the Liverpool waterfront, hosting major events with enthusiastic Scouse fans.",
+  "location": "Liverpool",
+  "capacity": 11000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "vibrant-crowd", "cultural-hub" ]
+}, {
+  "name": "3Arena",
+  "description": "A major indoor arena in Dublin, Ireland, a popular stop for international wrestling promotions.",
+  "location": "Dublin",
+  "capacity": 13000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "passionate-fans", "electric-atmosphere" ]
+}, {
+  "name": "Underground Brawlers Pit",
+  "description": "A repurposed, grimy industrial space in NYC, host to underground, hardcore wrestling bouts.",
+  "location": "New York City",
+  "capacity": 1500,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "gritty", "hardcore-vibe", "underground" ]
+}, {
+  "name": "Abandoned Warehouse Brawl",
+  "description": "A desolate warehouse in Chicago, used for unsanctioned, no-holds-barred fights where rules are nonexistent.",
+  "location": "Chicago",
+  "capacity": 2500,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "urban-decay-vibe", "no-rules", "makeshift" ]
+}, {
+  "name": "Pixel Palace Arcade",
+  "description": "A vibrant, retro-futuristic arcade repurposed for high-energy, fast-paced wrestling in Neo-Tokyo.",
+  "location": "Neo-Tokyo",
+  "capacity": 3000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "retro-futuristic", "high-energy", "neon-lights" ]
+}, {
+  "name": "Jungle Coliseum",
+  "description": "An open-air arena carved into the dense Amazon jungle, where nature provides a wild, unpredictable backdrop.",
+  "location": "Amazonian Canopy-City",
+  "capacity": 8000,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "jungle-environment", "unpredictable", "natural-elements" ]
+}, {
+  "name": "Ice Breaker Arena",
+  "description": "A brutal, ice-themed fighting arena deep within the Siberian Outpost, designed for extreme, punishing matches.",
+  "location": "Siberian Outpost",
+  "capacity": 4000,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "extreme-cold", "brutal-matches", "isolated" ]
+}, {
+  "name": "WrestleDome Expo",
+  "description": "A dazzling convention center transformed into a wrestling arena in Las Vegas, a showcase for unique and extravagant talent.",
+  "location": "Las Vegas",
+  "capacity": 12000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "extravagant", "showcase", "entertainment-hub" ]
+}, {
+  "name": "Gladiator Gauntlet",
+  "description": "A modern recreation of an ancient Roman coliseum, hosting brutal, epic battles in a new Rome.",
+  "location": "Rome",
+  "capacity": 10000,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "ancient-ruins", "brutal-matches", "historic-vibe" ]
+}, {
+  "name": "Lunar Colosseum",
+  "description": "A vast, domed arena on Lunar Colony Alpha, where low-gravity matches become an ethereal spectacle.",
+  "location": "Lunar Colony Alpha",
+  "capacity": 60000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "low-gravity", "spectacle", "futuristic" ]
+}, {
+  "name": "Deep Sea Grand Arena",
+  "description": "A breathtaking underwater arena in Atlantis Reborn, where matches are observed through transparent domes revealing marine life.",
+  "location": "Atlantis Reborn",
+  "capacity": 45000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "underwater", "unique-acoustics", "serene" ]
+}, {
+  "name": "Amazonian Sky Bowl",
+  "description": "An open-air arena suspended high within the giant Bio-Trees of the Amazonian Canopy-City, blending nature with technology.",
+  "location": "Amazonian Canopy-City",
+  "capacity": 35000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "high-altitude", "natural-elements", "eco-futuristic" ]
+}, {
+  "name": "Ironclad Arena",
+  "description": "A brutal, no-frills arena located in a repurposed factory in Detroit, echoing the city's industrial past.",
+  "location": "Detroit",
+  "capacity": 4000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "industrial", "gritty", "blue-collar" ]
+}, {
+  "name": "The Golden Forum",
+  "description": "A luxurious and technologically advanced arena in Houston, designed for high-profile events and a refined audience.",
+  "location": "Houston",
+  "capacity": 20000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "luxury", "high-tech", "refined-audience" ]
+}, {
+  "name": "Sunshine Coliseum",
+  "description": "An open-air arena in Orlando, featuring a vibrant, energetic atmosphere perfect for family-friendly wrestling shows.",
+  "location": "Orlando",
+  "capacity": 15000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "outdoor", "family-friendly", "vibrant-crowd" ]
+}, {
+  "name": "Pirate's Cove Arena",
+  "description": "A themed arena in Tampa, embracing the city's pirate heritage with a rowdy, buccaneer-like crowd.",
+  "location": "Tampa",
+  "capacity": 10000,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "themed", "rowdy-crowd", "coastal" ]
+}, {
+  "name": "Liberty Bell Center",
+  "description": "A modern indoor arena in Philadelphia, paying homage to the city's revolutionary history while hosting fierce wrestling battles.",
+  "location": "Philadelphia",
+  "capacity": 18000,
+  "alignmentBias": "HEEL_FAVORABLE",
+  "environmentalTraits": [ "historic-vibe", "fierce-fans", "intense-spotlight" ]
+}, {
+  "name": "Maple Leaf Gardens",
+  "description": "A legendary historic arena in Toronto, preserving the grit and glory of classic Canadian wrestling.",
+  "location": "Toronto",
+  "capacity": 16000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "historic-prestige", "traditional-crowd" ]
+}, {
+  "name": "Bellator Arena",
+  "description": "A modern, multi-purpose arena in Edmonton, known for its passionate fans and electrifying atmosphere during combat sports events.",
+  "location": "Edmonton",
+  "capacity": 15000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "modern-amenities", "passionate-fans" ]
+}, {
+  "name": "The Colossus of Rhodes",
+  "description": "A colossal open-air arena in a modern Greek city, inspired by ancient wonders and hosting epic wrestling spectacles.",
+  "location": "Athens",
+  "capacity": 70000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "ancient-inspired", "massive-scale", "epic" ]
 } ]

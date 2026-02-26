@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -158,6 +159,9 @@ class ShowSchedulerServiceTest {
             eq(100L)); // Verify arenaId is passed
 
     verify(arenaService, atLeastOnce()).assignArenaToShow(eq(false)); // Verify for regular show
+
+    // Reset mocks for next test
+    org.mockito.Mockito.reset(arenaService);
   }
 
   @Test
@@ -193,6 +197,9 @@ class ShowSchedulerServiceTest {
             eq(100L)); // Verify arenaId is passed
 
     verify(arenaService, atLeastOnce()).assignArenaToShow(eq(true)); // Verify for PLE
+
+    // Reset mocks for next test
+    org.mockito.Mockito.reset(arenaService);
   }
 
   @Test
@@ -211,6 +218,8 @@ class ShowSchedulerServiceTest {
     // DayOfWeek is intentionally NULL
 
     when(showTemplateService.findAll()).thenReturn(List.of(invalidTemplate));
+    // Making this lenient because it's not strictly related to the main assertion of this test
+    lenient().when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L);
 
     // The season is in Feb/March, but the template is for January.
     // Even if it were in January, it should be skipped because DayOfWeek is missing.

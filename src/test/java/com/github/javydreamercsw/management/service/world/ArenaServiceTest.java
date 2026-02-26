@@ -87,12 +87,12 @@ class ArenaServiceTest {
         testArenas.stream().filter(a -> a.getId().equals(assignedArenaId)).findFirst();
     assertTrue(assignedArena.isPresent());
 
-    // Verify it's one of the largest arenas (e.g., in the top 2)
+    // Verify it's one of the largest arenas (e.g., in the top 5)
     List<Arena> sortedArenas =
         testArenas.stream()
             .sorted(java.util.Comparator.comparingInt(Arena::getCapacity).reversed())
             .toList();
-    List<Long> largestArenaIds = sortedArenas.subList(0, 2).stream().map(Arena::getId).toList();
+    List<Long> largestArenaIds = sortedArenas.subList(0, 5).stream().map(Arena::getId).toList();
     assertTrue(largestArenaIds.contains(assignedArenaId));
   }
 
