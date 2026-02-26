@@ -1175,7 +1175,7 @@ public class DataInitializer implements Initializable {
             existing.setImageUrl(dto.getImageUrl());
             existing.setCulturalTags(dto.getCulturalTags());
             locationRepository.save(existing);
-            log.debug("Updated existing location: {}", existing.getName());
+            log.info("Updated existing location: {}", existing.getName());
           }
         }
         log.info("Location loading completed - {} locations processed", locationsFromFile.size());
@@ -1238,7 +1238,7 @@ public class DataInitializer implements Initializable {
                         dto.getLocation(),
                         dto.getName()));
             arenaRepository.save(existing);
-            log.debug("Updated existing arena: {}", existing.getName());
+            log.info("Updated existing arena: {}", existing.getName());
           }
         }
         log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());

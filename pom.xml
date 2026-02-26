@@ -1576,14 +1576,24 @@
                 <type>runtime</type>
                 <properties>
                   <cargo.tomcat.manager.url>http://localhost:8080/manager/html</cargo.tomcat.manager.url>
-                  <!-- Reference the server ID from settings.xml -->
-                  <cargo.remote.username>${tomcat.username}</cargo.remote.username>
-                  <cargo.remote.password>${tomcat.password}</cargo.remote.password>
+                  <cargo.remote.username>${env.tomcat.username}</cargo.remote.username>
+                  <cargo.remote.password>${env.tomcat.password}</cargo.remote.password>
                 </properties>
               </configuration>
               <deployer>
                 <type>remote</type>
               </deployer>
+              <deployables>
+                <deployable>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>${project.artifactId}</artifactId>
+                  <type>war</type>
+                  <location>${project.build.directory}/${project.build.finalName}.war</location>
+                  <properties>
+                    <context>/all-time-wrestling-rpg</context>
+                  </properties>
+                </deployable>
+              </deployables>
             </configuration>
             <executions>
               <execution>

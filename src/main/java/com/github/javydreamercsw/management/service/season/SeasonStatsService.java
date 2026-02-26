@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
@@ -39,12 +40,16 @@ public class SeasonStatsService {
 
   private final SegmentRepository segmentRepository;
   private final SeasonRepository seasonRepository;
+  private final TitleReignRepository titleReignRepository;
 
   @Autowired
   public SeasonStatsService(
-      SegmentRepository segmentRepository, SeasonRepository seasonRepository) {
+      SegmentRepository segmentRepository,
+      SeasonRepository seasonRepository,
+      TitleReignRepository titleReignRepository) {
     this.segmentRepository = segmentRepository;
     this.seasonRepository = seasonRepository;
+    this.titleReignRepository = titleReignRepository;
   }
 
   /**
@@ -83,7 +88,7 @@ public class SeasonStatsService {
     }
 
     List<String> accolades =
-        wrestler.getReigns().stream()
+        titleReignRepository.findByChampionsContaining(wrestler).stream()
             .filter(reign -> isReignInSeason(reign, season))
             .map(reign -> reign.getTitle().getName())
             .distinct()

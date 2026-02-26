@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
@@ -52,6 +53,7 @@ class SeasonStatsServiceTest {
 
   @Mock private SegmentRepository segmentRepository;
   @Mock private SeasonRepository seasonRepository;
+  @Mock private TitleReignRepository titleReignRepository;
 
   @InjectMocks private SeasonStatsService seasonStatsService;
 
@@ -102,7 +104,8 @@ class SeasonStatsServiceTest {
     reign.setTitle(title);
     reign.setStartDate(Instant.parse("2024-02-01T00:00:00Z"));
     reign.setEndDate(Instant.parse("2024-02-15T00:00:00Z"));
-    wrestler.setReigns(Arrays.asList(reign));
+
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(Arrays.asList(reign));
 
     // When
     SeasonStatsDTO stats = seasonStatsService.calculateStats(wrestler, season);
