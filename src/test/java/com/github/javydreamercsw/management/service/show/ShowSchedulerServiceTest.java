@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
@@ -44,6 +45,7 @@ class ShowSchedulerServiceTest {
 
   @Mock private ShowService showService;
   @Mock private ShowTemplateService showTemplateService;
+  @Mock private ArenaService arenaService;
 
   @InjectMocks private ShowSchedulerService showSchedulerService;
 
@@ -86,6 +88,9 @@ class ShowSchedulerServiceTest {
     pleTemplate.setWeekOfMonth(-1); // Last
     pleTemplate.setDayOfWeek(DayOfWeek.SUNDAY);
     pleTemplate.setDurationDays(2);
+
+    // Mock arena service behavior
+    when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L); // Default arena ID
   }
 
   @Test
@@ -106,7 +111,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -117,7 +122,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -128,7 +133,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -139,7 +144,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -150,7 +155,9 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
+
+    verify(arenaService, atLeastOnce()).assignArenaToShow(eq(false)); // Verify for regular show
   }
 
   @Test
@@ -172,7 +179,7 @@ class ShowSchedulerServiceTest {
             eq(2L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Big Event - Night 2"),
@@ -183,7 +190,9 @@ class ShowSchedulerServiceTest {
             eq(2L),
             any(),
             any(),
-            any()); // Added null for arenaId
+            eq(100L)); // Verify arenaId is passed
+
+    verify(arenaService, atLeastOnce()).assignArenaToShow(eq(true)); // Verify for PLE
   }
 
   @Test

@@ -22,8 +22,10 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +44,7 @@ public class ArenaService {
   private final ArenaRepository repository;
   private final LocationService locationService;
   private final ImageGenerationServiceFactory imageFactory;
+  private final Random random = new Random();
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Arena createArena(
@@ -160,5 +163,35 @@ public class ArenaService {
               }
               return null;
             });
+  }
+
+  /**
+   * Assigns an arena to a show.
+   *
+   * @param isPle True if the show is a Premium Live Event (PLE), which prioritizes larger arenas.
+   * @return The assigned Arena, or null if no arenas are available.
+   */
+  public Long assignArenaToShow(boolean isPle) {
+    List<Arena> allArenas = repository.findAll();
+    if (allArenas.isEmpty()) {
+      log.warn("No arenas available to assign to show.");
+      return null;
+    }
+
+    if (isPle) {
+      // For PLEs, prioritize the largest arenas
+      List<Arena> largeArenas =
+          allArenas.stream()
+              .sorted(Comparator.comparingInt(Arena::getCapacity).reversed())
+              .limit(5) // Consider top 5 largest arenas for selection
+              .toList();
+
+      if (!largeArenas.isEmpty()) {
+        return largeArenas.get(random.nextInt(largeArenas.size())).getId();
+      }
+    }
+
+    // For regular shows or if no large arenas for PLE, pick a random arena
+    return allArenas.get(random.nextInt(allArenas.size())).getId();
   }
 }
