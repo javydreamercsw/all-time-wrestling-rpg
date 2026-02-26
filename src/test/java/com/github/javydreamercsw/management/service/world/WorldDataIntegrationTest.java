@@ -141,8 +141,8 @@ class WorldDataIntegrationTest extends AbstractIntegrationTest {
   @Test
   void testDataInitializationIntegrity() {
     // Verify that DataInitializer has loaded the expected lore data.
-    assertTrue(locationRepository.count() >= 16, "Should have at least 16 lore locations");
-    assertTrue(arenaRepository.count() >= 14, "Should have at least 14 lore arenas");
+    assertTrue(locationRepository.count() >= 26, "Should have at least 26 lore locations");
+    assertTrue(arenaRepository.count() >= 33, "Should have at least 33 lore arenas");
 
     Optional<Location> tokyo = locationRepository.findByName("Neo-Tokyo");
     assertTrue(tokyo.isPresent());

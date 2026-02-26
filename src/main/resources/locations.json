@@ -1,11 +1,19 @@
 [ {
-  "name": "Neo-Tokyo",
-  "description": "A sprawling cyberpunk metropolis in the 23rd century, rebuilt after the Great Collapse. A hub for tech and underground fighting.",
-  "culturalTags": [ "high-tech", "urban", "cyberpunk", "japan", "osaka" ]
+  "name": "New York City",
+  "description": "The 'Big Apple' and a historic epicenter for professional wrestling. From the bright lights of Times Square to the grit of the boroughs, it's the ultimate stage.",
+  "culturalTags": [ "metropolis", "usa", "historic", "big-apple", "east-coast" ]
 }, {
-  "name": "Osaka Cyber-District",
-  "description": "The futuristic birthplace of Oda Tsuguri (born 2361 AD). A neon-drenched district where the Oda clan still holds sway.",
-  "culturalTags": [ "yakuza", "cybernetic", "japan", "osaka", "future" ]
+  "name": "Mexico City Megaplex",
+  "description": "The Lucha Libre capital of the 21st through 23rd centuries. Where Rey Jaguar unified the world titles in 2034 AD.",
+  "culturalTags": [ "mexico", "lucha", "jaguar", "tradition", "mexico city" ]
+}, {
+  "name": "London",
+  "description": "A hub for the European wrestling scene, known for its rowdy, singing crowds and a mix of technical and hard-hitting styles.",
+  "culturalTags": [ "uk", "british-strong-style", "europe", "historic", "vocal-crowd" ]
+}, {
+  "name": "Chicago",
+  "description": "The 'Windy City', home to some of the most passionate and vocal wrestling fans in the world. A true blue-collar wrestling town.",
+  "culturalTags": [ "usa", "midwest", "blue-collar", "passionate-fans", "windy-city" ]
 }, {
   "name": "Pittsburgh Citadel",
   "description": "The 23rd-century evolution of the Steel City. Hails the legacy of Kurt Angle. Known for its industrial strength and 'Wrestling Machine' academy.",
@@ -14,6 +22,26 @@
   "name": "Winnipeg Cryo-Hub",
   "description": "A high-tech Canadian city in the 22nd and 23rd centuries. Home to the Felix wrestling dynasty and the Alpha Pack.",
   "culturalTags": [ "canada", "cold", "prodigy", "alpha-pack", "winnipeg" ]
+}, {
+  "name": "Calgary Spire",
+  "description": "The legendary home of the Hart family and the 'Loose Cannon' Brian Pillman. A center for technical brilliance and unpredictable energy.",
+  "culturalTags": [ "canada", "stampede", "loose-cannon", "technical", "calgary" ]
+}, {
+  "name": "Toronto",
+  "description": "A major Canadian hub for wrestling, hosting massive international spectacles and fostering a rich independent scene.",
+  "culturalTags": [ "canada", "metropolis", "ontario", "international-hub" ]
+}, {
+  "name": "New Orleans",
+  "description": "The 'Big Easy', known for its unique culture and for hosting some of the most memorable championship moments in history.",
+  "culturalTags": [ "usa", "south", "big-easy", "louisiana", "culture" ]
+}, {
+  "name": "Osaka Cyber-District",
+  "description": "The futuristic birthplace of Oda Tsuguri (born 2361 AD). A neon-drenched district where the Oda clan still holds sway.",
+  "culturalTags": [ "yakuza", "cybernetic", "japan", "osaka", "future" ]
+}, {
+  "name": "Neo-Tokyo",
+  "description": "A sprawling cyberpunk metropolis in the 23rd century, rebuilt after the Great Collapse. A hub for tech and underground fighting.",
+  "culturalTags": [ "high-tech", "urban", "cyberpunk", "japan", "osaka" ]
 }, {
   "name": "Zambezi Sanctuary",
   "description": "A lush, technologically advanced kingdom along the Zambezi River, restored to its 10th-century glory by time-displaced technology.",
@@ -27,17 +55,9 @@
   "description": "A harsh, sub-zero prison and training ground in Russia. The birthplace of OMZ's 'Knockout Artist' persona.",
   "culturalTags": [ "russia", "harsh", "prison", "combat", "siberia" ]
 }, {
-  "name": "Mexico City Megaplex",
-  "description": "The Lucha Libre capital of the 21st through 23rd centuries. Where Rey Jaguar unified the world titles in 2034 AD.",
-  "culturalTags": [ "mexico", "lucha", "jaguar", "tradition", "mexico city" ]
-}, {
   "name": "Ugandan Wilds",
   "description": "A protected ecological zone in the 23rd century, echoing the homeland of the Ugandan Giant, Kamala.",
   "culturalTags": [ "uganda", "jungle", "savage", "giant", "africa" ]
-}, {
-  "name": "Calgary Spire",
-  "description": "The legendary home of the Hart family and the 'Loose Cannon' Brian Pillman. A center for technical brilliance and unpredictable energy.",
-  "culturalTags": [ "canada", "stampede", "loose-cannon", "technical", "calgary" ]
 }, {
   "name": "Slamtown",
   "description": "The fictional, yet very real, sovereign state governed by Johnny All Time. A place where gravity is optional.",
@@ -62,4 +82,24 @@
   "name": "Atlantis Reborn",
   "description": "A fully submerged city beneath the Atlantic, a marvel of bio-engineering and marine architecture.",
   "culturalTags": [ "underwater", "utopian", "mysterious", "atlantic" ]
+}, {
+  "name": "Perth",
+  "description": "A vibrant coastal city in Western Australia, known for its passionate sports fans and stunning modern architecture.",
+  "culturalTags": [ "australia", "oceania", "coastal", "passionate-fans" ]
+}, {
+  "name": "Melbourne",
+  "description": "The sporting capital of Australia, with a rich history of hosting massive international spectacles and a very vocal wrestling community.",
+  "culturalTags": [ "australia", "oceania", "sporting-capital", "metropolis" ]
+}, {
+  "name": "San Juan",
+  "description": "The historic and vibrant capital of Puerto Rico, a legendary territory where wrestling is part of the cultural fabric.",
+  "culturalTags": [ "puerto-rico", "caribbean", "territory", "historic", "vibrant" ]
+}, {
+  "name": "Riyadh",
+  "description": "The booming capital of Saudi Arabia, a new global hub for massive international wrestling events and high-production spectacles.",
+  "culturalTags": [ "saudi-arabia", "middle-east", "metropolis", "high-production" ]
+}, {
+  "name": "Jeddah",
+  "description": "A historic port city on the Red Sea, now home to some of the world's most unique and technologically advanced sporting venues.",
+  "culturalTags": [ "saudi-arabia", "middle-east", "red-sea", "historic-port" ]
 } ]

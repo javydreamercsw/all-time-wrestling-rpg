@@ -1,10 +1,86 @@
 [ {
+  "name": "Madison Square Garden",
+  "description": "The 'World's Most Famous Arena' and the spiritual home of sports entertainment. Every legend has walked these hallowed halls.",
+  "location": "New York City",
+  "capacity": 18500,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "historic-prestige", "intense-spotlight" ]
+}, {
+  "name": "Tokyo Dome",
+  "description": "The massive 'Big Egg'. Host to the largest spectacles in Japanese wrestling history, where the atmosphere is both respectful and electric.",
+  "location": "Neo-Tokyo",
+  "capacity": 45000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "massive-scale", "respectful-silence" ]
+}, {
+  "name": "Arena México",
+  "description": "The 'Cathedral of Lucha Libre'. A place of high-flying tradition, colorful masks, and deep-rooted cultural pride.",
+  "location": "Mexico City Megaplex",
+  "capacity": 16500,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "lucha-tradition", "vibrant-colors" ]
+}, {
+  "name": "Wembley Stadium",
+  "description": "A gargantuan open-air stadium in London. When it's full for a wrestling event, the roar of the crowd is deafening.",
+  "location": "London",
+  "capacity": 80000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "open-air", "deafening-crowd" ]
+}, {
+  "name": "Allstate Arena",
+  "description": "A legendary arena in the Chicago area known for having one of the loudest and most opinionated crowds in the world.",
+  "location": "Chicago",
+  "capacity": 18000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "vocal-crowd", "intimate-feel" ]
+}, {
+  "name": "Korakuen Hall",
+  "description": "Known as the 'Holy Ground' of Japanese wrestling. A smaller, intimate venue where every strike and slam echoes throughout the building.",
+  "location": "Neo-Tokyo",
+  "capacity": 2000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "intimate-setting", "technical-focus" ]
+}, {
+  "name": "Hammerstein Ballroom",
+  "description": "A historic NYC ballroom with tiered balconies that create a unique vertical atmosphere, famous for its hardcore history.",
+  "location": "New York City",
+  "capacity": 2500,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "vertical-seating", "hardcore-vibe" ]
+}, {
+  "name": "Scotiabank Arena",
+  "description": "A premier multi-purpose arena in downtown Toronto, host to some of the biggest events in North American wrestling history.",
+  "location": "Toronto",
+  "capacity": 19800,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "modern-amenities", "passionate-fans" ]
+}, {
+  "name": "Smoothie King Center",
+  "description": "A top-tier arena in New Orleans, known for its incredible atmosphere during major championship events.",
+  "location": "New Orleans",
+  "capacity": 17000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "southern-hospitality", "festival-atmosphere" ]
+}, {
+  "name": "EDION Arena Osaka",
+  "description": "Formerly known as Osaka Prefectural Gymnasium, it is a staple for major Japanese wrestling tournaments.",
+  "location": "Osaka Cyber-District",
+  "capacity": 8000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "intense-fans", "traditional-layout" ]
+}, {
+  "name": "Accor Arena",
+  "description": "A modern, multi-purpose arena in Paris that has become the premier destination for major international wrestling tours in France.",
+  "location": "Neo-Paris Sky-Garden",
+  "capacity": 15000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "artistic-lighting", "energetic-crowd" ]
+}, {
   "name": "Neon Serpent Dome",
   "description": "A dazzling, multi-tiered arena in Neo-Tokyo, famous for its holographic displays and an electrifying atmosphere.",
   "location": "Neo-Tokyo",
   "capacity": 25000,
   "alignmentBias": "HEEL_FAVORABLE",
-  "imageUrl": "https://example.com/neon_serpent_dome.jpg",
   "environmentalTraits": [ "holographic-displays", "urban-decay-vibe" ]
 }, {
   "name": "The Steel Citadel",
@@ -12,7 +88,6 @@
   "location": "Pittsburgh Citadel",
   "capacity": 18000,
   "alignmentBias": "NEUTRAL",
-  "imageUrl": "https://example.com/steel_citadel.jpg",
   "environmentalTraits": [ "industrial", "technical-focus" ]
 }, {
   "name": "Oda Clan Fortress",
@@ -20,7 +95,6 @@
   "location": "Osaka Cyber-District",
   "capacity": 12000,
   "alignmentBias": "HEEL_FAVORABLE",
-  "imageUrl": "https://example.com/oda_fortress.jpg",
   "environmentalTraits": [ "yakuza-themed", "cybernetic-lighting" ]
 }, {
   "name": "The Frozen Peak",
@@ -28,7 +102,6 @@
   "location": "Winnipeg Cryo-Hub",
   "capacity": 15000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/frozen_peak.jpg",
   "environmentalTraits": [ "cryo-fog", "high-altitude" ]
 }, {
   "name": "Lion's Roar Sanctuary",
@@ -36,7 +109,6 @@
   "location": "Zambezi Sanctuary",
   "capacity": 30000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/lions_roar.jpg",
   "environmentalTraits": [ "royal-ambiance", "natural-elements" ]
 }, {
   "name": "The Epic of Uruk",
@@ -44,7 +116,6 @@
   "location": "Uruk Eternal",
   "capacity": 50000,
   "alignmentBias": "ANARCHIC",
-  "imageUrl": "https://example.com/epic_uruk.jpg",
   "environmentalTraits": [ "ancient-ruins", "mythical-vibe" ]
 }, {
   "name": "Frost-Bite Octagon",
@@ -52,7 +123,6 @@
   "location": "Siberian Outpost",
   "capacity": 5000,
   "alignmentBias": "ANARCHIC",
-  "imageUrl": "https://example.com/frost_bite.jpg",
   "environmentalTraits": [ "extreme-cold", "barbed-wire-fencing" ]
 }, {
   "name": "Jaguar's Sun-Stone Plaza",
@@ -60,7 +130,6 @@
   "location": "Mexico City Megaplex",
   "capacity": 40000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/jaguar_plaza.jpg",
   "environmentalTraits": [ "lucha-tradition", "vibrant-colors" ]
 }, {
   "name": "The Palace of Slam",
@@ -68,7 +137,6 @@
   "location": "Slamtown",
   "capacity": 10000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/palace_slam.jpg",
   "environmentalTraits": [ "parkour-ready", "glamour-lighting" ]
 }, {
   "name": "Royal Bulldog Hall",
@@ -76,7 +144,6 @@
   "location": "Neo-London Spire",
   "capacity": 8000,
   "alignmentBias": "NEUTRAL",
-  "imageUrl": "https://example.com/bulldog_hall.jpg",
   "environmentalTraits": [ "traditional-crowd", "prestige" ]
 }, {
   "name": "Grand Palace Gardens",
@@ -84,7 +151,6 @@
   "location": "Neo-Paris Sky-Garden",
   "capacity": 12000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/paris_gardens.jpg",
   "environmentalTraits": [ "scenic-views", "artistic-crowd" ]
 }, {
   "name": "Zero-G Octagon",
@@ -92,7 +158,6 @@
   "location": "Lunar Colony Alpha",
   "capacity": 10000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/zero_g_octagon.jpg",
   "environmentalTraits": [ "low-gravity", "zero-g-grappling" ]
 }, {
   "name": "Canopy Combat Cage",
@@ -100,7 +165,6 @@
   "location": "Amazonian Canopy-City",
   "capacity": 12000,
   "alignmentBias": "FACE_FAVORABLE",
-  "imageUrl": "https://example.com/canopy_combat.jpg",
   "environmentalTraits": [ "high-altitude", "jungle-environment" ]
 }, {
   "name": "Aqua Colosseum",
@@ -108,6 +172,61 @@
   "location": "Atlantis Reborn",
   "capacity": 15000,
   "alignmentBias": "NEUTRAL",
-  "imageUrl": "https://example.com/aqua_colosseum.jpg",
   "environmentalTraits": [ "underwater", "unique-acoustics" ]
+}, {
+  "name": "Optus Stadium",
+  "description": "A massive state-of-the-art stadium in Perth, configured for a deafening wall of sound during international spectacles.",
+  "location": "Perth",
+  "capacity": 65000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "massive-scale", "modern-amenities" ]
+}, {
+  "name": "Melbourne Cricket Ground",
+  "description": "The 'G'. A legendary, gargantuan stadium capable of holding over 100,000 screaming fans for the biggest events on the planet.",
+  "location": "Melbourne",
+  "capacity": 100000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "open-air", "historic-prestige" ]
+}, {
+  "name": "Rod Laver Arena",
+  "description": "A premier indoor arena in Melbourne, known for its intense atmosphere and proximity of the fans to the ring.",
+  "location": "Melbourne",
+  "capacity": 15000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "vocal-crowd", "intense-lighting" ]
+}, {
+  "name": "Coliseo de Puerto Rico",
+  "description": "The 'Choliseo'. The crown jewel of Puerto Rican wrestling, where the fans are among the most passionate in the world.",
+  "location": "San Juan",
+  "capacity": 18500,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "loyal-fanbase", "festival-atmosphere" ]
+}, {
+  "name": "Estadio Hiram Bithorn",
+  "description": "A historic open-air stadium in San Juan, legendary for hosting massive championship battles under the Caribbean stars.",
+  "location": "San Juan",
+  "capacity": 32000,
+  "alignmentBias": "ANARCHIC",
+  "environmentalTraits": [ "open-air", "historic-prestige" ]
+}, {
+  "name": "Mohammed Abdo Arena",
+  "description": "A high-production multi-purpose arena in Riyadh, part of the glittering Boulevard City complex.",
+  "location": "Riyadh",
+  "capacity": 22000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "modern-amenities", "high-production" ]
+}, {
+  "name": "Jeddah Super Dome",
+  "description": "The largest geodesic dome in the world, a massive and visually stunning marvel of engineering in Jeddah.",
+  "location": "Jeddah",
+  "capacity": 35000,
+  "alignmentBias": "NEUTRAL",
+  "environmentalTraits": [ "massive-scale", "unique-acoustics" ]
+}, {
+  "name": "Kingdom Arena",
+  "description": "A spectacular, state-of-the-art indoor stadium in Riyadh designed for the ultimate spectator experience.",
+  "location": "Riyadh",
+  "capacity": 30000,
+  "alignmentBias": "FACE_FAVORABLE",
+  "environmentalTraits": [ "modern-amenities", "intense-spotlight" ]
 } ]
