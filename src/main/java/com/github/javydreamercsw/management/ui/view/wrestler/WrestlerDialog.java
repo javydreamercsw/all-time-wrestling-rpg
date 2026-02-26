@@ -174,7 +174,7 @@ public class WrestlerDialog extends Dialog {
     accountComboBox.setId("wrestler-dialog-account-combo-box");
     accountComboBox.setPlaceholder("Select Account");
     accountComboBox.setItemLabelGenerator(Account::getUsername);
-    accountComboBox.setItems(accountService.findAllNonPlayerAccounts());
+    accountComboBox.setItems(accountService.findAll());
     accountComboBox.setVisible(
         isPlayerField.getValue() && (securityUtils.isAdmin() || securityUtils.isBooker()));
     accountComboBox.setReadOnly(!(securityUtils.isAdmin() || securityUtils.isBooker()));

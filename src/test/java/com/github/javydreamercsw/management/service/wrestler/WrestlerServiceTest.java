@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -319,5 +320,34 @@ class WrestlerServiceTest {
     // Then
     assertEquals(2, result.size());
     result.forEach(w -> assertEquals(WrestlerTier.MAIN_EVENTER, w.getTier()));
+  }
+
+  @Test
+  void testMultipleWrestlersPerAccount() {
+    // Given
+    com.github.javydreamercsw.base.domain.account.Account account =
+        new com.github.javydreamercsw.base.domain.account.Account();
+    account.setId(100L);
+    account.setUsername("sharedAccount");
+
+    Wrestler w1 = new Wrestler();
+    w1.setId(10L);
+    w1.setName("Wrestler 1");
+    w1.setAccount(account);
+
+    Wrestler w2 = new Wrestler();
+    w2.setId(11L);
+    w2.setName("Wrestler 2");
+    w2.setAccount(account);
+
+    when(wrestlerRepository.findAllByAccount(account)).thenReturn(Arrays.asList(w1, w2));
+
+    // When
+    List<Wrestler> result = wrestlerService.findAllByAccount(account);
+
+    // Then
+    assertEquals(2, result.size());
+    assertTrue(result.contains(w1));
+    assertTrue(result.contains(w2));
   }
 }
