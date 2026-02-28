@@ -75,6 +75,6 @@
 
 ## Active Tracks
 
-- [~] **Track: Improve Notion sync UI feedback and progress tracking**
+- [x] **Track: Improve Notion sync UI feedback and progress tracking**
   *Link: [./tracks/notion_sync_ui_details_20260227/](./tracks/notion_sync_ui_details_20260227/)*
 
