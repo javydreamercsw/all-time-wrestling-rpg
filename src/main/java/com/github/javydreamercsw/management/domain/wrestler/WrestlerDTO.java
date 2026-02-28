@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -41,7 +42,22 @@ public class WrestlerDTO implements Serializable {
   private String externalId;
   private String imageUrl;
   private String managerName;
+  private String managerExternalId;
   private boolean injured;
+  private List<String> injuryExternalIds = new ArrayList<>();
+  private List<String> teamExternalIds = new ArrayList<>();
+  private List<String> titleReignExternalIds = new ArrayList<>();
+  private String alignment;
+  private Integer drive;
+  private Integer resilience;
+  private Integer charisma;
+  private Integer brawl;
+  private String heritageTag;
+  private Integer deckSize;
+  private Integer startingHealth;
+  private Integer lowHealth;
+  private Integer startingStamina;
+  private Integer lowStamina;
 
   public WrestlerDTO(@NonNull Wrestler wrestler) {
     this.id = wrestler.getId(); // Initialize id
@@ -56,7 +72,35 @@ public class WrestlerDTO implements Serializable {
     this.injured = !wrestler.getActiveInjuries().isEmpty();
     if (wrestler.getManager() != null) {
       this.managerName = wrestler.getManager().getName();
+      this.managerExternalId = wrestler.getManager().getExternalId();
     }
+    if (wrestler.getInjuries() != null) {
+      this.injuryExternalIds =
+          wrestler.getInjuries().stream()
+              .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
+              .filter(Objects::nonNull)
+              .toList();
+    }
+    if (wrestler.getReigns() != null) {
+      this.titleReignExternalIds =
+          wrestler.getReigns().stream()
+              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
+              .filter(Objects::nonNull)
+              .toList();
+    }
+    if (wrestler.getAlignment() != null && wrestler.getAlignment().getAlignmentType() != null) {
+      this.alignment = wrestler.getAlignment().getAlignmentType().name();
+    }
+    this.drive = wrestler.getDrive();
+    this.resilience = wrestler.getResilience();
+    this.charisma = wrestler.getCharisma();
+    this.brawl = wrestler.getBrawl();
+    this.heritageTag = wrestler.getHeritageTag();
+    this.deckSize = wrestler.getDeckSize();
+    this.startingHealth = wrestler.getStartingHealth();
+    this.lowHealth = wrestler.getLowHealth();
+    this.startingStamina = wrestler.getStartingStamina();
+    this.lowStamina = wrestler.getLowStamina();
   }
 
   private MoveSet convertToMoveSet(Wrestler wrestler) {

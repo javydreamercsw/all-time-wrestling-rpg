@@ -1178,7 +1178,9 @@ public class DataInitializer implements Initializable {
             log.info("Updated existing location: {}", existing.getName());
           }
         }
+        locationRepository.flush();
         log.info("Location loading completed - {} locations processed", locationsFromFile.size());
+
       } catch (IOException e) {
         log.error("Error loading locations from file", e);
       }
