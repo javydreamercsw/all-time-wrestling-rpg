@@ -16,123 +16,99 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.service.sync.SyncEntityType;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import lombok.NonNull;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FactionNotionSyncService implements NotionEntitySyncService {
-
-  private final FactionRepository factionRepository;
-  private final NotionHandler notionHandler;
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
+public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
 
   public FactionNotionSyncService(
-      FactionRepository factionRepository, NotionHandler notionHandler) {
-    this.factionRepository = factionRepository;
-    this.notionHandler = notionHandler;
+      FactionRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    if (notionHandler != null) {
-      Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-      if (clientOptional.isPresent()) {
-        try (NotionClient client = clientOptional.get()) {
-          String databaseId = notionHandler.getDatabaseId("Factions");
-          if (databaseId != null) {
-            int processedCount = 0;
-            int created = 0;
-            int updated = 0;
-            int errors = 0;
-            progressTracker.startOperation(operationId, SyncEntityType.FACTIONS.getKey(), 1);
-            List<Faction> entities = factionRepository.findAll();
-            for (Faction entity : entities) {
-              // Update progress every 5 entities
-              if (processedCount % 5 == 0) {
-                progressTracker.updateProgress(
-                    operationId,
-                    1,
-                    String.format(
-                        "Saving %s to Notion... (%d/%d processedCount)",
-                        SyncEntityType.FACTIONS.getKey(), processedCount, entities.size()));
-              }
-              try {
-                Map<String, PageProperty> properties = new HashMap<>();
-                properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
-                if (entity.isActive()) {
-                  properties.put(
-                      "Active", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
-                }
-                if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
-                  properties.put(
-                      "Leader",
-                      NotionPropertyBuilder.createRelationProperty(
-                          entity.getLeader().getExternalId()));
-                }
+  protected Map<String, PageProperty> getProperties(@NonNull Faction entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-                if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                  // Update existing page
-                  UpdatePageRequest updatePageRequest =
-                      new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                  notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                  updated++;
-                } else {
-                  // Create new page
-                  CreatePageRequest createPageRequest =
-                      new CreatePageRequest(
-                          new PageParent(null, databaseId), properties, null, null);
-                  Page page =
-                      notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                  entity.setExternalId(page.getId());
-                  created++;
-                }
-                entity.setLastSync(Instant.now());
-                factionRepository.save(entity);
-                processedCount++;
-              } catch (Exception ex) {
-                errors++;
-                processedCount++;
-              }
-            }
-            // Final progress update
-            progressTracker.updateProgress(
-                operationId,
-                1,
-                String.format(
-                    "✅ Completed Notion sync: %%d %s saved/updated, %%d errors",
-                    SyncEntityType.FACTIONS.getKey(), created + updated, errors));
-            return errors > 0
-                ? BaseSyncService.SyncResult.failure(
-                    SyncEntityType.FACTIONS.getKey(), "Error syncing factions!")
-                : BaseSyncService.SyncResult.success(
-                    SyncEntityType.FACTIONS.getKey(), created, updated, errors);
-          }
-        }
-      }
+    if (entity.getDescription() != null) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
     }
-    progressTracker.failOperation(
-        operationId, String.format("Error syncing %s!", SyncEntityType.FACTIONS.getKey()));
-    return BaseSyncService.SyncResult.failure(
-        SyncEntityType.FACTIONS.getKey(), "Error syncing factions!");
+
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+
+    if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
+      properties.put(
+          "Leader",
+          NotionPropertyBuilder.createRelationProperty(entity.getLeader().getExternalId()));
+    }
+
+    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
+      properties.put(
+          "Manager",
+          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
+    }
+
+    if (entity.getAlignment() != null) {
+      properties.put(
+          "Alignment", NotionPropertyBuilder.createSelectProperty(entity.getAlignment()));
+    }
+
+    if (entity.getFormedDate() != null) {
+      properties.put(
+          "Formed Date",
+          NotionPropertyBuilder.createDateProperty(entity.getFormedDate().toString()));
+    }
+
+    if (entity.getDisbandedDate() != null) {
+      properties.put(
+          "Disbanded Date",
+          NotionPropertyBuilder.createDateProperty(entity.getDisbandedDate().toString()));
+    }
+
+    if (entity.getMembers() != null && !entity.getMembers().isEmpty()) {
+      properties.put(
+          "Members",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getMembers().stream()
+                  .map(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getExternalId)
+                  .filter(Objects::nonNull)
+                  .toList()));
+    }
+
+    if (entity.getTeams() != null && !entity.getTeams().isEmpty()) {
+      properties.put(
+          "Teams",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getTeams().stream()
+                  .map(com.github.javydreamercsw.management.domain.team.Team::getExternalId)
+                  .filter(Objects::nonNull)
+                  .toList()));
+    }
+
+    return properties;
+  }
+
+  @Override
+  protected String getDatabaseName() {
+    return "Factions";
+  }
+
+  @Override
+  protected String getEntityName() {
+    return "Faction";
   }
 }
