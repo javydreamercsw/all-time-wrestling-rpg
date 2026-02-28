@@ -16,9 +16,10 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Specific Sync Service Updates' (Protocol in workflow.md)
 
 ## Phase 3: UI and Verification [checkpoint: 9d8e7f6]
+
 - [x] Task: Verify in `NotionSyncView.java` that the log entries are correctly displayed and auto-scroll to the bottom.
 - [x] Task: Perform manual verification of both inbound and outbound syncs for various entities (Wrestlers, Factions, etc.).
 - [x] Task: Verify that error conditions (e.g., Notion offline, invalid token) are clearly surfaced in the UI.
-- [x] Task: Conductor - User Manual Verification 'Phase 3: UI and Verification' (Protocol in workflow.md)
-
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions [checkpoint: 4a49bb2]
 
