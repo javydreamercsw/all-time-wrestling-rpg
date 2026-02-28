@@ -20,18 +20,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.FactionDTO;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -89,9 +87,6 @@ public class FactionSyncService extends BaseSyncService {
           .getProgressTracker()
           .updateProgress(operationId, 1, "Retrieving factions from Notion...");
 
-      log.info("📥 Retrieving factions from Notion...");
-      long retrieveStart = System.currentTimeMillis();
-
       if (!isNotionHandlerAvailable()) {
         log.warn("NotionHandler not available. Cannot sync factions from Notion.");
         return SyncResult.failure(
@@ -100,283 +95,206 @@ public class FactionSyncService extends BaseSyncService {
 
       List<FactionPage> factionPages =
           executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllFactions);
-      log.info(
-          "✅ Retrieved {} factions in {}ms",
-          factionPages.size(),
-          System.currentTimeMillis() - retrieveStart);
 
-      syncServiceDependencies
-          .getProgressTracker()
-          .updateProgress(
-              operationId,
-              1,
-              String.format(
-                  "✅ Retrieved %d factions from Notion in %dms",
-                  factionPages.size(), System.currentTimeMillis() - retrieveStart));
-
-      syncServiceDependencies
-          .getProgressTracker()
-          .updateProgress(
+      // Convert to DTOs
+      List<FactionDTO> factionDTOs =
+          processWithControlledParallelism(
+              factionPages,
+              this::convertFactionPageToDTO,
+              10,
               operationId,
               2,
-              String.format(
-                  "Converting %d factions to DTOs and merging with existing data...",
-                  factionPages.size()));
-      log.info("🔄 Converting factions to DTOs and merging with existing data...");
-      long convertStart = System.currentTimeMillis();
-      List<FactionDTO> factionDTOs = convertAndMergeFactionData(factionPages);
-      log.info(
-          "✅ Converted and merged {} factions in {}ms",
-          factionDTOs.size(),
-          System.currentTimeMillis() - convertStart);
+              "Converted %d/%d factions");
 
-      syncServiceDependencies
-          .getProgressTracker()
-          .updateProgress(
-              operationId,
-              2,
-              String.format(
-                  "✅ Converted and merged %d factions in %dms",
-                  factionDTOs.size(), System.currentTimeMillis() - convertStart));
-
-      syncServiceDependencies
-          .getProgressTracker()
-          .updateProgress(
-              operationId,
-              3,
-              String.format("Saving %d factions to database...", factionDTOs.size()));
-      log.info("🗄️ Saving factions to database...");
-      long dbStart = System.currentTimeMillis();
-      int[] result = saveFactionsToDatabase(factionDTOs, operationId);
-      int savedCount = result[0];
-      int skippedCount = result[1];
-      log.info(
-          "✅ Saved {} factions to database in {}ms",
-          savedCount,
-          System.currentTimeMillis() - dbStart);
+      // Save factions to database
+      int savedCount =
+          (int)
+              processWithControlledParallelism(
+                      factionDTOs,
+                      this::saveOrUpdateFaction,
+                      10,
+                      operationId,
+                      3,
+                      "Saved %d/%d factions")
+                  .stream()
+                  .filter(Objects::nonNull)
+                  .count();
 
       long totalTime = System.currentTimeMillis() - startTime;
-      log.info(
-          "🎉 Successfully synchronized {} factions in {}ms total", factionDTOs.size(), totalTime);
-
       syncServiceDependencies
           .getProgressTracker()
           .completeOperation(
               operationId,
               true,
-              String.format("Successfully synced %d factions", factionDTOs.size()),
-              factionDTOs.size());
+              String.format("Successfully synced %d factions", savedCount),
+              savedCount);
 
       syncServiceDependencies
           .getHealthMonitor()
-          .recordSuccess(SyncEntityType.FACTIONS.getKey(), totalTime, factionDTOs.size());
+          .recordSuccess(SyncEntityType.FACTIONS.getKey(), totalTime, savedCount);
 
-      if (skippedCount > 0) {
-        return SyncResult.failure(
-            SyncEntityType.FACTIONS.getKey(),
-            "Some factions failed to sync. Check logs for details.");
-      } else {
-        return SyncResult.success(SyncEntityType.FACTIONS.getKey(), factionDTOs.size(), 0, 0);
-      }
+      return SyncResult.success(SyncEntityType.FACTIONS.getKey(), savedCount, 0, 0);
 
     } catch (Exception e) {
-      long totalTime = System.currentTimeMillis() - startTime;
-      log.error("❌ Failed to synchronize factions from Notion after {}ms", totalTime, e);
-
+      log.error("❌ Faction sync failed", e);
       syncServiceDependencies
           .getProgressTracker()
           .failOperation(operationId, "Sync failed: " + e.getMessage());
-
       syncServiceDependencies
           .getHealthMonitor()
           .recordFailure(SyncEntityType.FACTIONS.getKey(), e.getMessage());
-
       return SyncResult.failure(SyncEntityType.FACTIONS.getKey(), e.getMessage());
     }
   }
 
-  private List<FactionDTO> convertAndMergeFactionData(@NonNull List<FactionPage> factionPages) {
-    Map<String, FactionDTO> existingFactions = new HashMap<>();
-    if (syncServiceDependencies.getNotionSyncProperties().isLoadFromJson()) {
-      // DTO does not exist for factions yet.
-    }
-
-    List<FactionDTO> mergedFactions = new ArrayList<>();
-
-    for (FactionPage factionPage : factionPages) {
-      FactionDTO notionDTO = convertFactionPageToDTO(factionPage);
-
-      FactionDTO existingDTO = null;
-      if (notionDTO.getExternalId() != null) {
-        existingDTO =
-            existingFactions.values().stream()
-                .filter(w -> notionDTO.getExternalId().equals(w.getExternalId()))
-                .findFirst()
-                .orElse(null);
-      }
-      if (existingDTO == null && notionDTO.getName() != null) {
-        existingDTO = existingFactions.get(notionDTO.getName());
-      }
-
-      FactionDTO mergedDTO = mergeFactionData(existingDTO, notionDTO);
-      mergedFactions.add(mergedDTO);
-    }
-
-    for (FactionDTO existing : existingFactions.values()) {
-      boolean foundInNotion =
-          mergedFactions.stream()
-              .anyMatch(
-                  merged ->
-                      (existing.getExternalId() != null
-                              && existing.getExternalId().equals(merged.getExternalId()))
-                          || (existing.getName() != null
-                              && existing.getName().equals(merged.getName())));
-
-      if (!foundInNotion) {
-        mergedFactions.add(existing);
-        log.debug("Preserved local-only faction: {}", existing.getName());
-      }
-    }
-
-    return mergedFactions;
-  }
-
   private FactionDTO convertFactionPageToDTO(@NonNull FactionPage factionPage) {
-    FactionDTO dto = new FactionDTO();
-    dto.setName(
-        syncServiceDependencies
-            .getNotionPageDataExtractor()
-            .extractNameFromNotionPage(factionPage));
-    dto.setExternalId(factionPage.getId());
+    try {
+      FactionDTO dto = new FactionDTO();
+      Map<String, Object> rawProperties = factionPage.getRawProperties();
 
-    Map<String, Object> rawProperties = factionPage.getRawProperties();
-    if (rawProperties != null) {
-      Object isActiveObj = rawProperties.get("Active");
-      if (isActiveObj instanceof Boolean) {
-        dto.setIsActive((Boolean) isActiveObj);
+      dto.setName(
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractNameFromNotionPage(factionPage));
+      dto.setExternalId(factionPage.getId());
+      dto.setDescription(
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractDescriptionFromNotionPage(factionPage));
+
+      if (rawProperties != null) {
+        Object isActiveObj = rawProperties.get("Status");
+        if (isActiveObj instanceof Boolean) {
+          dto.setIsActive((Boolean) isActiveObj);
+        }
+
+        dto.setLeaderExternalId(extractRelationId(rawProperties.get("Leader")));
+        dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
+        dto.setMemberExternalIds(extractRelationIds(rawProperties.get("Members")));
+        dto.setTeamExternalIds(extractRelationIds(rawProperties.get("Teams")));
+
+        Object alignmentObj = rawProperties.get("Alignment");
+        if (alignmentObj instanceof String) {
+          dto.setAlignment((String) alignmentObj);
+        }
+
+        Object formedObj = rawProperties.get("Formed Date");
+        if (formedObj instanceof String) {
+          dto.setFormedDate((String) formedObj);
+        }
+
+        Object disbandedObj = rawProperties.get("Disbanded Date");
+        if (disbandedObj instanceof String) {
+          dto.setDisbandedDate((String) disbandedObj);
+        }
       }
-      Object leaderObj = rawProperties.get("Leader");
-      if (leaderObj instanceof String) {
-        dto.setLeader((String) leaderObj);
-      }
+      return dto;
+    } catch (Exception e) {
+      log.error("Failed to convert faction page to DTO", e);
+      return null;
     }
-    return dto;
   }
 
-  private FactionDTO mergeFactionData(FactionDTO existing, @NonNull FactionDTO notion) {
-    FactionDTO merged = new FactionDTO();
-
-    // These are the source of truth from Notion
-    merged.setName(notion.getName());
-    merged.setExternalId(notion.getExternalId());
-
-    // Smart merge for isActive
-    if (notion.getIsActive() != null) {
-      merged.setIsActive(notion.getIsActive());
-    } else if (existing != null && existing.getIsActive() != null) {
-      merged.setIsActive(existing.getIsActive());
-    } else {
-      merged.setIsActive(false); // Default to not active
-    }
-
-    // Smart merge for leader
-    if (notion.getLeader() != null && !notion.getLeader().isBlank()) {
-      merged.setLeader(notion.getLeader());
-    } else if (existing != null && existing.getLeader() != null) {
-      merged.setLeader(existing.getLeader());
-    }
-
-    // Preserve fields not sourced from Notion
-    if (existing != null) {
-      merged.setFormedDate(existing.getFormedDate());
-      merged.setDisbandedDate(existing.getDisbandedDate());
-    }
-
-    return merged;
+  private String extractRelationId(Object property) {
+    List<String> ids = extractRelationIds(property);
+    return ids.isEmpty() ? null : ids.get(0);
   }
 
-  private int[] saveFactionsToDatabase(
-      @NonNull List<FactionDTO> factionDTOs, @NonNull String operationId) {
-    log.info("Starting database persistence for {} factions", factionDTOs.size());
+  private List<String> extractRelationIds(Object property) {
+    List<String> ids = new ArrayList<>();
+    if (property == null) return ids;
 
-    int savedCount = 0;
-    int skippedCount = 0;
-    int processedCount = 0;
-
-    for (FactionDTO dto : factionDTOs) {
-      processedCount++;
-
-      if (processedCount % 5 == 0) {
-        syncServiceDependencies
-            .getProgressTracker()
-            .updateProgress(
-                operationId,
-                4,
-                String.format(
-                    "Saving factions to database... (%d/%d processed)",
-                    processedCount, factionDTOs.size()));
+    if (property instanceof String str) {
+      if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+        ids.add(str);
       }
-
-      try {
-        Faction faction = null;
-        boolean isNewFaction = false;
-
-        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-          faction = factionService.findByExternalId(dto.getExternalId()).orElse(null);
+    } else if (property instanceof List<?> list) {
+      for (Object item : list) {
+        if (item instanceof String str
+            && str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+          ids.add(str);
+        } else if (item instanceof Map<?, ?> map) {
+          Object id = map.get("id");
+          if (id instanceof String str) ids.add(str);
         }
-
-        if (faction == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
-          faction = factionService.getFactionByName(dto.getName()).orElse(null);
-        }
-
-        if (faction == null) {
-          faction = Faction.builder().build();
-          isNewFaction = true;
-        }
-
-        faction.setName(dto.getName());
-        faction.setExternalId(dto.getExternalId());
-        faction.setActive(dto.getIsActive());
-
-        if (dto.getLeader() != null) {
-          Optional<Wrestler> leader =
-              syncServiceDependencies.getWrestlerRepository().findByName(dto.getLeader());
-          if (leader.isPresent()) {
-            faction.setLeader(leader.get());
-          }
-        }
-        if (dto.getFormedDate() != null) {
-          faction.setFormedDate(Instant.parse(dto.getFormedDate()));
-        }
-        if (dto.getDisbandedDate() != null) {
-          faction.setDisbandedDate(Instant.parse(dto.getDisbandedDate()));
-        }
-
-        if (isNewFaction) {
-          factionService.save(faction);
-        } else {
-          syncServiceDependencies.getFactionRepository().saveAndFlush(faction);
-        }
-        savedCount++;
-
-      } catch (Exception e) {
-        log.error("❌ Failed to save faction: {} - {}", dto.getName(), e.getMessage());
-        skippedCount++;
       }
+    } else if (property instanceof Map<?, ?> map) {
+      Object id = map.get("id");
+      if (id instanceof String str) ids.add(str);
     }
+    return ids;
+  }
 
-    log.info(
-        "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
+  private Faction saveOrUpdateFaction(FactionDTO dto) {
+    if (dto == null || dto.getName() == null) return null;
 
-    syncServiceDependencies
-        .getProgressTracker()
-        .updateProgress(
-            operationId,
-            4,
-            String.format(
-                "✅ Completed database save: %d factions saved/updated, %d skipped",
-                savedCount, skippedCount));
+    try {
+      Faction faction =
+          factionService
+              .findByExternalId(dto.getExternalId())
+              .orElseGet(
+                  () ->
+                      factionService
+                          .getFactionByName(dto.getName())
+                          .orElseGet(() -> Faction.builder().build()));
 
-    return new int[] {savedCount, skippedCount};
+      faction.setName(dto.getName());
+      faction.setExternalId(dto.getExternalId());
+      faction.setDescription(dto.getDescription());
+      faction.setActive(dto.getIsActive() != null ? dto.getIsActive() : true);
+      faction.setAlignment(dto.getAlignment());
+
+      if (dto.getFormedDate() != null) {
+        faction.setFormedDate(Instant.parse(dto.getFormedDate()));
+      }
+      if (dto.getDisbandedDate() != null) {
+        faction.setDisbandedDate(Instant.parse(dto.getDisbandedDate()));
+      }
+
+      // Resolve relationships
+      if (dto.getLeaderExternalId() != null) {
+        syncServiceDependencies
+            .getWrestlerRepository()
+            .findByExternalId(dto.getLeaderExternalId())
+            .ifPresent(faction::setLeader);
+      }
+
+      if (dto.getManagerExternalId() != null) {
+        syncServiceDependencies
+            .getNpcRepository()
+            .findByExternalId(dto.getManagerExternalId())
+            .ifPresent(faction::setManager);
+      }
+
+      // Sync members
+      if (!dto.getMemberExternalIds().isEmpty()) {
+        for (String extId : dto.getMemberExternalIds()) {
+          syncServiceDependencies
+              .getWrestlerRepository()
+              .findByExternalId(extId)
+              .ifPresent(faction::addMember);
+        }
+      }
+
+      // Sync teams
+      if (!dto.getTeamExternalIds().isEmpty()) {
+        for (String extId : dto.getTeamExternalIds()) {
+          syncServiceDependencies
+              .getTeamRepository()
+              .findByExternalId(extId)
+              .ifPresent(
+                  team -> {
+                    team.setFaction(faction);
+                    faction.getTeams().add(team);
+                  });
+        }
+      }
+
+      factionService.save(faction);
+      return faction;
+    } catch (Exception e) {
+      log.error("Failed to save faction '{}': {}", dto.getName(), e.getMessage());
+      return null;
+    }
   }
 }
