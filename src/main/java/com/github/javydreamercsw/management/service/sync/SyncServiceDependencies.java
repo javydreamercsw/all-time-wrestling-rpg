@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -63,6 +64,7 @@ public class SyncServiceDependencies {
   private final TitleReignRepository titleReignRepository;
   private final TitleRepository titleRepository;
   private final NpcRepository npcRepository;
+  private final SegmentRepository segmentRepository;
 
   @Autowired
   public SyncServiceDependencies(
@@ -89,7 +91,8 @@ public class SyncServiceDependencies {
       @NonNull TeamRepository teamRepository,
       @NonNull TitleReignRepository titleReignRepository,
       @NonNull TitleRepository titleRepository,
-      @NonNull NpcRepository npcRepository) {
+      @NonNull NpcRepository npcRepository,
+      @NonNull SegmentRepository segmentRepository) {
     this.progressTracker = progressTracker;
     this.healthMonitor = healthMonitor;
     this.retryService = retryService;
@@ -114,5 +117,6 @@ public class SyncServiceDependencies {
     this.titleReignRepository = titleReignRepository;
     this.titleRepository = titleRepository;
     this.npcRepository = npcRepository;
+    this.segmentRepository = segmentRepository;
   }
 }

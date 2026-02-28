@@ -18,68 +18,84 @@ package com.github.javydreamercsw.base.ai.notion;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
 public class TitlePage extends NotionPage {
-  // This class can be expanded to include specific properties from the Notion
-  // database for Titles, such as relation IDs for the current champion.
 
   public String getName() {
-    if (getRawProperties() != null && getRawProperties().containsKey("Name")) {
-      Object nameProp = getRawProperties().get("Name");
-      if (nameProp instanceof String) {
-        return (String) nameProp;
-      }
-      // Handle other Notion property types for 'Name' if necessary in future
-    }
-    return null;
+    return extractPropertyAsString("Name");
   }
 
   public List<String> getChampionRelationIds() {
-    if (getRawProperties() != null && getRawProperties().containsKey("Current Champion")) {
-      Object championProp = getRawProperties().get("Current Champion");
-      if (championProp instanceof String) {
-        return List.of(((String) championProp).split(",")).stream()
-            .map(String::trim)
-            .collect(Collectors.toList());
-      }
-    }
-    return new ArrayList<>();
+    return extractRelationIds("Current Champion");
   }
 
   public List<String> getContenderRelationIds() {
-    if (getRawProperties() != null && getRawProperties().containsKey("#1 Contender")) {
-      Object contenderProp = getRawProperties().get("#1 Contender");
-      if (contenderProp instanceof String) {
-        return List.of(((String) contenderProp).split(",")).stream()
-            .map(String::trim)
-            .collect(Collectors.toList());
-      }
-    }
-    return new ArrayList<>();
+    return extractRelationIds("#1 Contender");
   }
 
   public String getTier() {
-    if (getRawProperties() != null && getRawProperties().containsKey("Tier")) {
-      Object tierProp = getRawProperties().get("Tier");
-      if (tierProp instanceof String) {
-        return (String) tierProp;
+    return extractPropertyAsString("Tier");
+  }
+
+  public String getGender() {
+    return extractPropertyAsString("Gender");
+  }
+
+  public String getDescription() {
+    return extractPropertyAsString("Description");
+  }
+
+  public String getChampionshipType() {
+    return extractPropertyAsString("Championship Type");
+  }
+
+  public Boolean getIncludeInRankings() {
+    Object prop = getRawProperties() != null ? getRawProperties().get("Include in Rankings") : null;
+    return prop instanceof Boolean ? (Boolean) prop : null;
+  }
+
+  public Boolean getIsActive() {
+    Object prop = getRawProperties() != null ? getRawProperties().get("Status") : null;
+    return prop instanceof Boolean ? (Boolean) prop : null;
+  }
+
+  public Integer getDefenseFrequency() {
+    Object prop = getRawProperties() != null ? getRawProperties().get("Defense Frequency") : null;
+    return prop instanceof Number ? ((Number) prop).intValue() : null;
+  }
+
+  private String extractPropertyAsString(String name) {
+    if (getRawProperties() != null && getRawProperties().containsKey(name)) {
+      Object prop = getRawProperties().get(name);
+      if (prop instanceof String) {
+        return (String) prop;
       }
     }
     return null;
   }
 
-  public String getGender() {
-    if (getRawProperties() != null && getRawProperties().containsKey("Gender")) {
-      Object genderProp = getRawProperties().get("Gender");
-      if (genderProp instanceof String) {
-        return (String) genderProp;
+  private List<String> extractRelationIds(String name) {
+    List<String> ids = new ArrayList<>();
+    if (getRawProperties() != null && getRawProperties().containsKey(name)) {
+      Object prop = getRawProperties().get(name);
+      if (prop instanceof List<?> list) {
+        for (Object item : list) {
+          if (item instanceof String str) {
+            ids.add(str);
+          } else if (item instanceof Map<?, ?> map) {
+            Object id = map.get("id");
+            if (id instanceof String str) ids.add(str);
+          }
+        }
+      } else if (prop instanceof String str) {
+        ids.add(str);
       }
     }
-    return null;
+    return ids;
   }
 }

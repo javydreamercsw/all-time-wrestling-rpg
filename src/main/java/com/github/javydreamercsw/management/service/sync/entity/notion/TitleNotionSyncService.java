@@ -16,165 +16,99 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
-public class TitleNotionSyncService implements NotionEntitySyncService {
+public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
 
-  private final TitleRepository titleRepository;
-  private final NotionHandler notionHandler;
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  public TitleNotionSyncService(TitleRepository titleRepository, NotionHandler notionHandler) {
-    this.titleRepository = titleRepository;
-    this.notionHandler = notionHandler;
+  public TitleNotionSyncService(
+      TitleRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    if (notionHandler != null) {
-      Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-      if (clientOptional.isPresent()) {
-        try (NotionClient client = clientOptional.get()) {
-          String databaseId =
-              notionHandler.getDatabaseId(
-                  "Championships"); // Assuming a Notion database named "Championships"
-          if (databaseId != null) {
-            int updated = 0;
-            int errors = 0;
-            int created = 0;
-            int processedCount = 0;
-            progressTracker.startOperation(operationId, "Sync Titles", 1);
-            List<Title> titles = titleRepository.findAll();
-            for (Title entity : titles) {
-              // Update progress every 5 entities
-              if (processedCount % 5 == 0) {
-                progressTracker.updateProgress(
-                    operationId,
-                    1,
-                    String.format(
-                        "Saving titles to Notion... (%d/%d processedCount)",
-                        processedCount, titles.size()));
-              }
-              try {
-                Map<String, PageProperty> properties = new HashMap<>();
-                properties.put(
-                    "Name", // Assuming Notion property is "Name"
-                    NotionPropertyBuilder.createTitleProperty(entity.getName()));
+  protected Map<String, PageProperty> getProperties(@NonNull Title entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-                // Map Tier (Select)
-                if (entity.getTier() != null) {
-                  properties.put(
-                      "Tier", // Assuming Notion property is "Tier"
-                      NotionPropertyBuilder.createSelectProperty(
-                          entity.getTier().getDisplayName()));
-                }
-
-                // Map Gender (Select)
-                if (entity.getGender() != null) {
-                  properties.put(
-                      "Gender", // Assuming Notion property is "Gender"
-                      NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
-                }
-
-                // Map Is Active (Checkbox)
-                if (entity.getIsActive() != null) {
-                  properties.put(
-                      "Active", // Assuming Notion property is "Active"
-                      NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
-                }
-
-                // Map Champion (Relation)
-                List<String> championIds = new java.util.ArrayList<>();
-                if (entity.getCurrentChampions() != null) {
-                  championIds.addAll(
-                      entity.getCurrentChampions().stream()
-                          .map(wrestler -> wrestler.getExternalId())
-                          .filter(java.util.Objects::nonNull)
-                          .collect(Collectors.toList()));
-                }
-                properties.put(
-                    "Current Champion", // Assuming Notion property is "Current Champion"
-                    NotionPropertyBuilder.createRelationProperty(championIds));
-
-                // Map Challengers (Relation)
-                List<String> challengerIds = new java.util.ArrayList<>();
-                if (entity.getChallengers() != null) {
-                  challengerIds.addAll(
-                      entity.getChallengers().stream()
-                          .map(wrestler -> wrestler.getExternalId())
-                          .filter(java.util.Objects::nonNull)
-                          .collect(Collectors.toList()));
-                }
-                properties.put(
-                    "#1 Contender", // Assuming Notion property is "#1 Contender"
-                    NotionPropertyBuilder.createRelationProperty(challengerIds));
-
-                if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                  // Update existing page
-                  UpdatePageRequest updatePageRequest =
-                      new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                  notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                  updated++;
-                } else {
-                  // Create new page
-                  CreatePageRequest createPageRequest =
-                      new CreatePageRequest(
-                          new PageParent(null, databaseId), properties, null, null);
-                  Page page =
-                      notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                  entity.setExternalId(page.getId());
-                  created++;
-                }
-                entity.setLastSync(Instant.now());
-                titleRepository.save(entity);
-                processedCount++;
-              } catch (Exception ex) {
-                log.error("Error processing title: " + entity.getName(), ex);
-                errors++;
-                processedCount++;
-              }
-            }
-            // Final progress update
-            progressTracker.updateProgress(
-                operationId,
-                1,
-                String.format(
-                    "✅ Completed Notion sync: %d titles saved/updated, %d errors",
-                    created + updated, errors));
-            return errors > 0
-                ? BaseSyncService.SyncResult.failure("titles", "Error syncing titles!")
-                : BaseSyncService.SyncResult.success("titles", created, updated, errors);
-          }
-        }
-      }
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
     }
-    progressTracker.failOperation(operationId, "Error syncing titles!");
-    return BaseSyncService.SyncResult.failure("titles", "Unable to sync!");
+
+    if (entity.getTier() != null) {
+      properties.put("Tier", NotionPropertyBuilder.createSelectProperty(entity.getTier().name()));
+    }
+
+    if (entity.getGender() != null) {
+      properties.put(
+          "Gender", NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
+    }
+
+    if (entity.getChampionshipType() != null) {
+      properties.put(
+          "Championship Type",
+          NotionPropertyBuilder.createSelectProperty(entity.getChampionshipType().name()));
+    }
+
+    properties.put(
+        "Include in Rankings",
+        NotionPropertyBuilder.createCheckboxProperty(
+            entity.getIncludeInRankings() != null && entity.getIncludeInRankings()));
+
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
+
+    if (entity.getDefenseFrequency() != null) {
+      properties.put(
+          "Defense Frequency",
+          NotionPropertyBuilder.createNumberProperty(entity.getDefenseFrequency().doubleValue()));
+    }
+
+    // Current Champion relation
+    if (entity.getChampion() != null && !entity.getChampion().isEmpty()) {
+      properties.put(
+          "Current Champion",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getChampion().stream()
+                  .map(Wrestler::getExternalId)
+                  .filter(Objects::nonNull)
+                  .toList()));
+    }
+
+    // #1 Contender relation
+    if (entity.getChallengers() != null && !entity.getChallengers().isEmpty()) {
+      properties.put(
+          "#1 Contender",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getChallengers().stream()
+                  .map(Wrestler::getExternalId)
+                  .filter(Objects::nonNull)
+                  .toList()));
+    }
+
+    return properties;
+  }
+
+  @Override
+  protected String getDatabaseName() {
+    return "Championships";
+  }
+
+  @Override
+  protected String getEntityName() {
+    return "Title";
   }
 }

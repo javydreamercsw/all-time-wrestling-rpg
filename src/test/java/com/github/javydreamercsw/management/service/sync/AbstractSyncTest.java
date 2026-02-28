@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -82,6 +83,7 @@ public abstract class AbstractSyncTest {
   @Mock protected TitleReignRepository titleReignRepository;
   @Mock protected TitleRepository titleRepository;
   @Mock protected NpcRepository npcRepository;
+  @Mock protected SegmentRepository segmentRepository;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -161,6 +163,7 @@ public abstract class AbstractSyncTest {
             teamRepository,
             titleReignRepository,
             titleRepository,
-            npcRepository);
+            npcRepository,
+            segmentRepository);
   }
 }
