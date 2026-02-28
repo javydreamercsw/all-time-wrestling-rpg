@@ -48,6 +48,11 @@ public class ShowTemplateNotionSyncService extends BaseNotionSyncService<ShowTem
           NotionPropertyBuilder.createRelationProperty(entity.getShowType().getExternalId()));
     }
 
+    if (entity.getDescription() != null) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
     if (entity.getDayOfWeek() != null) {
       properties.put(
           "Day of Week", NotionPropertyBuilder.createSelectProperty(entity.getDayOfWeek().name()));

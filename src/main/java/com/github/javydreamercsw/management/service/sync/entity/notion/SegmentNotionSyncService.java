@@ -47,7 +47,49 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
 
     if (entity.getShow() != null && entity.getShow().getExternalId() != null) {
       properties.put(
-          "Show", NotionPropertyBuilder.createRelationProperty(entity.getShow().getExternalId()));
+          "Shows", NotionPropertyBuilder.createRelationProperty(entity.getShow().getExternalId()));
+    }
+
+    if (entity.getSegmentType() != null && entity.getSegmentType().getExternalId() != null) {
+      properties.put(
+          "Segment Type",
+          NotionPropertyBuilder.createRelationProperty(entity.getSegmentType().getExternalId()));
+    }
+
+    if (entity.getSegmentDate() != null) {
+      properties.put(
+          "Date", NotionPropertyBuilder.createDateProperty(entity.getSegmentDate().toString()));
+    }
+
+    if (entity.getSegmentRules() != null && !entity.getSegmentRules().isEmpty()) {
+      properties.put(
+          "Rules",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getSegmentRules().stream()
+                  .map(
+                      com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
+                          ::getExternalId)
+                  .filter(java.util.Objects::nonNull)
+                  .toList()));
+    }
+
+    if (entity.getNarration() != null) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getNarration()));
+    }
+
+    if (entity.getSummary() != null) {
+      properties.put("Summary", NotionPropertyBuilder.createRichTextProperty(entity.getSummary()));
+    }
+
+    if (entity.getWrestlers() != null && !entity.getWrestlers().isEmpty()) {
+      properties.put(
+          "Participants",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getWrestlers().stream()
+                  .map(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getExternalId)
+                  .filter(java.util.Objects::nonNull)
+                  .toList()));
     }
 
     properties.put(

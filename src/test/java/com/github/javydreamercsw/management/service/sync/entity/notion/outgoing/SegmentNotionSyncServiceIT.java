@@ -188,6 +188,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     assertEquals(
         segment.getShow().getExternalId(),
         capturedRequest.getProperties().get("Shows").getRelation().get(0).getId());
+
     assertEquals(
         segment.getSegmentType().getExternalId(),
         capturedRequest.getProperties().get("Segment Type").getRelation().get(0).getId());
