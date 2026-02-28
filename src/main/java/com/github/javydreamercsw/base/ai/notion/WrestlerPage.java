@@ -41,5 +41,20 @@ public class WrestlerPage extends NotionPage {
     private Property fanWeight;
     private Property heat;
     private Property gender;
+    private Property alignment;
+    private Property deckSize;
+    private Property startingHealth;
+    private Property lowHealth;
+    private Property startingStamina;
+    private Property lowStamina;
+    private Property drive;
+    private Property resilience;
+    private Property charisma;
+    private Property brawl;
+    private Property heritageTag;
+    private Property tier;
+    private Property manager;
+    private Property injuries;
+    private Property teams;
   }
 }

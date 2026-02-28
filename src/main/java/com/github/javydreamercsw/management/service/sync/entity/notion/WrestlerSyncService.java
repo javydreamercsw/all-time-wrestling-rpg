@@ -24,6 +24,14 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -52,6 +60,12 @@ public class WrestlerSyncService extends BaseSyncService {
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerNotionSyncService wrestlerNotionSyncService;
   private final TierRecalculationService tierRecalculationService;
+  private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  private final FactionRepository factionRepository;
+  private final NpcRepository npcRepository;
+  private final InjuryRepository injuryRepository;
+  private final TeamRepository teamRepository;
+  private final TitleReignRepository titleReignRepository;
 
   public WrestlerSyncService(
       ObjectMapper objectMapper,
@@ -60,12 +74,24 @@ public class WrestlerSyncService extends BaseSyncService {
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       WrestlerNotionSyncService wrestlerNotionSyncService,
-      TierRecalculationService tierRecalculationService) {
+      TierRecalculationService tierRecalculationService,
+      WrestlerAlignmentRepository wrestlerAlignmentRepository,
+      FactionRepository factionRepository,
+      NpcRepository npcRepository,
+      InjuryRepository injuryRepository,
+      TeamRepository teamRepository,
+      TitleReignRepository titleReignRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerNotionSyncService = wrestlerNotionSyncService;
     this.tierRecalculationService = tierRecalculationService;
+    this.wrestlerAlignmentRepository = wrestlerAlignmentRepository;
+    this.factionRepository = factionRepository;
+    this.npcRepository = npcRepository;
+    this.injuryRepository = injuryRepository;
+    this.teamRepository = teamRepository;
+    this.titleReignRepository = titleReignRepository;
   }
 
   /**
@@ -354,8 +380,83 @@ public class WrestlerSyncService extends BaseSyncService {
       if (deckSizeObj instanceof Number) {
         dto.setDeckSize(((Number) deckSizeObj).intValue());
       }
+
+      // Extract Alignment
+      Object alignmentObj = rawProperties.get("Alignment");
+      if (alignmentObj instanceof String) {
+        dto.setAlignment((String) alignmentObj);
+      }
+
+      // Extract Drive
+      Object driveObj = rawProperties.get("Drive");
+      if (driveObj instanceof Number) {
+        dto.setDrive(((Number) driveObj).intValue());
+      }
+
+      // Extract Resilience
+      Object resilienceObj = rawProperties.get("Resilience");
+      if (resilienceObj instanceof Number) {
+        dto.setResilience(((Number) resilienceObj).intValue());
+      }
+
+      // Extract Charisma
+      Object charismaObj = rawProperties.get("Charisma");
+      if (charismaObj instanceof Number) {
+        dto.setCharisma(((Number) charismaObj).intValue());
+      }
+
+      // Extract Brawl
+      Object brawlObj = rawProperties.get("Brawl");
+      if (brawlObj instanceof Number) {
+        dto.setBrawl(((Number) brawlObj).intValue());
+      }
+
+      // Extract Heritage Tag
+      Object heritageTagObj = rawProperties.get("Heritage Tag");
+      if (heritageTagObj instanceof String) {
+        dto.setHeritageTag((String) heritageTagObj);
+      }
+
+      // Extract Relationship IDs
+      dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
+      dto.setInjuryExternalIds(extractRelationIds(rawProperties.get("Injuries")));
+      dto.setTeamExternalIds(extractRelationIds(rawProperties.get("Teams")));
+      dto.setTitleReignExternalIds(extractRelationIds(rawProperties.get("Titles")));
     }
     return dto;
+  }
+
+  /** Extracts a single relation ID from a Notion property. */
+  private String extractRelationId(Object property) {
+    List<String> ids = extractRelationIds(property);
+    return ids.isEmpty() ? null : ids.get(0);
+  }
+
+  /** Extracts relation IDs from a Notion property. */
+  private List<String> extractRelationIds(Object property) {
+    List<String> ids = new java.util.ArrayList<>();
+    if (property == null) return ids;
+
+    if (property instanceof String str) {
+      if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+        ids.add(str);
+      }
+    } else if (property instanceof java.util.List<?> list) {
+      for (Object item : list) {
+        if (item instanceof String str) {
+          if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            ids.add(str);
+          }
+        } else if (item instanceof Map<?, ?> map) {
+          Object id = map.get("id");
+          if (id instanceof String str) ids.add(str);
+        }
+      }
+    } else if (property instanceof Map<?, ?> map) {
+      Object id = map.get("id");
+      if (id instanceof String str) ids.add(str);
+    }
+    return ids;
   }
 
   /** Extracts description from the page body/content using NotionBlocksRetriever. */
@@ -584,6 +685,85 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setDeckSize(15);
     }
 
+    // Smart alignment handling
+    if (notion.getAlignment() != null && !notion.getAlignment().trim().isEmpty()) {
+      merged.setAlignment(notion.getAlignment());
+    } else if (existing != null && existing.getAlignment() != null) {
+      merged.setAlignment(existing.getAlignment());
+    } else {
+      merged.setAlignment(null);
+    }
+
+    // Smart drive handling
+    if (notion.getDrive() != null) {
+      merged.setDrive(notion.getDrive());
+    } else if (existing != null && existing.getDrive() != null) {
+      merged.setDrive(existing.getDrive());
+    } else {
+      merged.setDrive(1);
+    }
+
+    // Smart resilience handling
+    if (notion.getResilience() != null) {
+      merged.setResilience(notion.getResilience());
+    } else if (existing != null && existing.getResilience() != null) {
+      merged.setResilience(existing.getResilience());
+    } else {
+      merged.setResilience(1);
+    }
+
+    // Smart charisma handling
+    if (notion.getCharisma() != null) {
+      merged.setCharisma(notion.getCharisma());
+    } else if (existing != null && existing.getCharisma() != null) {
+      merged.setCharisma(existing.getCharisma());
+    } else {
+      merged.setCharisma(1);
+    }
+
+    // Smart brawl handling
+    if (notion.getBrawl() != null) {
+      merged.setBrawl(notion.getBrawl());
+    } else if (existing != null && existing.getBrawl() != null) {
+      merged.setBrawl(existing.getBrawl());
+    } else {
+      merged.setBrawl(1);
+    }
+
+    // Smart heritageTag handling
+    if (notion.getHeritageTag() != null && !notion.getHeritageTag().trim().isEmpty()) {
+      merged.setHeritageTag(notion.getHeritageTag());
+    } else if (existing != null && existing.getHeritageTag() != null) {
+      merged.setHeritageTag(existing.getHeritageTag());
+    } else {
+      merged.setHeritageTag(null);
+    }
+
+    // Merge Relationship External IDs
+    if (notion.getManagerExternalId() != null) {
+      merged.setManagerExternalId(notion.getManagerExternalId());
+    } else if (existing != null) {
+      merged.setManagerExternalId(existing.getManagerExternalId());
+    }
+
+    if (!notion.getInjuryExternalIds().isEmpty()) {
+      merged.setInjuryExternalIds(notion.getInjuryExternalIds());
+    } else if (existing != null) {
+      merged.setInjuryExternalIds(existing.getInjuryExternalIds());
+    }
+
+    if (!notion.getTeamExternalIds().isEmpty()) {
+      merged.setTeamExternalIds(notion.getTeamExternalIds());
+    } else if (existing != null) {
+      merged.setTeamExternalIds(existing.getTeamExternalIds());
+    }
+
+    if (!notion.getTitleReignExternalIds().isEmpty()) {
+      merged.setTitleReignExternalIds(notion.getTitleReignExternalIds());
+    } else if (existing != null) {
+      merged.setTitleReignExternalIds(existing.getTitleReignExternalIds());
+    }
+
     merged.setExternalId(notion.getExternalId());
     return merged;
   }
@@ -712,6 +892,90 @@ public class WrestlerSyncService extends BaseSyncService {
           if (dto.getIsPlayer() != null) wrestler.setIsPlayer(dto.getIsPlayer());
           if (dto.getBumps() != null) wrestler.setBumps(dto.getBumps());
         }
+
+        // Update campaign attributes
+        if (dto.getDrive() != null) wrestler.setDrive(dto.getDrive());
+        if (dto.getResilience() != null) wrestler.setResilience(dto.getResilience());
+        if (dto.getCharisma() != null) wrestler.setCharisma(dto.getCharisma());
+        if (dto.getBrawl() != null) wrestler.setBrawl(dto.getBrawl());
+        if (dto.getHeritageTag() != null) wrestler.setHeritageTag(dto.getHeritageTag());
+
+        // Resolve relationships
+        // 1. Faction
+        if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
+          factionRepository
+              .findByName(dto.getFaction())
+              .ifPresentOrElse(
+                  wrestler::setFaction,
+                  () -> log.debug("Faction not found for wrestler: {}", dto.getFaction()));
+        }
+
+        // 2. Manager
+        if (dto.getManagerExternalId() != null) {
+          npcRepository
+              .findByExternalId(dto.getManagerExternalId())
+              .ifPresentOrElse(
+                  wrestler::setManager,
+                  () ->
+                      log.debug("Manager not found for wrestler: {}", dto.getManagerExternalId()));
+        }
+
+        // 3. Injuries
+        if (dto.getInjuryExternalIds() != null && !dto.getInjuryExternalIds().isEmpty()) {
+          wrestler.getInjuries().clear();
+          for (String id : dto.getInjuryExternalIds()) {
+            java.util.Optional<com.github.javydreamercsw.management.domain.injury.Injury>
+                injuryOpt = injuryRepository.findByExternalId(id);
+            if (injuryOpt.isPresent()) {
+              com.github.javydreamercsw.management.domain.injury.Injury injury = injuryOpt.get();
+              injury.setWrestler(wrestler);
+              wrestler.getInjuries().add(injury);
+            }
+          }
+        }
+
+        // 4. Title Reigns
+        if (dto.getTitleReignExternalIds() != null && !dto.getTitleReignExternalIds().isEmpty()) {
+          for (String id : dto.getTitleReignExternalIds()) {
+            java.util.Optional<com.github.javydreamercsw.management.domain.title.TitleReign>
+                reignOpt = titleReignRepository.findByExternalId(id);
+            if (reignOpt.isPresent()) {
+              com.github.javydreamercsw.management.domain.title.TitleReign reign = reignOpt.get();
+              if (!wrestler.getReigns().contains(reign)) {
+                wrestler.getReigns().add(reign);
+                if (!reign.getChampions().contains(wrestler)) {
+                  reign.getChampions().add(wrestler);
+                }
+              }
+            }
+          }
+        }
+
+        // Update alignment
+        if (dto.getAlignment() != null && !dto.getAlignment().isBlank()) {
+          try {
+            AlignmentType type = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
+            WrestlerAlignment alignment =
+                wrestlerAlignmentRepository.findByWrestler(wrestler).orElse(null);
+            if (alignment == null) {
+              alignment =
+                  WrestlerAlignment.builder()
+                      .wrestler(wrestler)
+                      .alignmentType(type)
+                      .level(1) // Default level 1
+                      .build();
+            } else {
+              alignment.setAlignmentType(type);
+            }
+            wrestler.setAlignment(alignment);
+          } catch (IllegalArgumentException e) {
+            log.warn(
+                "Invalid alignment value '{}' for wrestler '{}'",
+                dto.getAlignment(),
+                dto.getName());
+          }
+        }
+
         tierRecalculationService.recalculateTier(wrestler);
 
         // Save the wrestler
@@ -770,6 +1034,16 @@ public class WrestlerSyncService extends BaseSyncService {
     private String externalId; // Notion page ID
     private String gender;
     private String tier;
+    private String alignment;
+    private String managerExternalId;
+    private List<String> injuryExternalIds = new java.util.ArrayList<>();
+    private List<String> teamExternalIds = new java.util.ArrayList<>();
+    private List<String> titleReignExternalIds = new java.util.ArrayList<>();
+    private Integer drive;
+    private Integer resilience;
+    private Integer charisma;
+    private Integer brawl;
+    private String heritageTag;
 
     // Game-specific fields (preserved from existing data)
     private Integer deckSize;

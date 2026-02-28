@@ -22,6 +22,13 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
@@ -34,8 +41,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 /**
@@ -51,6 +60,12 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
   @Mock private TierRecalculationService tierRecalculationService;
+  @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Mock private FactionRepository factionRepository;
+  @Mock private NpcRepository npcRepository;
+  @Mock private InjuryRepository injuryRepository;
+  @Mock private TeamRepository teamRepository;
+  @Mock private TitleReignRepository titleReignRepository;
 
   @BeforeEach
   @Override
@@ -78,6 +93,37 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     lenient()
         .when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Mock Name extraction
+    lenient()
+        .when(notionPageDataExtractor.extractNameFromNotionPage(any(WrestlerPage.class)))
+        .thenAnswer(
+            invocation -> {
+              WrestlerPage page = invocation.getArgument(0);
+              Map<String, Object> props = page.getRawProperties();
+              if (props != null && props.containsKey("Name")) {
+                Object nameObj = props.get("Name");
+                if (nameObj instanceof String) return (String) nameObj;
+                if (nameObj instanceof Map) {
+                  Map<String, Object> nameMap = (Map<String, Object>) nameObj;
+                  if (nameMap.containsKey("title")) {
+                    List<Map<String, Object>> titleList =
+                        (List<Map<String, Object>>) nameMap.get("title");
+                    if (!titleList.isEmpty()) {
+                      Map<String, Object> titleMap = titleList.get(0);
+                      if (titleMap.containsKey("text")) {
+                        Map<String, Object> textMap = (Map<String, Object>) titleMap.get("text");
+                        if (textMap.containsKey("content")) {
+                          return (String) textMap.get("content");
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              return "Unknown";
+            });
+
     wrestlerSyncService =
         new WrestlerSyncService(
             objectMapper,
@@ -86,7 +132,13 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             wrestlerService,
             wrestlerRepository,
             wrestlerNotionSyncService,
-            tierRecalculationService);
+            tierRecalculationService,
+            wrestlerAlignmentRepository,
+            factionRepository,
+            npcRepository,
+            injuryRepository,
+            teamRepository,
+            titleReignRepository);
   }
 
   @Test
@@ -103,6 +155,49 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     assertEquals("Wrestlers", result.getEntityType());
     verify(wrestlerService, times(2)).save(any(Wrestler.class));
     verify(healthMonitor).recordSuccess(eq("Wrestlers"), anyLong(), anyInt());
+  }
+
+  @Test
+  void syncWrestlers_WithNewProperties_ShouldSyncCorrectly() {
+    // Given
+    WrestlerPage page = mock(WrestlerPage.class);
+    lenient().when(page.getId()).thenReturn("wrestler-1");
+
+    Map<String, Object> properties = new HashMap<>();
+    properties.put(
+        "Name",
+        Map.of("title", List.of(Map.of("text", Map.of("content", "Stone Cold Steve Austin")))));
+    properties.put("Alignment", "FACE");
+    properties.put("Drive", 5);
+    properties.put("Resilience", 6);
+    properties.put("Charisma", 6);
+    properties.put("Brawl", 5);
+    properties.put("Heritage Tag", "Texas");
+    properties.put("Fans", 1000000L);
+    properties.put("Starting Health", 20);
+    properties.put("Starting Stamina", 20);
+
+    lenient().when(page.getRawProperties()).thenReturn(properties);
+    when(notionHandler.loadAllWrestlers()).thenReturn(List.of(page));
+    when(wrestlerAlignmentRepository.findByWrestler(any())).thenReturn(Optional.empty());
+
+    // When
+    SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
+
+    // Then
+    assertTrue(result.isSuccess());
+    ArgumentCaptor<Wrestler> wrestlerCaptor = ArgumentCaptor.forClass(Wrestler.class);
+    verify(wrestlerService).save(wrestlerCaptor.capture());
+
+    Wrestler savedWrestler = wrestlerCaptor.getValue();
+    assertEquals("Stone Cold Steve Austin", savedWrestler.getName());
+    assertEquals(5, savedWrestler.getDrive());
+    assertEquals(6, savedWrestler.getResilience());
+    assertEquals(6, savedWrestler.getCharisma());
+    assertEquals(5, savedWrestler.getBrawl());
+    assertEquals("Texas", savedWrestler.getHeritageTag());
+    assertNotNull(savedWrestler.getAlignment());
+    assertEquals(AlignmentType.FACE, savedWrestler.getAlignment().getAlignmentType());
   }
 
   @Test
