@@ -59,6 +59,34 @@ public class TeamNotionSyncService extends BaseNotionSyncService<Team> {
           NotionPropertyBuilder.createRelationProperty(entity.getWrestler2().getExternalId()));
     }
 
+    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
+      properties.put(
+          "Manager",
+          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
+    }
+
+    if (entity.getFaction() != null && entity.getFaction().getExternalId() != null) {
+      properties.put(
+          "Faction",
+          NotionPropertyBuilder.createRelationProperty(entity.getFaction().getExternalId()));
+    }
+
+    if (entity.getThemeSong() != null) {
+      properties.put(
+          "Theme Song", NotionPropertyBuilder.createRichTextProperty(entity.getThemeSong()));
+    }
+
+    if (entity.getArtist() != null) {
+      properties.put("Artist", NotionPropertyBuilder.createRichTextProperty(entity.getArtist()));
+    }
+
+    if (entity.getTeamFinisher() != null) {
+      properties.put(
+          "Team Finisher", NotionPropertyBuilder.createRichTextProperty(entity.getTeamFinisher()));
+    }
+
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+
     return properties;
   }
 

@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
-import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -29,10 +28,8 @@ import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -182,6 +179,7 @@ public class TeamSyncService extends BaseSyncService {
   private TeamDTO convertTeamPageToDTO(@NonNull TeamPage teamPage) {
     try {
       TeamDTO dto = new TeamDTO();
+      Map<String, Object> rawProperties = teamPage.getRawProperties();
 
       // Extract basic properties using existing methods
       dto.setName(
@@ -192,92 +190,46 @@ public class TeamSyncService extends BaseSyncService {
               .getNotionPageDataExtractor()
               .extractDescriptionFromNotionPage(teamPage));
 
-      // Log available properties for debugging
-      log.debug(
-          "Team '{}' available properties: {}",
-          dto.getName(),
-          teamPage.getRawProperties().keySet());
+      // Extract wrestler IDs
+      dto.setWrestler1ExternalId(extractRelationId(rawProperties.get("Member 1")));
+      dto.setWrestler2ExternalId(extractRelationId(rawProperties.get("Member 2")));
 
-      // Extract wrestler names using enhanced relation-aware extraction
-      String wrestler1Name = extractWrestlerNameFromTeamPage(teamPage, "Member 1");
-      String wrestler2Name = extractWrestlerNameFromTeamPage(teamPage, "Member 2");
-
-      log.debug(
-          "Initial extraction for team '{}': Member 1='{}', Member 2='{}'",
-          dto.getName(),
-          wrestler1Name,
-          wrestler2Name);
-
-      // Try alternative property names if the standard ones don't work
-      if (wrestler1Name == null || wrestler1Name.matches("\\d+ items?")) {
-        String altWrestler1 = extractWrestlerNameFromTeamPage(teamPage, "Wrestler 1");
-        if (altWrestler1 != null) {
-          wrestler1Name = altWrestler1;
-          log.debug(
-              "Using alternative 'Wrestler 1' for team '{}': '{}'", dto.getName(), wrestler1Name);
-        }
+      // Fallback to names if IDs aren't present (less reliable but preserves old behavior)
+      if (dto.getWrestler1ExternalId() == null) {
+        dto.setWrestler1Name(extractWrestlerNameFromTeamPage(teamPage, "Member 1"));
       }
-      if (wrestler2Name == null || wrestler2Name.matches("\\d+ items?")) {
-        String altWrestler2 = extractWrestlerNameFromTeamPage(teamPage, "Wrestler 2");
-        if (altWrestler2 != null) {
-          wrestler2Name = altWrestler2;
-          log.debug(
-              "Using alternative 'Wrestler 2' for team '{}': '{}'", dto.getName(), wrestler2Name);
-        }
+      if (dto.getWrestler2ExternalId() == null) {
+        dto.setWrestler2Name(extractWrestlerNameFromTeamPage(teamPage, "Member 2"));
       }
 
-      // If still null or relation counts, check if this is a Notion API limitation
-      if (wrestler1Name == null
-          || wrestler2Name == null
-          || (wrestler1Name != null && wrestler1Name.matches("\\d+ items?"))
-          || (wrestler2Name != null && wrestler2Name.matches("\\d+ items?"))) {
-
-        log.warn(
-            "Team '{}' has unresolved wrestler relations. Final values: '{}', '{}'. Available"
-                + " properties: {}",
-            dto.getName(),
-            wrestler1Name,
-            wrestler2Name,
-            teamPage.getRawProperties().keySet());
-
-        // Mark these as unresolved so we can handle them appropriately
-        if (wrestler1Name == null) wrestler1Name = "UNRESOLVED_RELATION";
-        if (wrestler2Name == null) wrestler2Name = "UNRESOLVED_RELATION";
+      // Extract relationship IDs
+      dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
+      String factionId = extractRelationId(rawProperties.get("Faction"));
+      if (factionId != null) {
+        // We'll resolve the name during saving, or we could resolve it here if needed
+        dto.setFactionName(factionId); // Using ID as placeholder
       }
 
-      dto.setWrestler1Name(wrestler1Name);
-      dto.setWrestler2Name(wrestler2Name);
+      // Extract new fields
+      Object themeSongObj = rawProperties.get("Theme Song");
+      if (themeSongObj instanceof String) {
+        dto.setThemeSong((String) themeSongObj);
+      }
 
-      log.debug(
-          "Final extracted wrestlers for team '{}': '{}' and '{}'",
-          dto.getName(),
-          wrestler1Name,
-          wrestler2Name);
+      Object artistObj = rawProperties.get("Artist");
+      if (artistObj instanceof String) {
+        dto.setArtist((String) artistObj);
+      }
 
-      // Extract faction name if available
-      String factionName =
-          syncServiceDependencies
-              .getNotionPageDataExtractor()
-              .extractFactionFromNotionPage(teamPage);
-      if (factionName != null && !factionName.trim().isEmpty()) {
-        dto.setFactionName(factionName);
+      Object teamFinisherObj = rawProperties.get("Team Finisher");
+      if (teamFinisherObj instanceof String) {
+        dto.setTeamFinisher((String) teamFinisherObj);
       }
 
       // Extract status
-      String statusStr =
-          syncServiceDependencies
-              .getNotionPageDataExtractor()
-              .extractPropertyAsString(teamPage.getRawProperties(), "Status");
-      if (statusStr != null && !statusStr.trim().isEmpty()) {
-        try {
-          dto.setStatus(TeamStatus.valueOf(statusStr.toUpperCase()));
-        } catch (IllegalArgumentException e) {
-          log.warn(
-              "Invalid team status '{}' for team '{}', defaulting to ACTIVE",
-              statusStr,
-              dto.getName());
-          dto.setStatus(TeamStatus.ACTIVE);
-        }
+      Object statusObj = rawProperties.get("Status");
+      if (statusObj instanceof Boolean) {
+        dto.setStatus((Boolean) statusObj ? TeamStatus.ACTIVE : TeamStatus.INACTIVE);
       } else {
         dto.setStatus(TeamStatus.ACTIVE); // Default status
       }
@@ -289,6 +241,27 @@ public class TeamSyncService extends BaseSyncService {
       log.error("Failed to convert team page to DTO", e);
       return null;
     }
+  }
+
+  /** Extracts a single relation ID from a Notion property. */
+  private String extractRelationId(Object property) {
+    if (property == null) return null;
+    if (property instanceof String str) {
+      if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+        return str;
+      }
+    } else if (property instanceof java.util.List<?> list && !list.isEmpty()) {
+      Object first = list.get(0);
+      if (first instanceof String str) return str;
+      if (first instanceof Map<?, ?> map) {
+        Object id = map.get("id");
+        if (id instanceof String str) return str;
+      }
+    } else if (property instanceof Map<?, ?> map) {
+      Object id = map.get("id");
+      if (id instanceof String str) return str;
+    }
+    return null;
   }
 
   /** Extracts wrestler name from team page with enhanced relation handling. */
@@ -310,46 +283,15 @@ public class TeamSyncService extends BaseSyncService {
 
     // If it shows as "X items" or "X relations", this means the relation isn't resolved
     if (propertyStr.matches("\\d+ (items?|relations?)")) {
-      log.debug(
-          "Property '{}' shows as relationship count ({}), attempting alternative resolution",
-          propertyName,
-          propertyStr);
-
-      // If we can't resolve it directly, return null to indicate it's unresolved for now
       return null;
     }
 
     // If it's a UUID, it's likely a relation ID that wasn't resolved
     if (propertyStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-      log.debug(
-          "Property '{}' appears to be a relation ID that wasn't resolved: {}",
-          propertyName,
-          propertyStr);
       return null;
     }
 
-    // If it contains comma-separated values, it might be multiple wrestlers
-    if (propertyStr.contains(",")) {
-      String[] parts = propertyStr.split(",");
-      for (String part : parts) {
-        String trimmedPart = part.trim();
-        if (!trimmedPart.isEmpty()
-            && !trimmedPart.matches("\\d+ (items?|relations?)")
-            && !trimmedPart.matches(
-                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          log.debug(
-              "Property '{}' contains multiple values, using: '{}'", propertyName, trimmedPart);
-          return trimmedPart;
-        }
-      }
-    }
-
-    // If it's a clean string that's not empty and not a relation count/ID, use it
-    if (!propertyStr.isEmpty()) {
-      return propertyStr;
-    }
-
-    return null;
+    return propertyStr;
   }
 
   /** Saves or updates a team in the database. */
@@ -360,258 +302,86 @@ public class TeamSyncService extends BaseSyncService {
     }
 
     try {
-      // Check if we have unresolved relations (null, relation counts, or our UNRESOLVED_RELATION
-      // marker)
-      boolean hasUnresolvedRelations =
-          (dto.getWrestler1Name() != null
-                  && (dto.getWrestler1Name().matches("\\d+ items?")
-                      || dto.getWrestler1Name().equals("UNRESOLVED_RELATION")))
-              || (dto.getWrestler2Name() != null
-                  && (dto.getWrestler2Name().matches("\\d+ items?")
-                      || dto.getWrestler2Name().equals("UNRESOLVED_RELATION")))
-              || dto.getWrestler1Name() == null
-              || dto.getWrestler2Name() == null;
+      // Find wrestlers
+      Wrestler wrestler1 = null;
+      Wrestler wrestler2 = null;
 
-      if (hasUnresolvedRelations) {
-        log.warn(
-            "Team '{}' has unresolved wrestler relations ('{}', '{}') - this is likely a Notion API"
-                + " limitation. Preserving existing team data if available.",
-            dto.getName(),
-            dto.getWrestler1Name(),
-            dto.getWrestler2Name());
-
-        // Try to find existing team and preserve it without updating wrestlers
-        Team existingTeam = null;
-        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-          existingTeam = teamService.getTeamByExternalId(dto.getExternalId()).orElse(null);
-        }
-        if (existingTeam == null) {
-          existingTeam = teamService.getTeamByName(dto.getName()).orElse(null);
-        }
-
-        if (existingTeam != null) {
-          // Update only the non-wrestler properties
-          log.info(
-              "Updating existing team '{}' metadata only (preserving wrestlers)", dto.getName());
-
-          existingTeam.setName(dto.getName());
-          if (dto.getDescription() != null) {
-            existingTeam.setDescription(dto.getDescription());
-          }
-          existingTeam.setExternalId(dto.getExternalId());
-
-          if (dto.getStatus() != null) {
-            existingTeam.setStatus(dto.getStatus());
-          }
-
-          // Find and set faction if specified
-          if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-            Faction faction =
-                syncServiceDependencies
-                    .getFactionRepository()
-                    .findByName(dto.getFactionName())
-                    .orElse(null);
-            existingTeam.setFaction(faction);
-            if (faction == null) {
-              log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
-            }
-          }
-
-          syncServiceDependencies.getTeamRepository().saveAndFlush(existingTeam);
-          log.info("✅ Updated team metadata: {}", dto.getName());
-          return existingTeam;
-        } else {
-          // Can't create new team without wrestlers
-          log.warn(
-              "Cannot create new team '{}' without resolved wrestler relations", dto.getName());
-          return null;
-        }
+      if (dto.getWrestler1ExternalId() != null) {
+        wrestler1 = wrestlerService.findByExternalId(dto.getWrestler1ExternalId()).orElse(null);
+      }
+      if (wrestler1 == null && dto.getWrestler1Name() != null) {
+        wrestler1 = wrestlerService.findByName(dto.getWrestler1Name()).orElse(null);
       }
 
-      // Original logic for when we have actual wrestler names
-      // Try to find existing team by external ID first
+      if (dto.getWrestler2ExternalId() != null) {
+        wrestler2 = wrestlerService.findByExternalId(dto.getWrestler2ExternalId()).orElse(null);
+      }
+      if (wrestler2 == null && dto.getWrestler2Name() != null) {
+        wrestler2 = wrestlerService.findByName(dto.getWrestler2Name()).orElse(null);
+      }
+
+      // Try to find existing team
       Team existingTeam = null;
       if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
         existingTeam = teamService.getTeamByExternalId(dto.getExternalId()).orElse(null);
       }
-
       if (existingTeam == null) {
         existingTeam = teamService.getTeamByName(dto.getName()).orElse(null);
       }
 
-      // Find wrestlers by name
-      Wrestler wrestler1 = null;
-      Wrestler wrestler2 = null;
+      Team team = existingTeam;
+      boolean isNew = (team == null);
 
-      if (dto.getWrestler1Name() != null && !dto.getWrestler1Name().trim().isEmpty()) {
-        wrestler1 = wrestlerService.findByName(dto.getWrestler1Name()).orElse(null);
-        if (wrestler1 == null) {
-          log.warn("Wrestler '{}' not found for team '{}'", dto.getWrestler1Name(), dto.getName());
-        }
-      }
-
-      if (dto.getWrestler2Name() != null && !dto.getWrestler2Name().trim().isEmpty()) {
-        wrestler2 = wrestlerService.findByName(dto.getWrestler2Name()).orElse(null);
-        if (wrestler2 == null) {
-          log.warn("Wrestler '{}' not found for team '{}'", dto.getWrestler2Name(), dto.getName());
-        }
-      }
-
-      // Both wrestlers are required for a new team
-      if (wrestler1 == null || wrestler2 == null) {
-        if (existingTeam != null) {
-          // Update existing team without changing wrestlers if we can't resolve them
-          log.info(
-              "Updating existing team '{}' metadata only (couldn't resolve wrestlers)",
-              dto.getName());
-
-          existingTeam.setName(dto.getName());
-          if (dto.getDescription() != null) {
-            existingTeam.setDescription(dto.getDescription());
-          }
-          existingTeam.setExternalId(dto.getExternalId());
-
-          if (dto.getStatus() != null) {
-            existingTeam.setStatus(dto.getStatus());
-          }
-
-          // Find and set faction if specified
-          if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-            Faction faction =
-                syncServiceDependencies
-                    .getFactionRepository()
-                    .findByName(dto.getFactionName())
-                    .orElse(null);
-            existingTeam.setFaction(faction);
-            if (faction == null) {
-              log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
-            }
-          }
-
-          syncServiceDependencies.getTeamRepository().saveAndFlush(existingTeam);
-          log.info("✅ Updated team metadata: {}", dto.getName());
-          return existingTeam;
-        } else {
-          String missingWrestlers =
-              (wrestler1 == null
-                      ? (dto.getWrestler1Name() != null ? dto.getWrestler1Name() : "null")
-                      : "")
-                  + (wrestler1 == null && wrestler2 == null ? ", " : "")
-                  + (wrestler2 == null
-                      ? (dto.getWrestler2Name() != null ? dto.getWrestler2Name() : "null")
-                      : "");
-
-          log.warn(
-              "⚠️ Skipping team '{}' due to missing required wrestlers: {}",
-              dto.getName(),
-              missingWrestlers);
+      if (isNew) {
+        if (wrestler1 == null || wrestler2 == null) {
+          log.warn("Skipping new team '{}' due to missing wrestlers", dto.getName());
           return null;
         }
+        team = new Team();
+        team.setName(dto.getName());
+        team.setWrestler1(wrestler1);
+        team.setWrestler2(wrestler2);
       }
 
-      if (existingTeam != null) {
-        // Update existing team
-        log.debug("Updating existing team: {}", dto.getName());
+      // Update basic fields
+      team.setName(dto.getName());
+      team.setDescription(dto.getDescription());
+      team.setExternalId(dto.getExternalId());
+      team.setThemeSong(dto.getThemeSong());
+      team.setArtist(dto.getArtist());
+      team.setTeamFinisher(dto.getTeamFinisher());
+      if (dto.getStatus() != null) team.setStatus(dto.getStatus());
 
-        existingTeam.setName(dto.getName());
-        existingTeam.setDescription(dto.getDescription());
-        existingTeam.setWrestler1(wrestler1);
-        existingTeam.setWrestler2(wrestler2);
-        existingTeam.setExternalId(dto.getExternalId());
+      if (wrestler1 != null) team.setWrestler1(wrestler1);
+      if (wrestler2 != null) team.setWrestler2(wrestler2);
 
-        if (dto.getStatus() != null) {
-          existingTeam.setStatus(dto.getStatus());
-        }
+      // Resolve relationships
+      if (dto.getManagerExternalId() != null) {
+        syncServiceDependencies
+            .getNpcRepository()
+            .findByExternalId(dto.getManagerExternalId())
+            .ifPresent(team::setManager);
+      }
 
-        if (dto.getFormedDate() != null) {
-          existingTeam.setFormedDate(
-              LocalDate.parse(dto.getFormedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
-        }
-
-        if (dto.getDisbandedDate() != null) {
-          existingTeam.setDisbandedDate(
-              LocalDate.parse(dto.getDisbandedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
-        }
-
-        // Find and set faction if specified
-        if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-          Faction faction =
-              syncServiceDependencies
-                  .getFactionRepository()
-                  .findByName(dto.getFactionName())
-                  .orElse(null);
-          existingTeam.setFaction(faction);
-          if (faction == null) {
-            log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
-          }
-        }
-
-        syncServiceDependencies.getTeamRepository().saveAndFlush(existingTeam);
-        log.info("✅ Updated team: {}", dto.getName());
-        return existingTeam;
-
-      } else {
-        // Create new team using TeamService
-        log.debug("Creating new team: {}", dto.getName());
-
-        Long wrestler1Id = wrestler1.getId();
-        Long wrestler2Id = wrestler2.getId();
-        Long factionId = null;
-
-        // Find faction ID if specified
-        if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-          Faction faction =
-              syncServiceDependencies
-                  .getFactionRepository()
-                  .findByName(dto.getFactionName())
-                  .orElse(null);
-          if (faction != null) {
-            factionId = faction.getId();
-          } else {
-            log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
-          }
-        }
-
-        // Use TeamService to create the team
-        Optional<Team> createdTeam =
-            teamService.createTeam(
-                dto.getName(), dto.getDescription(), wrestler1Id, wrestler2Id, factionId, null);
-
-        if (createdTeam.isPresent()) {
-          Team newTeam = createdTeam.get();
-
-          // Set additional properties
-          newTeam.setExternalId(dto.getExternalId());
-
-          if (dto.getStatus() != null) {
-            newTeam.setStatus(dto.getStatus());
-          }
-
-          if (dto.getFormedDate() != null) {
-            newTeam.setFormedDate(
-                LocalDate.parse(dto.getFormedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
-          }
-
-          if (dto.getDisbandedDate() != null) {
-            newTeam.setDisbandedDate(
-                LocalDate.parse(dto.getDisbandedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
-          }
-
-          // Save additional properties
-          if (dto.getExternalId() != null
-              || dto.getStatus() != null
-              || dto.getFormedDate() != null
-              || dto.getDisbandedDate() != null) {
-            syncServiceDependencies.getTeamRepository().saveAndFlush(newTeam);
-          }
-
-          log.info("✅ Created new team: {}", dto.getName());
-          return newTeam;
+      if (dto.getFactionName() != null) {
+        // If it's a UUID, resolve by external ID
+        if (dto.getFactionName()
+            .matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+          syncServiceDependencies
+              .getFactionRepository()
+              .findByExternalId(dto.getFactionName())
+              .ifPresent(team::setFaction);
         } else {
-          log.warn("Failed to create team '{}' - TeamService validation failed", dto.getName());
-          return null;
+          syncServiceDependencies
+              .getFactionRepository()
+              .findByName(dto.getFactionName())
+              .ifPresent(team::setFaction);
         }
       }
+
+      syncServiceDependencies.getTeamRepository().saveAndFlush(team);
+      log.info("✅ {} team: {}", isNew ? "Created" : "Updated", team.getName());
+      return team;
 
     } catch (Exception e) {
       log.error("Failed to save team '{}': {}", dto.getName(), e.getMessage(), e);
