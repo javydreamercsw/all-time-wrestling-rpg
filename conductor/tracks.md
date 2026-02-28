@@ -70,6 +70,6 @@
 
 ## Active Tracks
 
-- [ ] **Track: Fix Authentication error during outbound Notion sync**
-*Link: [./tracks/notion_sync_auth_fix_20260227/](./tracks/notion_sync_auth_fix_20260227/)*
+- [x] **Track: Fix Authentication error during outbound Notion sync**
+  *Link: [./tracks/notion_sync_auth_fix_20260227/](./tracks/notion_sync_auth_fix_20260227/)*
 

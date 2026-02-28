@@ -52,6 +52,7 @@ import notion.api.v1.model.search.DatabaseSearchResult;
 import notion.api.v1.model.search.SearchResults;
 import notion.api.v1.request.databases.QueryDatabaseRequest;
 import notion.api.v1.request.search.SearchRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Getter
@@ -59,13 +60,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class NotionHandler {
 
+  private final NotionTokenProvider tokenProvider;
+
   /**
-   * Checks if the Notion token is available in the environment.
+   * Checks if the Notion token is available.
    *
    * @return true if the token is available, false otherwise.
    */
   public boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
+    return getEffectiveNotionToken().isPresent();
+  }
+
+  private Optional<String> getEffectiveNotionToken() {
+    if (tokenProvider != null) {
+      Optional<String> token = tokenProvider.getToken();
+      if (token.isPresent() && !token.get().trim().isEmpty()) {
+        return token;
+      }
+    }
+    String envToken = EnvironmentVariableUtil.getNotionToken();
+    if (envToken != null && !envToken.trim().isEmpty()) {
+      return Optional.of(envToken);
+    }
+    return Optional.empty();
   }
 
   private final Map<String, String> databaseMap = new HashMap<>();
@@ -86,20 +103,14 @@ public class NotionHandler {
   private final ShowTypeNotionHandler showTypeNotionHandler;
 
   public NotionHandler() {
-    // Only initialize databases if NOTION_TOKEN is available
-    if (isNotionTokenAvailable()) {
-      try {
-        initializeDatabases();
-      } catch (Exception e) {
-        log.warn("Failed to initialize Notion databases: {}", e.getMessage());
-      }
-    } else {
-      log.info("NOTION_TOKEN not available, skipping database initialization");
-    }
-    this.wrestlerNotionHandler =
-        new com.github.javydreamercsw.base.ai.notion.handler.WrestlerNotionHandler(this);
-    this.showNotionHandler =
-        new com.github.javydreamercsw.base.ai.notion.handler.ShowNotionHandler(this);
+    this(Optional.empty());
+  }
+
+  @Autowired
+  public NotionHandler(Optional<NotionTokenProvider> tokenProvider) {
+    this.tokenProvider = tokenProvider.orElse(null);
+    this.wrestlerNotionHandler = new WrestlerNotionHandler(this);
+    this.showNotionHandler = new ShowNotionHandler(this);
     this.segmentNotionHandler = new SegmentNotionHandler(this);
     this.heatNotionHandler = new HeatNotionHandler(this);
     this.teamNotionHandler = new TeamNotionHandler(this);
@@ -115,12 +126,32 @@ public class NotionHandler {
     this.showTypeNotionHandler = new ShowTypeNotionHandler(this);
   }
 
+  private boolean initialized = false;
+
+  private synchronized void ensureInitialized() {
+    if (!initialized && isNotionTokenAvailable()) {
+      try {
+        initializeDatabases();
+        initialized = true;
+      } catch (Exception e) {
+        log.warn("Failed to initialize Notion databases: {}", e.getMessage());
+      }
+    }
+  }
+
+  /** Force re-initialization of Notion databases. Useful if the token has changed. */
+  public synchronized void reinitialize() {
+    initialized = false;
+    databaseMap.clear();
+    ensureInitialized();
+  }
+
   /**
    * Initializes the database map by loading all databases from Notion workspace. This method is
    * called automatically on first access to the singleton.
    */
   private void initializeDatabases() {
-    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+    if (!isNotionTokenAvailable()) {
       return;
     }
 
@@ -165,7 +196,7 @@ public class NotionHandler {
                 result -> {
                   DatabaseSearchResult database = result.asDatabase();
                   if (database.getTitle() != null && !database.getTitle().isEmpty()) {
-                    String name = database.getTitle().get(0).getPlainText();
+                    String name = database.getTitle().getFirst().getPlainText();
                     String id = database.getId();
 
                     // Store in map for later reference
@@ -188,74 +219,11 @@ public class NotionHandler {
   }
 
   /**
-   * Queries a specific database and prints all page properties. This is the original functionality
-   * from the main method.
-   */
-  public void querySpecificDatabase(@NonNull String databaseId) {
-    log.debug("Querying specific database: {}", databaseId);
-
-    try (NotionClient client = createNotionClient().orElse(null)) {
-      if (client == null) {
-        log.warn("NotionClient not available, skipping database query.");
-        return;
-      }
-      querySpecificDatabase(client, databaseId);
-    } catch (Exception e) {
-      log.error("Failed to query database: {}", databaseId, e);
-      throw new RuntimeException("Failed to query database: " + databaseId, e);
-    }
-  }
-
-  /** Internal method to query a specific database with an existing client. */
-  private void querySpecificDatabase(@NonNull NotionClient client, String databaseId) {
-    // PrintStream originalOut = System.out;
-    try {
-      log.debug("Creating query request for database: {}", databaseId);
-
-      // Create an empty query request (no filters, returns all results)
-      QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
-
-      // Send query request
-      List<Page> results =
-          NotionUtil.executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
-
-      log.debug("Found {} pages in database {}", results.size(), databaseId);
-
-      results.forEach(
-          page -> {
-            log.debug("Processing page: {}", page.getId());
-
-            Page pageData =
-                NotionUtil.executeWithRetry(
-                    () -> client.retrievePage(page.getId(), Collections.emptyList()));
-
-            pageData
-                .getProperties()
-                .forEach(
-                    (key, value) -> {
-                      String valueStr = NotionUtil.getValue(client, value);
-                      log.debug("Page {}: {} = {}", page.getId(), key, valueStr);
-                    });
-          });
-
-      log.debug("Completed querying database: {}", databaseId);
-
-    } catch (Exception e) {
-      log.error("Error querying database: {}", databaseId, e);
-      throw e;
-    }
-  }
-
-  /**
-   * Gets the database ID for a given database name.
-   *
    * @param databaseName The name of the database
    * @return The database ID, or null if not found
    */
   public String getDatabaseId(@NonNull String databaseName) {
-    if (databaseMap.isEmpty() && isNotionTokenAvailable()) {
-      initializeDatabases();
-    }
+    ensureInitialized();
     log.debug("Looking up database ID for: '{}'", databaseName);
     String id = databaseMap.get(databaseName);
     if (id != null) {
@@ -316,17 +284,6 @@ public class NotionHandler {
       key = "'wrestlers'")
   public List<WrestlerPage> loadAllWrestlers() {
     return wrestlerNotionHandler.loadAll();
-  }
-
-  /**
-   * Loads all wrestlers from the Notion Wrestlers database.
-   *
-   * @param syncMode If true, loads minimal data for sync operations (faster). If false, loads full
-   *     data with all relationships (slower).
-   * @return List of WrestlerPage objects from the Wrestlers database
-   */
-  public List<WrestlerPage> loadAllWrestlers(boolean syncMode) {
-    return wrestlerNotionHandler.loadAll(syncMode);
   }
 
   // ==================== SHOW LOADING METHODS ====================
@@ -481,74 +438,15 @@ public class NotionHandler {
    * @return NotionClient instance, or null if token is not available
    */
   public Optional<NotionClient> createNotionClient() {
-    String notionToken = EnvironmentVariableUtil.getNotionToken();
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
+    Optional<String> tokenOptional = getEffectiveNotionToken();
+    if (tokenOptional.isEmpty()) {
+      log.warn("Notion token not available. Cannot create NotionClient.");
       return Optional.empty();
     }
-    NotionClient client = new NotionClient(notionToken);
+    NotionClient client = new NotionClient(tokenOptional.get());
     client.setHttpClient(new OkHttp4Client(60_000, 60_000, 60_000));
     client.setLogger(new notion.api.v1.logging.Slf4jLogger());
     return Optional.of(client);
-  }
-
-  /** Optimized method to load all entities for sync operations with minimal processing. */
-  public List<ShowPage> loadAllEntitiesForSync(
-      @NonNull NotionClient client, @NonNull String databaseId, @NonNull String entityType) {
-
-    List<ShowPage> entities = new ArrayList<>();
-    try {
-      log.debug("Loading all {} entities for sync from database {}", entityType, databaseId);
-
-      QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
-
-      List<Page> results =
-          NotionUtil.executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
-
-      log.debug("Found {} pages in {} database for sync", results.size(), entityType);
-
-      // Process pages in batches to avoid overwhelming the API
-      int batchSize = 10;
-      for (int i = 0; i < results.size(); i += batchSize) {
-        int endIndex = Math.min(i + batchSize, results.size());
-        List<Page> batch = results.subList(i, endIndex);
-
-        log.debug("Processing batch {}-{} of {} pages", i + 1, endIndex, results.size());
-
-        for (Page page : batch) {
-          try {
-            // Create ShowPage with minimal processing - just extract basic properties
-            ShowPage showPage = createMinimalShowPage(page);
-            entities.add(showPage);
-
-          } catch (Exception e) {
-            log.warn(
-                "Failed to process {} entity from page {}: {}",
-                entityType,
-                page.getId(),
-                e.getMessage());
-          }
-        }
-
-        // Small delay between batches to be respectful to the API
-        if (endIndex < results.size()) {
-          try {
-            Thread.sleep(100); // 100ms delay between batches
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            break;
-          }
-        }
-      }
-
-      log.debug("Successfully loaded {} {} entities for sync", entities.size(), entityType);
-      return entities;
-
-    } catch (Exception e) {
-      log.error(
-          "Error loading all {} entities for sync from database: {}", entityType, databaseId, e);
-      return entities; // Return partial results
-    }
   }
 
   /** Generic method to load all entities from a database. */
@@ -664,7 +562,7 @@ public class NotionHandler {
       if (nameProperty != null
           && nameProperty.getTitle() != null
           && !nameProperty.getTitle().isEmpty()) {
-        entityName = nameProperty.getTitle().get(0).getPlainText();
+        entityName = nameProperty.getTitle().getFirst().getPlainText();
       }
 
       T entity = mapper.apply(pageData, entityName);
@@ -708,7 +606,7 @@ public class NotionHandler {
         if (nameProperty != null
             && nameProperty.getTitle() != null
             && !nameProperty.getTitle().isEmpty()) {
-          String pageName = nameProperty.getTitle().get(0).getPlainText();
+          String pageName = nameProperty.getTitle().getFirst().getPlainText();
 
           if (entityName.equalsIgnoreCase(pageName)) {
             log.debug("Found matching {} page: {}", entityType, pageName);
@@ -724,92 +622,6 @@ public class NotionHandler {
       log.error("Error loading {} '{}' from database: {}", entityType, entityName, databaseId, e);
       throw e;
     }
-  }
-
-  // ==================== MAPPING METHODS ====================
-
-  /** Creates a minimal ShowPage object for sync operations without detailed property extraction. */
-  private ShowPage createMinimalShowPage(@NonNull Page page) {
-    ShowPage showPage = new ShowPage(this);
-
-    // Set basic page properties
-    showPage.setId(page.getId());
-    showPage.setCreated_time(page.getCreatedTime());
-    showPage.setLast_edited_time(page.getLastEditedTime());
-    showPage.setArchived(Boolean.TRUE.equals(page.getArchived()));
-    showPage.setIn_trash(Boolean.TRUE.equals(page.getInTrash()));
-    showPage.setUrl(page.getUrl());
-    showPage.setPublic_url(page.getPublicUrl());
-
-    // Extract only essential properties for sync without detailed processing
-    Map<String, Object> rawProperties = new HashMap<>();
-    Map<String, PageProperty> pageProperties = page.getProperties();
-
-    // Extract key properties with minimal processing
-    pageProperties.forEach(
-        (key, value) -> {
-          try {
-            String simpleValue = extractSimplePropertyValue(value);
-            if (simpleValue != null) {
-              rawProperties.put(key, simpleValue);
-            } else {
-              log.debug("Property {} extracted as null, skipping", key);
-            }
-          } catch (Exception e) {
-            log.debug("Failed to extract property {}: {}", key, e.getMessage());
-            // Don't put "N/A" - just skip the property if extraction fails
-          }
-        });
-
-    showPage.setRawProperties(rawProperties);
-    return showPage;
-  }
-
-  /** Extracts a simple string value from a PageProperty without complex processing. */
-  private String extractSimplePropertyValue(PageProperty property) {
-    if (property == null) return null; // Return null instead of "N/A" for missing properties
-
-    try {
-      // Handle different property types with minimal processing
-      if (property.getTitle() != null && !property.getTitle().isEmpty()) {
-        return property.getTitle().get(0).getPlainText();
-      }
-      if (property.getRichText() != null && !property.getRichText().isEmpty()) {
-        return property.getRichText().get(0).getPlainText();
-      }
-      if (property.getSelect() != null) {
-        return property.getSelect().getName();
-      }
-      if (property.getDate() != null) {
-        return property.getDate().getStart();
-      }
-      if (property.getNumber() != null) {
-        return property.getNumber().toString();
-      }
-      if (property.getRelation() != null && !property.getRelation().isEmpty()) {
-        return property.getRelation().get(0).getId();
-      }
-
-      // Log when we can't extract a value instead of defaulting to "N/A"
-      log.debug("Unable to extract value from property type: {}", property.getType());
-      return null;
-
-    } catch (Exception e) {
-      log.debug("Error extracting property value: {}", e.getMessage());
-      return null; // Return null instead of "N/A" for extraction errors
-    }
-  }
-
-  public Optional<SegmentPage> getSegmentPage(@NonNull String segmentId) {
-    return segmentNotionHandler.loadSegmentById(segmentId);
-  }
-
-  public List<ShowTypePage> getShowTypePages() {
-    return showTypeNotionHandler.getShowTypePages();
-  }
-
-  public List<String> getSegmentIds() {
-    return segmentNotionHandler.getSegmentIds();
   }
 
   @org.springframework.cache.annotation.Cacheable(
@@ -969,60 +781,6 @@ public class NotionHandler {
   }
 
   /**
-   * Extracts the first segment name from a show's matches relation property.
-   *
-   * @param showPage The ShowPage object to extract matches from
-   * @return The name of the first segment, or null if no matches found
-   */
-  public String extractFirstMatchFromShow(@NonNull ShowPage showPage) {
-    log.debug("Extracting first segment from show: {}", showPage.getId());
-
-    Optional<NotionClient> clientOptional = createNotionClient();
-    if (clientOptional.isEmpty()) {
-      log.warn(
-          "NotionClient not available, returning null for first match from show: {}",
-          showPage.getId());
-      return null;
-    }
-
-    try (NotionClient client = clientOptional.get()) {
-      try {
-        Page pageData =
-            NotionUtil.executeWithRetry(
-                () -> client.retrievePage(showPage.getId(), Collections.emptyList()));
-
-        Map<String, PageProperty> properties = pageData.getProperties();
-
-        // Look for a "Segments" relation property
-        PageProperty matchesProperty = properties.get("Segments");
-        if (matchesProperty != null
-            && matchesProperty.getRelation() != null
-            && !matchesProperty.getRelation().isEmpty()) {
-          // Get the first related segment - using generic approach since Relation type may not be
-          // accessible
-          Object firstMatch = matchesProperty.getRelation().get(0);
-          String matchId = null;
-
-          // Use reflection to get the ID since we can't access the Relation type directly
-          try {
-            matchId = (String) firstMatch.getClass().getMethod("getId").invoke(firstMatch);
-            return matchId;
-          } catch (Exception e) {
-            log.error("Failed to extract match ID from relation object: {}", e.getMessage());
-          }
-        }
-
-      } catch (Exception e) {
-        log.error("Error extracting first match from show: {}", e.getMessage());
-      }
-    } catch (Exception e) {
-      log.error("Error processing with NotionClient for show: {}", e.getMessage());
-    }
-
-    return null;
-  }
-
-  /**
    * Retrieves the plain text content of a Notion page by its ID. This method fetches all blocks
    * within the page and extracts their plain text.
    *
@@ -1031,12 +789,12 @@ public class NotionHandler {
    */
   public String getPageContentPlainText(@NonNull String pageId) {
     log.debug("Retrieving content for page: {}", pageId);
-    String notionToken = EnvironmentVariableUtil.getNotionToken();
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot retrieve page content.");
+    Optional<String> tokenOptional = getEffectiveNotionToken();
+    if (tokenOptional.isEmpty()) {
+      log.warn("Notion token not available. Cannot retrieve page content.");
       return "";
     }
-    NotionBlocksRetriever retriever = new NotionBlocksRetriever(notionToken);
+    NotionBlocksRetriever retriever = new NotionBlocksRetriever(tokenOptional.get());
     return retriever.retrievePageContent(pageId);
   }
 

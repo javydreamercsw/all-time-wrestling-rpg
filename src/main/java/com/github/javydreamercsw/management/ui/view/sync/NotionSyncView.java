@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.sync;
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
@@ -61,6 +62,8 @@ import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * UI view for managing Notion synchronization operations. Provides controls to trigger sync
@@ -377,7 +380,9 @@ public class NotionSyncView extends Main {
     showProgressSection();
     addLogEntry("Started: " + operationName, "INFO");
 
-    CompletableFuture.supplyAsync(operation::execute)
+    SecurityContext context = SecurityContextHolder.getContext();
+    CompletableFuture.supplyAsync(
+            () -> GeneralSecurityUtils.runWithContext(context, operation::execute))
         .whenComplete(
             (result, throwable) -> {
               getUI()
@@ -460,7 +465,9 @@ public class NotionSyncView extends Main {
 
     progressTracker.addProgressListener(progressListener);
 
-    CompletableFuture.supplyAsync(operation::execute)
+    SecurityContext context = SecurityContextHolder.getContext();
+    CompletableFuture.supplyAsync(
+            () -> GeneralSecurityUtils.runWithContext(context, operation::execute))
         .whenComplete(
             (result, throwable) -> {
               if (throwable != null) {
