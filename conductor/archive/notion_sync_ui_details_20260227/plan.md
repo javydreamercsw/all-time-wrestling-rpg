@@ -20,6 +20,8 @@
 - [x] Task: Verify in `NotionSyncView.java` that the log entries are correctly displayed and auto-scroll to the bottom.
 - [x] Task: Perform manual verification of both inbound and outbound syncs for various entities (Wrestlers, Factions, etc.).
 - [x] Task: Verify that error conditions (e.g., Notion offline, invalid token) are clearly surfaced in the UI.
+
 ## Phase: Review Fixes
+
 - [x] Task: Apply review suggestions [checkpoint: 4a49bb2]
 

@@ -31,7 +31,6 @@ import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.SyncProgress;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
-import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
@@ -96,7 +95,7 @@ class NotionSyncViewTest extends AbstractViewTest {
     progress.setCurrentStepDescription("Processing item 5");
 
     // Simulate callback from background thread
-    MockVaadin.runPush(() -> listener.onProgressUpdated(progress));
+    listener.onProgressUpdated(progress);
 
     // Verify progress bar and text update
     ProgressBar progressBar = _get(ProgressBar.class);
@@ -113,14 +112,14 @@ class NotionSyncViewTest extends AbstractViewTest {
         _get(view, Span.class, spec -> spec.withText("Processing item 5 (5/10)")).isVisible());
 
     // Simulate a log message
-    MockVaadin.runPush(() -> listener.onLogMessage(operationId, "Custom log message", "SUCCESS"));
+    listener.onLogMessage(operationId, "Custom log message", "SUCCESS");
     assertTrue(_get(view, Span.class, spec -> spec.withText("Custom log message")).isVisible());
 
     // Simulate completion
     progress.setCompleted(true);
     progress.setSuccess(true);
     progress.setResultMessage("Sync finished");
-    MockVaadin.runPush(() -> listener.onOperationCompleted(progress));
+    listener.onOperationCompleted(progress);
 
     // Verify progress section hidden
     com.github.mvysny.kaributesting.v10.LocatorJ._assertNone(ProgressBar.class);
