@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +32,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -78,6 +81,7 @@ public abstract class AbstractSyncTest {
   @Mock protected TeamRepository teamRepository;
   @Mock protected TitleReignRepository titleReignRepository;
   @Mock protected TitleRepository titleRepository;
+  @Mock protected NpcRepository npcRepository;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -104,6 +108,33 @@ public abstract class AbstractSyncTest {
     lenient()
         .when(notionApiExecutor.getSyncExecutorService())
         .thenReturn(java.util.concurrent.Executors.newSingleThreadExecutor());
+    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(notionApiExecutor.getSyncProgressTracker()).thenReturn(progressTracker);
+    lenient()
+        .when(notionApiExecutor.executeWithRateLimit(any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(0);
+              return supplier != null ? supplier.get() : null;
+            });
+    lenient()
+        .when(
+            notionApiExecutor.executeWithRateLimit(
+                anyString(), any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier != null ? supplier.get() : null;
+            });
+    lenient()
+        .when(
+            notionApiExecutor.executeWithRateLimit(
+                isNull(), any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier != null ? supplier.get() : null;
+            });
 
     syncServiceDependencies =
         new SyncServiceDependencies(
@@ -129,6 +160,7 @@ public abstract class AbstractSyncTest {
             showTypeRepository,
             teamRepository,
             titleReignRepository,
-            titleRepository);
+            titleRepository,
+            npcRepository);
   }
 }

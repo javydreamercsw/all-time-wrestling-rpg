@@ -16,179 +16,41 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
-import com.github.javydreamercsw.management.service.sync.SyncEntityType;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
-import java.util.Collections;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
-import notion.api.v1.model.databases.DatabaseProperty;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-@Slf4j
-public class NpcNotionSyncService implements NotionEntitySyncService {
+public class NpcNotionSyncService extends BaseNotionSyncService<Npc> {
 
-  private final NpcRepository npcRepository;
-  private final NotionHandler notionHandler;
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  public NpcNotionSyncService(NpcRepository npcRepository, NotionHandler notionHandler) {
-    this.npcRepository = npcRepository;
-    this.notionHandler = notionHandler;
+  public NpcNotionSyncService(
+      NpcRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    if (notionHandler != null) {
-      Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-      if (clientOptional.isPresent()) {
-        try (NotionClient client = clientOptional.get()) {
-          String databaseId =
-              notionHandler.getDatabaseId("NPCs"); // Assuming a Notion database named "NPCs"
-          if (databaseId != null) {
-            int processedCount = 0;
-            int created = 0;
-            int updated = 0;
-            int errors = 0;
-            progressTracker.startOperation(operationId, "Sync NPCs", 1);
-            List<Npc> npcs = npcRepository.findAll();
-            for (Npc entity : npcs) {
-              // Update progress every 5 entities
-              if (processedCount % 5 == 0) {
-                progressTracker.updateProgress(
-                    operationId,
-                    1,
-                    String.format(
-                        "Saving NPCs to Notion... (%d/%d processedCount)",
-                        processedCount, npcs.size()));
-              }
-              try {
-                Map<String, PageProperty> properties = new HashMap<>();
-                properties.put(
-                    "Name",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Title,
-                        Collections.singletonList(
-                            new PageProperty.RichText(
-                                RichTextType.Text,
-                                new PageProperty.RichText.Text(entity.getName()),
-                                null,
-                                null,
-                                null,
-                                null,
-                                null)),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+  protected Map<String, PageProperty> getProperties(@NonNull Npc entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+    return properties;
+  }
 
-                // Map NpcType
-                if (entity.getNpcType() != null && !entity.getNpcType().isBlank()) {
-                  properties.put(
-                      "Role",
-                      new PageProperty(
-                          UUID.randomUUID().toString(),
-                          PropertyType.Select,
-                          null,
-                          null,
-                          new DatabaseProperty.Select.Option(null, entity.getNpcType(), null, null),
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null));
-                }
+  @Override
+  protected String getDatabaseName() {
+    return "NPCs";
+  }
 
-                if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                  // Update existing page
-                  UpdatePageRequest updatePageRequest =
-                      new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                  notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                  updated++;
-                } else {
-                  // Create new page
-                  CreatePageRequest createPageRequest =
-                      new CreatePageRequest(
-                          new PageParent(null, databaseId), properties, null, null);
-                  Page page =
-                      notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                  entity.setExternalId(page.getId());
-                  created++;
-                }
-                entity.setLastSync(Instant.now());
-                npcRepository.save(entity);
-                processedCount++;
-              } catch (Exception ex) {
-                log.error("Error processing NPC: " + entity.getName(), ex);
-                errors++;
-                processedCount++;
-              }
-            }
-            // Final progress update
-            progressTracker.updateProgress(
-                operationId,
-                1,
-                String.format(
-                    "✅ Completed Notion sync: %d NPCs saved/updated, %d errors",
-                    created + updated, errors));
-            return errors > 0
-                ? BaseSyncService.SyncResult.failure(
-                    SyncEntityType.NPCS.getKey(), "Error syncing NPCs!")
-                : BaseSyncService.SyncResult.success(
-                    SyncEntityType.NPCS.getKey(), created, updated, errors);
-          }
-        }
-      }
-    }
-    progressTracker.failOperation(operationId, "Error syncing NPCs!");
-    return BaseSyncService.SyncResult.failure(SyncEntityType.NPCS.getKey(), "Error syncing NPCs!");
+  @Override
+  protected String getEntityName() {
+    return "NPC";
   }
 }

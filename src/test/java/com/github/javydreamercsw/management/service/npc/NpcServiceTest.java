@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,7 +89,7 @@ class NpcServiceTest {
 
   @Test
   void testFindByName() {
-    when(npcRepository.findByName("Test NPC")).thenReturn(java.util.Optional.of(npc));
+    when(npcRepository.findByName("Test NPC")).thenReturn(Optional.of(npc));
 
     Npc result = npcService.findByName("Test NPC");
 
@@ -98,9 +99,9 @@ class NpcServiceTest {
   @Test
   void testFindByExternalId() {
     npc.setExternalId("test-id");
-    when(npcRepository.findByExternalId("test-id")).thenReturn(npc);
+    when(npcRepository.findByExternalId("test-id")).thenReturn(Optional.of(npc));
 
-    Npc result = npcService.findByExternalId("test-id");
+    Npc result = npcService.findByExternalId("test-id").orElse(null);
 
     assertEquals(npc, result);
   }

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.sync;
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.Syn
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -61,6 +63,8 @@ import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * UI view for managing Notion synchronization operations. Provides controls to trigger sync
@@ -321,11 +325,15 @@ public class NotionSyncView extends Main {
       return;
     }
 
-    startSyncOperation(
+    String operationId = "sync-all-" + System.currentTimeMillis();
+
+    startSyncOperationWithProgress(
         "Syncing all entities...",
+        operationId,
         () -> {
           try {
-            List<NotionSyncService.SyncResult> results = notionSyncScheduler.triggerManualSync();
+            List<NotionSyncService.SyncResult> results =
+                notionSyncScheduler.triggerManualSync(operationId);
             return new SyncOperationResult(
                 true,
                 results.size(),
@@ -353,7 +361,12 @@ public class NotionSyncView extends Main {
         () -> {
           try {
             NotionSyncService.SyncResult result =
-                notionSyncScheduler.syncEntity(entityName, direction);
+                SyncEntityType.fromKey(entityName)
+                    .map(type -> notionSyncScheduler.syncEntity(type, operationId, direction))
+                    .orElseGet(
+                        () ->
+                            NotionSyncService.SyncResult.failure(
+                                entityName, "Unknown entity type"));
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,
@@ -377,7 +390,9 @@ public class NotionSyncView extends Main {
     showProgressSection();
     addLogEntry("Started: " + operationName, "INFO");
 
-    CompletableFuture.supplyAsync(operation::execute)
+    SecurityContext context = SecurityContextHolder.getContext();
+    CompletableFuture.supplyAsync(
+            () -> GeneralSecurityUtils.runWithContext(context, operation::execute))
         .whenComplete(
             (result, throwable) -> {
               getUI()
@@ -409,73 +424,79 @@ public class NotionSyncView extends Main {
     showProgressSection();
     addLogEntry("Started: " + operationName, "INFO");
 
+    UI ui = getUI().orElse(null);
+
     // Register as progress listener for this operation
     SyncProgressTracker.SyncProgressListener progressListener =
         new SyncProgressTracker.SyncProgressListener() {
           @Override
           public void onProgressUpdated(@NonNull SyncProgress progress) {
-            if (progress.getOperationId().equals(operationId)) {
-              getUI().ifPresent(ui -> ui.access(() -> updateProgressDisplay(progress)));
+            if (progress.getOperationId().startsWith(operationId) && ui != null) {
+              ui.access(
+                  () -> {
+                    updateProgressDisplay(progress);
+                    ui.push();
+                  });
             }
           }
 
           @Override
           public void onOperationCompleted(@NonNull SyncProgress progress) {
-            if (progress.getOperationId().equals(operationId)) {
-              getUI()
-                  .ifPresent(
-                      ui ->
-                          ui.access(
-                              () -> {
-                                syncInProgress = false;
-                                hideProgressSection();
-                                updateButtonStates();
+            // Only handle completion for the main operation ID to avoid premature completion
+            // when sub-operations (like individual entities in a full sync) finish.
+            if (progress.getOperationId().equals(operationId) && ui != null) {
+              ui.access(
+                  () -> {
+                    syncInProgress = false;
+                    hideProgressSection();
+                    updateButtonStates();
 
-                                if (progress.isSuccess()) {
-                                  handleSyncResult(
-                                      new SyncOperationResult(
-                                          true,
-                                          1,
-                                          progress.getItemsProcessed(),
-                                          progress.getResultMessage()));
-                                } else {
-                                  handleSyncError(
-                                      new RuntimeException(progress.getResultMessage()));
-                                }
+                    if (progress.isSuccess()) {
+                      handleSyncResult(
+                          new SyncOperationResult(
+                              true, 1, progress.getItemsProcessed(), progress.getResultMessage()));
+                    } else {
+                      handleSyncError(new RuntimeException(progress.getResultMessage()));
+                    }
 
-                                updateLastSyncTime();
-                                progressTracker.removeProgressListener(this);
-                              }));
+                    updateLastSyncTime();
+                    progressTracker.removeProgressListener(this);
+                    ui.push();
+                  });
             }
           }
 
           @Override
           public void onLogMessage(
               @NonNull String logOperationId, @NonNull String message, @NonNull String level) {
-            if (logOperationId.equals(operationId)) {
-              getUI().ifPresent(ui -> ui.access(() -> addLogEntry(message, level)));
+            if (logOperationId.startsWith(operationId) && ui != null) {
+              ui.access(
+                  () -> {
+                    addLogEntry(message, level);
+                    ui.push();
+                  });
             }
           }
         };
 
     progressTracker.addProgressListener(progressListener);
 
-    CompletableFuture.supplyAsync(operation::execute)
+    SecurityContext context = SecurityContextHolder.getContext();
+    CompletableFuture.supplyAsync(
+            () -> GeneralSecurityUtils.runWithContext(context, operation::execute))
         .whenComplete(
             (result, throwable) -> {
-              if (throwable != null) {
-                getUI()
-                    .ifPresent(
-                        ui ->
-                            ui.access(
-                                () -> {
-                                  syncInProgress = false;
-                                  hideProgressSection();
-                                  updateButtonStates();
-                                  handleSyncError(throwable);
-                                  updateLastSyncTime();
-                                  progressTracker.removeProgressListener(progressListener);
-                                }));
+              if (throwable != null && ui != null) {
+                ui.access(
+                    () -> {
+                      syncInProgress = false;
+                      hideProgressSection();
+                      updateButtonStates();
+                      handleSyncError(throwable);
+                      updateLastSyncTime();
+                      progressTracker.removeProgressListener(progressListener);
+                      ui.push();
+                    });
               }
               // Success case is handled by the progress listener
             });
@@ -617,12 +638,15 @@ public class NotionSyncView extends Main {
     messageSpan.addClassNames(LumoUtility.FontSize.SMALL);
 
     logEntry.add(timeSpan, levelIcon, messageSpan);
-    logContainer.addComponentAsFirst(logEntry);
+    logContainer.add(logEntry);
 
     // Keep only last 20 log entries
     while (logContainer.getComponentCount() > 20) {
-      logContainer.remove(logContainer.getComponentAt(logContainer.getComponentCount() - 1));
+      logContainer.remove(logContainer.getComponentAt(0)); // Remove from top
     }
+
+    // Scroll to bottom
+    logContainer.getElement().executeJs("this.scrollTop = this.scrollHeight;");
   }
 
   private void showNotification(@NonNull String message, @NonNull NotificationVariant variant) {

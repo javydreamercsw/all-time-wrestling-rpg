@@ -16,123 +16,41 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
-public class ShowTypeNotionSyncService implements NotionEntitySyncService {
+public class ShowTypeNotionSyncService extends BaseNotionSyncService<ShowType> {
 
-  private final ShowTypeRepository showTypeRepository;
-  private final NotionHandler notionHandler;
-  private final SyncProgressTracker progressTracker;
-
-  @Autowired
   public ShowTypeNotionSyncService(
-      ShowTypeRepository showTypeRepository,
-      NotionHandler notionHandler,
-      SyncProgressTracker progressTracker) {
-    this.showTypeRepository = showTypeRepository;
-    this.notionHandler = notionHandler;
-    this.progressTracker = progressTracker;
+      ShowTypeRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    return syncToNotion(operationId, null);
+  protected Map<String, PageProperty> getProperties(@NonNull ShowType entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+    return properties;
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isPresent()) {
-      try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Show Type");
-        if (databaseId != null) {
-          int processedCount = 0;
-          int created = 0;
-          int updated = 0;
-          int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Show Types", 1);
-          List<ShowType> showTypes =
-              (ids == null || ids.isEmpty())
-                  ? showTypeRepository.findAll()
-                  : showTypeRepository.findAllById(ids);
-          for (ShowType entity : showTypes) {
-            if (processedCount % 5 == 0) {
-              progressTracker.updateProgress(
-                  operationId,
-                  1,
-                  String.format(
-                      "Saving show types to Notion... (%d/%d processed)",
-                      processedCount, showTypes.size()));
-            }
-            try {
-              Map<String, PageProperty> properties = new HashMap<>();
+  protected String getDatabaseName() {
+    return "Show Type";
+  }
 
-              // Name (Title property)
-              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
-
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                log.debug("Updating existing show type page: {}", entity.getName());
-                UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                updated++;
-              } else {
-                log.debug("Creating a new show type page for: {}", entity.getName());
-                CreatePageRequest createPageRequest =
-                    new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-                Page page =
-                    notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                entity.setExternalId(page.getId());
-                created++;
-              }
-              entity.setLastSync(Instant.now());
-              showTypeRepository.save(entity);
-              processedCount++;
-            } catch (Exception ex) {
-              errors++;
-              processedCount++;
-              log.error("Error syncing show type: " + entity.getName(), ex);
-            }
-          }
-          progressTracker.updateProgress(
-              operationId,
-              1,
-              String.format(
-                  "✅ Completed database save: %d show types saved/updated, %d errors",
-                  created + updated, errors));
-          return errors > 0
-              ? BaseSyncService.SyncResult.failure("show types", "Error syncing show types!")
-              : BaseSyncService.SyncResult.success("show types", created, updated, errors);
-        }
-      }
-    }
-    progressTracker.failOperation(operationId, "Error syncing show types!");
-    return BaseSyncService.SyncResult.failure("show types", "Error syncing show types!");
+  @Override
+  protected String getEntityName() {
+    return "Show Type";
   }
 }

@@ -60,6 +60,29 @@ public final class GeneralSecurityUtils {
   }
 
   /**
+   * Runs the given {@link Supplier} with the provided {@link SecurityContext}.
+   *
+   * @param <T> The type of the result.
+   * @param context The security context to use.
+   * @param supplier The supplier to run.
+   * @return The result of the supplier.
+   */
+  public static <T> T runWithContext(
+      @NonNull SecurityContext context, @NonNull Supplier<T> supplier) {
+    SecurityContext originalContext = SecurityContextHolder.getContext();
+    try {
+      SecurityContextHolder.setContext(context);
+      return supplier.get();
+    } finally {
+      if (originalContext != null && originalContext.getAuthentication() != null) {
+        SecurityContextHolder.setContext(originalContext);
+      } else {
+        SecurityContextHolder.clearContext();
+      }
+    }
+  }
+
+  /**
    * Runs the given {@link Supplier} with the credentials and roles provided.
    *
    * @param <T> The type of the result.

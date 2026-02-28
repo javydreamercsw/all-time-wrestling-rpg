@@ -16,147 +16,57 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
-public class SeasonNotionSyncService implements NotionEntitySyncService {
+public class SeasonNotionSyncService extends BaseNotionSyncService<Season> {
 
-  private final SeasonRepository seasonRepository;
-  private final NotionHandler notionHandler;
-
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  @Autowired
-  public SeasonNotionSyncService(SeasonRepository seasonRepository, NotionHandler notionHandler) {
-    this.seasonRepository = seasonRepository;
-    this.notionHandler = notionHandler;
+  public SeasonNotionSyncService(
+      SeasonRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    return syncToNotion(operationId, null);
-  }
+  protected Map<String, PageProperty> getProperties(@NonNull Season entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-  @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isPresent()) {
-      try (NotionClient client = clientOptional.get()) {
-        String databaseId =
-            notionHandler.getDatabaseId("Seasons"); // Assuming a Notion database named "Seasons"
-        if (databaseId != null) {
-          int processedCount = 0;
-          int created = 0;
-          int updated = 0;
-          int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Seasons", 1);
-          List<Season> seasons =
-              (ids == null || ids.isEmpty())
-                  ? seasonRepository.findAll()
-                  : seasonRepository.findAllById(ids);
-          for (Season entity : seasons) {
-            if (processedCount % 5 == 0) {
-              progressTracker.updateProgress(
-                  operationId,
-                  1,
-                  String.format(
-                      "Saving seasons to Notion... (%d/%d processedCount)",
-                      processedCount, seasons.size()));
-            }
-            try {
-              Map<String, PageProperty> properties = new HashMap<>();
-              properties.put(
-                  "Name", // Assuming Notion property is "Name"
-                  NotionPropertyBuilder.createTitleProperty(entity.getName()));
-
-              // Map Description
-              if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                properties.put(
-                    "Description", // Assuming Notion property is "Description"
-                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
-              }
-
-              // Map Start Date
-              if (entity.getStartDate() != null) {
-                properties.put(
-                    "Start Date", // Assuming Notion property is "Start Date"
-                    NotionPropertyBuilder.createDateProperty(
-                        entity.getStartDate().atOffset(ZoneOffset.UTC).toString()));
-              }
-
-              // Map End Date
-              if (entity.getEndDate() != null) {
-                properties.put(
-                    "End Date", // Assuming Notion property is "End Date"
-                    NotionPropertyBuilder.createDateProperty(
-                        entity.getEndDate().atOffset(ZoneOffset.UTC).toString()));
-              }
-
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                // Update existing page
-                UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                updated++;
-              } else {
-                // Create new page
-                CreatePageRequest createPageRequest =
-                    new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-                Page page =
-                    notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                entity.setExternalId(page.getId());
-                created++;
-              }
-              entity.setLastSync(Instant.now());
-              seasonRepository.save(entity);
-              processedCount++;
-            } catch (Exception ex) {
-              log.error("Error processing season: {}", entity.getName(), ex);
-              errors++;
-              processedCount++;
-            }
-          }
-          // Final progress update
-          progressTracker.updateProgress(
-              operationId,
-              1,
-              String.format(
-                  "✅ Completed Notion sync: %d seasons saved/updated, %d errors",
-                  created + updated, errors));
-          return errors > 0
-              ? BaseSyncService.SyncResult.failure("seasons", "Error syncing seasons!")
-              : BaseSyncService.SyncResult.success("seasons", created, updated, errors);
-        }
-      }
+    if (entity.getStartDate() != null) {
+      properties.put(
+          "Start Date",
+          NotionPropertyBuilder.createDateProperty(
+              entity.getStartDate().atOffset(ZoneOffset.UTC).toLocalDateTime().toString()));
     }
-    progressTracker.failOperation(operationId, "Error syncing seasons!");
-    return BaseSyncService.SyncResult.failure("seasons", "Error syncing seasons!");
+
+    if (entity.getEndDate() != null) {
+      properties.put(
+          "End Date",
+          NotionPropertyBuilder.createDateProperty(
+              entity.getEndDate().atOffset(ZoneOffset.UTC).toLocalDateTime().toString()));
+    }
+
+    return properties;
+  }
+
+  @Override
+  protected String getDatabaseName() {
+    return "Seasons";
+  }
+
+  @Override
+  protected String getEntityName() {
+    return "Season";
   }
 }

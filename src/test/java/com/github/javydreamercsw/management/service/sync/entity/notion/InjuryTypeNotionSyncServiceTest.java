@@ -25,11 +25,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
-import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -41,20 +38,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Mock;
 
 class InjuryTypeNotionSyncServiceTest extends AbstractSyncTest {
   private InjuryTypeNotionSyncService injuryTypeNotionSyncService;
-  @Mock private InjuryTypeRepository injuryTypeRepository;
-  @Mock private NotionHandler notionHandler;
-  @Mock private SyncProgressTracker progressTracker;
   @Captor private ArgumentCaptor<InjuryType> injuryTypeCaptor;
 
   @BeforeEach
   protected void setUp() {
     super.setUp();
     injuryTypeNotionSyncService =
-        new InjuryTypeNotionSyncService(injuryTypeRepository, notionHandler, progressTracker);
+        new InjuryTypeNotionSyncService(
+            injuryTypeRepository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Test

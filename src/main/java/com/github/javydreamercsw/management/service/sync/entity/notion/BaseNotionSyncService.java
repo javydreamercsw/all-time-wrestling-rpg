@@ -55,6 +55,13 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
   @Override
   @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
+    return syncToNotion(operationId, null);
+  }
+
+  @Override
+  @Transactional
+  public BaseSyncService.SyncResult syncToNotion(
+      @NonNull String operationId, java.util.Collection<Long> ids) {
     Optional<NotionClient> clientOptional =
         notionApiExecutor.getNotionHandler().createNotionClient();
     if (clientOptional.isPresent()) {
@@ -65,28 +72,69 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
           int created = 0;
           int updated = 0;
           int errors = 0;
+          List<T> entities =
+              (ids == null || ids.isEmpty()) ? repository.findAll() : repository.findAllById(ids);
+
           syncServiceDependencies
               .getProgressTracker()
-              .startOperation(operationId, "Sync " + getEntityName(), 1);
-          List<T> entities = repository.findAll();
+              .addLogMessage(
+                  operationId, "🔍 Checking existing entries in Notion database...", "INFO");
+
+          // Load all existing pages from Notion to avoid duplicates
+          Map<String, String> notionLookup =
+              notionApiExecutor.executeWithRateLimit(
+                  operationId,
+                  () ->
+                      notionApiExecutor
+                          .getNotionHandler()
+                          .getDatabaseNamesToIds(getDatabaseName()));
+
+          syncServiceDependencies
+              .getProgressTracker()
+              .startOperation(operationId, "Sync " + getEntityName(), entities.size());
+
           for (T entity : entities) {
-            if (processedCount % 5 == 0) {
+            // Update progress for each entity
+            syncServiceDependencies
+                .getProgressTracker()
+                .updateProgress(
+                    operationId,
+                    processedCount,
+                    String.format(
+                        "Saving %s to Notion... (%d/%d processed)",
+                        getEntityName(), processedCount, entities.size()));
+            try {
+              String entityDisplayName = getEntityDisplayName(entity);
               syncServiceDependencies
                   .getProgressTracker()
-                  .updateProgress(
+                  .addLogMessage(
                       operationId,
-                      1,
-                      String.format(
-                          "Saving %s to Notion... (%d/%d processed)",
-                          getEntityName(), processedCount, entities.size()));
-            }
-            try {
+                      "Processing " + getEntityName() + ": " + entityDisplayName,
+                      "INFO");
+
+              String externalId = entity.getExternalId();
+
+              // If externalId is missing locally, try to match by name from Notion lookup
+              if ((externalId == null || externalId.isBlank())
+                  && notionLookup.containsKey(entityDisplayName)) {
+                externalId = notionLookup.get(entityDisplayName);
+                entity.setExternalId(externalId);
+                syncServiceDependencies
+                    .getProgressTracker()
+                    .addLogMessage(
+                        operationId,
+                        "🔗 Matched existing Notion page for: " + entityDisplayName,
+                        "INFO");
+              }
+
               Map<String, PageProperty> properties = getProperties(entity);
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
+              if (externalId != null && !externalId.isBlank()) {
                 log.debug("Updating existing page for: {}", getEntityName());
+                final String finalId = externalId;
                 UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
+                    new UpdatePageRequest(finalId, properties, false, null, null);
                 notionApiExecutor.executeWithRateLimit(
+                    operationId,
                     () ->
                         notionApiExecutor
                             .getNotionHandler()
@@ -98,6 +146,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                     new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
                 Page page =
                     notionApiExecutor.executeWithRateLimit(
+                        operationId,
                         () ->
                             notionApiExecutor
                                 .getNotionHandler()
@@ -108,24 +157,53 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
               entity.setLastSync(Instant.now());
               repository.save(entity);
               processedCount++;
+              syncServiceDependencies
+                  .getProgressTracker()
+                  .addLogMessage(
+                      operationId,
+                      "✅ Successfully synced " + getEntityName() + ": " + entityDisplayName,
+                      "SUCCESS");
             } catch (Exception ex) {
               errors++;
               processedCount++;
               log.error("Error syncing " + getEntityName(), ex);
+              syncServiceDependencies
+                  .getProgressTracker()
+                  .addLogMessage(
+                      operationId,
+                      "❌ Error syncing "
+                          + getEntityName()
+                          + ": "
+                          + getEntityDisplayName(entity)
+                          + " - "
+                          + ex.getMessage(),
+                      "ERROR");
             }
           }
           syncServiceDependencies
               .getProgressTracker()
               .updateProgress(
                   operationId,
-                  1,
+                  processedCount,
                   String.format(
                       "✅ Completed database save: %d %s saved/updated, %d errors",
                       created + updated, getEntityName(), errors));
-          return errors > 0
-              ? BaseSyncService.SyncResult.failure(
-                  getEntityName(), "Error syncing " + getEntityName() + "!")
-              : BaseSyncService.SyncResult.success(getEntityName(), created, updated, errors);
+          if (errors > 0) {
+            syncServiceDependencies
+                .getProgressTracker()
+                .failOperation(operationId, "Completed with " + errors + " errors.");
+            return BaseSyncService.SyncResult.failure(
+                getEntityName(), "Error syncing " + getEntityName() + "!");
+          } else {
+            syncServiceDependencies
+                .getProgressTracker()
+                .completeOperation(
+                    operationId,
+                    true,
+                    "Successfully synced " + (created + updated) + " items.",
+                    created + updated);
+            return BaseSyncService.SyncResult.success(getEntityName(), created, updated, errors);
+          }
         }
       } catch (Exception e) {
         log.error("Error during Notion sync: {}", e.getMessage(), e);
@@ -142,7 +220,20 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
 
   protected abstract Map<String, PageProperty> getProperties(T entity);
 
-  protected abstract String getDatabaseId();
+  protected abstract String getDatabaseName();
+
+  protected String getDatabaseId() {
+    return syncServiceDependencies.getNotionHandler().getDatabaseId(getDatabaseName());
+  }
 
   protected abstract String getEntityName();
+
+  private String getEntityDisplayName(T entity) {
+    try {
+      java.lang.reflect.Method getNameMethod = entity.getClass().getMethod("getName");
+      return (String) getNameMethod.invoke(entity);
+    } catch (Exception e) {
+      return entity.toString();
+    }
+  }
 }

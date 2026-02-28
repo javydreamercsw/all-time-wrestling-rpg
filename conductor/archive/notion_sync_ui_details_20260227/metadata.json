@@ -1,0 +1,8 @@
+{
+  "track_id": "notion_sync_ui_details_20260227",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-27T20:00:00Z",
+  "updated_at": "2026-02-27T20:00:00Z",
+  "description": "Improve UI feedback during Notion sync by providing detailed logs and better progress tracking."
+}

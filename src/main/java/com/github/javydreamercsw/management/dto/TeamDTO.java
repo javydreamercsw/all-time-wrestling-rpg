@@ -32,8 +32,10 @@ public class TeamDTO {
   private String externalId;
   private Long wrestler1Id;
   private String wrestler1Name;
+  private String wrestler1ExternalId;
   private Long wrestler2Id;
   private String wrestler2Name;
+  private String wrestler2ExternalId;
   private String formedDate;
   private String disbandedDate;
   private TeamStatus status;
@@ -41,6 +43,10 @@ public class TeamDTO {
   private String factionName;
   private Long managerId;
   private String managerName;
+  private String managerExternalId;
+  private String themeSong;
+  private String artist;
+  private String teamFinisher;
   private boolean active;
   private boolean disbanded;
 
@@ -53,10 +59,12 @@ public class TeamDTO {
     if (team.getWrestler1() != null) {
       dto.setWrestler1Id(team.getWrestler1().getId());
       dto.setWrestler1Name(team.getWrestler1().getName());
+      dto.setWrestler1ExternalId(team.getWrestler1().getExternalId());
     }
     if (team.getWrestler2() != null) {
       dto.setWrestler2Id(team.getWrestler2().getId());
       dto.setWrestler2Name(team.getWrestler2().getName());
+      dto.setWrestler2ExternalId(team.getWrestler2().getExternalId());
     }
     if (team.getFormedDate() != null) {
       dto.setFormedDate(team.getFormedDate().toString());
@@ -72,7 +80,11 @@ public class TeamDTO {
     if (team.getManager() != null) {
       dto.setManagerId(team.getManager().getId());
       dto.setManagerName(team.getManager().getName());
+      dto.setManagerExternalId(team.getManager().getExternalId());
     }
+    dto.setThemeSong(team.getThemeSong());
+    dto.setArtist(team.getArtist());
+    dto.setTeamFinisher(team.getTeamFinisher());
     dto.setActive(team.isActive());
     dto.setDisbanded(team.isDisbanded());
     return dto;

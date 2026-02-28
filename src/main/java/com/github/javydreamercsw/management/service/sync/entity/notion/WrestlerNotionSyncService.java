@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import lombok.NonNull;
 import notion.api.v1.model.pages.PageProperty;
 import org.springframework.stereotype.Service;
@@ -82,12 +83,68 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
           "Deck Size",
           NotionPropertyBuilder.createNumberProperty(entity.getDeckSize().doubleValue()));
     }
+    if (entity.getAlignment() != null && entity.getAlignment().getAlignmentType() != null) {
+      properties.put(
+          "Alignment",
+          NotionPropertyBuilder.createSelectProperty(
+              entity.getAlignment().getAlignmentType().name()));
+    }
+    if (entity.getDrive() != null) {
+      properties.put(
+          "Drive", NotionPropertyBuilder.createNumberProperty(entity.getDrive().doubleValue()));
+    }
+    if (entity.getResilience() != null) {
+      properties.put(
+          "Resilience",
+          NotionPropertyBuilder.createNumberProperty(entity.getResilience().doubleValue()));
+    }
+    if (entity.getCharisma() != null) {
+      properties.put(
+          "Charisma",
+          NotionPropertyBuilder.createNumberProperty(entity.getCharisma().doubleValue()));
+    }
+    if (entity.getBrawl() != null) {
+      properties.put(
+          "Brawl", NotionPropertyBuilder.createNumberProperty(entity.getBrawl().doubleValue()));
+    }
+    if (entity.getHeritageTag() != null) {
+      properties.put(
+          "Heritage Tag", NotionPropertyBuilder.createRichTextProperty(entity.getHeritageTag()));
+    }
+    if (entity.getFaction() != null && entity.getFaction().getExternalId() != null) {
+      properties.put(
+          "Faction",
+          NotionPropertyBuilder.createRelationProperty(entity.getFaction().getExternalId()));
+    }
+    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
+      properties.put(
+          "Manager",
+          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
+    }
+    if (entity.getInjuries() != null && !entity.getInjuries().isEmpty()) {
+      properties.put(
+          "Injuries",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getInjuries().stream()
+                  .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
+                  .filter(Objects::nonNull)
+                  .toList()));
+    }
+    if (entity.getReigns() != null && !entity.getReigns().isEmpty()) {
+      properties.put(
+          "Titles",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getReigns().stream()
+                  .map(com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
+                  .filter(Objects::nonNull)
+                  .toList()));
+    }
     return properties;
   }
 
   @Override
-  protected String getDatabaseId() {
-    return syncServiceDependencies.getNotionHandler().getDatabaseId("Wrestlers");
+  protected String getDatabaseName() {
+    return "Wrestlers";
   }
 
   @Override

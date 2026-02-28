@@ -16,139 +16,64 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
-public class ShowTemplateNotionSyncService implements NotionEntitySyncService {
+public class ShowTemplateNotionSyncService extends BaseNotionSyncService<ShowTemplate> {
 
-  private final ShowTemplateRepository showTemplateRepository;
-  private final NotionHandler notionHandler;
-  private final SyncProgressTracker progressTracker;
-
-  @Autowired
   public ShowTemplateNotionSyncService(
-      ShowTemplateRepository showTemplateRepository,
-      NotionHandler notionHandler,
-      SyncProgressTracker progressTracker) {
-    this.showTemplateRepository = showTemplateRepository;
-    this.notionHandler = notionHandler;
-    this.progressTracker = progressTracker;
+      ShowTemplateRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    return syncToNotion(operationId, null);
-  }
+  protected Map<String, PageProperty> getProperties(@NonNull ShowTemplate entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-  @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isPresent()) {
-      try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Show Templates");
-        if (databaseId != null) {
-          int processedCount = 0;
-          int created = 0;
-          int updated = 0;
-          int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Show Templates", 1);
-          List<ShowTemplate> showTemplates =
-              (ids == null || ids.isEmpty())
-                  ? showTemplateRepository.findAll()
-                  : showTemplateRepository.findAllById(ids);
-          for (ShowTemplate entity : showTemplates) {
-            if (processedCount % 5 == 0) {
-              progressTracker.updateProgress(
-                  operationId,
-                  1,
-                  String.format(
-                      "Saving show templates to Notion... (%d/%d processed)",
-                      processedCount, showTemplates.size()));
-            }
-            try {
-              Map<String, PageProperty> properties = new HashMap<>();
-
-              // Name (Title property)
-              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
-
-              // Description (Rich Text property)
-              if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                properties.put(
-                    "Description",
-                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
-              }
-
-              // Show Type (Relation property)
-              if (entity.getShowType() != null && entity.getShowType().getExternalId() != null) {
-                properties.put(
-                    "Show Type",
-                    NotionPropertyBuilder.createRelationProperty(
-                        entity.getShowType().getExternalId()));
-              }
-
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                log.debug("Updating existing show template page: {}", entity.getName());
-                UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                updated++;
-              } else {
-                log.debug("Creating a new show template page for: {}", entity.getName());
-                CreatePageRequest createPageRequest =
-                    new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-                Page page =
-                    notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                entity.setExternalId(page.getId());
-                created++;
-              }
-              entity.setLastSync(Instant.now());
-              showTemplateRepository.save(entity);
-              processedCount++;
-            } catch (Exception ex) {
-              errors++;
-              processedCount++;
-              log.error("Error syncing show template: " + entity.getName(), ex);
-            }
-          }
-          progressTracker.updateProgress(
-              operationId,
-              1,
-              String.format(
-                  "✅ Completed database save: %d show templates saved/updated, %d errors",
-                  created + updated, errors));
-          return errors > 0
-              ? BaseSyncService.SyncResult.failure(
-                  "show templates", "Error syncing show templates!")
-              : BaseSyncService.SyncResult.success("show templates", created, updated, errors);
-        }
-      }
+    if (entity.getShowType() != null && entity.getShowType().getExternalId() != null) {
+      properties.put(
+          "Show Type",
+          NotionPropertyBuilder.createRelationProperty(entity.getShowType().getExternalId()));
     }
-    progressTracker.failOperation(operationId, "Error syncing show templates!");
-    return BaseSyncService.SyncResult.failure("show templates", "Error syncing show templates!");
+
+    if (entity.getDescription() != null) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
+    if (entity.getDayOfWeek() != null) {
+      properties.put(
+          "Day of Week", NotionPropertyBuilder.createSelectProperty(entity.getDayOfWeek().name()));
+    }
+
+    if (entity.getWeekOfMonth() != null) {
+      properties.put(
+          "Week of Month",
+          NotionPropertyBuilder.createNumberProperty(entity.getWeekOfMonth().doubleValue()));
+    }
+
+    return properties;
+  }
+
+  @Override
+  protected String getDatabaseName() {
+    return "Show Templates";
+  }
+
+  @Override
+  protected String getEntityName() {
+    return "Show Template";
   }
 }

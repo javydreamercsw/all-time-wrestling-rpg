@@ -130,7 +130,7 @@ class NpcSyncIT extends ManagementIntegrationTest {
 
     assertEquals(1, npcService.findAll().size());
 
-    Npc updatedNpc1 = npcService.findByExternalId(npc1Id);
+    Npc updatedNpc1 = npcService.findByExternalId(npc1Id).orElse(null);
     assertNotNull(updatedNpc1);
     assertEquals("Test NPC 1 Updated", updatedNpc1.getName());
     assertEquals("Announcer", updatedNpc1.getNpcType());

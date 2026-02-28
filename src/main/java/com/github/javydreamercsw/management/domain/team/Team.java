@@ -80,6 +80,15 @@ public class Team extends AbstractEntity<Long> {
   @JoinColumn(name = "faction_id")
   private Faction faction;
 
+  @Column(name = "theme_song")
+  private String themeSong;
+
+  @Column(name = "artist")
+  private String artist;
+
+  @Column(name = "team_finisher")
+  private String teamFinisher;
+
   @Column(name = "status", nullable = false)
   @Enumerated(EnumType.STRING)
   private TeamStatus status = TeamStatus.ACTIVE;

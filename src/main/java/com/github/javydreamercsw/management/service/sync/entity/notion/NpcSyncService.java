@@ -92,7 +92,7 @@ public class NpcSyncService extends BaseSyncService {
         }
 
         if (npcName != null && !npcName.isEmpty() && npcType != null && !npcType.isEmpty()) {
-          Npc npc = npcService.findByExternalId(npcPage.getId());
+          Npc npc = npcService.findByExternalId(npcPage.getId()).orElse(null);
           if (npc == null) {
             npc = npcService.findByName(npcName);
             if (npc == null) {

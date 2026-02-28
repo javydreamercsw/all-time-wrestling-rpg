@@ -16,142 +16,87 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
-public class TeamNotionSyncService implements NotionEntitySyncService {
+public class TeamNotionSyncService extends BaseNotionSyncService<Team> {
 
-  private final TeamRepository teamRepository;
-  private final NotionHandler notionHandler;
-
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  @Autowired
-  public TeamNotionSyncService(TeamRepository teamRepository, NotionHandler notionHandler) {
-    this.teamRepository = teamRepository;
-    this.notionHandler = notionHandler;
+  public TeamNotionSyncService(
+      TeamRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isPresent()) {
-      try (NotionClient client = clientOptional.get()) {
-        String databaseId =
-            notionHandler.getDatabaseId("Teams"); // Assuming a Notion database named "Teams"
-        if (databaseId != null) {
-          int processedCount = 0;
-          int created = 0;
-          int updated = 0;
-          int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Teams", 1);
-          List<Team> teams = teamRepository.findAll();
-          for (Team entity : teamRepository.findAll()) {
-            try {
-              // Update progress every 5 entities
-              if (processedCount % 5 == 0) {
-                progressTracker.updateProgress(
-                    operationId,
-                    1,
-                    String.format(
-                        "Saving teams to Notion... (%d/%d processedCount)",
-                        processedCount, teams.size()));
-              }
-              Map<String, PageProperty> properties = new HashMap<>();
-              properties.put(
-                  "Name", // Assuming Notion property is "Name"
-                  NotionPropertyBuilder.createTitleProperty(entity.getName()));
+  protected Map<String, PageProperty> getProperties(@NonNull Team entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-              // Map Description
-              if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                properties.put(
-                    "Description", // Assuming Notion property is "Description"
-                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
-              }
-
-              // Map Members (Relation)
-              if (entity.getWrestler1() != null && entity.getWrestler1().getExternalId() != null) {
-                properties.put(
-                    "Member 1",
-                    NotionPropertyBuilder.createRelationProperty(
-                        entity.getWrestler1().getExternalId()));
-              }
-              if (entity.getWrestler2() != null && entity.getWrestler2().getExternalId() != null) {
-                properties.put(
-                    "Member 2",
-                    NotionPropertyBuilder.createRelationProperty(
-                        entity.getWrestler2().getExternalId()));
-              }
-
-              // Map Faction (Relation)
-              if (entity.getFaction() != null) {
-                properties.put(
-                    "Faction", // Assuming Notion property is "Faction"
-                    NotionPropertyBuilder.createRelationProperty(
-                        entity.getFaction().getExternalId()));
-              }
-
-              // Map Status (Checkbox)
-              if (entity.getStatus() != null) {
-                properties.put(
-                    "Status", // Assuming Notion property is "Status"
-                    NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
-              }
-
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                // Update existing page
-                UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                updated++;
-              } else {
-                // Create new page
-                CreatePageRequest createPageRequest =
-                    new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-                Page page =
-                    notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                entity.setExternalId(page.getId());
-                created++;
-              }
-              entity.setLastSync(Instant.now());
-              teamRepository.save(entity);
-              processedCount++;
-            } catch (Exception ex) {
-              log.error("Error syncing team: " + entity.getName(), ex);
-              errors++;
-              processedCount++;
-            }
-          }
-          return errors > 0
-              ? BaseSyncService.SyncResult.failure("teams", "Error syncing teams!")
-              : BaseSyncService.SyncResult.success("teams", created, updated, errors);
-        }
-      }
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
     }
-    return BaseSyncService.SyncResult.failure("teams", "Error syncing teams!");
+
+    if (entity.getWrestler1() != null && entity.getWrestler1().getExternalId() != null) {
+      properties.put(
+          "Member 1",
+          NotionPropertyBuilder.createRelationProperty(entity.getWrestler1().getExternalId()));
+    }
+
+    if (entity.getWrestler2() != null && entity.getWrestler2().getExternalId() != null) {
+      properties.put(
+          "Member 2",
+          NotionPropertyBuilder.createRelationProperty(entity.getWrestler2().getExternalId()));
+    }
+
+    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
+      properties.put(
+          "Manager",
+          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
+    }
+
+    if (entity.getFaction() != null && entity.getFaction().getExternalId() != null) {
+      properties.put(
+          "Faction",
+          NotionPropertyBuilder.createRelationProperty(entity.getFaction().getExternalId()));
+    }
+
+    if (entity.getThemeSong() != null) {
+      properties.put(
+          "Theme Song", NotionPropertyBuilder.createRichTextProperty(entity.getThemeSong()));
+    }
+
+    if (entity.getArtist() != null) {
+      properties.put("Artist", NotionPropertyBuilder.createRichTextProperty(entity.getArtist()));
+    }
+
+    if (entity.getTeamFinisher() != null) {
+      properties.put(
+          "Team Finisher", NotionPropertyBuilder.createRichTextProperty(entity.getTeamFinisher()));
+    }
+
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+
+    return properties;
+  }
+
+  @Override
+  protected String getDatabaseName() {
+    return "Teams";
+  }
+
+  @Override
+  protected String getEntityName() {
+    return "Team";
   }
 }

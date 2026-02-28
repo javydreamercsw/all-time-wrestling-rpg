@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,21 +14,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.config;
+package com.github.javydreamercsw.base.ai.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import java.util.Optional;
 
-@Configuration
-@Profile("!test")
-public class NotionConfiguration {
-
-  @Bean
-  @ConditionalOnProperty(name = "NOTION_TOKEN")
-  public NotionHandler notionHandler() {
-    return new NotionHandler();
-  }
+/** Interface for providing Notion integration tokens. */
+public interface NotionTokenProvider {
+  /**
+   * Gets the Notion token.
+   *
+   * @return An Optional containing the token if available, or empty otherwise.
+   */
+  Optional<String> getToken();
 }
