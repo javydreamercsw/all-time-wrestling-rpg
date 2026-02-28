@@ -129,7 +129,9 @@ public class TestNotionConfiguration {
   public NotionApiExecutor testNotionApiExecutor(
       NotionHandler notionHandler,
       NotionRateLimitService notionRateLimitService,
-      NotionSyncProperties notionSyncProperties) {
-    return new NotionApiExecutor(notionHandler, notionRateLimitService, notionSyncProperties);
+      NotionSyncProperties notionSyncProperties,
+      SyncProgressTracker progressTracker) {
+    return new NotionApiExecutor(
+        notionHandler, notionRateLimitService, notionSyncProperties, progressTracker);
   }
 }

@@ -74,16 +74,25 @@ public class NotionHandler {
   }
 
   private Optional<String> getEffectiveNotionToken() {
+    log.debug("Attempting to get Notion token.");
     if (tokenProvider != null) {
+      log.debug("TokenProvider is available. Attempting to get token from provider.");
       Optional<String> token = tokenProvider.getToken();
       if (token.isPresent() && !token.get().trim().isEmpty()) {
+        log.debug("Token found from provider.");
         return token;
+      } else {
+        log.debug("TokenProvider returned empty or blank token.");
       }
+    } else {
+      log.debug("No NotionTokenProvider bean found. Falling back to environment variable.");
     }
     String envToken = EnvironmentVariableUtil.getNotionToken();
     if (envToken != null && !envToken.trim().isEmpty()) {
+      log.debug("Token found from environment variable.");
       return Optional.of(envToken);
     }
+    log.debug("No token found from environment variable.");
     return Optional.empty();
   }
 
@@ -234,6 +243,74 @@ public class NotionHandler {
       log.debug("Database '{}' not found in loaded databases", databaseName);
     }
     return id;
+  }
+
+  /**
+   * Efficiently retrieves a map of page names to their IDs from a given database.
+   *
+   * @param databaseName The name of the database
+   * @return Map of page names to page IDs
+   */
+  public Map<String, String> getDatabaseNamesToIds(@NonNull String databaseName) {
+    log.debug("Loading all page names and IDs from database: '{}'", databaseName);
+
+    String dbId = getDatabaseId(databaseName);
+    if (dbId == null) {
+      log.warn("'{}' database not found in workspace", databaseName);
+      return new HashMap<>();
+    }
+
+    try (NotionClient client = createNotionClient().orElse(null)) {
+      if (client == null) {
+        return new HashMap<>();
+      }
+
+      Map<String, String> nameToIdMap = new HashMap<>();
+      String nextCursor = null;
+      boolean hasMore;
+
+      do {
+        QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(dbId);
+        queryRequest.setStartCursor(nextCursor);
+
+        QueryResults queryResults =
+            NotionUtil.executeWithRetry(() -> client.queryDatabase(queryRequest));
+
+        queryResults
+            .getResults()
+            .forEach(
+                page -> {
+                  PageProperty nameProp = page.getProperties().get("Name");
+                  if (nameProp == null) {
+                    // Try other common title property names if 'Name' is not found
+                    nameProp =
+                        page.getProperties().values().stream()
+                            .filter(p -> "title".equals(NotionUtil.inferPropertyType(p)))
+                            .findFirst()
+                            .orElse(null);
+                  }
+
+                  if (nameProp != null) {
+                    String name = NotionUtil.getValue(client, nameProp, false);
+                    if (name != null && !"N/A".equals(name)) {
+                      nameToIdMap.put(name, page.getId());
+                    }
+                  }
+                });
+
+        hasMore = queryResults.getHasMore();
+        nextCursor = queryResults.getNextCursor();
+      } while (hasMore);
+
+      log.debug(
+          "Successfully loaded {} name-to-ID mappings from database '{}'",
+          nameToIdMap.size(),
+          databaseName);
+      return nameToIdMap;
+    } catch (Exception e) {
+      log.error("Failed to load name-to-ID mappings from database '{}'", databaseName, e);
+      return new HashMap<>();
+    }
   }
 
   /**

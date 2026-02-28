@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
@@ -104,6 +105,22 @@ public abstract class AbstractSyncTest {
     lenient()
         .when(notionApiExecutor.getSyncExecutorService())
         .thenReturn(java.util.concurrent.Executors.newSingleThreadExecutor());
+    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(notionApiExecutor.getSyncProgressTracker()).thenReturn(progressTracker);
+    lenient()
+        .when(notionApiExecutor.executeWithRateLimit(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier.get();
+            });
+    lenient()
+        .when(notionApiExecutor.executeWithRateLimit(any()))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(0);
+              return supplier.get();
+            });
 
     syncServiceDependencies =
         new SyncServiceDependencies(

@@ -86,8 +86,8 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
   }
 
   @Override
-  protected String getDatabaseId() {
-    return syncServiceDependencies.getNotionHandler().getDatabaseId("Wrestlers");
+  protected String getDatabaseName() {
+    return "Wrestlers";
   }
 
   @Override

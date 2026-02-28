@@ -35,8 +35,10 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -86,7 +88,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
             (Answer<Page>)
                 invocation -> {
                   // The argument is a Supplier<Page>
-                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  Supplier<Page> supplier = invocation.getArgument(0);
                   return supplier.get();
                 });
 
@@ -138,7 +140,11 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
         wrestler.getName(),
-        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+        Objects.requireNonNull(
+                Objects.requireNonNull(capturedRequest.getProperties().get("Name").getTitle())
+                    .getFirst()
+                    .getText())
+            .getContent());
     assertEquals(
         wrestler.getFans().doubleValue(), capturedRequest.getProperties().get("Fans").getNumber());
 
@@ -156,10 +162,18 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
     assertEquals(
         updatedWrestler2.getName(),
-        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+        Objects.requireNonNull(
+                Objects.requireNonNull(capturedUpdateRequest.getProperties().get("Name").getTitle())
+                    .getFirst()
+                    .getText())
+            .getContent());
 
     assertEquals(
         updatedWrestler.getName(),
-        newPage.getProperties().get("Name").getTitle().get(0).getText().getContent());
+        Objects.requireNonNull(
+                Objects.requireNonNull(newPage.getProperties().get("Name").getTitle())
+                    .getFirst()
+                    .getText())
+            .getContent());
   }
 }

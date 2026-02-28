@@ -20,12 +20,13 @@ import com.github.javydreamercsw.base.ai.notion.NotionTokenProvider;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.Optional;
-import java.util.function.Supplier;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /** Implementation of {@link NotionTokenProvider} that retrieves the token from game settings. */
 @Component
+@Slf4j
 public class DatabaseNotionTokenProvider implements NotionTokenProvider {
 
   private final GameSettingService gameSettingService;
@@ -37,13 +38,17 @@ public class DatabaseNotionTokenProvider implements NotionTokenProvider {
 
   @Override
   public Optional<String> getToken() {
+    log.debug("DatabaseNotionTokenProvider: Attempting to get token from GameSettingService.");
     return GeneralSecurityUtils.runAsAdmin(
-        (Supplier<Optional<String>>)
-            () -> {
-              String token = gameSettingService.getNotionToken();
-              return (token != null && !token.trim().isEmpty())
-                  ? Optional.of(token)
-                  : Optional.empty();
-            });
+        () -> {
+          String token = gameSettingService.getNotionToken();
+          if (token != null && !token.trim().isEmpty()) {
+            log.debug("DatabaseNotionTokenProvider: Token found in GameSettingService.");
+          } else {
+            log.debug(
+                "DatabaseNotionTokenProvider: Token not found or empty in GameSettingService.");
+          }
+          return (token != null && !token.trim().isEmpty()) ? Optional.of(token) : Optional.empty();
+        });
   }
 }
