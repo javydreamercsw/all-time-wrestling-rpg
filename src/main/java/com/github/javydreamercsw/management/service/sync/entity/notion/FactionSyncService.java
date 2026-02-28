@@ -166,9 +166,17 @@ public class FactionSyncService extends BaseSyncService {
         Object isActiveObj = rawProperties.get("Status");
         if (isActiveObj instanceof Boolean) {
           dto.setIsActive((Boolean) isActiveObj);
+        } else if (isActiveObj instanceof String str) {
+          dto.setIsActive(str.equalsIgnoreCase("true") || str.equalsIgnoreCase("active"));
         }
 
         dto.setLeaderExternalId(extractRelationId(rawProperties.get("Leader")));
+        if (dto.getLeaderExternalId() == null) {
+          dto.setLeader(
+              syncServiceDependencies
+                  .getNotionPageDataExtractor()
+                  .extractPropertyAsString(rawProperties, "Leader"));
+        }
         dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
         dto.setMemberExternalIds(extractRelationIds(rawProperties.get("Members")));
         dto.setTeamExternalIds(extractRelationIds(rawProperties.get("Teams")));
@@ -256,6 +264,12 @@ public class FactionSyncService extends BaseSyncService {
         syncServiceDependencies
             .getWrestlerRepository()
             .findByExternalId(dto.getLeaderExternalId())
+            .ifPresent(faction::setLeader);
+      }
+      if (faction.getLeader() == null && dto.getLeader() != null) {
+        syncServiceDependencies
+            .getWrestlerRepository()
+            .findByName(dto.getLeader())
             .ifPresent(faction::setLeader);
       }
 
