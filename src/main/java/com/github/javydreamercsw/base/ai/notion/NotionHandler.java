@@ -33,6 +33,7 @@ import com.github.javydreamercsw.base.ai.notion.handler.TitleReignNotionHandler;
 import com.github.javydreamercsw.base.ai.notion.handler.WrestlerNotionHandler;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ import notion.api.v1.model.search.SearchResults;
 import notion.api.v1.request.databases.QueryDatabaseRequest;
 import notion.api.v1.request.search.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Getter
@@ -803,16 +805,12 @@ public class NotionHandler {
    *
    * @return List of all RivalryPage objects from the Heat database
    */
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
-      key = "'rivalries'")
+  @Cacheable(value = CacheConfig.NOTION_SYNC_CACHE, key = "'rivalries'")
   public List<RivalryPage> loadAllRivalries() {
     return rivalryNotionHandler.loadAllRivalries();
   }
 
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
-      key = "'factionRivalries'")
+  @Cacheable(value = CacheConfig.NOTION_SYNC_CACHE, key = "'factionRivalries'")
   public List<FactionRivalryPage> loadAllFactionRivalries() {
     return factionRivalryNotionHandler.loadAllFactionRivalries();
   }
