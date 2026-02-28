@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,18 +109,29 @@ public abstract class AbstractSyncTest {
     lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
     lenient().when(notionApiExecutor.getSyncProgressTracker()).thenReturn(progressTracker);
     lenient()
-        .when(notionApiExecutor.executeWithRateLimit(any(), any()))
-        .thenAnswer(
-            invocation -> {
-              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
-              return supplier.get();
-            });
-    lenient()
-        .when(notionApiExecutor.executeWithRateLimit(any()))
+        .when(notionApiExecutor.executeWithRateLimit(any(java.util.function.Supplier.class)))
         .thenAnswer(
             invocation -> {
               java.util.function.Supplier<?> supplier = invocation.getArgument(0);
-              return supplier.get();
+              return supplier != null ? supplier.get() : null;
+            });
+    lenient()
+        .when(
+            notionApiExecutor.executeWithRateLimit(
+                anyString(), any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier != null ? supplier.get() : null;
+            });
+    lenient()
+        .when(
+            notionApiExecutor.executeWithRateLimit(
+                isNull(), any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier != null ? supplier.get() : null;
             });
 
     syncServiceDependencies =

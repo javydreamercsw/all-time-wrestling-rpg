@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyze
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -47,12 +48,14 @@ class NotionSyncSchedulerTest extends BaseTest {
   @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
   @Mock private SyncServiceDependencies syncServiceDependencies;
   @Mock private SyncSessionManager syncSessionManager;
+  @Mock private SyncProgressTracker progressTracker;
 
   private NotionSyncScheduler notionSyncScheduler;
 
   @BeforeEach
   void setUp() {
     lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
     lenient().when(notionSyncService.isNotionHandlerAvailable()).thenReturn(true);
     notionSyncScheduler =
         new NotionSyncScheduler(
