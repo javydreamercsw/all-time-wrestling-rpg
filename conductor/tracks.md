@@ -66,10 +66,14 @@
 *Link: [./conductor/archive/arena_customizer_20260224/plan.md](./conductor/archive/arena_customizer_20260224/plan.md)*
 *Status: Discarded (2026-02-24)*
 
+### [x] Track: Fix Authentication error during outbound Notion sync
+
+*Link: [./conductor/archive/notion_sync_auth_fix_20260227/plan.md](./conductor/archive/notion_sync_auth_fix_20260227/plan.md)*
+*Status: Completed (2026-02-27)*
+
 ---
 
 ## Active Tracks
 
-- [x] **Track: Fix Authentication error during outbound Notion sync**
-  *Link: [./tracks/notion_sync_auth_fix_20260227/](./tracks/notion_sync_auth_fix_20260227/)*
+(No active tracks)
 
