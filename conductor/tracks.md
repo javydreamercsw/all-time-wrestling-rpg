@@ -68,13 +68,14 @@
 
 ### [x] Track: Fix Authentication error during outbound Notion sync
 
-*Link: [./conductor/archive/notion_sync_auth_fix_20260227/plan.md](./conductor/archive/notion_sync_auth_fix_20260227/plan.md)*
+*Link: [./archive/notion_sync_auth_fix_20260227/plan.md](./archive/notion_sync_auth_fix_20260227/plan.md)*
 *Status: Completed (2026-02-27)*
+
+### [x] Track: Improve Notion sync UI feedback and progress tracking
+
+*Link: [./archive/notion_sync_ui_details_20260227/plan.md](./archive/notion_sync_ui_details_20260227/plan.md)*
+*Status: Completed (2026-02-28)*
 
 ---
 
 ## Active Tracks
-
-- [x] **Track: Improve Notion sync UI feedback and progress tracking**
-  *Link: [./tracks/notion_sync_ui_details_20260227/](./tracks/notion_sync_ui_details_20260227/)*
-
