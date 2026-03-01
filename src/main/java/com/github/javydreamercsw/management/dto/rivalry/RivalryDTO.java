@@ -31,4 +31,19 @@ public class RivalryDTO implements Serializable {
   private String storylineNotes;
   private Instant startedDate;
   private Instant endedDate;
+
+  /**
+   * Helper to get the other participant in the rivalry.
+   *
+   * @param wrestler The participant to exclude
+   * @return The opponent
+   */
+  public WrestlerDTO getOpponent(WrestlerDTO wrestler) {
+    if (wrestler1 != null && wrestler1.getId().equals(wrestler.getId())) {
+      return wrestler2;
+    } else if (wrestler2 != null && wrestler2.getId().equals(wrestler.getId())) {
+      return wrestler1;
+    }
+    return null;
+  }
 }

@@ -83,12 +83,6 @@ public class Injury extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId;
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
-
   @JsonIgnore
   public boolean isCurrentlyActive() {
     return isActive && healedDate == null;

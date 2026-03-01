@@ -1445,9 +1445,6 @@
               <excludes>
                 <exclude>**/*E2ETest.java</exclude>
                 <exclude>**/DockerPackageIT.java</exclude>
-                <!-- Exclude non-Notion ITs -->
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
               </excludes>
             </configuration>
           </plugin>
@@ -1484,14 +1481,15 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
+              <!-- Ensure E2E is not skipped in this profile. -->
+              <skipITs>false</skipITs>
+
               <includes>
                 <include>**/*Notion*E2ETest.java</include>
               </includes>
               <excludes>
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
-                <!-- Exclude non-Notion E2Es -->
-                <exclude>**/*E2ETest.java</exclude>
               </excludes>
               <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>

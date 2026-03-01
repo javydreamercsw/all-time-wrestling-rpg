@@ -82,7 +82,7 @@ class InjuryTypeNotionSyncServiceTest extends AbstractSyncTest {
     assertEquals(1, result.getCreatedCount());
     assertEquals(0, result.getUpdatedCount());
     assertEquals(0, result.getErrorCount());
-    verify(injuryTypeRepository, times(1)).save(injuryTypeCaptor.capture());
+    verify(injuryTypeRepository, times(1)).saveAndFlush(injuryTypeCaptor.capture());
     InjuryType savedInjuryType = injuryTypeCaptor.getValue();
     assertNotNull(savedInjuryType.getExternalId());
     assertNotNull(savedInjuryType.getLastSync());
@@ -116,7 +116,7 @@ class InjuryTypeNotionSyncServiceTest extends AbstractSyncTest {
     assertEquals(0, result.getCreatedCount());
     assertEquals(1, result.getUpdatedCount());
     assertEquals(0, result.getErrorCount());
-    verify(injuryTypeRepository, times(1)).save(injuryTypeCaptor.capture());
+    verify(injuryTypeRepository, times(1)).saveAndFlush(injuryTypeCaptor.capture());
     InjuryType savedInjuryType = injuryTypeCaptor.getValue();
     assertNotNull(savedInjuryType.getLastSync());
   }

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
 import dev.failsafe.FailsafeException;
 import java.time.Instant;
@@ -66,7 +67,8 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
       factionRepository.save(faction);
 
       // Sync to Notion for the first time
-      factionNotionSyncService.syncToNotion("test-op-1");
+      BaseSyncService.SyncResult result = factionNotionSyncService.syncToNotion("test-op-1");
+      assertTrue(result.isSuccess(), "Sync failed: " + result.getSummary());
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(faction.getId());

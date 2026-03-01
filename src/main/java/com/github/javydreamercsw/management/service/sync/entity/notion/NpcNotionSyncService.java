@@ -41,6 +41,49 @@ public class NpcNotionSyncService extends BaseNotionSyncService<Npc> {
   protected Map<String, PageProperty> getProperties(@NonNull Npc entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
+    if (entity.getNpcType() != null) {
+      properties.put("Role", NotionPropertyBuilder.createSelectProperty(entity.getNpcType()));
+    }
+
+    if (entity.getAlignment() != null) {
+      properties.put(
+          "Alignment", NotionPropertyBuilder.createSelectProperty(entity.getAlignment().name()));
+    }
+
+    if (entity.getGender() != null) {
+      properties.put("Sex", NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
+    }
+
+    Map<String, Object> attrs = entity.getAttributes();
+    if (attrs.containsKey("likeness")) {
+      properties.put(
+          "Likeness", NotionPropertyBuilder.createRichTextProperty((String) attrs.get("likeness")));
+    }
+    if (attrs.containsKey("origin")) {
+      properties.put(
+          "Origin", NotionPropertyBuilder.createRichTextProperty((String) attrs.get("origin")));
+    }
+    if (attrs.containsKey("catchphrase")) {
+      properties.put(
+          "Catchphrase",
+          NotionPropertyBuilder.createRichTextProperty((String) attrs.get("catchphrase")));
+    }
+    if (attrs.containsKey("signatureStyle")) {
+      properties.put(
+          "Signature Style",
+          NotionPropertyBuilder.createRichTextProperty((String) attrs.get("signatureStyle")));
+    }
+    if (attrs.containsKey("status")) {
+      properties.put(
+          "Status", NotionPropertyBuilder.createSelectProperty((String) attrs.get("status")));
+    }
+
     return properties;
   }
 

@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
@@ -95,41 +96,35 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
       factionRepository.save(testFaction);
 
       // Sync dependencies to Notion to get external IDs
+      BaseSyncService.SyncResult wrestlerResult =
+          wrestlerNotionSyncService.syncToNotion(
+              "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
+      assertTrue(
+          wrestlerResult.isSuccess(), "Wrestler sync failed: " + wrestlerResult.getSummary());
 
-      wrestlerNotionSyncService.syncToNotion(
-          "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
-
-      factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
+      BaseSyncService.SyncResult factionResult =
+          factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
+      assertTrue(factionResult.isSuccess(), "Faction sync failed: " + factionResult.getSummary());
 
       final Wrestler wrestler1_reloaded = wrestlerRepository.findById(wrestler1.getId()).get();
-
       final Wrestler wrestler2_reloaded = wrestlerRepository.findById(wrestler2.getId()).get();
-
       testFaction = factionRepository.findById(testFaction.getId()).get();
 
       // Create a new Team
-
       team = new Team();
-
       team.setName("Test Team " + UUID.randomUUID());
-
       team.setDescription("A test wrestling team");
-
       team.setWrestler1(wrestler1_reloaded);
-
       team.setWrestler2(wrestler2_reloaded);
-
       team.setFaction(testFaction);
-
       team.setStatus(TeamStatus.ACTIVE);
-
       team.setFormedDate(Instant.now().minusSeconds(3600));
-
       teamRepository.save(team);
 
       // Sync to Notion for the first time
-
-      teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
+      BaseSyncService.SyncResult result =
+          teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
+      assertTrue(result.isSuccess(), "Team sync failed: " + result.getSummary());
 
       // Verify that the externalId and lastSync fields are updated
 

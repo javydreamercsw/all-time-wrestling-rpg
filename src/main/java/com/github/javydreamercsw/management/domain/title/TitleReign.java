@@ -42,9 +42,6 @@ public class TitleReign extends AbstractEntity<Long> {
   @Column(name = "title_reign_id")
   private Long id;
 
-  @Column(name = "external_id")
-  private String externalId;
-
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "title_id", nullable = false)
   private Title title;
