@@ -161,7 +161,7 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
                 created++;
               }
               entity.setLastSync(Instant.now());
-              factionRivalryRepository.save(entity);
+              factionRivalryRepository.saveAndFlush(entity);
               processedCount++;
             } catch (Exception ex) {
               errors++;

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -24,13 +24,16 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
-import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignNotionSyncService;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
@@ -46,11 +49,12 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
+class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
 
-  @Autowired private InjuryRepository injuryRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired private TitleRepository titleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private InjuryNotionSyncService injuryNotionSyncService;
+  @Autowired private TitleReignNotionSyncService titleReignNotionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
 
@@ -74,7 +78,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
     when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
     when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
-    when(notionHandler.getDatabaseId("Injuries")).thenReturn("test-db-id");
+    when(notionHandler.getDatabaseId("Title Reigns")).thenReturn("test-db-id");
     when(notionHandler.executeWithRetry(any()))
         .thenAnswer(
             (Answer<Page>)
@@ -83,60 +87,67 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
-    // Create a new Wrestler
+    // Create a Title
+    Title title = new Title();
+    title.setName("ATW World Championship");
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    title.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+    title.setExternalId(UUID.randomUUID().toString());
+    titleRepository.save(title);
+
+    // Create a Wrestler
     Wrestler wrestler = new Wrestler();
-    wrestler.setName("Test Wrestler " + UUID.randomUUID());
+    wrestler.setName("Test Champion");
     wrestler.setExternalId(UUID.randomUUID().toString());
     wrestlerRepository.save(wrestler);
 
-    // Create a new Injury
-    Injury injury = new Injury();
-    injury.setName("Concussion");
-    injury.setSeverity(InjurySeverity.SEVERE);
-    injury.setHealthPenalty(10);
-    injury.setStaminaPenalty(5);
-    injury.setHandSizePenalty(2);
-    injury.setIsActive(true);
-    injury.setInjuryDate(Instant.now());
-    injury.setInjuryNotes("Got hit with a chair");
-    injury.setWrestler(wrestler);
-    injuryRepository.save(injury);
+    // Create a Title Reign
+    TitleReign reign = new TitleReign();
+    reign.setTitle(title);
+    reign.setChampions(List.of(wrestler));
+    reign.setReignNumber(1);
+    reign.setStartDate(Instant.now());
+    reign.setNotes("Historical first reign");
+    titleReignRepository.save(reign);
 
     // Sync to Notion for the first time
-    injuryNotionSyncService.syncToNotion("test-op-1");
+    titleReignNotionSyncService.syncToNotion("test-op-1");
 
-    // Verify that the externalId and lastSync fields are updated
-    assertNotNull(injury.getId());
-    Injury updatedInjury = injuryRepository.findById(injury.getId()).get();
-    assertNotNull(updatedInjury.getExternalId());
-    assertEquals(newPageId, updatedInjury.getExternalId());
-    assertNotNull(updatedInjury.getLastSync());
+    // Verify fields updated
+    TitleReign updatedReign = titleReignRepository.findById(reign.getId()).get();
+    assertNotNull(updatedReign.getExternalId());
+    assertEquals(newPageId, updatedReign.getExternalId());
 
     // Verify properties sent to Notion
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        injury.getName(),
+        String.format("%s - Reign #%d", title.getName(), reign.getReignNumber()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
+        title.getExternalId(),
+        capturedRequest.getProperties().get("Title").getRelation().get(0).getId());
+    assertEquals(
         wrestler.getExternalId(),
-        capturedRequest.getProperties().get("Wrestler").getRelation().get(0).getId());
+        capturedRequest.getProperties().get("Champion").getRelation().get(0).getId());
 
-    // Sync to Notion again
-    updatedInjury.setInjuryNotes("Recovery going well");
-    injuryRepository.save(updatedInjury);
-    injuryNotionSyncService.syncToNotion("test-op-2");
-    Injury updatedInjury2 = injuryRepository.findById(injury.getId()).get();
-    assertTrue(updatedInjury2.getLastSync().isAfter(updatedInjury.getLastSync()));
+    // Sync to Notion again with updates
+    updatedReign.setNotes("Updated historical notes");
+    titleReignRepository.save(updatedReign);
+    titleReignNotionSyncService.syncToNotion("test-op-2");
+
+    TitleReign updatedReign2 = titleReignRepository.findById(reign.getId()).get();
+    assertTrue(updatedReign2.getLastSync().isAfter(updatedReign.getLastSync()));
 
     // Verify updated properties sent to Notion
     Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
     UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
     assertEquals(
-        updatedInjury2.getInjuryNotes(),
+        updatedReign2.getNotes(),
         capturedUpdateRequest
             .getProperties()
-            .get("Injury Notes")
+            .get("Notes")
             .getRichText()
             .get(0)
             .getText()

@@ -19,105 +19,99 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
-import dev.failsafe.FailsafeException;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-@TestPropertySource(properties = "test.mock.notion-handler=false")
 class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FactionRepository factionRepository;
   @Autowired private FactionNotionSyncService factionNotionSyncService;
-  @Autowired private NotionHandler notionHandler;
+
+  @MockitoBean private NotionHandler notionHandler;
+
+  @Mock private NotionClient notionClient;
+  @Mock private Page newPage;
+
+  @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
+  @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
+
+  @BeforeEach
+  public void setup() {
+    clearAllRepositories();
+  }
 
   @Test
   void testSyncToNotion() {
-    Faction faction = null;
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      Assertions.fail("Unable to create Notion client, skipping test.");
-    }
-    try (NotionClient client = clientOptional.get()) {
-      // Create a new faction
-      faction = new Faction();
-      faction.setName("Test Faction " + UUID.randomUUID());
-      faction.setCreationDate(Instant.now());
-      factionRepository.save(faction);
+    when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
 
-      // Sync to Notion for the first time
-      BaseSyncService.SyncResult result = factionNotionSyncService.syncToNotion("test-op-1");
-      assertTrue(result.isSuccess(), "Sync failed: " + result.getSummary());
+    String newPageId = UUID.randomUUID().toString();
+    when(newPage.getId()).thenReturn(newPageId);
 
-      // Verify that the externalId and lastSync fields are updated
-      assertNotNull(faction.getId());
-      Faction updatedFaction = factionRepository.findById(faction.getId()).get();
-      assertNotNull(updatedFaction.getExternalId());
-      assertNotNull(updatedFaction.getLastSync());
+    when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
+    when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
+    when(notionHandler.getDatabaseId("Factions")).thenReturn("test-db-id");
+    when(notionHandler.executeWithRetry(any()))
+        .thenAnswer(
+            (Answer<Page>)
+                invocation -> {
+                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                });
 
-      // Retrieve the page from Notion and verify properties
-      Page page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedFaction.getExternalId(), Collections.emptyList()));
-      Map<String, PageProperty> props = page.getProperties();
-      assertEquals(
-          updatedFaction.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
+    // Create a new Faction
+    Faction faction = new Faction();
+    faction.setName("Test Faction " + UUID.randomUUID());
+    factionRepository.save(faction);
 
-      // Sync to Notion again
-      updatedFaction.setName("Test Faction Updated " + UUID.randomUUID());
-      factionRepository.save(updatedFaction);
-      factionNotionSyncService.syncToNotion("test-op-2");
-      Faction updatedFaction2 = factionRepository.findById(faction.getId()).get();
-      assertTrue(updatedFaction2.getLastSync().isAfter(updatedFaction.getLastSync()));
+    // Sync to Notion for the first time
+    factionNotionSyncService.syncToNotion("test-op-1");
 
-      // Verify updated name
-      page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedFaction.getExternalId(), Collections.emptyList()));
-      props = page.getProperties();
-      assertEquals(
-          updatedFaction2.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-    } finally {
-      if (faction != null && faction.getExternalId() != null) {
-        // Clean up
-        try (NotionClient client = clientOptional.get()) {
-          UpdatePageRequest request =
-              new UpdatePageRequest(faction.getExternalId(), new HashMap<>(), true, null, null);
-          notionHandler.executeWithRetry(() -> client.updatePage(request));
-        } catch (FailsafeException e) {
-          // Ignore timeout on cleanup
-        }
-        factionRepository.delete(faction);
-      } else if (faction != null && faction.getId() != null) {
-        factionRepository.delete(faction);
-      }
-    }
+    // Verify that the externalId and lastSync fields are updated
+    assertNotNull(faction.getId());
+    Faction updatedFaction = factionRepository.findById(faction.getId()).get();
+    assertNotNull(updatedFaction.getExternalId());
+    assertEquals(newPageId, updatedFaction.getExternalId());
+    assertNotNull(updatedFaction.getLastSync());
+
+    // Verify properties sent to Notion
+    Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
+    CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
+    assertEquals(
+        faction.getName(),
+        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+
+    // Sync to Notion again with updates
+    updatedFaction.setName("Test Faction Updated " + UUID.randomUUID());
+    factionRepository.save(updatedFaction);
+    factionNotionSyncService.syncToNotion("test-op-2");
+    Faction updatedFaction2 = factionRepository.findById(faction.getId()).get();
+    assertTrue(updatedFaction2.getLastSync().isAfter(updatedFaction.getLastSync()));
+
+    // Verify updated properties sent to Notion
+    Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
+    UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
+    assertEquals(
+        updatedFaction2.getName(),
+        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
   }
 }

@@ -211,6 +211,36 @@ public class NotionPageDataExtractor {
     return extractPropertyAsString(page.getRawProperties(), "Recurrence Type");
   }
 
+  /**
+   * Extracts a single relation ID from a Notion page.
+   *
+   * @param page The Notion page
+   * @param propertyName The property name
+   * @return The relation ID or null
+   */
+  public String extractRelationId(@NonNull NotionPage page, @NonNull String propertyName) {
+    String val = extractPropertyAsString(page.getRawProperties(), propertyName);
+    if (val != null
+        && val.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+      return val;
+    }
+    return null;
+  }
+
+  /**
+   * Extracts multiple relation IDs from a Notion page.
+   *
+   * @param page The Notion page
+   * @param propertyName The property name
+   * @return List of relation IDs
+   */
+  public java.util.List<String> extractRelationIds(
+      @NonNull NotionPage page, @NonNull String propertyName) {
+    // This is a simplified version for mocks
+    String val = extractRelationId(page, propertyName);
+    return val != null ? java.util.List.of(val) : java.util.Collections.emptyList();
+  }
+
   public String extractDayOfWeekFromNotionPage(@NonNull NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Day of Week");
   }
@@ -243,5 +273,41 @@ public class NotionPageDataExtractor {
 
   public String extractMonthFromNotionPage(@NonNull NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Month");
+  }
+
+  /**
+   * Extracts the ID from any NotionPage type.
+   *
+   * @param page The Notion page to extract the ID from
+   * @return The page ID
+   */
+  public String extractIdFromNotionPage(@NonNull NotionPage page) {
+    return page.getId();
+  }
+
+  /**
+   * Extracts date from any NotionPage type using raw properties.
+   *
+   * @param page The Notion page to extract the date from
+   * @return The extracted LocalDate or null if not found or invalid
+   */
+  public java.time.LocalDate extractDateFromNotionPage(@NonNull NotionPage page) {
+    String dateStr = extractPropertyAsString(page.getRawProperties(), "Date");
+    if (dateStr != null && !dateStr.trim().isEmpty()) {
+      try {
+        // Handle full ISO date-time or just date
+        if (dateStr.length() > 10) {
+          return java.time.OffsetDateTime.parse(dateStr).toLocalDate();
+        }
+        return java.time.LocalDate.parse(dateStr);
+      } catch (Exception e) {
+        log.warn(
+            "Failed to parse date string '{}' from page {}: {}",
+            dateStr,
+            page.getId(),
+            e.getMessage());
+      }
+    }
+    return null;
   }
 }

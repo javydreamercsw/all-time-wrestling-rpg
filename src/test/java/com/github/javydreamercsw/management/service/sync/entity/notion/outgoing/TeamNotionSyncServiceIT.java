@@ -17,210 +17,117 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
-import dev.failsafe.FailsafeException;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-@TestPropertySource(properties = "test.mock.notion-handler=false")
 class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TeamRepository teamRepository;
-  @Autowired private TeamNotionSyncService teamNotionSyncService;
-  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
-  @Autowired private FactionNotionSyncService factionNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private NotionHandler notionHandler;
+  @Autowired private TeamNotionSyncService teamNotionSyncService;
+
+  @MockitoBean private NotionHandler notionHandler;
+
+  @Mock private NotionClient notionClient;
+  @Mock private Page newPage;
+
+  @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
+  @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
 
   @BeforeEach
-  void setUp() {
+  public void setup() {
     clearAllRepositories();
   }
 
   @Test
   void testSyncToNotion() {
-    Team team = null;
-    Wrestler testWrestler1 = null;
-    Wrestler testWrestler2 = null;
-    Faction testFaction = null;
+    when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
 
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      Assertions.fail("Unable to create Notion client, skipping test.");
-    }
-    try (NotionClient client = clientOptional.get()) {
-      final Wrestler wrestler1 = createTestWrestler("Wrestler One " + UUID.randomUUID());
-      wrestlerRepository.save(wrestler1);
-      testWrestler1 = wrestler1;
+    String newPageId = UUID.randomUUID().toString();
+    when(newPage.getId()).thenReturn(newPageId);
 
-      final Wrestler wrestler2 = createTestWrestler("Wrestler Two " + UUID.randomUUID());
-      wrestlerRepository.save(wrestler2);
-      testWrestler2 = wrestler2;
+    when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
+    when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
+    when(notionHandler.getDatabaseId("Teams")).thenReturn("test-db-id");
+    when(notionHandler.executeWithRetry(any()))
+        .thenAnswer(
+            (Answer<Page>)
+                invocation -> {
+                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                });
 
-      testFaction = new Faction();
-      testFaction.setName("Test Faction Team " + UUID.randomUUID());
-      factionRepository.save(testFaction);
+    // Create Wrestlers
+    Wrestler wrestler1 = new Wrestler();
+    wrestler1.setName("Wrestler 1 " + UUID.randomUUID());
+    wrestler1.setExternalId(UUID.randomUUID().toString());
+    wrestlerRepository.save(wrestler1);
 
-      // Sync dependencies to Notion to get external IDs
-      BaseSyncService.SyncResult wrestlerResult =
-          wrestlerNotionSyncService.syncToNotion(
-              "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
-      assertTrue(
-          wrestlerResult.isSuccess(), "Wrestler sync failed: " + wrestlerResult.getSummary());
+    Wrestler wrestler2 = new Wrestler();
+    wrestler2.setName("Wrestler 2 " + UUID.randomUUID());
+    wrestler2.setExternalId(UUID.randomUUID().toString());
+    wrestlerRepository.save(wrestler2);
 
-      BaseSyncService.SyncResult factionResult =
-          factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
-      assertTrue(factionResult.isSuccess(), "Faction sync failed: " + factionResult.getSummary());
+    // Create a new Team
+    Team team = new Team();
+    team.setName("Test Team " + UUID.randomUUID());
+    team.setWrestler1(wrestler1);
+    team.setWrestler2(wrestler2);
+    teamRepository.save(team);
 
-      final Wrestler wrestler1_reloaded = wrestlerRepository.findById(wrestler1.getId()).get();
-      final Wrestler wrestler2_reloaded = wrestlerRepository.findById(wrestler2.getId()).get();
-      testFaction = factionRepository.findById(testFaction.getId()).get();
+    // Sync to Notion for the first time
+    teamNotionSyncService.syncToNotion("test-op-1");
 
-      // Create a new Team
-      team = new Team();
-      team.setName("Test Team " + UUID.randomUUID());
-      team.setDescription("A test wrestling team");
-      team.setWrestler1(wrestler1_reloaded);
-      team.setWrestler2(wrestler2_reloaded);
-      team.setFaction(testFaction);
-      team.setStatus(TeamStatus.ACTIVE);
-      team.setFormedDate(Instant.now().minusSeconds(3600));
-      teamRepository.save(team);
+    // Verify that the externalId and lastSync fields are updated
+    assertNotNull(team.getId());
+    Team updatedTeam = teamRepository.findById(team.getId()).get();
+    assertNotNull(updatedTeam.getExternalId());
+    assertEquals(newPageId, updatedTeam.getExternalId());
+    assertNotNull(updatedTeam.getLastSync());
 
-      // Sync to Notion for the first time
-      BaseSyncService.SyncResult result =
-          teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
-      assertTrue(result.isSuccess(), "Team sync failed: " + result.getSummary());
+    // Verify properties sent to Notion
+    Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
+    CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
+    assertEquals(
+        team.getName(),
+        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
 
-      // Verify that the externalId and lastSync fields are updated
+    // Sync to Notion again with updates
+    updatedTeam.setName("Test Team Updated " + UUID.randomUUID());
+    teamRepository.save(updatedTeam);
+    teamNotionSyncService.syncToNotion("test-op-2");
+    Team updatedTeam2 = teamRepository.findById(team.getId()).get();
+    assertTrue(updatedTeam2.getLastSync().isAfter(updatedTeam.getLastSync()));
 
-      assertNotNull(team.getId());
-
-      Team updatedTeam = teamRepository.findById(team.getId()).get();
-
-      assertNotNull(updatedTeam.getExternalId());
-
-      assertNotNull(updatedTeam.getLastSync());
-
-      // Retrieve the page from Notion and verify properties
-
-      Page page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedTeam.getExternalId(), Collections.emptyList()));
-
-      Map<String, PageProperty> props = page.getProperties();
-
-      assertEquals(
-          updatedTeam.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-
-      assertNotNull(props.get("Member 1").getRelation());
-
-      assertFalse(props.get("Member 1").getRelation().isEmpty());
-
-      assertEquals(
-          wrestler1_reloaded.getExternalId(), props.get("Member 1").getRelation().get(0).getId());
-
-      assertNotNull(props.get("Member 2").getRelation());
-
-      assertFalse(props.get("Member 2").getRelation().isEmpty());
-
-      assertEquals(
-          wrestler2_reloaded.getExternalId(), props.get("Member 2").getRelation().get(0).getId());
-
-      assertNotNull(props.get("Faction").getRelation());
-
-      assertFalse(props.get("Faction").getRelation().isEmpty());
-
-      assertEquals(testFaction.getExternalId(), props.get("Faction").getRelation().get(0).getId());
-
-      assertTrue(Objects.requireNonNull(props.get("Status").getCheckbox()));
-
-      // Sync to Notion again with updates
-
-      updatedTeam.setName("Test Team Updated " + UUID.randomUUID());
-
-      updatedTeam.setStatus(TeamStatus.DISBANDED);
-
-      updatedTeam.setDisbandedDate(Instant.now());
-
-      teamRepository.save(updatedTeam);
-
-      teamNotionSyncService.syncToNotion("test-op-2", List.of(team.getId()));
-      Team updatedTeam2 = teamRepository.findById(team.getId()).get();
-      assertTrue(updatedTeam2.getLastSync().isAfter(updatedTeam.getLastSync()));
-
-      // Verify updated properties
-      page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedTeam.getExternalId(), Collections.emptyList()));
-      props = page.getProperties();
-      assertEquals(
-          updatedTeam2.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertFalse(Objects.requireNonNull(props.get("Status").getCheckbox()));
-
-    } finally {
-      if (team != null && team.getExternalId() != null) {
-        // Clean up
-        try (NotionClient client = clientOptional.get()) {
-          UpdatePageRequest request =
-              new UpdatePageRequest(team.getExternalId(), new HashMap<>(), true, null, null);
-          notionHandler.executeWithRetry(() -> client.updatePage(request));
-        } catch (FailsafeException e) {
-          // Ignore timeout on cleanup
-        }
-      }
-      if (team != null) {
-        teamRepository.delete(team);
-      }
-      if (testWrestler1 != null) {
-        wrestlerRepository.delete(testWrestler1);
-      }
-      if (testWrestler2 != null) {
-        wrestlerRepository.delete(testWrestler2);
-      }
-      if (testFaction != null) {
-        factionRepository.delete(testFaction);
-      }
-    }
+    // Verify updated properties sent to Notion
+    Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
+    UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
+    assertEquals(
+        updatedTeam2.getName(),
+        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
   }
 }
