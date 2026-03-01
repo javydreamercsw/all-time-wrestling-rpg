@@ -281,11 +281,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
   protected abstract String getEntityName();
 
   private String getEntityDisplayName(T entity) {
-    try {
-      java.lang.reflect.Method getNameMethod = entity.getClass().getMethod("getName");
-      return (String) getNameMethod.invoke(entity);
-    } catch (Exception e) {
-      return entity.toString();
-    }
+    String name = entity.getName();
+    return name != null ? name : entity.toString();
   }
 }

@@ -67,6 +67,11 @@ public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
           NotionPropertyBuilder.createDateProperty(
               entity.getShowDate().atStartOfDay().atOffset(ZoneOffset.UTC).toString()));
     }
+
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
     return properties;
   }
 

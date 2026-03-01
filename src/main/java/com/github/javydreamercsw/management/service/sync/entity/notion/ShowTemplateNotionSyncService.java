@@ -64,6 +64,46 @@ public class ShowTemplateNotionSyncService extends BaseNotionSyncService<ShowTem
           NotionPropertyBuilder.createNumberProperty(entity.getWeekOfMonth().doubleValue()));
     }
 
+    if (entity.getExpectedMatches() != null) {
+      properties.put(
+          "Expected Matches",
+          NotionPropertyBuilder.createNumberProperty(entity.getExpectedMatches().doubleValue()));
+    }
+
+    if (entity.getExpectedPromos() != null) {
+      properties.put(
+          "Expected Promos",
+          NotionPropertyBuilder.createNumberProperty(entity.getExpectedPromos().doubleValue()));
+    }
+
+    if (entity.getGenderConstraint() != null) {
+      properties.put(
+          "Gender Constraint",
+          NotionPropertyBuilder.createSelectProperty(entity.getGenderConstraint().name()));
+    }
+
+    if (entity.getDurationDays() != null) {
+      properties.put(
+          "Duration Days",
+          NotionPropertyBuilder.createNumberProperty(entity.getDurationDays().doubleValue()));
+    }
+
+    if (entity.getRecurrenceType() != null) {
+      properties.put(
+          "Recurrence Type",
+          NotionPropertyBuilder.createSelectProperty(entity.getRecurrenceType().name()));
+    }
+
+    if (entity.getDayOfMonth() != null) {
+      properties.put(
+          "Day of Month",
+          NotionPropertyBuilder.createNumberProperty(entity.getDayOfMonth().doubleValue()));
+    }
+
+    if (entity.getMonth() != null) {
+      properties.put("Month", NotionPropertyBuilder.createSelectProperty(entity.getMonth().name()));
+    }
+
     return properties;
   }
 

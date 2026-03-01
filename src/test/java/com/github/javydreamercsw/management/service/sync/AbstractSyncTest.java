@@ -31,9 +31,12 @@ import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -77,7 +80,10 @@ public abstract class AbstractSyncTest {
   @Mock protected EntitySyncConfiguration entitySyncConfig;
   @Mock protected FactionRepository factionRepository;
   @Mock protected WrestlerRepository wrestlerRepository;
+  @Mock protected InjuryRepository injuryRepository;
   @Mock protected InjuryTypeRepository injuryTypeRepository;
+  @Mock protected ShowRepository showRepository;
+  @Mock protected ShowTemplateRepository showTemplateRepository;
   @Mock protected ShowTypeRepository showTypeRepository;
   @Mock protected TeamRepository teamRepository;
   @Mock protected TitleReignRepository titleReignRepository;
@@ -158,7 +164,10 @@ public abstract class AbstractSyncTest {
             syncSessionManager,
             factionRepository,
             wrestlerRepository,
+            injuryRepository,
             injuryTypeRepository,
+            showRepository,
+            showTemplateRepository,
             showTypeRepository,
             teamRepository,
             titleReignRepository,
