@@ -31,9 +31,12 @@ import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -79,16 +82,20 @@ public abstract class AbstractSyncTest {
   @Mock protected DataIntegrityChecker integrityChecker;
   @Mock protected EntitySyncConfiguration entitySyncConfig;
   @Mock protected FactionRepository factionRepository;
+  @Mock protected FactionRivalryRepository factionRivalryRepository;
   @Mock protected WrestlerRepository wrestlerRepository;
   @Mock protected InjuryRepository injuryRepository;
   @Mock protected InjuryTypeRepository injuryTypeRepository;
-  @Mock protected ShowRepository showRepository;
-  @Mock protected ShowTemplateRepository showTemplateRepository;
+  @Mock protected RivalryRepository rivalryRepository;
   @Mock protected ShowTypeRepository showTypeRepository;
+  @Mock protected ShowRepository showRepository;
+
+  @Mock protected ShowTemplateRepository showTemplateRepository;
   @Mock protected TeamRepository teamRepository;
   @Mock protected TitleReignRepository titleReignRepository;
   @Mock protected TitleRepository titleRepository;
   @Mock protected NpcRepository npcRepository;
+  @Mock protected SeasonRepository seasonRepository;
   @Mock protected SegmentRepository segmentRepository;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
@@ -166,6 +173,8 @@ public abstract class AbstractSyncTest {
             wrestlerRepository,
             injuryRepository,
             injuryTypeRepository,
+            seasonRepository,
+            rivalryRepository,
             showRepository,
             showTemplateRepository,
             showTypeRepository,

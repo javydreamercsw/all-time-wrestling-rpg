@@ -75,12 +75,55 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
 
     if (entity.getNarration() != null) {
       properties.put(
-          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getNarration()));
+          "Narration", NotionPropertyBuilder.createRichTextProperty(entity.getNarration()));
     }
 
     if (entity.getSummary() != null) {
       properties.put("Summary", NotionPropertyBuilder.createRichTextProperty(entity.getSummary()));
     }
+
+    properties.put("Status", NotionPropertyBuilder.createSelectProperty(entity.getStatus().name()));
+
+    properties.put(
+        "Adjudication Status",
+        NotionPropertyBuilder.createSelectProperty(entity.getAdjudicationStatus().name()));
+
+    properties.put(
+        "Is Title Segment",
+        NotionPropertyBuilder.createCheckboxProperty(entity.getIsTitleSegment()));
+
+    properties.put(
+        "Is Main Event", NotionPropertyBuilder.createCheckboxProperty(entity.isMainEvent()));
+
+    if (entity.getWinners() != null && !entity.getWinners().isEmpty()) {
+      properties.put(
+          "Winners",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getWinners().stream()
+                  .map(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getExternalId)
+                  .filter(java.util.Objects::nonNull)
+                  .toList()));
+    }
+
+    if (entity.getTitles() != null && !entity.getTitles().isEmpty()) {
+      properties.put(
+          "Title(s)",
+          NotionPropertyBuilder.createRelationProperty(
+              entity.getTitles().stream()
+                  .map(com.github.javydreamercsw.management.domain.title.Title::getExternalId)
+                  .filter(java.util.Objects::nonNull)
+                  .toList()));
+    }
+
+    if (entity.getReferee() != null && entity.getReferee().getExternalId() != null) {
+      properties.put(
+          "Referee(s)",
+          NotionPropertyBuilder.createRelationProperty(entity.getReferee().getExternalId()));
+    }
+
+    properties.put(
+        "Referee Awareness Level",
+        NotionPropertyBuilder.createNumberProperty((double) entity.getRefereeAwarenessLevel()));
 
     if (entity.getWrestlers() != null && !entity.getWrestlers().isEmpty()) {
       properties.put(

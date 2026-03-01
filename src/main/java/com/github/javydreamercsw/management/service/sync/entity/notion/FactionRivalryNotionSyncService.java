@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,13 +65,13 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Faction Rivalries");
+        String databaseId = notionHandler.getDatabaseId("Faction Heat");
         if (databaseId != null) {
           int processedCount = 0;
           int created = 0;
           int updated = 0;
           int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Faction Rivalries", 1);
+          progressTracker.startOperation(operationId, "Sync Faction Heat", 1);
           List<FactionRivalry> rivalries = factionRivalryRepository.findAll();
           for (FactionRivalry entity : rivalries) {
             if (processedCount % 5 == 0) {
@@ -78,7 +79,7 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
                   operationId,
                   1,
                   String.format(
-                      "Saving faction rivalries to Notion... (%d/%d processed)",
+                      "Saving faction heat to Notion... (%d/%d processed)",
                       processedCount, rivalries.size()));
             }
             try {
@@ -86,31 +87,63 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
               properties.put(
                   "Name", NotionPropertyBuilder.createTitleProperty(entity.getDisplayName()));
 
-              properties.put(
-                  "Faction 1",
-                  NotionPropertyBuilder.createRelationProperty(
-                      entity.getFaction1().getExternalId()));
+              if (entity.getFaction1() != null && entity.getFaction1().getExternalId() != null) {
+                properties.put(
+                    "Faction 1",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getFaction1().getExternalId()));
+              }
 
-              // Faction 2
-              properties.put(
-                  "Faction 2",
-                  NotionPropertyBuilder.createRelationProperty(
-                      entity.getFaction2().getExternalId()));
+              if (entity.getFaction2() != null && entity.getFaction2().getExternalId() != null) {
+                properties.put(
+                    "Faction 2",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getFaction2().getExternalId()));
+              }
 
-              // Heat
               properties.put(
                   "Heat",
                   NotionPropertyBuilder.createNumberProperty(entity.getHeat().doubleValue()));
 
-              // Active
               properties.put(
                   "Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
-              // Intensity
+              properties.put(
+                  "Status",
+                  NotionPropertyBuilder.createSelectProperty(
+                      entity.getIsActive() ? "Active" : "Innactive"));
+
               properties.put(
                   "Intensity",
-                  NotionPropertyBuilder.createSelectProperty(
-                      entity.getIntensity().getDisplayName()));
+                  NotionPropertyBuilder.createSelectProperty(entity.getIntensity().name()));
+
+              if (entity.getStartedDate() != null) {
+                properties.put(
+                    "Started Date",
+                    NotionPropertyBuilder.createDateProperty(
+                        entity
+                            .getStartedDate()
+                            .atOffset(ZoneOffset.UTC)
+                            .toLocalDateTime()
+                            .toString()));
+              }
+
+              if (entity.getEndedDate() != null) {
+                properties.put(
+                    "Ended Date",
+                    NotionPropertyBuilder.createDateProperty(
+                        entity
+                            .getEndedDate()
+                            .atOffset(ZoneOffset.UTC)
+                            .toLocalDateTime()
+                            .toString()));
+              }
+
+              if (entity.getStorylineNotes() != null && !entity.getStorylineNotes().isBlank()) {
+                properties.put(
+                    "Storyline Notes",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getStorylineNotes()));
+              }
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing faction rivalry page: {}", entity.getDisplayName());

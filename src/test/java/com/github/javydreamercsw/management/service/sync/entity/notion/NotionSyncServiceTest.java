@@ -143,6 +143,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             wrestlerRepository,
             injuryRepository,
             injuryTypeRepository,
+            seasonRepository,
+            rivalryRepository,
             showRepository,
             showTemplateRepository,
             showTypeRepository,

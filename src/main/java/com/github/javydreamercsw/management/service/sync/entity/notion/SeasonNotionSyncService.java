@@ -57,6 +57,17 @@ public class SeasonNotionSyncService extends BaseNotionSyncService<Season> {
               entity.getEndDate().atOffset(ZoneOffset.UTC).toLocalDateTime().toString()));
     }
 
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
+    properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
+
+    properties.put(
+        "Shows per PPV",
+        NotionPropertyBuilder.createNumberProperty(entity.getShowsPerPpv().doubleValue()));
+
     return properties;
   }
 
