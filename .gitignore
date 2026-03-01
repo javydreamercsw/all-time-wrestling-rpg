@@ -46,3 +46,7 @@ replay_pid*
 /models/
 src/main/resources/META-INF/resources/images/generated/
 .vaadin-node-tasks.lock
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
