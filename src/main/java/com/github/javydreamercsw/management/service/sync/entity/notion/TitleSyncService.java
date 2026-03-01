@@ -180,6 +180,10 @@ public class TitleSyncService extends BaseSyncService {
           }
         }
 
+        if (titlePage.getIncludeInRankings() != null) {
+          title.setIncludeInRankings(titlePage.getIncludeInRankings());
+        }
+
         if (titlePage.getIsActive() != null) {
           title.setIsActive(titlePage.getIsActive());
         }

@@ -89,9 +89,11 @@ class TitleSyncIT extends ManagementIntegrationTest {
     String titleId = UUID.randomUUID().toString();
     when(titlePage.getId()).thenReturn(titleId);
     when(titlePage.getRawProperties()).thenReturn(Map.of("Name", "Test Title"));
+    when(titlePage.getDescription()).thenReturn("Test Description");
     when(titlePage.getTier()).thenReturn("Main Event");
     when(titlePage.getGender()).thenReturn("MALE");
     when(titlePage.getChampionshipType()).thenReturn("SINGLE");
+    when(titlePage.getIncludeInRankings()).thenReturn(true);
     when(titlePage.getIsActive()).thenReturn(true);
     when(titlePage.getDefenseFrequency()).thenReturn(30);
 

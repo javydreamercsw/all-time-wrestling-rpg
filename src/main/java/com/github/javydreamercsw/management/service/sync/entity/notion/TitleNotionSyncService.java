@@ -44,6 +44,11 @@ public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
     if (entity.getTier() != null) {
       properties.put(
           "Tier", NotionPropertyBuilder.createSelectProperty(entity.getTier().getDisplayName()));
@@ -60,7 +65,13 @@ public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
           NotionPropertyBuilder.createSelectProperty(entity.getChampionshipType().name()));
     }
 
+    properties.put(
+        "Include in Rankings",
+        NotionPropertyBuilder.createCheckboxProperty(
+            entity.getIncludeInRankings() != null && entity.getIncludeInRankings()));
+
     properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
     if (entity.getDefenseFrequency() != null) {
       properties.put(

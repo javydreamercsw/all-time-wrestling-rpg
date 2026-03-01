@@ -21,9 +21,11 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
@@ -93,6 +95,27 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                 () ->
                     notionApiExecutor.getNotionHandler().getDatabaseNamesToIds(getDatabaseName()));
 
+        // Fetch the database schema to know which properties are valid to send
+        Set<String> validNotionProperties;
+        try {
+          validNotionProperties =
+              notionApiExecutor.executeWithRateLimit(
+                  operationId,
+                  () ->
+                      notionApiExecutor
+                          .getNotionHandler()
+                          .executeWithRetry(() -> client.retrieveDatabase(databaseId))
+                          .getProperties()
+                          .keySet());
+        } catch (Exception e) {
+          log.warn(
+              "Failed to fetch schema for database '{}', falling back to sending all properties:"
+                  + " {}",
+              getDatabaseName(),
+              e.getMessage());
+          validNotionProperties = null;
+        }
+
         syncServiceDependencies
             .getProgressTracker()
             .startOperation(operationId, "Sync " + getEntityName(), entities.size());
@@ -131,12 +154,32 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                       "INFO");
             }
 
-            Map<String, PageProperty> properties = getProperties(entity);
+            Map<String, PageProperty> allProperties = getProperties(entity);
+            // Filter properties to only include those that exist in the Notion database schema
+            Map<String, PageProperty> propertiesToSend;
+            if (validNotionProperties != null) {
+              propertiesToSend = new HashMap<>();
+              final Set<String> validProps = validNotionProperties;
+              allProperties.forEach(
+                  (key, value) -> {
+                    if (validProps.contains(key)) {
+                      propertiesToSend.put(key, value);
+                    } else {
+                      log.trace(
+                          "Skipping property '{}' as it is not present in Notion database '{}'",
+                          key,
+                          getDatabaseName());
+                    }
+                  });
+            } else {
+              propertiesToSend = allProperties;
+            }
+
             if (externalId != null && !externalId.isBlank()) {
               log.debug("Updating existing page for: {}", getEntityName());
               final String finalId = externalId;
               UpdatePageRequest updatePageRequest =
-                  new UpdatePageRequest(finalId, properties, false, null, null);
+                  new UpdatePageRequest(finalId, propertiesToSend, false, null, null);
               notionApiExecutor.executeWithRateLimit(
                   operationId,
                   () ->
@@ -147,7 +190,8 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
             } else {
               log.debug("Creating a new page for: {}", getEntityName());
               CreatePageRequest createPageRequest =
-                  new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
+                  new CreatePageRequest(
+                      new PageParent(null, databaseId), propertiesToSend, null, null);
               Page page =
                   notionApiExecutor.executeWithRateLimit(
                       operationId,

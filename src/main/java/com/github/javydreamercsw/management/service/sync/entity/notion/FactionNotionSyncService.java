@@ -42,12 +42,42 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
   protected Map<String, PageProperty> getProperties(@NonNull Faction entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
+    if (entity.getAlignment() != null && !entity.getAlignment().isBlank()) {
+      properties.put(
+          "Alignment", NotionPropertyBuilder.createSelectProperty(entity.getAlignment()));
+    }
+
     properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+
+    if (entity.getFormedDate() != null) {
+      properties.put(
+          "Formed Date",
+          NotionPropertyBuilder.createDateProperty(entity.getFormedDate().toString()));
+    }
+
+    if (entity.getDisbandedDate() != null) {
+      properties.put(
+          "Disbanded Date",
+          NotionPropertyBuilder.createDateProperty(entity.getDisbandedDate().toString()));
+    }
 
     if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
       properties.put(
           "Leader",
           NotionPropertyBuilder.createRelationProperty(entity.getLeader().getExternalId()));
+    }
+
+    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
+      properties.put(
+          "Manager",
+          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
     }
 
     properties.put(
