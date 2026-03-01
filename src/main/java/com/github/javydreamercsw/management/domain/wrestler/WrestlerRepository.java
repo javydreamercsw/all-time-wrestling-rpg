@@ -60,4 +60,10 @@ public interface WrestlerRepository
 
   @Query("SELECT w.id FROM Wrestler w")
   List<Long> findAllIds();
+
+  @Query(
+      "SELECT w FROM Wrestler w JOIN SegmentParticipant sp ON sp.wrestler = w WHERE sp.segment ="
+          + " :segment")
+  List<Wrestler> findAllBySegment(
+      @Param("segment") com.github.javydreamercsw.management.domain.show.segment.Segment segment);
 }

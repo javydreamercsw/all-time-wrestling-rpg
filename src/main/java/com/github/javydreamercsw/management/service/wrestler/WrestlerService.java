@@ -477,6 +477,18 @@ public class WrestlerService {
   }
 
   /**
+   * Find all wrestlers for a segment as DTOs.
+   *
+   * @param segment The segment
+   * @return List of wrestler DTOs
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<WrestlerDTO> findAllBySegment(
+      @NonNull com.github.javydreamercsw.management.domain.show.segment.Segment segment) {
+    return wrestlerRepository.findAllBySegment(segment).stream().map(WrestlerDTO::new).toList();
+  }
+
+  /**
    * Get statistics for a wrestler, including wins, losses, and titles held.
    *
    * @param wrestlerId The ID of the wrestler
