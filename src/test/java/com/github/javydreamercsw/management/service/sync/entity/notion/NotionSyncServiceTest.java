@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -106,6 +107,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private NpcRepository npcRepository;
+  @Mock private SegmentRepository segmentRepository;
   @Mock private NotionSyncServicesManager notionSyncServicesManager;
   @Mock private NotionApiExecutor notionApiExecutor;
   @Mock private NotionPageDataExtractor notionPageDataExtractor;
@@ -142,7 +144,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             teamRepository,
             titleReignRepository,
             titleRepository,
-            npcRepository);
+            npcRepository,
+            segmentRepository);
     when(syncProperties.getParallelThreads()).thenReturn(1);
     when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
 

@@ -43,29 +43,18 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-    if (entity.getDescription() != null) {
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
       properties.put(
           "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
     }
 
-    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
-
-    if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
-      properties.put(
-          "Leader",
-          NotionPropertyBuilder.createRelationProperty(entity.getLeader().getExternalId()));
-    }
-
-    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
-      properties.put(
-          "Manager",
-          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
-    }
-
-    if (entity.getAlignment() != null) {
+    if (entity.getAlignment() != null && !entity.getAlignment().isBlank()) {
       properties.put(
           "Alignment", NotionPropertyBuilder.createSelectProperty(entity.getAlignment()));
     }
+
+    properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
 
     if (entity.getFormedDate() != null) {
       properties.put(
@@ -79,25 +68,39 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
           NotionPropertyBuilder.createDateProperty(entity.getDisbandedDate().toString()));
     }
 
-    if (entity.getMembers() != null && !entity.getMembers().isEmpty()) {
+    if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
       properties.put(
-          "Members",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getMembers().stream()
-                  .map(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
+          "Leader",
+          NotionPropertyBuilder.createRelationProperty(entity.getLeader().getExternalId()));
     }
 
-    if (entity.getTeams() != null && !entity.getTeams().isEmpty()) {
+    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
       properties.put(
-          "Teams",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getTeams().stream()
-                  .map(com.github.javydreamercsw.management.domain.team.Team::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
+          "Manager",
+          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
     }
+
+    properties.put(
+        "Members",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getMembers() == null
+                ? java.util.Collections.emptyList()
+                : entity.getMembers().stream()
+                    .map(
+                        com.github.javydreamercsw.management.domain.wrestler.Wrestler
+                            ::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
+
+    properties.put(
+        "Teams",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getTeams() == null
+                ? java.util.Collections.emptyList()
+                : entity.getTeams().stream()
+                    .map(com.github.javydreamercsw.management.domain.team.Team::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
 
     return properties;
   }

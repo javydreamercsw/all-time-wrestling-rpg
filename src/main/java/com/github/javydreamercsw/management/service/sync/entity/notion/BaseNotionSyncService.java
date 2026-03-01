@@ -21,9 +21,11 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
@@ -67,143 +69,193 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
         String databaseId = getDatabaseId();
-        if (databaseId != null) {
-          int processedCount = 0;
-          int created = 0;
-          int updated = 0;
-          int errors = 0;
-          List<T> entities =
-              (ids == null || ids.isEmpty()) ? repository.findAll() : repository.findAllById(ids);
+        if (databaseId == null) {
+          String errorMsg = "Database '" + getDatabaseName() + "' not found in Notion workspace.";
+          log.error(errorMsg);
+          syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMsg);
+          return BaseSyncService.SyncResult.failure(getEntityName(), errorMsg);
+        }
 
-          syncServiceDependencies
-              .getProgressTracker()
-              .addLogMessage(
-                  operationId, "🔍 Checking existing entries in Notion database...", "INFO");
+        int processedCount = 0;
+        int created = 0;
+        int updated = 0;
+        int errors = 0;
+        List<T> entities =
+            (ids == null || ids.isEmpty()) ? repository.findAll() : repository.findAllById(ids);
 
-          // Load all existing pages from Notion to avoid duplicates
-          Map<String, String> notionLookup =
+        syncServiceDependencies
+            .getProgressTracker()
+            .addLogMessage(
+                operationId, "🔍 Checking existing entries in Notion database...", "INFO");
+
+        // Load all existing pages from Notion to avoid duplicates
+        Map<String, String> notionLookup =
+            notionApiExecutor.executeWithRateLimit(
+                operationId,
+                () ->
+                    notionApiExecutor.getNotionHandler().getDatabaseNamesToIds(getDatabaseName()));
+
+        // Fetch the database schema to know which properties are valid to send
+        Set<String> validNotionProperties;
+        try {
+          validNotionProperties =
               notionApiExecutor.executeWithRateLimit(
                   operationId,
                   () ->
                       notionApiExecutor
                           .getNotionHandler()
-                          .getDatabaseNamesToIds(getDatabaseName()));
+                          .executeWithRetry(() -> client.retrieveDatabase(databaseId))
+                          .getProperties()
+                          .keySet());
+        } catch (Exception e) {
+          log.warn(
+              "Failed to fetch schema for database '{}', falling back to sending all properties:"
+                  + " {}",
+              getDatabaseName(),
+              e.getMessage());
+          validNotionProperties = null;
+        }
 
-          syncServiceDependencies
-              .getProgressTracker()
-              .startOperation(operationId, "Sync " + getEntityName(), entities.size());
+        syncServiceDependencies
+            .getProgressTracker()
+            .startOperation(operationId, "Sync " + getEntityName(), entities.size());
 
-          for (T entity : entities) {
-            // Update progress for each entity
-            syncServiceDependencies
-                .getProgressTracker()
-                .updateProgress(
-                    operationId,
-                    processedCount,
-                    String.format(
-                        "Saving %s to Notion... (%d/%d processed)",
-                        getEntityName(), processedCount, entities.size()));
-            try {
-              String entityDisplayName = getEntityDisplayName(entity);
-              syncServiceDependencies
-                  .getProgressTracker()
-                  .addLogMessage(
-                      operationId,
-                      "Processing " + getEntityName() + ": " + entityDisplayName,
-                      "INFO");
-
-              String externalId = entity.getExternalId();
-
-              // If externalId is missing locally, try to match by name from Notion lookup
-              if ((externalId == null || externalId.isBlank())
-                  && notionLookup.containsKey(entityDisplayName)) {
-                externalId = notionLookup.get(entityDisplayName);
-                entity.setExternalId(externalId);
-                syncServiceDependencies
-                    .getProgressTracker()
-                    .addLogMessage(
-                        operationId,
-                        "🔗 Matched existing Notion page for: " + entityDisplayName,
-                        "INFO");
-              }
-
-              Map<String, PageProperty> properties = getProperties(entity);
-              if (externalId != null && !externalId.isBlank()) {
-                log.debug("Updating existing page for: {}", getEntityName());
-                final String finalId = externalId;
-                UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(finalId, properties, false, null, null);
-                notionApiExecutor.executeWithRateLimit(
-                    operationId,
-                    () ->
-                        notionApiExecutor
-                            .getNotionHandler()
-                            .executeWithRetry(() -> client.updatePage(updatePageRequest)));
-                updated++;
-              } else {
-                log.debug("Creating a new page for: {}", getEntityName());
-                CreatePageRequest createPageRequest =
-                    new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-                Page page =
-                    notionApiExecutor.executeWithRateLimit(
-                        operationId,
-                        () ->
-                            notionApiExecutor
-                                .getNotionHandler()
-                                .executeWithRetry(() -> client.createPage(createPageRequest)));
-                entity.setExternalId(page.getId());
-                created++;
-              }
-              entity.setLastSync(Instant.now());
-              repository.save(entity);
-              processedCount++;
-              syncServiceDependencies
-                  .getProgressTracker()
-                  .addLogMessage(
-                      operationId,
-                      "✅ Successfully synced " + getEntityName() + ": " + entityDisplayName,
-                      "SUCCESS");
-            } catch (Exception ex) {
-              errors++;
-              processedCount++;
-              log.error("Error syncing " + getEntityName(), ex);
-              syncServiceDependencies
-                  .getProgressTracker()
-                  .addLogMessage(
-                      operationId,
-                      "❌ Error syncing "
-                          + getEntityName()
-                          + ": "
-                          + getEntityDisplayName(entity)
-                          + " - "
-                          + ex.getMessage(),
-                      "ERROR");
-            }
-          }
+        for (T entity : entities) {
+          // Update progress for each entity
           syncServiceDependencies
               .getProgressTracker()
               .updateProgress(
                   operationId,
                   processedCount,
                   String.format(
-                      "✅ Completed database save: %d %s saved/updated, %d errors",
-                      created + updated, getEntityName(), errors));
-          if (errors > 0) {
+                      "Saving %s to Notion... (%d/%d processed)",
+                      getEntityName(), processedCount, entities.size()));
+          try {
+            String entityDisplayName = getEntityDisplayName(entity);
             syncServiceDependencies
                 .getProgressTracker()
-                .failOperation(operationId, "Completed with " + errors + " errors.");
-            return BaseSyncService.SyncResult.failure(
-                getEntityName(), "Error syncing " + getEntityName() + "!");
-          } else {
-            syncServiceDependencies
-                .getProgressTracker()
-                .completeOperation(
+                .addLogMessage(
                     operationId,
-                    true,
-                    "Successfully synced " + (created + updated) + " items.",
-                    created + updated);
-            return BaseSyncService.SyncResult.success(getEntityName(), created, updated, errors);
+                    "Processing " + getEntityName() + ": " + entityDisplayName,
+                    "INFO");
+
+            String externalId = entity.getExternalId();
+
+            // If externalId is missing locally, try to match by name from Notion lookup
+            if ((externalId == null || externalId.isBlank())
+                && notionLookup.containsKey(entityDisplayName)) {
+              externalId = notionLookup.get(entityDisplayName);
+              entity.setExternalId(externalId);
+              syncServiceDependencies
+                  .getProgressTracker()
+                  .addLogMessage(
+                      operationId,
+                      "🔗 Matched existing Notion page for: " + entityDisplayName,
+                      "INFO");
+            }
+
+            Map<String, PageProperty> allProperties = getProperties(entity);
+            // Filter properties to only include those that exist in the Notion database schema
+            Map<String, PageProperty> propertiesToSend;
+            if (validNotionProperties != null) {
+              propertiesToSend = new HashMap<>();
+              final Set<String> validProps = validNotionProperties;
+              allProperties.forEach(
+                  (key, value) -> {
+                    if (validProps.contains(key)) {
+                      propertiesToSend.put(key, value);
+                    } else {
+                      log.trace(
+                          "Skipping property '{}' as it is not present in Notion database '{}'",
+                          key,
+                          getDatabaseName());
+                    }
+                  });
+            } else {
+              propertiesToSend = allProperties;
+            }
+
+            if (externalId != null && !externalId.isBlank()) {
+              log.debug("Updating existing page for: {}", getEntityName());
+              final String finalId = externalId;
+              UpdatePageRequest updatePageRequest =
+                  new UpdatePageRequest(finalId, propertiesToSend, false, null, null);
+              notionApiExecutor.executeWithRateLimit(
+                  operationId,
+                  () ->
+                      notionApiExecutor
+                          .getNotionHandler()
+                          .executeWithRetry(() -> client.updatePage(updatePageRequest)));
+              updated++;
+            } else {
+              log.debug("Creating a new page for: {}", getEntityName());
+              CreatePageRequest createPageRequest =
+                  new CreatePageRequest(
+                      new PageParent(null, databaseId), propertiesToSend, null, null);
+              Page page =
+                  notionApiExecutor.executeWithRateLimit(
+                      operationId,
+                      () ->
+                          notionApiExecutor
+                              .getNotionHandler()
+                              .executeWithRetry(() -> client.createPage(createPageRequest)));
+              if (page != null && page.getId() != null) {
+                entity.setExternalId(page.getId());
+                created++;
+              } else {
+                throw new RuntimeException(
+                    "Failed to create Notion page: API returned null page or ID");
+              }
+            }
+            entity.setLastSync(Instant.now());
+            repository.saveAndFlush(entity);
+            processedCount++;
+            syncServiceDependencies
+                .getProgressTracker()
+                .addLogMessage(
+                    operationId,
+                    "✅ Successfully synced " + getEntityName() + ": " + entityDisplayName,
+                    "SUCCESS");
+          } catch (Exception ex) {
+            errors++;
+            processedCount++;
+            log.error("Error syncing " + getEntityName(), ex);
+            syncServiceDependencies
+                .getProgressTracker()
+                .addLogMessage(
+                    operationId,
+                    "❌ Error syncing "
+                        + getEntityName()
+                        + ": "
+                        + getEntityDisplayName(entity)
+                        + " - "
+                        + ex.getMessage(),
+                    "ERROR");
           }
+        }
+        syncServiceDependencies
+            .getProgressTracker()
+            .updateProgress(
+                operationId,
+                processedCount,
+                String.format(
+                    "✅ Completed database save: %d %s saved/updated, %d errors",
+                    created + updated, getEntityName(), errors));
+        if (errors > 0) {
+          syncServiceDependencies
+              .getProgressTracker()
+              .failOperation(operationId, "Completed with " + errors + " errors.");
+          return BaseSyncService.SyncResult.failure(
+              getEntityName(), "Error syncing " + getEntityName() + "!");
+        } else {
+          syncServiceDependencies
+              .getProgressTracker()
+              .completeOperation(
+                  operationId,
+                  true,
+                  "Successfully synced " + (created + updated) + " items.",
+                  created + updated);
+          return BaseSyncService.SyncResult.success(getEntityName(), created, updated, errors);
         }
       } catch (Exception e) {
         log.error("Error during Notion sync: {}", e.getMessage(), e);

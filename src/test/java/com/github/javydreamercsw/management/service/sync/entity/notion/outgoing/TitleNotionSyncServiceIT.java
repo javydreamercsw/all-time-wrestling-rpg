@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import dev.failsafe.FailsafeException;
@@ -82,8 +83,11 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       wrestlerRepository.save(testContender);
 
       // Sync dependencies to Notion to get external IDs
-      wrestlerNotionSyncService.syncToNotion(
-          "test-prep-wrestlers", List.of(testChampion.getId(), testContender.getId()));
+      BaseSyncService.SyncResult depResult =
+          wrestlerNotionSyncService.syncToNotion(
+              "test-prep-wrestlers", List.of(testChampion.getId(), testContender.getId()));
+      assertTrue(depResult.isSuccess(), "Wrestler sync failed: " + depResult.getSummary());
+
       testChampion = wrestlerRepository.findById(testChampion.getId()).get();
       testContender = wrestlerRepository.findById(testContender.getId()).get();
 
@@ -101,7 +105,9 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       titleRepository.save(title);
 
       // Sync to Notion for the first time
-      titleNotionSyncService.syncToNotion("test-op-1", List.of(title.getId()));
+      BaseSyncService.SyncResult result =
+          titleNotionSyncService.syncToNotion("test-op-1", List.of(title.getId()));
+      assertTrue(result.isSuccess(), "Title sync failed: " + result.getSummary());
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(title.getId());
