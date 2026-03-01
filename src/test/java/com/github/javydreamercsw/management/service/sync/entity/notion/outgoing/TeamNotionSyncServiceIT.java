@@ -95,41 +95,35 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
       factionRepository.save(testFaction);
 
       // Sync dependencies to Notion to get external IDs
+      BaseSyncService.SyncResult wrestlerResult =
+          wrestlerNotionSyncService.syncToNotion(
+              "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
+      assertTrue(
+          wrestlerResult.isSuccess(), "Wrestler sync failed: " + wrestlerResult.getMessage());
 
-      wrestlerNotionSyncService.syncToNotion(
-          "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
-
-      factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
+      BaseSyncService.SyncResult factionResult =
+          factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
+      assertTrue(factionResult.isSuccess(), "Faction sync failed: " + factionResult.getMessage());
 
       final Wrestler wrestler1_reloaded = wrestlerRepository.findById(wrestler1.getId()).get();
-
       final Wrestler wrestler2_reloaded = wrestlerRepository.findById(wrestler2.getId()).get();
-
       testFaction = factionRepository.findById(testFaction.getId()).get();
 
       // Create a new Team
-
       team = new Team();
-
       team.setName("Test Team " + UUID.randomUUID());
-
       team.setDescription("A test wrestling team");
-
       team.setWrestler1(wrestler1_reloaded);
-
       team.setWrestler2(wrestler2_reloaded);
-
       team.setFaction(testFaction);
-
       team.setStatus(TeamStatus.ACTIVE);
-
       team.setFormedDate(Instant.now().minusSeconds(3600));
-
       teamRepository.save(team);
 
       // Sync to Notion for the first time
-
-      teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
+      BaseSyncService.SyncResult result =
+          teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
+      assertTrue(result.isSuccess(), "Team sync failed: " + result.getMessage());
 
       // Verify that the externalId and lastSync fields are updated
 

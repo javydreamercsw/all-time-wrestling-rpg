@@ -66,7 +66,8 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
       factionRepository.save(faction);
 
       // Sync to Notion for the first time
-      factionNotionSyncService.syncToNotion("test-op-1");
+      BaseSyncService.SyncResult result = factionNotionSyncService.syncToNotion("test-op-1");
+      assertTrue(result.isSuccess(), "Sync failed: " + result.getMessage());
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(faction.getId());
