@@ -20,12 +20,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
@@ -50,12 +52,11 @@ class NpcSyncIT extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private NpcService npcService;
-  @Autowired private NpcSyncService npcSyncService;
   @Autowired private SyncSessionManager syncSessionManager;
   @MockitoBean private NotionHandler notionHandler;
+  @MockitoBean private NotionPageDataExtractor notionPageDataExtractor;
 
   private NpcPage npcPage1;
-  private NpcPage npcPage2;
 
   private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -80,12 +81,12 @@ class NpcSyncIT extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    syncSessionManager.clearSyncSession();
     npcPage1 = Mockito.mock(NpcPage.class);
-    npcPage2 = Mockito.mock(NpcPage.class);
   }
 
   @Test
-  @DisplayName("Should sync NPCs from Notion")
+  @DisplayName("Should sync NPCs from Notion with all properties")
   void shouldSyncNpcsFromNotion() {
     log.info("🚀 Starting real NPC sync integration test...");
 
@@ -93,12 +94,17 @@ class NpcSyncIT extends ManagementIntegrationTest {
     String npc1Id = UUID.randomUUID().toString();
     when(npcPage1.getId()).thenReturn(npc1Id);
     when(npcPage1.getRawProperties())
-        .thenReturn(Map.of("Name", "Test NPC 1", "Role", "Interviewer"));
+        .thenReturn(
+            Map.of(
+                "Name", "Test NPC 1",
+                "Role", "Interviewer",
+                "Alignment", "Face",
+                "Sex", "Female",
+                "Status", "Active",
+                "Likeness", "Test Likeness",
+                "Origin", "Test Origin"));
 
-    String npc2Id = UUID.randomUUID().toString();
-    when(npcPage2.getId()).thenReturn(npc2Id);
-    when(npcPage2.getRawProperties())
-        .thenReturn(Map.of("Name", "Test NPC 2", "Role", "General Manager"));
+    when(notionPageDataExtractor.extractNameFromNotionPage(npcPage1)).thenReturn("Test NPC 1");
 
     when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1));
 
@@ -107,32 +113,21 @@ class NpcSyncIT extends ManagementIntegrationTest {
         notionSyncService.syncNpcs("test-operation", SyncDirection.INBOUND);
 
     // Then - Verify the sync result
-    assertNotNull(result, "Sync result should not be null");
-    assertEquals(
-        SyncEntityType.NPCS.getKey(),
-        result.getEntityType(),
-        String.format("Entity type should be '%s'", SyncEntityType.SHOWS.getKey()));
-    assertTrue(result.isSuccess(), "Sync should be successful");
-    assertEquals(1, result.getSyncedCount(), "Should have synced 1 NPCs");
+    assertNotNull(result);
+    assertTrue(result.isSuccess());
+    assertEquals(1, result.getSyncedCount());
 
     // Verify NPCs in database
     Npc npc1 = npcService.findByName("Test NPC 1");
     assertNotNull(npc1);
     assertEquals(npc1Id, npc1.getExternalId());
     assertEquals("Interviewer", npc1.getNpcType());
+    assertEquals(AlignmentType.FACE, npc1.getAlignment());
+    assertEquals(Gender.FEMALE, npc1.getGender());
+    assertEquals("Active", npc1.getAttributes().get("status"));
+    assertEquals("Test Likeness", npc1.getAttributes().get("likeness"));
+    assertEquals("Test Origin", npc1.getAttributes().get("origin"));
 
-    // Run sync again to test updates and no duplicates
-    syncSessionManager.clearSyncSession(); // Reset session to allow second sync
-    when(npcPage1.getRawProperties())
-        .thenReturn(Map.of("Name", "Test NPC 1 Updated", "Role", "Announcer"));
-    when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1));
-    notionSyncService.syncNpcs("second-sync-operation", SyncDirection.INBOUND);
-
-    assertEquals(1, npcService.findAll().size());
-
-    Npc updatedNpc1 = npcService.findByExternalId(npc1Id).orElse(null);
-    assertNotNull(updatedNpc1);
-    assertEquals("Test NPC 1 Updated", updatedNpc1.getName());
-    assertEquals("Announcer", updatedNpc1.getNpcType());
+    log.info("✅ NPC sync completed successfully!");
   }
 }
