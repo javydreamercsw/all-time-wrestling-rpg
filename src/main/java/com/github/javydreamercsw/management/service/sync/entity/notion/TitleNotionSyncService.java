@@ -44,13 +44,9 @@ public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
-    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-      properties.put(
-          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
-    }
-
     if (entity.getTier() != null) {
-      properties.put("Tier", NotionPropertyBuilder.createSelectProperty(entity.getTier().name()));
+      properties.put(
+          "Tier", NotionPropertyBuilder.createSelectProperty(entity.getTier().getDisplayName()));
     }
 
     if (entity.getGender() != null) {
@@ -60,44 +56,39 @@ public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
 
     if (entity.getChampionshipType() != null) {
       properties.put(
-          "Championship Type",
+          "Title Type",
           NotionPropertyBuilder.createSelectProperty(entity.getChampionshipType().name()));
     }
 
-    properties.put(
-        "Include in Rankings",
-        NotionPropertyBuilder.createCheckboxProperty(
-            entity.getIncludeInRankings() != null && entity.getIncludeInRankings()));
-
-    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
+    properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
     if (entity.getDefenseFrequency() != null) {
       properties.put(
-          "Defense Frequency",
+          "Defense Cadence (weeks)",
           NotionPropertyBuilder.createNumberProperty(entity.getDefenseFrequency().doubleValue()));
     }
 
     // Current Champion relation
-    if (entity.getChampion() != null && !entity.getChampion().isEmpty()) {
-      properties.put(
-          "Current Champion",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getChampion().stream()
-                  .map(Wrestler::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
-    }
+    properties.put(
+        "Current Champion",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getChampion() == null
+                ? java.util.Collections.emptyList()
+                : entity.getChampion().stream()
+                    .map(Wrestler::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
 
     // #1 Contender relation
-    if (entity.getChallengers() != null && !entity.getChallengers().isEmpty()) {
-      properties.put(
-          "#1 Contender",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getChallengers().stream()
-                  .map(Wrestler::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
-    }
+    properties.put(
+        "#1 Contender",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getChallengers() == null
+                ? java.util.Collections.emptyList()
+                : entity.getChallengers().stream()
+                    .map(Wrestler::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
 
     return properties;
   }

@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
@@ -99,11 +100,11 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
           wrestlerNotionSyncService.syncToNotion(
               "test-prep-wrestlers", List.of(wrestler1.getId(), wrestler2.getId()));
       assertTrue(
-          wrestlerResult.isSuccess(), "Wrestler sync failed: " + wrestlerResult.getMessage());
+          wrestlerResult.isSuccess(), "Wrestler sync failed: " + wrestlerResult.getSummary());
 
       BaseSyncService.SyncResult factionResult =
           factionNotionSyncService.syncToNotion("test-prep-factions", List.of(testFaction.getId()));
-      assertTrue(factionResult.isSuccess(), "Faction sync failed: " + factionResult.getMessage());
+      assertTrue(factionResult.isSuccess(), "Faction sync failed: " + factionResult.getSummary());
 
       final Wrestler wrestler1_reloaded = wrestlerRepository.findById(wrestler1.getId()).get();
       final Wrestler wrestler2_reloaded = wrestlerRepository.findById(wrestler2.getId()).get();
@@ -123,7 +124,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
       // Sync to Notion for the first time
       BaseSyncService.SyncResult result =
           teamNotionSyncService.syncToNotion("test-op-1", List.of(team.getId()));
-      assertTrue(result.isSuccess(), "Team sync failed: " + result.getMessage());
+      assertTrue(result.isSuccess(), "Team sync failed: " + result.getSummary());
 
       // Verify that the externalId and lastSync fields are updated
 

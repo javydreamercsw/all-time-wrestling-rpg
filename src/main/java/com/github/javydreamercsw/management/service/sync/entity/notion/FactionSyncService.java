@@ -163,7 +163,7 @@ public class FactionSyncService extends BaseSyncService {
               .extractDescriptionFromNotionPage(factionPage));
 
       if (rawProperties != null) {
-        Object isActiveObj = rawProperties.get("Status");
+        Object isActiveObj = rawProperties.get("Active");
         if (isActiveObj instanceof Boolean) {
           dto.setIsActive((Boolean) isActiveObj);
         } else if (isActiveObj instanceof String str) {
@@ -177,24 +177,8 @@ public class FactionSyncService extends BaseSyncService {
                   .getNotionPageDataExtractor()
                   .extractPropertyAsString(rawProperties, "Leader"));
         }
-        dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
         dto.setMemberExternalIds(extractRelationIds(rawProperties.get("Members")));
         dto.setTeamExternalIds(extractRelationIds(rawProperties.get("Teams")));
-
-        Object alignmentObj = rawProperties.get("Alignment");
-        if (alignmentObj instanceof String) {
-          dto.setAlignment((String) alignmentObj);
-        }
-
-        Object formedObj = rawProperties.get("Formed Date");
-        if (formedObj instanceof String) {
-          dto.setFormedDate((String) formedObj);
-        }
-
-        Object disbandedObj = rawProperties.get("Disbanded Date");
-        if (disbandedObj instanceof String) {
-          dto.setDisbandedDate((String) disbandedObj);
-        }
       }
       return dto;
     } catch (Exception e) {

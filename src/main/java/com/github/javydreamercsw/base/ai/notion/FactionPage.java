@@ -28,13 +28,9 @@ public class FactionPage extends NotionPage {
   @EqualsAndHashCode(callSuper = false)
   static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Faction-specific properties only (common properties inherited from base)
-    private Property Description;
     private Property Leader;
     private Property Members;
     private Property Teams;
-    private Property Alignment;
-    private Property Status;
-    private Property FormedDate;
-    private Property DisbandedDate;
+    private Property Active;
   }
 }

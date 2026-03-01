@@ -42,13 +42,7 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
   protected Map<String, PageProperty> getProperties(@NonNull Faction entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
-
-    if (entity.getDescription() != null) {
-      properties.put(
-          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
-    }
-
-    properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
+    properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
 
     if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
       properties.put(
@@ -56,48 +50,27 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
           NotionPropertyBuilder.createRelationProperty(entity.getLeader().getExternalId()));
     }
 
-    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
-      properties.put(
-          "Manager",
-          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
-    }
+    properties.put(
+        "Members",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getMembers() == null
+                ? java.util.Collections.emptyList()
+                : entity.getMembers().stream()
+                    .map(
+                        com.github.javydreamercsw.management.domain.wrestler.Wrestler
+                            ::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
 
-    if (entity.getAlignment() != null) {
-      properties.put(
-          "Alignment", NotionPropertyBuilder.createSelectProperty(entity.getAlignment()));
-    }
-
-    if (entity.getFormedDate() != null) {
-      properties.put(
-          "Formed Date",
-          NotionPropertyBuilder.createDateProperty(entity.getFormedDate().toString()));
-    }
-
-    if (entity.getDisbandedDate() != null) {
-      properties.put(
-          "Disbanded Date",
-          NotionPropertyBuilder.createDateProperty(entity.getDisbandedDate().toString()));
-    }
-
-    if (entity.getMembers() != null && !entity.getMembers().isEmpty()) {
-      properties.put(
-          "Members",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getMembers().stream()
-                  .map(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
-    }
-
-    if (entity.getTeams() != null && !entity.getTeams().isEmpty()) {
-      properties.put(
-          "Teams",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getTeams().stream()
-                  .map(com.github.javydreamercsw.management.domain.team.Team::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
-    }
+    properties.put(
+        "Teams",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getTeams() == null
+                ? java.util.Collections.emptyList()
+                : entity.getTeams().stream()
+                    .map(com.github.javydreamercsw.management.domain.team.Team::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
 
     return properties;
   }

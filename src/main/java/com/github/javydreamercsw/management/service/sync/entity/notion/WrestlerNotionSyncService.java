@@ -121,24 +121,26 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
           "Manager",
           NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
     }
-    if (entity.getInjuries() != null && !entity.getInjuries().isEmpty()) {
-      properties.put(
-          "Injuries",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getInjuries().stream()
-                  .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
-    }
-    if (entity.getReigns() != null && !entity.getReigns().isEmpty()) {
-      properties.put(
-          "Titles",
-          NotionPropertyBuilder.createRelationProperty(
-              entity.getReigns().stream()
-                  .map(com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
-                  .filter(Objects::nonNull)
-                  .toList()));
-    }
+    properties.put(
+        "Injuries",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getInjuries() == null
+                ? java.util.Collections.emptyList()
+                : entity.getInjuries().stream()
+                    .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
+
+    properties.put(
+        "Titles",
+        NotionPropertyBuilder.createRelationProperty(
+            entity.getReigns() == null
+                ? java.util.Collections.emptyList()
+                : entity.getReigns().stream()
+                    .map(
+                        com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
+                    .filter(Objects::nonNull)
+                    .toList()));
     return properties;
   }
 

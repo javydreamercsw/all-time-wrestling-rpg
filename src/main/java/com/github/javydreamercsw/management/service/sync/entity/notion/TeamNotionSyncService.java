@@ -59,17 +59,19 @@ public class TeamNotionSyncService extends BaseNotionSyncService<Team> {
           NotionPropertyBuilder.createRelationProperty(entity.getWrestler2().getExternalId()));
     }
 
-    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
-      properties.put(
-          "Manager",
-          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
-    }
+    properties.put(
+        "Manager",
+        NotionPropertyBuilder.createRelationProperty(
+            (entity.getManager() != null && entity.getManager().getExternalId() != null)
+                ? java.util.Collections.singletonList(entity.getManager().getExternalId())
+                : java.util.Collections.emptyList()));
 
-    if (entity.getFaction() != null && entity.getFaction().getExternalId() != null) {
-      properties.put(
-          "Faction",
-          NotionPropertyBuilder.createRelationProperty(entity.getFaction().getExternalId()));
-    }
+    properties.put(
+        "Faction",
+        NotionPropertyBuilder.createRelationProperty(
+            (entity.getFaction() != null && entity.getFaction().getExternalId() != null)
+                ? java.util.Collections.singletonList(entity.getFaction().getExternalId())
+                : java.util.Collections.emptyList()));
 
     if (entity.getThemeSong() != null) {
       properties.put(

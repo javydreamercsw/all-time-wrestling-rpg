@@ -51,21 +51,17 @@ public class TitlePage extends NotionPage {
   }
 
   public String getChampionshipType() {
-    return extractPropertyAsString("Championship Type");
-  }
-
-  public Boolean getIncludeInRankings() {
-    Object prop = getRawProperties() != null ? getRawProperties().get("Include in Rankings") : null;
-    return prop instanceof Boolean ? (Boolean) prop : null;
+    return extractPropertyAsString("Title Type");
   }
 
   public Boolean getIsActive() {
-    Object prop = getRawProperties() != null ? getRawProperties().get("Status") : null;
+    Object prop = getRawProperties() != null ? getRawProperties().get("Active") : null;
     return prop instanceof Boolean ? (Boolean) prop : null;
   }
 
   public Integer getDefenseFrequency() {
-    Object prop = getRawProperties() != null ? getRawProperties().get("Defense Frequency") : null;
+    Object prop =
+        getRawProperties() != null ? getRawProperties().get("Defense Cadence (weeks)") : null;
     return prop instanceof Number ? ((Number) prop).intValue() : null;
   }
 
