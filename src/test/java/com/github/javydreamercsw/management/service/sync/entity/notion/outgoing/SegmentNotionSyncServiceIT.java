@@ -203,7 +203,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         segment.getNarration(),
         capturedRequest
             .getProperties()
-            .get("Description")
+            .get("Narration")
             .getRichText()
             .get(0)
             .getText()
@@ -232,7 +232,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedSegment2.getNarration(),
         capturedUpdateRequest
             .getProperties()
-            .get("Description")
+            .get("Narration")
             .getRichText()
             .get(0)
             .getText()
