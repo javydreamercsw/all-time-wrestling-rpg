@@ -80,10 +80,12 @@ public class RingsideAiService {
   }
 
   private AlignmentType getAlignment(Object interferer) {
-    if (interferer instanceof Wrestler w && w.getAlignment() != null) {
+    if (interferer instanceof Wrestler w
+        && w.getAlignment() != null
+        && w.getAlignment().getAlignmentType() != null) {
       return w.getAlignment().getAlignmentType();
     }
-    if (interferer instanceof Npc n) {
+    if (interferer instanceof Npc n && n.getAlignment() != null) {
       return n.getAlignment();
     }
     return AlignmentType.NEUTRAL;

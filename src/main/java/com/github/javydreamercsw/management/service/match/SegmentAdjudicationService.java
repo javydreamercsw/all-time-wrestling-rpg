@@ -339,9 +339,15 @@ public class SegmentAdjudicationService {
         case "Abu Dhabi Rumble":
         case "One on One":
         case "Free-for-All":
-          int size = segment.getParticipants().size();
-          for (int i = 1; i < size; i++) {
-            attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(i));
+          List<Wrestler> wrestlers = segment.getWrestlers();
+          if (!wrestlers.isEmpty()) {
+            Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
+            for (int i = 0; i < wrestlers.size(); i++) {
+              Wrestler other = wrestlers.get(i);
+              if (!baseWrestler.equals(other)) {
+                attemptRivalryResolution(baseWrestler, other);
+              }
+            }
           }
           break;
       }
@@ -460,7 +466,9 @@ public class SegmentAdjudicationService {
     double modifier = 1.0;
 
     // Arena Alignment Bias (+25%)
-    if (segment.getShow().getArena() != null && wrestler.getAlignment() != null) {
+    if (segment.getShow().getArena() != null
+        && wrestler.getAlignment() != null
+        && wrestler.getAlignment().getAlignmentType() != null) {
       com.github.javydreamercsw.management.domain.world.Arena arena = segment.getShow().getArena();
       String wrestlerAlignment = wrestler.getAlignment().getAlignmentType().name();
 
