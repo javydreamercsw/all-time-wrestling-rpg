@@ -23,11 +23,11 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.npc.Npc;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -469,17 +469,12 @@ public class NarrationDialog extends Dialog {
         wc.setTier(wrestler.getTier().name());
         wc.setMoveSet(wrestler.getMoveSet());
         List<String> feuds = new ArrayList<>();
-        wrestlerService
-            .findByName(wrestler.getName())
-            .ifPresent(
-                w -> {
-                  for (Rivalry rivalry : rivalryService.getRivalriesForWrestler(w.getId())) {
-                    Wrestler opponent = rivalry.getOpponent(w);
-                    feuds.add(
-                        String.format(
-                            "Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
-                  }
-                });
+        for (RivalryDTO rivalry :
+            rivalryService.getActiveRivalriesForWrestlerAsDTO(wrestler.getId())) {
+          WrestlerDTO opponent = rivalry.getOpponent(wrestler);
+          feuds.add(
+              String.format("Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
+        }
         wc.setFeudsAndHeat(feuds);
         wrestlerContexts.add(wc);
       }
@@ -567,17 +562,12 @@ public class NarrationDialog extends Dialog {
       wc.setTier(wrestler.getTier().name());
       wc.setMoveSet(wrestler.getMoveSet());
       List<String> feuds = new ArrayList<>();
-      wrestlerService
-          .findById(wrestler.getId())
-          .ifPresent(
-              w -> {
-                for (Rivalry rivalry : rivalryService.getRivalriesForWrestler(w.getId())) {
-                  Wrestler opponent = rivalry.getOpponent(w);
-                  feuds.add(
-                      String.format(
-                          "Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
-                }
-              });
+      for (RivalryDTO rivalry :
+          rivalryService.getActiveRivalriesForWrestlerAsDTO(wrestler.getId())) {
+        WrestlerDTO opponent = rivalry.getOpponent(wrestler);
+        feuds.add(
+            String.format("Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
+      }
       wc.setFeudsAndHeat(feuds);
       wrestlerContexts.add(wc);
     }

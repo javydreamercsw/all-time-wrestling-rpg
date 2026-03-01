@@ -477,6 +477,18 @@ public class WrestlerService {
   }
 
   /**
+   * Find a wrestler by ID and return it as a DTO.
+   *
+   * @param id The wrestler ID
+   * @return Optional containing the wrestler DTO if found, otherwise empty
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id) {
+    return wrestlerRepository.findById(id).map(WrestlerDTO::new);
+  }
+
+  /**
    * Find all wrestlers for a segment as DTOs.
    *
    * @param segment The segment

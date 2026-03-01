@@ -17,12 +17,15 @@
 package com.github.javydreamercsw.management.mapper;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RivalryMapper {
+  @Autowired private WrestlerService wrestlerService;
+
   public RivalryDTO toRivalryDTO(Rivalry rivalry) {
     if (rivalry == null) {
       return null;
@@ -34,8 +37,8 @@ public class RivalryMapper {
     dto.setStorylineNotes(rivalry.getStorylineNotes());
     dto.setStartedDate(rivalry.getStartedDate());
     dto.setEndedDate(rivalry.getEndedDate());
-    dto.setWrestler1(new WrestlerDTO(rivalry.getWrestler1()));
-    dto.setWrestler2(new WrestlerDTO(rivalry.getWrestler2()));
+    dto.setWrestler1(wrestlerService.findByIdAsDTO(rivalry.getWrestler1().getId()).orElse(null));
+    dto.setWrestler2(wrestlerService.findByIdAsDTO(rivalry.getWrestler2().getId()).orElse(null));
     // Map other fields as needed
     return dto;
   }
