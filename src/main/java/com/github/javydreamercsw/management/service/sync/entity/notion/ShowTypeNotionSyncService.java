@@ -41,6 +41,20 @@ public class ShowTypeNotionSyncService extends BaseNotionSyncService<ShowType> {
   protected Map<String, PageProperty> getProperties(@NonNull ShowType entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+
+    if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+      properties.put(
+          "Description", NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+    }
+
+    properties.put(
+        "Expected Matches",
+        NotionPropertyBuilder.createNumberProperty((double) entity.getExpectedMatches()));
+
+    properties.put(
+        "Expected Promos",
+        NotionPropertyBuilder.createNumberProperty((double) entity.getExpectedPromos()));
+
     return properties;
   }
 

@@ -63,6 +63,16 @@ public class InjuryNotionSyncService extends BaseNotionSyncService<Injury> {
         NotionPropertyBuilder.createNumberProperty(
             Integer.valueOf(entity.getHealthPenalty()).doubleValue()));
 
+    properties.put(
+        "Stamina Penalty",
+        NotionPropertyBuilder.createNumberProperty(
+            Integer.valueOf(entity.getStaminaPenalty()).doubleValue()));
+
+    properties.put(
+        "Hand Size Penalty",
+        NotionPropertyBuilder.createNumberProperty(
+            Integer.valueOf(entity.getHandSizePenalty()).doubleValue()));
+
     properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
     if (entity.getInjuryDate() != null) {

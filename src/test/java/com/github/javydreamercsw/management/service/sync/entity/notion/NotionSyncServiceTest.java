@@ -30,6 +30,7 @@ import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -101,6 +102,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private EntitySyncConfiguration entitySyncConfig;
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private InjuryRepository injuryRepository;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private ShowTypeRepository showTypeRepository;
   @Mock private TeamRepository teamRepository;
@@ -139,7 +141,12 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             syncSessionManager,
             factionRepository,
             wrestlerRepository,
+            injuryRepository,
             injuryTypeRepository,
+            seasonRepository,
+            rivalryRepository,
+            showRepository,
+            showTemplateRepository,
             showTypeRepository,
             teamRepository,
             titleReignRepository,

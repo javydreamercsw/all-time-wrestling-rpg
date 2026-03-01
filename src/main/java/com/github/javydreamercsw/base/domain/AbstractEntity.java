@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
 @MappedSuperclass
 @Getter
 @Setter
-public abstract class AbstractEntity<ID> {
+public abstract class AbstractEntity<ID> implements NamedEntity {
 
   /** Maximum length for description fields across all entities */
   public static final int DESCRIPTION_MAX_LENGTH = 255;
@@ -40,6 +40,11 @@ public abstract class AbstractEntity<ID> {
   private Instant lastSync;
 
   public abstract @Nullable ID getId();
+
+  @Override
+  public @Nullable String getName() {
+    return null;
+  }
 
   @Override
   public String toString() {

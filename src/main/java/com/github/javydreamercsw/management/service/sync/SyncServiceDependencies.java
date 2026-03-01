@@ -23,9 +23,14 @@ import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -58,12 +63,17 @@ public class SyncServiceDependencies {
   private final SyncSessionManager syncSessionManager;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final InjuryRepository injuryRepository;
   private final InjuryTypeRepository injuryTypeRepository;
+  private final SeasonRepository seasonRepository;
+  private final ShowRepository showRepository;
+  private final ShowTemplateRepository showTemplateRepository;
   private final ShowTypeRepository showTypeRepository;
   private final TeamRepository teamRepository;
   private final TitleReignRepository titleReignRepository;
   private final TitleRepository titleRepository;
   private final NpcRepository npcRepository;
+  private final RivalryRepository rivalryRepository;
   private final SegmentRepository segmentRepository;
 
   @Autowired
@@ -86,7 +96,12 @@ public class SyncServiceDependencies {
       @NonNull SyncSessionManager syncSessionManager,
       @NonNull FactionRepository factionRepository,
       @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull InjuryRepository injuryRepository,
       @NonNull InjuryTypeRepository injuryTypeRepository,
+      @NonNull SeasonRepository seasonRepository,
+      @NonNull RivalryRepository rivalryRepository,
+      @NonNull ShowRepository showRepository,
+      @NonNull ShowTemplateRepository showTemplateRepository,
       @NonNull ShowTypeRepository showTypeRepository,
       @NonNull TeamRepository teamRepository,
       @NonNull TitleReignRepository titleReignRepository,
@@ -111,7 +126,12 @@ public class SyncServiceDependencies {
     this.syncSessionManager = syncSessionManager;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.injuryRepository = injuryRepository;
     this.injuryTypeRepository = injuryTypeRepository;
+    this.seasonRepository = seasonRepository;
+    this.rivalryRepository = rivalryRepository;
+    this.showRepository = showRepository;
+    this.showTemplateRepository = showTemplateRepository;
     this.showTypeRepository = showTypeRepository;
     this.teamRepository = teamRepository;
     this.titleReignRepository = titleReignRepository;

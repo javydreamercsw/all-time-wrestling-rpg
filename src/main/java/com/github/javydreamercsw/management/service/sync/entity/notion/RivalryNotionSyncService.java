@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.NonNull;
@@ -52,6 +53,36 @@ public class RivalryNotionSyncService extends BaseNotionSyncService<Rivalry> {
       properties.put(
           "Wrestler 2",
           NotionPropertyBuilder.createRelationProperty(entity.getWrestler2().getExternalId()));
+    }
+
+    properties.put(
+        "Heat", NotionPropertyBuilder.createNumberProperty(entity.getHeat().doubleValue()));
+
+    properties.put(
+        "Priority", NotionPropertyBuilder.createNumberProperty(entity.getPriority().doubleValue()));
+
+    properties.put(
+        "Status",
+        NotionPropertyBuilder.createSelectProperty(entity.getIsActive() ? "Active" : "Innactive"));
+
+    if (entity.getStartedDate() != null) {
+      properties.put(
+          "Start Date",
+          NotionPropertyBuilder.createDateProperty(
+              entity.getStartedDate().atOffset(ZoneOffset.UTC).toLocalDateTime().toString()));
+    }
+
+    if (entity.getEndedDate() != null) {
+      properties.put(
+          "End Date",
+          NotionPropertyBuilder.createDateProperty(
+              entity.getEndedDate().atOffset(ZoneOffset.UTC).toLocalDateTime().toString()));
+    }
+
+    if (entity.getStorylineNotes() != null && !entity.getStorylineNotes().isBlank()) {
+      properties.put(
+          "Storyline Notes",
+          NotionPropertyBuilder.createRichTextProperty(entity.getStorylineNotes()));
     }
 
     return properties;

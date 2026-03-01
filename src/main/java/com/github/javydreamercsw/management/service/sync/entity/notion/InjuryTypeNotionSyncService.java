@@ -50,6 +50,13 @@ public class InjuryTypeNotionSyncService extends BaseNotionSyncService<InjuryTyp
     properties.put(
         "Card Effect",
         NotionPropertyBuilder.createNumberProperty((double) entity.getEffectiveCardEffect()));
+
+    if (entity.getSpecialEffects() != null && !entity.getSpecialEffects().isBlank()) {
+      properties.put(
+          "Special Effects",
+          NotionPropertyBuilder.createRichTextProperty(entity.getSpecialEffects()));
+    }
+
     return properties;
   }
 

@@ -171,7 +171,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       assertEquals(
           testShowType.getName(),
           com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Show Type")));
+              client, props.get("Show Type (Formula)")));
 
       assertEquals(
           testSeason.getName(),
@@ -213,7 +213,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       assertEquals(
           testShowType.getName(),
           com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Show Type")));
+              client, props.get("Show Type (Formula)")));
       assertEquals(
           testSeason.getName(),
           com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
