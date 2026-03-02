@@ -86,20 +86,30 @@ class NotionSyncSchedulerTest extends BaseTest {
     // Given
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(dependencyAnalyzer.getAutomaticSyncOrder())
-        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
+        .thenReturn(
+            List.of(
+                SyncEntityType.SHOWS,
+                SyncEntityType.WRESTLERS,
+                SyncEntityType.INJURY_TYPES,
+                SyncEntityType.INJURIES));
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
         .thenReturn(BaseSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 5, 0, 0));
     when(notionSyncService.syncWrestlers(anyString(), any(SyncDirection.class)))
         .thenReturn(BaseSyncService.SyncResult.success(SyncEntityType.WRESTLERS.getKey(), 3, 0, 0));
+    when(notionSyncService.syncInjuryTypes(anyString(), any(SyncDirection.class)))
+        .thenReturn(
+            BaseSyncService.SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 2, 0, 0));
+    when(notionSyncService.syncInjuries(anyString(), any(SyncDirection.class)))
+        .thenReturn(BaseSyncService.SyncResult.success(SyncEntityType.INJURIES.getKey(), 1, 0, 0));
 
     // When
     notionSyncScheduler.performScheduledSync();
 
     // Then
-    verify(notionSyncService)
-        .syncShows(anyString(), any(SyncDirection.class)); // Now accepts operation ID
-    verify(notionSyncService)
-        .syncWrestlers(anyString(), any(SyncDirection.class)); // Now accepts operation ID
+    verify(notionSyncService).syncShows(anyString(), any(SyncDirection.class));
+    verify(notionSyncService).syncWrestlers(anyString(), any(SyncDirection.class));
+    verify(notionSyncService).syncInjuryTypes(anyString(), any(SyncDirection.class));
+    verify(notionSyncService).syncInjuries(anyString(), any(SyncDirection.class));
   }
 
   @Test
@@ -188,6 +198,50 @@ class NotionSyncSchedulerTest extends BaseTest {
     assertNotNull(result);
     assertTrue(result.isSuccess());
     assertEquals(SyncEntityType.WRESTLERS.getKey(), result.getEntityType());
+    assertEquals(1, result.getSyncedCount());
+  }
+
+  @Test
+  @DisplayName("Should trigger sync to notion for injury types and return success")
+  void shouldTriggerSyncToNotionForInjuryTypesAndReturnSuccess() {
+    // Given
+    when(notionSyncService.syncInjuryTypes(any(), eq(SyncDirection.OUTBOUND)))
+        .thenReturn(
+            BaseSyncService.SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 1, 0, 0));
+
+    // When
+    BaseSyncService.SyncResult result =
+        notionSyncScheduler.syncEntity(
+            SyncEntityType.INJURY_TYPES.getKey(), SyncDirection.OUTBOUND);
+
+    // Then
+    verify(notionSyncService).syncInjuryTypes(any(), eq(SyncDirection.OUTBOUND));
+    verify(syncProperties)
+        .setLastSyncTime(eq(SyncEntityType.INJURY_TYPES.getKey()), any(LocalDateTime.class));
+    assertNotNull(result);
+    assertTrue(result.isSuccess());
+    assertEquals(SyncEntityType.INJURY_TYPES.getKey(), result.getEntityType());
+    assertEquals(1, result.getSyncedCount());
+  }
+
+  @Test
+  @DisplayName("Should trigger sync to notion for injuries and return success")
+  void shouldTriggerSyncToNotionForInjuriesAndReturnSuccess() {
+    // Given
+    when(notionSyncService.syncInjuries(any(), eq(SyncDirection.OUTBOUND)))
+        .thenReturn(BaseSyncService.SyncResult.success(SyncEntityType.INJURIES.getKey(), 1, 0, 0));
+
+    // When
+    BaseSyncService.SyncResult result =
+        notionSyncScheduler.syncEntity(SyncEntityType.INJURIES.getKey(), SyncDirection.OUTBOUND);
+
+    // Then
+    verify(notionSyncService).syncInjuries(any(), eq(SyncDirection.OUTBOUND));
+    verify(syncProperties)
+        .setLastSyncTime(eq(SyncEntityType.INJURIES.getKey()), any(LocalDateTime.class));
+    assertNotNull(result);
+    assertTrue(result.isSuccess());
+    assertEquals(SyncEntityType.INJURIES.getKey(), result.getEntityType());
     assertEquals(1, result.getSyncedCount());
   }
 

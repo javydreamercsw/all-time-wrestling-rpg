@@ -226,7 +226,7 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   /**
-   * Synchronizes injury types from Notion Injuries database to the local database.
+   * Synchronizes injury types from Notion Injury Types database to the local database.
    *
    * @param operationId Operation ID for progress tracking
    * @param direction The direction of the synchronization (inbound or outbound)
@@ -237,6 +237,20 @@ public class NotionSyncService extends BaseSyncService {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getInjuryTypeSyncService().syncInjuryTypes(operationId)
         : notionSyncServicesManager.getInjuryTypeNotionSyncService().syncToNotion(operationId);
+  }
+
+  /**
+   * Synchronizes individual injuries from Notion Injuries database to the local database.
+   *
+   * @param operationId Operation ID for progress tracking
+   * @param direction The direction of the synchronization (inbound or outbound)
+   * @return SyncResult indicating success or failure with details
+   */
+  @PreAuthorize("hasRole('ADMIN')")
+  public SyncResult syncInjuries(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? notionSyncServicesManager.getInjurySyncService().syncInjuries(operationId)
+        : notionSyncServicesManager.getInjuryNotionSyncService().syncToNotion(operationId);
   }
 
   /**

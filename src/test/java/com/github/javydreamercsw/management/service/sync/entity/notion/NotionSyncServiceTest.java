@@ -78,6 +78,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private TitleSyncService titleSyncService;
   @Mock private TitleReignSyncService titleReignSyncService;
   @Mock private InjuryTypeSyncService injuryTypeSyncService;
+  @Mock private InjurySyncService injurySyncService;
   @Mock private NpcSyncService npcSyncService;
   @Mock private SegmentSyncService segmentSyncService;
   @Mock private RivalrySyncService rivalrySyncService;
@@ -171,6 +172,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
     when(notionSyncServicesManager.getTitleReignSyncService()).thenReturn(titleReignSyncService);
     when(notionSyncServicesManager.getInjuryTypeSyncService()).thenReturn(injuryTypeSyncService);
+    when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
     when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
     when(notionSyncServicesManager.getSegmentSyncService()).thenReturn(segmentSyncService);
     when(notionSyncServicesManager.getRivalrySyncService()).thenReturn(rivalrySyncService);
@@ -329,6 +331,26 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     assertNotNull(result, "Sync result should not be null");
     assertThat(result).isEqualTo(expectedResult);
     verify(injuryTypeSyncService, times(1)).syncInjuryTypes(anyString());
+  }
+
+  @Test
+  @DisplayName("Should sync injuries from Notion to database")
+  void shouldSyncInjuriesFromNotionToDatabase() {
+    log.info("🏥 Testing injuries sync from Notion to database");
+
+    // Given
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success(SyncEntityType.INJURIES.getKey(), 1, 0, 0);
+    when(injurySyncService.syncInjuries(anyString())).thenReturn(expectedResult);
+
+    // When - Sync injuries from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncInjuries("integration-test-injuries", SyncDirection.INBOUND);
+
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(injurySyncService, times(1)).syncInjuries(anyString());
   }
 
   @Test

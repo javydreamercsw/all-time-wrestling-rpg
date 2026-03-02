@@ -481,6 +481,13 @@ public class NotionHandler {
     return injuryNotionHandler.loadAllInjuries();
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'injuryTypes'")
+  public List<InjuryPage> loadAllInjuryTypes() {
+    return injuryNotionHandler.loadAllInjuryTypes();
+  }
+
   // ==================== GENERIC HELPER METHODS ====================
 
   /**

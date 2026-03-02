@@ -35,6 +35,7 @@ public class NotionSyncServicesManager {
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private InjuryTypeSyncService injuryTypeSyncService;
+  @Autowired private InjurySyncService injurySyncService;
   @Autowired private NpcSyncService npcSyncService;
   @Autowired private TitleSyncService titleSyncService;
   @Autowired private TitleReignSyncService titleReignSyncService;

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import notion.api.v1.model.pages.PageProperty;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -236,9 +237,56 @@ public class NotionPageDataExtractor {
    */
   public java.util.List<String> extractRelationIds(
       @NonNull NotionPage page, @NonNull String propertyName) {
-    // This is a simplified version for mocks
-    String val = extractRelationId(page, propertyName);
-    return val != null ? java.util.List.of(val) : java.util.Collections.emptyList();
+    Object property = page.getRawProperties().get(propertyName);
+    if (property == null) {
+      return java.util.Collections.emptyList();
+    }
+
+    java.util.List<String> ids = new java.util.ArrayList<>();
+
+    // Handle Map objects that mimic Notion's relation structure
+    if (property instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> map = (Map<String, Object>) property;
+      if (map.containsKey("relation")) {
+        Object relationObj = map.get("relation");
+        if (relationObj instanceof List) {
+          @SuppressWarnings("unchecked")
+          List<Object> relationList = (List<Object>) relationObj;
+          for (Object item : relationList) {
+            if (item instanceof Map) {
+              @SuppressWarnings("unchecked")
+              Map<String, Object> itemMap = (Map<String, Object>) item;
+              if (itemMap.containsKey("id")) {
+                ids.add(itemMap.get("id").toString());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Handle PageProperty objects (from Notion API)
+    if (property instanceof notion.api.v1.model.pages.PageProperty pageProperty) {
+      if (pageProperty.getRelation() != null) {
+        for (PageProperty.PageReference relation : pageProperty.getRelation()) {
+          if (relation.getId() != null) {
+            ids.add(relation.getId());
+          }
+        }
+      }
+    }
+
+    // Fallback: check if the string representation is a single ID
+    if (ids.isEmpty()) {
+      String val = extractTextFromProperty(property);
+      if (val != null
+          && val.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+        ids.add(val);
+      }
+    }
+
+    return ids;
   }
 
   public String extractDayOfWeekFromNotionPage(@NonNull NotionPage page) {

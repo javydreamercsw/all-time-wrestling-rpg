@@ -166,7 +166,7 @@ public class NotionSyncScheduler {
           case FACTION_RIVALRIES -> notionSyncService.syncFactionRivalries(operationId, direction);
           case SEGMENTS -> notionSyncService.syncSegments(operationId, direction);
           case TITLE_REIGN -> notionSyncService.syncTitleReigns(operationId);
-          case INJURIES -> notionSyncService.syncInjuryTypes(operationId, direction);
+          case INJURIES -> notionSyncService.syncInjuries(operationId, direction);
         };
     if (result.isSuccess()) {
       syncProperties.setLastSyncTime(entityType.getKey(), LocalDateTime.now());
