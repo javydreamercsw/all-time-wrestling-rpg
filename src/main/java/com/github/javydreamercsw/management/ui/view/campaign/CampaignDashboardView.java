@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -24,6 +25,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardR
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -32,6 +34,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
+import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
@@ -84,13 +87,13 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignAbilityCardRepository cardRepository;
   private final CampaignUpgradeService upgradeService;
   private final SecurityUtils securityUtils;
-  private final com.github.javydreamercsw.management.service.campaign.TournamentService
-      tournamentService;
+  private final TournamentService tournamentService;
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
   private final CampaignChapterService chapterService;
   private final TitleService titleService;
-  private final com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
-  private final StorylineDirectorService storylineDirectorService;
+  private final TitleRepository titleRepository;
+  private final com.github.javydreamercsw.management.service.campaign.StorylineDirectorService
+      storylineDirectorService;
   private final StorylineExportService storylineExportService;
 
   private Campaign currentCampaign;
@@ -103,11 +106,11 @@ public class CampaignDashboardView extends VerticalLayout {
       CampaignAbilityCardRepository cardRepository,
       CampaignUpgradeService upgradeService,
       SecurityUtils securityUtils,
-      com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService,
+      TournamentService tournamentService,
       com.fasterxml.jackson.databind.ObjectMapper objectMapper,
       CampaignChapterService chapterService,
       TitleService titleService,
-      com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository,
+      TitleRepository titleRepository,
       StorylineDirectorService storylineDirectorService,
       StorylineExportService storylineExportService) {
     this.campaignRepository = campaignRepository;
@@ -185,50 +188,50 @@ public class CampaignDashboardView extends VerticalLayout {
           new Span(
               "No active campaign found. To start a campaign, please navigate to the Wrestler"
                   + " List and use the 'Start Campaign' action on your assigned wrestler."));
+      if (!VaadinService.getCurrent().getDeploymentConfiguration().isProductionMode()) {
+        // Debug button for E2E tests and quick start
+        Button debugStartButton =
+            new Button(
+                "Start New Campaign (Debug)",
+                e -> {
+                  log.info("Debug Start Campaign button clicked");
+                  securityUtils
+                      .getAuthenticatedUser()
+                      .ifPresentOrElse(
+                          user -> {
+                            Account account = user.getAccount();
+                            java.util.List<Wrestler> wrestlers =
+                                wrestlerRepository.findByAccount(account);
+                            Wrestler active =
+                                wrestlers.stream()
+                                    .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                                    .findFirst()
+                                    .orElse(wrestlers.isEmpty() ? null : wrestlers.getFirst());
 
-      // Debug button for E2E tests and quick start
-      Button debugStartButton =
-          new Button(
-              "Start New Campaign (Debug)",
-              e -> {
-                log.info("Debug Start Campaign button clicked");
-                securityUtils
-                    .getAuthenticatedUser()
-                    .ifPresentOrElse(
-                        user -> {
-                          com.github.javydreamercsw.base.domain.account.Account account =
-                              user.getAccount();
-                          java.util.List<Wrestler> wrestlers =
-                              wrestlerRepository.findByAccount(account);
-                          Wrestler active =
-                              wrestlers.stream()
-                                  .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
-                                  .findFirst()
-                                  .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
-
-                          if (active != null) {
-                            campaignService.startCampaign(active);
-                            refreshUI();
-                          } else {
-                            List<Wrestler> all = wrestlerRepository.findAll();
-                            if (!all.isEmpty()) {
-                              Wrestler first = all.get(0);
-                              first.setAccount(user.getAccount());
-                              first.setIsPlayer(true);
-                              wrestlerRepository.save(first);
-                              campaignService.startCampaign(first);
+                            if (active != null) {
+                              campaignService.startCampaign(active);
                               refreshUI();
+                            } else {
+                              List<Wrestler> all = wrestlerRepository.findAll();
+                              if (!all.isEmpty()) {
+                                Wrestler first = all.getFirst();
+                                first.setAccount(user.getAccount());
+                                first.setIsPlayer(true);
+                                wrestlerRepository.save(first);
+                                campaignService.startCampaign(first);
+                                refreshUI();
+                              }
                             }
-                          }
-                        },
-                        () ->
-                            log.warn(
-                                "No authenticated user found when clicking debug start button"));
-              });
-      debugStartButton.addThemeVariants(
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY);
-      debugStartButton.setId("debug-start-campaign");
-      add(debugStartButton);
+                          },
+                          () ->
+                              log.warn(
+                                  "No authenticated user found when clicking debug start button"));
+                });
+        debugStartButton.addThemeVariants(
+            com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY);
+        debugStartButton.setId("debug-start-campaign");
+        add(debugStartButton);
+      }
       return;
     }
 
