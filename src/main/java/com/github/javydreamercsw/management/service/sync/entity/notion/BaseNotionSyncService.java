@@ -34,6 +34,8 @@ import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +46,8 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
   protected final JpaRepository<T, Long> repository;
   protected final SyncServiceDependencies syncServiceDependencies;
   protected final NotionApiExecutor notionApiExecutor;
+
+  @Autowired @Lazy private BaseNotionSyncService<T> self;
 
   protected BaseNotionSyncService(
       JpaRepository<T, Long> repository,
@@ -168,7 +172,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
               continue;
             }
 
-            Map<String, PageProperty> allProperties = getProperties(entity);
+            Map<String, PageProperty> allProperties = self.getProperties(entity);
             log.info(
                 "📤 Sending {} properties to Notion for {}",
                 allProperties.size(),
@@ -293,6 +297,12 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
         getEntityName(), "Error syncing " + getEntityName() + "!");
   }
 
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+  protected void saveEntity(T entity) {
+    repository.saveAndFlush(entity);
+  }
+
+  @Transactional
   protected abstract Map<String, PageProperty> getProperties(T entity);
 
   protected abstract String getDatabaseName();

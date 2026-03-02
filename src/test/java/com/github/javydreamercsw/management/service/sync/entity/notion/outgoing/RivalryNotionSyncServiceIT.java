@@ -101,7 +101,6 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
     rivalry.setIsActive(true);
     rivalry.setStartedDate(Instant.now());
     rivalry.setStorylineNotes("Test rivalry");
-    rivalry.setUpdatedAt(java.time.Instant.now());
     rivalryRepository.save(rivalry);
 
     // Ensure it has unsynced changes by setting updatedAt to the future
@@ -109,6 +108,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
     rivalryRepository.saveAndFlush(rivalry);
 
     // Sync to Notion for the first time
+
     rivalryNotionSyncService.syncToNotion("test-op-1");
 
     // Verify that the externalId and lastSync fields are updated

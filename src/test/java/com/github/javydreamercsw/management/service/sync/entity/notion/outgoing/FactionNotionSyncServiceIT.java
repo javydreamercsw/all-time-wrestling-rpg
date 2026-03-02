@@ -81,7 +81,6 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
     // Create a new Faction
     Faction faction = new Faction();
     faction.setName("Test Faction " + UUID.randomUUID());
-    faction.setUpdatedAt(java.time.Instant.now());
     factionRepository.save(faction);
 
     // Ensure it has unsynced changes by setting updatedAt to the future

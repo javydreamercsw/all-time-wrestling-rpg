@@ -109,7 +109,6 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     reign.setReignNumber(1);
     reign.setStartDate(Instant.now());
     reign.setNotes("Historical first reign");
-    reign.setUpdatedAt(java.time.Instant.now());
     titleReignRepository.save(reign);
 
     // Ensure it has unsynced changes by setting updatedAt to the future
@@ -117,6 +116,7 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     titleReignRepository.saveAndFlush(reign);
 
     // Sync to Notion for the first time
+
     titleReignNotionSyncService.syncToNotion("test-op-1");
 
     // Verify fields updated

@@ -167,7 +167,6 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     segment.setSegmentOrder(1);
     segment.setMainEvent(true);
     segment.addParticipant(wrestler); // Add wrestler as a participant
-    segment.setUpdatedAt(java.time.Instant.now());
     segmentRepository.save(segment);
 
     // Ensure it has unsynced changes by setting updatedAt to the future
@@ -175,6 +174,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     segmentRepository.saveAndFlush(segment);
 
     // Sync to Notion for the first time
+
     segmentNotionSyncService.syncToNotion("test-op-1");
 
     // Verify that the externalId and lastSync fields are updated
