@@ -78,7 +78,7 @@ class ShowSchedulerServiceTest {
 
     ShowType pleType = new ShowType();
     pleType.setId(2L);
-    pleType.setName("PLE");
+    pleType.setName("Premium Live Event (PLE)");
 
     pleTemplate = new ShowTemplate();
     pleTemplate.setId(2L);
@@ -206,7 +206,7 @@ class ShowSchedulerServiceTest {
   void testGenerateAnnualShowMissingDayOfWeek() {
     ShowType pleType = new ShowType();
     pleType.setId(2L);
-    pleType.setName("PLE");
+    pleType.setName("Premium Live Event (PLE)");
 
     ShowTemplate invalidTemplate = new ShowTemplate();
     invalidTemplate.setId(3L);

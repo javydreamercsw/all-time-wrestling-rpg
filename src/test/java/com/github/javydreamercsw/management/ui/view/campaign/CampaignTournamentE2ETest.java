@@ -176,7 +176,6 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineDirectorService,
             storylineExportService);
 
     UI.getCurrent().add(dashboard);
@@ -223,7 +222,6 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
               chapterService,
               titleService,
               titleRepository,
-              storylineDirectorService,
               storylineExportService);
       UI.getCurrent().add(dashboard);
 

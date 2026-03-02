@@ -10,14 +10,14 @@ name: Java CI with Maven
 
 on:
   push:
+    branches:
+      - '**'
     tags:
       - 'v*.*.*'
-    branches:
-      - main
-      - 'release/**'
 
   pull_request:
-    branches: [ main, 'release/**' ]
+    branches:
+      - '**'
 
 permissions:
   contents: read

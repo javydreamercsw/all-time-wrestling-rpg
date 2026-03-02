@@ -38,7 +38,19 @@ public class GameSettingService {
   public static final String NEWS_RUMOR_CHANCE_KEY = "news_rumor_chance";
   public static final String NEWS_STRATEGY_KEY = "news_strategy"; // "SEGMENT" or "SHOW"
   public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
+  public static final String NOTION_TOKEN_KEY = "notion_token";
   private final GameSettingRepository repository;
+
+  @PreAuthorize("hasRole('ADMIN')")
+  public String getNotionToken() {
+    return repository.findById(NOTION_TOKEN_KEY).map(GameSetting::getValue).orElse(null);
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @Transactional
+  public void setNotionToken(String token) {
+    save(NOTION_TOKEN_KEY, token);
+  }
 
   @PreAuthorize("permitAll()")
   public boolean isWearAndTearEnabled() {

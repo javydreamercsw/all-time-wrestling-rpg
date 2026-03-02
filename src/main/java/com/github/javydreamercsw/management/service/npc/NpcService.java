@@ -39,7 +39,7 @@ public class NpcService {
     return npcRepository.save(npc);
   }
 
-  public Npc findByExternalId(String externalId) {
+  public java.util.Optional<Npc> findByExternalId(String externalId) {
     return npcRepository.findByExternalId(externalId);
   }
 

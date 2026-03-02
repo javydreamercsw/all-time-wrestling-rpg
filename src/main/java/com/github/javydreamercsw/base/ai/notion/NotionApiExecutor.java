@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.ai.notion;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,6 +26,7 @@ import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,22 +37,33 @@ public class NotionApiExecutor {
   private final NotionRateLimitService rateLimitService;
   private final NotionSyncProperties syncProperties; // Keep this field to use in newFixedThreadPool
   private final ExecutorService syncExecutorService;
+  private final SyncProgressTracker syncProgressTracker;
 
   @Autowired
   public NotionApiExecutor(
       @NonNull NotionHandler notionHandler,
       @NonNull NotionRateLimitService rateLimitService,
-      @NonNull NotionSyncProperties syncProperties) {
+      @NonNull NotionSyncProperties syncProperties,
+      @NonNull SyncProgressTracker syncProgressTracker) {
     this.notionHandler = notionHandler;
     this.rateLimitService = rateLimitService;
     this.syncProperties = syncProperties;
     this.syncExecutorService =
         Executors.newFixedThreadPool(Math.max(1, this.syncProperties.getParallelThreads()));
+    this.syncProgressTracker = syncProgressTracker;
   }
 
   /** Execute a Notion API call with proper rate limiting. */
   public <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) {
+    return executeWithRateLimit(null, apiCall);
+  }
+
+  /** Execute a Notion API call with proper rate limiting and optional progress logging. */
+  public <T> T executeWithRateLimit(@Nullable String operationId, @NonNull Supplier<T> apiCall) {
     try {
+      if (operationId != null && rateLimitService.isRateLimited()) {
+        syncProgressTracker.addLogMessage(operationId, "🚦 Rate limit active. Pausing...", "WARN");
+      }
       rateLimitService.acquirePermit();
       return apiCall.get();
     } catch (InterruptedException e) {

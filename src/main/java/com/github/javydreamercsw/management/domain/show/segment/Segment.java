@@ -115,12 +115,6 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "is_npc_generated", nullable = false)
   private Boolean isNpcGenerated = false;
 
-  @Column(name = "external_id", unique = true)
-  private String externalId;
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
-
   @Column(name = "segment_order", nullable = false)
   private int segmentOrder;
 
@@ -283,5 +277,19 @@ public class Segment extends AbstractEntity<Long> {
     return segmentRules.stream()
         .map(SegmentRule::getName)
         .collect(java.util.stream.Collectors.joining(", "));
+  }
+
+  @Override
+  public String getName() {
+    String type = segmentType != null ? segmentType.getName() : "Unknown Type";
+    String participantsStr =
+        getWrestlers().stream()
+            .map(Wrestler::getName)
+            .collect(java.util.stream.Collectors.joining(", "));
+    return "%s: %s (%s)".formatted(getEntityName(), type, participantsStr);
+  }
+
+  private String getEntityName() {
+    return "Segment";
   }
 }

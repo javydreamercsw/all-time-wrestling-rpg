@@ -14,21 +14,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.config;
+package com.github.javydreamercsw.base.domain;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.jspecify.annotations.Nullable;
 
-@Configuration
-@Profile("!test")
-public class NotionConfiguration {
-
-  @Bean
-  @ConditionalOnProperty(name = "NOTION_TOKEN")
-  public NotionHandler notionHandler() {
-    return new NotionHandler();
-  }
+/** Interface for entities that have a display name. */
+public interface NamedEntity {
+  /**
+   * Get the display name of the entity.
+   *
+   * @return display name or null if not set
+   */
+  @Nullable String getName();
 }

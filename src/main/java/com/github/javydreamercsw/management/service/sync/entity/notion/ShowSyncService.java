@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -56,6 +58,8 @@ public class ShowSyncService extends BaseSyncService {
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
 
+  @Autowired @Lazy private ShowSyncService self;
+
   public ShowSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
@@ -69,6 +73,7 @@ public class ShowSyncService extends BaseSyncService {
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
+    this.self = this;
   }
 
   /**
@@ -390,7 +395,7 @@ public class ShowSyncService extends BaseSyncService {
       try {
         for (ShowDTO dto : batch) {
           try {
-            if (processSingleShow(dto, showTypes, seasons, templates)) {
+            if (self.processSingleShow(dto, showTypes, seasons, templates)) {
               savedCount++;
             } else {
               skippedCount++;

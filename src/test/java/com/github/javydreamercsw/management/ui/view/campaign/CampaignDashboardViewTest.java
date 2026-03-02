@@ -30,13 +30,17 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardR
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
+import com.github.javydreamercsw.management.service.campaign.TournamentService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -63,16 +67,10 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
-      chapterService;
-
-  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
-  @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  @Mock private TournamentService tournamentService;
+  @Mock private CampaignChapterService chapterService;
+  @Mock private TitleService titleService;
+  @Mock private TitleRepository titleRepository;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -127,7 +125,6 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineDirectorService,
             storylineExportService);
 
     UI.getCurrent().add(view);
@@ -184,7 +181,6 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineDirectorService,
             storylineExportService);
 
     UI.getCurrent().add(view);
@@ -210,7 +206,6 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineDirectorService,
             storylineExportService);
 
     UI.getCurrent().add(view);
@@ -249,7 +244,6 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineDirectorService,
             storylineExportService);
 
     UI.getCurrent().add(view);

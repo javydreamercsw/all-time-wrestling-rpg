@@ -85,15 +85,12 @@ public class Faction extends AbstractEntity<Long> {
   @Column(name = "disbanded_date")
   private Instant disbandedDate;
 
+  @Column(name = "alignment")
+  private String alignment;
+
   @Column(name = "creation_date", nullable = false)
   @Builder.Default
   private Instant creationDate = Instant.now();
-
-  @Column(name = "external_id")
-  private String externalId; // External system ID (e.g., Notion page ID)
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
 
   @Column(name = "affinity", nullable = false)
   @Builder.Default

@@ -66,10 +66,17 @@
 *Link: [./conductor/archive/arena_customizer_20260224/plan.md](./conductor/archive/arena_customizer_20260224/plan.md)*
 *Status: Discarded (2026-02-24)*
 
+### [x] Track: Fix Authentication error during outbound Notion sync
+
+*Link: [./archive/notion_sync_auth_fix_20260227/plan.md](./archive/notion_sync_auth_fix_20260227/plan.md)*
+*Status: Completed (2026-02-27)*
+
+### [x] Track: Improve Notion sync UI feedback and progress tracking
+
+*Link: [./archive/notion_sync_ui_details_20260227/plan.md](./archive/notion_sync_ui_details_20260227/plan.md)*
+*Status: Completed (2026-02-28)*
+
 ---
 
 ## Active Tracks
-
-- [ ] **Track: Fix Authentication error during outbound Notion sync**
-*Link: [./tracks/notion_sync_auth_fix_20260227/](./tracks/notion_sync_auth_fix_20260227/)*
 

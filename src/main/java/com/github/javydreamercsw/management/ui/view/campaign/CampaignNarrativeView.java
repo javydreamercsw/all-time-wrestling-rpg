@@ -17,10 +17,10 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -50,6 +50,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -59,7 +60,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class CampaignNarrativeView extends VerticalLayout {
 
-  private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
   private final CampaignEncounterService encounterService;
   private final CampaignService campaignService;
@@ -73,13 +73,11 @@ public class CampaignNarrativeView extends VerticalLayout {
 
   @Autowired
   public CampaignNarrativeView(
-      CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       CampaignEncounterService encounterService,
       CampaignService campaignService,
       SecurityUtils securityUtils,
       SegmentNarrationServiceFactory aiFactory) {
-    this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
@@ -107,13 +105,13 @@ public class CampaignNarrativeView extends VerticalLayout {
         .getAuthenticatedUser()
         .ifPresent(
             user -> {
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
+              Account account = user.getAccount();
               java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
                       .findFirst()
-                      .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
+                      .orElse(wrestlers.isEmpty() ? null : wrestlers.getFirst());
 
               if (active != null) {
                 campaignService.getCampaignForWrestler(active).ifPresent(c -> currentCampaign = c);
@@ -213,7 +211,7 @@ public class CampaignNarrativeView extends VerticalLayout {
         });
   }
 
-  private void displayEncounter(CampaignEncounterResponseDTO encounter) {
+  private void displayEncounter(@NonNull CampaignEncounterResponseDTO encounter) {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 

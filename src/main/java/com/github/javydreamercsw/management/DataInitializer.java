@@ -23,6 +23,8 @@ import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -779,6 +781,30 @@ public class DataInitializer implements Initializable {
                   existingWrestler.setHeritageTag(w.getHeritageTag());
                 }
 
+                if (w.getAlignment() != null) {
+                  if (existingWrestler.getAlignment() == null
+                      || existingWrestler.getAlignment().getAlignmentType() == null) {
+                    try {
+                      AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+                      existingWrestler.setAlignment(
+                          WrestlerAlignment.builder()
+                              .wrestler(existingWrestler)
+                              .alignmentType(at)
+                              .level(0)
+                              .build());
+                      log.debug(
+                          "Initialized alignment for existing wrestler {}: {}",
+                          existingWrestler.getName(),
+                          at);
+                    } catch (IllegalArgumentException e) {
+                      log.warn(
+                          "Invalid alignment '{}' for wrestler '{}'",
+                          w.getAlignment(),
+                          w.getName());
+                    }
+                  }
+                }
+
                 if (w.getExternalId() != null) {
                   existingWrestler.setExternalId(w.getExternalId());
                 }
@@ -1045,6 +1071,14 @@ public class DataInitializer implements Initializable {
           if (dto.getAwareness() != null) {
             npcService.setAwareness(npc, dto.getAwareness());
           }
+          if (dto.getAlignment() != null) {
+            try {
+              AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
+              npc.setAlignment(at);
+            } catch (IllegalArgumentException e) {
+              log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
+            }
+          }
           npcService.save(npc);
           log.debug("Loaded npc: {}", dto.getName());
         }
@@ -1178,7 +1212,9 @@ public class DataInitializer implements Initializable {
             log.info("Updated existing location: {}", existing.getName());
           }
         }
+        locationRepository.flush();
         log.info("Location loading completed - {} locations processed", locationsFromFile.size());
+
       } catch (IOException e) {
         log.error("Error loading locations from file", e);
       }

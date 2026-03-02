@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,22 +14,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.sync.entity;
+package com.github.javydreamercsw.base.ai.notion;
 
-import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.Optional;
 
-@Setter
-@Getter
-public class FactionDTO {
-  private String name;
-  private String description;
-  private String externalId; // Notion page ID
-  private String leader;
-  private Boolean isActive;
-  private String formedDate;
-  private String disbandedDate;
-  private List<String> members;
-  private List<String> teams;
+/** Interface for providing Notion integration tokens. */
+public interface NotionTokenProvider {
+  /**
+   * Gets the Notion token.
+   *
+   * @return An Optional containing the token if available, or empty otherwise.
+   */
+  Optional<String> getToken();
 }
