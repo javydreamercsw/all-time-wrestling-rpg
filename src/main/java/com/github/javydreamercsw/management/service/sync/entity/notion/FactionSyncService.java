@@ -32,12 +32,18 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 public class FactionSyncService extends BaseSyncService {
   private final FactionService factionService;
+
+  @Autowired @Lazy private FactionSyncService self;
 
   public FactionSyncService(
       ObjectMapper objectMapper,
@@ -111,7 +117,7 @@ public class FactionSyncService extends BaseSyncService {
           (int)
               processWithControlledParallelism(
                       factionDTOs,
-                      this::saveOrUpdateFaction,
+                      self::saveOrUpdateFaction,
                       10,
                       operationId,
                       3,
@@ -237,7 +243,8 @@ public class FactionSyncService extends BaseSyncService {
     return ids;
   }
 
-  private Faction saveOrUpdateFaction(FactionDTO dto) {
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public Faction saveOrUpdateFaction(FactionDTO dto) {
     if (dto == null || dto.getName() == null) return null;
 
     try {

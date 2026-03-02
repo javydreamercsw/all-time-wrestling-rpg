@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,7 @@ public class SyncServiceDependencies {
   private final NotionHandler notionHandler;
   private final NotionPageDataExtractor notionPageDataExtractor;
   private final SyncSessionManager syncSessionManager;
+  private final SyncLockService syncLockService;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
   private final InjuryRepository injuryRepository;
@@ -94,6 +96,7 @@ public class SyncServiceDependencies {
       @NonNull NotionHandler notionHandler,
       @NonNull NotionPageDataExtractor notionPageDataExtractor,
       @NonNull SyncSessionManager syncSessionManager,
+      @NonNull SyncLockService syncLockService,
       @NonNull FactionRepository factionRepository,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull InjuryRepository injuryRepository,
@@ -124,6 +127,7 @@ public class SyncServiceDependencies {
     this.notionHandler = notionHandler;
     this.notionPageDataExtractor = notionPageDataExtractor;
     this.syncSessionManager = syncSessionManager;
+    this.syncLockService = syncLockService;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.injuryRepository = injuryRepository;

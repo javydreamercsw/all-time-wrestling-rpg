@@ -53,6 +53,7 @@ import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,6 +94,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
   @Mock private SyncSessionManager syncSessionManager;
+  @Mock private SyncLockService syncLockService;
   private SyncServiceDependencies syncServiceDependencies; // No longer a mock
   @Mock private RetryService retryService;
   @Mock private CircuitBreakerService circuitBreakerService;
@@ -139,6 +141,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             notionHandler,
             notionPageDataExtractor,
             syncSessionManager,
+            syncLockService,
             factionRepository,
             wrestlerRepository,
             injuryRepository,

@@ -33,7 +33,10 @@ import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Service responsible for synchronizing teams from Notion to the database. */
 @Service
@@ -42,6 +45,8 @@ public class TeamSyncService extends BaseSyncService {
 
   private final TeamService teamService;
   private final WrestlerService wrestlerService;
+
+  @Autowired @Lazy private TeamSyncService self;
 
   @Autowired
   public TeamSyncService(
@@ -133,7 +138,7 @@ public class TeamSyncService extends BaseSyncService {
           (int)
               processWithControlledParallelism(
                       teamDTOs,
-                      this::saveOrUpdateTeam,
+                      self::saveOrUpdateTeam,
                       10, // Batch size
                       operationId,
                       3, // Progress step
@@ -295,7 +300,8 @@ public class TeamSyncService extends BaseSyncService {
   }
 
   /** Saves or updates a team in the database. */
-  private Team saveOrUpdateTeam(TeamDTO dto) {
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public Team saveOrUpdateTeam(TeamDTO dto) {
     if (dto == null || dto.getName() == null || dto.getName().trim().isEmpty()) {
       log.warn("Cannot save team: DTO is null or has no name");
       return null;

@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -72,6 +73,7 @@ public abstract class AbstractSyncTest {
   @Mock protected ObjectMapper objectMapper;
   @Mock protected NotionRateLimitService rateLimitService;
   @Mock protected SyncSessionManager syncSessionManager;
+  @Mock protected SyncLockService syncLockService;
   protected SyncServiceDependencies syncServiceDependencies;
   @Mock protected NotionPageDataExtractor notionPageDataExtractor;
   @Mock protected NotionApiExecutor notionApiExecutor;
@@ -151,6 +153,8 @@ public abstract class AbstractSyncTest {
               return supplier != null ? supplier.get() : null;
             });
 
+    lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
+
     syncServiceDependencies =
         new SyncServiceDependencies(
             progressTracker,
@@ -169,6 +173,7 @@ public abstract class AbstractSyncTest {
             notionHandler,
             notionPageDataExtractor,
             syncSessionManager,
+            syncLockService,
             factionRepository,
             wrestlerRepository,
             injuryRepository,

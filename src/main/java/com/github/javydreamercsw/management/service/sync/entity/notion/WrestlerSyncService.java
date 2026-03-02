@@ -49,7 +49,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Service responsible for synchronizing wrestlers from Notion to the database. */
 @Service
@@ -66,6 +70,8 @@ public class WrestlerSyncService extends BaseSyncService {
   private final InjuryRepository injuryRepository;
   private final TeamRepository teamRepository;
   private final TitleReignRepository titleReignRepository;
+
+  @Autowired @Lazy private WrestlerSyncService self;
 
   public WrestlerSyncService(
       ObjectMapper objectMapper,
@@ -199,7 +205,24 @@ public class WrestlerSyncService extends BaseSyncService {
               String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
       log.info("🗄️ Saving wrestlers to database...");
       long dbStart = System.currentTimeMillis();
-      int savedCount = saveWrestlersToDatabase(wrestlerDTOs, operationId);
+      int savedCount = 0;
+      int processedItems = 0;
+      for (WrestlerDTO dto : wrestlerDTOs) {
+        processedItems++;
+        if (processedItems % 5 == 0) {
+          syncServiceDependencies
+              .getProgressTracker()
+              .updateProgress(
+                  operationId,
+                  4,
+                  String.format(
+                      "Saving wrestlers to database... (%d/%d processed)",
+                      processedItems, wrestlerDTOs.size()));
+        }
+        if (self.processSingleWrestler(dto)) {
+          savedCount++;
+        }
+      }
       log.info(
           "✅ Saved {} wrestlers to database in {}ms",
           savedCount,
@@ -768,256 +791,205 @@ public class WrestlerSyncService extends BaseSyncService {
     return merged;
   }
 
-  /** Saves wrestler DTOs to the database. */
-  private int saveWrestlersToDatabase(
-      @NonNull List<WrestlerDTO> wrestlerDTOs, @NonNull String operationId) {
-    log.info("Starting database persistence for {} wrestlers", wrestlerDTOs.size());
+  /** Saves a single wrestler DTO to the database. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public boolean processSingleWrestler(@NonNull WrestlerDTO dto) {
+    try {
+      // Smart duplicate handling - prefer external ID, fallback to name
+      Wrestler wrestler = null;
+      boolean isNewWrestler = false;
 
-    int savedCount = 0;
-    int skippedCount = 0;
-    int processedCount = 0;
-
-    for (WrestlerDTO dto : wrestlerDTOs) {
-      processedCount++;
-
-      // Update progress every 5 wrestlers
-      if (processedCount % 5 == 0) {
-        syncServiceDependencies
-            .getProgressTracker()
-            .updateProgress(
-                operationId,
-                4,
-                String.format(
-                    "Saving wrestlers to database... (%d/%d processed)",
-                    processedCount, wrestlerDTOs.size()));
+      // 1. Try to find by external ID first (most reliable)
+      if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+        log.debug("Searching for existing wrestler with external ID: {}", dto.getExternalId());
+        wrestler = wrestlerService.findByExternalId(dto.getExternalId()).orElse(null);
+        if (wrestler != null) {
+          log.debug(
+              "Found existing wrestler by external ID: {} for wrestler: {}",
+              dto.getExternalId(),
+              dto.getName());
+        } else {
+          log.debug("No existing wrestler found with external ID: {}", dto.getExternalId());
+        }
       }
 
-      try {
-        // Smart duplicate handling - prefer external ID, fallback to name
-        Wrestler wrestler = null;
-        boolean isNewWrestler = false;
-
-        // 1. Try to find by external ID first (most reliable)
-        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-          log.debug("Searching for existing wrestler with external ID: {}", dto.getExternalId());
-          wrestler = wrestlerService.findByExternalId(dto.getExternalId()).orElse(null);
-          if (wrestler != null) {
-            log.debug(
-                "Found existing wrestler by external ID: {} for wrestler: {}",
-                dto.getExternalId(),
-                dto.getName());
-          } else {
-            log.debug("No existing wrestler found with external ID: {}", dto.getExternalId());
-          }
-        }
-
-        // 2. Fallback to name matching if external ID didn't work
-        if (wrestler == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
-          log.debug("Searching for existing wrestler with name: {}", dto.getName());
-          wrestler = wrestlerService.findByName(dto.getName()).orElse(null);
-          if (wrestler != null) {
-            log.debug("Found existing wrestler by name: {}", dto.getName());
-          } else {
-            log.debug("No existing wrestler found with name: {}", dto.getName());
-          }
-        }
-
-        // 3. Create new wrestler if no segment found
-        if (wrestler == null) {
-          wrestler = Wrestler.builder().build();
-          isNewWrestler = true;
-          log.info(
-              "🆕 Creating new wrestler: {} with external ID: {}",
-              dto.getName(),
-              dto.getExternalId());
+      // 2. Fallback to name matching if external ID didn't work
+      if (wrestler == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
+        log.debug("Searching for existing wrestler with name: {}", dto.getName());
+        wrestler = wrestlerService.findByName(dto.getName()).orElse(null);
+        if (wrestler != null) {
+          log.debug("Found existing wrestler by name: {}", dto.getName());
         } else {
-          log.info(
-              "🔄 Updating existing wrestler: {} (ID: {}) with external ID: {}",
-              dto.getName(),
-              wrestler.getId(),
-              dto.getExternalId());
+          log.debug("No existing wrestler found with name: {}", dto.getName());
         }
+      }
 
-        // Set basic properties (always update these)
-        wrestler.setName(dto.getName());
-        wrestler.setExternalId(dto.getExternalId());
+      // 3. Create new wrestler if no segment found
+      if (wrestler == null) {
+        wrestler = Wrestler.builder().build();
+        isNewWrestler = true;
+        log.info(
+            "🆕 Creating new wrestler: {} with external ID: {}",
+            dto.getName(),
+            dto.getExternalId());
+      } else {
+        log.info(
+            "🔄 Updating existing wrestler: {} (ID: {}) with external ID: {}",
+            dto.getName(),
+            wrestler.getId(),
+            dto.getExternalId());
+      }
 
-        if (dto.getGender() != null && !dto.getGender().isBlank()) {
-          try {
-            wrestler.setGender(Gender.valueOf(dto.getGender().toUpperCase()));
-          } catch (IllegalArgumentException e) {
-            log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getGender(), dto.getName());
+      // Set basic properties (always update these)
+      wrestler.setName(dto.getName());
+      wrestler.setExternalId(dto.getExternalId());
+
+      if (dto.getGender() != null && !dto.getGender().isBlank()) {
+        try {
+          wrestler.setGender(Gender.valueOf(dto.getGender().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getGender(), dto.getName());
+        }
+      }
+
+      if (dto.getTier() != null && !dto.getTier().isBlank()) {
+        try {
+          wrestler.setTier(WrestlerTier.fromDisplayName(dto.getTier()));
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid tier value '{}' for wrestler '{}'", dto.getTier(), dto.getName());
+        }
+      }
+
+      // Update description if provided
+      if (dto.getDescription() != null && !dto.getDescription().trim().isEmpty()) {
+        wrestler.setDescription(dto.getDescription());
+        log.debug(
+            "Updated description for wrestler {}: {}",
+            dto.getName(),
+            dto.getDescription().substring(0, Math.min(50, dto.getDescription().length())) + "...");
+      }
+
+      // Set default values for required fields if this is a new wrestler
+      if (isNewWrestler) {
+        wrestler.setDeckSize(dto.getDeckSize() != null ? dto.getDeckSize() : 15);
+        wrestler.setStartingHealth(dto.getStartingHealth() != null ? dto.getStartingHealth() : 0);
+        wrestler.setLowHealth(dto.getLowHealth() != null ? dto.getLowHealth() : 0);
+        wrestler.setStartingStamina(
+            dto.getStartingStamina() != null ? dto.getStartingStamina() : 0);
+        wrestler.setLowStamina(dto.getLowStamina() != null ? dto.getLowStamina() : 0);
+        wrestler.setFans(dto.getFans() != null ? dto.getFans() : 0L);
+        wrestler.setIsPlayer(dto.getIsPlayer() != null ? dto.getIsPlayer() : false);
+        wrestler.setBumps(dto.getBumps() != null ? dto.getBumps() : 0);
+        wrestler.setCreationDate(java.time.Instant.now());
+      } else {
+        // For existing wrestlers, update game fields from DTO if they have values
+        if (dto.getDeckSize() != null) wrestler.setDeckSize(dto.getDeckSize());
+        if (dto.getStartingHealth() != null) wrestler.setStartingHealth(dto.getStartingHealth());
+        if (dto.getLowHealth() != null) wrestler.setLowHealth(dto.getLowHealth());
+        if (dto.getStartingStamina() != null) wrestler.setStartingStamina(dto.getStartingStamina());
+        if (dto.getLowStamina() != null) wrestler.setLowStamina(dto.getLowStamina());
+        if (dto.getFans() != null) wrestler.setFans(dto.getFans());
+        if (dto.getIsPlayer() != null) wrestler.setIsPlayer(dto.getIsPlayer());
+        if (dto.getBumps() != null) wrestler.setBumps(dto.getBumps());
+      }
+
+      // Update campaign attributes
+      if (dto.getDrive() != null) wrestler.setDrive(dto.getDrive());
+      if (dto.getResilience() != null) wrestler.setResilience(dto.getResilience());
+      if (dto.getCharisma() != null) wrestler.setCharisma(dto.getCharisma());
+      if (dto.getBrawl() != null) wrestler.setBrawl(dto.getBrawl());
+      if (dto.getHeritageTag() != null) wrestler.setHeritageTag(dto.getHeritageTag());
+
+      // Resolve relationships
+      // 1. Faction
+      if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
+        factionRepository
+            .findByName(dto.getFaction())
+            .ifPresentOrElse(
+                wrestler::setFaction,
+                () -> log.debug("Faction not found for wrestler: {}", dto.getFaction()));
+      }
+
+      // 2. Manager
+      if (dto.getManagerExternalId() != null) {
+        npcRepository
+            .findByExternalId(dto.getManagerExternalId())
+            .ifPresentOrElse(
+                wrestler::setManager,
+                () -> log.debug("Manager not found for wrestler: {}", dto.getManagerExternalId()));
+      }
+
+      // 3. Injuries
+      if (dto.getInjuryExternalIds() != null && !dto.getInjuryExternalIds().isEmpty()) {
+        wrestler.getInjuries().clear();
+        for (String id : dto.getInjuryExternalIds()) {
+          java.util.Optional<com.github.javydreamercsw.management.domain.injury.Injury> injuryOpt =
+              injuryRepository.findByExternalId(id);
+          if (injuryOpt.isPresent()) {
+            com.github.javydreamercsw.management.domain.injury.Injury injury = injuryOpt.get();
+            injury.setWrestler(wrestler);
+            wrestler.getInjuries().add(injury);
           }
         }
+      }
 
-        if (dto.getTier() != null && !dto.getTier().isBlank()) {
-          try {
-            wrestler.setTier(WrestlerTier.fromDisplayName(dto.getTier()));
-          } catch (IllegalArgumentException e) {
-            log.warn("Invalid tier value '{}' for wrestler '{}'", dto.getTier(), dto.getName());
-          }
-        }
-
-        // Update description if provided
-        if (dto.getDescription() != null && !dto.getDescription().trim().isEmpty()) {
-          wrestler.setDescription(dto.getDescription());
-          log.debug(
-              "Updated description for wrestler {}: {}",
-              dto.getName(),
-              dto.getDescription().substring(0, Math.min(50, dto.getDescription().length()))
-                  + "...");
-        }
-
-        // Set default values for required fields if this is a new wrestler
-        if (isNewWrestler) {
-          wrestler.setDeckSize(dto.getDeckSize() != null ? dto.getDeckSize() : 15);
-          wrestler.setStartingHealth(dto.getStartingHealth() != null ? dto.getStartingHealth() : 0);
-          wrestler.setLowHealth(dto.getLowHealth() != null ? dto.getLowHealth() : 0);
-          wrestler.setStartingStamina(
-              dto.getStartingStamina() != null ? dto.getStartingStamina() : 0);
-          wrestler.setLowStamina(dto.getLowStamina() != null ? dto.getLowStamina() : 0);
-          wrestler.setFans(dto.getFans() != null ? dto.getFans() : 0L);
-          wrestler.setIsPlayer(dto.getIsPlayer() != null ? dto.getIsPlayer() : false);
-          wrestler.setBumps(dto.getBumps() != null ? dto.getBumps() : 0);
-          wrestler.setCreationDate(java.time.Instant.now());
-        } else {
-          // For existing wrestlers, update game fields from DTO if they have values
-          if (dto.getDeckSize() != null) wrestler.setDeckSize(dto.getDeckSize());
-          if (dto.getStartingHealth() != null) wrestler.setStartingHealth(dto.getStartingHealth());
-          if (dto.getLowHealth() != null) wrestler.setLowHealth(dto.getLowHealth());
-          if (dto.getStartingStamina() != null)
-            wrestler.setStartingStamina(dto.getStartingStamina());
-          if (dto.getLowStamina() != null) wrestler.setLowStamina(dto.getLowStamina());
-          if (dto.getFans() != null) wrestler.setFans(dto.getFans());
-          if (dto.getIsPlayer() != null) wrestler.setIsPlayer(dto.getIsPlayer());
-          if (dto.getBumps() != null) wrestler.setBumps(dto.getBumps());
-        }
-
-        // Update campaign attributes
-        if (dto.getDrive() != null) wrestler.setDrive(dto.getDrive());
-        if (dto.getResilience() != null) wrestler.setResilience(dto.getResilience());
-        if (dto.getCharisma() != null) wrestler.setCharisma(dto.getCharisma());
-        if (dto.getBrawl() != null) wrestler.setBrawl(dto.getBrawl());
-        if (dto.getHeritageTag() != null) wrestler.setHeritageTag(dto.getHeritageTag());
-
-        // Resolve relationships
-        // 1. Faction
-        if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
-          factionRepository
-              .findByName(dto.getFaction())
-              .ifPresentOrElse(
-                  wrestler::setFaction,
-                  () -> log.debug("Faction not found for wrestler: {}", dto.getFaction()));
-        }
-
-        // 2. Manager
-        if (dto.getManagerExternalId() != null) {
-          npcRepository
-              .findByExternalId(dto.getManagerExternalId())
-              .ifPresentOrElse(
-                  wrestler::setManager,
-                  () ->
-                      log.debug("Manager not found for wrestler: {}", dto.getManagerExternalId()));
-        }
-
-        // 3. Injuries
-        if (dto.getInjuryExternalIds() != null && !dto.getInjuryExternalIds().isEmpty()) {
-          wrestler.getInjuries().clear();
-          for (String id : dto.getInjuryExternalIds()) {
-            java.util.Optional<com.github.javydreamercsw.management.domain.injury.Injury>
-                injuryOpt = injuryRepository.findByExternalId(id);
-            if (injuryOpt.isPresent()) {
-              com.github.javydreamercsw.management.domain.injury.Injury injury = injuryOpt.get();
-              injury.setWrestler(wrestler);
-              wrestler.getInjuries().add(injury);
-            }
-          }
-        }
-
-        // 4. Title Reigns
-        if (dto.getTitleReignExternalIds() != null && !dto.getTitleReignExternalIds().isEmpty()) {
-          for (String id : dto.getTitleReignExternalIds()) {
-            java.util.Optional<com.github.javydreamercsw.management.domain.title.TitleReign>
-                reignOpt = titleReignRepository.findByExternalId(id);
-            if (reignOpt.isPresent()) {
-              com.github.javydreamercsw.management.domain.title.TitleReign reign = reignOpt.get();
-              if (!wrestler.getReigns().contains(reign)) {
-                wrestler.getReigns().add(reign);
-                if (!reign.getChampions().contains(wrestler)) {
-                  reign.getChampions().add(wrestler);
-                }
+      // 4. Title Reigns
+      if (dto.getTitleReignExternalIds() != null && !dto.getTitleReignExternalIds().isEmpty()) {
+        for (String id : dto.getTitleReignExternalIds()) {
+          java.util.Optional<com.github.javydreamercsw.management.domain.title.TitleReign>
+              reignOpt = titleReignRepository.findByExternalId(id);
+          if (reignOpt.isPresent()) {
+            com.github.javydreamercsw.management.domain.title.TitleReign reign = reignOpt.get();
+            if (!wrestler.getReigns().contains(reign)) {
+              wrestler.getReigns().add(reign);
+              if (!reign.getChampions().contains(wrestler)) {
+                reign.getChampions().add(wrestler);
               }
             }
           }
         }
-
-        // Update alignment
-        if (dto.getAlignment() != null && !dto.getAlignment().isBlank()) {
-          try {
-            AlignmentType type = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
-            WrestlerAlignment alignment =
-                wrestlerAlignmentRepository.findByWrestler(wrestler).orElse(null);
-            if (alignment == null) {
-              alignment =
-                  WrestlerAlignment.builder()
-                      .wrestler(wrestler)
-                      .alignmentType(type)
-                      .level(1) // Default level 1
-                      .build();
-            } else {
-              alignment.setAlignmentType(type);
-            }
-            wrestler.setAlignment(alignment);
-          } catch (IllegalArgumentException e) {
-            log.warn(
-                "Invalid alignment value '{}' for wrestler '{}'",
-                dto.getAlignment(),
-                dto.getName());
-          }
-        }
-
-        tierRecalculationService.recalculateTier(wrestler);
-
-        // Save the wrestler
-        log.info(
-            "💾 Saving wrestler to database: {} (ID: {}, isNew: {})",
-            wrestler.getName(),
-            wrestler.getId(),
-            isNewWrestler);
-
-        Wrestler savedWrestler;
-        if (isNewWrestler) {
-          savedWrestler = wrestlerService.save(wrestler);
-        } else {
-          savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-        }
-        savedCount++;
-
-        log.info(
-            "✅ Wrestler saved successfully: {} (Final ID: {})",
-            savedWrestler.getName(),
-            savedWrestler.getId());
-
-      } catch (Exception e) {
-        log.error("❌ Failed to save wrestler: {} - {}", dto.getName(), e.getMessage());
-        skippedCount++;
       }
+
+      // Update alignment
+      if (dto.getAlignment() != null && !dto.getAlignment().isBlank()) {
+        try {
+          AlignmentType type = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
+          WrestlerAlignment alignment =
+              wrestlerAlignmentRepository.findByWrestler(wrestler).orElse(null);
+          if (alignment == null) {
+            alignment =
+                WrestlerAlignment.builder().wrestler(wrestler).alignmentType(type).level(1).build();
+          } else {
+            alignment.setAlignmentType(type);
+          }
+          wrestler.setAlignment(alignment);
+        } catch (IllegalArgumentException e) {
+          log.warn(
+              "Invalid alignment value '{}' for wrestler '{}'", dto.getAlignment(), dto.getName());
+        }
+      }
+
+      tierRecalculationService.recalculateTier(wrestler);
+
+      // Save the wrestler
+      log.info(
+          "💾 Saving wrestler to database: {} (ID: {}, isNew: {})",
+          wrestler.getName(),
+          wrestler.getId(),
+          isNewWrestler);
+
+      if (isNewWrestler) {
+        wrestlerService.save(wrestler);
+      } else {
+        wrestlerRepository.saveAndFlush(wrestler);
+      }
+
+      log.info("✅ Wrestler saved successfully: {}", wrestler.getName());
+      return true;
+    } catch (Exception e) {
+      log.error("❌ Failed to save wrestler: {} - {}", dto.getName(), e.getMessage());
+      return false;
     }
-
-    log.info(
-        "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
-
-    // Final progress update
-    syncServiceDependencies
-        .getProgressTracker()
-        .updateProgress(
-            operationId,
-            4,
-            String.format(
-                "✅ Completed database save: %d wrestlers saved/updated, %d skipped",
-                savedCount, skippedCount));
-
-    return savedCount;
   }
 
   public SyncResult syncToNotion(@NonNull String operationId) {

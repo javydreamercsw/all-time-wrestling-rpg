@@ -37,6 +37,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,8 @@ public class SegmentSyncService extends BaseSyncService {
   private final WrestlerService wrestlerService;
   private final SegmentTypeService segmentTypeService;
   private final ShowSyncService showSyncService;
+
+  @Autowired @Lazy private SegmentSyncService self;
 
   public SegmentSyncService(
       ObjectMapper objectMapper,
@@ -68,7 +72,6 @@ public class SegmentSyncService extends BaseSyncService {
     this.showSyncService = showSyncService;
   }
 
-  @Transactional
   public SyncResult syncSegments(@NonNull String operationId) {
     log.info("🤼 Starting segments synchronization from Notion with operation ID: {}", operationId);
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segments Sync", 4);
@@ -298,7 +301,7 @@ public class SegmentSyncService extends BaseSyncService {
     int savedCount = 0;
     for (SegmentDTO segmentDTO : segmentDTOs) {
       try {
-        if (processSingleSegment(segmentDTO, messageConsumer)) {
+        if (self.processSingleSegment(segmentDTO, messageConsumer)) {
           savedCount++;
         }
       } catch (Exception e) {
@@ -312,12 +315,12 @@ public class SegmentSyncService extends BaseSyncService {
     return savedCount;
   }
 
-  @org.springframework.transaction.annotation.Transactional(
-      propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(@NonNull SegmentDTO segmentDTO) {
-    return processSingleSegment(segmentDTO, (msg) -> {});
+    return self.processSingleSegment(segmentDTO, (msg) -> {});
   }
 
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(
       @NonNull SegmentDTO segmentDTO, Consumer<String> messageConsumer) {
     try {

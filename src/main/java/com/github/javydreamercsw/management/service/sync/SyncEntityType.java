@@ -41,7 +41,8 @@ public enum SyncEntityType {
   RIVALRIES("Rivalries", "Rivalry"),
   FACTION_RIVALRIES("Faction-rivalries", "FactionRivalry"),
   SEGMENTS("Segments", "Segment"),
-  TITLE_REIGN("Title-reigns", "TitleReign");
+  TITLE_REIGN("Title-reigns", "TitleReign"),
+  INJURIES("Injuries", "Injury");
 
   /** The string key used for configuration and logging */
   private final String key;
