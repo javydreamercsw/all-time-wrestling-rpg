@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -25,6 +27,8 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeCont
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
+import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Arrays;
@@ -56,6 +60,8 @@ public class SegmentNarrationController {
   private final SegmentNarrationConfig config;
   private final Environment environment;
   private final SegmentOutcomeProvider segmentOutcomeService;
+  private final ArenaService arenaService;
+  private final LocationService locationService;
 
   private SegmentNarrationService getAppropriateService() {
     if (isTestProfile()) {
@@ -330,6 +336,21 @@ public class SegmentNarrationController {
     commentator2.setDescription("Former ECW champion providing expert analysis");
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
+
+    ArenaContext arena = new ArenaContext();
+    arena.setName("Madison Square Garden");
+    arena.setDescription("The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
+    arena.setCapacity(20000);
+    arena.setAlignmentBias("Neutral");
+    arena.setEnvironmentalTraits(Arrays.asList("Historic", "Electric", "Intimate"));
+    context.setArenaContext(arena);
+
+    LocationContext location = new LocationContext();
+    location.setName("New York City");
+    location.setDescription("The concrete jungle where dreams are made of");
+    location.setCulturalTags(Arrays.asList("USA", "Metropolis", "Traditional"));
+    context.setLocationContext(location);
+
     VenueContext venue = new VenueContext();
     venue.setName("Madison Square Garden");
     venue.setLocation("New York City, New York");
@@ -353,6 +374,25 @@ public class SegmentNarrationController {
         Arrays.asList(
             "Previous segment saw intense back-and-forth action with multiple near-falls...",
             "Last encounter ended in controversy when Angle used the ropes for leverage..."));
+
+    // Add sample Arena and Location Context
+    ArenaContext arenaContext = new ArenaContext();
+    arenaContext.setName("The Martian Dust-Bowl");
+    arenaContext.setDescription("A brutal, open-air pit carved into the Martian landscape.");
+    arenaContext.setCapacity(5000);
+    arenaContext.setAlignmentBias(
+        com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias.ANARCHIC
+            .getDisplayName());
+    arenaContext.setEnvironmentalTraits(Arrays.asList("dust-storms", "rugged-terrain"));
+    arenaContext.setImageUrl("https://example.com/red_sand_pit.jpg");
+    context.setArenaContext(arenaContext);
+
+    LocationContext locationContext = new LocationContext();
+    locationContext.setName("The Martian Dust-Bowl");
+    locationContext.setDescription("A rugged, red wasteland now home to daring prospectors.");
+    locationContext.setCulturalTags(Arrays.asList("frontier", "harsh", "low-gravity"));
+    context.setLocationContext(locationContext);
+
     return context;
   }
 }

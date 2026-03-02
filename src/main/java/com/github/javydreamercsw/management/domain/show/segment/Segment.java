@@ -99,7 +99,7 @@ public class Segment extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "segment_id"),
       inverseJoinColumns = @JoinColumn(name = "segment_rule_id"))
   @JsonIgnoreProperties({"description", "creationDate"})
-  private List<SegmentRule> segmentRules = new ArrayList<>();
+  private Set<SegmentRule> segmentRules = new HashSet<>();
 
   @Lob
   @Column(name = "narration")
@@ -115,12 +115,6 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "is_npc_generated", nullable = false)
   private Boolean isNpcGenerated = false;
 
-  @Column(name = "external_id", unique = true)
-  private String externalId;
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
-
   @Column(name = "segment_order", nullable = false)
   private int segmentOrder;
 
@@ -134,7 +128,7 @@ public class Segment extends AbstractEntity<Long> {
       orphanRemoval = true,
       fetch = FetchType.EAGER)
   @JsonIgnoreProperties({"segment"})
-  private List<SegmentParticipant> participants = new ArrayList<>();
+  private Set<SegmentParticipant> participants = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
@@ -143,6 +137,13 @@ public class Segment extends AbstractEntity<Long> {
       inverseJoinColumns = @JoinColumn(name = "title_id"))
   @JsonIgnore
   private Set<Title> titles = new HashSet<>();
+
+  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "referee_id")
+  private com.github.javydreamercsw.management.domain.npc.Npc referee;
+
+  @Column(name = "referee_awareness_level", nullable = false)
+  private int refereeAwarenessLevel = 0; // The "Detection Meter" (0-100)
 
   @Override
   public @Nullable Long getId() {
@@ -202,8 +203,8 @@ public class Segment extends AbstractEntity<Long> {
         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
-  public List<SegmentRule> getSegmentRules() {
-    if (segmentRules == null) segmentRules = new ArrayList<>();
+  public Set<SegmentRule> getSegmentRules() {
+    if (segmentRules == null) segmentRules = new HashSet<>();
     return segmentRules;
   }
 
@@ -213,7 +214,7 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   public void setWinners(List<Wrestler> winners) {
-    if (participants == null) participants = new ArrayList<>();
+    if (participants == null) participants = new HashSet<>();
     if (winners == null || winners.isEmpty()) {
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(false);
@@ -276,5 +277,19 @@ public class Segment extends AbstractEntity<Long> {
     return segmentRules.stream()
         .map(SegmentRule::getName)
         .collect(java.util.stream.Collectors.joining(", "));
+  }
+
+  @Override
+  public String getName() {
+    String type = segmentType != null ? segmentType.getName() : "Unknown Type";
+    String participantsStr =
+        getWrestlers().stream()
+            .map(Wrestler::getName)
+            .collect(java.util.stream.Collectors.joining(", "));
+    return "%s: %s (%s)".formatted(getEntityName(), type, participantsStr);
+  }
+
+  private String getEntityName() {
+    return "Segment";
   }
 }

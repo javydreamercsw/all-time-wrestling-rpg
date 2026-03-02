@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -42,12 +43,16 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
+import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -64,6 +69,7 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -71,6 +77,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -84,6 +91,8 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -113,15 +122,19 @@ class DataInitializerTest {
   @Mock private CampaignUpgradeService campaignUpgradeService;
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
+  @Mock private LocationRepository locationRepository;
+  @Mock private ArenaRepository arenaRepository;
+  @Mock private RingsideActionDataService ringsideActionDataService;
+  @Mock private ResourcePatternResolver resourcePatternResolver;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     // Manually instantiate DataInitializer with mocked dependencies
     dataInitializer =
         new DataInitializer(
             true, // Enabled parameter
             showTemplateService,
-            wrestlerService,
             wrestlerRepository,
             showTypeService,
             segmentRuleService,
@@ -140,9 +153,16 @@ class DataInitializerTest {
             campaignUpgradeService,
             env,
             achievementRepository,
-            accountRepository);
+            ringsideActionDataService,
+            resourcePatternResolver,
+            locationRepository,
+            arenaRepository,
+            objectMapper);
 
     // Mock count methods to prevent issues during init()
+    lenient()
+        .when(resourcePatternResolver.getResources(anyString()))
+        .thenReturn(new org.springframework.core.io.Resource[0]);
     lenient().when(wrestlerService.count()).thenReturn(0L);
     lenient().when(cardSetService.count()).thenReturn(0L);
     lenient().when(cardService.count()).thenReturn(0L);
@@ -166,14 +186,15 @@ class DataInitializerTest {
     lenient()
         .when(
             segmentRuleService.createOrUpdateRule(
-                anyString(), anyString(), anyBoolean(), any(BumpAddition.class)))
+                anyString(), anyString(), anyBoolean(), anyBoolean(), any(BumpAddition.class)))
         .thenAnswer(
             invocation -> {
               SegmentRule rule = new SegmentRule();
               rule.setName(invocation.getArgument(0));
               rule.setDescription(invocation.getArgument(1));
               rule.setRequiresHighHeat(invocation.getArgument(2));
-              rule.setBumpAddition(invocation.getArgument(3));
+              rule.setNoDq(invocation.getArgument(3));
+              rule.setBumpAddition(invocation.getArgument(4));
               return rule;
             });
     lenient()
@@ -413,7 +434,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncWrestlersFromFile_existingWrestler() {
+  void testSyncWrestlersFromFile_existingWrestler() throws IOException {
     // Given
     Wrestler existingWrestler = new Wrestler();
     existingWrestler.setName("Rob Van Dam");
@@ -425,6 +446,10 @@ class DataInitializerTest {
         .when(wrestlerRepository.findByName("Rob Van Dam"))
         .thenReturn(Optional.of(existingWrestler));
     lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
+
+    Resource wrestlersResource = new ClassPathResource("wrestlers.json");
+    when(resourcePatternResolver.getResources("classpath*:wrestlers*.json"))
+        .thenReturn(new Resource[] {wrestlersResource});
 
     // When
     dataInitializer.syncWrestlersFromFile();
@@ -458,5 +483,25 @@ class DataInitializerTest {
 
     // Should NOT overwrite existing DB value unless forceOverride is enabled
     verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
+  }
+
+  @Test
+  void validateLocationsJson() throws IOException {
+    ClassPathResource resource = new ClassPathResource("locations.json");
+    try (var is = resource.getInputStream()) {
+      var locations = objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+      assertNotNull(locations);
+      assertFalse(locations.isEmpty());
+    }
+  }
+
+  @Test
+  void validateArenasJson() throws IOException {
+    ClassPathResource resource = new ClassPathResource("arenas.json");
+    try (var is = resource.getInputStream()) {
+      var arenas = objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+      assertNotNull(arenas);
+      assertFalse(arenas.isEmpty());
+    }
   }
 }

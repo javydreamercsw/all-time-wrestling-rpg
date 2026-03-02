@@ -60,6 +60,11 @@ public class Npc extends AbstractEntity<Long> {
   @Column(name = "alignment", nullable = false)
   private AlignmentType alignment = AlignmentType.NEUTRAL;
 
+  @jakarta.persistence.Convert(converter = NpcAttributesConverter.class)
+  @Column(columnDefinition = "TEXT")
+  private java.util.Map<String, Object> attributes =
+      new java.util.HashMap<>(); // Stores JSON data for additional stats like "Awareness"
+
   @Override
   public Long getId() {
     return id;

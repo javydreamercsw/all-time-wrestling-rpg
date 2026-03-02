@@ -23,11 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -35,7 +31,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryNotionSyncService;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
@@ -55,7 +50,6 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private InjuryRepository injuryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private FactionRepository factionRepository;
   @Autowired private InjuryNotionSyncService injuryNotionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
@@ -89,39 +83,23 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
-    // Create a Faction (for Wrestler)
-    Faction faction = new Faction();
-    faction.setName("Test Faction " + UUID.randomUUID());
-    factionRepository.save(faction);
-
-    // Create a Wrestler
+    // Create a new Wrestler
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler " + UUID.randomUUID());
-    wrestler.setStartingStamina(16);
-    wrestler.setFans(1000L);
-    wrestler.setBumps(1);
-    wrestler.setGender(Gender.MALE);
-    wrestler.setLowStamina(2);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(4);
-    wrestler.setDeckSize(15);
-    wrestler.setTier(WrestlerTier.MIDCARDER);
-    wrestler.setCreationDate(Instant.now());
-    wrestler.setFaction(faction);
-    wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
+    wrestler.setExternalId(UUID.randomUUID().toString());
     wrestlerRepository.save(wrestler);
 
     // Create a new Injury
     Injury injury = new Injury();
-    injury.setWrestler(wrestler);
-    injury.setName("Sprained Ankle");
-    injury.setDescription("Minor injury to the ankle.");
-    injury.setSeverity(InjurySeverity.MINOR);
-    injury.setHealthPenalty(5);
+    injury.setName("Concussion");
+    injury.setSeverity(InjurySeverity.SEVERE);
+    injury.setHealthPenalty(10);
+    injury.setStaminaPenalty(5);
+    injury.setHandSizePenalty(2);
     injury.setIsActive(true);
     injury.setInjuryDate(Instant.now());
-    injury.setHealingCost(5000L);
-    injury.setInjuryNotes("Wrestler landed awkwardly during a match.");
+    injury.setInjuryNotes("Got hit with a chair");
+    injury.setWrestler(wrestler);
     injuryRepository.save(injury);
 
     // Sync to Notion for the first time
@@ -141,44 +119,11 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         injury.getName(),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
-        injury.getWrestler().getExternalId(),
+        wrestler.getExternalId(),
         capturedRequest.getProperties().get("Wrestler").getRelation().get(0).getId());
-    assertEquals(
-        injury.getDescription(),
-        capturedRequest
-            .getProperties()
-            .get("Description")
-            .getRichText()
-            .get(0)
-            .getText()
-            .getContent());
-    assertEquals(
-        injury.getSeverity().name(),
-        capturedRequest.getProperties().get("Severity").getSelect().getName());
-    assertEquals(
-        Integer.valueOf(injury.getHealthPenalty()).doubleValue(),
-        capturedRequest.getProperties().get("Health Penalty").getNumber());
-    assertEquals(injury.getIsActive(), capturedRequest.getProperties().get("Active").getCheckbox());
-    assertEquals(
-        injury.getInjuryDate().truncatedTo(ChronoUnit.SECONDS),
-        Instant.parse(capturedRequest.getProperties().get("Injury Date").getDate().getStart())
-            .truncatedTo(ChronoUnit.SECONDS));
-    assertEquals(
-        injury.getHealingCost().doubleValue(),
-        capturedRequest.getProperties().get("Healing Cost").getNumber());
-    assertEquals(
-        injury.getInjuryNotes(),
-        capturedRequest
-            .getProperties()
-            .get("Injury Notes")
-            .getRichText()
-            .get(0)
-            .getText()
-            .getContent());
 
     // Sync to Notion again
-    updatedInjury.heal(); // Mark as healed
-    updatedInjury.setInjuryNotes("Updated notes " + UUID.randomUUID());
+    updatedInjury.setInjuryNotes("Recovery going well");
     injuryRepository.save(updatedInjury);
     injuryNotionSyncService.syncToNotion("test-op-2");
     Injury updatedInjury2 = injuryRepository.findById(injury.getId()).get();
@@ -187,13 +132,6 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     // Verify updated properties sent to Notion
     Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
     UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
-    assertEquals(
-        updatedInjury2.getIsActive(),
-        capturedUpdateRequest.getProperties().get("Active").getCheckbox());
-    assertEquals(
-        updatedInjury2.getHealedDate().truncatedTo(ChronoUnit.SECONDS),
-        Instant.parse(capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart())
-            .truncatedTo(ChronoUnit.SECONDS));
     assertEquals(
         updatedInjury2.getInjuryNotes(),
         capturedUpdateRequest

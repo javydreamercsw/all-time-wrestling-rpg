@@ -23,4 +23,6 @@ public class NpcDTO {
   private String name;
   private String description;
   private String type;
+  private String alignment;
+  private Integer awareness;
 }

@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -64,8 +65,10 @@ class ShowPlanningViewTest {
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private ObjectMapper objectMapper;
-  private SegmentNarrationServiceFactory aiFactory;
+  @Mock private SegmentNarrationServiceFactory aiFactory;
+  @Mock private ArenaService arenaService;
 
   @BeforeEach
   void setUp() {
@@ -81,8 +84,10 @@ class ShowPlanningViewTest {
             titleService,
             segmentTypeRepository,
             segmentRuleRepository,
+            npcService,
             objectMapper,
-            aiFactory);
+            aiFactory,
+            arenaService);
     // Mock the UI since we are not in a Vaadin environment
     UI ui = mock(UI.class);
     UI.setCurrent(ui);
