@@ -49,6 +49,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
 
   @Autowired @Lazy private BaseNotionSyncService<T> self;
 
+  protected BaseNotionSyncService<T> getSelf() {
+    return self != null ? self : this;
+  }
+
   protected BaseNotionSyncService(
       JpaRepository<T, Long> repository,
       SyncServiceDependencies syncServiceDependencies,
@@ -172,7 +176,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
               continue;
             }
 
-            Map<String, PageProperty> allProperties = self.getProperties(entity);
+            Map<String, PageProperty> allProperties = getSelf().getProperties(entity);
             log.info(
                 "📤 Sending {} properties to Notion for {}",
                 allProperties.size(),

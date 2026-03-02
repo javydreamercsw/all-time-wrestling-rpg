@@ -94,7 +94,7 @@ class FactionRivalryNotionSyncServiceTest extends AbstractSyncTest {
     assertEquals(1, result.getCreatedCount());
     assertEquals(0, result.getUpdatedCount());
     assertEquals(0, result.getErrorCount());
-    verify(factionRivalryRepository, times(1)).save(factionRivalryCaptor.capture());
+    verify(factionRivalryRepository, times(1)).saveAndFlush(factionRivalryCaptor.capture());
     FactionRivalry savedRivalry = factionRivalryCaptor.getValue();
     assertNotNull(savedRivalry.getExternalId());
     assertNotNull(savedRivalry.getLastSync());

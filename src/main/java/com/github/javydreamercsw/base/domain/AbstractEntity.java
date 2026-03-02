@@ -50,8 +50,11 @@ public abstract class AbstractEntity<ID> implements NamedEntity {
    * @return true if there are unsynced changes, false otherwise
    */
   public boolean hasUnsyncedChanges() {
-    if (lastSync == null || updatedAt == null) {
-      return true; // Never synced or missing update record - sync to be safe
+    if (lastSync == null) {
+      return true; // Never synced
+    }
+    if (updatedAt == null) {
+      return true; // Missing update record - sync to be safe
     }
     // Any update at or after the last sync time should be synced.
     // We use !isBefore to include equal timestamps.
