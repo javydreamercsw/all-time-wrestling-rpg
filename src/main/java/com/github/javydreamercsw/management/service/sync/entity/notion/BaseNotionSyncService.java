@@ -154,6 +154,20 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                       "INFO");
             }
 
+            // treating the data in this application as source of truth and only update things
+            // in Notion that are new or have changed since the last time they were synced
+            if (externalId != null && !externalId.isBlank() && !entity.hasUnsyncedChanges()) {
+              log.debug("Skipping unchanged entity: {}", entityDisplayName);
+              syncServiceDependencies
+                  .getProgressTracker()
+                  .addLogMessage(
+                      operationId,
+                      "⏭️ Skipping unchanged " + getEntityName() + ": " + entityDisplayName,
+                      "INFO");
+              processedCount++;
+              continue;
+            }
+
             Map<String, PageProperty> allProperties = getProperties(entity);
             // Filter properties to only include those that exist in the Notion database schema
             Map<String, PageProperty> propertiesToSend;

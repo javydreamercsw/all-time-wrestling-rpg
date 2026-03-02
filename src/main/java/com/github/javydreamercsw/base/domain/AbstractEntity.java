@@ -39,7 +39,37 @@ public abstract class AbstractEntity<ID> implements NamedEntity {
   @Column(name = "last_sync")
   private Instant lastSync;
 
+  @Column(name = "updated_at")
+  private Instant updatedAt;
+
   public abstract @Nullable ID getId();
+
+  /**
+   * Checks if the entity has changed since the last synchronization.
+   *
+   * @return true if there are unsynced changes, false otherwise
+   */
+  public boolean hasUnsyncedChanges() {
+    if (lastSync == null) {
+      return true; // Never synced
+    }
+    if (updatedAt == null) {
+      return false; // No record of updates after creation (or legacy data)
+    }
+    return updatedAt.isAfter(lastSync);
+  }
+
+  @jakarta.persistence.PrePersist
+  protected void onBaseCreate() {
+    if (updatedAt == null) {
+      updatedAt = Instant.now();
+    }
+  }
+
+  @jakarta.persistence.PreUpdate
+  protected void onBaseUpdate() {
+    updatedAt = Instant.now();
+  }
 
   @Override
   public @Nullable String getName() {
