@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,7 @@ class NotionSyncSchedulerTest extends BaseTest {
   @Mock private SyncServiceDependencies syncServiceDependencies;
   @Mock private SyncSessionManager syncSessionManager;
   @Mock private SyncProgressTracker progressTracker;
+  @Mock private SyncLockService syncLockService;
 
   private NotionSyncScheduler notionSyncScheduler;
 
@@ -56,6 +58,8 @@ class NotionSyncSchedulerTest extends BaseTest {
   void setUp() {
     lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
     lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getSyncLockService()).thenReturn(syncLockService);
+    lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
     lenient().when(notionSyncService.isNotionHandlerAvailable()).thenReturn(true);
     notionSyncScheduler =
         new NotionSyncScheduler(
