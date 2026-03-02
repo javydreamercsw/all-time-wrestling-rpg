@@ -327,7 +327,7 @@ public class NotionSyncService extends BaseSyncService {
   @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getSegmentSyncService().syncSegments(operationId + "-segments")
+        ? notionSyncServicesManager.getSegmentSyncService().syncSegments(operationId)
         : notionSyncServicesManager.getSegmentNotionSyncService().syncToNotion(operationId);
   }
 }

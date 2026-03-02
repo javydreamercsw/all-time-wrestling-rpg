@@ -199,39 +199,39 @@ public class WrestlerSyncService extends BaseSyncService {
 
     // Extract Numbers
     Object deckSizeObj = rawProperties.get("Deck Size");
-    if (deckSizeObj instanceof Double) dto.setDeckSize(((Double) deckSizeObj).intValue());
+    if (deckSizeObj instanceof Number) dto.setDeckSize(((Number) deckSizeObj).intValue());
 
     Object startingHealthObj = rawProperties.get("Starting Health");
-    if (startingHealthObj instanceof Double)
-      dto.setStartingHealth(((Double) startingHealthObj).intValue());
+    if (startingHealthObj instanceof Number)
+      dto.setStartingHealth(((Number) startingHealthObj).intValue());
 
     Object lowHealthObj = rawProperties.get("Low Health");
-    if (lowHealthObj instanceof Double) dto.setLowHealth(((Double) lowHealthObj).intValue());
+    if (lowHealthObj instanceof Number) dto.setLowHealth(((Number) lowHealthObj).intValue());
 
     Object startingStaminaObj = rawProperties.get("Starting Stamina");
-    if (startingStaminaObj instanceof Double)
-      dto.setStartingStamina(((Double) startingStaminaObj).intValue());
+    if (startingStaminaObj instanceof Number)
+      dto.setStartingStamina(((Number) startingStaminaObj).intValue());
 
     Object lowStaminaObj = rawProperties.get("Low Stamina");
-    if (lowStaminaObj instanceof Double) dto.setLowStamina(((Double) lowStaminaObj).intValue());
+    if (lowStaminaObj instanceof Number) dto.setLowStamina(((Number) lowStaminaObj).intValue());
 
     Object driveObj = rawProperties.get("Drive");
-    if (driveObj instanceof Double) dto.setDrive(((Double) driveObj).intValue());
+    if (driveObj instanceof Number) dto.setDrive(((Number) driveObj).intValue());
 
     Object resilienceObj = rawProperties.get("Resilience");
-    if (resilienceObj instanceof Double) dto.setResilience(((Double) resilienceObj).intValue());
+    if (resilienceObj instanceof Number) dto.setResilience(((Number) resilienceObj).intValue());
 
     Object charismaObj = rawProperties.get("Charisma");
-    if (charismaObj instanceof Double) dto.setCharisma(((Double) charismaObj).intValue());
+    if (charismaObj instanceof Number) dto.setCharisma(((Number) charismaObj).intValue());
 
     Object brawlObj = rawProperties.get("Brawl");
-    if (brawlObj instanceof Double) dto.setBrawl(((Double) brawlObj).intValue());
+    if (brawlObj instanceof Number) dto.setBrawl(((Number) brawlObj).intValue());
 
     Object fansObj = rawProperties.get("Fans");
-    if (fansObj instanceof Double) dto.setFans(((Double) fansObj).longValue());
+    if (fansObj instanceof Number) dto.setFans(((Number) fansObj).longValue());
 
     Object bumpsObj = rawProperties.get("Bumps");
-    if (bumpsObj instanceof Double) dto.setBumps(((Double) bumpsObj).intValue());
+    if (bumpsObj instanceof Number) dto.setBumps(((Number) bumpsObj).intValue());
 
     Object isPlayerObj = rawProperties.get("Is Player");
     dto.setIsPlayer(Boolean.TRUE.equals(isPlayerObj));

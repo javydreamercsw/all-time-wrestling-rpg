@@ -167,7 +167,12 @@ public class InjurySyncService extends BaseSyncService {
 
       Map<String, Object> props = page.getRawProperties();
       dto.setWrestlerExternalId(
-          syncServiceDependencies.getNotionPageDataExtractor().extractRelationId(page, "Wrestler"));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractRelationIds(page, "Wrestler")
+              .stream()
+              .findFirst()
+              .orElse(null));
       dto.setSeverity((String) props.get("Severity"));
 
       Object activeObj = props.get("Active");
@@ -267,6 +272,12 @@ public class InjurySyncService extends BaseSyncService {
       if (dto.getHealingCost() != null
           && !Objects.equals(injury.getHealingCost(), dto.getHealingCost())) {
         injury.setHealingCost(dto.getHealingCost());
+        changed = true;
+      }
+
+      if (dto.getInjuryNotes() != null
+          && !Objects.equals(injury.getInjuryNotes(), dto.getInjuryNotes())) {
+        injury.setInjuryNotes(dto.getInjuryNotes());
         changed = true;
       }
 
