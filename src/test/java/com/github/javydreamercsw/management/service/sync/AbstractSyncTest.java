@@ -30,6 +30,7 @@ import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
@@ -45,7 +46,9 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -99,6 +102,9 @@ public abstract class AbstractSyncTest {
   @Mock protected NpcRepository npcRepository;
   @Mock protected SeasonRepository seasonRepository;
   @Mock protected SegmentRepository segmentRepository;
+  @Mock protected WrestlerService wrestlerService;
+  @Mock protected TierRecalculationService tierRecalculationService;
+  @Mock protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -120,6 +126,7 @@ public abstract class AbstractSyncTest {
 
   @BeforeEach
   protected void setUp() {
+    lenient().when(syncProperties.isEnabled()).thenReturn(true);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     lenient()

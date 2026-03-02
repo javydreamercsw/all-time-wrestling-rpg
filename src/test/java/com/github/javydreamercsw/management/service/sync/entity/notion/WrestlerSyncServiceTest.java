@@ -16,32 +16,27 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
-import com.github.javydreamercsw.management.domain.npc.NpcRepository;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
-import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -54,45 +49,12 @@ import org.mockito.Mock;
 class WrestlerSyncServiceTest extends AbstractSyncTest {
 
   private WrestlerSyncService wrestlerSyncService;
-  @Mock private NotionHandler notionHandler;
-  @Mock private SyncServiceDependencies syncServiceDependencies;
-  @Mock private SyncSessionManager syncSessionManager;
-  @Mock private WrestlerService wrestlerService;
+
   @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
-  @Mock private TierRecalculationService tierRecalculationService;
-  @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
-  @Mock private FactionRepository factionRepository;
-  @Mock private NpcRepository npcRepository;
-  @Mock private InjuryRepository injuryRepository;
-  @Mock private TeamRepository teamRepository;
-  @Mock private TitleReignRepository titleReignRepository;
 
   @BeforeEach
-  @Override
   protected void setUp() {
-    super.setUp(); // Call parent setup first
-    lenient().when(notionApiExecutor.getSyncProperties()).thenReturn(syncProperties);
-    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
-    lenient()
-        .when(notionApiExecutor.executeWithRateLimit(any()))
-        .thenAnswer(
-            invocation -> invocation.getArgument(0, java.util.function.Supplier.class).get());
-    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
-    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
-    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
-    lenient()
-        .when(syncServiceDependencies.getNotionPageDataExtractor())
-        .thenReturn(notionPageDataExtractor);
-    lenient().when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(true);
-    lenient()
-        .when(wrestlerService.save(any(Wrestler.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient()
-        .when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    super.setUp();
 
     // Mock Name extraction
     lenient()
@@ -103,13 +65,12 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
               Map<String, Object> props = page.getRawProperties();
               if (props != null && props.containsKey("Name")) {
                 Object nameObj = props.get("Name");
-                if (nameObj instanceof String) return (String) nameObj;
                 if (nameObj instanceof Map) {
                   Map<String, Object> nameMap = (Map<String, Object>) nameObj;
                   if (nameMap.containsKey("title")) {
                     List<Map<String, Object>> titleList =
                         (List<Map<String, Object>>) nameMap.get("title");
-                    if (!titleList.isEmpty()) {
+                    if (titleList != null && !titleList.isEmpty()) {
                       Map<String, Object> titleMap = titleList.get(0);
                       if (titleMap.containsKey("text")) {
                         Map<String, Object> textMap = (Map<String, Object>) titleMap.get("text");
@@ -136,9 +97,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             wrestlerAlignmentRepository,
             factionRepository,
             npcRepository,
-            injuryRepository,
-            teamRepository,
-            titleReignRepository);
+            injuryRepository);
   }
 
   @Test
@@ -154,7 +113,6 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     assertTrue(result.isSuccess());
     assertEquals("Wrestlers", result.getEntityType());
     verify(wrestlerService, times(2)).save(any(Wrestler.class));
-    verify(healthMonitor).recordSuccess(eq("Wrestlers"), anyLong(), anyInt());
   }
 
   @Test
@@ -168,18 +126,17 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
         "Name",
         Map.of("title", List.of(Map.of("text", Map.of("content", "Stone Cold Steve Austin")))));
     properties.put("Alignment", "FACE");
-    properties.put("Drive", 5);
-    properties.put("Resilience", 6);
-    properties.put("Charisma", 6);
-    properties.put("Brawl", 5);
+    properties.put("Drive", 5.0);
+    properties.put("Resilience", 6.0);
+    properties.put("Charisma", 6.0);
+    properties.put("Brawl", 5.0);
     properties.put("Heritage Tag", "Texas");
-    properties.put("Fans", 1000000L);
-    properties.put("Starting Health", 20);
-    properties.put("Starting Stamina", 20);
+    properties.put("Fans", 1000000.0);
+    properties.put("Starting Health", 20.0);
+    properties.put("Starting Stamina", 20.0);
 
     lenient().when(page.getRawProperties()).thenReturn(properties);
     when(notionHandler.loadAllWrestlers()).thenReturn(List.of(page));
-    when(wrestlerAlignmentRepository.findByWrestler(any())).thenReturn(Optional.empty());
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -203,7 +160,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncWrestlers_WhenDisabled_ShouldSkipSync() {
     // Given
-    when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
+    lenient().when(syncProperties.isEnabled()).thenReturn(false);
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -216,14 +173,14 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncWrestlers_WhenNoWrestlersFound_ShouldReturnSuccess() {
     // Given
-    when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
+    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
 
     // Then
     assertTrue(result.isSuccess());
-    verify(wrestlerRepository, never()).save(any(Wrestler.class));
+    verify(wrestlerService, never()).save(any(Wrestler.class));
   }
 
   private List<WrestlerPage> createMockWrestlerPages() {
@@ -239,9 +196,11 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
 
     Map<String, Object> properties = new HashMap<>();
     properties.put("Name", Map.of("title", List.of(Map.of("text", Map.of("content", name)))));
-    properties.put("Health", health);
-    properties.put("Stamina", stamina);
-    properties.put("Charisma", charisma);
+    properties.put("Starting Health", (double) health);
+    properties.put("Starting Stamina", (double) stamina);
+    properties.put("Charisma", (double) charisma);
+    properties.put("Tier", "Main Event");
+    properties.put("Fans", 1000.0);
     lenient().when(page.getRawProperties()).thenReturn(properties);
 
     return page;

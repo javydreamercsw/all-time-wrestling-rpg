@@ -70,6 +70,7 @@ public class SegmentSyncService extends BaseSyncService {
     this.wrestlerService = wrestlerService;
     this.segmentTypeService = segmentTypeService;
     this.showSyncService = showSyncService;
+    this.self = this;
   }
 
   public SyncResult syncSegments(@NonNull String operationId) {
@@ -409,14 +410,24 @@ public class SegmentSyncService extends BaseSyncService {
       segment.syncParticipants(participants);
 
       if (!winners.isEmpty()) {
-        segment.setWinners(winners);
+        List<Wrestler> currentWinners = segment.getWinners();
+        if (!new java.util.HashSet<>(currentWinners).equals(new java.util.HashSet<>(winners))) {
+          segment.setWinners(winners);
+        }
       }
 
-      segment.setSegmentDate(segmentDTO.getSegmentDate());
+      if (segmentDTO.getSegmentDate() != null
+          && !segmentDTO.getSegmentDate().equals(segment.getSegmentDate())) {
+        segment.setSegmentDate(segmentDTO.getSegmentDate());
+      }
 
-      segment.setNarration(segmentDTO.getNarration());
+      if (segmentDTO.getNarration() != null
+          && !segmentDTO.getNarration().equals(segment.getNarration())) {
+        segment.setNarration(segmentDTO.getNarration());
+      }
 
       segmentService.updateSegment(segment);
+
       return true;
     } catch (Exception e) {
       String msg =

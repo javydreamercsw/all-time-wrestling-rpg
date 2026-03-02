@@ -52,6 +52,7 @@ public class FactionSyncService extends BaseSyncService {
       NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.factionService = factionService;
+    this.self = this;
   }
 
   public SyncResult syncFactions(@NonNull String operationId) {

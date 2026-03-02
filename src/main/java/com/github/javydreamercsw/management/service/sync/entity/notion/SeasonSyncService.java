@@ -50,6 +50,7 @@ public class SeasonSyncService extends BaseSyncService {
       NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.seasonService = seasonService;
+    this.self = this;
   }
 
   /**

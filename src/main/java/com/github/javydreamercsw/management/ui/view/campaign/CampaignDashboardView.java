@@ -24,21 +24,23 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
-import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
 import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
+import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -48,7 +50,6 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
@@ -92,8 +93,6 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignChapterService chapterService;
   private final TitleService titleService;
   private final TitleRepository titleRepository;
-  private final com.github.javydreamercsw.management.service.campaign.StorylineDirectorService
-      storylineDirectorService;
   private final StorylineExportService storylineExportService;
 
   private Campaign currentCampaign;
@@ -111,7 +110,6 @@ public class CampaignDashboardView extends VerticalLayout {
       CampaignChapterService chapterService,
       TitleService titleService,
       TitleRepository titleRepository,
-      StorylineDirectorService storylineDirectorService,
       StorylineExportService storylineExportService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
@@ -124,7 +122,6 @@ public class CampaignDashboardView extends VerticalLayout {
     this.chapterService = chapterService;
     this.titleService = titleService;
     this.titleRepository = titleRepository;
-    this.storylineDirectorService = storylineDirectorService;
     this.storylineExportService = storylineExportService;
 
     setSpacing(true);
@@ -134,7 +131,7 @@ public class CampaignDashboardView extends VerticalLayout {
     initUI();
   }
 
-  private boolean getFeatureBoolean(CampaignState state, String key) {
+  private boolean getFeatureBoolean(@NonNull CampaignState state, @NonNull String key) {
     if (state.getFeatureData() == null) return false;
     try {
       java.util.Map<String, Object> data =
@@ -456,7 +453,7 @@ public class CampaignDashboardView extends VerticalLayout {
     }
   }
 
-  private void addStorylineSection(CampaignState state, VerticalLayout parent) {
+  private void addStorylineSection(@NonNull CampaignState state, @NonNull VerticalLayout parent) {
     if (state.getActiveStoryline() == null) return;
 
     com.github.javydreamercsw.management.domain.campaign.CampaignStoryline storyline =
@@ -513,9 +510,7 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(section);
   }
 
-  private String getMilestoneIcon(
-      com.github.javydreamercsw.management.domain.campaign.StorylineMilestone.MilestoneStatus
-          status) {
+  private String getMilestoneIcon(StorylineMilestone.MilestoneStatus status) {
     return switch (status) {
       case COMPLETED -> "✅";
       case FAILED -> "❌";
@@ -524,7 +519,7 @@ public class CampaignDashboardView extends VerticalLayout {
     };
   }
 
-  private void addPendingPicksSection(@NonNull Campaign campaign, VerticalLayout parent) {
+  private void addPendingPicksSection(@NonNull Campaign campaign, @NonNull VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getPendingL1Picks() <= 0
         && state.getPendingL2Picks() <= 0
@@ -578,7 +573,7 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(pendingSection);
   }
 
-  private void addSkillUpgradesSection(@NonNull Campaign campaign, VerticalLayout parent) {
+  private void addSkillUpgradesSection(@NonNull Campaign campaign, @NonNull VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getSkillTokens() < 8) return;
 
@@ -624,7 +619,7 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(upgradeSection);
   }
 
-  private void addTournamentBracket(VerticalLayout parent) {
+  private void addTournamentBracket(@NonNull VerticalLayout parent) {
     com.github.javydreamercsw.management.dto.campaign.TournamentDTO tournament =
         tournamentService.getTournamentState(currentCampaign);
 
@@ -643,12 +638,10 @@ public class CampaignDashboardView extends VerticalLayout {
     title.addClassNames(LumoUtility.Margin.NONE);
     bracketContainer.add(title);
 
-    bracketContainer.add(
-        new com.github.javydreamercsw.management.ui.component.TournamentBracketComponent(
-            tournament));
+    bracketContainer.add(new TournamentBracketComponent(tournament));
 
     // Play Next Match Button
-    com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch nextMatch =
+    TournamentDTO.TournamentMatch nextMatch =
         tournamentService.getCurrentPlayerMatch(currentCampaign);
 
     if (nextMatch != null && nextMatch.getWinnerId() == null) {
@@ -726,11 +719,6 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     parent.add(bracketContainer);
-  }
-
-  private Div createBracketBox(@NonNull String name, boolean isPlayer) {
-    // Legacy method, can be removed or kept if needed by other logic not yet updated
-    return new Div();
   }
 
   private void refreshUI() {
@@ -954,13 +942,6 @@ public class CampaignDashboardView extends VerticalLayout {
               WrestlerAlignment wa = currentCampaign.getWrestler().getAlignment();
               wa.setAlignmentType(alignSelect.getValue());
               wa.setLevel(alignLevel.getValue());
-              // Save happens via cascade or we need repo
-              // We didn't inject alignmentRepo here, but we can rely on persistence or existing
-              // service methods
-              // CampaignService has shiftAlignment but that's delta.
-              // Let's just assume modifying the entity and refreshing works if transaction commits,
-              // but we are in view.
-              // We need to save. We have wrestlerRepo.
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
             });

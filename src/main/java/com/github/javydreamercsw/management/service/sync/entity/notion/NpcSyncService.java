@@ -29,18 +29,24 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 public class NpcSyncService extends BaseSyncService {
 
   private final NpcService npcService;
+
+  @Autowired @Lazy private NpcSyncService self;
 
   @Autowired
   public NpcSyncService(
@@ -69,69 +75,7 @@ public class NpcSyncService extends BaseSyncService {
 
       int savedCount = 0;
       for (NpcPage npcPage : npcPages) {
-        Map<String, Object> rawProperties = npcPage.getRawProperties();
-        String npcName =
-            syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(npcPage);
-        Object roleObj = rawProperties.get("Role");
-        String npcType = roleObj instanceof String ? (String) roleObj : null;
-
-        if (npcName != null && !npcName.isEmpty() && npcType != null && !npcType.isEmpty()) {
-          Npc npc = npcService.findByExternalId(npcPage.getId()).orElse(null);
-          if (npc == null) {
-            npc = npcService.findByName(npcName);
-            if (npc == null) {
-              npc = new Npc();
-            }
-          }
-          npc.setName(npcName);
-          npc.setNpcType(npcType);
-          npc.setExternalId(npcPage.getId());
-
-          npc.setDescription(
-              syncServiceDependencies
-                  .getNotionPageDataExtractor()
-                  .extractDescriptionFromNotionPage(npcPage));
-
-          // Alignment
-          Object alignmentObj = rawProperties.get("Alignment");
-          if (alignmentObj instanceof String) {
-            try {
-              npc.setAlignment(AlignmentType.valueOf(((String) alignmentObj).toUpperCase()));
-            } catch (IllegalArgumentException e) {
-              log.warn("Invalid alignment '{}' for NPC '{}'", alignmentObj, npcName);
-            }
-          }
-
-          // Gender (Sex)
-          Object sexObj = rawProperties.get("Sex");
-          if (sexObj instanceof String) {
-            try {
-              npc.setGender(Gender.valueOf(((String) sexObj).toUpperCase()));
-            } catch (IllegalArgumentException e) {
-              log.warn("Invalid sex '{}' for NPC '{}'", sexObj, npcName);
-            }
-          }
-
-          // Additional Attributes
-          Map<String, Object> attrs = npc.getAttributes();
-
-          Object likenessObj = rawProperties.get("Likeness");
-          if (likenessObj instanceof String) attrs.put("likeness", likenessObj);
-
-          Object originObj = rawProperties.get("Origin");
-          if (originObj instanceof String) attrs.put("origin", originObj);
-
-          Object catchphraseObj = rawProperties.get("Catchphrase");
-          if (catchphraseObj instanceof String) attrs.put("catchphrase", catchphraseObj);
-
-          Object signatureStyleObj = rawProperties.get("Signature Style");
-          if (signatureStyleObj instanceof String) attrs.put("signatureStyle", signatureStyleObj);
-
-          Object statusObj = rawProperties.get("Status");
-          if (statusObj instanceof String) attrs.put("status", statusObj);
-
-          npc.setAttributes(attrs);
-          npcService.save(npc);
+        if (self.processSingleNpc(npcPage)) {
           savedCount++;
         }
       }
@@ -150,7 +94,131 @@ public class NpcSyncService extends BaseSyncService {
     }
   }
 
-  /** DTO for Npc data from Notion. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public boolean processSingleNpc(NpcPage npcPage) {
+    try {
+      Map<String, Object> rawProperties = npcPage.getRawProperties();
+      String npcName =
+          syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(npcPage);
+      Object roleObj = rawProperties.get("Role");
+      String npcType = roleObj instanceof String ? (String) roleObj : null;
+
+      if (npcName == null || npcName.isEmpty() || npcType == null || npcType.isEmpty()) {
+        return false;
+      }
+
+      Npc npc = npcService.findByExternalId(npcPage.getId()).orElse(null);
+      if (npc == null) {
+        npc = npcService.findByName(npcName);
+        if (npc == null) {
+          npc = new Npc();
+        }
+      }
+
+      boolean changed = false;
+
+      if (!Objects.equals(npc.getName(), npcName)) {
+        npc.setName(npcName);
+        changed = true;
+      }
+      if (!Objects.equals(npc.getNpcType(), npcType)) {
+        npc.setNpcType(npcType);
+        changed = true;
+      }
+      if (!Objects.equals(npc.getExternalId(), npcPage.getId())) {
+        npc.setExternalId(npcPage.getId());
+        changed = true;
+      }
+
+      String description =
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractDescriptionFromNotionPage(npcPage);
+      if (!Objects.equals(npc.getDescription(), description)) {
+        npc.setDescription(description);
+        changed = true;
+      }
+
+      // Alignment
+      Object alignmentObj = rawProperties.get("Alignment");
+      if (alignmentObj instanceof String) {
+        try {
+          AlignmentType type = AlignmentType.valueOf(((String) alignmentObj).toUpperCase());
+          if (!Objects.equals(npc.getAlignment(), type)) {
+            npc.setAlignment(type);
+            changed = true;
+          }
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid alignment '{}' for NPC '{}'", alignmentObj, npcName);
+        }
+      }
+
+      // Gender (Sex)
+      Object sexObj = rawProperties.get("Sex");
+      if (sexObj instanceof String) {
+        try {
+          Gender gender = Gender.valueOf(((String) sexObj).toUpperCase());
+          if (!Objects.equals(npc.getGender(), gender)) {
+            npc.setGender(gender);
+            changed = true;
+          }
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid sex '{}' for NPC '{}'", sexObj, npcName);
+        }
+      }
+
+      // Additional Attributes
+      Map<String, Object> attrs = new java.util.HashMap<>(npc.getAttributes());
+      boolean attrsChanged = false;
+
+      Object likenessObj = rawProperties.get("Likeness");
+      if (likenessObj instanceof String && !Objects.equals(attrs.get("likeness"), likenessObj)) {
+        attrs.put("likeness", likenessObj);
+        attrsChanged = true;
+      }
+
+      Object originObj = rawProperties.get("Origin");
+      if (originObj instanceof String && !Objects.equals(attrs.get("origin"), originObj)) {
+        attrs.put("origin", originObj);
+        attrsChanged = true;
+      }
+
+      Object catchphraseObj = rawProperties.get("Catchphrase");
+      if (catchphraseObj instanceof String
+          && !Objects.equals(attrs.get("catchphrase"), catchphraseObj)) {
+        attrs.put("catchphrase", catchphraseObj);
+        attrsChanged = true;
+      }
+
+      Object signatureStyleObj = rawProperties.get("Signature Style");
+      if (signatureStyleObj instanceof String
+          && !Objects.equals(attrs.get("signatureStyle"), signatureStyleObj)) {
+        attrs.put("signatureStyle", signatureStyleObj);
+        attrsChanged = true;
+      }
+
+      Object statusObj = rawProperties.get("Status");
+      if (statusObj instanceof String && !Objects.equals(attrs.get("status"), statusObj)) {
+        attrs.put("status", statusObj);
+        attrsChanged = true;
+      }
+
+      if (attrsChanged) {
+        npc.setAttributes(attrs);
+        changed = true;
+      }
+
+      if (changed || npc.getId() == null) {
+        npcService.save(npc);
+        return true;
+      }
+      return false;
+    } catch (Exception e) {
+      log.error("❌ Failed to process single NPC: {}", npcPage.getId(), e);
+      return false;
+    }
+  }
+
   @Setter
   @Getter
   public static class NpcDTO {

@@ -58,6 +58,7 @@ public class TeamSyncService extends BaseSyncService {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.teamService = teamService;
     this.wrestlerService = wrestlerService;
+    this.self = this;
   }
 
   /**

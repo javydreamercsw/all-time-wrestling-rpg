@@ -73,6 +73,7 @@ public class ShowSyncService extends BaseSyncService {
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
+    this.self = this;
   }
 
   /**
