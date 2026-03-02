@@ -111,7 +111,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     p1.setIsWinner(true);
     SegmentParticipant p2 = new SegmentParticipant();
     p2.setWrestler(wrestler2);
-    match.setParticipants(Arrays.asList(p1, p2));
+    match.setParticipants(new java.util.HashSet<>(java.util.Arrays.asList(p1, p2)));
 
     Segment promo = new Segment();
     promo.setId(2L);
@@ -120,7 +120,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     promo.setSegmentType(promoSegmentType);
     SegmentParticipant p3 = new SegmentParticipant();
     p3.setWrestler(wrestler1);
-    promo.setParticipants(Collections.singletonList(p3));
+    promo.setParticipants(new java.util.HashSet<>(java.util.Collections.singletonList(p3)));
 
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
         .thenReturn(Arrays.asList(match, promo));

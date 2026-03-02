@@ -21,9 +21,11 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.event.RivalryCompletedEvent;
 import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
+import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
@@ -48,8 +50,18 @@ public class RivalryService {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private RivalryMapper rivalryMapper;
   @Autowired private Clock clock;
   @Autowired private ApplicationEventPublisher eventPublisher;
+
+  /**
+   * Get the rivalry mapper.
+   *
+   * @return The rivalry mapper
+   */
+  public RivalryMapper getRivalryMapper() {
+    return rivalryMapper;
+  }
 
   /** Create a new rivalry between two wrestlers. */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -218,6 +230,18 @@ public class RivalryService {
     return rivalryRepository.findById(rivalryId);
   }
 
+  /**
+   * Get a rivalry by ID and return it as a DTO.
+   *
+   * @param rivalryId The rivalry ID
+   * @return Optional containing the rivalry DTO if found, otherwise empty
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<RivalryDTO> findByIdAsDTO(@NonNull Long rivalryId) {
+    return getRivalryById(rivalryId).map(rivalryMapper::toRivalryDTO);
+  }
+
   /** Get all rivalries with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -259,6 +283,18 @@ public class RivalryService {
         .findById(wrestlerId)
         .map(rivalryRepository::findActiveRivalriesForWrestler)
         .orElse(List.of());
+  }
+
+  /**
+   * Get all active rivalries for a specific wrestler as DTOs.
+   *
+   * @param wrestlerId The wrestler ID
+   * @return List of rivalry DTOs
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<RivalryDTO> getActiveRivalriesForWrestlerAsDTO(@NonNull Long wrestlerId) {
+    return getRivalriesForWrestler(wrestlerId).stream().map(rivalryMapper::toRivalryDTO).toList();
   }
 
   /** Get rivalries requiring matches (10+ heat). */

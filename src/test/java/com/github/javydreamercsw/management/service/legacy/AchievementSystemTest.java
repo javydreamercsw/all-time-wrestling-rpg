@@ -34,10 +34,12 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -64,7 +66,6 @@ class AchievementSystemTest {
   @Mock private FeudResolutionService feudResolutionService;
   @Mock private MultiWrestlerFeudService feudService;
   @Mock private TitleService titleService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private TitleRepository titleRepository;
@@ -76,8 +77,18 @@ class AchievementSystemTest {
   private Account account;
   private Wrestler wrestler;
 
+  @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+
   @BeforeEach
   void setUp() {
+    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     legacyService =
         new LegacyService(
             accountRepository,
@@ -92,10 +103,14 @@ class AchievementSystemTest {
             feudResolutionService,
             feudService,
             titleService,
-            matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
+            factionService,
+            ringsideActionService,
+            ringsideAiService,
+            retirementService,
+            gameSettingService,
             new Random());
 
     account = new Account();
@@ -232,10 +247,13 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
+    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("One on One");
     when(rule.getName()).thenReturn("Normal");
+    when(rule.getBumpAddition())
+        .thenReturn(
+            com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition.NONE);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(segment.isMainEvent()).thenReturn(true);
 
@@ -262,7 +280,7 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(Collections.emptyList());
+    when(segment.getSegmentRules()).thenReturn(java.util.Collections.emptySet());
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("Abu Dhabi Rumble");
     when(show.isPremiumLiveEvent()).thenReturn(true);

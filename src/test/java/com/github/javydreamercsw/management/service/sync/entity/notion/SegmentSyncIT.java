@@ -49,7 +49,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
@@ -59,6 +59,7 @@ class SegmentSyncIT extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private SegmentRepository segmentRepository;
+  @Autowired private TransactionTemplate transactionTemplate;
   @MockitoBean private NotionHandler notionHandler;
   private SegmentPage segmentPage;
 
@@ -90,7 +91,6 @@ class SegmentSyncIT extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should sync segments from Notion to database successfully")
-  @Transactional
   void shouldSyncSegmentsFromNotionToDatabaseSuccessfully() {
     // Given
     Wrestler wrestler1 = createTestWrestler("Wrestler 1");
@@ -154,13 +154,18 @@ class SegmentSyncIT extends ManagementIntegrationTest {
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getSyncedCount()).isEqualTo(1);
 
-    List<Segment> finalSegments = segmentRepository.findAll();
-    assertThat(finalSegments).hasSize(1);
-    Segment segment = finalSegments.get(0);
-    assertThat(segment.getExternalId()).isEqualTo(segmentId);
-    assertThat(segment.getShow().getName()).isEqualTo("Test Show");
-    assertThat(segment.getParticipants()).hasSize(2);
-    assertThat(segment.getWinners()).hasSize(1);
-    assertThat(segment.getWinners().get(0).getName()).isEqualTo(wrestler1.getName());
+    transactionTemplate.executeWithoutResult(
+        status -> {
+          List<Segment> finalSegments = segmentRepository.findAll();
+          assertThat(finalSegments).hasSize(1);
+          Segment segment = finalSegments.get(0);
+          assertThat(segment.getExternalId()).isEqualTo(segmentId);
+
+          // Now safe to access lazy relationships
+          assertThat(segment.getShow().getName()).isEqualTo("Test Show");
+          assertThat(segment.getParticipants()).hasSize(2);
+          assertThat(segment.getWinners()).hasSize(1);
+          assertThat(segment.getWinners().get(0).getName()).isEqualTo(wrestler1.getName());
+        });
   }
 }

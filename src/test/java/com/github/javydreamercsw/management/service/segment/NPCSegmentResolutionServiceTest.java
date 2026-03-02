@@ -108,13 +108,13 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
 
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
-        "Steel Cage Match", "Steel cage segment with no escape", false, BumpAddition.NONE);
+        "Steel Cage Match", "Steel cage segment with no escape", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Test Match", "Generic Test Match for various scenarios", false, BumpAddition.NONE);
+        "Test Match", "Generic Test Match for various scenarios", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Triple Threat Match", "Triple Threat Match", false, BumpAddition.NONE);
+        "Triple Threat Match", "Triple Threat Match", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Injury Test", "Injury Test Match", false, BumpAddition.NONE);
+        "Injury Test", "Injury Test Match", false, false, BumpAddition.NONE);
 
     // Create test show
     ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();
@@ -294,6 +294,66 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       assertThat(rookie2WinRate)
           .isGreaterThanOrEqualTo(0.30) // Should have some advantage due to opponent's injuries
           .describedAs("Healthy wrestler should have some advantage over injured opponent");
+    }
+  }
+
+  @Test
+  @Transactional
+  @DisplayName("Should favor faction with high affinity in tag matches")
+  void shouldFavorFactionWithHighAffinity() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+
+      // Given - Create a high affinity faction
+      com.github.javydreamercsw.management.domain.faction.Faction highAffinityFaction =
+          com.github.javydreamercsw.management.domain.faction.Faction.builder()
+              .name("High Affinity")
+              .affinity(100)
+              .isActive(true)
+              .build();
+      highAffinityFaction = factionRepository.save(highAffinityFaction);
+
+      Wrestler f1 =
+          wrestlerService.createWrestler("Faction Member 1", true, null, WrestlerTier.MIDCARDER);
+      Wrestler f2 =
+          wrestlerService.createWrestler("Faction Member 2", true, null, WrestlerTier.MIDCARDER);
+      f1.setFaction(highAffinityFaction);
+      f2.setFaction(highAffinityFaction);
+      wrestlerRepository.saveAll(List.of(f1, f2));
+
+      // Create a low affinity faction (or just independent midcarders)
+      Wrestler i1 =
+          wrestlerService.createWrestler("Independent 1", true, null, WrestlerTier.MIDCARDER);
+      Wrestler i2 =
+          wrestlerService.createWrestler("Independent 2", true, null, WrestlerTier.MIDCARDER);
+
+      SegmentTeam highAffinityTeam = new SegmentTeam(List.of(f1, f2), "Team Alpha");
+      SegmentTeam independentTeam = new SegmentTeam(List.of(i1, i2), "Team Beta");
+
+      // When - Simulate matches (increased sample size for more reliable statistics)
+      int factionWins = 0;
+      int totalMatches = 500;
+
+      for (int i = 0; i < totalMatches; i++) {
+        Segment result =
+            npcSegmentResolutionService.resolveTeamSegment(
+                highAffinityTeam, independentTeam, tagTeamType, testShow, "Synergy Test " + i);
+        if (result.getWinners().contains(f1)) {
+          factionWins++;
+        }
+      }
+
+      // Then - Faction should win more than 50% (base is equal, bonus is +10 weight)
+      // Using 0.51 threshold to account for statistical variance in random results
+      double winRate = (double) factionWins / totalMatches;
+      assertThat(winRate)
+          .isGreaterThan(0.51)
+          .describedAs(
+              "Faction with 100 affinity should have clear advantage over independents (found "
+                  + winRate
+                  + ")");
     }
   }
 

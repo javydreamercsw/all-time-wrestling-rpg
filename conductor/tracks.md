@@ -4,31 +4,79 @@
 
 ## Archived Tracks
 
-### [x] Track: Enhanced Filtering Controls (Alignment & Gender)
+### [ ] Track: Pollinations AI Video Generation
 
-*Link: [./conductor/archive/enhanced_filtering_controls_20260214/](./conductor/archive/enhanced_filtering_controls_20260214/)*
-*Status: Completed (2026-02-14)*
+*Status: Canceled (2026-02-16)*
 
-### [x] Track: Wrestler Career Legacy & Hall of Fame
+### [x] Track: Inbox Visibility Fix
 
-*Link: [./conductor/archive/wrestler_career_legacy_20260214/index.md](./conductor/archive/wrestler_career_legacy_20260214/index.md)*
-*Status: Completed (2026-02-14)*
+*Status: Completed (2026-02-16) (Pruned)*
 
-### [x] Track: Data-Driven Achievements
+### [x] Track: Achievement Notifications
 
-*Link: [./conductor/archive/data_driven_achievements_20260214/spec.md](./conductor/archive/data_driven_achievements_20260214/spec.md)*
-*Status: Completed (2026-02-14)*
+*Status: Completed (2026-02-16) (Pruned)*
+
+### [ ] Track: Add Season summary to player dashboard
+
+*Link: [./conductor/archive/season_summary_20260219/plan.md](./conductor/archive/season_summary_20260219/plan.md)*
+*Status: Archived (2026-02-21)*
+
+### [x] Track: AI-Driven "Smart Promo" Response System
+
+*Link: [./conductor/archive/smart_promo_20260221/plan.md](./conductor/archive/smart_promo_20260221/plan.md)*
+*Status: Completed (2026-02-21)*
+
+### [x] Track: AI Storyline "Director" with Branching Milestones
+
+*Link: [./conductor/archive/ai_storyline_director_20260221/plan.md](./conductor/archive/ai_storyline_director_20260221/plan.md)*
+*Status: Completed (2026-02-21)*
+
+### [x] Track: AI-Generated "Wrestling World" News Feed
+
+*Link: [./conductor/archive/news_feed_20260222/plan.md](./conductor/archive/news_feed_20260222/plan.md)*
+*Status: Completed (2026-02-22)*
+
+### [x] Track: Dynamic Faction Chemistry & Synergies
+
+*Link: [./conductor/archive/faction_synergy_20260222/plan.md](./conductor/archive/faction_synergy_20260222/plan.md)*
+*Status: Completed (2026-02-22)*
+
+### [x] Track: Match Interference & Manager Mechanics
+
+*Link: [./conductor/archive/interference_mechanics_20260222/plan.md](./conductor/archive/interference_mechanics_20260222/plan.md)*
+*Status: Completed (2026-02-22)*
+
+### [x] Track: Interactive Backstage "Dialogue Tree" Events
+
+*Link: [./conductor/archive/backstage_events_20260224/plan.md](./conductor/archive/backstage_events_20260224/plan.md)*
+*Status: Completed (2026-02-24)*
+
+### [x] Track: Persistent "Wear & Tear" & Career Longevity
+
+*Link: [./conductor/archive/career_longevity_20260224/plan.md](./conductor/archive/career_longevity_20260224/plan.md)*
+*Status: Completed (2026-02-24)*
+
+### [x] Track: Global Tour & Dynamic Arenas
+
+*Link: [./conductor/archive/world_arenas_20260225/plan.md](./conductor/archive/world_arenas_20260225/plan.md)*
+*Status: Completed (2026-02-25)*
+
+### [x] Track: Visual Arena Customizer (AI-Assisted)
+
+*Link: [./conductor/archive/arena_customizer_20260224/plan.md](./conductor/archive/arena_customizer_20260224/plan.md)*
+*Status: Discarded (2026-02-24)*
+
+### [x] Track: Fix Authentication error during outbound Notion sync
+
+*Link: [./archive/notion_sync_auth_fix_20260227/plan.md](./archive/notion_sync_auth_fix_20260227/plan.md)*
+*Status: Completed (2026-02-27)*
+
+### [x] Track: Improve Notion sync UI feedback and progress tracking
+
+*Link: [./archive/notion_sync_ui_details_20260227/plan.md](./archive/notion_sync_ui_details_20260227/plan.md)*
+*Status: Completed (2026-02-28)*
 
 ---
 
 ## Active Tracks
 
-### [ ] Track: Inbox Visibility Fix
-
-*Link: [./conductor/tracks/inbox_visibility_fix/spec.md](./conductor/tracks/inbox_visibility_fix/spec.md)*
-*Status: Active (2026-02-15)*
-
-### [ ] Track: Pollinations AI Video Generation
-
-*Link: [./conductor/tracks/pollinations_video_generation_20260215/](./conductor/tracks/pollinations_video_generation_20260215/)*
-*Status: Active (2026-02-15)*
