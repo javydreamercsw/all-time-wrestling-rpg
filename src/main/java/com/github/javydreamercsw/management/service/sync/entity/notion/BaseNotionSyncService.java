@@ -190,10 +190,11 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
             }
 
             if (externalId != null && !externalId.isBlank()) {
-              log.debug("Updating existing page for: {}", getEntityName());
+              log.debug("Updating existing page for {}: {}", getEntityName(), entityDisplayName);
               final String finalId = externalId;
               UpdatePageRequest updatePageRequest =
                   new UpdatePageRequest(finalId, propertiesToSend, false, null, null);
+              log.info("📤 Sending {} properties to Notion for {}", propertiesToSend.size(), entityDisplayName);
               notionApiExecutor.executeWithRateLimit(
                   operationId,
                   () ->

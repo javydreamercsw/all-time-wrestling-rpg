@@ -20,11 +20,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.model.common.PropertyType;
 import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.PageProperty;
 
+@Slf4j
 public class NotionPropertyBuilder {
 
   private static final int MAX_TEXT_LENGTH = 2000;
@@ -51,6 +53,10 @@ public class NotionPropertyBuilder {
     }
 
     java.util.ArrayList<PageProperty.RichText> list = new java.util.ArrayList<>();
+    int chunkCount = (int) Math.ceil((double) content.length() / MAX_TEXT_LENGTH);
+    if (chunkCount > 1) {
+      log.info("✂️ Splitting text (length: {}) into {} chunks", content.length(), chunkCount);
+    }
     for (int i = 0; i < content.length(); i += MAX_TEXT_LENGTH) {
       String chunk = content.substring(i, Math.min(i + MAX_TEXT_LENGTH, content.length()));
       list.add(
