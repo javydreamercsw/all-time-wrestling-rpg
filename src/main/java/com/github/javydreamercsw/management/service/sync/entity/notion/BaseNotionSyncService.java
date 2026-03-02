@@ -169,6 +169,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
             }
 
             Map<String, PageProperty> allProperties = getProperties(entity);
+            log.info(
+                "📤 Sending {} properties to Notion for {}",
+                allProperties.size(),
+                entityDisplayName);
             // Filter properties to only include those that exist in the Notion database schema
             Map<String, PageProperty> propertiesToSend;
             if (validNotionProperties != null) {
@@ -227,6 +231,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
             }
             entity.setLastSync(Instant.now());
             repository.saveAndFlush(entity);
+            log.info("💾 Saved {} to local database", entityDisplayName);
             processedCount++;
             syncServiceDependencies
                 .getProgressTracker()

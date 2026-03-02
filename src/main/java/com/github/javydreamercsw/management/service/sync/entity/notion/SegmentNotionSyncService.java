@@ -40,10 +40,7 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
   @Override
   protected Map<String, PageProperty> getProperties(@NonNull Segment entity) {
     Map<String, PageProperty> properties = new HashMap<>();
-    properties.put(
-        "Name",
-        NotionPropertyBuilder.createTitleProperty(
-            entity.getSegmentType().getName() + " - " + entity.getShow().getName()));
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
     if (entity.getShow() != null && entity.getShow().getExternalId() != null) {
       properties.put(

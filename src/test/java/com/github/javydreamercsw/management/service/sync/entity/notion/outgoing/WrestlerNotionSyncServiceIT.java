@@ -84,7 +84,12 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setFans(500L);
     wrestlerRepository.save(wrestler);
 
+    // Ensure it has unsynced changes by setting updatedAt to the future
+    wrestler.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    wrestlerRepository.saveAndFlush(wrestler);
+
     // Sync to Notion for the first time
+
     wrestlerNotionSyncService.syncToNotion("test-op-1");
 
     // Verify that the externalId and lastSync fields are updated
@@ -103,7 +108,9 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion again with updates
     updatedWrestler.setFans(1000L);
-    wrestlerRepository.save(updatedWrestler);
+    // Ensure it's treated as changed
+    updatedWrestler.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    wrestlerRepository.saveAndFlush(updatedWrestler);
     wrestlerNotionSyncService.syncToNotion("test-op-2");
     Wrestler updatedWrestler2 = wrestlerRepository.findById(wrestler.getId()).get();
     assertTrue(updatedWrestler2.getLastSync().isAfter(updatedWrestler.getLastSync()));

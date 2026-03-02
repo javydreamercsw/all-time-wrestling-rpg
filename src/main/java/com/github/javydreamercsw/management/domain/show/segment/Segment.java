@@ -278,4 +278,18 @@ public class Segment extends AbstractEntity<Long> {
         .map(SegmentRule::getName)
         .collect(java.util.stream.Collectors.joining(", "));
   }
+
+  @Override
+  public String getName() {
+    String type = segmentType != null ? segmentType.getName() : "Unknown Type";
+    String participantsStr =
+        getWrestlers().stream()
+            .map(Wrestler::getName)
+            .collect(java.util.stream.Collectors.joining(", "));
+    return "%s: %s (%s)".formatted(getEntityName(), type, participantsStr);
+  }
+
+  private String getEntityName() {
+    return "Segment";
+  }
 }

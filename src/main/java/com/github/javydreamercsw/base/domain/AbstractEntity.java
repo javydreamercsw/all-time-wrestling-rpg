@@ -40,7 +40,7 @@ public abstract class AbstractEntity<ID> implements NamedEntity {
   private Instant lastSync;
 
   @Column(name = "updated_at")
-  private Instant updatedAt;
+  private Instant updatedAt = Instant.now();
 
   public abstract @Nullable ID getId();
 
@@ -50,13 +50,12 @@ public abstract class AbstractEntity<ID> implements NamedEntity {
    * @return true if there are unsynced changes, false otherwise
    */
   public boolean hasUnsyncedChanges() {
-    if (lastSync == null) {
-      return true; // Never synced
+    if (lastSync == null || updatedAt == null) {
+      return true; // Never synced or missing update record - sync to be safe
     }
-    if (updatedAt == null) {
-      return false; // No record of updates after creation (or legacy data)
-    }
-    return updatedAt.isAfter(lastSync);
+    // Any update at or after the last sync time should be synced.
+    // We use !isBefore to include equal timestamps.
+    return !updatedAt.isBefore(lastSync);
   }
 
   @jakarta.persistence.PrePersist

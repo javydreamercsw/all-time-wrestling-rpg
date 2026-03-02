@@ -81,9 +81,15 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
     // Create a new Faction
     Faction faction = new Faction();
     faction.setName("Test Faction " + UUID.randomUUID());
+    faction.setUpdatedAt(java.time.Instant.now());
     factionRepository.save(faction);
 
+    // Ensure it has unsynced changes by setting updatedAt to the future
+    faction.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    factionRepository.saveAndFlush(faction);
+
     // Sync to Notion for the first time
+
     factionNotionSyncService.syncToNotion("test-op-1");
 
     // Verify that the externalId and lastSync fields are updated
@@ -102,7 +108,10 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion again with updates
     updatedFaction.setName("Test Faction Updated " + UUID.randomUUID());
-    factionRepository.save(updatedFaction);
+    // Ensure it's treated as changed
+    updatedFaction.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    factionRepository.saveAndFlush(updatedFaction);
+
     factionNotionSyncService.syncToNotion("test-op-2");
     Faction updatedFaction2 = factionRepository.findById(faction.getId()).get();
     assertTrue(updatedFaction2.getLastSync().isAfter(updatedFaction.getLastSync()));

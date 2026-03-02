@@ -146,6 +146,13 @@ public class TitleReign extends AbstractEntity<Long> {
   }
 
   @Override
+  public String getName() {
+    return String.format(
+        "%s - Reign #%d (%s)",
+        title != null ? title.getName() : "Unknown Title", reignNumber, getChampionNames());
+  }
+
+  @Override
   public @Nullable Long getId() {
     return id;
   }

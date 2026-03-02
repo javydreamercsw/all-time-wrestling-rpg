@@ -167,7 +167,12 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     segment.setSegmentOrder(1);
     segment.setMainEvent(true);
     segment.addParticipant(wrestler); // Add wrestler as a participant
+    segment.setUpdatedAt(java.time.Instant.now());
     segmentRepository.save(segment);
+
+    // Ensure it has unsynced changes by setting updatedAt to the future
+    segment.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    segmentRepository.saveAndFlush(segment);
 
     // Sync to Notion for the first time
     segmentNotionSyncService.syncToNotion("test-op-1");
@@ -183,7 +188,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        segment.getSegmentType().getName() + " - " + segment.getShow().getName(),
+        String.format("Segment: %s (%s)", segment.getSegmentType().getName(), wrestler.getName()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         segment.getShow().getExternalId(),
@@ -220,7 +225,9 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     updatedSegment.setSummary("Updated summary " + UUID.randomUUID());
     updatedSegment.setSegmentOrder(2);
     updatedSegment.setMainEvent(false);
-    segmentRepository.save(updatedSegment);
+    // Ensure it's treated as changed
+    updatedSegment.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    segmentRepository.saveAndFlush(updatedSegment);
     segmentNotionSyncService.syncToNotion("test-op-2");
     Segment updatedSegment2 = segmentRepository.findById(segment.getId()).get();
     assertTrue(updatedSegment2.getLastSync().isAfter(updatedSegment.getLastSync()));

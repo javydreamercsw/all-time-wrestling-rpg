@@ -109,7 +109,12 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     reign.setReignNumber(1);
     reign.setStartDate(Instant.now());
     reign.setNotes("Historical first reign");
+    reign.setUpdatedAt(java.time.Instant.now());
     titleReignRepository.save(reign);
+
+    // Ensure it has unsynced changes by setting updatedAt to the future
+    reign.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    titleReignRepository.saveAndFlush(reign);
 
     // Sync to Notion for the first time
     titleReignNotionSyncService.syncToNotion("test-op-1");
@@ -123,7 +128,8 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        String.format("%s - Reign #%d", title.getName(), reign.getReignNumber()),
+        String.format(
+            "%s - Reign #%d (%s)", title.getName(), reign.getReignNumber(), wrestler.getName()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         title.getExternalId(),
@@ -134,7 +140,9 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion again with updates
     updatedReign.setNotes("Updated historical notes");
-    titleReignRepository.save(updatedReign);
+    // Ensure it's treated as changed
+    updatedReign.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
+    titleReignRepository.saveAndFlush(updatedReign);
     titleReignNotionSyncService.syncToNotion("test-op-2");
 
     TitleReign updatedReign2 = titleReignRepository.findById(reign.getId()).get();

@@ -42,11 +42,7 @@ public class TitleReignNotionSyncService extends BaseNotionSyncService<TitleReig
   @Override
   protected Map<String, PageProperty> getProperties(@NonNull TitleReign entity) {
     Map<String, PageProperty> properties = new HashMap<>();
-
-    // Using title name + reign number as the page title
-    String name =
-        String.format("%s - Reign #%d", entity.getTitle().getName(), entity.getReignNumber());
-    properties.put("Name", NotionPropertyBuilder.createTitleProperty(name));
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
     if (entity.getTitle() != null && entity.getTitle().getExternalId() != null) {
       properties.put(
