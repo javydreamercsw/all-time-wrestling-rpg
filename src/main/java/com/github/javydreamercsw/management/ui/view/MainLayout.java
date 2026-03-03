@@ -95,11 +95,15 @@ public class MainLayout extends AppLayout {
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
-    Div footer = createFooter();
-    Div content = new Div(sideNav, footer);
-    content.setSizeFull(); // Ensure content takes full size for proper scrolling
+    Scroller navScroller = new Scroller(sideNav);
+    navScroller.addClassNames(Margin.Bottom.AUTO);
 
-    addToDrawer(createHeader(), new Scroller(content));
+    com.vaadin.flow.component.html.Section drawerContainer =
+        new com.vaadin.flow.component.html.Section(createHeader(), navScroller, createFooter());
+    drawerContainer.setSizeFull();
+    drawerContainer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.STRETCH);
+
+    addToDrawer(drawerContainer);
     addToNavbar(createNavbar());
   }
 
@@ -124,15 +128,20 @@ public class MainLayout extends AppLayout {
     } else {
       versionSpan.setText("Version: N/A");
     }
-    versionSpan.addClassNames(
-        FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
+    versionSpan.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
+
     Anchor githubLink =
         new Anchor("https://github.com/javydreamercsw/all-time-wrestling-rpg", "Source Code");
-    githubLink.addClassNames(
-        FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
+    githubLink.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
+
     Div footer = new Div(versionSpan, githubLink);
     footer.addClassNames(
-        Display.FLEX, JustifyContent.CENTER, Width.FULL, FlexDirection.COLUMN, AlignItems.CENTER);
+        Display.FLEX,
+        FlexDirection.COLUMN,
+        AlignItems.CENTER,
+        Padding.MEDIUM,
+        Gap.SMALL,
+        Width.FULL);
     return footer;
   }
 
