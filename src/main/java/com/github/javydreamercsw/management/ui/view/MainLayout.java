@@ -116,11 +116,13 @@ public class MainLayout extends AppLayout {
     appName.addClassNames(FontWeight.SEMIBOLD, FontSize.LARGE);
 
     Div header = new Div(appLogo, appName);
-    header.addClassNames(Display.FLEX, Padding.MEDIUM, Gap.MEDIUM, AlignItems.CENTER);
+    header.addClassNames(
+        Display.FLEX, JustifyContent.CENTER, Padding.MEDIUM, Gap.MEDIUM, AlignItems.CENTER);
+    header.addClassName("drawer-header");
     return header;
   }
 
-  private Div createFooter() {
+  private com.vaadin.flow.component.html.Footer createFooter() {
     Span versionSpan = new Span();
     versionSpan.setId("version-span");
     if (buildProperties != null) { // Needed for tests
@@ -128,20 +130,15 @@ public class MainLayout extends AppLayout {
     } else {
       versionSpan.setText("Version: N/A");
     }
-    versionSpan.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
 
     Anchor githubLink =
         new Anchor("https://github.com/javydreamercsw/all-time-wrestling-rpg", "Source Code");
     githubLink.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
 
-    Div footer = new Div(versionSpan, githubLink);
-    footer.addClassNames(
-        Display.FLEX,
-        FlexDirection.COLUMN,
-        AlignItems.CENTER,
-        Padding.MEDIUM,
-        Gap.SMALL,
-        Width.FULL);
+    com.vaadin.flow.component.html.Footer footer =
+        new com.vaadin.flow.component.html.Footer(versionSpan, githubLink);
+    footer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.CENTER, Padding.MEDIUM);
+    footer.addClassName("drawer-footer");
     return footer;
   }
 
@@ -191,20 +188,14 @@ public class MainLayout extends AppLayout {
       Button profileButton = new Button("Profile", VaadinIcon.USER.create());
       profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       profileButton.addClickListener(
-          e -> {
-            securityUtils
-                .getAuthenticatedUser()
-                .ifPresent(
-                    user -> {
-                      accountService
-                          .findByUsername(user.getUsername())
-                          .ifPresent(
-                              account ->
-                                  new ProfileDrawer(
-                                          account, accountService, passwordEncoder, themeService)
-                                      .open());
-                    });
-          });
+          e ->
+              securityUtils
+                  .getAuthenticatedUser()
+                  .flatMap(user -> accountService.findByUsername(user.getUsername()))
+                  .ifPresent(
+                      account ->
+                          new ProfileDrawer(account, accountService, passwordEncoder, themeService)
+                              .open()));
 
       // Logout button
       Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
