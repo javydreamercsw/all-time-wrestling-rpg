@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "All Time Wrestling RPG",
   description: "The comprehensive game guide.",
-  base: process.env.BASE_URL || "/docs/",
+  base: process.env.BASE_URL || "./",
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
