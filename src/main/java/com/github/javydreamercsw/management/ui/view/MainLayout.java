@@ -27,7 +27,6 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.JustifyContent;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
-import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
@@ -38,6 +37,7 @@ import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -104,7 +104,7 @@ public class MainLayout extends AppLayout {
     drawerContainer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.STRETCH);
 
     addToDrawer(drawerContainer);
-    addToNavbar(createNavbar());
+    addToNavbar(new DrawerToggle(), createNavbar());
   }
 
   private Div createHeader() {
@@ -167,13 +167,7 @@ public class MainLayout extends AppLayout {
   private Div createNavbar() {
     Div navbar = new Div();
     navbar.addClassNames(
-        Display.FLEX,
-        AlignItems.CENTER,
-        JustifyContent.END,
-        Padding.Horizontal.MEDIUM,
-        Padding.Vertical.SMALL,
-        Gap.MEDIUM,
-        Width.FULL);
+        Display.FLEX, AlignItems.CENTER, Gap.MEDIUM, Margin.Left.AUTO, Padding.Horizontal.MEDIUM);
 
     if (securityUtils != null && securityUtils.isAuthenticated()) {
       String username = securityUtils.getCurrentUsername();
