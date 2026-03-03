@@ -154,10 +154,6 @@ public class MainLayout extends AppLayout {
     item.setPrefixComponent(menuItem.getIcon().create());
     String path = menuItem.getPath();
     if (menuItem.isExternal() && path != null && !path.startsWith("http")) {
-      // Remove leading slash if present to let Vaadin handle context path correctly
-      if (path.startsWith("/")) {
-        path = path.substring(1);
-      }
       item.getElement().setAttribute("router-ignore", "");
       item.getElement().setAttribute("target", "_blank");
     }

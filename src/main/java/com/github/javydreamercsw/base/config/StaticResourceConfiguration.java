@@ -40,10 +40,5 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
     log.info("Mapping images/generated/** to {}", imagePath);
 
     registry.addResourceHandler("/images/generated/**").addResourceLocations(imagePath);
-
-    log.info("Mapping /docs/** to classpath:/META-INF/resources/docs/");
-    registry
-        .addResourceHandler("/docs/**")
-        .addResourceLocations("classpath:/META-INF/resources/docs/");
   }
 }
