@@ -87,9 +87,11 @@ console.log('Created .nojekyll file');
 
 // 6. Copy to App Static Resources
 console.log('Embedding docs in Spring Boot application...');
-if (!fs.existsSync(appStaticDocsDir)) {
-  fs.mkdirSync(appStaticDocsDir, { recursive: true });
+if (fs.existsSync(appStaticDocsDir)) {
+  console.log(`Clearing existing docs in: ${appStaticDocsDir}`);
+  fs.rmSync(appStaticDocsDir, { recursive: true, force: true });
 }
+fs.mkdirSync(appStaticDocsDir, { recursive: true });
 
 // Simple recursive copy
 function copyRecursiveSync(src, dest) {
