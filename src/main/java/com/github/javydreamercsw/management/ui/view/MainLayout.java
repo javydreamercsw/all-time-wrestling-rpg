@@ -52,7 +52,6 @@ import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
-import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
@@ -155,12 +154,9 @@ public class MainLayout extends AppLayout {
     item.setPrefixComponent(menuItem.getIcon().create());
     String path = menuItem.getPath();
     if (menuItem.isExternal() && path != null && !path.startsWith("http")) {
-      // Resolve path with context path if it's a local static resource
-      String contextPath = VaadinService.getCurrentRequest().getContextPath();
-      if (!path.startsWith("/")) {
-        path = contextPath + "/" + path;
-      } else {
-        path = contextPath + path;
+      // Remove leading slash if present to let Vaadin handle context path correctly
+      if (path.startsWith("/")) {
+        path = path.substring(1);
       }
       item.getElement().setAttribute("router-ignore", "");
       item.getElement().setAttribute("target", "_blank");
