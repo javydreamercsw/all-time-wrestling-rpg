@@ -1,17 +1,16 @@
 # Implementation Plan: Content Set Grouping
 
-## Phase 1: Data Model and Schema Updates
-
-* **Objective:** Ensure wrestlers have set data and clean up teams/factions.
-* - [x] Task: Update JSON Schemas for Wrestlers
-  - [x] Add `set` field to all objects in `src/main/resources/wrestlers.json`.
-* - [x] Task: Clean up Teams and Factions
-  - [x] Remove `set` field from `src/main/resources/teams.json` (Derived from members instead).
-  - [x] Ensure `src/main/resources/factions.json` does not have a `set` field.
-* - [x] Task: Database Migration for Set Preferences
-  - [x] Verify `GameSetting` table structure.
-  - [x] Initialize `GameSetting` entries for all expansions found in `expansions.json` (Default to Enabled).
-* - [ ] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
+## Phase 1: Data Model and Schema Updates [checkpoint: d599ce6]
+*   **Objective:** Ensure wrestlers have set data and clean up teams/factions.
+*   - [x] Task: Update JSON Schemas for Wrestlers
+    - [x] Add `set` field to all objects in `src/main/resources/wrestlers.json`.
+*   - [x] Task: Clean up Teams and Factions
+    - [x] Remove `set` field from `src/main/resources/teams.json` (Derived from members instead).
+    - [x] Ensure `src/main/resources/factions.json` does not have a `set` field.
+*   - [x] Task: Database Migration for Set Preferences
+    - [x] Verify `GameSetting` table structure.
+    - [x] Initialize `GameSetting` entries for all expansions found in `expansions.json` (Default to Enabled).
+*   - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
 
 ## Phase 2: Backend Logic and Filtering
 
