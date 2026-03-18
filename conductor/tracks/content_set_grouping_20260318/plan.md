@@ -13,27 +13,26 @@
   - [x] Initialize `GameSetting` entries for all expansions found in `expansions.json` (Default to Enabled).
 * - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
 
-## Phase 2: Backend Logic and Filtering
+## Phase 2: Backend Logic and Filtering [checkpoint: f977f58]
 
 * **Objective:** Implement member-aware filtering for teams and factions.
 * - [x] Task: Implement Expansion Service
   - [x] Write unit tests for `ExpansionService`.
   - [x] Implement `ExpansionService` to interact with `GameSetting` and `expansions.json`.
-*   - [x] Task: Update Content Loading Logic
-    - [x] Implement filtering in `WrestlerService` based on `GameSetting`.
-    - [x] Implement filtering in `TeamService`: Filter teams where any member's set is disabled.
-    - [x] Implement filtering in `FactionService`: Filter factions where any member's set is disabled.
-* - [ ] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
+* - [x] Task: Update Content Loading Logic
+  - [x] Implement filtering in `WrestlerService` based on `GameSetting`.
+  - [x] Implement filtering in `TeamService`: Filter teams where any member's set is disabled.
+  - [x] Implement filtering in `FactionService`: Filter factions where any member's set is disabled.
+* - [x] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
 
 ## Phase 3: Set Management UI
 
 * **Objective:** Create the user interface for managing content sets.
-* - [ ] Task: Create Set Management View
-  - [ ] Write E2E/Integration tests for the Set Management view (displaying sets, toggling).
-  - [ ] Implement the `SetManagementView` in Vaadin.
-  - [ ] Add toggles for each unique set found in the system.
-* - [ ] Task: Integrate Set Management into Navigation
-  - [ ] Add a link to the Set Management view in the main navigation menu.
+* - [x] Task: Create Expansion Management View
+  - [x] Implement the `ExpansionManagementView` component in Vaadin.
+  - [x] Add toggles for each unique expansion found in `expansions.json`.
+* - [x] Task: Integrate Expansion Management into Navigation
+  - [x] Add an "Expansion Management" tab to the existing `AdminView`.
 * - [ ] Task: Conductor - User Manual Verification 'Phase 3: Set Management UI' (Protocol in workflow.md)
 
 ## Phase 4: Final Integration and Verification

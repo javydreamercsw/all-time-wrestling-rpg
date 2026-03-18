@@ -53,7 +53,13 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAll() {
-    return factionRepository.findAll();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAll().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Get all factions (alias for findAll for UI compatibility). */
@@ -67,21 +73,53 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembers() {
-    return factionRepository.findAllWithMembers();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAllWithMembers().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Get all factions with both members and teams eagerly loaded for UI display. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembersAndTeams() {
-    return factionRepository.findAllWithMembersAndTeams();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAllWithMembersAndTeams().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<Faction> getAllFactions(Pageable pageable) {
-    return factionRepository.findAllBy(pageable);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+
+    // Fetch all since we need to filter based on member properties and manually paginate.
+    List<Faction> allFiltered =
+        factionRepository.findAll().stream()
+            .filter(
+                faction ->
+                    faction.getMembers().stream()
+                        .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+            .collect(Collectors.toList());
+
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+
+    List<Faction> pageContent = new java.util.ArrayList<>();
+    if (start < allFiltered.size()) {
+      pageContent = allFiltered.subList(start, end);
+    }
+
+    return new org.springframework.data.domain.PageImpl<>(
+        pageContent, pageable, allFiltered.size());
   }
 
   /** Get faction by ID. */

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +37,7 @@ public class ExpansionService {
   public static final String SET_ENABLED_PREFIX = "set_enabled_";
   private final GameSettingService gameSettingService;
   private final ObjectMapper objectMapper;
+  private final ApplicationEventPublisher eventPublisher;
 
   public List<Expansion> getExpansions() {
     List<Expansion> expansions = new ArrayList<>();
@@ -64,6 +66,7 @@ public class ExpansionService {
   public void setExpansionEnabled(String expansionCode, boolean enabled) {
     String key = SET_ENABLED_PREFIX + expansionCode;
     gameSettingService.save(key, String.valueOf(enabled));
+    eventPublisher.publishEvent(new ExpansionToggledEvent(this, expansionCode, enabled));
   }
 
   public List<String> getEnabledExpansionCodes() {

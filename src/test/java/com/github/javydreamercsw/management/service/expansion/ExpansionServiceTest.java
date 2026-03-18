@@ -34,19 +34,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class ExpansionServiceTest {
 
   @Mock private GameSettingService gameSettingService;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   private ExpansionService expansionService;
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   void setUp() {
-    expansionService = new ExpansionService(gameSettingService, objectMapper);
+    expansionService = new ExpansionService(gameSettingService, objectMapper, eventPublisher);
   }
 
   @Test

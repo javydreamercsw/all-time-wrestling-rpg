@@ -66,7 +66,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
     wrestler2 = wrestlerRepository.save(wrestler2);
 
     wrestler3 = createTestWrestler("Wrestler 3");
-    wrestler3.setExpansionCode("EXTREME");
+    wrestler3.setExpansionCode("BASE_GAME");
     wrestler3 = wrestlerRepository.save(wrestler3);
 
     faction = Faction.builder().build();
@@ -85,6 +85,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @DisplayName("Should filter active teams by enabled expansions")
   void shouldFilterActiveTeamsByEnabledExpansions() {
     // Given
+    wrestler3.setExpansionCode("EXTREME");
+    wrestler3 = wrestlerRepository.save(wrestler3);
+
     teamService.createTeam("Base Team", "Desc", wrestler1.getId(), wrestler2.getId(), null, null);
     teamService.createTeam("Mixed Team", "Desc", wrestler1.getId(), wrestler3.getId(), null, null);
 

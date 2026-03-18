@@ -28,10 +28,10 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -55,8 +55,42 @@ public class TeamService {
   /** Get all teams with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Team> getAllTeams(Pageable pageable) {
-    return teamRepository.findAll(pageable);
+  public org.springframework.data.domain.Page<Team> getAllTeams(@NonNull Pageable pageable) {
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+
+    // Fetch all since we need to filter based on member properties not in the Team table directly
+    // and then manually paginate.
+    List<Team> allFiltered =
+        teamRepository.findAll().stream()
+            .filter(
+                team ->
+                    enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                        && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+            .collect(Collectors.toList());
+
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+
+    List<Team> pageContent = new java.util.ArrayList<>();
+    if (start < allFiltered.size()) {
+      pageContent = allFiltered.subList(start, end);
+    }
+
+    return new org.springframework.data.domain.PageImpl<>(
+        pageContent, pageable, allFiltered.size());
+  }
+
+  /** Count all teams. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long countAllTeams() {
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository.findAll().stream()
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .count();
   }
 
   /** Get team by ID. */
