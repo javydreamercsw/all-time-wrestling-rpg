@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
@@ -190,6 +191,32 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
               + " forced retirement.",
           "mechanic-wear-and-tear");
     }
+  }
+
+  @Test
+  void testCaptureExpansionPacks() {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    waitForVaadinClientToLoad();
+
+    WebElement tab =
+        waitForVaadinElement(
+            driver,
+            org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+    clickElement(tab);
+
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException ignored) {
+    }
+
+    documentFeature(
+        "Game Mechanics",
+        "Expansion Packs",
+        "The roster is modular. Content is grouped into Expansion Packs that can be enabled or"
+            + " disabled by administrators. This dynamic system automatically filters wrestlers,"
+            + " teams, and factions based on active sets, allowing for themed seasons and"
+            + " customized gameplay experiences.",
+        "mechanic-expansion-packs");
   }
 
   private void waitForText(String text) {
