@@ -24,8 +24,10 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,7 @@ public class TeamService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private NpcRepository npcRepository;
+  @Autowired private ExpansionService expansionService;
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -219,7 +222,13 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getActiveTeams() {
-    return teamRepository.findByStatus(TeamStatus.ACTIVE);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository.findByStatus(TeamStatus.ACTIVE).stream()
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   /** Get teams by faction. */

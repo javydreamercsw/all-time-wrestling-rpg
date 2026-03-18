@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -68,6 +69,7 @@ public class WrestlerService {
   @Autowired private AccountRepository accountRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
+  @Autowired private ExpansionService expansionService;
   @Autowired private InjuryService injuryService;
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private SegmentService segmentService;
@@ -162,6 +164,7 @@ public class WrestlerService {
             .bumps(0)
             .tier(tier)
             .account(account) // Set account here
+            .expansionCode("BASE_GAME")
             .build();
 
     return save(wrestler);
@@ -235,7 +238,10 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
-    return wrestlerRepository.findAllByActiveTrue();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return wrestlerRepository.findAllByActiveTrue().stream()
+        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   /** Get wrestler by ID. */

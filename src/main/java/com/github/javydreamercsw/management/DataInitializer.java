@@ -781,6 +781,10 @@ public class DataInitializer implements Initializable {
                   existingWrestler.setHeritageTag(w.getHeritageTag());
                 }
 
+                if (w.getSet() != null) {
+                  existingWrestler.setExpansionCode(w.getSet());
+                }
+
                 if (w.getAlignment() != null) {
                   if (existingWrestler.getAlignment() == null
                       || existingWrestler.getAlignment().getAlignmentType() == null) {
@@ -837,6 +841,9 @@ public class DataInitializer implements Initializable {
                 newWrestler.setBumps(w.getBumps());
                 newWrestler.setImageUrl(w.getImageUrl());
                 newWrestler.setHeritageTag(w.getHeritageTag());
+                if (w.getSet() != null) {
+                  newWrestler.setExpansionCode(w.getSet());
+                }
                 newWrestler.setTier(WrestlerTier.ROOKIE);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());

@@ -1,27 +1,28 @@
 # Implementation Plan: Content Set Grouping
 
 ## Phase 1: Data Model and Schema Updates [checkpoint: d599ce6]
-*   **Objective:** Ensure wrestlers have set data and clean up teams/factions.
-*   - [x] Task: Update JSON Schemas for Wrestlers
-    - [x] Add `set` field to all objects in `src/main/resources/wrestlers.json`.
-*   - [x] Task: Clean up Teams and Factions
-    - [x] Remove `set` field from `src/main/resources/teams.json` (Derived from members instead).
-    - [x] Ensure `src/main/resources/factions.json` does not have a `set` field.
-*   - [x] Task: Database Migration for Set Preferences
-    - [x] Verify `GameSetting` table structure.
-    - [x] Initialize `GameSetting` entries for all expansions found in `expansions.json` (Default to Enabled).
-*   - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
+
+* **Objective:** Ensure wrestlers have set data and clean up teams/factions.
+* - [x] Task: Update JSON Schemas for Wrestlers
+  - [x] Add `set` field to all objects in `src/main/resources/wrestlers.json`.
+* - [x] Task: Clean up Teams and Factions
+  - [x] Remove `set` field from `src/main/resources/teams.json` (Derived from members instead).
+  - [x] Ensure `src/main/resources/factions.json` does not have a `set` field.
+* - [x] Task: Database Migration for Set Preferences
+  - [x] Verify `GameSetting` table structure.
+  - [x] Initialize `GameSetting` entries for all expansions found in `expansions.json` (Default to Enabled).
+* - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
 
 ## Phase 2: Backend Logic and Filtering
 
 * **Objective:** Implement member-aware filtering for teams and factions.
-* - [ ] Task: Implement Set Management Service
-  - [ ] Write unit tests for `SetManagementService`.
-  - [ ] Implement `SetManagementService` to interact with `GameSetting` and `expansions.json`.
-* - [ ] Task: Update Content Loading Logic
-  - [ ] Implement filtering in `WrestlerService` based on `GameSetting`.
-  - [ ] Implement filtering in `TeamService`: Filter teams where any member's set is disabled.
-  - [ ] Implement filtering in `FactionService`: Filter factions where any member's set is disabled.
+* - [x] Task: Implement Expansion Service
+  - [x] Write unit tests for `ExpansionService`.
+  - [x] Implement `ExpansionService` to interact with `GameSetting` and `expansions.json`.
+*   - [x] Task: Update Content Loading Logic
+    - [x] Implement filtering in `WrestlerService` based on `GameSetting`.
+    - [x] Implement filtering in `TeamService`: Filter teams where any member's set is disabled.
+    - [x] Implement filtering in `FactionService`: Filter factions where any member's set is disabled.
 * - [ ] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
 
 ## Phase 3: Set Management UI

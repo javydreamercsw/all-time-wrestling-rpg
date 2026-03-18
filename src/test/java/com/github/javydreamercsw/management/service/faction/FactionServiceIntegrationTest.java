@@ -18,17 +18,22 @@ package com.github.javydreamercsw.management.service.faction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("Faction Service Integration Tests")
@@ -39,15 +44,25 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private WrestlerService wrestlerService;
 
+  @MockitoSpyBean private ExpansionService expansionService;
   private Faction testFaction;
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
 
   @BeforeEach
   public void setUp() throws Exception {
+    // Default mock behavior
+    when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
+
     // Create test wrestlers with all required fields
     testWrestler1 = wrestlerService.createWrestler("John Cena", true, null);
+    testWrestler1.setExpansionCode("BASE_GAME");
+    testWrestler1 = wrestlerService.save(testWrestler1);
+
     testWrestler2 = wrestlerService.createWrestler("The Rock", true, null);
+    testWrestler2.setExpansionCode("BASE_GAME");
+    testWrestler2 = wrestlerService.save(testWrestler2);
 
     // Create test faction
     testFaction = Faction.builder().build();
@@ -57,6 +72,33 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     testFaction.addMember(testWrestler1);
     testFaction.addMember(testWrestler2);
     testFaction = factionService.save(testFaction);
+  }
+
+  @Test
+  @DisplayName("Should filter active factions by enabled expansions")
+  void shouldFilterActiveFactionsByEnabledExpansions() {
+    // Given
+    Wrestler extremeWrestler = wrestlerService.createWrestler("Extreme Wrestler", true, null);
+    extremeWrestler.setExpansionCode("EXTREME");
+    extremeWrestler = wrestlerService.save(extremeWrestler);
+
+    Optional<Faction> extremeFactionOpt =
+        factionService.createFaction("Extreme Faction", "Desc", extremeWrestler.getId());
+    assertTrue(extremeFactionOpt.isPresent());
+
+    // Case 1: Both expansions enabled
+    when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
+    List<Faction> activeFactions = factionService.getActiveFactions();
+    // At least 2 active factions (Base and Extreme)
+    assertTrue(activeFactions.size() >= 2);
+
+    // Case 2: Only BASE_GAME enabled
+    when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(Collections.singletonList("BASE_GAME"));
+    activeFactions = factionService.getActiveFactions();
+    assertTrue(activeFactions.stream().noneMatch(f -> f.getName().equals("Extreme Faction")));
+    assertTrue(activeFactions.stream().anyMatch(f -> f.getName().equals("Test Faction")));
   }
 
   @Test

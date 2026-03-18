@@ -20,9 +20,11 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +46,7 @@ public class FactionService {
 
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final ExpansionService expansionService;
   private final Clock clock; // Injected via constructor
 
   /** Get all factions. */
@@ -113,7 +116,13 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> getActiveFactions() {
-    return factionRepository.findByIsActiveTrue();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findByIsActiveTrue().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Create a new faction. */
