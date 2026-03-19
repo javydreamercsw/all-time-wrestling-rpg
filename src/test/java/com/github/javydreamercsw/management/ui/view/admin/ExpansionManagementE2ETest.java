@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
-class ExpansionManagementE2EIT extends AbstractE2ETest {
+class ExpansionManagementE2ETest extends AbstractE2ETest {
 
   @Test
   void testToggleExpansionAndVerifyFiltering() {
@@ -38,23 +38,23 @@ class ExpansionManagementE2EIT extends AbstractE2ETest {
 
     // Wait for grid to load expansions
     waitForVaadinElement(
-        driver, By.xpath("//vaadin-grid-cell-content[contains(., 'Extreme Pack')]"));
+        driver, By.xpath("//vaadin-grid-cell-content[contains(., 'ATW Extreme Expansion')]"));
 
     // 2. Find the checkbox for 'Extreme Pack' and disable it
-    // Note: This assumes 'Extreme Pack' is in the grid.
-    WebElement extremeCheckbox =
-        waitForVaadinElement(
-            driver,
-            By.xpath(
-                "//vaadin-grid-cell-content[contains(., 'Extreme Pack')]/..//vaadin-checkbox"));
+    WebElement extremeCheckbox = waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
 
-    // Check if it's currently checked (enabled by default)
-    if (extremeCheckbox.getAttribute("checked") != null) {
-      clickElement(extremeCheckbox);
-    }
+    // Use Javascript to click to be more robust with Vaadin Grid rendering
+    ((org.openqa.selenium.JavascriptExecutor) driver)
+        .executeScript("arguments[0].click();", extremeCheckbox);
 
     // Wait for notification
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'disabled')]"));
+
+    // Give it a moment for cache eviction to process
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+    }
 
     // 3. Navigate to Wrestler List and verify Rob Van Dam (EXTREME set) is hidden
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
@@ -70,17 +70,18 @@ class ExpansionManagementE2EIT extends AbstractE2ETest {
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
-    extremeCheckbox =
-        waitForVaadinElement(
-            driver,
-            By.xpath(
-                "//vaadin-grid-cell-content[contains(., 'Extreme Pack')]/..//vaadin-checkbox"));
+    extremeCheckbox = waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
 
-    if (extremeCheckbox.getAttribute("checked") == null) {
-      clickElement(extremeCheckbox);
-    }
+    ((org.openqa.selenium.JavascriptExecutor) driver)
+        .executeScript("arguments[0].click();", extremeCheckbox);
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
+
+    // Give it a moment
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+    }
 
     // 5. Verify Rob Van Dam is back
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");

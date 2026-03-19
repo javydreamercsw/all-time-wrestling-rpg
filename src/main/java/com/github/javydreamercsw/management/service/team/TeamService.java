@@ -68,6 +68,11 @@ public class TeamService {
                         && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
             .collect(Collectors.toList());
 
+    if (pageable.isUnpaged()) {
+      return new org.springframework.data.domain.PageImpl<>(
+          allFiltered, pageable, allFiltered.size());
+    }
+
     int start = (int) pageable.getOffset();
     int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
 
