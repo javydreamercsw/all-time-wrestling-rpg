@@ -1,5 +1,33 @@
 {
   "features": [ {
+    "id": "admin-admin-expansion-management",
+    "category": "Admin",
+    "title": "Expansion Management",
+    "description": "Group and toggle themed content sets. Enable or disable entire collections of wrestlers, teams, and factions to customize the available roster for matches and leagues.",
+    "imagePath": "screenshots/admin-expansion-management.png",
+    "order": 170
+  }, {
+    "id": "game-mechanics-mechanic-wear-and-tear",
+    "category": "Game Mechanics",
+    "title": "Persistent Wear & Tear",
+    "description": "Matches take a toll on a wrestler's body. Physical condition degrades over time based on match intensity (Extreme matches double the wear) and positioning (Main Events are more demanding). Low condition results in health penalties and potential forced retirement.",
+    "imagePath": "screenshots/mechanic-wear-and-tear.png",
+    "order": 460
+  }, {
+    "id": "game-mechanics-mechanic-expansion-packs",
+    "category": "Game Mechanics",
+    "title": "Expansion Packs",
+    "description": "The roster is modular. Content is grouped into Expansion Packs that can be enabled or disabled by administrators. This dynamic system automatically filters wrestlers, teams, and factions based on active sets, allowing for themed seasons and customized gameplay experiences.",
+    "imagePath": "screenshots/mechanic-expansion-packs.png",
+    "order": 470
+  }, {
+    "id": "game-mechanics-mechanic-ringside-actions",
+    "category": "Game Mechanics",
+    "title": "Ringside Actions",
+    "description": "Managers and faction members can swing the match in your favor. Perform ringside actions like coaching, distracting the referee, or sliding in a weapon, but be careful - too much illegal interference will lead to ejections or disqualification!",
+    "imagePath": "screenshots/mechanic-ringside-actions.png",
+    "order": 500
+  }, {
     "id": "campaign-campaign-backstage-encounter",
     "category": "Campaign",
     "title": "Backstage Encounters",

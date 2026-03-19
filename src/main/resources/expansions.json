@@ -1,0 +1,25 @@
+[ {
+  "name": "Base Game",
+  "expansion_code": "BASE_GAME"
+}, {
+  "name": "Eddie Guerrero Expansion",
+  "expansion_code": "EDDIE"
+}, {
+  "name": "ATW Extreme Expansion",
+  "expansion_code": "EXTREME"
+}, {
+  "name": "Matt Cardona Expansion",
+  "expansion_code": "MATT_CARDONA"
+}, {
+  "name": "Abu Dhabi Rumble Expansion",
+  "expansion_code": "RUMBLE"
+}, {
+  "name": "Trailblazers Expansion",
+  "expansion_code": "TRAILBLAZERS"
+}, {
+  "name": "ATW vs. WOW Expansion",
+  "expansion_code": "ATW_VS_WOW"
+}, {
+  "name": "Gail Kim Expansion",
+  "expansion_code": "GAIL_KIM"
+} ]

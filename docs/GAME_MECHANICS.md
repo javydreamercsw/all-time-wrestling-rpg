@@ -29,6 +29,22 @@ Matches take a toll on a wrestler's physical well-being. This is tracked via the
 - **Resetting:** Administrators and Bookers can reset a wrestler's condition to 100% via the Wrestler Profile. A global reset for all wrestlers is available in the **Admin Tools** dashboard.
 - **Toggle:** The entire feature can be enabled or disabled globally in **Game Settings**.
 
+## Expansion Packs
+
+The All Time Wrestling RPG features a modular content system where wrestlers, staff, and pre-defined teams are grouped into **Expansion Packs**.
+
+### How it Works
+
+- **Content Grouping:** Every wrestler and staff member belongs to a specific set (e.g., "Base Game", "Extreme Pack", "Eddie Guerrero Pack").
+- **Member-Driven Availability:**
+  - Tag Teams and Factions do not have a fixed set. Instead, their availability is derived from their members.
+  - A Team or Faction is only available if **all** of its members belong to expansion packs that are currently enabled.
+- **Hard Disable:** Disabling an expansion pack completely hides all associated wrestlers from the roster, rankings, and match selection. Any teams or factions they belong to will also be hidden.
+
+### Management
+
+Administrators can manage these packs through the **Admin -> Expansion Management** tab. Toggling an expansion pack immediately updates the available content across the entire application.
+
 ## Faction Synergy
 
 Factions are more than just groups; they provide mechanical benefits when members work together.

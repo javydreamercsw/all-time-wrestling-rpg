@@ -76,12 +76,14 @@
 *Link: [./archive/notion_sync_ui_details_20260227/plan.md](./archive/notion_sync_ui_details_20260227/plan.md)*
 *Status: Completed (2026-02-28)*
 
+### [x] Track: Allow grouping content by expansion packs
+
+*Link: [./archive/content_set_grouping_20260318/plan.md](./archive/content_set_grouping_20260318/plan.md)*
+*Status: Completed (2026-03-18)*
+
 ---
 
 ## Active Tracks
 
 ---
-
-- [ ] **Track: Allow grouping content as part from the base game or an extension to allow users to enable/disable wrestlers, teams, etc based on the set they are from.**
-*Link: [./tracks/content_set_grouping_20260318/](./tracks/content_set_grouping_20260318/)*
 

@@ -97,7 +97,8 @@ public class AdminView extends VerticalLayout {
         new Tab("Game Settings"),
         new Tab("Holidays"),
         new Tab("Season Settings"),
-        new Tab("Campaign Cards"));
+        new Tab("Campaign Cards"),
+        new Tab("Expansion Management"));
   }
 
   private Div createPages(Tabs tabs) {
@@ -111,6 +112,8 @@ public class AdminView extends VerticalLayout {
     SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
     CampaignAbilityCardListView campaignAbilityCardListView =
         instantiator.getOrCreate(CampaignAbilityCardListView.class);
+    ExpansionManagementView expansionManagementView =
+        instantiator.getOrCreate(ExpansionManagementView.class);
 
     Div pages =
         new Div(
@@ -119,7 +122,8 @@ public class AdminView extends VerticalLayout {
             gameSettingsView,
             holidayListView,
             seasonSettingsView,
-            campaignAbilityCardListView);
+            campaignAbilityCardListView,
+            expansionManagementView);
     pages.setSizeFull();
 
     Map<Tab, Component> tabsToPages =
@@ -129,13 +133,17 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(2), gameSettingsView,
             tabs.getTabAt(3), holidayListView,
             tabs.getTabAt(4), seasonSettingsView,
-            tabs.getTabAt(5), campaignAbilityCardListView);
+            tabs.getTabAt(5), campaignAbilityCardListView,
+            tabs.getTabAt(6), expansionManagementView);
 
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
           Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
           selectedPage.setVisible(true);
+          if (selectedPage instanceof ExpansionManagementView emv) {
+            emv.refresh();
+          }
         });
 
     // Hide all pages except the first one

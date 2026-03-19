@@ -20,9 +20,11 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,13 +46,20 @@ public class FactionService {
 
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final ExpansionService expansionService;
   private final Clock clock; // Injected via constructor
 
   /** Get all factions. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAll() {
-    return factionRepository.findAll();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAll().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Get all factions (alias for findAll for UI compatibility). */
@@ -64,21 +73,58 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembers() {
-    return factionRepository.findAllWithMembers();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAllWithMembers().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Get all factions with both members and teams eagerly loaded for UI display. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembersAndTeams() {
-    return factionRepository.findAllWithMembersAndTeams();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAllWithMembersAndTeams().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<Faction> getAllFactions(Pageable pageable) {
-    return factionRepository.findAllBy(pageable);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+
+    // Fetch all since we need to filter based on member properties and manually paginate.
+    List<Faction> allFiltered =
+        factionRepository.findAll().stream()
+            .filter(
+                faction ->
+                    faction.getMembers().stream()
+                        .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+            .collect(Collectors.toList());
+
+    if (pageable.isUnpaged()) {
+      return new org.springframework.data.domain.PageImpl<>(
+          allFiltered, pageable, allFiltered.size());
+    }
+
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+
+    List<Faction> pageContent = new java.util.ArrayList<>();
+    if (start < allFiltered.size()) {
+      pageContent = allFiltered.subList(start, end);
+    }
+
+    return new org.springframework.data.domain.PageImpl<>(
+        pageContent, pageable, allFiltered.size());
   }
 
   /** Get faction by ID. */
@@ -113,7 +159,13 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> getActiveFactions() {
-    return factionRepository.findByIsActiveTrue();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findByIsActiveTrue().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .collect(Collectors.toList());
   }
 
   /** Create a new faction. */

@@ -34,6 +34,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -68,6 +70,7 @@ public class WrestlerService {
   @Autowired private AccountRepository accountRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
+  @Autowired private ExpansionService expansionService;
   @Autowired private InjuryService injuryService;
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private SegmentService segmentService;
@@ -162,6 +165,7 @@ public class WrestlerService {
             .bumps(0)
             .tier(tier)
             .account(account) // Set account here
+            .expansionCode("BASE_GAME")
             .build();
 
     return save(wrestler);
@@ -200,12 +204,18 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> list(@NonNull Pageable pageable) {
-    return wrestlerRepository.findAllBy(pageable).toList();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return wrestlerRepository.findAllBy(pageable).stream()
+        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")
   public long count() {
-    return wrestlerRepository.count();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return wrestlerRepository.findAllByActiveTrue().stream()
+        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
+        .count();
   }
 
   @CacheEvict(
@@ -230,12 +240,26 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllIncludingInactive() {
-    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans")).stream()
+        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
-    return wrestlerRepository.findAllByActiveTrue();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return wrestlerRepository.findAllByActiveTrue().stream()
+        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
+        .collect(Collectors.toList());
+  }
+
+  @org.springframework.context.event.EventListener
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void onExpansionToggled(ExpansionToggledEvent event) {
+    log.info("Expansion '{}' toggled, evicting wrestler caches.", event.getExpansionCode());
   }
 
   /** Get wrestler by ID. */
