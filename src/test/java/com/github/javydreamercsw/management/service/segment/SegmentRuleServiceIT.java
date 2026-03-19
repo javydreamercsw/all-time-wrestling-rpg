@@ -42,7 +42,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
 
     // Create a new segment rule, should evict the cache
     segmentRuleService.createOrUpdateRule(
-        "Test Rule", "Test Description", false, BumpAddition.NONE);
+        "Test Rule", "Test Description", false, false, BumpAddition.NONE);
 
     // Second call, should hit the repository again
     segmentRuleService.findAll();

@@ -21,20 +21,25 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
+import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -47,6 +52,9 @@ public class NewsGenerationService {
   private final GameSettingService gameSettingService;
   private final InjuryRepository injuryRepository;
   private final SegmentRepository segmentRepository;
+  private final EventAggregationService aggregationService;
+  private final WrestlerRepository wrestlerRepository;
+  private final NpcRepository npcRepository;
   private final Random random = new Random();
 
   private static final String SYSTEM_PROMPT =
@@ -64,6 +72,57 @@ public class NewsGenerationService {
       - importance: Integer 1-5, where 5 is a major event like a title change or injury.
       """;
 
+  private static final String RUMOR_PROMPT_ENHANCEMENT =
+      """
+
+      IMPORTANT INSTRUCTIONS FOR RUMORS:
+      - You MUST ONLY use the names of wrestlers and NPCs provided in the 'Current Roster' list below.
+      - DO NOT hallucinate or invent names of wrestlers not present in the provided list.
+      - Focus on backstage drama, contract negotiations, or potential future matches between these specific individuals.
+      """;
+
+  private static final String MONTHLY_SYSTEM_PROMPT =
+      """
+      You are the Lead Analyst for the Wrestling World.
+      You have been provided with a summary of the entire month's major events, including title changes and key match results.
+
+      Your task is to write a 'Monthly State of the World' report. This should be a long-form, analytical piece that synthesizes these events into a cohesive narrative.
+
+      - What were the defining moments?
+      - Who are the rising stars?
+      - What is the current landscape of the championships?
+
+      Output MUST be a valid JSON object with the following fields:
+      - headline: A formal, powerful headline for the monthly report (e.g., 'THE JANUARY RECAP: A Month of Betrayal and New Kings').
+      - content: A comprehensive, multi-paragraph analysis (max 2000 chars).
+      - category: 'ANALYSIS'.
+      - isRumor: false.
+      - importance: 5.
+      """;
+
+  @Transactional
+  public boolean generateMonthlySynthesis() {
+    if (!gameSettingService.isAiNewsEnabled()) return false;
+
+    SegmentNarrationService aiService = aiFactory.getBestAvailableService();
+    if (aiService == null || !aiService.isAvailable()) return false;
+
+    EventAggregationService.MonthlySummary summary = aggregationService.getMonthlySummary();
+    String context = aggregationService.formatMonthlySummary(summary);
+
+    try {
+      String response =
+          aiService.generateText(
+              MONTHLY_SYSTEM_PROMPT + "\n\nMonthly Summary Context:\n" + context);
+      parseAndCreateNews(response);
+      return true;
+    } catch (Exception e) {
+      log.error("Failed to generate monthly synthesis news", e);
+      return false;
+    }
+  }
+
+  @Transactional
   public void generateNewsForSegment(@NonNull Segment segment) {
     if (!gameSettingService.isAiNewsEnabled()) {
       log.debug("AI news generation is disabled. Creating fallback news.");
@@ -114,6 +173,7 @@ public class NewsGenerationService {
     }
   }
 
+  @Transactional
   public void generateNewsForShow(@NonNull Show show) {
     if (!gameSettingService.isAiNewsEnabled()) return;
 
@@ -147,6 +207,7 @@ public class NewsGenerationService {
     }
   }
 
+  @Transactional(readOnly = true)
   public void rollForRumor() {
     if (!gameSettingService.isAiNewsEnabled()) return;
 
@@ -156,11 +217,20 @@ public class NewsGenerationService {
       SegmentNarrationService aiService = aiFactory.getBestAvailableService();
       if (aiService != null && aiService.isAvailable()) {
         try {
+          String rosterContext =
+              Stream.concat(
+                      wrestlerRepository.findAllByActiveTrue().stream().map(Wrestler::getName),
+                      npcRepository.findAll().stream().map(Npc::getName))
+                  .collect(Collectors.joining(", "));
+
           String response =
               aiService.generateText(
                   SYSTEM_PROMPT
+                      + RUMOR_PROMPT_ENHANCEMENT
                       + "\n\nContext: Generate a plausible backstage rumor about the current"
-                      + " wrestling roster. It should be speculative and interesting.");
+                      + " wrestling roster. It should be speculative and interesting."
+                      + "\n\nCurrent Roster: "
+                      + rosterContext);
           parseAndCreateNews(response);
         } catch (Exception e) {
           log.error("Failed to generate random rumor", e);

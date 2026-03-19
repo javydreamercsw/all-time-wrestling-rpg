@@ -6,4 +6,24 @@
   "name": "Charles",
   "description": "The mysterious owner of ATW.",
   "type": "Owner"
+}, {
+  "name": "Samuel Winters",
+  "description": "A veteran referee with an imposing presence, Samuel Winters brings legitimacy and authority to every match he officiates. Standing at 6'2\" with an athletic build, his clean-shaven head and stern expression command respect. Winters is known for his strict adherence to the rules and is not easily fooled by distractions or illegal tactics, making him a referee that heels often try to avoid.",
+  "type": "Referee",
+  "awareness": 85
+}, {
+  "name": "Rezan the Resolved",
+  "description": "An ageless Matchkeeper from the Chrono-Monastery of the Unseen Year. Pale-skinned and blindfolded with gold-plated runes, Rezan is an eternal arbiter summoned to stabilize high-stakes cross-era contests. He is unwavering, impossible to intimidate, and unaffected by distractions or chaos. When a match exceeds 12 turns, he utters 'It is decided,' and the next pin counts regardless of kickout rolls.",
+  "type": "Referee",
+  "awareness": 100
+}, {
+  "name": "Rigo Del Sarto",
+  "description": "A corrupt former fix-man for mob-run matches in 1920s Milan. Wiry and sharp-eyed, Rigo wears a blood-red referee shirt and black gloves. He is slick, sarcastic, and always watching for bribes. He frequently 'misses' illegal interference and is known for fast counts for heel pins and slow counts for faces. 'I call it how I feel it… not how you see it.'",
+  "type": "Referee",
+  "awareness": 25
+}, {
+  "name": "Anika Stroud",
+  "description": "A former gold-level combat judge from the 22nd-century Martian colony. Anika has short cropped platinum-blonde hair and wears modern gear with glowing blue trim. She is just, fast-reacting, and highly respected for her sacred adherence to universal sports ethics. She never misses a weapon shot and is known to intervene to protect injured wrestlers. 'Clean, clear, and final. That’s how I count it.'",
+  "type": "Referee",
+  "awareness": 90
 } ]

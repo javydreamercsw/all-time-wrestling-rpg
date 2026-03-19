@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -27,11 +28,13 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -55,7 +58,6 @@ class SegmentAdjudicationServiceUnitTest {
 
   @Mock private Random random;
   @Mock private TitleService titleService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
 
   @Mock
@@ -63,6 +65,16 @@ class SegmentAdjudicationServiceUnitTest {
       leagueRosterRepository;
 
   @Mock private LegacyService legacyService;
+  @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
+  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
@@ -73,6 +85,7 @@ class SegmentAdjudicationServiceUnitTest {
 
   @BeforeEach
   void setUp() {
+    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     adjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -80,10 +93,14 @@ class SegmentAdjudicationServiceUnitTest {
             feudResolutionService,
             feudService,
             titleService,
-            matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
+            factionService,
+            ringsideActionService,
+            ringsideAiService,
+            retirementService,
+            gameSettingService,
             random);
 
     wrestler1 = Wrestler.builder().build();
