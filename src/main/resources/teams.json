@@ -28,4 +28,10 @@
   "description": "A world-renowned duo from Australia, Cassie Lee and Jessie McKay bring a unique blend of comedic arrogance and tactical synergy. As multi-time tag team champions across multiple eras, they rely on their life-long friendship and a 'mental game' that leaves opponents both annoyed and defeated.",
   "wrestler1": "Cassie Lee",
   "wrestler2": "Jessie McKay"
+}, {
+  "name": "The Hurt Business",
+  "description": "Bobby Lashley, MVP, and Shelton Benjamin are a dominant faction that combines Lashley's raw power with MVP's strategic mind and Benjamin's technical prowess. They have held multiple championships across various promotions, using their collective strength and cunning to maintain their position at the top of the wrestling world.",
+  "wrestler1": "Bobby Lashley",
+  "wrestler2": "Shelton Benjamin",
+  "manager": "MVP"
 } ]
