@@ -128,6 +128,10 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Column(name = "heritage_tag")
   private String heritageTag;
 
+  @Column(name = "expansion_code", nullable = false)
+  @Builder.Default
+  private String expansionCode = "BASE_GAME";
+
   // ==================== CAMPAIGN ATTRIBUTES ====================
   @Column(name = "drive")
   @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
@@ -344,6 +348,9 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
     }
     if (gender == null) {
       gender = Gender.MALE;
+    }
+    if (expansionCode == null) {
+      expansionCode = "BASE_GAME";
     }
     if (alignment == null) {
       alignment =
