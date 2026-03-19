@@ -43,7 +43,7 @@ public class ExpansionService {
     List<Expansion> expansions = new ArrayList<>();
     ClassPathResource resource = new ClassPathResource("expansions.json");
     if (resource.exists()) {
-      try (var is = resource.getInputStream()) {
+      try (java.io.InputStream is = resource.getInputStream()) {
         expansions = objectMapper.readValue(is, new TypeReference<List<Expansion>>() {});
         for (Expansion expansion : expansions) {
           expansion.setEnabled(isExpansionEnabled(expansion.getCode()));

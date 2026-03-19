@@ -69,6 +69,7 @@ public class ExpansionManagementView extends VerticalLayout {
 
   private Checkbox createEnabledCheckbox(Expansion expansion) {
     Checkbox checkbox = new Checkbox(expansion.isEnabled());
+    checkbox.setId("expansion-toggle-" + expansion.getCode());
     checkbox.addValueChangeListener(
         event -> {
           expansionService.setExpansionEnabled(expansion.getCode(), event.getValue());
