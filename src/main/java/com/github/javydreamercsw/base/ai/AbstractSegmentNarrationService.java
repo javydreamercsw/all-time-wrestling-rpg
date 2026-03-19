@@ -133,6 +133,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
             + "Injuries should be mentioned if they might affect performance.\n\n");
 
     prompt.append(
+        "Use the 'hailingFrom' information in each wrestler's context to provide authentic"
+            + " introductions. Narrate the ring announcer or commentators specifying where the"
+            + " wrestler is from during their entrance or early in the match.\n\n");
+
+    prompt.append(
         "If arenaContext and locationContext are present, use the arena's name, description,"
             + " capacity, and environmental traits, as well as the location's cultural tags to"
             + " ground the narration in the specific venue and city. Describe the unique"

@@ -258,7 +258,7 @@ public class SegmentNarrationController {
       }
       return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
     } catch (Exception e) {
-      log.error("Error testing provider: " + provider, e);
+      log.error("Error testing provider: {}", provider, e);
       return ResponseEntity.internalServerError()
           .body(Map.of("error", "Unknown error occurred: " + e.getMessage()));
     }
@@ -277,6 +277,7 @@ public class SegmentNarrationController {
     rvd.setDescription(
         "The Whole F'n Show - High-flying ECW legend known for his laid-back attitude and"
             + " innovative offense");
+    rvd.setHailingFrom("Battle Creek, Michigan");
     MoveSet rvdMoves = new MoveSet();
     rvdMoves.setFinishers(
         Arrays.asList(
@@ -300,6 +301,7 @@ public class SegmentNarrationController {
     angle.setDescription(
         "Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate"
             + " amateur background");
+    angle.setHailingFrom("Pittsburgh, Pennsylvania");
     MoveSet angleMoves = new MoveSet();
     angleMoves.setFinishers(
         Arrays.asList(

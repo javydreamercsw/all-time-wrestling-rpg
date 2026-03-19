@@ -170,6 +170,7 @@ public interface SegmentNarrationService {
     private String alignment;
     private String tier;
     private String managerName;
+    private String hailingFrom;
     private MoveSet moveSet;
     private List<String> feudsAndHeat;
     private List<String> recentSegments;
