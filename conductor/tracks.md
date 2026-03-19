@@ -87,3 +87,8 @@
 
 ---
 
+- [ ] **Track: Enable expansion pack support for NPCs, assign MVP to Hurt Business and Colonel Mustafa to Rumble, and allow assigning managers to Teams and Factions.**
+*Link: [./tracks/npc_expansion_managers_20260319/](./tracks/npc_expansion_managers_20260319/)*
+
+---
+
