@@ -76,6 +76,11 @@
 *Link: [./archive/notion_sync_ui_details_20260227/plan.md](./archive/notion_sync_ui_details_20260227/plan.md)*
 *Status: Completed (2026-02-28)*
 
+### [x] Track: Allow grouping content by expansion packs
+
+*Link: [./archive/content_set_grouping_20260318/plan.md](./archive/content_set_grouping_20260318/plan.md)*
+*Status: Completed (2026-03-18)*
+
 ---
 
 ## Active Tracks
