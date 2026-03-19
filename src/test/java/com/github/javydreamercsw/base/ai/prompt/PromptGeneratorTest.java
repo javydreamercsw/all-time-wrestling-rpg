@@ -18,10 +18,9 @@ package com.github.javydreamercsw.base.ai.prompt;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -37,13 +36,10 @@ class PromptGeneratorTest {
     context.setSegmentType(type);
     context.setWrestlers(List.of());
 
-    ArenaContext arena = new ArenaContext();
-    arena.setName("Neon Serpent Dome");
-    context.setArenaContext(arena);
-
-    LocationContext location = new LocationContext();
-    location.setName("Neo-Tokyo");
-    context.setLocationContext(location);
+    VenueContext venue = new VenueContext();
+    venue.setName("Neon Serpent Dome");
+    venue.setLocation("Neo-Tokyo");
+    context.setVenue(venue);
 
     String prompt = generator.generateMatchNarrationPrompt(context);
 
@@ -67,13 +63,10 @@ class PromptGeneratorTest {
     type.setSegmentType("Singles Match");
     context.setSegmentType(type);
 
-    ArenaContext arena = new ArenaContext();
-    arena.setName("Neon Serpent Dome");
-    context.setArenaContext(arena);
-
-    LocationContext location = new LocationContext();
-    location.setName("Neo-Tokyo");
-    context.setLocationContext(location);
+    VenueContext venue = new VenueContext();
+    venue.setName("Neon Serpent Dome");
+    venue.setLocation("Neo-Tokyo");
+    context.setVenue(venue);
 
     String prompt = generator.generateSimplifiedMatchNarrationPrompt(context);
 

@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.base.ai;
 
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -27,6 +25,8 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeCont
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -339,36 +339,59 @@ public class SegmentNarrationController {
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
 
-    ArenaContext arena = new ArenaContext();
-    arena.setName("Madison Square Garden");
-    arena.setDescription("The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
-    arena.setCapacity(20000);
-    arena.setAlignmentBias("Neutral");
-    arena.setEnvironmentalTraits(Arrays.asList("Historic", "Electric", "Intimate"));
-    context.setArenaContext(arena);
+    List<Arena> allArenas = arenaService.findAll();
+    if (!allArenas.isEmpty()) {
+      Arena selectedArena = allArenas.get(new java.util.Random().nextInt(allArenas.size()));
 
-    LocationContext location = new LocationContext();
-    location.setName("New York City");
-    location.setDescription("The concrete jungle where dreams are made of");
-    location.setCulturalTags(Arrays.asList("USA", "Metropolis", "Traditional"));
-    context.setLocationContext(location);
+      VenueContext venue = new VenueContext();
+      venue.setName(selectedArena.getName());
+      venue.setDescription(selectedArena.getDescription());
+      venue.setLocation(selectedArena.getLocation().getName());
+      venue.setType("Wrestling Arena");
+      venue.setCapacity(selectedArena.getCapacity());
+      venue.setAlignmentBias(selectedArena.getAlignmentBias().getDisplayName());
+      venue.setEnvironmentalTraits(
+          new java.util.ArrayList<>(selectedArena.getEnvironmentalTraits()));
+      venue.setImageUrl(selectedArena.getImageUrl());
+      venue.setCulturalTags(
+          new java.util.ArrayList<>(selectedArena.getLocation().getCulturalTags()));
+      venue.setAtmosphere("Electric and historic - where legends are made");
+      venue.setSignificance("A key venue in the All Time Wrestling circuit.");
+      context.setVenue(venue);
+    } else {
+      // Fallback: try to at least get a random location if no arenas exist
+      List<Location> allLocations = locationService.findAll();
 
-    VenueContext venue = new VenueContext();
-    venue.setName("Madison Square Garden");
-    venue.setLocation("New York City, New York");
-    venue.setType("Indoor Arena");
-    venue.setCapacity(20000);
-    venue.setDescription("The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
-    venue.setAtmosphere("Electric and historic - where legends are made");
-    venue.setSignificance(
-        "The Mecca of professional wrestling, host to countless legendary segments");
-    venue.setNotableSegments(
-        Arrays.asList(
-            "Hulk Hogan vs Andre the Giant (1988)",
-            "Shawn Michaels vs Razor Ramon Ladder Segment (1994)",
-            "Stone Cold vs The Rock (1999)"));
-    context.setVenue(venue);
-    context.setAudience("Sold-out crowd of 20,000 with strong ECW contingent");
+      VenueContext venue = new VenueContext();
+      if (!allLocations.isEmpty()) {
+        Location selectedLocation =
+            allLocations.get(new java.util.Random().nextInt(allLocations.size()));
+        venue.setLocation(selectedLocation.getName());
+        venue.setCulturalTags(new java.util.ArrayList<>(selectedLocation.getCulturalTags()));
+      } else {
+        venue.setLocation("New York City");
+        venue.setCulturalTags(Arrays.asList("USA", "Metropolis", "Traditional"));
+      }
+
+      venue.setName("Madison Square Garden");
+      venue.setDescription(
+          "The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
+      venue.setCapacity(20000);
+      venue.setAlignmentBias("Neutral");
+      venue.setEnvironmentalTraits(Arrays.asList("Historic", "Electric", "Intimate"));
+      venue.setType("Indoor Arena");
+      venue.setAtmosphere("Electric and historic - where legends are made");
+      venue.setSignificance(
+          "The Mecca of professional wrestling, host to countless legendary segments");
+      venue.setNotableSegments(
+          Arrays.asList(
+              "Hulk Hogan vs Andre the Giant (1988)",
+              "Shawn Michaels vs Razor Ramon Ladder Segment (1994)",
+              "Stone Cold vs The Rock (1999)"));
+      context.setVenue(venue);
+    }
+
+    context.setAudience("Sold-out crowd with high energy and anticipation");
     context.setDeterminedOutcome(
         "Rob Van Dam wins the World Championship after hitting the Five-Star Frog Splash, ending"
             + " Kurt Angle's 6-month reign");
@@ -376,24 +399,6 @@ public class SegmentNarrationController {
         Arrays.asList(
             "Previous segment saw intense back-and-forth action with multiple near-falls...",
             "Last encounter ended in controversy when Angle used the ropes for leverage..."));
-
-    // Add sample Arena and Location Context
-    ArenaContext arenaContext = new ArenaContext();
-    arenaContext.setName("The Martian Dust-Bowl");
-    arenaContext.setDescription("A brutal, open-air pit carved into the Martian landscape.");
-    arenaContext.setCapacity(5000);
-    arenaContext.setAlignmentBias(
-        com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias.ANARCHIC
-            .getDisplayName());
-    arenaContext.setEnvironmentalTraits(Arrays.asList("dust-storms", "rugged-terrain"));
-    arenaContext.setImageUrl("https://example.com/red_sand_pit.jpg");
-    context.setArenaContext(arenaContext);
-
-    LocationContext locationContext = new LocationContext();
-    locationContext.setName("The Martian Dust-Bowl");
-    locationContext.setDescription("A rugged, red wasteland now home to daring prospectors.");
-    locationContext.setCulturalTags(Arrays.asList("frontier", "harsh", "low-gravity"));
-    context.setLocationContext(locationContext);
 
     return context;
   }
