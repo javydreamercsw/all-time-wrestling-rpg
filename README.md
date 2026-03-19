@@ -14,6 +14,8 @@ All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows 
 - [Notion Synchronization](#notion-synchronization)
 - [Development](#development)
 - [Running the Application](#running-the-application)
+- [Executable JAR](#executable-jar)
+- [Native Desktop Installers](#native-desktop-installers)
 - [Docker](#docker)
 	- [Prerequisites](#prerequisites)
 	- [Building the Docker Image](#building-the-docker-image)
@@ -179,6 +181,34 @@ To build the application in production mode, run:
 ./mvnw -Pproduction package
 ```
 
+This will produce an executable JAR in the `target/` directory.
+
+### Executable JAR
+
+The application can be run directly as a standalone executable JAR. This is the recommended way for most users as it includes an embedded Tomcat server.
+
+1.  **Build the JAR**:
+	```bash
+	./mvnw clean package -DskipTests
+	```
+2.  **Run the JAR**:
+	```bash
+	java -jar target/all-time-wrestling-rpg-*.jar
+	```
+
+The application will be available at `http://localhost:8080/atw-rpg`.
+
+### Native Desktop Installers
+
+For non-technical users, you can generate native installers (DMG for macOS, DEB for Linux, MSI for Windows) that bundle a minimal Java runtime.
+
+1.  **Build the Installer**:
+	```bash
+	./mvnw clean package -Pproduction,desktop -DskipTests
+	```
+2.  **Find the Installer**:
+	The generated installer will be located in `target/dist/`.
+
 ### Docker
 
 This project can be built and run using Docker.
@@ -244,7 +274,7 @@ You can also deploy the application to a standalone Tomcat server.
 1.  **Build the .war file**:
 
 	```bash
-	./mvnw -Pproduction package
+	./mvnw clean package -Pproduction,war -DskipTests
 	```
 
 2.  **Deploy the .war file**:

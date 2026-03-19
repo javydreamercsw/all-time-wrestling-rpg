@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.sync.parallel;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
 import java.util.ArrayList;
@@ -39,12 +40,16 @@ public class ParallelSyncOrchestrator {
 
   private final NotionSyncServicesManager notionSyncServicesManager;
   private final EntitySyncConfiguration entityConfig;
+  private final SyncServiceDependencies syncServiceDependencies;
 
   @Autowired
   public ParallelSyncOrchestrator(
-      NotionSyncServicesManager notionSyncServicesManager, EntitySyncConfiguration entityConfig) {
+      NotionSyncServicesManager notionSyncServicesManager,
+      EntitySyncConfiguration entityConfig,
+      SyncServiceDependencies syncServiceDependencies) {
     this.notionSyncServicesManager = notionSyncServicesManager;
     this.entityConfig = entityConfig;
+    this.syncServiceDependencies = syncServiceDependencies;
   }
 
   /**
@@ -80,6 +85,11 @@ public class ParallelSyncOrchestrator {
     String operationId = baseOperationId != null ? baseOperationId : UUID.randomUUID().toString();
     log.info("🚀 Starting parallel entity synchronization with operation ID: {}", operationId);
 
+    if (!syncServiceDependencies.getSyncLockService().acquireLock(operationId)) {
+      log.warn("❌ Parallel sync rejected: another synchronization is in progress.");
+      return new ParallelSyncResult(new ArrayList<>(), 0, false, "Sync already in progress");
+    }
+
     long startTime = System.currentTimeMillis();
 
     // Determine optimal thread pool size based on enabled entities
@@ -114,6 +124,7 @@ public class ParallelSyncOrchestrator {
       return new ParallelSyncResult(
           new ArrayList<>(), System.currentTimeMillis() - startTime, false, e.getMessage());
     } finally {
+      syncServiceDependencies.getSyncLockService().releaseLock(operationId);
       shutdownExecutor(executor);
     }
   }

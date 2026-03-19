@@ -180,20 +180,21 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
 
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
-        "Handicap Match", "Handicap segment with uneven teams", false, BumpAddition.NONE);
+        "Handicap Match", "Handicap segment with uneven teams", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Tag Team Championship", "Tag Team Championship Match", false, BumpAddition.NONE);
+        "Tag Team Championship", "Tag Team Championship Match", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Test Match", "Generic Test Match for various scenarios", false, BumpAddition.NONE);
+        "Test Match", "Generic Test Match for various scenarios", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "3v2 Elimination", "3 vs 2 Elimination Match", false, BumpAddition.NONE);
+        "3v2 Elimination", "3 vs 2 Elimination Match", false, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
         "Singles Match via Team Interface",
         "Singles Match resolved via Team Interface",
         false,
+        false,
         BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Tag Team Match", "Tag Team Match", false, BumpAddition.NONE);
+        "Tag Team Match", "Tag Team Match", false, false, BumpAddition.NONE);
 
     // Create test show
     ShowType showType =

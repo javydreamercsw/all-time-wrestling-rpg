@@ -37,12 +37,14 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -184,6 +186,47 @@ public class FactionListView extends Main {
                     : "")
         .setHeader("Formed Date")
         .setSortable(true);
+
+    factionGrid
+        .addComponentColumn(
+            faction -> {
+              int affinity = faction.getAffinity();
+              Span badge = new Span();
+              badge.getElement().getThemeList().add("badge");
+
+              String level;
+              String description;
+              if (affinity >= 100) {
+                level = "MAX";
+                description = "Legendary Chemistry: All synergies active!";
+                badge.getElement().getThemeList().add("success");
+              } else if (affinity >= 80) {
+                level = "LVL 4";
+                description = "Momentum Synergy: Heat carries over between members.";
+                badge.getElement().getThemeList().add("success");
+              } else if (affinity >= 60) {
+                level = "LVL 3";
+                description = "Resilience Synergy: Bonus resilience when partners are present.";
+                badge.getElement().getThemeList().add("success");
+              } else if (affinity >= 40) {
+                level = "LVL 2";
+                description = "Finisher Synergy: +10% Tag Team maneuver damage.";
+              } else if (affinity >= 20) {
+                level = "LVL 1";
+                description = "Stamina Synergy: +5 Stamina recovery on tags.";
+              } else {
+                level = "NONE";
+                description = "No synergy yet. Win matches together to build affinity.";
+                badge.getElement().getThemeList().add("contrast");
+              }
+
+              badge.setText(level + " (" + affinity + "%)");
+              Tooltip.forComponent(badge).setText(description);
+              return badge;
+            })
+        .setHeader("Synergy")
+        .setSortable(true)
+        .setComparator(Comparator.comparingInt(Faction::getAffinity));
 
     // Actions column
     factionGrid
@@ -426,6 +469,25 @@ public class FactionListView extends Main {
                 + (loadedFaction.getLeader() != null
                     ? loadedFaction.getLeader().getName()
                     : "No Leader")));
+
+    // Synergy info in View dialog
+    int affinity = loadedFaction.getAffinity();
+    String synergyDesc;
+    if (affinity >= 100) {
+      synergyDesc = "MAX - Legendary Chemistry: All synergies active!";
+    } else if (affinity >= 80) {
+      synergyDesc = "LVL 4 - Momentum Synergy: Heat carries over between members.";
+    } else if (affinity >= 60) {
+      synergyDesc = "LVL 3 - Resilience Synergy: Bonus resilience when partners are present.";
+    } else if (affinity >= 40) {
+      synergyDesc = "LVL 2 - Finisher Synergy: +10% Tag Team maneuver damage.";
+    } else if (affinity >= 20) {
+      synergyDesc = "LVL 1 - Stamina Synergy: +5 Stamina recovery on tags.";
+    } else {
+      synergyDesc = "None - Win matches together to build affinity.";
+    }
+    basicInfo.add(new Div("Affinity: " + affinity + "%"));
+    basicInfo.add(new Div("Synergy Level: " + synergyDesc));
 
     if (loadedFaction.getFormedDate() != null) {
       basicInfo.add(

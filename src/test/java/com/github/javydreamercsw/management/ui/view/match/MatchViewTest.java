@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -78,6 +79,20 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private PromoService promoService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      ringsideActionService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      ringsideActionDataService;
+
+  @Mock private TeamService teamService;
+
   private MatchView matchView;
 
   @BeforeEach
@@ -96,7 +111,11 @@ class MatchViewTest extends AbstractViewTest {
             matchFulfillmentService,
             promoService,
             commentaryTeamRepository,
-            narrationParserService);
+            narrationParserService,
+            ringsideActionService,
+            ringsideAiService,
+            ringsideActionDataService,
+            teamService);
   }
 
   @Test
@@ -134,7 +153,7 @@ class MatchViewTest extends AbstractViewTest {
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
-    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     when(wrestlerService.findByIdWithInjuries(1L)).thenReturn(Optional.of(wrestler1));
     when(wrestlerService.findByIdWithInjuries(2L)).thenReturn(Optional.of(wrestler2));
 
@@ -187,7 +206,7 @@ class MatchViewTest extends AbstractViewTest {
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.isAdmin()).thenReturn(false);
     when(userDetails.getWrestler()).thenReturn(wrestler1);
-    when(segmentService.findByIdWithShow(1L)).thenReturn(Optional.of(segment));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));

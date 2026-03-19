@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -65,6 +66,7 @@ class ShowServiceTest {
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private LegacyService legacyService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private ArenaRepository arenaRepository;
 
   @Mock
   private com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository
@@ -85,10 +87,10 @@ class ShowServiceTest {
     showService =
         new ShowService(
             showRepository,
-            null, // ShowTypeRepository
-            null, // SeasonRepository
-            null, // ShowTemplateRepository
-            null, // LeagueRepository
+            null,
+            null,
+            null,
+            null,
             java.time.Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
@@ -99,7 +101,8 @@ class ShowServiceTest {
             commentaryTeamRepository,
             newsGenerationService,
             legacyService,
-            securityUtils);
+            securityUtils,
+            arenaRepository);
     show = new Show();
     show.setId(1L);
 

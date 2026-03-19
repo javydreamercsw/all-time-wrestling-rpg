@@ -48,7 +48,7 @@ class ShowServiceIT extends ManagementIntegrationTest {
 
     // Create a new show, should evict the cache
     showService.createShow(
-        "Test Show", "Test Show", showType.getId(), null, null, null, null, null);
+        "Test Show", "Test Show", showType.getId(), null, null, null, null, null, null);
 
     // Second call, should hit the repository again
     showService.findAll();

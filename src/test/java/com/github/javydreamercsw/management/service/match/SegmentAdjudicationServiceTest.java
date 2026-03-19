@@ -16,20 +16,22 @@
 */
 package com.github.javydreamercsw.management.service.match;
 
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -59,7 +61,6 @@ class SegmentAdjudicationServiceTest {
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
-  @Mock private MatchRewardService matchRewardService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
 
   @Mock
@@ -67,11 +68,22 @@ class SegmentAdjudicationServiceTest {
       leagueRosterRepository;
 
   @Mock private LegacyService legacyService;
+  @Mock private FactionService factionService;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
+  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
   void setUp() {
+    lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -79,10 +91,14 @@ class SegmentAdjudicationServiceTest {
             feudResolutionService,
             feudService,
             titleService,
-            matchRewardService,
             matchFulfillmentRepository,
             leagueRosterRepository,
             legacyService,
+            factionService,
+            ringsideActionService,
+            ringsideAiService,
+            retirementService,
+            gameSettingService,
             random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
@@ -97,13 +113,25 @@ class SegmentAdjudicationServiceTest {
   }
 
   @Test
-  void testProcessRewardsCalled() {
-    SegmentRule rule = new SegmentRule();
-    rule.setBumpAddition(BumpAddition.WINNERS);
-    when(segment.getSegmentRules()).thenReturn(List.of(rule));
+  void testAffinityGainOnVictory() {
+    com.github.javydreamercsw.management.domain.faction.Faction faction =
+        mock(com.github.javydreamercsw.management.domain.faction.Faction.class);
+    when(faction.getId()).thenReturn(100L);
+
+    Wrestler w1 = mock(Wrestler.class);
+    Wrestler w2 = mock(Wrestler.class);
+    when(w1.getFaction()).thenReturn(faction);
+    when(w2.getFaction()).thenReturn(faction);
+    when(w1.getId()).thenReturn(10L);
+    when(w2.getId()).thenReturn(11L);
+
+    when(segment.getWrestlers()).thenReturn(List.of(w1, w2, loser));
+    when(segment.getWinners()).thenReturn(List.of(w1, w2));
+    when(segment.isMainEvent()).thenReturn(false);
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(matchRewardService, times(1)).processRewards(segment, 1.0);
+    // Calculation: (2-1) [participation] + 2 [victory bonus] = 3
+    verify(factionService).addAffinity(100L, 3);
   }
 }
