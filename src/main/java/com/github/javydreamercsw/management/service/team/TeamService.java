@@ -66,6 +66,14 @@ public class TeamService {
                 team ->
                     enabledExpansions.contains(team.getWrestler1().getExpansionCode())
                         && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+            .peek(
+                team -> {
+                  // Hide manager if their expansion is disabled
+                  if (team.getManager() != null
+                      && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                    team.setManager(null);
+                  }
+                })
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
@@ -267,49 +275,130 @@ public class TeamService {
             team ->
                 enabledExpansions.contains(team.getWrestler1().getExpansionCode())
                     && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .peek(
+            team -> {
+              // Hide manager if their expansion is disabled
+              if (team.getManager() != null
+                  && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                team.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
+  }
+
+  @org.springframework.context.event.EventListener
+  public void onExpansionToggled(
+      com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
+    log.info("Expansion '{}' toggled, clear team caches if any.", event.getExpansionCode());
   }
 
   /** Get teams by faction. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getTeamsByFaction(Faction faction) {
-    return teamRepository.findByFaction(faction);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository.findByFaction(faction).stream()
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .peek(
+            team -> {
+              if (team.getManager() != null
+                  && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                team.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /** Get teams where a wrestler is a member. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getTeamsByWrestler(Wrestler wrestler) {
-    return teamRepository.findByWrestler(wrestler);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository.findByWrestler(wrestler).stream()
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .peek(
+            team -> {
+              if (team.getManager() != null
+                  && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                team.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /** Get active teams where a wrestler is a member. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getActiveTeamsByWrestler(Wrestler wrestler) {
-    return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE).stream()
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .peek(
+            team -> {
+              if (team.getManager() != null
+                  && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                team.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /** Find team by both wrestlers. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<Team> findTeamByWrestlers(Wrestler wrestler1, Wrestler wrestler2) {
-    return teamRepository.findByBothWrestlers(wrestler1, wrestler2);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository
+        .findByBothWrestlers(wrestler1, wrestler2)
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .map(
+            team -> {
+              if (team.getManager() != null
+                  && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                team.setManager(null);
+              }
+              return team;
+            });
   }
 
   /** Find active team by both wrestlers. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<Team> findActiveTeamByWrestlers(Wrestler wrestler1, Wrestler wrestler2) {
-    return teamRepository.findActiveTeamByBothWrestlers(wrestler1, wrestler2);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return teamRepository
+        .findActiveTeamByBothWrestlers(wrestler1, wrestler2)
+        .filter(
+            team ->
+                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
+                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .map(
+            team -> {
+              if (team.getManager() != null
+                  && !enabledExpansions.contains(team.getManager().getExpansionCode())) {
+                team.setManager(null);
+              }
+              return team;
+            });
   }
 
   /** Count active teams. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public long countActiveTeams() {
-    return teamRepository.countByStatus(TeamStatus.ACTIVE);
+    return getActiveTeams().size();
   }
 
   // ==================== BUSINESS OPERATIONS ====================

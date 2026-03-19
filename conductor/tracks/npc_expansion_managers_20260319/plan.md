@@ -1,16 +1,16 @@
 # Implementation Plan: NPC Expansion and Manager Support
 
-## Phase 1: Data Model and Schema Updates
+## Phase 1: Data Model and Schema Updates [checkpoint: 5469eb1]
 
 * **Objective:** Update the JSON data structures and database schema to support NPC expansions and manager assignments.
-* - [ ] Task: Update JSON Schemas for NPCs, Teams, and Factions
-  - [ ] Add `set` field to all objects in `src/main/resources/npcs.json` (Default to "BASE_GAME").
-  - [ ] Assign **MVP** to `HURT_BUSINESS` and **Colonel Mustafa** to `RUMBLE`.
-  - [ ] Add optional `manager` field to `src/main/resources/teams.json` and `src/main/resources/factions.json`.
-* - [ ] Task: Database Migrations
-  - [ ] Create a migration to add `expansion_code` column to the `npc` table.
-  - [ ] Create a migration to add `manager_id` column to the `team` and `faction` tables.
-* - [ ] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
+* - [x] Task: Update JSON Schemas for NPCs, Teams, and Factions
+  - [x] Add `set` field to all objects in `src/main/resources/npcs.json` (Default to "BASE_GAME").
+  - [x] Assign **MVP** to `HURT_BUSINESS` and **Colonel Mustafa** to `RUMBLE`.
+  - [x] Add optional `manager` field to `src/main/resources/teams.json` and `src/main/resources/factions.json`.
+* - [x] Task: Database Migrations
+  - [x] Create a migration to add `expansion_code` column to the `npc` table.
+  - [x] Create a migration to add `manager_id` column to the `team` and `faction` tables.
+* - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
 
 ## Phase 2: Backend Logic and Filtering
 
