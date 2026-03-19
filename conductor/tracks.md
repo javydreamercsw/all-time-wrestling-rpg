@@ -82,7 +82,4 @@
 
 ---
 
-- [x] **Track: Allow grouping content as part from the base game or an extension to allow users to enable/disable wrestlers, teams, etc based on the set they are from.**
-  *Link: [./tracks/content_set_grouping_20260318/](./tracks/content_set_grouping_20260318/)*
-  *Status: Completed (2026-03-18)*
 
