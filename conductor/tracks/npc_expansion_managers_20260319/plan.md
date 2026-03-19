@@ -1,6 +1,6 @@
 # Implementation Plan: NPC Expansion and Manager Support
 
-## Phase 1: Data Model and Schema Updates [checkpoint: 5469eb1]
+## Phase 1: Data Model and Schema Updates [checkpoint: 6b1d2ad]
 
 * **Objective:** Update the JSON data structures and database schema to support NPC expansions and manager assignments.
 * - [x] Task: Update JSON Schemas for NPCs, Teams, and Factions
@@ -12,18 +12,18 @@
   - [x] Create a migration to add `manager_id` column to the `team` and `faction` tables.
 * - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Model' (Protocol in workflow.md)
 
-## Phase 2: Backend Logic and Filtering
+## Phase 2: Backend Logic and Filtering [checkpoint: 6b1d2ad]
 
 * **Objective:** Implement the filtering logic for NPCs and manager assignments.
-* - [ ] Task: Update NPC and Content Loading Logic
-  - [ ] Update `NPC` entity and `NpcImportDTO` to support `expansionCode`.
-  - [ ] Update `DataInitializer` to map NPC `set` and Team/Faction `manager` assignments during sync.
-  - [ ] Implement expansion-aware filtering in `NPCService`.
-  - [ ] Add `ExpansionToggledEvent` listener to `NPCService` for cache eviction.
-* - [ ] Task: Update Team and Faction Domain and Services
-  - [ ] Update `Team` and `Faction` entities to include the `manager` relationship.
-  - [ ] Implement logic in `TeamService` and `FactionService` to hide assigned managers if their expansion is disabled.
-* - [ ] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
+* - [x] Task: Update NPC and Content Loading Logic
+  - [x] Update `NPC` entity and `NpcDTO` to support `expansionCode`.
+  - [x] Update `DataInitializer` to map NPC `set` and Team/Faction `manager` assignments during sync.
+  - [x] Implement expansion-aware filtering in `NPCService`.
+  - [x] Add `ExpansionToggledEvent` listener to `NPCService` for cache eviction.
+* - [x] Task: Update Team and Faction Domain and Services
+  - [x] Update `Team` and `Faction` entities to include the `manager` relationship.
+  - [x] Implement logic in `TeamService` and `FactionService` to hide assigned managers if their expansion is disabled.
+* - [~] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
 
 ## Phase 3: UI Integration
 
