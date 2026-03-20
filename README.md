@@ -329,37 +329,43 @@ EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key>
-    <string>com.atwrpg.relink-tomcat</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/opt/homebrew/etc/tomcat/relink.sh</string>
-    </array>
-    <key>WatchPaths</key>
-    <array>
-        <string>/opt/homebrew/opt/tomcat</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
+	<key>Label</key>
+	<string>com.atwrpg.relink-tomcat</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/opt/homebrew/etc/tomcat/relink.sh</string>
+	</array>
+	<key>WatchPaths</key>
+	<array>
+		<string>/opt/homebrew/opt/tomcat</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
 </dict>
 </plist>' > ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
 
 	launchctl load ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
 	```
 
-	**Example `setenv.sh` (Standard Installation):**
+4.  **Increase Upload Limits (Optional)**:
 
-	```bash
-	#!/bin/bash
-	# Use a file-based database for persistence
-	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
-	export SPRING_DATASOURCE_USERNAME="sa"
-	export SPRING_DATASOURCE_PASSWORD=""
-	export SPRING_H2_CONSOLE_ENABLED="true"
+	By default, Tomcat's Manager application limits uploads to 50 MiB. If your `.war` file exceeds this size (e.g., the 148 MiB full build), you must increase the limit:
+
+	1. Open the Manager app's `web.xml` file:
+	   - **Homebrew**: `/opt/homebrew/opt/tomcat/libexec/webapps/manager/WEB-INF/web.xml`
+	   - **Standard**: `webapps/manager/WEB-INF/web.xml`
+	2. Locate the `<multipart-config>` section and update the following values (e.g., to 250 MiB):
+	```xml
+	<multipart-config>
+	  <!-- 250 MiB max -->
+	  <max-file-size>262144000</max-file-size>
+	  <max-request-size>262144000</max-request-size>
+	  <file-size-threshold>0</file-size-threshold>
+	</multipart-config>
 	```
-	Replace the placeholder values with your actual Notion token and desired database path. AI settings can also be configured here via environment variables (e.g., `AI_GEMINI_API_KEY`).
+	3. Restart Tomcat to apply the changes.
 
-4.  **Start Tomcat**:
+5.  **Start Tomcat**:
 
 	Run `startup.sh` or `startup.bat` from the `bin` directory of your Tomcat installation, or use Homebrew:
 	```bash
