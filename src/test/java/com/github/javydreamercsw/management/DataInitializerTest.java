@@ -37,6 +37,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -503,5 +504,26 @@ class DataInitializerTest {
       assertNotNull(arenas);
       assertFalse(arenas.isEmpty());
     }
+  }
+
+  @Test
+  void testSyncNpcsFromFile() throws IOException {
+    // Given
+    Npc npc = new Npc();
+    npc.setName("Mock NPC");
+    when(npcService.findByName(anyString())).thenReturn(null);
+    when(npcService.save(any(Npc.class))).thenAnswer(i -> i.getArguments()[0]);
+
+    // When
+    dataInitializer.syncNpcsFromFile();
+
+    // Then
+    ArgumentCaptor<Npc> npcCaptor = ArgumentCaptor.forClass(Npc.class);
+    verify(npcService, atLeastOnce()).save(npcCaptor.capture());
+
+    Npc savedNpc =
+        npcCaptor.getAllValues().stream().filter(n -> n.getName() != null).findFirst().orElse(null);
+
+    assertNotNull(savedNpc);
   }
 }

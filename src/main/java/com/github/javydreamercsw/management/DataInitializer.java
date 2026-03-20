@@ -1060,7 +1060,7 @@ public class DataInitializer implements Initializable {
     }
   }
 
-  private void syncNpcsFromFile() {
+  void syncNpcsFromFile() {
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
       log.info("Loading npcs from file: {}", resource.getPath());
