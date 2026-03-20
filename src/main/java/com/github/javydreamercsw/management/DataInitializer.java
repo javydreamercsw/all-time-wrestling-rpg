@@ -1075,6 +1075,9 @@ public class DataInitializer implements Initializable {
           }
           npc.setDescription(dto.getDescription());
           npc.setNpcType(dto.getType());
+          if (dto.getSet() != null) {
+            npc.setExpansionCode(dto.getSet());
+          }
           if (dto.getAwareness() != null) {
             npcService.setAwareness(npc, dto.getAwareness());
           }

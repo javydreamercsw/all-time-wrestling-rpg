@@ -16,23 +16,42 @@
 */
 package com.github.javydreamercsw.management.service.npc;
 
+import static com.github.javydreamercsw.management.config.CacheConfig.NPCS_CACHE;
+
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NpcService {
 
   private final NpcRepository npcRepository;
+  private final ExpansionService expansionService;
 
   public static final String ATTRIBUTE_AWARENESS = "awareness";
 
   public Npc findByName(String name) {
     return npcRepository.findByName(name).orElse(null);
+  }
+
+  public java.util.Optional<Npc> getByName(String name) {
+    return npcRepository.findByName(name);
   }
 
   public Npc save(Npc npc) {
@@ -47,17 +66,43 @@ public class NpcService {
     return npcRepository.findById(id).orElse(null);
   }
 
-  public java.util.List<Npc> findAllByType(String npcType) {
-    return npcRepository.findAllByNpcType(npcType);
+  public List<Npc> findAllByType(String npcType) {
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return npcRepository.findAllByNpcType(npcType).stream()
+        .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
-  public java.util.List<Npc> findAll() {
-    return npcRepository.findAll();
+  @Cacheable(value = NPCS_CACHE)
+  public List<Npc> findAll() {
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return npcRepository.findAll().stream()
+        .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
-  public org.springframework.data.domain.Page<Npc> findAll(
-      org.springframework.data.domain.Pageable pageable) {
-    return npcRepository.findAll(pageable);
+  public Page<Npc> findAll(Pageable pageable) {
+    List<Npc> allFiltered = findAll();
+
+    if (pageable.isUnpaged()) {
+      return new PageImpl<>(allFiltered, pageable, allFiltered.size());
+    }
+
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+
+    List<Npc> pageContent = new java.util.ArrayList<>();
+    if (start < allFiltered.size()) {
+      pageContent = allFiltered.subList(start, end);
+    }
+
+    return new PageImpl<>(pageContent, pageable, allFiltered.size());
+  }
+
+  @EventListener
+  @CacheEvict(value = NPCS_CACHE, allEntries = true)
+  public void onExpansionToggled(ExpansionToggledEvent event) {
+    log.info("Expansion '{}' toggled, evicting NPC cache.", event.getExpansionCode());
   }
 
   public void delete(Npc npc) {

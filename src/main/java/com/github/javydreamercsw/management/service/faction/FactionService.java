@@ -59,6 +59,13 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
   }
 
@@ -79,6 +86,13 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
   }
 
@@ -92,6 +106,13 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
   }
 
@@ -108,6 +129,13 @@ public class FactionService {
                 faction ->
                     faction.getMembers().stream()
                         .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+            .peek(
+                faction -> {
+                  if (faction.getManager() != null
+                      && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                    faction.setManager(null);
+                  }
+                })
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
@@ -165,7 +193,21 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              // Hide manager if their expansion is disabled
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
+  }
+
+  @org.springframework.context.event.EventListener
+  public void onExpansionToggled(
+      com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
+    log.info("Expansion '{}' toggled, clear faction caches if any.", event.getExpansionCode());
   }
 
   /** Create a new faction. */
