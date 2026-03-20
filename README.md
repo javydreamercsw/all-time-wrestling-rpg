@@ -308,8 +308,44 @@ EOF
 	ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
 	```
 
-	**Note:** You will need to re-run the link command (step 2) after every Homebrew upgrade (`brew upgrade tomcat`), as Homebrew installs new versions into fresh directories. You can create a shell alias to make this easier:
-	`alias fix-tomcat='ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh && brew services restart tomcat'`
+	**Note (Automating Homebrew Updates):** To automatically re-establish the symlink and restart Tomcat whenever Homebrew updates the server, you can set up a background LaunchAgent:
+
+	1. Create a relink script:
+	```bash
+	sudo mkdir -p /opt/homebrew/etc/tomcat
+	cat <<EOF > /opt/homebrew/etc/tomcat/relink.sh
+#!/bin/bash
+# Re-establish the symlink after a Homebrew upgrade
+ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
+# Restart the service to apply changes
+/opt/homebrew/bin/brew services restart tomcat
+EOF
+	chmod +x /opt/homebrew/etc/tomcat/relink.sh
+	```
+
+	2. Create and load the LaunchAgent:
+	```bash
+	printf '<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.atwrpg.relink-tomcat</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/etc/tomcat/relink.sh</string>
+    </array>
+    <key>WatchPaths</key>
+    <array>
+        <string>/opt/homebrew/opt/tomcat</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>' > ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+
+	launchctl load ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+	```
 
 	**Example `setenv.sh` (Standard Installation):**
 
