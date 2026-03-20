@@ -23,18 +23,18 @@
 * - [x] Task: Update Team and Faction Domain and Services
   - [x] Update `Team` and `Faction` entities to include the `manager` relationship.
   - [x] Implement logic in `TeamService` and `FactionService` to hide assigned managers if their expansion is disabled.
-* - [~] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
+* - [x] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
 
-## Phase 3: UI Integration
+## Phase 3: UI Integration [checkpoint: 6b1d2ad]
 
 * **Objective:** Enhance the user interface to support manager assignments and filtered views.
-* - [ ] Task: Update Management Dialogs
-  - [ ] Update `TeamFormDialog` to include an NPC dropdown for manager selection (filtered by expansion).
-  - [ ] Update Faction creation and edit dialogs to include a manager dropdown.
-* - [ ] Task: Update Views and Components
-  - [ ] Display assigned managers in the Roster, Team list, and Faction views.
-  - [ ] Ensure all manager selection dropdowns across the app respect expansion enablement.
-* - [ ] Task: Conductor - User Manual Verification 'Phase 3: UI Integration' (Protocol in workflow.md)
+* - [x] Task: Update Management Dialogs
+  - [x] Update `TeamFormDialog` to include an NPC dropdown for manager selection (filtered by expansion).
+  - [x] Update Faction creation and edit dialogs to include a manager dropdown.
+* - [x] Task: Update Views and Components
+  - [x] Display assigned managers in the Roster, Team list, and Faction views.
+  - [x] Ensure all manager selection dropdowns across the app respect expansion enablement.
+* - [~] Task: Conductor - User Manual Verification 'Phase 3: UI Integration' (Protocol in workflow.md)
 
 ## Phase 4: Final Integration and Verification
 

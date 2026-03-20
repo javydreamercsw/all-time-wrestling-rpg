@@ -54,9 +54,9 @@ public class CacheConfig {
   public static final String WRESTLER_STATS_CACHE = "wrestlerStats";
   public static final String CALENDAR_CACHE = "calendar";
   public static final String NOTION_SYNC_CACHE = "notionSync";
-  public static final String NOTION_PAGES_CACHE = "notionPages"; // Cache for Notion pages
-  public static final String NOTION_QUERIES_CACHE =
-      "notionQueries"; // Cache for Notion database queries
+  public static final String NOTION_PAGES_CACHE = "notionPages";
+  public static final String NOTION_QUERIES_CACHE = "notionQueries";
+  public static final String NPCS_CACHE = "npcs";
 
   /**
    * Configures the cache manager with optimized cache settings. Uses Caffeine for thread-safe
@@ -83,7 +83,8 @@ public class CacheConfig {
             CALENDAR_CACHE,
             NOTION_SYNC_CACHE,
             NOTION_PAGES_CACHE,
-            NOTION_QUERIES_CACHE));
+            NOTION_QUERIES_CACHE,
+            NPCS_CACHE));
 
     // Default spec for all caches
     cacheManager.setCaffeine(

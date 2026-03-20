@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.npc;
 
+import static com.github.javydreamercsw.management.config.CacheConfig.NPCS_CACHE;
+
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -41,8 +43,6 @@ public class NpcService {
 
   private final NpcRepository npcRepository;
   private final ExpansionService expansionService;
-
-  public static final String NPC_CACHE = "npcs";
 
   public static final String ATTRIBUTE_AWARENESS = "awareness";
 
@@ -73,7 +73,7 @@ public class NpcService {
         .collect(Collectors.toList());
   }
 
-  @Cacheable(value = NPC_CACHE)
+  @Cacheable(value = NPCS_CACHE)
   public List<Npc> findAll() {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return npcRepository.findAll().stream()
@@ -100,7 +100,7 @@ public class NpcService {
   }
 
   @EventListener
-  @CacheEvict(value = NPC_CACHE, allEntries = true)
+  @CacheEvict(value = NPCS_CACHE, allEntries = true)
   public void onExpansionToggled(ExpansionToggledEvent event) {
     log.info("Expansion '{}' toggled, evicting NPC cache.", event.getExpansionCode());
   }
