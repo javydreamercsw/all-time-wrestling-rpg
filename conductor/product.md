@@ -25,9 +25,9 @@ The core gameplay mechanics and features of All Time Wrestling RPG include:
 * **League Management:** Multiplayer-focused league system supporting snake drafts, automated standings, match reporting, and season history tracking.
 * **Interactive Promos:** Role-playing elements where players can cut promos to influence feud heat, alignment, and match hype, with AI providing dynamic feedback and rewards.
 * **Match Narration Feedback:** Players can rate and provide specific feedback on AI-generated match narration to train the system for better future storytelling.
-* **On-Demand Theme Switching:** User-configurable UI themes allowing instant switching between Light, Dark, and custom color presets.
-* **Expansion Pack Management:** Administrative interface to group game content (wrestlers, teams, factions) into expansions that can be toggled on or off to customize the roster.
-* **AI Image Generation:** Integrated generation of wrestler, NPC, and show template visual assets using local or remote AI models.
+*   **On-Demand Theme Switching:** User-configurable UI themes allowing instant switching between Light, Dark, and custom color presets.
+*   **Expansion Pack Management:** Administrative interface to group game content (wrestlers, NPCs, teams, factions) into expansions that can be toggled on or off to customize the active roster and staff.
+*   **AI Image Generation:** Integrated generation of wrestler, NPC, and show template visual assets using local or remote AI models.
 
 ## Technical Considerations
 
