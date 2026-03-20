@@ -352,15 +352,15 @@ EOF
 	By default, Tomcat's Manager application limits uploads to 50 MiB. If your `.war` file exceeds this size (e.g., the 148 MiB full build), you must increase the limit:
 
 	1. Open the Manager app's `web.xml` file:
-	   - **Homebrew**: `/opt/homebrew/opt/tomcat/libexec/webapps/manager/WEB-INF/web.xml`
-	   - **Standard**: `webapps/manager/WEB-INF/web.xml`
+	- **Homebrew**: `/opt/homebrew/opt/tomcat/libexec/webapps/manager/WEB-INF/web.xml`
+	- **Standard**: `webapps/manager/WEB-INF/web.xml`
 	2. Locate the `<multipart-config>` section and update the following values (e.g., to 250 MiB):
 	```xml
 	<multipart-config>
-	  <!-- 250 MiB max -->
-	  <max-file-size>262144000</max-file-size>
-	  <max-request-size>262144000</max-request-size>
-	  <file-size-threshold>0</file-size-threshold>
+	<!-- 250 MiB max -->
+	<max-file-size>262144000</max-file-size>
+	<max-request-size>262144000</max-request-size>
+	<file-size-threshold>0</file-size-threshold>
 	</multipart-config>
 	```
 	3. Restart Tomcat to apply the changes.
