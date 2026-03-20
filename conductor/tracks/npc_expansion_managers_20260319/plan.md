@@ -25,16 +25,15 @@
   - [x] Implement logic in `TeamService` and `FactionService` to hide assigned managers if their expansion is disabled.
 * - [x] Task: Conductor - User Manual Verification 'Phase 2: Backend Logic' (Protocol in workflow.md)
 
-## Phase 3: UI Integration [checkpoint: 6b1d2ad]
-
-* **Objective:** Enhance the user interface to support manager assignments and filtered views.
-* - [x] Task: Update Management Dialogs
-  - [x] Update `TeamFormDialog` to include an NPC dropdown for manager selection (filtered by expansion).
-  - [x] Update Faction creation and edit dialogs to include a manager dropdown.
-* - [x] Task: Update Views and Components
-  - [x] Display assigned managers in the Roster, Team list, and Faction views.
-  - [x] Ensure all manager selection dropdowns across the app respect expansion enablement.
-* - [~] Task: Conductor - User Manual Verification 'Phase 3: UI Integration' (Protocol in workflow.md)
+## Phase 3: UI Integration [checkpoint: 67f894f]
+*   **Objective:** Enhance the user interface to support manager assignments and filtered views.
+*   - [x] Task: Update Management Dialogs
+    - [x] Update `TeamFormDialog` to include an NPC dropdown for manager selection (filtered by expansion).
+    - [x] Update Faction creation and edit dialogs to include a manager dropdown.
+*   - [x] Task: Update Views and Components
+    - [x] Display assigned managers in the Roster, Team list, and Faction views.
+    - [x] Ensure all manager selection dropdowns across the app respect expansion enablement.
+*   - [x] Task: Conductor - User Manual Verification 'Phase 3: UI Integration' (Protocol in workflow.md)
 
 ## Phase 4: Final Integration and Verification
 
