@@ -403,16 +403,16 @@
   "name": "Cassie Lee",
   "alignment": "HEEL",
   "deckSize": 15,
-  "startingHealth": 15,
-  "lowHealth": 0,
+  "startingHealth": 14,
+  "lowHealth": 4,
   "startingStamina": 15,
-  "lowStamina": 0,
+  "lowStamina": 4,
   "drive": 1,
   "resilience": 1,
   "charisma": 1,
   "brawl": 1,
   "heritageTag": "Australia",
-  "description": "Known for her poise, her vanity, and her devastating knee strikes, Cassie Lee is one half of the world-renowned duo, The IInspiration. Alongside her life-long best friend Jessie McKay, Cassie has conquered every tag team division she has ever stepped into, from the bright lights of global promotions to the gritty rings of the independent scene. She isn't just a wrestler; she is a star who demands the finest things in life and the loudest cheers from the audience—though she usually settles for the loudest boos.\\n\\nHer style is a blend of technical precision and opportunistic aggression, often using her long limbs to strike from unexpected angles. But her greatest weapon is the synergy she shares with Jessie. Together, they are more than just a team; they are a force of nature that thrives on mocking their peers and manipulating the rules to their advantage. Now, finding herself in the ultimate “All-Time” tournament, Cassie Lee is ready to show the future that true inspiration comes with a side of arrogance and a collection of championship gold.",
+  "description": "Cassie Lee is the embodiment of confidence, beauty and chaos – a magnetic force who danced her way into the spotlight and owned it like she was born there. With a killer instinct and deadly strikes masked by a dazzling smile, Cassie is a one-woman highlight reel, equal parts glam and grit, and a master of mind games and in-ring mayhem.\n\nHailing from Sydney, Australia, Cassie climbed the ranks with charm, wit, and a spinning heel kick that came from nowhere and landed everywhere. As one half of one of the most entertaining and decorated women’s tag teams of the modern era, she became known for stealing scenes, starting trends, and snatching titles. But don’t let the flawless fashion and iconic poses distract you – when the bell rings, Cassie Lee is all business.\n\nHer style is fast, fierce, and unpredictable – a mix of technical precision and pure Aussie fire. She’s not just a performer; she’s a presence. From comedy gold to championship gold, she’s done it all – and looked amazing doing it.\n\nNow, centuries beyond her time, Cassie Lee returns to a new era of combat – and she’s still stealing the show, breaking hearts, and kicking heads.\n\n“Darling, I didn’t come back to play fair. I came to win, pose, and be absolutely iconic – in that order.”\n",
   "gender": "FEMALE",
   "set": "ATW_VS_WOW"
 }, {
@@ -428,7 +428,7 @@
   "charisma": 1,
   "brawl": 1,
   "heritageTag": "Australia",
-  "description": "If there is one voice that can pierce through the roar of a stadium crowd, it belongs to the incomparable Jessie McKay. As one half of The IInspiration, Jessie has made a career out of being the most entertaining, most annoying, and most successful tag team specialist of her generation. With a personality that is larger than life and a sense of humor that is often lost on her victims, Jessie is a master of the “mental game”—using her wit and her best friend Cassie Lee to ensure she always has the upper hand.\\n\\nWhile she is often seen as the comedic heart of the duo, Jessie is a dangerous competitor who knows exactly how to capitalize on an opponent's mistake. She is a multi-time tag team champion who believes that her presence alone is a gift to the wrestling world. In this new era of “All-Time” legends, Jessie McKay is unimpressed by the icons of the past. To her, they are just more people to mock on her way to the top. After all, why settle for being a legend when you can be an Inspiration?",
+  "description": "",
   "gender": "FEMALE",
   "set": "ATW_VS_WOW"
 }, {
