@@ -86,12 +86,14 @@
 *Link: [./archive/npc_expansion_managers_20260319/plan.md](./archive/npc_expansion_managers_20260319/plan.md)*
 *Status: Completed (2026-03-20)*
 
+### [x] Track: Add a system to have default images for wrestlers, NPCs, Show Templates, etc.
+
+*Link: [./archive/default_image_system_20260327/plan.md](./archive/default_image_system_20260327/plan.md)*
+*Status: Completed (2026-03-27)*
+
 ---
 
 ## Active Tracks
 
 ---
-
-- [x] **Track: Add a system to have default images for wrestlers, NPCs, Show Templates, etc.**
-  *Link: [./tracks/default_image_system_20260327/](./tracks/default_image_system_20260327/)*
 
