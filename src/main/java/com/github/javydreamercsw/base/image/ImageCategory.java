@@ -27,6 +27,7 @@ public enum ImageCategory {
   NPC("generic-npc.png", "npcs", false),
   SHOW("generic-show.png", "shows", true),
   VENUE("generic-venue.png", "venues", true),
+  LOCATION("generic-venue.png", "locations", true),
   TITLE("generic-title.png", "championships", true),
   TEAM("generic-team.png", "teams", true),
   FACTION("generic-faction.png", "factions", true);

@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,7 @@ class EntityImageResolutionIntegrationTest {
   @Autowired private TeamService teamService;
   @Autowired private FactionService factionService;
   @Autowired private ArenaService arenaService;
+  @Autowired private LocationService locationService;
 
   @Test
   void testWrestlerImageResolution() {
@@ -128,6 +130,17 @@ class EntityImageResolutionIntegrationTest {
   void testArenaFallbackResolution() {
     Arena arena = Arena.builder().name("Unknown Arena").build();
     String imageUrl = arenaService.resolveArenaImage(arena);
+    assertNotNull(imageUrl);
+    assertEquals("images/generic-venue.png", imageUrl);
+  }
+
+  @Test
+  void testLocationFallbackResolution() {
+    com.github.javydreamercsw.management.domain.world.Location location =
+        com.github.javydreamercsw.management.domain.world.Location.builder()
+            .name("Unknown Location")
+            .build();
+    String imageUrl = locationService.resolveLocationImage(location);
     assertNotNull(imageUrl);
     assertEquals("images/generic-venue.png", imageUrl);
   }

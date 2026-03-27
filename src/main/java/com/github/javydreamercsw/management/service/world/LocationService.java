@@ -109,6 +109,6 @@ public class LocationService {
     if (location.getImageUrl() != null && !location.getImageUrl().isBlank()) {
       return location.getImageUrl();
     }
-    return imageService.resolveImage(location.getName(), ImageCategory.VENUE).url();
+    return imageService.resolveImage(location.getName(), ImageCategory.LOCATION).url();
   }
 }
