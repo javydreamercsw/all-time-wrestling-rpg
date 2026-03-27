@@ -14,20 +14,19 @@
   - [x] Implement the service to orchestrate multiple `ImageSource`s.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Core Service' (Protocol in workflow.md)
 
-## Phase 2: Configuration & External Sources
-
+## Phase 2: Configuration & External Sources [checkpoint: a1f8520]
 - [x] Task: Implement `FileSystemImageSource`
   - [x] Create TDD unit tests for resolving images from a local directory.
   - [x] Implement the source with configurable path support.
 - [x] Task: Implement `PollinationsImageSource`
   - [x] Create TDD unit tests for dynamic image generation using `PollinationsImageGenerationService`.
   - [x] Implement the source to generate images based on entity name and category.
-- [ ] Task: Add Spring Configuration for Image System
-  - [ ] Define properties for external image paths and source priority.
-  - [ ] Ensure `DefaultImageService` is properly initialized with configured sources.
+- [x] Task: Add Spring Configuration for Image System
+  - [x] Define properties for external image paths and source priority.
+  - [x] Ensure `DefaultImageService` is properly initialized with configured sources.
 - [x] Task: Implement `RemoteUrlImageSource` (Basic)
   - [x] Add support for resolving images via absolute URLs.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Configuration & External Sources' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration & External Sources' (Protocol in workflow.md)
 
 ## Phase 3: Integration with Entities
 
