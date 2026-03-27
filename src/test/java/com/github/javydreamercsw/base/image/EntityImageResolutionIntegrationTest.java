@@ -98,6 +98,16 @@ class EntityImageResolutionIntegrationTest {
   }
 
   @Test
+  void testTitleKebabCaseResolution() {
+    // atw-extreme.png exists in src/main/resources/META-INF/resources/images/championships/
+    Title title = new Title();
+    title.setName("ATW Extreme");
+    String imageUrl = titleService.resolveTitleImage(title);
+    assertNotNull(imageUrl);
+    assertEquals("images/championships/atw-extreme.png", imageUrl);
+  }
+
+  @Test
   void testTeamFallbackResolution() {
     Team team = new Team();
     team.setName("Unknown Team");

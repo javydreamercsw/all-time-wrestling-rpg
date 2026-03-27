@@ -49,14 +49,14 @@ class FileSystemImageSourceTest {
 
   @Test
   void testResolveExistingImage() throws IOException {
-    Path wrestlerDir = tempDir.resolve("wrestlers");
-    Files.createDirectories(wrestlerDir);
-    Path imageFile = wrestlerDir.resolve("Test Wrestler.png");
+    Path titleDir = tempDir.resolve("championships");
+    Files.createDirectories(titleDir);
+    Path imageFile = titleDir.resolve("atw-extreme.png");
     Files.createFile(imageFile);
 
-    Optional<String> result = source.resolveImage("Test Wrestler", ImageCategory.WRESTLER);
+    Optional<String> result = source.resolveImage("ATW Extreme", ImageCategory.TITLE);
     assertTrue(result.isPresent());
-    assertEquals("images/defaults/wrestlers/Test Wrestler.png", result.get());
+    assertEquals("images/defaults/championships/atw-extreme.png", result.get());
   }
 
   @Test

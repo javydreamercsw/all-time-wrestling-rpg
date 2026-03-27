@@ -19,9 +19,9 @@
 - [x] Task: Implement `FileSystemImageSource`
   - [x] Create TDD unit tests for resolving images from a local directory.
   - [x] Implement the source with configurable path support.
-- [x] Task: Implement `PollinationsImageSource`
-  - [x] Create TDD unit tests for dynamic image generation using `PollinationsImageGenerationService`.
-  - [x] Implement the source to generate images based on entity name and category.
+- [x] Task: Implement `PollinationsImageSource` (Removed per user feedback to avoid dynamic AI calls)
+  - [x] Create TDD unit tests for dynamic image generation using `PollinationsImageGenerationService`. (Removed)
+  - [x] Implement the source to generate images based on entity name and category. (Removed)
 - [x] Task: Add Spring Configuration for Image System
   - [x] Define properties for external image paths and source priority.
   - [x] Ensure `DefaultImageService` is properly initialized with configured sources.
@@ -41,6 +41,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Integration with Entities' (Protocol in workflow.md)
 
 ## Phase 4: UI Integration & Final Verification [checkpoint: 5f0be69]
+
 - [x] Task: Update Vaadin UI components
   - [x] Replace hardcoded image paths in the frontend with calls to the `DefaultImageService`.
 - [x] Task: Implement E2E tests for Image Rendering

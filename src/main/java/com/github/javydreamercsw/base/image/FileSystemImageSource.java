@@ -35,8 +35,8 @@ public class FileSystemImageSource implements ImageSource {
   @Override
   public Optional<String> resolveImage(String name, ImageCategory category) {
     Path baseDir = storageProperties.getResolvedDefaultImageDir();
-    String subDir = category.name().toLowerCase() + "s";
-    String filename = name + ".png";
+    String subDir = category.getDirectoryName();
+    String filename = (category.isUseKebabCase() ? toKebabCase(name) : name) + ".png";
     Path imagePath = baseDir.resolve(subDir).resolve(filename);
 
     if (Files.exists(imagePath)) {
@@ -45,6 +45,13 @@ public class FileSystemImageSource implements ImageSource {
     }
 
     return Optional.empty();
+  }
+
+  private String toKebabCase(String name) {
+    if (name == null) {
+      return "";
+    }
+    return name.toLowerCase().replaceAll("\\s+", "-");
   }
 
   @Override

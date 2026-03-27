@@ -63,9 +63,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  void testWrestlerDynamicAiImage() {
-    // Enable AI
-    System.setProperty("mock.ai.enabled", "true");
+  void testWrestlerFallbackImage() {
     Wrestler wrestler =
         wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Unknown Wrestler"));
 
@@ -82,59 +80,43 @@ class EntityImageE2ETest extends AbstractE2ETest {
 
     String src = image.getAttribute("src");
     assertTrue(
-        src.contains("mock-image-url.png"),
-        "Should show dynamic AI image when enabled. Found: " + src);
-  }
-
-  @Test
-  void testWrestlerFallbackImage() {
-    // Disable AI to force fallback
-    System.setProperty("mock.ai.enabled", "false");
-    try {
-      Wrestler wrestler =
-          wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Unknown Wrestler"));
-
-      driver.get(
-          "http://localhost:"
-              + serverPort
-              + getContextPath()
-              + "/wrestler-profile/"
-              + wrestler.getId());
-
-      WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-      WebElement image =
-          wait.until(ExpectedConditions.presenceOfElementLocated(By.id("wrestler-image")));
-
-      String src = image.getAttribute("src");
-      assertTrue(
-          src.contains("images/generic-wrestler.png"),
-          "Should show generic wrestler image when AI is disabled. Found: " + src);
-    } finally {
-      System.clearProperty("mock.ai.enabled");
-    }
+        src.contains("images/generic-wrestler.png"),
+        "Should show generic wrestler image. Found: " + src);
   }
 
   @Test
   void testNpcFallbackImage() {
-    // Disable AI to force fallback
-    System.setProperty("mock.ai.enabled", "false");
-    try {
-      Npc npc = new Npc();
-      npc.setName("Unknown NPC");
-      npc.setNpcType("Manager");
-      npc = npcRepository.saveAndFlush(npc);
+    Npc npc = new Npc();
+    npc.setName("Unknown NPC");
+    npc.setNpcType("Manager");
+    npc = npcRepository.saveAndFlush(npc);
 
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
 
-      WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-      WebElement image = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("npc-image")));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement image = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("npc-image")));
 
-      String src = image.getAttribute("src");
-      assertTrue(
-          src.contains("images/generic-npc.png"),
-          "Should show generic npc image when AI is disabled. Found: " + src);
-    } finally {
-      System.clearProperty("mock.ai.enabled");
-    }
+    String src = image.getAttribute("src");
+    assertTrue(
+        src.contains("images/generic-npc.png"),
+        "Should show generic npc image when AI is disabled. Found: " + src);
+  }
+
+  @Test
+  void testChampionshipImage() {
+    // ATW Tag Team is selected by default (alphabetically first in championships.json)
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
+
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    // Check image resolution
+    WebElement image =
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("championship-image")));
+    wait.until(d -> image.getAttribute("src") != null && !image.getAttribute("src").isEmpty());
+
+    String src = image.getAttribute("src");
+    assertTrue(
+        src.contains("images/championships/atw-tag-team.png"),
+        "Should show specific image for ATW Tag Team championship by default. Found: " + src);
   }
 }

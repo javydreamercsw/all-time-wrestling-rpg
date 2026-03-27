@@ -26,21 +26,30 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ClasspathImageSource implements ImageSource {
 
+  private static final String RESOURCE_PREFIX = "META-INF/resources/";
   private static final String IMAGES_BASE = "images/";
 
   @Override
   public Optional<String> resolveImage(String name, ImageCategory category) {
-    String subDir = category.name().toLowerCase() + "s/";
-    String filename = name + ".png";
-    String path = IMAGES_BASE + subDir + filename;
+    String subDir = category.getDirectoryName() + "/";
+    String filename = (category.isUseKebabCase() ? toKebabCase(name) : name) + ".png";
+    String webPath = IMAGES_BASE + subDir + filename;
+    String classpathPath = RESOURCE_PREFIX + webPath;
 
-    URL resource = getClass().getClassLoader().getResource(path);
+    URL resource = getClass().getClassLoader().getResource(classpathPath);
     if (resource != null) {
-      log.debug("Found image in classpath: {}", path);
-      return Optional.of(path);
+      log.debug("Found image in classpath: {}", classpathPath);
+      return Optional.of(webPath);
     }
 
     return Optional.empty();
+  }
+
+  private String toKebabCase(String name) {
+    if (name == null) {
+      return "";
+    }
+    return name.toLowerCase().replaceAll("\\s+", "-");
   }
 
   @Override

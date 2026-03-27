@@ -34,10 +34,18 @@ class ClasspathImageSourceTest {
 
   @Test
   void testResolveExistingImage() {
-    // Princess Aussie.png exists in src/main/resources/images/wrestlers/
+    // Princess Aussie.png exists in src/main/resources/META-INF/resources/images/wrestlers/
     Optional<String> result = source.resolveImage("Princess Aussie", ImageCategory.WRESTLER);
     assertTrue(result.isPresent());
     assertEquals("images/wrestlers/Princess Aussie.png", result.get());
+  }
+
+  @Test
+  void testResolveKebabCaseImage() {
+    // atw-extreme.png exists in src/main/resources/META-INF/resources/images/championships/
+    Optional<String> result = source.resolveImage("ATW Extreme", ImageCategory.TITLE);
+    assertTrue(result.isPresent());
+    assertEquals("images/championships/atw-extreme.png", result.get());
   }
 
   @Test

@@ -23,13 +23,15 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ImageCategory {
-  WRESTLER("generic-wrestler.png"),
-  NPC("generic-npc.png"),
-  SHOW("generic-show.png"),
-  VENUE("generic-venue.png"),
-  TITLE("generic-title.png"),
-  TEAM("generic-team.png"),
-  FACTION("generic-faction.png");
+  WRESTLER("generic-wrestler.png", "wrestlers", false),
+  NPC("generic-npc.png", "npcs", false),
+  SHOW("generic-show.png", "shows", true),
+  VENUE("generic-venue.png", "venues", true),
+  TITLE("generic-title.png", "championships", true),
+  TEAM("generic-team.png", "teams", true),
+  FACTION("generic-faction.png", "factions", true);
 
   private final String defaultFilename;
+  private final String directoryName;
+  private final boolean useKebabCase;
 }

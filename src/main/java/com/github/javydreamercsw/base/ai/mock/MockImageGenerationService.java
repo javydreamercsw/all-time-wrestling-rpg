@@ -33,6 +33,6 @@ public class MockImageGenerationService implements ImageGenerationService {
 
   @Override
   public boolean isAvailable() {
-    return Boolean.parseBoolean(System.getProperty("mock.ai.enabled", "true"));
+    return true;
   }
 }

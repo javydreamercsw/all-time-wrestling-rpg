@@ -17,8 +17,6 @@
 package com.github.javydreamercsw.management.config;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
-import com.github.javydreamercsw.base.ai.mock.MockImageGenerationService;
 import com.github.javydreamercsw.base.ai.mock.MockSegmentNarrationService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -33,10 +31,5 @@ public class TestAIConfiguration {
   @Primary
   public SegmentNarrationService mockSegmentNarrationService() {
     return new MockSegmentNarrationService();
-  }
-
-  @Bean(name = "pollinationsImageGenerationService")
-  public ImageGenerationService pollinationsImageGenerationService() {
-    return new MockImageGenerationService();
   }
 }
