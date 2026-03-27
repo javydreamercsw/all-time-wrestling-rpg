@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -34,14 +35,19 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.data.validator.StringLengthValidator;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
@@ -73,6 +79,7 @@ public class TeamFormDialog extends Dialog {
   private final ComboBox<Faction> factionField;
   private final ComboBox<Npc> managerField;
   private final ComboBox<TeamStatus> statusField;
+  private final Image imagePreview;
 
   // Form components
   private final FormLayout formLayout;
@@ -106,6 +113,7 @@ public class TeamFormDialog extends Dialog {
     this.factionField = new ComboBox<>("Faction");
     this.managerField = new ComboBox<>("Manager");
     this.statusField = new ComboBox<>("Status");
+    this.imagePreview = new Image();
 
     // Initialize form components
     this.formLayout = new FormLayout();
@@ -124,7 +132,7 @@ public class TeamFormDialog extends Dialog {
     setDraggable(true);
     setResizable(true);
     setWidth("600px");
-    setHeight("500px");
+    setHeight("600px");
   }
 
   private void configureForm() {
@@ -163,6 +171,16 @@ public class TeamFormDialog extends Dialog {
     statusField.setItemLabelGenerator(TeamStatus::getDisplayName);
     statusField.setWidthFull();
 
+    // Configure image preview
+    imagePreview.setHeight("150px");
+    imagePreview.setWidth("150px");
+    imagePreview.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
+
+    VerticalLayout imageSection = new VerticalLayout(new Span("Team Art"), imagePreview);
+    imageSection.setPadding(false);
+    imageSection.setSpacing(false);
+    imageSection.setAlignItems(FlexComponent.Alignment.CENTER);
+
     // Add validation to prevent same wrestler selection
     wrestler1Field.addValueChangeListener(e -> validateWrestlerSelection());
     wrestler2Field.addValueChangeListener(e -> validateWrestlerSelection());
@@ -175,11 +193,13 @@ public class TeamFormDialog extends Dialog {
         wrestler2Field,
         factionField,
         managerField,
-        statusField);
+        statusField,
+        imageSection);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(nameField, 2);
     formLayout.setColspan(descriptionField, 2);
+    formLayout.setColspan(imageSection, 2);
   }
 
   private void configureButtons() {
@@ -189,7 +209,7 @@ public class TeamFormDialog extends Dialog {
     cancelButton.addClickListener(e -> close());
 
     HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
-    buttonLayout.setJustifyContentMode(HorizontalLayout.JustifyContentMode.END);
+    buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
     buttonLayout.setWidthFull();
 
     add(formLayout, buttonLayout);
@@ -333,6 +353,20 @@ public class TeamFormDialog extends Dialog {
     managerField.setReadOnly(!canEdit);
     statusField.setReadOnly(!canEdit);
     saveButton.setVisible(canEdit);
+    updateImagePreview();
+  }
+
+  private void updateImagePreview() {
+    if (currentTeam != null && currentTeam.getId() != null) {
+      teamService
+          .getTeamById(currentTeam.getId())
+          .ifPresent(
+              team -> {
+                imagePreview.setSrc(teamService.resolveTeamImage(team));
+              });
+    } else {
+      imagePreview.setSrc("images/generic-team.png");
+    }
   }
 
   private void saveTeam() {
