@@ -68,6 +68,7 @@ import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -120,6 +121,7 @@ public class DataInitializer implements Initializable {
   private final TeamService teamService;
   private final TeamRepository teamRepository;
   private final CampaignAbilityCardService campaignAbilityCardService;
+  private final InjuryTypeService injuryTypeService;
   private final CommentaryService commentaryService;
   private final CampaignUpgradeService campaignUpgradeService;
   private final LocationRepository locationRepository;
@@ -149,6 +151,7 @@ public class DataInitializer implements Initializable {
       TeamService teamService,
       TeamRepository teamRepository,
       CampaignAbilityCardService campaignAbilityCardService,
+      InjuryTypeService injuryTypeService,
       CommentaryService commentaryService,
       CampaignUpgradeService campaignUpgradeService,
       Environment env,
@@ -174,6 +177,7 @@ public class DataInitializer implements Initializable {
     this.teamService = teamService;
     this.teamRepository = teamRepository;
     this.campaignAbilityCardService = campaignAbilityCardService;
+    this.injuryTypeService = injuryTypeService;
     this.commentaryService = commentaryService;
     this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
@@ -209,6 +213,7 @@ public class DataInitializer implements Initializable {
       campaignUpgradeService.loadUpgrades();
       syncCommentatorsFromFile();
       syncCommentaryTeamsFromFile();
+      syncInjuryTypesFromFile();
       loadAchievements();
       syncRingsideActions();
     }
@@ -349,6 +354,46 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Commentary teams file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncInjuryTypesFromFile() {
+    ClassPathResource resource = new ClassPathResource("injury_types.json");
+    if (resource.exists()) {
+      log.info("Loading injury types from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos =
+            mapper.readValue(
+                is, new TypeReference<List<com.github.javydreamercsw.management.dto.InjuryTypeDTO>>() {});
+        for (com.github.javydreamercsw.management.dto.InjuryTypeDTO dto : dtos) {
+          Optional<com.github.javydreamercsw.management.domain.injury.InjuryType> existing =
+              injuryTypeService.findByName(dto.getInjuryName());
+          if (existing.isEmpty()) {
+            injuryTypeService.createInjuryType(
+                dto.getInjuryName(),
+                dto.getHealthEffect(),
+                dto.getStaminaEffect(),
+                dto.getCardEffect(),
+                dto.getSpecialEffects());
+            log.debug("Loaded new injury type: {}", dto.getInjuryName());
+          } else {
+            injuryTypeService.updateInjuryType(
+                existing.get().getId(),
+                dto.getInjuryName(),
+                dto.getHealthEffect(),
+                dto.getStaminaEffect(),
+                dto.getCardEffect(),
+                dto.getSpecialEffects());
+            log.debug("Updated existing injury type: {}", dto.getInjuryName());
+          }
+        }
+        log.info("Injury type loading completed - {} types loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading injury types from file", e);
+      }
+    } else {
+      log.warn("Injury types file not found: {}", resource.getPath());
     }
   }
 

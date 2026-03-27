@@ -1,0 +1,30 @@
+[
+  {
+    "injuryName": "Head Injury",
+    "healthEffect": -3,
+    "staminaEffect": 0,
+    "cardEffect": -2,
+    "specialEffects": "No reversal token"
+  },
+  {
+    "injuryName": "Rib Injury",
+    "healthEffect": -2,
+    "staminaEffect": -2,
+    "cardEffect": 0,
+    "specialEffects": "Opponent attacks of 3+ damage make you lose 1 stamina"
+  },
+  {
+    "injuryName": "Leg Injury",
+    "healthEffect": -2,
+    "staminaEffect": 0,
+    "cardEffect": -1,
+    "specialEffects": "Hand size reduced by 1"
+  },
+  {
+    "injuryName": "Back Injury",
+    "healthEffect": -3,
+    "staminaEffect": -4,
+    "cardEffect": 0,
+    "specialEffects": "None"
+  }
+]
