@@ -92,6 +92,6 @@
 
 ---
 
-- [~] **Track: Add a system to have default images for wrestlers, NPCs, Show Templates, etc.**
+- [x] **Track: Add a system to have default images for wrestlers, NPCs, Show Templates, etc.**
   *Link: [./tracks/default_image_system_20260327/](./tracks/default_image_system_20260327/)*
 

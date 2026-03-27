@@ -30,6 +30,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration & External Sources' (Protocol in workflow.md)
 
 ## Phase 3: Integration with Entities [checkpoint: 11765e8]
+
 - [x] Task: Update Entity Models/Services to use `DefaultImageService`
   - [x] Update `WrestlerService` to resolve images via the new system.
   - [x] Update `NPCService`, `ShowTemplateService`, etc.
@@ -39,11 +40,10 @@
   - [x] Ensure `generic-wrestler.png`, `generic-npc.png`, etc., exist in `src/main/resources/images/`.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Integration with Entities' (Protocol in workflow.md)
 
-## Phase 4: UI Integration & Final Verification
-
-- [ ] Task: Update Vaadin UI components
-  - [ ] Replace hardcoded image paths in the frontend with calls to the `DefaultImageService`.
-- [ ] Task: Implement E2E tests for Image Rendering
-  - [ ] Create E2E tests to verify that images (both specific and default) are correctly rendered in the browser.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: UI Integration & Final Verification' (Protocol in workflow.md)
+## Phase 4: UI Integration & Final Verification [checkpoint: 5f0be69]
+- [x] Task: Update Vaadin UI components
+  - [x] Replace hardcoded image paths in the frontend with calls to the `DefaultImageService`.
+- [x] Task: Implement E2E tests for Image Rendering
+  - [x] Create E2E tests to verify that images (both specific and default) are correctly rendered in the browser.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: UI Integration & Final Verification' (Protocol in workflow.md)
 

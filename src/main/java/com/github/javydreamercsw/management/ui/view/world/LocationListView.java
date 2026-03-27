@@ -80,10 +80,7 @@ public class LocationListView extends Main {
     grid.addColumn(Location::getDescription).setHeader("Description").setFlexGrow(1);
     grid.addComponentColumn(
             location -> {
-              if (location.getImageUrl() == null || location.getImageUrl().isBlank()) {
-                return new Span("No Image");
-              }
-              Image image = new Image(location.getImageUrl(), "Location Image");
+              Image image = new Image(service.resolveLocationImage(location), "Location Image");
               image.setHeight("100px");
               image.setWidth("100px");
               image.addClassNames(LumoUtility.BorderRadius.MEDIUM);

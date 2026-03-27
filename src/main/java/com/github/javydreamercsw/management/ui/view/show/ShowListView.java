@@ -243,12 +243,10 @@ public class ShowListView extends Main {
         .addComponentColumn(
             show -> {
               Image image = new Image();
-              if (show.getTemplate() != null
-                  && show.getTemplate().getImageUrl() != null
-                  && !show.getTemplate().getImageUrl().isEmpty()) {
-                image.setSrc(show.getTemplate().getImageUrl());
+              if (show.getTemplate() != null) {
+                image.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
               } else {
-                image.setSrc("https://via.placeholder.com/50");
+                image.setSrc("images/generic-show.png");
               }
               image.setHeight("50px");
               image.setWidth("50px");

@@ -183,12 +183,10 @@ public class ShowTemplateListView extends Main {
     templateGrid
         .addComponentColumn(
             template -> {
-              Image image = new Image();
-              if (template.getImageUrl() != null && !template.getImageUrl().isEmpty()) {
-                image.setSrc(template.getImageUrl());
-              } else {
-                image.setSrc("https://via.placeholder.com/50");
-              }
+              Image image =
+                  new Image(
+                      showTemplateService.resolveShowTemplateImage(template),
+                      "Show Template Image");
               image.setHeight("50px");
               image.setWidth("50px");
               image.addClassName(LumoUtility.BorderRadius.SMALL);

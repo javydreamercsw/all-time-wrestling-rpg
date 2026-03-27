@@ -94,10 +94,7 @@ public class ArenaListView extends Main {
         .setAutoWidth(true);
     grid.addComponentColumn(
             arena -> {
-              if (arena.getImageUrl() == null || arena.getImageUrl().isBlank()) {
-                return new com.vaadin.flow.component.html.Span("No Image");
-              }
-              Image image = new Image(arena.getImageUrl(), "Arena Image");
+              Image image = new Image(arenaService.resolveArenaImage(arena), "Arena Image");
               image.setHeight("100px");
               image.setWidth("100px");
               image.addClassNames(LumoUtility.BorderRadius.MEDIUM);
