@@ -517,13 +517,14 @@ public class FactionListView extends Main {
 
       Grid<Wrestler> membersGrid = new Grid<>(Wrestler.class, false);
       membersGrid.addColumn(Wrestler::getName).setHeader("Name");
-      membersGrid
-          .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
+      membersGrid.addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
           .setHeader("Tier");
       membersGrid.setItems(loadedFaction.getMembers());
       membersGrid.setHeight("200px");
+      membersGrid.setWidthFull();
 
       membersInfo.add(membersGrid);
+      membersInfo.setWidthFull();
       layout.add(membersInfo);
     } else {
       layout.add(new Div("No members in this faction."));
@@ -569,6 +570,7 @@ public class FactionListView extends Main {
         .setHeader("Tier");
     currentMembersGrid.addColumn(Wrestler::getFans).setHeader("Fans");
     currentMembersGrid.setId("members-grid");
+    currentMembersGrid.setWidthFull();
 
     // Remove member button
     currentMembersGrid
