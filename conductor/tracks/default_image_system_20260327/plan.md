@@ -29,7 +29,7 @@
   - [x] Add support for resolving images via absolute URLs.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration & External Sources' (Protocol in workflow.md)
 
-## Phase 3: Integration with Entities
+## Phase 3: Integration with Entities [checkpoint: 11765e8]
 - [x] Task: Update Entity Models/Services to use `DefaultImageService`
   - [x] Update `WrestlerService` to resolve images via the new system.
   - [x] Update `NPCService`, `ShowTemplateService`, etc.
@@ -37,7 +37,7 @@
   - [x] Verify that requesting a wrestler's image through the service returns the expected path/URL.
 - [x] Task: Add Default Generic Images to Resources
   - [x] Ensure `generic-wrestler.png`, `generic-npc.png`, etc., exist in `src/main/resources/images/`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Integration with Entities' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Integration with Entities' (Protocol in workflow.md)
 
 ## Phase 4: UI Integration & Final Verification
 
