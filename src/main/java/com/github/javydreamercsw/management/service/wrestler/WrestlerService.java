@@ -26,6 +26,8 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -78,6 +80,7 @@ public class WrestlerService {
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
   @Autowired private LegacyService legacyService;
+  @Autowired private DefaultImageService imageService;
 
   /**
    * Find all active wrestlers filtered by alignment and gender.
@@ -241,7 +244,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllIncludingInactive() {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return wrestlerRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans")).stream()
         .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
         .collect(Collectors.toList());
   }
@@ -251,7 +254,6 @@ public class WrestlerService {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return wrestlerRepository.findAllByActiveTrue().stream()
         .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
-        .sorted(Comparator.comparing(Wrestler::getName))
         .collect(Collectors.toList());
   }
 
@@ -299,9 +301,7 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllByAccount(@NonNull Account account) {
-    return wrestlerRepository.findAllByAccount(account).stream()
-        .sorted(Comparator.comparing(Wrestler::getName))
-        .toList();
+    return wrestlerRepository.findAllByAccount(account);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -500,7 +500,7 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<WrestlerDTO> findAllAsDTO() {
-    return findAll().stream().map(WrestlerDTO::new).toList();
+    return findAll().stream().map(this::toDTO).toList();
   }
 
   /**
@@ -512,7 +512,7 @@ public class WrestlerService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id) {
-    return wrestlerRepository.findById(id).map(WrestlerDTO::new);
+    return wrestlerRepository.findById(id).map(this::toDTO);
   }
 
   /**
@@ -524,7 +524,29 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<WrestlerDTO> findAllBySegment(
       @NonNull com.github.javydreamercsw.management.domain.show.segment.Segment segment) {
-    return wrestlerRepository.findAllBySegment(segment).stream().map(WrestlerDTO::new).toList();
+    return wrestlerRepository.findAllBySegment(segment).stream().map(this::toDTO).toList();
+  }
+
+  private WrestlerDTO toDTO(Wrestler wrestler) {
+    WrestlerDTO dto = new WrestlerDTO(wrestler);
+    if (dto.getImageUrl() == null || dto.getImageUrl().isBlank()) {
+      dto.setImageUrl(resolveWrestlerImage(wrestler));
+    }
+    return dto;
+  }
+
+  /**
+   * Resolves the image URL for a wrestler, using the default image system if no specific URL is
+   * set.
+   *
+   * @param wrestler The wrestler entity.
+   * @return The resolved image URL.
+   */
+  public String resolveWrestlerImage(Wrestler wrestler) {
+    if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isBlank()) {
+      return wrestler.getImageUrl();
+    }
+    return imageService.resolveImage(wrestler.getName(), ImageCategory.WRESTLER).url();
   }
 
   /**

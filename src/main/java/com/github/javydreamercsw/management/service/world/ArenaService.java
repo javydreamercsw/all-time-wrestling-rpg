@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.service.world;
 
 import com.github.javydreamercsw.base.ai.image.ImageGenerationService.ImageRequest;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
@@ -44,6 +46,7 @@ public class ArenaService {
   private final ArenaRepository repository;
   private final LocationService locationService;
   private final ImageGenerationServiceFactory imageFactory;
+  private final DefaultImageService imageService;
   private final Random random = new Random();
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -193,5 +196,18 @@ public class ArenaService {
 
     // For regular shows or if no large arenas for PLE, pick a random arena
     return allArenas.get(random.nextInt(allArenas.size())).getId();
+  }
+
+  /**
+   * Resolves the image URL for an arena, using the default image system if no specific URL is set.
+   *
+   * @param arena The arena entity.
+   * @return The resolved image URL.
+   */
+  public String resolveArenaImage(Arena arena) {
+    if (arena.getImageUrl() != null && !arena.getImageUrl().isBlank()) {
+      return arena.getImageUrl();
+    }
+    return imageService.resolveImage(arena.getName(), ImageCategory.VENUE).url();
   }
 }

@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.world;
 
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import java.util.List;
@@ -36,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocationService {
 
   private final LocationRepository repository;
+  private final DefaultImageService imageService;
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Location createLocation(
@@ -93,5 +96,19 @@ public class LocationService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Location> findByName(String name) {
     return repository.findByName(name);
+  }
+
+  /**
+   * Resolves the image URL for a location, using the default image system if no specific URL is
+   * set.
+   *
+   * @param location The location entity.
+   * @return The resolved image URL.
+   */
+  public String resolveLocationImage(Location location) {
+    if (location.getImageUrl() != null && !location.getImageUrl().isBlank()) {
+      return location.getImageUrl();
+    }
+    return imageService.resolveImage(location.getName(), ImageCategory.LOCATION).url();
   }
 }

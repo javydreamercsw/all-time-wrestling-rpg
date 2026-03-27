@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,23 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto.ranking;
+package com.github.javydreamercsw.base.image;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ChampionshipDTO {
-  private Long id;
-  private String name;
-  private String imageUrl;
-  private WrestlerTier tier;
-}
+/**
+ * Result of an image resolution request.
+ *
+ * @param url The resolved URL or resource path.
+ * @param isFallback True if this is the generic fallback image.
+ */
+public record ImageResolution(String url, boolean isFallback) {}

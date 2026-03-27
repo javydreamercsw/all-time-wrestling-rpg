@@ -47,6 +47,7 @@ public class TeamDTO {
   private String themeSong;
   private String artist;
   private String teamFinisher;
+  private String imageUrl;
   private boolean active;
   private boolean disbanded;
 
@@ -85,6 +86,7 @@ public class TeamDTO {
     dto.setThemeSong(team.getThemeSong());
     dto.setArtist(team.getArtist());
     dto.setTeamFinisher(team.getTeamFinisher());
+    dto.setImageUrl(team.getImageUrl());
     dto.setActive(team.isActive());
     dto.setDisbanded(team.isDisbanded());
     return dto;

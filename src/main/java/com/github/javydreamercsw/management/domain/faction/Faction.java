@@ -88,6 +88,9 @@ public class Faction extends AbstractEntity<Long> {
   @Column(name = "alignment")
   private String alignment;
 
+  @Column(name = "image_url")
+  private String imageUrl;
+
   @Column(name = "creation_date", nullable = false)
   @Builder.Default
   private Instant creationDate = Instant.now();
