@@ -1,18 +1,17 @@
 # Implementation Plan: Default Image System for Game Entities
 
-## Phase 1: Foundation & Core Service
-
+## Phase 1: Foundation & Core Service [checkpoint: 19cddf7]
 - [x] Task: Create `ImageCategory` enum (Wrestler, NPC, Show, Venue, Title, Team, Faction)
-  - [x] Define the enum with category-specific default filenames.
+    - [x] Define the enum with category-specific default filenames.
 - [x] Task: Create `ImageSource` interface and `ImageResolution` result object
-  - [x] `ImageSource` should have a method to find an image by name and category.
+    - [x] `ImageSource` should have a method to find an image by name and category.
 - [x] Task: Implement `ClasspathImageSource`
-  - [x] Create TDD unit tests to verify finding images in `src/main/resources/images/`.
-  - [x] Implement the source to search the classpath.
+    - [x] Create TDD unit tests to verify finding images in `src/main/resources/images/`.
+    - [x] Implement the source to search the classpath.
 - [x] Task: Implement `DefaultImageService`
-  - [x] Create TDD unit tests for the resolution logic (specific match -> fallback).
-  - [x] Implement the service to orchestrate multiple `ImageSource`s.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Core Service' (Protocol in workflow.md)
+    - [x] Create TDD unit tests for the resolution logic (specific match -> fallback).
+    - [x] Implement the service to orchestrate multiple `ImageSource`s.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Core Service' (Protocol in workflow.md)
 
 ## Phase 2: Configuration & External Sources
 - [ ] Task: Implement `FileSystemImageSource`
