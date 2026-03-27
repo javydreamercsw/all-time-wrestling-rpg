@@ -77,8 +77,7 @@ class FactionErrorHandlingTest {
     assertThrows(
         RuntimeException.class,
         () -> {
-          new FactionListView(
-              factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+          new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
         });
   }
 
@@ -98,8 +97,7 @@ class FactionErrorHandlingTest {
           assertNotNull(wrestlerService); // Service should exist
           // Instantiate the view to ensure it can be created without null pointers
           FactionListView view =
-              new FactionListView(
-                  factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+              new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
           assertNotNull(view);
         });
   }
@@ -111,8 +109,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     Faction factionToSave = Faction.builder().build();
     factionToSave.setName("Test Faction");
@@ -137,8 +134,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     Faction factionToDelete = Faction.builder().build();
     factionToDelete.setId(1L);
@@ -165,8 +161,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     Long factionId = 1L;
     Long wrestlerId = 2L;
@@ -191,8 +186,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     // Test various invalid faction scenarios
     Faction invalidFaction1 = Faction.builder().build(); // No name, no alignment
@@ -246,8 +240,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     Long nonExistentFactionId = 999L;
     Long wrestlerId = 1L;
@@ -269,8 +262,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     Long factionId = 1L;
     Long nonExistentWrestlerId = 999L;
@@ -316,8 +308,7 @@ class FactionErrorHandlingTest {
 
     // When
     FactionListView viewWithLargeDataset =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     // Then - Should handle large datasets without issues
     assertNotNull(viewWithLargeDataset);
@@ -336,8 +327,7 @@ class FactionErrorHandlingTest {
     assertThrows(
         RuntimeException.class,
         () -> {
-          new FactionListView(
-              factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+          new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
         });
 
     verify(factionService).findAllWithMembersAndTeams();
@@ -353,8 +343,7 @@ class FactionErrorHandlingTest {
     when(securityUtils.canEdit()).thenReturn(false);
 
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     Faction restrictedFaction = Faction.builder().build();
     restrictedFaction.setId(1L);
@@ -380,8 +369,7 @@ class FactionErrorHandlingTest {
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     // Test faction with name too long
     Faction factionWithLongName = Faction.builder().build();

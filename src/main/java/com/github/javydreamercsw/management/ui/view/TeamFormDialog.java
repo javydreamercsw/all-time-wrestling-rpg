@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -28,7 +27,6 @@ import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -65,7 +63,6 @@ import org.springframework.stereotype.Component;
 public class TeamFormDialog extends Dialog {
 
   private final TeamService teamService;
-  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
   private final NpcService npcService;
@@ -93,13 +90,11 @@ public class TeamFormDialog extends Dialog {
   @Autowired
   public TeamFormDialog(
       TeamService teamService,
-      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       FactionService factionService,
       NpcService npcService,
       SecurityUtils securityUtils) {
     this.teamService = teamService;
-    this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.factionService = factionService;
     this.npcService = npcService;

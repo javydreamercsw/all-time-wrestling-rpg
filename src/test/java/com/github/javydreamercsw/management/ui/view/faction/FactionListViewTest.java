@@ -76,8 +76,7 @@ class FactionListViewTest {
 
     // Create the view
     factionListView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
   }
 
   @Test
@@ -135,8 +134,7 @@ class FactionListViewTest {
 
     // When
     FactionListView emptyView =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     // Then
     assertNotNull(emptyView);
@@ -188,8 +186,7 @@ class FactionListViewTest {
 
     // When
     FactionListView view =
-        new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
 
     // Then
     assertNotNull(view);

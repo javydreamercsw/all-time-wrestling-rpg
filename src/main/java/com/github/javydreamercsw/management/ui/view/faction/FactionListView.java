@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -75,7 +74,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class FactionListView extends Main {
 
   private final FactionService factionService;
-  private final WrestlerService wrestlerService;
   private final NpcService npcService;
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
@@ -88,12 +86,10 @@ public class FactionListView extends Main {
 
   public FactionListView(
       @NonNull FactionService factionService,
-      @NonNull WrestlerService wrestlerService,
       @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull SecurityUtils securityUtils) {
     this.factionService = factionService;
-    this.wrestlerService = wrestlerService;
     this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
@@ -517,7 +513,8 @@ public class FactionListView extends Main {
 
       Grid<Wrestler> membersGrid = new Grid<>(Wrestler.class, false);
       membersGrid.addColumn(Wrestler::getName).setHeader("Name");
-      membersGrid.addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
+      membersGrid
+          .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
           .setHeader("Tier");
       membersGrid.setItems(loadedFaction.getMembers());
       membersGrid.setHeight("200px");
