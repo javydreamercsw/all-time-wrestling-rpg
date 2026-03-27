@@ -28,6 +28,7 @@ The core gameplay mechanics and features of All Time Wrestling RPG include:
 * **On-Demand Theme Switching:** User-configurable UI themes allowing instant switching between Light, Dark, and custom color presets.
 * **Expansion Pack Management:** Administrative interface to group game content (wrestlers, NPCs, teams, factions) into expansions that can be toggled on or off to customize the active roster and staff.
 * **AI Image Generation:** Integrated generation of wrestler, NPC, and show template visual assets using local or remote AI models.
+* **Default Image System:** A centralized resolution service that provides high-quality default silhouettes and specific artwork for all game entities (Wrestlers, NPCs, Shows, Venues, etc.), ensuring a visually complete and immersive experience regardless of custom content availability.
 
 ## Technical Considerations
 
