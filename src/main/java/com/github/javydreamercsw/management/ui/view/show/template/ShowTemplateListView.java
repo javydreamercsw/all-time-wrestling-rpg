@@ -102,6 +102,7 @@ public class ShowTemplateListView extends Main {
   private ComboBox<Integer> editWeekOfMonth;
   private ComboBox<Month> editMonth;
   private ComboBox<Gender> editGenderConstraint;
+  private Image editImagePreview;
   private ShowTemplate editingTemplate;
   private Binder<ShowTemplate> binder;
 
@@ -362,6 +363,12 @@ public class ShowTemplateListView extends Main {
     editImageUrl = new TextField("Image URL");
     editImageUrl.setWidthFull();
     editImageUrl.setReadOnly(true);
+    editImageUrl.addValueChangeListener(e -> updateImagePreview(e.getValue()));
+
+    editImagePreview = new Image();
+    editImagePreview.setHeight("150px");
+    editImagePreview.setWidth("150px");
+    editImagePreview.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
 
     ImageUploadComponent imageUpload =
         new ImageUploadComponent(
@@ -374,6 +381,12 @@ public class ShowTemplateListView extends Main {
     HorizontalLayout imageEditLayout = new HorizontalLayout(editImageUrl, imageUpload);
     imageEditLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
     imageEditLayout.setWidthFull();
+
+    VerticalLayout imageSection =
+        new VerticalLayout(new Span("Template Art"), editImagePreview, imageEditLayout);
+    imageSection.setPadding(false);
+    imageSection.setSpacing(false);
+    imageSection.setAlignItems(FlexComponent.Alignment.CENTER);
 
     editExpectedMatches = new IntegerField("Expected Matches");
     editExpectedMatches.setWidthFull();
@@ -477,7 +490,7 @@ public class ShowTemplateListView extends Main {
         editShowType,
         editCommentaryTeam,
         editNotionUrl,
-        imageEditLayout,
+        imageSection,
         editExpectedMatches,
         editExpectedPromos,
         editDurationDays,
@@ -490,7 +503,7 @@ public class ShowTemplateListView extends Main {
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
-    formLayout.setColspan(imageEditLayout, 2);
+    formLayout.setColspan(imageSection, 2);
 
     HorizontalLayout buttonLayout = new HorizontalLayout(generateArtDialogBtn, saveBtn, cancelBtn);
     buttonLayout.setWidthFull();
@@ -581,10 +594,21 @@ public class ShowTemplateListView extends Main {
         .bind(ShowTemplate::getMonth, ShowTemplate::setMonth);
   }
 
+  private void updateImagePreview(String url) {
+    if (url != null && !url.trim().isEmpty()) {
+      editImagePreview.setSrc(url);
+    } else if (editingTemplate != null) {
+      editImagePreview.setSrc(showTemplateService.resolveShowTemplateImage(editingTemplate));
+    } else {
+      editImagePreview.setSrc("images/generic-show.png");
+    }
+  }
+
   private void openCreateDialog() {
     editingTemplate = new ShowTemplate();
     editDialog.setHeaderTitle("Create Show Template");
     binder.readBean(editingTemplate);
+    updateImagePreview(editingTemplate.getImageUrl());
     editDialog.open();
   }
 
@@ -592,6 +616,7 @@ public class ShowTemplateListView extends Main {
     editingTemplate = template;
     editDialog.setHeaderTitle("Edit Show Template");
     binder.readBean(template);
+    updateImagePreview(template.getImageUrl());
     editDialog.open();
   }
 
