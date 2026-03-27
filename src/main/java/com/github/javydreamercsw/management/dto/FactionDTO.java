@@ -34,6 +34,7 @@ public class FactionDTO {
   private String leaderExternalId;
   private String managerName;
   private String managerExternalId;
+  private String imageUrl;
   private String alignment;
   private List<String> members = new ArrayList<>(); // Member wrestler names
   private List<String> memberExternalIds = new ArrayList<>();

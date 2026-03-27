@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.team;
 
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
@@ -49,6 +51,7 @@ public class TeamService {
   @Autowired private FactionRepository factionRepository;
   @Autowired private NpcRepository npcRepository;
   @Autowired private ExpansionService expansionService;
+  @Autowired private DefaultImageService imageService;
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -413,5 +416,18 @@ public class TeamService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Team> reactivateTeam(Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.ACTIVE, null, null);
+  }
+
+  /**
+   * Resolves the image URL for a team, using the default image system if no specific URL is set.
+   *
+   * @param team The team entity.
+   * @return The resolved image URL.
+   */
+  public String resolveTeamImage(Team team) {
+    if (team.getImageUrl() != null && !team.getImageUrl().isBlank()) {
+      return team.getImageUrl();
+    }
+    return imageService.resolveImage(team.getName(), ImageCategory.TEAM).url();
   }
 }

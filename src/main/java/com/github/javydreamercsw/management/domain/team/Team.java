@@ -89,6 +89,9 @@ public class Team extends AbstractEntity<Long> {
   @Column(name = "team_finisher")
   private String teamFinisher;
 
+  @Column(name = "image_url")
+  private String imageUrl;
+
   @Column(name = "status", nullable = false)
   @Enumerated(EnumType.STRING)
   private TeamStatus status = TeamStatus.ACTIVE;

@@ -15,6 +15,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Core Service' (Protocol in workflow.md)
 
 ## Phase 2: Configuration & External Sources [checkpoint: a1f8520]
+
 - [x] Task: Implement `FileSystemImageSource`
   - [x] Create TDD unit tests for resolving images from a local directory.
   - [x] Implement the source with configurable path support.
@@ -29,14 +30,13 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration & External Sources' (Protocol in workflow.md)
 
 ## Phase 3: Integration with Entities
-
-- [ ] Task: Update Entity Models/Services to use `DefaultImageService`
-  - [ ] Update `WrestlerService` to resolve images via the new system.
-  - [ ] Update `NPCService`, `ShowTemplateService`, etc.
-- [ ] Task: Create Integration Tests for Entity Image Resolution
-  - [ ] Verify that requesting a wrestler's image through the service returns the expected path/URL.
-- [ ] Task: Add Default Generic Images to Resources
-  - [ ] Ensure `generic-wrestler.png`, `generic-npc.png`, etc., exist in `src/main/resources/images/`.
+- [x] Task: Update Entity Models/Services to use `DefaultImageService`
+  - [x] Update `WrestlerService` to resolve images via the new system.
+  - [x] Update `NPCService`, `ShowTemplateService`, etc.
+- [x] Task: Create Integration Tests for Entity Image Resolution
+  - [x] Verify that requesting a wrestler's image through the service returns the expected path/URL.
+- [x] Task: Add Default Generic Images to Resources
+  - [x] Ensure `generic-wrestler.png`, `generic-npc.png`, etc., exist in `src/main/resources/images/`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Integration with Entities' (Protocol in workflow.md)
 
 ## Phase 4: UI Integration & Final Verification

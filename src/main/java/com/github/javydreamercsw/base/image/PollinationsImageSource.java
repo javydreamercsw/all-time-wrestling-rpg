@@ -19,17 +19,21 @@ package com.github.javydreamercsw.base.image;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationService.ImageRequest;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /** Image source that dynamically generates images using Pollinations AI. */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class PollinationsImageSource implements ImageSource {
 
   private final ImageGenerationService imageGenerationService;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public PollinationsImageSource(
+      @org.springframework.beans.factory.annotation.Qualifier("pollinationsImageGenerationService") ImageGenerationService imageGenerationService) {
+    this.imageGenerationService = imageGenerationService;
+  }
 
   @Override
   public Optional<String> resolveImage(String name, ImageCategory category) {

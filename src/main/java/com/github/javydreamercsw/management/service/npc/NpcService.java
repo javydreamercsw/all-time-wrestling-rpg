@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.service.npc;
 
 import static com.github.javydreamercsw.management.config.CacheConfig.NPCS_CACHE;
 
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -25,8 +27,8 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEv
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
@@ -37,12 +39,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class NpcService {
 
   private final NpcRepository npcRepository;
   private final ExpansionService expansionService;
+  private final DefaultImageService imageService;
+
+  @Autowired
+  public NpcService(
+      NpcRepository npcRepository,
+      ExpansionService expansionService,
+      DefaultImageService imageService) {
+    this.npcRepository = npcRepository;
+    this.expansionService = expansionService;
+    this.imageService = imageService;
+  }
 
   public static final String ATTRIBUTE_AWARENESS = "awareness";
 
@@ -107,6 +119,19 @@ public class NpcService {
 
   public void delete(Npc npc) {
     npcRepository.delete(npc);
+  }
+
+  /**
+   * Resolves the image URL for an NPC, using the default image system if no specific URL is set.
+   *
+   * @param npc The NPC entity.
+   * @return The resolved image URL.
+   */
+  public String resolveNpcImage(Npc npc) {
+    if (npc.getImageUrl() != null && !npc.getImageUrl().isBlank()) {
+      return npc.getImageUrl();
+    }
+    return imageService.resolveImage(npc.getName(), ImageCategory.NPC).url();
   }
 
   /**

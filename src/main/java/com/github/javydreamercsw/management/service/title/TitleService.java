@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.title;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -45,6 +47,7 @@ public class TitleService {
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
   private final Clock clock;
+  private final DefaultImageService imageService;
 
   public boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
@@ -392,6 +395,19 @@ public class TitleService {
   public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     return wrestlerOpt.map(titleRepository::findTitlesHeldByWrestler).orElse(List.of());
+  }
+
+  /**
+   * Resolves the image URL for a title, using the default image system if no specific URL is set.
+   *
+   * @param title The title entity.
+   * @return The resolved image URL.
+   */
+  public String resolveTitleImage(Title title) {
+    if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
+      return title.getImageUrl();
+    }
+    return imageService.resolveImage(title.getName(), ImageCategory.TITLE).url();
   }
 
   // Nested records for API responses/requests

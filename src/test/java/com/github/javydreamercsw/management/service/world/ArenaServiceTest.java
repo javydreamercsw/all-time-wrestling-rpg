@@ -42,6 +42,7 @@ class ArenaServiceTest {
   @Mock private ArenaRepository arenaRepository;
   @Mock private LocationService locationService;
   @Mock private ImageGenerationServiceFactory imageGenerationServiceFactory;
+  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
 
   @InjectMocks private ArenaService arenaService;
 

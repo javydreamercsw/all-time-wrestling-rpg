@@ -41,6 +41,7 @@ class NpcServiceTest {
 
   @Mock private NpcRepository npcRepository;
   @Mock private ExpansionService expansionService;
+  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
 
   @InjectMocks private NpcService npcService;
 
