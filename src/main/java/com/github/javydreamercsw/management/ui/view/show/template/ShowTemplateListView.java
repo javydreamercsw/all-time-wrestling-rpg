@@ -41,6 +41,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -368,7 +369,8 @@ public class ShowTemplateListView extends Main {
     editImagePreview = new Image();
     editImagePreview.setHeight("150px");
     editImagePreview.setWidth("150px");
-    editImagePreview.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
+    editImagePreview.addClassNames(
+        LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
 
     ImageUploadComponent imageUpload =
         new ImageUploadComponent(

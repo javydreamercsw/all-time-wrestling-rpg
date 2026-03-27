@@ -65,6 +65,9 @@ public class Npc extends AbstractEntity<Long> {
   private java.util.Map<String, Object> attributes =
       new java.util.HashMap<>(); // Stores JSON data for additional stats like "Awareness"
 
+  @Column(name = "expansion_code")
+  private String expansionCode;
+
   @Override
   public Long getId() {
     return id;

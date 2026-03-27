@@ -16,7 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
-import com.github.javydreamercsw.base.image.ImageCategory;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
