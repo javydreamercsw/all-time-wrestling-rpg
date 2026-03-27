@@ -32,7 +32,7 @@ public class ClasspathImageSource implements ImageSource {
   @Override
   public Optional<String> resolveImage(String name, ImageCategory category) {
     String subDir = category.getDirectoryName() + "/";
-    String filename = (category.isUseKebabCase() ? toKebabCase(name) : name) + ".png";
+    String filename = category.formatName(name) + ".png";
     String webPath = IMAGES_BASE + subDir + filename;
     String classpathPath = RESOURCE_PREFIX + webPath;
 
@@ -43,13 +43,6 @@ public class ClasspathImageSource implements ImageSource {
     }
 
     return Optional.empty();
-  }
-
-  private String toKebabCase(String name) {
-    if (name == null) {
-      return "";
-    }
-    return name.toLowerCase().replaceAll("\\s+", "-");
   }
 
   @Override

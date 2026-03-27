@@ -35,4 +35,17 @@ public enum ImageCategory {
   private final String defaultFilename;
   private final String directoryName;
   private final boolean useKebabCase;
+
+  /**
+   * Formats the entity name according to the category's naming strategy.
+   *
+   * @param name The entity name.
+   * @return The formatted name.
+   */
+  public String formatName(String name) {
+    if (name == null) {
+      return "";
+    }
+    return useKebabCase ? name.toLowerCase().replaceAll("\\s+", "-") : name;
+  }
 }
