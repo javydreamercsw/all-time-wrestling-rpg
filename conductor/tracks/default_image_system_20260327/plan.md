@@ -1,30 +1,32 @@
 # Implementation Plan: Default Image System for Game Entities
 
 ## Phase 1: Foundation & Core Service [checkpoint: 19cddf7]
+
 - [x] Task: Create `ImageCategory` enum (Wrestler, NPC, Show, Venue, Title, Team, Faction)
-    - [x] Define the enum with category-specific default filenames.
+  - [x] Define the enum with category-specific default filenames.
 - [x] Task: Create `ImageSource` interface and `ImageResolution` result object
-    - [x] `ImageSource` should have a method to find an image by name and category.
+  - [x] `ImageSource` should have a method to find an image by name and category.
 - [x] Task: Implement `ClasspathImageSource`
-    - [x] Create TDD unit tests to verify finding images in `src/main/resources/images/`.
-    - [x] Implement the source to search the classpath.
+  - [x] Create TDD unit tests to verify finding images in `src/main/resources/images/`.
+  - [x] Implement the source to search the classpath.
 - [x] Task: Implement `DefaultImageService`
-    - [x] Create TDD unit tests for the resolution logic (specific match -> fallback).
-    - [x] Implement the service to orchestrate multiple `ImageSource`s.
+  - [x] Create TDD unit tests for the resolution logic (specific match -> fallback).
+  - [x] Implement the service to orchestrate multiple `ImageSource`s.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Core Service' (Protocol in workflow.md)
 
 ## Phase 2: Configuration & External Sources
-- [ ] Task: Implement `FileSystemImageSource`
-  - [ ] Create TDD unit tests for resolving images from a local directory.
-  - [ ] Implement the source with configurable path support.
-- [ ] Task: Implement `PollinationsImageSource`
-  - [ ] Create TDD unit tests for dynamic image generation using `PollinationsImageGenerationService`.
-  - [ ] Implement the source to generate images based on entity name and category.
+
+- [x] Task: Implement `FileSystemImageSource`
+  - [x] Create TDD unit tests for resolving images from a local directory.
+  - [x] Implement the source with configurable path support.
+- [x] Task: Implement `PollinationsImageSource`
+  - [x] Create TDD unit tests for dynamic image generation using `PollinationsImageGenerationService`.
+  - [x] Implement the source to generate images based on entity name and category.
 - [ ] Task: Add Spring Configuration for Image System
   - [ ] Define properties for external image paths and source priority.
   - [ ] Ensure `DefaultImageService` is properly initialized with configured sources.
-- [ ] Task: Implement `RemoteUrlImageSource` (Basic)
-  - [ ] Add support for resolving images via absolute URLs.
+- [x] Task: Implement `RemoteUrlImageSource` (Basic)
+  - [x] Add support for resolving images via absolute URLs.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Configuration & External Sources' (Protocol in workflow.md)
 
 ## Phase 3: Integration with Entities
