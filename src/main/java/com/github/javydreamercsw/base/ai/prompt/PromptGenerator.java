@@ -92,15 +92,15 @@ public class PromptGenerator {
     }
 
     // 4. Venue & Location
-    if (segmentContext.getArenaContext() != null) {
+    if (segmentContext.getVenue() != null) {
       prompt
           .append("4. VENUE: The match takes place at '")
-          .append(segmentContext.getArenaContext().getName())
+          .append(segmentContext.getVenue().getName())
           .append("'.\n");
-      if (segmentContext.getLocationContext() != null) {
+      if (segmentContext.getVenue().getLocation() != null) {
         prompt
             .append("   Location: ")
-            .append(segmentContext.getLocationContext().getName())
+            .append(segmentContext.getVenue().getLocation())
             .append(".\n");
       }
     }
@@ -211,10 +211,10 @@ public class PromptGenerator {
     }
 
     // 6. Venue
-    if (segmentContext.getArenaContext() != null) {
-      prompt.append("VENUE: ").append(segmentContext.getArenaContext().getName());
-      if (segmentContext.getLocationContext() != null) {
-        prompt.append(" in ").append(segmentContext.getLocationContext().getName());
+    if (segmentContext.getVenue() != null) {
+      prompt.append("VENUE: ").append(segmentContext.getVenue().getName());
+      if (segmentContext.getVenue().getLocation() != null) {
+        prompt.append(" in ").append(segmentContext.getVenue().getLocation());
       }
       prompt.append("\n");
     }

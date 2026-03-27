@@ -69,7 +69,8 @@ class FactionFormValidationTest {
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
 
     factionListView =
-        new FactionListView(factionService, npcService, wrestlerRepository, securityUtils);
+        new FactionListView(
+            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
   }
 
   @Test

@@ -61,6 +61,11 @@ class ShowPlanningViewTest {
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.show.template.ShowTemplateService
+      showTemplateService;
+
   private ShowPlanningView showPlanningView;
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
@@ -80,6 +85,7 @@ class ShowPlanningViewTest {
             showPlanningService,
             showPlanningAiService,
             wrestlerService,
+            showTemplateService,
             wrestlerRepository,
             titleService,
             segmentTypeRepository,

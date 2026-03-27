@@ -52,6 +52,7 @@ import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
@@ -62,6 +63,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
 @PermitAll
+@AnonymousAllowed
 public class MainLayout extends AppLayout {
 
   private MenuService menuService;

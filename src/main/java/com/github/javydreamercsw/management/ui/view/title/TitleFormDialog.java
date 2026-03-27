@@ -31,15 +31,10 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -50,7 +45,6 @@ import lombok.NonNull;
 public class TitleFormDialog extends Dialog {
 
   private final Title title;
-  private final TitleService titleService;
   private final Binder<Title> binder = new Binder<>(Title.class);
   private final WrestlerRepository wrestlerRepository;
   private final TextField name;
@@ -58,7 +52,6 @@ public class TitleFormDialog extends Dialog {
   private final ComboBox<WrestlerTier> tier;
   private final ComboBox<Gender> gender;
   private final MultiSelectComboBox<Wrestler> champion;
-  private final Image imagePreview;
   private final Button saveButton;
 
   public TitleFormDialog(
@@ -69,7 +62,6 @@ public class TitleFormDialog extends Dialog {
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.title = title;
-    this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
     name = new TextField("Name");
     name.setReadOnly(!securityUtils.canEdit());
@@ -100,16 +92,6 @@ public class TitleFormDialog extends Dialog {
     champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(Wrestler::getName);
     champion.setReadOnly(!securityUtils.canEdit());
-
-    imagePreview = new Image();
-    imagePreview.setHeight("150px");
-    imagePreview.setWidth("150px");
-    imagePreview.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
-
-    VerticalLayout imageSection = new VerticalLayout(new Span("Title Art"), imagePreview);
-    imageSection.setPadding(false);
-    imageSection.setSpacing(false);
-    imageSection.setAlignItems(FlexComponent.Alignment.CENTER);
 
     binder.forField(name).asRequired().bind(Title::getName, Title::setName);
     binder.bind(description, Title::getDescription, Title::setDescription);
@@ -155,11 +137,7 @@ public class TitleFormDialog extends Dialog {
             championshipType,
             isActive,
             includeInRankings,
-            champion,
-            imageSection);
-    formLayout.setResponsiveSteps(
-        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
-    formLayout.setColspan(imageSection, 2);
+            champion);
     add(formLayout);
 
     saveButton =
@@ -185,7 +163,6 @@ public class TitleFormDialog extends Dialog {
     getFooter().add(new HorizontalLayout(saveButton, cancelButton));
 
     binder.readBean(this.title);
-    updateImagePreview();
 
     // Initial population for existing titles.
     if (this.title.getTier() != null) {
@@ -195,9 +172,5 @@ public class TitleFormDialog extends Dialog {
     if (title.getChampion() != null) {
       champion.setValue(title.getChampion());
     }
-  }
-
-  private void updateImagePreview() {
-    imagePreview.setSrc(titleService.resolveTitleImage(this.title));
   }
 }

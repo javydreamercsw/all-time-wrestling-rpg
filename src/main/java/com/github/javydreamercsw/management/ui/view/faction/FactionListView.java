@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -74,6 +75,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FactionListView extends Main {
 
   private final FactionService factionService;
+  private final WrestlerService wrestlerService;
   private final NpcService npcService;
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
@@ -86,10 +88,12 @@ public class FactionListView extends Main {
 
   public FactionListView(
       @NonNull FactionService factionService,
+      @NonNull WrestlerService wrestlerService,
       @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull SecurityUtils securityUtils) {
     this.factionService = factionService;
+    this.wrestlerService = wrestlerService;
     this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
@@ -518,10 +522,8 @@ public class FactionListView extends Main {
           .setHeader("Tier");
       membersGrid.setItems(loadedFaction.getMembers());
       membersGrid.setHeight("200px");
-      membersGrid.setWidthFull();
 
       membersInfo.add(membersGrid);
-      membersInfo.setWidthFull();
       layout.add(membersInfo);
     } else {
       layout.add(new Div("No members in this faction."));
@@ -567,7 +569,6 @@ public class FactionListView extends Main {
         .setHeader("Tier");
     currentMembersGrid.addColumn(Wrestler::getFans).setHeader("Fans");
     currentMembersGrid.setId("members-grid");
-    currentMembersGrid.setWidthFull();
 
     // Remove member button
     currentMembersGrid

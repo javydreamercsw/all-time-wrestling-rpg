@@ -90,7 +90,6 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
     this.securityUtils = securityUtils;
 
     npcName.setId("npc-name");
-    npcImage.setSrc("https://via.placeholder.com/150");
     npcImage.setAlt("NPC Image");
     npcImage.setId("npc-image");
     npcImage.setMaxWidth("300px");
@@ -201,11 +200,7 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
       npcName.setText(npc.getName());
       npcDetails.setText(String.format("Type: %s", npc.getNpcType()));
 
-      if (npc.getImageUrl() != null && !npc.getImageUrl().isEmpty()) {
-        npcImage.setSrc(npc.getImageUrl());
-      } else {
-        npcImage.setSrc("https://via.placeholder.com/150");
-      }
+      npcImage.setSrc(npcService.resolveNpcImage(npc));
 
       // Remove existing paragraphs but keep header and buttons
       biographyLayout

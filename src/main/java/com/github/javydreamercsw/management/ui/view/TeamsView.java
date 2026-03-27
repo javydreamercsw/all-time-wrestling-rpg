@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.team.Team;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.vaadin.flow.component.button.Button;
@@ -27,7 +26,6 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -38,7 +36,6 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
-import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +52,6 @@ import org.springframework.data.domain.PageRequest;
 public class TeamsView extends VerticalLayout {
 
   private final TeamService teamService;
-  private final TeamRepository teamRepository;
   private final SecurityUtils securityUtils;
   private final Grid<TeamDTO> grid;
   private final TextField searchField;
@@ -63,12 +59,8 @@ public class TeamsView extends VerticalLayout {
   private TeamFormDialog teamFormDialog;
 
   public TeamsView(
-      TeamService teamService,
-      TeamRepository teamRepository,
-      TeamFormDialog teamFormDialog,
-      SecurityUtils securityUtils) {
+      TeamService teamService, TeamFormDialog teamFormDialog, SecurityUtils securityUtils) {
     this.teamService = teamService;
-    this.teamRepository = teamRepository;
     this.teamFormDialog = teamFormDialog;
     this.securityUtils = securityUtils;
     this.grid = new Grid<>(TeamDTO.class, false);
@@ -88,24 +80,6 @@ public class TeamsView extends VerticalLayout {
     grid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_ROW_STRIPES);
 
     // Configure columns
-    grid.addComponentColumn(
-            dto -> {
-              Image image = new Image();
-              Optional<Team> team = teamRepository.findById(dto.getId());
-              if (team.isPresent()) {
-                image.setSrc(teamService.resolveTeamImage(team.get()));
-              } else {
-                image.setSrc("images/generic-team.png");
-              }
-              image.setHeight("50px");
-              image.setWidth("50px");
-              image.addClassName(LumoUtility.BorderRadius.SMALL);
-              return image;
-            })
-        .setHeader("Art")
-        .setFlexGrow(0)
-        .setWidth("70px");
-
     grid.addColumn(TeamDTO::getName).setHeader("Team Name").setSortable(true).setFlexGrow(2);
 
     grid.addColumn(TeamDTO::getMemberNames).setHeader("Members").setSortable(false).setFlexGrow(3);

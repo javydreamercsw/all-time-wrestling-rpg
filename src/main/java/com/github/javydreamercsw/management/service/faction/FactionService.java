@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.faction;
 
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -26,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
  * and faction operations.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class FactionService {
@@ -48,6 +48,21 @@ public class FactionService {
   private final WrestlerRepository wrestlerRepository;
   private final ExpansionService expansionService;
   private final Clock clock; // Injected via constructor
+  private final DefaultImageService imageService;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public FactionService(
+      FactionRepository factionRepository,
+      WrestlerRepository wrestlerRepository,
+      ExpansionService expansionService,
+      Clock clock,
+      DefaultImageService imageService) {
+    this.factionRepository = factionRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.expansionService = expansionService;
+    this.clock = clock;
+    this.imageService = imageService;
+  }
 
   /** Get all factions. */
   @Transactional(readOnly = true)
@@ -59,6 +74,13 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
   }
 
@@ -79,6 +101,13 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
   }
 
@@ -92,6 +121,13 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
   }
 
@@ -108,6 +144,13 @@ public class FactionService {
                 faction ->
                     faction.getMembers().stream()
                         .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+            .peek(
+                faction -> {
+                  if (faction.getManager() != null
+                      && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                    faction.setManager(null);
+                  }
+                })
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
@@ -165,7 +208,21 @@ public class FactionService {
             faction ->
                 faction.getMembers().stream()
                     .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              // Hide manager if their expansion is disabled
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
         .collect(Collectors.toList());
+  }
+
+  @org.springframework.context.event.EventListener
+  public void onExpansionToggled(
+      com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
+    log.info("Expansion '{}' toggled, clear faction caches if any.", event.getExpansionCode());
   }
 
   /** Create a new faction. */
@@ -487,5 +544,18 @@ public class FactionService {
       return f1.get().getAffinity();
     }
     return 0;
+  }
+
+  /**
+   * Resolves the image URL for a faction, using the default image system if no specific URL is set.
+   *
+   * @param faction The faction entity.
+   * @return The resolved image URL.
+   */
+  public String resolveFactionImage(Faction faction) {
+    if (faction.getImageUrl() != null && !faction.getImageUrl().isBlank()) {
+      return faction.getImageUrl();
+    }
+    return imageService.resolveImage(faction.getName(), ImageCategory.FACTION).url();
   }
 }

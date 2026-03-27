@@ -16,4 +16,13 @@
 }, {
   "name": "Trailblazers Expansion",
   "expansion_code": "TRAILBLAZERS"
+}, {
+  "name": "ATW vs. WOW Expansion",
+  "expansion_code": "ATW_VS_WOW"
+}, {
+  "name": "Gail Kim Expansion",
+  "expansion_code": "GAIL_KIM"
+}, {
+  "name": "Hurt Business Expansion",
+  "expansion_code": "HURT_BUSINESS"
 } ]

@@ -133,10 +133,16 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
             + "Injuries should be mentioned if they might affect performance.\n\n");
 
     prompt.append(
-        "If arenaContext and locationContext are present, use the arena's name, description,"
-            + " capacity, and environmental traits, as well as the location's cultural tags to"
-            + " ground the narration in the specific venue and city. Describe the unique"
-            + " atmosphere and how it affects the match and audience reactions.\n\n");
+        "Use the 'hailingFrom' information in each wrestler's context to provide authentic"
+            + " introductions. Narrate the ring announcer or commentators specifying where the"
+            + " wrestler is from during their entrance or early in the match.\n\n");
+
+    prompt.append(
+        "If venue context is present, use the name, description, location, capacity, type,"
+            + " atmosphere, significance, alignmentBias, and environmentalTraits to ground the"
+            + " narration in the specific setting. Incorporate culturalTags to add local flair."
+            + " Describe the unique atmosphere and how it affects the match and audience"
+            + " reactions.\n\n");
 
     prompt.append("Here is the JSON context:\n\n");
     prompt.append(jsonContext);

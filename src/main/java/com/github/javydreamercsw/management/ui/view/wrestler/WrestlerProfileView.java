@@ -144,7 +144,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.imageStorageService = imageStorageService;
 
     wrestlerName.setId("wrestler-name");
-    wrestlerImage.setSrc("https://via.placeholder.com/150");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
 
@@ -265,11 +264,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       }
       wrestlerDetails.setText(details);
 
-      if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
-        wrestlerImage.setSrc(wrestler.getImageUrl());
-      } else {
-        wrestlerImage.setSrc("https://via.placeholder.com/150");
-      }
+      wrestlerImage.setSrc(wrestlerService.resolveWrestlerImage(wrestler));
 
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());

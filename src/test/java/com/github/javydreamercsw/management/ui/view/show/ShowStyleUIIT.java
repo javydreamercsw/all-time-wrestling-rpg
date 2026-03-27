@@ -183,7 +183,8 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(session.getService()).thenReturn(mock(VaadinService.class));
     ui.getInternals().setSession(session);
 
-    ShowCalendarView showCalendarView = new ShowCalendarView(showService, gameSettingService);
+    ShowCalendarView showCalendarView =
+        new ShowCalendarView(showService, gameSettingService, showTemplateService);
 
     // The calendar is populated in the constructor, so we can get the entries right away.
     Instant start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();

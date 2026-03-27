@@ -162,11 +162,12 @@ public class LocationFormDialog extends Dialog {
   private void updateImagePreview(String url) {
     if (url != null && !url.trim().isEmpty()) {
       locationImage.setSrc(url);
-      locationImage.setVisible(true);
+    } else if (location != null) {
+      locationImage.setSrc(service.resolveLocationImage(location));
     } else {
-      locationImage.setSrc("https://via.placeholder.com/150");
-      locationImage.setVisible(true);
+      locationImage.setSrc("images/generic-venue.png");
     }
+    locationImage.setVisible(true);
   }
 
   private void populateForm() {

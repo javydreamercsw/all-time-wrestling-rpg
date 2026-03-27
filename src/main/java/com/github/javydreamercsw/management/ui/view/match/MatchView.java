@@ -16,12 +16,11 @@
 */
 package com.github.javydreamercsw.management.ui.view.match;
 
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.ArenaContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.CommentatorContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.LocationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
@@ -723,6 +722,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     Wrestler w = p.getWrestler();
                     wc.setName(w.getName());
                     wc.setDescription(w.getDescription());
+                    wc.setHailingFrom(w.getHeritageTag());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
@@ -796,26 +796,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 .toList());
       }
 
-      // Arena and Location Context
+      // Venue Context
       if (segment.getShow().getArena() != null) {
         Arena arena = segment.getShow().getArena();
-        ArenaContext ac = new ArenaContext();
-        ac.setName(arena.getName());
-        ac.setDescription(arena.getDescription());
-        ac.setCapacity(arena.getCapacity());
-        ac.setAlignmentBias(arena.getAlignmentBias().getDisplayName());
-        ac.setEnvironmentalTraits(List.copyOf(arena.getEnvironmentalTraits()));
-        ac.setImageUrl(arena.getImageUrl());
-        context.setArenaContext(ac);
+        VenueContext vc = new VenueContext();
+        vc.setName(arena.getName());
+        vc.setDescription(arena.getDescription());
+        vc.setCapacity(arena.getCapacity());
+        vc.setAlignmentBias(arena.getAlignmentBias().getDisplayName());
+        vc.setEnvironmentalTraits(List.copyOf(arena.getEnvironmentalTraits()));
+        vc.setImageUrl(arena.getImageUrl());
+        vc.setAtmosphere("Electric and historic - where legends are made");
+        vc.setSignificance("A key venue in the All Time Wrestling circuit.");
 
         if (arena.getLocation() != null) {
           Location location = arena.getLocation();
-          LocationContext lc = new LocationContext();
-          lc.setName(location.getName());
-          lc.setDescription(location.getDescription());
-          lc.setCulturalTags(List.copyOf(location.getCulturalTags()));
-          context.setLocationContext(lc);
+          vc.setLocation(location.getName());
+          vc.setCulturalTags(List.copyOf(location.getCulturalTags()));
         }
+        context.setVenue(vc);
       }
 
       String feedback = feedbackArea.getValue();

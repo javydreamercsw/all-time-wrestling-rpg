@@ -99,19 +99,6 @@ public class TitleListView extends Main {
 
   private void setupGrid() {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-    grid.addComponentColumn(
-            title -> {
-              com.vaadin.flow.component.html.Image image =
-                  new com.vaadin.flow.component.html.Image(
-                      titleService.resolveTitleImage(title), "Title Image");
-              image.setHeight("50px");
-              image.setWidth("50px");
-              image.addClassName(LumoUtility.BorderRadius.SMALL);
-              return image;
-            })
-        .setHeader("Art")
-        .setFlexGrow(0)
-        .setWidth("70px");
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
     grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);

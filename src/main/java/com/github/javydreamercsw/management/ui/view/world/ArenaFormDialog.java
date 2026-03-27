@@ -266,11 +266,12 @@ public class ArenaFormDialog extends Dialog {
   private void updateImagePreview(String url) {
     if (url != null && !url.trim().isEmpty()) {
       arenaImage.setSrc(url);
-      arenaImage.setVisible(true);
+    } else if (arena != null) {
+      arenaImage.setSrc(arenaService.resolveArenaImage(arena));
     } else {
-      arenaImage.setSrc("https://via.placeholder.com/150");
-      arenaImage.setVisible(true);
+      arenaImage.setSrc("images/generic-venue.png");
     }
+    arenaImage.setVisible(true);
   }
 
   private void generateImage() {

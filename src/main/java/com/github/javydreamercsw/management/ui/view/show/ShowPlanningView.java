@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -76,6 +77,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
   private final WrestlerService wrestlerService;
+  private final ShowTemplateService showTemplateService;
   private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
@@ -97,6 +99,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
       WrestlerService wrestlerService,
+      ShowTemplateService showTemplateService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
@@ -110,6 +113,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
     this.wrestlerService = wrestlerService;
+    this.showTemplateService = showTemplateService;
     this.npcService = npcService;
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
@@ -265,11 +269,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   }
 
   private void updateTemplateImage(Show show) {
-    if (show != null
-        && show.getTemplate() != null
-        && show.getTemplate().getImageUrl() != null
-        && !show.getTemplate().getImageUrl().isEmpty()) {
-      templateImage.setSrc(show.getTemplate().getImageUrl());
+    if (show != null && show.getTemplate() != null) {
+      templateImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
       templateImage.setVisible(true);
     } else {
       templateImage.setVisible(false);

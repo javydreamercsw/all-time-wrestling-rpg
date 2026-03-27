@@ -335,16 +335,12 @@ public class ShowDetailView extends Main
     }
 
     Image showImage = new Image();
-    if (show.getTemplate() != null
-        && show.getTemplate().getImageUrl() != null
-        && !show.getTemplate().getImageUrl().isEmpty()) {
-      showImage.setSrc(show.getTemplate().getImageUrl());
-    } else if (show.getArena() != null
-        && show.getArena().getImageUrl() != null
-        && !show.getArena().getImageUrl().isEmpty()) {
-      showImage.setSrc(show.getArena().getImageUrl());
+    if (show.getTemplate() != null) {
+      showImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
+    } else if (show.getArena() != null) {
+      showImage.setSrc(arenaService.resolveArenaImage(show.getArena()));
     } else {
-      showImage.setSrc("https://via.placeholder.com/150");
+      showImage.setSrc("images/generic-show.png");
     }
     showImage.setHeight("100px");
     showImage.setWidth("100px");

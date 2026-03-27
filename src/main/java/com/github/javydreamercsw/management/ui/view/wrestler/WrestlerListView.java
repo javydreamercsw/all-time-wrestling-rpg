@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -49,13 +50,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
 @Menu(order = 0, icon = "vaadin:user", title = "Wrestler List")
-@PermitAll
+@PermitAll // When security is enabled, allow all authenticated users
 public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
   private final NpcService npcService;
+  private final WrestlerRepository wrestlerRepository;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
+  private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
   final Grid<Wrestler> wrestlerGrid;
 
@@ -63,14 +67,18 @@ public class WrestlerListView extends Main {
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
       @NonNull NpcService npcService,
+      @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils,
       @NonNull CampaignService campaignService,
       @NonNull ImageStorageService imageStorageService) {
     this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
     this.npcService = npcService;
+    this.wrestlerRepository = wrestlerRepository;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
+    this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
@@ -112,14 +120,8 @@ public class WrestlerListView extends Main {
               return nameLayout;
             })
         .setHeader("Name")
-        .setKey("name")
         .setComparator(Comparator.comparing(Wrestler::getName))
         .setSortable(true);
-    wrestlerGrid.sort(
-        java.util.List.of(
-            new com.vaadin.flow.component.grid.GridSortOrder<>(
-                wrestlerGrid.getColumnByKey("name"),
-                com.vaadin.flow.data.provider.SortDirection.ASCENDING)));
     wrestlerGrid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getDeckSize).setHeader("Deck Size").setSortable(true);
     wrestlerGrid
@@ -134,6 +136,10 @@ public class WrestlerListView extends Main {
     wrestlerGrid.addColumn(Wrestler::getLowStamina).setHeader("Low Stamina").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getBumps).setHeader("Bumps").setSortable(true);
+    wrestlerGrid
+        .addColumn(wrestler -> wrestler.getManager() != null ? wrestler.getManager().getName() : "")
+        .setHeader("Manager")
+        .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
     wrestlerGrid
         .addComponentColumn(

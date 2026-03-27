@@ -14,16 +14,25 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto;
+package com.github.javydreamercsw.base.ai.mock;
 
-import lombok.Data;
+import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 
-@Data
-public class NpcDTO {
-  private String name;
-  private String description;
-  private String type;
-  private String set;
-  private String alignment;
-  private Integer awareness;
+/** Mock implementation of {@link ImageGenerationService} for testing. */
+public class MockImageGenerationService implements ImageGenerationService {
+
+  @Override
+  public String generateImage(ImageRequest request) {
+    return "mock-image-url.png";
+  }
+
+  @Override
+  public String getProviderName() {
+    return "MockProvider";
+  }
+
+  @Override
+  public boolean isAvailable() {
+    return true;
+  }
 }
