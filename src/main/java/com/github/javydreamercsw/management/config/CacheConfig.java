@@ -99,16 +99,23 @@ public class CacheConfig {
 
   /** Cache statistics and monitoring bean. Provides insights into cache performance. */
   @Bean
-  public CacheMonitor cacheMonitor(CacheManager cacheManager) {
-    return new CacheMonitor(cacheManager);
+  public CacheMonitor cacheMonitor(
+      CacheManager cacheManager,
+      @org.springframework.context.annotation.Lazy
+          com.github.javydreamercsw.management.service.npc.NpcService npcService) {
+    return new CacheMonitor(cacheManager, npcService);
   }
 
   /** Cache monitoring utility for performance analysis. */
   public static class CacheMonitor {
     private final CacheManager cacheManager;
+    private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
 
-    public CacheMonitor(CacheManager cacheManager) {
+    public CacheMonitor(
+        CacheManager cacheManager,
+        com.github.javydreamercsw.management.service.npc.NpcService npcService) {
       this.cacheManager = cacheManager;
+      this.npcService = npcService;
     }
 
     /** Logs cache statistics for monitoring performance. */
@@ -194,9 +201,15 @@ public class CacheConfig {
      */
     public void warmUpCaches() {
       log.info("🔥 Warming up caches...");
-      // Cache warming would be implemented by the services
-      // This is a placeholder for cache warming logic
-      log.info("✅ Cache warm-up completed");
+      try {
+        // Warm up NPCs cache
+        log.debug("Warming up NPCs cache...");
+        npcService.findAll();
+
+        log.info("✅ Cache warm-up completed");
+      } catch (Exception e) {
+        log.error("❌ Error during cache warm-up", e);
+      }
     }
   }
 
