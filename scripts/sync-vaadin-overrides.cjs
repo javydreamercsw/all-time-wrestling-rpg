@@ -20,8 +20,8 @@ if (!vaadinVersion) {
   process.exit(2);
 }
 
-// Most @vaadin/* packages are at 25.0.7 or 25.0.4 even when Flow is 25.0.7
-const fallbackVaadinVersion = vaadinVersion || '25.0.7';
+// Most @vaadin/* packages are at 25.0.9 or 25.0.8 even when Flow is 25.0.9
+const fallbackVaadinVersion = vaadinVersion || '25.0.9';
 
 const packageJsonPath = path.resolve(process.cwd(), 'package.json');
 if (!fs.existsSync(packageJsonPath)) {
@@ -45,13 +45,13 @@ const pinnedNpmVersions = {
   '@vaadin/vaadin-development-mode-detector': '2.0.7',
   '@vaadin/vaadin-usage-statistics': '2.1.3',
 
-  // Npm lagging / not published for 25.0.7
-  '@vaadin/aura': '25.0.7',
-  '@vaadin/react-components': '25.0.7',
-  '@vaadin/vaadin-lumo-styles': '25.0.7',
-  '@vaadin/vaadin-themable-mixin': '25.0.7',
+  // Npm lagging / not published for 25.0.9
+  '@vaadin/aura': '25.0.9',
+  '@vaadin/react-components': '25.0.9',
+  '@vaadin/vaadin-lumo-styles': '25.0.9',
+  '@vaadin/vaadin-themable-mixin': '25.0.9',
   '@vaadin/router': '2.0.1',
-  '@vaadin/a11y-base': '25.0.7'
+  '@vaadin/a11y-base': '25.0.9'
 };
 
 // Only these packages will be updated to the Maven Vaadin version automatically.

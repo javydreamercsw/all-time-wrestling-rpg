@@ -48,7 +48,7 @@
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.4</testcontainers.version>
-    <vaadin.version>25.0.7</vaadin.version>
+    <vaadin.version>25.0.8</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -260,7 +260,7 @@
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
-      <version>7.1.5</version>
+      <version>7.1.6</version>
     </dependency>
     <!-- Persistence -->
     <dependency>
@@ -411,7 +411,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>6.2.0-M1</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
