@@ -241,7 +241,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllIncludingInactive() {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans")).stream()
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
         .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
         .collect(Collectors.toList());
   }
@@ -251,6 +251,7 @@ public class WrestlerService {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return wrestlerRepository.findAllByActiveTrue().stream()
         .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
+        .sorted(Comparator.comparing(Wrestler::getName))
         .collect(Collectors.toList());
   }
 
@@ -298,7 +299,9 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllByAccount(@NonNull Account account) {
-    return wrestlerRepository.findAllByAccount(account);
+    return wrestlerRepository.findAllByAccount(account).stream()
+        .sorted(Comparator.comparing(Wrestler::getName))
+        .toList();
   }
 
   @PreAuthorize("isAuthenticated()")
