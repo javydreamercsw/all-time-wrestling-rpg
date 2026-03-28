@@ -70,7 +70,8 @@ public class PermissionService {
       log.debug("isOwner: Using wrestler from CustomUserDetails");
       ownedWrestlerIds = java.util.Collections.singleton(customUserDetails.getWrestler().getId());
     } else {
-      log.debug("isOwner: Fetching wrestlers from repository for user: {}", userDetails.getUsername());
+      log.debug(
+          "isOwner: Fetching wrestlers from repository for user: {}", userDetails.getUsername());
       // Fetch all wrestlers associated with the account
       java.util.List<Wrestler> userWrestlers =
           accountRepository
