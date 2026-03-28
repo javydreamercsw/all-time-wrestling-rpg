@@ -54,8 +54,10 @@ public class PermissionService {
     }
 
     Object principal = authentication.getPrincipal();
-    log.debug("isOwner: Principal class: {}, Target object class: {}", 
-        principal.getClass().getName(), targetDomainObject.getClass().getName());
+    log.debug(
+        "isOwner: Principal class: {}, Target object class: {}",
+        principal.getClass().getName(),
+        targetDomainObject.getClass().getName());
 
     if (!(principal instanceof UserDetails userDetails)) {
       log.warn(
@@ -70,29 +72,39 @@ public class PermissionService {
 
     if (principal instanceof CustomUserDetails customUserDetails
         && customUserDetails.getWrestler() != null) {
-      log.debug("isOwner: Found wrestler in CustomUserDetails: {}", customUserDetails.getWrestler().getId());
+      log.debug(
+          "isOwner: Found wrestler in CustomUserDetails: {}",
+          customUserDetails.getWrestler().getId());
       ownedWrestlerIds.add(customUserDetails.getWrestler().getId());
     }
 
     // Always fetch from repo as well to handle integration tests with mock users
     // where the transient ID in principal might not match the persistent ID in DB.
-    log.debug("isOwner: Fetching wrestlers from repository for user: {}", userDetails.getUsername());
+    log.debug(
+        "isOwner: Fetching wrestlers from repository for user: {}", userDetails.getUsername());
     accountRepository
         .findByUsername(userDetails.getUsername())
         .ifPresentOrElse(
             account -> {
-              log.debug("isOwner: Found persistent account ID: {} for username: {}", account.getId(), account.getUsername());
+              log.debug(
+                  "isOwner: Found persistent account ID: {} for username: {}",
+                  account.getId(),
+                  account.getUsername());
               java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               log.debug(
                   "isOwner: Found {} wrestlers in DB for account ID: {}",
                   wrestlers.size(),
                   account.getId());
-              wrestlers.forEach(w -> {
-                log.debug("isOwner: User owns Wrestler ID: {} ({})", w.getId(), w.getName());
-                ownedWrestlerIds.add(w.getId());
-              });
+              wrestlers.forEach(
+                  w -> {
+                    log.debug("isOwner: User owns Wrestler ID: {} ({})", w.getId(), w.getName());
+                    ownedWrestlerIds.add(w.getId());
+                  });
             },
-            () -> log.warn("isOwner: Account not found in DB for username: {}", userDetails.getUsername()));
+            () ->
+                log.warn(
+                    "isOwner: Account not found in DB for username: {}",
+                    userDetails.getUsername()));
 
     if (ownedWrestlerIds.isEmpty()) {
       log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
@@ -137,7 +149,11 @@ public class PermissionService {
         return false;
       }
       Long wrestlerId = deckWrestler.getId();
-      log.debug("isOwner: Checking Deck {} (Wrestler ID: {}) against owned: {}", deck.getId(), wrestlerId, ownedWrestlerIds);
+      log.debug(
+          "isOwner: Checking Deck {} (Wrestler ID: {}) against owned: {}",
+          deck.getId(),
+          wrestlerId,
+          ownedWrestlerIds);
       return wrestlerId != null && ownedWrestlerIds.contains(wrestlerId);
     }
 

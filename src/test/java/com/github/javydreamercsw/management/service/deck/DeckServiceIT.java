@@ -189,6 +189,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     deck.setCreationDate(Instant.now());
     final Deck finalDeck = deckRepository.save(deck);
 
-    Assertions.assertThrows(AuthorizationDeniedException.class, () -> deckService.delete(finalDeck));
+    Assertions.assertThrows(
+        AuthorizationDeniedException.class, () -> deckService.delete(finalDeck));
   }
 }
