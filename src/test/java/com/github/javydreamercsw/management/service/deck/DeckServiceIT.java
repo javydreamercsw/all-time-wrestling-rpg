@@ -122,34 +122,23 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanListDecks() {
     deckService.list(Pageable.unpaged());
-    // No exception means success
   }
 
   @Test
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanCountDecks() {
     deckService.count();
-    // No exception means success
   }
 
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindAllDecks() {
     deckService.findAll();
-    // No exception means success
   }
 
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindById() {
-    // Create deck as admin first to bypass security check during creation
-    // or use a different user context for creation
-    // But here we want to test if player can find their own deck.
-    // The issue is likely that createDeck requires permissions that deck_player might not have
-    // OR createDeck creates it, but findById fails.
-
-    // Let's temporarily switch to admin to create the deck
-    // Actually, we can just use the repository directly to bypass service security
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
     deck.setCreationDate(Instant.now());
@@ -157,18 +146,16 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
     Assertions.assertNotNull(deck.getId());
     deckService.findById(deck.getId());
-    // No exception means success
   }
 
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindByWrestler() {
     deckService.findByWrestler(playerWrestler);
-    // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "booker", roles = "BOOKER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCanSaveTheirOwnDeck() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -177,7 +164,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
     deck = deckRepository.save(deck);
 
     deckService.save(deck);
-    // No exception means success
   }
 
   @Test
@@ -198,7 +184,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
     deck = deckRepository.save(deck);
 
     deckService.delete(deck);
-    // No exception means success
   }
 
   @Test
@@ -211,7 +196,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
     deck = deckRepository.save(deck);
 
     deckService.delete(deck);
-    // No exception means success
   }
 
   @Test
