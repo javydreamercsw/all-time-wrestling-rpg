@@ -63,28 +63,55 @@ public class PermissionService {
 
     log.debug("isOwner: Checking ownership for user: {}", userDetails.getUsername());
 
-    // Fetch all wrestlers associated with the account
-    java.util.List<Wrestler> userWrestlers =
-        accountRepository
-            .findByUsername(userDetails.getUsername())
-            .map(wrestlerRepository::findByAccount)
-            .orElse(java.util.Collections.emptyList());
+    java.util.Set<Long> ownedWrestlerIds;
 
-    if (userWrestlers.isEmpty()) {
-      log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
-      return false; // User does not have any wrestlers assigned
+    if (principal instanceof CustomUserDetails customUserDetails
+        && customUserDetails.getWrestler() != null) {
+      log.debug("isOwner: Using wrestler from CustomUserDetails");
+      ownedWrestlerIds = java.util.Collections.singleton(customUserDetails.getWrestler().getId());
+    } else {
+      log.debug("isOwner: Fetching wrestlers from repository for user: {}", userDetails.getUsername());
+      // Fetch all wrestlers associated with the account
+      java.util.List<Wrestler> userWrestlers =
+          accountRepository
+              .findByUsername(userDetails.getUsername())
+              .map(
+                  account -> {
+                    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+                    log.debug(
+                        "isOwner: Found {} wrestlers for account: {}",
+                        wrestlers.size(),
+                        account.getUsername());
+                    return wrestlers;
+                  })
+              .orElse(java.util.Collections.emptyList());
+
+      if (userWrestlers.isEmpty()) {
+        log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
+        return false; // User does not have any wrestlers assigned
+      }
+
+      ownedWrestlerIds =
+          userWrestlers.stream().map(Wrestler::getId).collect(java.util.stream.Collectors.toSet());
     }
 
-    java.util.Set<Long> ownedWrestlerIds =
-        userWrestlers.stream().map(Wrestler::getId).collect(java.util.stream.Collectors.toSet());
+    log.debug("isOwner: Owned wrestler IDs: {}", ownedWrestlerIds);
 
     switch (targetDomainObject) {
       case Wrestler targetWrestler -> {
+        log.debug("isOwner: Checking Wrestler ID: {}", targetWrestler.getId());
         return ownedWrestlerIds.contains(targetWrestler.getId());
       }
       case Deck deck -> {
-        Wrestler deckWrestler = deck.getWrestler();
-        return deckWrestler != null && ownedWrestlerIds.contains(deckWrestler.getId());
+        if (deck.getWrestler() == null) {
+          log.warn("isOwner: Deck {} has no wrestler", deck.getId());
+          return false;
+        }
+        // Fetch fresh wrestler to ensure account is populated
+        return wrestlerRepository
+            .findById(deck.getWrestler().getId())
+            .map(w -> ownedWrestlerIds.contains(w.getId()))
+            .orElse(false);
       }
       case DeckCard deckCard -> {
         Deck deck = deckCard.getDeck();

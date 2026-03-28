@@ -70,7 +70,7 @@ public class DeckService {
     return deckRepository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck)")
   public void delete(Deck deck) {
     deckRepository.delete(deck);
   }
