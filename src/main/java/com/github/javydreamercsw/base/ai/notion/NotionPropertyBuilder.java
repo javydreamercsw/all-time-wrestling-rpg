@@ -20,43 +20,56 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.model.common.PropertyType;
 import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.PageProperty;
 
+@Slf4j
 public class NotionPropertyBuilder {
+
+  private static final int MAX_TEXT_LENGTH = 2000;
 
   public static PageProperty createTitleProperty(@NonNull String content) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Title);
-    property.setTitle(
-        Collections.singletonList(
-            new PageProperty.RichText(
-                RichTextType.Text,
-                new PageProperty.RichText.Text(content),
-                null,
-                null,
-                null,
-                null,
-                null)));
+    property.setTitle(createRichTextList(content));
     return property;
   }
 
   public static PageProperty createRichTextProperty(@NonNull String content) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.RichText);
-    property.setRichText(
-        Collections.singletonList(
-            new PageProperty.RichText(
-                RichTextType.Text,
-                new PageProperty.RichText.Text(content),
-                null,
-                null,
-                null,
-                null,
-                null)));
+    property.setRichText(createRichTextList(content));
     return property;
+  }
+
+  private static List<PageProperty.RichText> createRichTextList(@NonNull String content) {
+    if (content.isEmpty()) {
+      return Collections.singletonList(
+          new PageProperty.RichText(
+              RichTextType.Text, new PageProperty.RichText.Text(""), null, null, null, null, null));
+    }
+
+    java.util.ArrayList<PageProperty.RichText> list = new java.util.ArrayList<>();
+    int chunkCount = (int) Math.ceil((double) content.length() / MAX_TEXT_LENGTH);
+    if (chunkCount > 1) {
+      log.info("✂️ Splitting text (length: {}) into {} chunks", content.length(), chunkCount);
+    }
+    for (int i = 0; i < content.length(); i += MAX_TEXT_LENGTH) {
+      String chunk = content.substring(i, Math.min(i + MAX_TEXT_LENGTH, content.length()));
+      list.add(
+          new PageProperty.RichText(
+              RichTextType.Text,
+              new PageProperty.RichText.Text(chunk),
+              null,
+              null,
+              null,
+              null,
+              null));
+    }
+    return list;
   }
 
   public static PageProperty createNumberProperty(@NonNull Double value) {

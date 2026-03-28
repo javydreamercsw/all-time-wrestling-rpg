@@ -16,12 +16,15 @@
 */
 package com.github.javydreamercsw.management.domain.season;
 
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface SeasonRepository
     extends JpaRepository<Season, Long>, JpaSpecificationExecutor<Season> {
@@ -47,4 +50,18 @@ public interface SeasonRepository
           + " s.description LIKE CONCAT('%', :searchTerm, '%')")
   Page<Season> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
       String searchTerm, Pageable pageable);
+
+  /**
+   * Find all seasons where a wrestler participated in at least one segment.
+   *
+   * @param wrestler the wrestler to search for
+   * @return list of seasons
+   */
+  @Query(
+      "SELECT DISTINCT se FROM Segment s "
+          + "JOIN s.participants p "
+          + "JOIN s.show sh "
+          + "JOIN sh.season se "
+          + "WHERE p.wrestler = :wrestler")
+  List<Season> findByWrestler(@Param("wrestler") Wrestler wrestler);
 }
