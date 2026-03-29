@@ -71,55 +71,32 @@ public class PermissionService {
 
     java.util.Set<Long> ownedWrestlerIds = new java.util.HashSet<>();
 
-    if (principal instanceof CustomUserDetails customUserDetails
-        && customUserDetails.getWrestler() != null) {
-      log.debug(
-          "isOwner: Found wrestler in CustomUserDetails: {}",
-          customUserDetails.getWrestler().getId());
-      ownedWrestlerIds.add(customUserDetails.getWrestler().getId());
-    }
-
-    // Always fetch from repo as well to handle integration tests with mock users
+    // Always fetch from repo to handle integration tests with mock users
     // where the transient ID in principal might not match the persistent ID in DB.
-    log.debug(
-        "isOwner: Fetching wrestlers from repository for user: {}", userDetails.getUsername());
     accountRepository
         .findByUsername(userDetails.getUsername())
-        .ifPresentOrElse(
+        .ifPresent(
             account -> {
               java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               wrestlers.forEach(w -> ownedWrestlerIds.add(w.getId()));
-            },
-            () ->
-                log.warn(
-                    "isOwner: Account not found in DB for username: {}",
-                    userDetails.getUsername()));
+            });
 
     if (ownedWrestlerIds.isEmpty()) {
       log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
       return false; // User does not have any wrestlers assigned
     }
 
-    log.debug("isOwner: Total owned wrestler IDs: {}", ownedWrestlerIds);
-
     if (targetDomainObject instanceof Wrestler targetWrestler) {
       Long targetId = targetWrestler.getId();
-      log.debug("isOwner: Checking Wrestler ID: {} against owned: {}", targetId, ownedWrestlerIds);
       return targetId != null && ownedWrestlerIds.contains(targetId);
     }
 
     if (targetDomainObject instanceof Deck deck) {
       Wrestler deckWrestler = deck.getWrestler();
       if (deckWrestler == null) {
-        log.warn("isOwner: Deck {} has no wrestler", deck.getId());
         return false;
       }
       Long wrestlerId = deckWrestler.getId();
-      log.debug(
-          "isOwner: Checking Deck {} (Wrestler ID: {}) against owned: {}",
-          deck.getId(),
-          wrestlerId,
-          ownedWrestlerIds);
       return wrestlerId != null && ownedWrestlerIds.contains(wrestlerId);
     }
 
@@ -127,13 +104,11 @@ public class PermissionService {
       Deck deck = deckCard.getDeck();
       if (deck != null && deck.getWrestler() != null) {
         Long wrestlerId = deck.getWrestler().getId();
-        log.debug("isOwner: Checking DeckCard associated with Wrestler ID: {}", wrestlerId);
         return ownedWrestlerIds.contains(wrestlerId);
       }
     }
 
     if (targetDomainObject instanceof InboxItem inboxItem) {
-      log.debug("isOwner: Checking InboxItem: {}", inboxItem.getId());
       return inboxItem.getTargets().stream()
           .anyMatch(
               target -> {
@@ -147,10 +122,8 @@ public class PermissionService {
 
     if (targetDomainObject instanceof Collection<?> collection) {
       if (collection.isEmpty()) {
-        log.debug("isOwner: Empty collection, returning false");
         return false;
       }
-      log.debug("isOwner: Checking collection of size: {}", collection.size());
       java.util.List<?> copy = new java.util.ArrayList<>(collection);
       return copy.stream().allMatch(this::isOwner);
     }
