@@ -174,6 +174,16 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     }
   }
 
+  /**
+   * Manually establishes a security context for the specified user.
+   *
+   * <p><b>NOTE:</b> For testing method-level security (e.g., @PreAuthorize), prefer the
+   * declarative {@code @WithCustomMockUser} annotation on the test method itself. Manually setting
+   * the context via {@code loginAs} may not always be correctly intercepted by Spring Security
+   * proxies in all environments.
+   *
+   * @param username the username to log in as
+   */
   protected void loginAs(String username) {
     var accountOpt = accountRepository.findByUsername(username);
     if (accountOpt.isPresent()) {
