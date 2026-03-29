@@ -69,7 +69,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_admin", roles = {"ADMIN"})
+  @WithCustomMockUser(
+      username = "deck_admin",
+      roles = {"ADMIN"})
   void testAdminCanCreateDeck() {
     Deck deck = deckService.createDeck(bookerWrestler);
     Assertions.assertNotNull(deck);
@@ -77,7 +79,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testPlayerCanCreateTheirOwnDeck() {
     Deck deck = deckService.createDeck(playerWrestler);
     Assertions.assertNotNull(deck);
@@ -85,32 +89,42 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testPlayerCannotCreateDeckForSomeoneElse() {
     Assertions.assertThrows(
         AccessDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testAuthenticatedCanListDecks() {
     deckService.list(Pageable.unpaged());
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_viewer", roles = {"VIEWER"})
+  @WithCustomMockUser(
+      username = "deck_viewer",
+      roles = {"VIEWER"})
   void testAuthenticatedCanCountDecks() {
     deckService.count();
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testAuthenticatedCanFindAllDecks() {
     deckService.findAll();
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testAuthenticatedCanFindById() {
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
@@ -122,13 +136,17 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testAuthenticatedCanFindByWrestler() {
     deckService.findByWrestler(playerWrestler);
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testPlayerCanSaveTheirOwnDeck() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -140,7 +158,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testPlayerCannotSaveSomeoneElsesDeck() {
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
@@ -151,7 +171,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_booker", roles = {"BOOKER"})
+  @WithCustomMockUser(
+      username = "deck_booker",
+      roles = {"BOOKER"})
   void testPlayerCanDeleteTheirOwnDeck() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -163,7 +185,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testPlayerCanDeleteTheirOwnDeckPlayer() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -175,7 +199,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = {"PLAYER"})
+  @WithCustomMockUser(
+      username = "deck_player",
+      roles = {"PLAYER"})
   void testPlayerCannotDeleteSomeoneElsesDeck() {
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
