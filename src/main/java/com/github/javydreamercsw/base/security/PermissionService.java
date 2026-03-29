@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,21 +32,25 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service("permissionService")
-@Transactional(readOnly = true)
+/**
+ * Service for checking object ownership and providing fine-grained access control. Used primarily
+ * in SpEL expressions within @PreAuthorize annotations.
+ */
+@Service
 @Slf4j
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PermissionService {
 
   private final WrestlerRepository wrestlerRepository;
   private final AccountRepository accountRepository;
 
-  public PermissionService(
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull AccountRepository accountRepository) {
-    this.wrestlerRepository = wrestlerRepository;
-    this.accountRepository = accountRepository;
-  }
-
+  /**
+   * Checks if the currently authenticated user owns the target domain object.
+   *
+   * @param targetDomainObject The object to check ownership for.
+   * @return True if the user is the owner, false otherwise.
+   */
   public boolean isOwner(@NonNull Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
@@ -54,10 +59,6 @@ public class PermissionService {
     }
 
     Object principal = authentication.getPrincipal();
-    log.debug(
-        "isOwner: Principal class: {}, Target object class: {}",
-        principal.getClass().getName(),
-        targetDomainObject.getClass().getName());
 
     if (!(principal instanceof UserDetails userDetails)) {
       log.warn(
@@ -86,20 +87,8 @@ public class PermissionService {
         .findByUsername(userDetails.getUsername())
         .ifPresentOrElse(
             account -> {
-              log.debug(
-                  "isOwner: Found persistent account ID: {} for username: {}",
-                  account.getId(),
-                  account.getUsername());
               java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-              log.debug(
-                  "isOwner: Found {} wrestlers in DB for account ID: {}",
-                  wrestlers.size(),
-                  account.getId());
-              wrestlers.forEach(
-                  w -> {
-                    log.debug("isOwner: User owns Wrestler ID: {} ({})", w.getId(), w.getName());
-                    ownedWrestlerIds.add(w.getId());
-                  });
+              wrestlers.forEach(w -> ownedWrestlerIds.add(w.getId()));
             },
             () ->
                 log.warn(
@@ -116,30 +105,7 @@ public class PermissionService {
     if (targetDomainObject instanceof Wrestler targetWrestler) {
       Long targetId = targetWrestler.getId();
       log.debug("isOwner: Checking Wrestler ID: {} against owned: {}", targetId, ownedWrestlerIds);
-      if (targetId != null && ownedWrestlerIds.contains(targetId)) {
-        return true;
-      }
-
-      // If ID check fails, try a name check if both have names (for detached/mock entities)
-      if (principal instanceof CustomUserDetails customUserDetails
-          && customUserDetails.getWrestler() != null) {
-        Wrestler userWrestler = customUserDetails.getWrestler();
-        if (userWrestler.getName() != null
-            && userWrestler.getName().equals(targetWrestler.getName())) {
-          log.debug("isOwner: Match by name: {}", targetWrestler.getName());
-          return true;
-        }
-      }
-
-      // Try checking the account username directly
-      if (targetWrestler.getAccount() != null
-          && targetWrestler.getAccount().getUsername() != null
-          && targetWrestler.getAccount().getUsername().equals(userDetails.getUsername())) {
-        log.debug("isOwner: Match by account username: {}", userDetails.getUsername());
-        return true;
-      }
-
-      return false;
+      return targetId != null && ownedWrestlerIds.contains(targetId);
     }
 
     if (targetDomainObject instanceof Deck deck) {
@@ -181,7 +147,8 @@ public class PermissionService {
 
     if (targetDomainObject instanceof Collection<?> collection) {
       if (collection.isEmpty()) {
-        return true;
+        log.debug("isOwner: Empty collection, returning false");
+        return false;
       }
       log.debug("isOwner: Checking collection of size: {}", collection.size());
       java.util.List<?> copy = new java.util.ArrayList<>(collection);
@@ -195,6 +162,13 @@ public class PermissionService {
     return false;
   }
 
+  /**
+   * Checks if the currently authenticated user owns the object with the specified ID and type.
+   *
+   * @param targetId The ID of the object.
+   * @param targetType The type of the object (e.g., "Wrestler", "Deck").
+   * @return True if the user is the owner, false otherwise.
+   */
   public boolean isOwner(Long targetId, String targetType) {
     if (targetId == null || targetType == null) {
       return false;
