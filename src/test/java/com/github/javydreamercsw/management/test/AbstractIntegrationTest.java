@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.test;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -72,7 +71,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, TestAIConfiguration.class, TestNotionConfiguration.class})
+@Import({TestAIConfiguration.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;

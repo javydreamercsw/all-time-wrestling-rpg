@@ -29,19 +29,17 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
-@Profile("!test & !e2e")
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final CustomUserDetailsService userDetailsService;
+  private final UserDetailsService userDetailsService;
   private final Environment environment;
 
   @Value("${https.enforcement.disabled:false}")
@@ -54,7 +52,8 @@ public class SecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  @Profile("!test & !e2e")
+  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
     http.authorizeHttpRequests(
         auth ->
@@ -103,13 +102,13 @@ public class SecurityConfig {
     return http.build();
   }
 
-  /**
-   * Password encoder bean. Uses BCrypt with strength 10.
-   *
-   * @return the password encoder
-   */
   @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder(10);
+  @Profile("test")
+  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+    http.csrf(csrf -> csrf.disable())
+        .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+    return http.build();
   }
 }

@@ -185,11 +185,17 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
    * @param username the username to log in as
    */
   protected void loginAs(String username) {
+    clearSecurityContext();
     var accountOpt = accountRepository.findByUsername(username);
     if (accountOpt.isPresent()) {
       this.login(accountOpt.get());
     } else {
-      log.warn("loginAs: Account not found: {}", username);
+      throw new RuntimeException("loginAs: Account not found: " + username);
     }
+  }
+
+  protected void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+    TestSecurityContextHolder.clearContext();
   }
 }

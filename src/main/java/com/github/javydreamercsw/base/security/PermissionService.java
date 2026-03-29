@@ -23,6 +23,9 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,21 +72,22 @@ public class PermissionService {
 
     log.debug("isOwner: Checking ownership for user: {}", userDetails.getUsername());
 
-    java.util.Set<Long> ownedWrestlerIds = new java.util.HashSet<>();
+    Set<Long> ownedWrestlerIds = new HashSet<>();
 
     // Always fetch from repo to handle integration tests with mock users
     // where the transient ID in principal might not match the persistent ID in DB.
+    // We prioritize the database as the source of truth for ownership.
     accountRepository
         .findByUsername(userDetails.getUsername())
         .ifPresent(
             account -> {
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               wrestlers.forEach(w -> ownedWrestlerIds.add(w.getId()));
             });
 
     if (ownedWrestlerIds.isEmpty()) {
-      log.warn("isOwner: No wrestlers found for user: {}", userDetails.getUsername());
-      return false; // User does not have any wrestlers assigned
+      log.debug("isOwner: No wrestlers found in DB for user: {}", userDetails.getUsername());
+      return false; // User does not have any wrestlers assigned in the database
     }
 
     if (targetDomainObject instanceof Wrestler targetWrestler) {
@@ -124,7 +128,7 @@ public class PermissionService {
       if (collection.isEmpty()) {
         return false;
       }
-      java.util.List<?> copy = new java.util.ArrayList<>(collection);
+      List<?> copy = new java.util.ArrayList<>(collection);
       return copy.stream().allMatch(this::isOwner);
     }
 
