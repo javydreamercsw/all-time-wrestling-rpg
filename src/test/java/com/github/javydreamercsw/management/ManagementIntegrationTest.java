@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -32,7 +30,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -87,8 +84,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected DatabaseCleanup databaseCleaner;
 
   @Autowired
-  @Qualifier("testCustomUserDetailsService")
-  protected UserDetailsService userDetailsService;
+  @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
 
   protected static Routes routes;
   private AutoCloseable mocks;
@@ -160,7 +156,9 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
         log.info("Found persistent account for {}, logging in...", details.getUsername());
         this.login(accountOpt.get());
       } else {
-        log.warn("Persistent account for {} not found after cleanup. Clearing context.", details.getUsername());
+        log.warn(
+            "Persistent account for {} not found after cleanup. Clearing context.",
+            details.getUsername());
         clearSecurityContext();
       }
     } else if (auth != null
@@ -172,7 +170,9 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
       if (accountOpt.isPresent()) {
         this.login(accountOpt.get());
       } else {
-        log.warn("Persistent account for {} not found after cleanup. Clearing context.", userDetails.getUsername());
+        log.warn(
+            "Persistent account for {} not found after cleanup. Clearing context.",
+            userDetails.getUsername());
         clearSecurityContext();
       }
     }
