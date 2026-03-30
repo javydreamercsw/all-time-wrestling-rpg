@@ -36,8 +36,8 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {
 
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired protected AccountRepository accountRepository;
+  @Autowired protected WrestlerRepository wrestlerRepository;
 
   @BeforeEach
   public void defaultLogin() {
