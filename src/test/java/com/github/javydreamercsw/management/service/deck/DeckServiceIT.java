@@ -17,6 +17,9 @@
 package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -37,35 +40,46 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DeckService deckService;
 
+  private String bookerUsername;
+  private String playerUsername;
+  private String viewerUsername;
+  private String adminUsername;
+
   private Wrestler bookerWrestler;
   private Wrestler playerWrestler;
 
   @BeforeEach
   void setUp() {
     String suffix = UUID.randomUUID().toString().substring(0, 8);
+    bookerUsername = "deck_booker_" + suffix;
+    playerUsername = "deck_player_" + suffix;
+    viewerUsername = "deck_viewer_" + suffix;
+    adminUsername = "deck_admin_" + suffix;
 
-    // Setup under admin context to ensure permissions
-    loginAs("admin");
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          Account booker = createTestAccount(bookerUsername, RoleName.BOOKER);
+          Account player = createTestAccount(playerUsername, RoleName.PLAYER);
+          createTestAccount(viewerUsername, RoleName.VIEWER);
+          createTestAccount(adminUsername, RoleName.ADMIN);
 
-    Account booker = accountRepository.findByUsername("booker").orElseThrow();
-    Account player = accountRepository.findByUsername("player").orElseThrow();
+          bookerWrestler = new Wrestler();
+          bookerWrestler.setName("Booker " + suffix);
+          bookerWrestler.setAccount(booker);
+          bookerWrestler.setIsPlayer(true);
+          bookerWrestler = wrestlerRepository.saveAndFlush(bookerWrestler);
 
-    bookerWrestler = new Wrestler();
-    bookerWrestler.setName("Booker " + suffix);
-    bookerWrestler.setAccount(booker);
-    bookerWrestler.setIsPlayer(true);
-    bookerWrestler = wrestlerRepository.saveAndFlush(bookerWrestler);
-
-    playerWrestler = new Wrestler();
-    playerWrestler.setName("Player " + suffix);
-    playerWrestler.setAccount(player);
-    playerWrestler.setIsPlayer(true);
-    playerWrestler = wrestlerRepository.saveAndFlush(playerWrestler);
+          playerWrestler = new Wrestler();
+          playerWrestler.setName("Player " + suffix);
+          playerWrestler.setAccount(player);
+          playerWrestler.setIsPlayer(true);
+          playerWrestler = wrestlerRepository.saveAndFlush(playerWrestler);
+        });
   }
 
   @Test
   void testAdminCanCreateDeck() {
-    loginAs("admin");
+    loginAs(adminUsername);
     Deck deck = deckService.createDeck(bookerWrestler);
     Assertions.assertNotNull(deck);
     Assertions.assertNotNull(deck.getId());
@@ -73,59 +87,68 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   void testPlayerCanCreateTheirOwnDeck() {
-    loginAs("player");
+    loginAs(playerUsername);
     Deck deck = deckService.createDeck(playerWrestler);
     Assertions.assertNotNull(deck);
     Assertions.assertNotNull(deck.getId());
   }
 
   @Test
+  @WithCustomMockUser(
+      username = "player",
+      roles = {"PLAYER"})
   void testPlayerCannotCreateDeckForSomeoneElse() {
-    loginAs("player");
+    loginAs(playerUsername);
     Assertions.assertThrows(
         AccessDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
 
   @Test
+  @WithCustomMockUser(
+      username = "viewer",
+      roles = {"VIEWER"})
   void testAuthenticatedCannotListDecksIfNotAdmin() {
-    loginAs("viewer");
     Assertions.assertThrows(
         AccessDeniedException.class, () -> deckService.list(Pageable.unpaged()));
   }
 
   @Test
   void testAdminCanListDecks() {
-    loginAs("admin");
+    loginAs(adminUsername);
     deckService.list(Pageable.unpaged());
   }
 
   @Test
+  @WithCustomMockUser(
+      username = "viewer",
+      roles = {"VIEWER"})
   void testAuthenticatedCannotCountDecksIfNotAdmin() {
-    loginAs("viewer");
     Assertions.assertThrows(AccessDeniedException.class, () -> deckService.count());
   }
 
   @Test
   void testAdminCanCountDecks() {
-    loginAs("admin");
+    loginAs(adminUsername);
     deckService.count();
   }
 
   @Test
+  @WithCustomMockUser(
+      username = "player",
+      roles = {"PLAYER"})
   void testAuthenticatedCannotFindAllDecksIfNotAdmin() {
-    loginAs("player");
     Assertions.assertThrows(AccessDeniedException.class, () -> deckService.findAll());
   }
 
   @Test
   void testAdminCanFindAllDecks() {
-    loginAs("admin");
+    loginAs(adminUsername);
     deckService.findAll();
   }
 
   @Test
   void testAuthenticatedCanFindById() {
-    loginAs("player");
+    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
     deck.setCreationDate(Instant.now());
@@ -137,13 +160,13 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   void testAuthenticatedCanFindByWrestler() {
-    loginAs("player");
+    loginAs(playerUsername);
     deckService.findByWrestler(playerWrestler);
   }
 
   @Test
   void testPlayerCanSaveTheirOwnDeck() {
-    loginAs("player");
+    loginAs(playerUsername);
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
@@ -154,8 +177,11 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(
+      username = "player",
+      roles = {"PLAYER"})
   void testPlayerCannotSaveSomeoneElsesDeck() {
-    loginAs("player");
+    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     deck.setCreationDate(Instant.now());
@@ -166,7 +192,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   void testPlayerCanDeleteTheirOwnDeck() {
-    loginAs("booker");
+    loginAs(bookerUsername);
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
@@ -178,7 +204,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   void testPlayerCanDeleteTheirOwnDeckPlayer() {
-    loginAs("player");
+    loginAs(playerUsername);
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
@@ -189,8 +215,11 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(
+      username = "player",
+      roles = {"PLAYER"})
   void testPlayerCannotDeleteSomeoneElsesDeck() {
-    loginAs("player");
+    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     deck.setCreationDate(Instant.now());
