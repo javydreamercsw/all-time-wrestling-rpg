@@ -49,12 +49,12 @@ public class DeckService {
     return deck;
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasRole('ADMIN')")
   public List<Deck> list(Pageable pageable) {
     return deckRepository.findAllBy(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasRole('ADMIN')")
   public long count() {
     return deckRepository.count();
   }
@@ -65,7 +65,7 @@ public class DeckService {
     return deckRepository.saveAndFlush(deck);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasRole('ADMIN')")
   public List<Deck> findAll() {
     return deckRepository.findAll();
   }
@@ -75,14 +75,14 @@ public class DeckService {
     deckRepository.delete(deck);
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#id, 'Deck')")
   public Deck findById(@NonNull Long id) {
     return deckRepository
         .findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
   }
 
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#wrestler)")
   public List<Deck> findByWrestler(Wrestler wrestler) {
     return deckRepository.findByWrestler(wrestler);
   }

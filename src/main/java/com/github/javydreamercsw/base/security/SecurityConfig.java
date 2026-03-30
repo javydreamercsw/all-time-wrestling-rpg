@@ -35,7 +35,6 @@ import org.springframework.security.web.SecurityFilterChain;
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -107,7 +106,7 @@ public class SecurityConfig {
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable())
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
 
     return http.build();
   }

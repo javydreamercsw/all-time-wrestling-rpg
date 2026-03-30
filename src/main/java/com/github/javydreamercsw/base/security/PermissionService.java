@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.security;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -47,6 +48,7 @@ public class PermissionService {
 
   private final WrestlerRepository wrestlerRepository;
   private final AccountRepository accountRepository;
+  private final DeckRepository deckRepository;
 
   /**
    * Checks if the currently authenticated user owns the target domain object.
@@ -153,6 +155,10 @@ public class PermissionService {
 
     if (targetType.equals("Wrestler")) {
       return wrestlerRepository.findById(targetId).map(this::isOwner).orElse(false);
+    }
+
+    if (targetType.equals("Deck")) {
+      return deckRepository.findById(targetId).map(this::isOwner).orElse(false);
     }
 
     return false;

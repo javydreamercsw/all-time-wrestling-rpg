@@ -83,6 +83,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
     Assertions.assertNotNull(deck.getId());
   }
 
+
+
   @Test
   void testPlayerCanCreateTheirOwnDeck() {
     loginAs(playerUsername);
@@ -99,20 +101,38 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  void testAuthenticatedCanListDecks() {
+  void testAuthenticatedCannotListDecksIfNotAdmin() {
     loginAs(playerUsername);
+    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.list(Pageable.unpaged()));
+  }
+
+  @Test
+  void testAdminCanListDecks() {
+    loginAs(adminUsername);
     deckService.list(Pageable.unpaged());
   }
 
   @Test
-  void testAuthenticatedCanCountDecks() {
+  void testAuthenticatedCannotCountDecksIfNotAdmin() {
     loginAs(viewerUsername);
+    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.count());
+  }
+
+  @Test
+  void testAdminCanCountDecks() {
+    loginAs(adminUsername);
     deckService.count();
   }
 
   @Test
-  void testAuthenticatedCanFindAllDecks() {
+  void testAuthenticatedCannotFindAllDecksIfNotAdmin() {
     loginAs(playerUsername);
+    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.findAll());
+  }
+
+  @Test
+  void testAdminCanFindAllDecks() {
+    loginAs(adminUsername);
     deckService.findAll();
   }
 
