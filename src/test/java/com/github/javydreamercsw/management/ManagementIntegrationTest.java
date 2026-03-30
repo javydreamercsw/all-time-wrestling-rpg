@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -32,7 +30,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -44,12 +41,11 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
@@ -57,15 +53,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 
+@Slf4j
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
-  private static final Logger log = LoggerFactory.getLogger(ManagementIntegrationTest.class);
 
   static {
     SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
   }
 
-  @Autowired protected AccountRepository accountRepository;
-  @Autowired protected RoleRepository roleRepository;
   @Autowired protected FactionRivalryRepository factionRivalryRepository;
   @Autowired protected RivalryRepository rivalryRepository;
   @Autowired protected SegmentRepository segmentRepository;
@@ -82,7 +76,6 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected FactionRepository factionRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
   @Autowired protected TitleRepository titleRepository;
-  @Autowired protected WrestlerRepository wrestlerRepository;
   @Autowired protected TeamService teamService;
   @Autowired protected TeamRepository teamRepository;
   @Autowired protected ShowService showService;
@@ -93,12 +86,11 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired
   @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
 
-  private static Routes routes;
+  protected static Routes routes;
   private AutoCloseable mocks;
 
   @BeforeAll
-  public static void discoverRoutes() {
-    // Auto-discover your application's routes
+  public static void setupRoutes() {
     routes = new Routes().autoDiscoverViews("com.github.javydreamercsw");
   }
 
@@ -144,6 +136,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     if (mocks != null) {
       mocks.close();
     }
+    clearSecurityContext();
   }
 
   protected void clearAllRepositories() {
@@ -158,28 +151,45 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
 
     if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
       log.info("Refreshing security context for user: {}", details.getUsername());
-      accountRepository
-          .findByUsername(details.getUsername())
-          .ifPresent(
-              account -> {
-                log.info("Found persistent account for {}, logging in...", details.getUsername());
-                this.login(account);
-              });
+      var accountOpt = accountRepository.findByUsername(details.getUsername());
+      if (accountOpt.isPresent()) {
+        log.info("Found persistent account for {}, logging in...", details.getUsername());
+        this.login(accountOpt.get());
+      } else {
+        log.warn(
+            "Persistent account for {} not found after cleanup. Clearing context.",
+            details.getUsername());
+        clearSecurityContext();
+      }
     } else if (auth != null
         && auth.getPrincipal()
             instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
       log.info(
           "Refreshing security context for standard UserDetails: {}", userDetails.getUsername());
-      accountRepository.findByUsername(userDetails.getUsername()).ifPresent(this::login);
+      var accountOpt = accountRepository.findByUsername(userDetails.getUsername());
+      if (accountOpt.isPresent()) {
+        this.login(accountOpt.get());
+      } else {
+        log.warn(
+            "Persistent account for {} not found after cleanup. Clearing context.",
+            userDetails.getUsername());
+        clearSecurityContext();
+      }
     }
   }
 
   protected void loginAs(String username) {
+    clearSecurityContext();
     var accountOpt = accountRepository.findByUsername(username);
     if (accountOpt.isPresent()) {
       this.login(accountOpt.get());
     } else {
-      log.warn("loginAs: Account not found: {}", username);
+      throw new RuntimeException("loginAs: Account not found: " + username);
     }
+  }
+
+  protected void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+    TestSecurityContextHolder.clearContext();
   }
 }

@@ -30,8 +30,10 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -45,14 +47,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class WrestlerServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private TierBoundaryRepository tierBoundaryRepository;
+  @Mock private ExpansionService expansionService;
 
   @InjectMocks private WrestlerService wrestlerService;
 
@@ -63,12 +69,15 @@ class WrestlerServiceTest {
 
   @BeforeEach
   void setUp() {
+    when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(Collections.singletonList("BASE_GAME"));
     init();
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
     wrestler.setGender(Gender.MALE);
     wrestler.setActive(true);
+    wrestler.setExpansionCode("BASE_GAME");
   }
 
   private void init() {
@@ -83,6 +92,7 @@ class WrestlerServiceTest {
                     .tier(WrestlerTier.MAIN_EVENTER)
                     .fans(1000L)
                     .gender(Gender.MALE)
+                    .expansionCode("BASE_GAME")
                     .alignment(
                         WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build())
                     .build(),
@@ -94,6 +104,7 @@ class WrestlerServiceTest {
                     .tier(WrestlerTier.MAIN_EVENTER)
                     .fans(900L)
                     .gender(Gender.FEMALE)
+                    .expansionCode("BASE_GAME")
                     .alignment(
                         WrestlerAlignment.builder().alignmentType(AlignmentType.HEEL).build())
                     .build(),
@@ -255,15 +266,30 @@ class WrestlerServiceTest {
   @Test
   void testFindAll() {
     // Given
-    when(wrestlerRepository.findAllByActiveTrue())
-        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+    Wrestler activeBase =
+        Wrestler.builder().name("Active Base").active(true).expansionCode("BASE_GAME").build();
+    Wrestler activeExtreme =
+        Wrestler.builder().name("Active Extreme").active(true).expansionCode("EXTREME").build();
 
-    // When
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(Arrays.asList(activeBase, activeExtreme));
+
+    // When - Only BASE_GAME enabled
+    when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(Collections.singletonList("BASE_GAME"));
     List<Wrestler> result = wrestlerService.findAll();
 
     // Then
-    assertEquals(3, result.size());
-    result.forEach(w -> assertEquals(true, w.getActive()));
+    assertEquals(1, result.size());
+    assertEquals("Active Base", result.get(0).getName());
+
+    // When - Both enabled
+    when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
+    result = wrestlerService.findAll();
+
+    // Then
+    assertEquals(2, result.size());
   }
 
   @Test
@@ -319,5 +345,34 @@ class WrestlerServiceTest {
     // Then
     assertEquals(2, result.size());
     result.forEach(w -> assertEquals(WrestlerTier.MAIN_EVENTER, w.getTier()));
+  }
+
+  @Test
+  void testMultipleWrestlersPerAccount() {
+    // Given
+    com.github.javydreamercsw.base.domain.account.Account account =
+        new com.github.javydreamercsw.base.domain.account.Account();
+    account.setId(100L);
+    account.setUsername("sharedAccount");
+
+    Wrestler w1 = new Wrestler();
+    w1.setId(10L);
+    w1.setName("Wrestler 1");
+    w1.setAccount(account);
+
+    Wrestler w2 = new Wrestler();
+    w2.setId(11L);
+    w2.setName("Wrestler 2");
+    w2.setAccount(account);
+
+    when(wrestlerRepository.findAllByAccount(account)).thenReturn(Arrays.asList(w1, w2));
+
+    // When
+    List<Wrestler> result = wrestlerService.findAllByAccount(account);
+
+    // Then
+    assertEquals(2, result.size());
+    assertTrue(result.contains(w1));
+    assertTrue(result.contains(w2));
   }
 }

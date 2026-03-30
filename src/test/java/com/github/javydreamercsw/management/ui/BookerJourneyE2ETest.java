@@ -382,6 +382,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             seasonRepository.findByName(SEASON_NAME).get().getId(),
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
             null,
+            null,
             null);
 
     // Create a new segment objects
@@ -477,6 +478,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             seasonRepository.findByName(SEASON_NAME).get().getId(),
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
             null,
+            null,
             null);
 
     // Create a new segment objects
@@ -520,7 +522,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     clickElement(narrateButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.id("narration-dialog")));
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
@@ -534,7 +536,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to disappear
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
+    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("narration-dialog")));
 
     WebElement summaryButton =
         wait.until(
@@ -568,6 +570,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             LocalDate.now(),
             seasonRepository.findByName(SEASON_NAME).get().getId(),
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
+            null,
             null,
             null);
 

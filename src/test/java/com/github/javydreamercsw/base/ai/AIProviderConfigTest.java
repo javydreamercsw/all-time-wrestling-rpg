@@ -22,17 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.github.javydreamercsw.base.ai.claude.ClaudeConfigProperties;
 import com.github.javydreamercsw.base.ai.gemini.GeminiConfigProperties;
 import com.github.javydreamercsw.base.ai.openai.OpenAIConfigProperties;
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.security.WithMockAdmin;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles({"test"})
 @SpringBootTest
-@Import(TestSecurityConfig.class)
 @WithMockAdmin
 class AIProviderConfigTest {
 

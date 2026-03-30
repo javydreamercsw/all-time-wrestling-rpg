@@ -100,7 +100,7 @@ class TitleReignSyncIT extends ManagementIntegrationTest {
     String reignId = UUID.randomUUID().toString();
     when(titleReignPage.getId()).thenReturn(reignId);
     when(titleReignPage.getTitleRelationId()).thenReturn("title-id");
-    when(titleReignPage.getChampionRelationId()).thenReturn("wrestler-id");
+    when(titleReignPage.getChampionRelationIds()).thenReturn(List.of("wrestler-id"));
     when(titleReignPage.getReignNumber()).thenReturn(1);
     when(titleReignPage.getNotes()).thenReturn("Test Notes");
     when(titleReignPage.getStartDate()).thenReturn(LocalDate.now().toString());

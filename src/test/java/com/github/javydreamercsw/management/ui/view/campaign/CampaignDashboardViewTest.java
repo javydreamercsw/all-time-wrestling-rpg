@@ -29,19 +29,28 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
+import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
+import com.github.javydreamercsw.management.service.campaign.TournamentService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,16 +65,12 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private CampaignAbilityCardRepository cardRepository;
   @Mock private CampaignUpgradeService upgradeService;
   @Mock private SecurityUtils securityUtils;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.TournamentService tournamentService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
-      chapterService;
-
-  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
-  @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  @Mock private StorylineDirectorService storylineDirectorService;
+  @Mock private StorylineExportService storylineExportService;
+  @Mock private TournamentService tournamentService;
+  @Mock private CampaignChapterService chapterService;
+  @Mock private TitleService titleService;
+  @Mock private TitleRepository titleRepository;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -97,8 +102,11 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     when(wrestlerRepository.findByAccount(mockAccount)).thenReturn(java.util.List.of(mockWrestler));
     when(campaignRepository.findActiveByWrestler(mockWrestler))
         .thenReturn(Optional.of(mockCampaign));
+    when(campaignService.getCampaignForWrestler(mockWrestler))
+        .thenReturn(Optional.of(mockCampaign));
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);
-    when(campaignService.getCurrentChapter(any())).thenReturn(new CampaignChapterDTO());
+    when(campaignService.getCurrentChapter(any()))
+        .thenReturn(Optional.of(new CampaignChapterDTO()));
     when(titleRepository.findByName(any())).thenReturn(Optional.empty());
   }
 
@@ -116,7 +124,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             objectMapper,
             chapterService,
             titleService,
-            titleRepository);
+            titleRepository,
+            storylineExportService);
 
     UI.getCurrent().add(view);
 
@@ -171,7 +180,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             objectMapper,
             chapterService,
             titleService,
-            titleRepository);
+            titleRepository,
+            storylineExportService);
 
     UI.getCurrent().add(view);
 
@@ -195,7 +205,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             objectMapper,
             chapterService,
             titleService,
-            titleRepository);
+            titleRepository,
+            storylineExportService);
 
     UI.getCurrent().add(view);
 
@@ -209,5 +220,36 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
       found = false;
     }
     assert (!found);
+  }
+
+  @Test
+  public void testStoryJournalDownloadLink() {
+    CampaignStoryline storyline = new CampaignStoryline();
+    storyline.setTitle("AI Epic Arc");
+    storyline.setDescription("Deep narrative.");
+    storyline.setStatus(CampaignStoryline.StorylineStatus.ACTIVE);
+
+    when(campaignService.getStorylineHistory(mockCampaign)).thenReturn(List.of(storyline));
+
+    CampaignDashboardView view =
+        new CampaignDashboardView(
+            campaignRepository,
+            campaignService,
+            wrestlerRepository,
+            cardRepository,
+            upgradeService,
+            securityUtils,
+            tournamentService,
+            objectMapper,
+            chapterService,
+            titleService,
+            titleRepository,
+            storylineExportService);
+
+    UI.getCurrent().add(view);
+
+    // Verify Story Journal contains the storyline and a download link
+    _get(view, Anchor.class, spec -> spec.withId("download-json-anchor-null"));
+    _get(view, Button.class, spec -> spec.withId("download-json-button-null"));
   }
 }

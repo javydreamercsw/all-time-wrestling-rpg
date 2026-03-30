@@ -165,17 +165,12 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
         null);
 
     // Navigate to Season Settings view
-    driver.get(
-        "http://localhost:"
-            + serverPort
-            + getContextPath()
-            + "/admin"); // Admin view contains Season Settings
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
     waitForVaadinClientToLoad();
 
     // Click the "Season Settings" tab
     click("vaadin-tab", "Season Settings");
-    waitForVaadinElement(
-        driver, By.id("generate-schedule-button")); // Wait for element in Season Settings
+    waitForVaadinElement(driver, By.id("generate-schedule-button"));
 
     documentFeature(
         "Admin",
@@ -186,6 +181,13 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
     // Click the generate button
     WebElement generateButton = waitForVaadinElement(driver, By.id("generate-schedule-button"));
     clickElement(generateButton);
+
+    documentFeature(
+        "Admin",
+        "Season Settings - Schedule Generation Confirmation",
+        "The Season Settings tab showing the 'Generate Season Confirmation' button, before"
+            + " execution.",
+        "admin-season-settings-confirmation");
 
     // Confirm the dialog
     WebElement confirmButton =

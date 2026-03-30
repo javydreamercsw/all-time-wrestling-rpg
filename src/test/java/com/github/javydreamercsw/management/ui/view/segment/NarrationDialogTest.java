@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -60,6 +61,7 @@ class NarrationDialogTest {
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
+  @Mock private RingsideActionService ringsideActionService;
 
   private NarrationDialog narrationDialog;
   private Segment segment;
@@ -101,6 +103,7 @@ class NarrationDialogTest {
     when(wrestlerService.findByName(wrestler.getName()))
         .thenReturn(java.util.Optional.of(wrestler));
     when(wrestlerService.findAll()).thenReturn(List.of(wrestler));
+    when(ringsideActionService.getBestSupporter(segment, wrestler)).thenReturn(manager);
 
     List<Segment> segments = new ArrayList<>();
     segments.add(segment1);
@@ -122,7 +125,8 @@ class NarrationDialogTest {
             s -> {},
             rivalryService,
             segmentNarrationController,
-            segmentNarrationServiceFactory);
+            segmentNarrationServiceFactory,
+            ringsideActionService);
 
     // Create mocks for the UI components that teamsLayout would contain
     VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
