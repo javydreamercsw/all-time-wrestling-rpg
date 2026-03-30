@@ -83,8 +83,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
     Assertions.assertNotNull(deck.getId());
   }
 
-
-
   @Test
   void testPlayerCanCreateTheirOwnDeck() {
     loginAs(playerUsername);
@@ -103,7 +101,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   void testAuthenticatedCannotListDecksIfNotAdmin() {
     loginAs(playerUsername);
-    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.list(Pageable.unpaged()));
+    Assertions.assertThrows(
+        AccessDeniedException.class, () -> deckService.list(Pageable.unpaged()));
   }
 
   @Test

@@ -75,7 +75,8 @@ public class DeckService {
     deckRepository.delete(deck);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#id, 'Deck')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#id, 'Deck')")
   public Deck findById(@NonNull Long id) {
     return deckRepository
         .findById(id)
