@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -92,15 +93,15 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(username = "player", roles = {"PLAYER"})
   void testPlayerCannotCreateDeckForSomeoneElse() {
-    loginAs(playerUsername);
     Assertions.assertThrows(
         AccessDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
 
   @Test
+  @WithCustomMockUser(username = "viewer", roles = {"VIEWER"})
   void testAuthenticatedCannotListDecksIfNotAdmin() {
-    loginAs(playerUsername);
     Assertions.assertThrows(
         AccessDeniedException.class, () -> deckService.list(Pageable.unpaged()));
   }
@@ -112,8 +113,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(username = "viewer", roles = {"VIEWER"})
   void testAuthenticatedCannotCountDecksIfNotAdmin() {
-    loginAs(viewerUsername);
     Assertions.assertThrows(AccessDeniedException.class, () -> deckService.count());
   }
 
@@ -124,8 +125,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(username = "player", roles = {"PLAYER"})
   void testAuthenticatedCannotFindAllDecksIfNotAdmin() {
-    loginAs(playerUsername);
     Assertions.assertThrows(AccessDeniedException.class, () -> deckService.findAll());
   }
 
@@ -166,8 +167,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(username = "player", roles = {"PLAYER"})
   void testPlayerCannotSaveSomeoneElsesDeck() {
-    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     deck.setCreationDate(Instant.now());
@@ -201,8 +202,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithCustomMockUser(username = "player", roles = {"PLAYER"})
   void testPlayerCannotDeleteSomeoneElsesDeck() {
-    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     deck.setCreationDate(Instant.now());

@@ -802,9 +802,9 @@
           <!-- Skip by default unless explicitly enabled. -->
           <skipITs>${e2e.skipITs}</skipITs>
 
-          <!-- Enable parallel execution -->
-          <parallel>classes</parallel>
-          <threadCount>4</threadCount>
+          <!-- Parallel execution disabled to prevent database interference between tests sharing the same context -->
+          <parallel>none</parallel>
+          <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
           <!-- Optimize for faster execution -->
