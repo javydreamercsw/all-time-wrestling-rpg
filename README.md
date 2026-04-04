@@ -289,11 +289,13 @@ You can also deploy the application to a standalone Tomcat server.
 
 	Create a `setenv.sh` (for Linux/macOS) or `setenv.bat` (for Windows) file to define the required environment variables.
 
-	**Important (Homebrew on macOS):** To prevent your settings from being overwritten during a `brew upgrade`, do not create the file directly in the Tomcat `bin` directory. Instead, create it in a persistent location and symlink it:
+	**Important (Homebrew on macOS):** To prevent your settings and deployed applications from being overwritten during a `brew upgrade`, do not use the default Tomcat directories. Instead, create persistent locations and symlink them:
 
 	```bash
-	# 1. Create the persistent config file
-	sudo mkdir -p /opt/homebrew/etc/tomcat
+	# 1. Create persistent config and webapps directories
+	sudo mkdir -p /opt/homebrew/etc/tomcat/webapps
+
+	# 2. Create the setenv.sh file
 	cat <<EOF > /opt/homebrew/etc/tomcat/setenv.sh
 export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/atw"
 export SPRING_DATASOURCE_USERNAME="root"
@@ -304,26 +306,31 @@ export SPRING_PROFILES_ACTIVE="mysql,prod"
 EOF
 	chmod +x /opt/homebrew/etc/tomcat/setenv.sh
 
-	# 2. Symlink it to Tomcat's bin directory
-	ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
-	```
-
-	**Note (Automating Homebrew Updates):** To automatically re-establish the symlink and restart Tomcat whenever Homebrew updates the server, you can set up a background LaunchAgent:
-
-	1. Create a relink script:
-	```bash
-	sudo mkdir -p /opt/homebrew/etc/tomcat
+	# 3. Create the relink script to handle upgrades automatically
 	cat <<EOF > /opt/homebrew/etc/tomcat/relink.sh
 #!/bin/bash
-# Re-establish the symlink after a Homebrew upgrade
+# Re-establish symlinks after a Homebrew upgrade
+
+# Symlink setenv.sh
 ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
+
+# Symlink webapps directory
+# Remove the default webapps directory first if it's not a symlink
+if [ ! -L /opt/homebrew/opt/tomcat/libexec/webapps ]; then
+	rm -rf /opt/homebrew/opt/tomcat/libexec/webapps
+fi
+ln -sfn /opt/homebrew/etc/tomcat/webapps /opt/homebrew/opt/tomcat/libexec/webapps
+
 # Restart the service to apply changes
 /opt/homebrew/bin/brew services restart tomcat
 EOF
 	chmod +x /opt/homebrew/etc/tomcat/relink.sh
+
+	# 4. Run the relink script for the first time
+	/opt/homebrew/etc/tomcat/relink.sh
 	```
 
-	2. Create and load the LaunchAgent:
+	**Note (Automating Homebrew Updates):** To automatically re-establish the symlinks and restart Tomcat whenever Homebrew updates the server, you can set up a background LaunchAgent:
 	```bash
 	printf '<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
