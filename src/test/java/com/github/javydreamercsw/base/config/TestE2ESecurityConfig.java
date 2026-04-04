@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -88,7 +87,7 @@ public class TestE2ESecurityConfig {
     // Basic form login for the "login" action used in LoginView
     http.formLogin(form -> form.loginPage("/login").permitAll());
 
-    http.csrf(AbstractHttpConfigurer::disable);
+    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
     return http.build();
