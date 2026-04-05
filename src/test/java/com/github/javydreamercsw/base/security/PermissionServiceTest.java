@@ -99,6 +99,60 @@ class PermissionServiceTest {
   }
 
   @Test
+  void testIsOwnerDeckCard() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    Deck deck = new Deck();
+    deck.setWrestler(wrestler);
+    com.github.javydreamercsw.management.domain.deck.DeckCard card =
+        new com.github.javydreamercsw.management.domain.deck.DeckCard();
+    card.setDeck(deck);
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
+
+    assertThat(permissionService.isOwner(card)).isTrue();
+  }
+
+  @Test
+  void testIsOwnerInboxItem() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+
+    com.github.javydreamercsw.management.domain.inbox.InboxItem item =
+        new com.github.javydreamercsw.management.domain.inbox.InboxItem();
+    com.github.javydreamercsw.management.domain.inbox.InboxItemTarget target =
+        new com.github.javydreamercsw.management.domain.inbox.InboxItemTarget();
+    target.setTargetId("1");
+    item.getTargets().add(target);
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
+
+    assertThat(permissionService.isOwner(item)).isTrue();
+  }
+
+  @Test
+  void testIsOwnerCollection() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1, w2));
+
+    assertThat(permissionService.isOwner(List.of(w1, w2))).isTrue();
+
+    Wrestler w3 = new Wrestler();
+    w3.setId(3L);
+    assertThat(permissionService.isOwner(List.of(w1, w3))).isFalse();
+  }
+
+  @Test
   void testIsOwnerByTypeId() {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
@@ -109,6 +163,12 @@ class PermissionServiceTest {
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
 
     assertThat(permissionService.isOwner(1L, "Wrestler")).isTrue();
-    assertThat(permissionService.isOwner(2L, "Wrestler")).isFalse();
+
+    Deck deck = new Deck();
+    deck.setWrestler(wrestler);
+    when(deckRepository.findById(10L)).thenReturn(Optional.of(deck));
+    assertThat(permissionService.isOwner(10L, "Deck")).isTrue();
+
+    assertThat(permissionService.isOwner(1L, "Unknown")).isFalse();
   }
 }

@@ -168,17 +168,4 @@ public class TournamentBracketComponent extends HorizontalLayout {
     line.add(nameSpan);
     return line;
   }
-
-  private String getSpacerHeight(int round) {
-    switch (round) {
-      case 1:
-        return "10px";
-      case 2:
-        return "40px";
-      case 3:
-        return "100px";
-      default:
-        return "0px";
-    }
-  }
 }

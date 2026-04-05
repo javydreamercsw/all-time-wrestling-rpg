@@ -191,26 +191,18 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               1,
               "nextOnFailureIndex",
               1);
-      var m2 =
-          Map.of(
-              "title",
-              "The Climax",
-              "description",
-              "Final showdown and resolution.",
-              "narrativeGoal",
-              "Conclude the arc based on performance.",
-              "order",
-              1,
-              "nextOnSuccessIndex",
-              null,
-              "nextOnFailureIndex",
-              null);
+      Map<String, Object> m2 = new java.util.HashMap<>();
+      m2.put("title", "The Climax");
+      m2.put("description", "Final showdown and resolution.");
+      m2.put("narrativeGoal", "Conclude the arc based on performance.");
+      m2.put("order", 1);
+      m2.put("nextOnSuccessIndex", null);
+      m2.put("nextOnFailureIndex", null);
 
-      var response =
-          Map.of(
-              "title", "Mock AI Arc",
-              "description", "A mock arc generated for testing purposes.",
-              "milestones", List.of(m1, m2));
+      Map<String, Object> response = new java.util.HashMap<>();
+      response.put("title", "Mock AI Arc");
+      response.put("description", "A mock arc generated for testing purposes.");
+      response.put("milestones", List.of(m1, m2));
 
       return objectMapper.writeValueAsString(response);
     } catch (Exception e) {
