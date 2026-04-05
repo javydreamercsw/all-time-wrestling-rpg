@@ -145,6 +145,7 @@ public interface SegmentNarrationService {
     private String alignment;
     private String tier;
     private String managerName;
+    private String hailingFrom;
     private MoveSet moveSet;
     private List<String> feudsAndHeat;
     private List<String> recentSegments;
@@ -232,6 +233,10 @@ public interface SegmentNarrationService {
     private String atmosphere; // Intimate, Electric, Historic, etc.
     private String significance; // WrestleMania venue, ECW stronghold, etc.
     private List<String> notableSegments; // Historic segments held here
+    private String alignmentBias;
+    private List<String> environmentalTraits;
+    private String imageUrl;
+    private List<String> culturalTags;
     private Map<String, Object> attributes; // acoustics, lighting, etc.
   }
 }

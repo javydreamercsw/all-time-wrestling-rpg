@@ -347,6 +347,30 @@ public class SegmentService {
   }
 
   /**
+   * Finds a match by ID with all details eagerly fetched.
+   *
+   * @param id The match ID
+   * @return Optional containing the Segment if found
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Segment> findByIdWithDetails(@NonNull Long id) {
+    return segmentRepository.findByIdWithDetails(id);
+  }
+
+  /**
+   * Find a segment by ID and return it as a DTO.
+   *
+   * @param id The segment ID
+   * @return Optional containing the segment DTO if found, otherwise empty
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<SegmentDTO> findByIdAsDTO(@NonNull Long id) {
+    return findByIdWithDetails(id).map(this::toDto);
+  }
+
+  /**
    * Gets all matches with pagination.
    *
    * @param pageable Pagination information

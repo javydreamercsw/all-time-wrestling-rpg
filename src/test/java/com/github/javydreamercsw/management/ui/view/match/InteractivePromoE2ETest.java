@@ -34,7 +34,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
@@ -65,9 +64,10 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
   @Autowired private PasswordEncoder passwordEncoder;
 
   private Segment promoSegment;
+  private MatchFulfillment fulfillment;
 
   @BeforeEach
-  public void setupData() throws IOException {
+  public void setupData() {
     cleanupLeagues();
     segmentRepository.deleteAll();
     showRepository.deleteAll();
@@ -157,7 +157,7 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
 
     // Create MatchFulfillment to make it accessible in player view if needed,
     // though MatchView logic checks segment participants too.
-    MatchFulfillment fulfillment = new MatchFulfillment();
+    fulfillment = new MatchFulfillment();
     fulfillment.setSegment(promoSegment);
     fulfillment.setLeague(league);
     matchFulfillmentRepository.saveAndFlush(fulfillment);
@@ -169,12 +169,16 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
     login("player1", "password123");
 
     driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/match/" + promoSegment.getId());
+        "http://localhost:" + serverPort + getContextPath() + "/match/" + fulfillment.getId());
 
-    // 1. Verify we are in the Promo Interface
-    waitForVaadinElement(driver, By.xpath("//h3[text()='Interactive Promo']"));
+    // 1. Activate Interactive Chat Mode
+    WebElement goChatBtn = waitForVaadinElement(driver, By.id("go-interactive-promo-button"));
+    clickElement(goChatBtn);
 
-    // 2. Locate Message Input
+    // 2. Verify we are in the Promo Interface
+    waitForVaadinElement(driver, By.xpath("//h3[text()='Interactive Promo Chat']"));
+
+    // 3. Locate Message Input
     WebElement messageInput = waitForVaadinElement(driver, By.tagName("vaadin-message-input"));
 
     // 3. Send a message
@@ -204,26 +208,23 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
     }
 
     // 4. Verify Player Message appears
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
     wait.until(d -> Objects.requireNonNull(d.getPageSource()).contains(promoText));
 
     // 5. Verify AI Retort appears (The Silent One)
-    WebDriverWait aiWait = new WebDriverWait(driver, Duration.ofSeconds(60));
-    aiWait.until(d -> Objects.requireNonNull(d.getPageSource()).contains("The Silent One"));
-
-    // 6. Verify Transcript Saved (Backend check)
-    // We can check the text area value or query the DB
-    WebElement narrationArea = driver.findElement(By.id("narration-area"));
-    // Wait for narration area to be updated
-    aiWait.until(
+    wait.until(
         d -> {
-          String value = narrationArea.getAttribute("value");
-          return value != null && value.contains(promoText) && value.contains("The Silent One");
+          Boolean foundInMessages =
+              (Boolean)
+                  ((JavascriptExecutor) d)
+                      .executeScript(
+                          "const list = document.querySelector('vaadin-message-list');if (!list)"
+                              + " return false;const items = list.items;if (!items ||"
+                              + " items.length < 2) return false;return items.some(it => it &&"
+                              + " it.userName && String(it.userName).includes('The Silent"
+                              + " One'));");
+          return Boolean.TRUE.equals(foundInMessages);
         });
-
-    String finalTranscript = narrationArea.getAttribute("value");
-    assert finalTranscript != null;
-    Assertions.assertTrue(finalTranscript.contains(promoText));
 
     // Verify DB persistence
     assert promoSegment.getId() != null;

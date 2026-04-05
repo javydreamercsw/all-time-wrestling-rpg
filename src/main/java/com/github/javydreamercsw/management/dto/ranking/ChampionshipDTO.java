@@ -31,6 +31,6 @@ import lombok.Setter;
 public class ChampionshipDTO {
   private Long id;
   private String name;
-  private String imageName;
+  private String imageUrl;
   private WrestlerTier tier;
 }

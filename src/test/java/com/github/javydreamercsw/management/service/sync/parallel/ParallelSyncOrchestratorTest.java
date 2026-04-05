@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryTypeSyncService;
@@ -36,6 +37,7 @@ import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncS
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
+import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,8 @@ class ParallelSyncOrchestratorTest {
   @Mock private TitleSyncService titleSyncService;
   @Mock private TitleReignSyncService titleReignSyncService;
   @Mock private NotionSyncServicesManager notionSyncServicesManager;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncLockService syncLockService;
 
   private ParallelSyncOrchestrator orchestrator;
 
@@ -75,9 +79,13 @@ class ParallelSyncOrchestratorTest {
     defaults.setMaxThreads(4);
     defaults.setTimeoutSeconds(300);
     when(entityConfig.getDefaults()).thenReturn(defaults);
+    when(syncServiceDependencies.getSyncLockService()).thenReturn(syncLockService);
+    when(syncLockService.acquireLock(anyString())).thenReturn(true);
 
     // Manually instantiate orchestrator with mocked NotionSyncServicesManager
-    orchestrator = new ParallelSyncOrchestrator(notionSyncServicesManager, entityConfig);
+    orchestrator =
+        new ParallelSyncOrchestrator(
+            notionSyncServicesManager, entityConfig, syncServiceDependencies);
   }
 
   private void setupAllSyncServices() {
