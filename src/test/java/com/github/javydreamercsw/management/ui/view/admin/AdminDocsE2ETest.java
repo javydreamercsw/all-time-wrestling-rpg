@@ -138,6 +138,30 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
         "admin-show-templates");
   }
 
+  @Test
+  void testCaptureExpansionManagementView() {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    waitForVaadinClientToLoad();
+
+    WebElement tab =
+        waitForVaadinElement(
+            driver,
+            org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+    clickElement(tab);
+
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException ignored) {
+    }
+
+    documentFeature(
+        "Admin",
+        "Expansion Management",
+        "Group and toggle themed content sets. Enable or disable entire collections of wrestlers,"
+            + " teams, and factions to customize the available roster for matches and leagues.",
+        "admin-expansion-management");
+  }
+
   private void waitForText(String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));

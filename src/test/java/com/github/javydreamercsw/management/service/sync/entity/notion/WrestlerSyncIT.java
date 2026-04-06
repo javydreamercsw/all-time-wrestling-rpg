@@ -107,7 +107,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     String wrestlerId = UUID.randomUUID().toString();
     when(wrestlerPage.getId()).thenReturn(wrestlerId);
     when(wrestlerPage.getRawProperties())
-        .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100_000L));
+        .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100_000.0));
 
     when(notionHandler.loadAllWrestlers()).thenReturn(List.of(wrestlerPage));
 
@@ -128,7 +128,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     // Test update
     syncSessionManager.clearSyncSession(); // Reset session to allow second sync
     when(wrestlerPage.getRawProperties())
-        .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120_000L));
+        .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120_000.0));
 
     wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
 

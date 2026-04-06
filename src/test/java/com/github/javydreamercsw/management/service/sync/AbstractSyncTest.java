@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,13 +30,25 @@ import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,6 +76,7 @@ public abstract class AbstractSyncTest {
   @Mock protected ObjectMapper objectMapper;
   @Mock protected NotionRateLimitService rateLimitService;
   @Mock protected SyncSessionManager syncSessionManager;
+  @Mock protected SyncLockService syncLockService;
   protected SyncServiceDependencies syncServiceDependencies;
   @Mock protected NotionPageDataExtractor notionPageDataExtractor;
   @Mock protected NotionApiExecutor notionApiExecutor;
@@ -72,12 +87,24 @@ public abstract class AbstractSyncTest {
   @Mock protected DataIntegrityChecker integrityChecker;
   @Mock protected EntitySyncConfiguration entitySyncConfig;
   @Mock protected FactionRepository factionRepository;
+  @Mock protected FactionRivalryRepository factionRivalryRepository;
   @Mock protected WrestlerRepository wrestlerRepository;
+  @Mock protected InjuryRepository injuryRepository;
   @Mock protected InjuryTypeRepository injuryTypeRepository;
+  @Mock protected RivalryRepository rivalryRepository;
   @Mock protected ShowTypeRepository showTypeRepository;
+  @Mock protected ShowRepository showRepository;
+
+  @Mock protected ShowTemplateRepository showTemplateRepository;
   @Mock protected TeamRepository teamRepository;
   @Mock protected TitleReignRepository titleReignRepository;
   @Mock protected TitleRepository titleRepository;
+  @Mock protected NpcRepository npcRepository;
+  @Mock protected SeasonRepository seasonRepository;
+  @Mock protected SegmentRepository segmentRepository;
+  @Mock protected WrestlerService wrestlerService;
+  @Mock protected TierRecalculationService tierRecalculationService;
+  @Mock protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -99,11 +126,41 @@ public abstract class AbstractSyncTest {
 
   @BeforeEach
   protected void setUp() {
+    lenient().when(syncProperties.isEnabled()).thenReturn(true);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     lenient()
         .when(notionApiExecutor.getSyncExecutorService())
         .thenReturn(java.util.concurrent.Executors.newSingleThreadExecutor());
+    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(notionApiExecutor.getSyncProgressTracker()).thenReturn(progressTracker);
+    lenient()
+        .when(notionApiExecutor.executeWithRateLimit(any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(0);
+              return supplier != null ? supplier.get() : null;
+            });
+    lenient()
+        .when(
+            notionApiExecutor.executeWithRateLimit(
+                anyString(), any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier != null ? supplier.get() : null;
+            });
+    lenient()
+        .when(
+            notionApiExecutor.executeWithRateLimit(
+                isNull(), any(java.util.function.Supplier.class)))
+        .thenAnswer(
+            invocation -> {
+              java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+              return supplier != null ? supplier.get() : null;
+            });
+
+    lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
 
     syncServiceDependencies =
         new SyncServiceDependencies(
@@ -123,12 +180,20 @@ public abstract class AbstractSyncTest {
             notionHandler,
             notionPageDataExtractor,
             syncSessionManager,
+            syncLockService,
             factionRepository,
             wrestlerRepository,
+            injuryRepository,
             injuryTypeRepository,
+            seasonRepository,
+            rivalryRepository,
+            showRepository,
+            showTemplateRepository,
             showTypeRepository,
             teamRepository,
             titleReignRepository,
-            titleRepository);
+            titleRepository,
+            npcRepository,
+            segmentRepository);
   }
 }

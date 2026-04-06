@@ -44,7 +44,7 @@ class NotionHandlerTest {
       // mocking the NotionClient and throwing an exception.
       // For now, we just ensure that the constructor doesn't throw an
       // unhandled exception.
-      assertDoesNotThrow(NotionHandler::new);
+      assertDoesNotThrow(() -> new NotionHandler());
     }
   }
 }

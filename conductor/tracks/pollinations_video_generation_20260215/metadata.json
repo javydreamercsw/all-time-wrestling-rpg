@@ -1,8 +1,0 @@
-{
-  "track_id": "pollinations_video_generation_20260215",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-02-15T19:35:00Z",
-  "updated_at": "2026-02-15T19:35:00Z",
-  "description": "Add feature to use Pollinations AI to generate video for the following: Match narration, Match summary, General prompts. If possible using the configured images for Wrestlers, and NPCs. Send show summaries with videos to player inbox."
-}

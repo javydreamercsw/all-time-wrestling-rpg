@@ -43,6 +43,8 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -142,7 +144,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.imageStorageService = imageStorageService;
 
     wrestlerName.setId("wrestler-name");
-    wrestlerImage.setSrc("https://via.placeholder.com/150");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
 
@@ -256,19 +257,32 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               accountService,
               imageStorageService));
       wrestlerName.setText(wrestler.getName());
-      wrestlerDetails.setText(
-          String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));
-
-      if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
-        wrestlerImage.setSrc(wrestler.getImageUrl());
-      } else {
-        wrestlerImage.setSrc("https://via.placeholder.com/150");
+      String details =
+          String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans());
+      if (wrestler.getHeritageTag() != null && !wrestler.getHeritageTag().isEmpty()) {
+        details += String.format(", Heritage: %s", wrestler.getHeritageTag());
       }
+      wrestlerDetails.setText(details);
+
+      wrestlerImage.setSrc(wrestlerService.resolveWrestlerImage(wrestler));
 
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());
       statsLayout.removeAll();
       statsLayout.add(new H3("Stats"));
+
+      Paragraph conditionPara =
+          new Paragraph("Physical Condition: " + wrestler.getPhysicalCondition() + "%");
+      conditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
+      if (wrestler.getPhysicalCondition() < 50) {
+        conditionPara.addClassNames(LumoUtility.TextColor.ERROR);
+      } else if (wrestler.getPhysicalCondition() < 80) {
+        conditionPara.addClassNames(LumoUtility.TextColor.WARNING);
+      } else {
+        conditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
+      }
+      statsLayout.add(conditionPara);
+
       if (stats.isPresent()) {
         WrestlerStats wrestlerStats = stats.get();
         statsLayout.add(new Paragraph("Wins: " + wrestlerStats.getWins()));
@@ -327,6 +341,33 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       // Bumps and Injuries
       injuriesLayout.removeAll();
       injuriesLayout.add(new H3("Bumps & Injuries"));
+
+      Paragraph physicalConditionPara =
+          new Paragraph("Physical Condition: " + wrestler.getPhysicalCondition() + "%");
+      physicalConditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
+      if (wrestler.getPhysicalCondition() < 50) {
+        physicalConditionPara.addClassNames(LumoUtility.TextColor.ERROR);
+      } else if (wrestler.getPhysicalCondition() < 80) {
+        physicalConditionPara.addClassNames(LumoUtility.TextColor.WARNING);
+      } else {
+        physicalConditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
+      }
+      injuriesLayout.add(physicalConditionPara);
+
+      if (securityUtils.isAdmin() || securityUtils.isBooker()) {
+        Button resetWearAndTearButton = new Button("Reset Wear & Tear");
+        resetWearAndTearButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
+        resetWearAndTearButton.addClickListener(
+            e -> {
+              wrestler.setPhysicalCondition(100);
+              wrestlerService.save(wrestler);
+              updateView();
+              com.vaadin.flow.component.notification.Notification.show(
+                  "Wear & Tear reset to 100%!");
+            });
+        injuriesLayout.add(resetWearAndTearButton);
+      }
+
       injuriesLayout.add(new Paragraph("Bumps: " + wrestler.getBumps()));
       if (wrestler.getInjuries().isEmpty()) {
         injuriesLayout.add(new Paragraph("No current injuries."));

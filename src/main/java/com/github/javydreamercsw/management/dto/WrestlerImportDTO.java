@@ -37,8 +37,11 @@ public class WrestlerImportDTO {
   private String description;
   private Gender gender;
   private String manager;
+  private String alignment;
   private String externalId;
   private String imageUrl;
+  private String heritageTag;
+  private String set;
   private Integer drive;
   private Integer resilience;
   private Integer charisma;
