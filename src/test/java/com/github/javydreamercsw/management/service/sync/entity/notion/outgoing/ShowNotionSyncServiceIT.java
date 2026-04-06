@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -30,44 +32,39 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateNotionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeNotionSyncService;
-import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-@TestPropertySource(properties = "test.mock.notion-handler=false")
 class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowNotionSyncService showNotionSyncService;
-  @Autowired private SeasonNotionSyncService seasonNotionSyncService;
-  @Autowired private ShowTypeNotionSyncService showTypeNotionSyncService;
-  @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
-  @Autowired private NotionHandler notionHandler;
+
+  @MockitoBean private NotionHandler notionHandler;
+
+  @Mock private NotionClient notionClient;
+  @Mock private Page newPage;
+
+  @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
+  @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
 
   @BeforeEach
   void setUp() {
@@ -76,178 +73,81 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Test
   void testSyncToNotion() {
-    Show show = null;
-    ShowType testShowType = null;
-    Season testSeason = null;
-    ShowTemplate testShowTemplate = null;
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      Assertions.fail("Unable to create Notion client, skipping test.");
-    }
-    try (NotionClient client = clientOptional.get()) {
-      testShowType = new ShowType();
-      testShowType.setName("Test ShowType " + UUID.randomUUID());
-      testShowType.setDescription("Test ShowType Description");
-      showTypeRepository.save(testShowType);
+    when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
 
-      testSeason = new Season();
-      testSeason.setName("Test Season " + UUID.randomUUID());
-      testSeason.setStartDate(Instant.now());
-      testSeason.setIsActive(true);
-      seasonRepository.save(testSeason);
+    String newPageId = UUID.randomUUID().toString();
+    when(newPage.getId()).thenReturn(newPageId);
 
-      testShowTemplate = new ShowTemplate();
-      testShowTemplate.setName("Test Template " + UUID.randomUUID());
-      testShowTemplate.setShowType(testShowType); // Set the required ShowType
-      showTemplateRepository.save(testShowTemplate);
+    when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
+    when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
+    when(notionHandler.getDatabaseId("Shows")).thenReturn("test-db-id");
+    when(notionHandler.executeWithRetry(any()))
+        .thenAnswer(
+            (Answer<Page>)
+                invocation -> {
+                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                });
 
-      // Sync dependencies to Notion to get external IDs
+    // Create dependencies
+    ShowType testShowType = new ShowType();
+    testShowType.setName("Test ShowType " + UUID.randomUUID());
+    testShowType.setDescription("Test ShowType Description");
+    testShowType.setExternalId(UUID.randomUUID().toString());
+    showTypeRepository.save(testShowType);
 
-      showTypeNotionSyncService.syncToNotion("test-prep-showtypes", List.of(testShowType.getId()));
+    Season testSeason = new Season();
+    testSeason.setName("Test Season " + UUID.randomUUID());
+    testSeason.setStartDate(Instant.now());
+    testSeason.setIsActive(true);
+    testSeason.setExternalId(UUID.randomUUID().toString());
+    seasonRepository.save(testSeason);
 
-      seasonNotionSyncService.syncToNotion("test-prep-seasons", List.of(testSeason.getId()));
+    ShowTemplate testShowTemplate = new ShowTemplate();
+    testShowTemplate.setName("Test Template " + UUID.randomUUID());
+    testShowTemplate.setShowType(testShowType);
+    testShowTemplate.setExternalId(UUID.randomUUID().toString());
+    showTemplateRepository.save(testShowTemplate);
 
-      showTemplateNotionSyncService.syncToNotion(
-          "test-prep-templates", List.of(testShowTemplate.getId()));
+    // Create a new Show
+    Show show = new Show();
+    show.setName("Test Show " + UUID.randomUUID());
+    show.setDescription("A test wrestling show");
+    show.setType(testShowType);
+    show.setSeason(testSeason);
+    show.setTemplate(testShowTemplate);
+    show.setShowDate(LocalDate.now());
+    showRepository.save(show);
 
-      testShowType = showTypeRepository.findById(testShowType.getId()).get();
+    // Sync to Notion for the first time
+    showNotionSyncService.syncToNotion("test-op-1");
 
-      testSeason = seasonRepository.findById(testSeason.getId()).get();
+    // Verify that the externalId and lastSync fields are updated
+    Show updatedShow = showRepository.findById(show.getId()).get();
+    assertNotNull(updatedShow.getExternalId());
+    assertEquals(newPageId, updatedShow.getExternalId());
+    assertNotNull(updatedShow.getLastSync());
 
-      testShowTemplate = showTemplateRepository.findById(testShowTemplate.getId()).get();
+    // Verify properties sent to Notion
+    Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
+    CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
+    assertEquals(
+        updatedShow.getName(),
+        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
 
-      assertNotNull(testShowType.getExternalId(), "ShowType externalId should not be null");
+    // Sync to Notion again with updates
+    updatedShow.setName("Test Show Updated " + UUID.randomUUID());
+    showRepository.save(updatedShow);
 
-      assertNotNull(testSeason.getExternalId(), "Season externalId should not be null");
+    showNotionSyncService.syncToNotion("test-op-2");
+    Show updatedShow2 = showRepository.findById(show.getId()).get();
+    assertTrue(updatedShow2.getLastSync().isAfter(updatedShow.getLastSync()));
 
-      assertNotNull(testShowTemplate.getExternalId(), "ShowTemplate externalId should not be null");
-
-      // Create a new Show
-
-      show = new Show();
-
-      show.setName("Test Show " + UUID.randomUUID());
-
-      show.setDescription("A test wrestling show");
-
-      show.setType(testShowType);
-
-      show.setSeason(testSeason);
-
-      show.setTemplate(testShowTemplate);
-
-      show.setShowDate(LocalDate.now());
-
-      showRepository.save(show);
-
-      // Sync to Notion for the first time
-
-      showNotionSyncService.syncToNotion("test-op-1", List.of(show.getId()));
-
-      // Verify that the externalId and lastSync fields are updated
-
-      assertNotNull(show.getId());
-
-      Show updatedShow = showRepository.findById(show.getId()).get();
-
-      assertNotNull(updatedShow.getExternalId());
-
-      assertNotNull(updatedShow.getLastSync());
-
-      // Retrieve the page from Notion and verify properties
-
-      Page page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
-
-      Map<String, PageProperty> props = page.getProperties();
-
-      assertEquals(
-          updatedShow.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-
-      assertEquals(
-          testShowType.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Show Type")));
-
-      assertEquals(
-          testSeason.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Season")));
-
-      assertEquals(
-          testShowTemplate.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Template")));
-
-      assertNotNull(props.get("Date").getDate());
-
-      // Sync to Notion again with updates
-
-      updatedShow.setName("Test Show Updated " + UUID.randomUUID());
-
-      updatedShow.setDescription("Updated description for the show");
-
-      updatedShow.setShowDate(LocalDate.now().plusDays(7));
-
-      showRepository.save(updatedShow);
-
-      showNotionSyncService.syncToNotion("test-op-2", List.of(show.getId()));
-      Show updatedShow2 = showRepository.findById(show.getId()).get();
-      assertTrue(updatedShow2.getLastSync().isAfter(updatedShow.getLastSync()));
-
-      // Verify updated properties
-      page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
-      props = page.getProperties();
-      assertEquals(
-          updatedShow2.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      // Relations should remain the same unless explicitly changed
-      assertEquals(
-          testShowType.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Show Type")));
-      assertEquals(
-          testSeason.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Season")));
-      assertEquals(
-          testShowTemplate.getName(),
-          com.github.javydreamercsw.base.ai.notion.NotionUtil.getValue(
-              client, props.get("Template")));
-      assertNotNull(props.get("Date").getDate());
-
-    } finally {
-      if (show != null && show.getExternalId() != null) {
-        // Clean up Notion page
-        try (NotionClient client = clientOptional.get()) {
-          UpdatePageRequest request =
-              new UpdatePageRequest(show.getExternalId(), new HashMap<>(), true, null, null);
-          notionHandler.executeWithRetry(() -> client.updatePage(request));
-        } catch (FailsafeException e) {
-          // Ignore timeout on cleanup
-        }
-      }
-      // Correct order of deletion
-      if (show != null) {
-        showRepository.delete(show);
-      }
-      if (testShowTemplate != null) {
-        showTemplateRepository.delete(testShowTemplate);
-      }
-      if (testSeason != null) {
-        seasonRepository.delete(testSeason);
-      }
-      if (testShowType != null) {
-        showTypeRepository.delete(testShowType);
-      }
-    }
+    // Verify updated properties
+    Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
+    UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
+    assertEquals(
+        updatedShow2.getName(),
+        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
   }
 }

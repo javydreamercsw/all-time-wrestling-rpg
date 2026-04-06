@@ -43,6 +43,7 @@ public class MenuService {
     dashboards.addChild(
         new MenuItem("Championship Rankings", VaadinIcon.TROPHY, "championship-rankings"));
     dashboards.addChild(new MenuItem("News & Rumors", VaadinIcon.NEWSPAPER, "news"));
+    dashboards.addChild(new MenuItem("Wrestling World Feed", VaadinIcon.CHAT, "news/feed"));
     dashboards.addChild(new MenuItem("Hall of Fame", VaadinIcon.ACADEMY_CAP, "hall-of-fame"));
 
     // Booker Dashboard: Only BOOKER and ADMIN
@@ -69,6 +70,8 @@ public class MenuService {
     // Entities menu: Only ADMIN can access
     // BOOKER, PLAYER, and VIEWER have their own dedicated views
     MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null, RoleName.ADMIN);
+    entities.addChild(new MenuItem("Arenas", VaadinIcon.BUILDING, "arena-list"));
+    entities.addChild(new MenuItem("Locations", VaadinIcon.GLOBE, "location-list"));
     entities.addChild(new MenuItem("Faction Rivalries", VaadinIcon.GROUP, "faction-rivalry-list"));
     entities.addChild(new MenuItem("Factions", VaadinIcon.GROUP, "faction-list"));
     entities.addChild(new MenuItem("Accounts", VaadinIcon.USERS, "account-list"));
@@ -111,7 +114,7 @@ public class MenuService {
 
     // Help menu: accessible to everyone
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
-    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "docs/index.html", true));
+    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "/docs/index.html", true));
 
     // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
     MenuItem multiplayer =

@@ -1,8 +1,0 @@
-{
-  "id": "achievement_notifications",
-  "title": "Achievement Notifications",
-  "description": "Notify players via Inbox Items when they unlock career achievements.",
-  "status": "active",
-  "category": "Gameplay",
-  "date_created": "2026-02-14"
-}
