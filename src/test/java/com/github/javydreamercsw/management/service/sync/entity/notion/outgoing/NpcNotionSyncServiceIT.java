@@ -19,106 +19,108 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcType;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NpcNotionSyncService;
-import dev.failsafe.FailsafeException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-@TestPropertySource(properties = "test.mock.notion-handler=false")
 class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private NpcRepository npcRepository;
   @Autowired private NpcNotionSyncService npcNotionSyncService;
-  @Autowired private NotionHandler notionHandler;
+
+  @MockitoBean private NotionHandler notionHandler;
+
+  @Mock private NotionClient notionClient;
+  @Mock private Page newPage;
+
+  @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
+  @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
+
+  @BeforeEach
+  public void setup() {
+    clearAllRepositories();
+  }
 
   @Test
   void testSyncToNotion() {
-    Npc npc = null;
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      Assertions.fail("Unable to create Notion client, skipping test.");
-    }
-    try (NotionClient client = clientOptional.get()) {
-      // Create a new Npc
-      npc = new Npc();
-      npc.setName("Test NPC " + UUID.randomUUID());
-      npc.setNpcType("Referee");
-      npcRepository.save(npc);
+    when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
 
-      // Sync to Notion for the first time
-      npcNotionSyncService.syncToNotion("test-op-1");
+    String newPageId = UUID.randomUUID().toString();
+    when(newPage.getId()).thenReturn(newPageId);
 
-      // Verify that the externalId and lastSync fields are updated
-      assertNotNull(npc.getId());
-      Npc updatedNpc = npcRepository.findById(npc.getId()).get();
-      assertNotNull(updatedNpc.getExternalId());
-      assertNotNull(updatedNpc.getLastSync());
+    when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
+    when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
+    when(notionHandler.getDatabaseId("NPCs")).thenReturn("test-db-id");
+    when(notionHandler.executeWithRetry(any()))
+        .thenAnswer(
+            (Answer<Page>)
+                invocation -> {
+                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                });
 
-      // Retrieve the page from Notion and verify properties
-      Page page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedNpc.getExternalId(), Collections.emptyList()));
-      Map<String, PageProperty> props = page.getProperties();
-      assertEquals(
-          updatedNpc.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals("Referee", Objects.requireNonNull(props.get("Role").getSelect()).getName());
+    // Create a new NPC
+    Npc npc = new Npc();
+    npc.setName("Test NPC " + UUID.randomUUID());
+    npc.setDescription("A test non-player character");
+    npc.setNpcType(NpcType.MANAGER.getName());
+    npcRepository.save(npc);
 
-      // Sync to Notion again
-      updatedNpc.setName("Test NPC Updated " + UUID.randomUUID());
-      updatedNpc.setNpcType("Commentator");
-      npcRepository.save(updatedNpc);
-      npcNotionSyncService.syncToNotion("test-op-2");
-      Npc updatedNpc2 = npcRepository.findById(npc.getId()).get();
-      assertTrue(updatedNpc2.getLastSync().isAfter(updatedNpc.getLastSync()));
+    // Sync to Notion for the first time
+    npcNotionSyncService.syncToNotion("test-op-1");
 
-      // Verify updated properties
-      page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(updatedNpc.getExternalId(), Collections.emptyList()));
-      props = page.getProperties();
-      assertEquals(
-          updatedNpc2.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals("Commentator", Objects.requireNonNull(props.get("Role").getSelect()).getName());
+    // Verify that the externalId and lastSync fields are updated
+    assertNotNull(npc.getId());
+    Npc updatedNpc = npcRepository.findById(npc.getId()).get();
+    assertNotNull(updatedNpc.getExternalId());
+    assertEquals(newPageId, updatedNpc.getExternalId());
+    assertNotNull(updatedNpc.getLastSync());
 
-    } finally {
-      if (npc != null && npc.getExternalId() != null) {
-        // Clean up
-        try (NotionClient client = clientOptional.get()) {
-          UpdatePageRequest request =
-              new UpdatePageRequest(npc.getExternalId(), new HashMap<>(), true, null, null);
-          notionHandler.executeWithRetry(() -> client.updatePage(request));
-        } catch (FailsafeException e) {
-          // Ignore timeout on cleanup
-        }
-        npcRepository.delete(npc);
-      } else if (npc != null && npc.getId() != null) {
-        npcRepository.delete(npc);
-      }
-    }
+    // Verify properties sent to Notion
+    Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
+    CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
+    assertEquals(
+        npc.getName(),
+        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+
+    // Sync to Notion again with updates
+    updatedNpc.setDescription("Updated NPC description");
+    npcRepository.save(updatedNpc);
+    npcNotionSyncService.syncToNotion("test-op-2");
+    Npc updatedNpc2 = npcRepository.findById(npc.getId()).get();
+    assertTrue(updatedNpc2.getLastSync().isAfter(updatedNpc.getLastSync()));
+
+    // Verify updated properties sent to Notion
+    Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
+    UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
+    assertEquals(
+        updatedNpc2.getDescription(),
+        capturedUpdateRequest
+            .getProperties()
+            .get("Description")
+            .getRichText()
+            .get(0)
+            .getText()
+            .getContent());
   }
 }

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ImageCleanupService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
@@ -57,14 +58,17 @@ public class AdminView extends VerticalLayout {
   private final RankingService rankingService;
   private final WrestlerRepository wrestlerRepository;
   private final ImageCleanupService imageCleanupService;
+  private final WrestlerService wrestlerService;
 
   public AdminView(
       RankingService rankingService,
       WrestlerRepository wrestlerRepository,
-      ImageCleanupService imageCleanupService) {
+      ImageCleanupService imageCleanupService,
+      WrestlerService wrestlerService) {
     this.rankingService = rankingService;
     this.wrestlerRepository = wrestlerRepository;
     this.imageCleanupService = imageCleanupService;
+    this.wrestlerService = wrestlerService;
     initializeUI();
   }
 
@@ -93,7 +97,8 @@ public class AdminView extends VerticalLayout {
         new Tab("Game Settings"),
         new Tab("Holidays"),
         new Tab("Season Settings"),
-        new Tab("Campaign Cards"));
+        new Tab("Campaign Cards"),
+        new Tab("Expansion Management"));
   }
 
   private Div createPages(Tabs tabs) {
@@ -107,6 +112,8 @@ public class AdminView extends VerticalLayout {
     SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
     CampaignAbilityCardListView campaignAbilityCardListView =
         instantiator.getOrCreate(CampaignAbilityCardListView.class);
+    ExpansionManagementView expansionManagementView =
+        instantiator.getOrCreate(ExpansionManagementView.class);
 
     Div pages =
         new Div(
@@ -115,7 +122,8 @@ public class AdminView extends VerticalLayout {
             gameSettingsView,
             holidayListView,
             seasonSettingsView,
-            campaignAbilityCardListView);
+            campaignAbilityCardListView,
+            expansionManagementView);
     pages.setSizeFull();
 
     Map<Tab, Component> tabsToPages =
@@ -125,13 +133,17 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(2), gameSettingsView,
             tabs.getTabAt(3), holidayListView,
             tabs.getTabAt(4), seasonSettingsView,
-            tabs.getTabAt(5), campaignAbilityCardListView);
+            tabs.getTabAt(5), campaignAbilityCardListView,
+            tabs.getTabAt(6), expansionManagementView);
 
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
           Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
           selectedPage.setVisible(true);
+          if (selectedPage instanceof ExpansionManagementView emv) {
+            emv.refresh();
+          }
         });
 
     // Hide all pages except the first one
@@ -205,8 +217,32 @@ public class AdminView extends VerticalLayout {
           }
         });
 
+    Button resetConditionButton = new Button("Reset Wrestler Physical Condition");
+    resetConditionButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    resetConditionButton.addClickListener(
+        event -> {
+          try {
+            wrestlerService.resetAllWearAndTear();
+            Notification.show(
+                    "All wrestlers reset to 100% physical condition!",
+                    3000, Notification.Position.TOP_END)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } catch (Exception e) {
+            Notification.show(
+                    "Error resetting physical condition: " + e.getMessage(),
+                    5000,
+                    Notification.Position.TOP_END)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            log.error("Error during physical condition reset", e);
+          }
+        });
+
     content.add(
-        recalculateTiersButton, manageAccountsButton, observabilityButton, cleanupImagesButton);
+        recalculateTiersButton,
+        manageAccountsButton,
+        observabilityButton,
+        cleanupImagesButton,
+        resetConditionButton);
     return content;
   }
 }

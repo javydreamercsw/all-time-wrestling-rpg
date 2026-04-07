@@ -25,6 +25,10 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeCont
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.Location;
+import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Arrays;
@@ -56,6 +60,8 @@ public class SegmentNarrationController {
   private final SegmentNarrationConfig config;
   private final Environment environment;
   private final SegmentOutcomeProvider segmentOutcomeService;
+  private final ArenaService arenaService;
+  private final LocationService locationService;
 
   private SegmentNarrationService getAppropriateService() {
     if (isTestProfile()) {
@@ -252,7 +258,7 @@ public class SegmentNarrationController {
       }
       return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
     } catch (Exception e) {
-      log.error("Error testing provider: " + provider, e);
+      log.error("Error testing provider: {}", provider, e);
       return ResponseEntity.internalServerError()
           .body(Map.of("error", "Unknown error occurred: " + e.getMessage()));
     }
@@ -271,6 +277,7 @@ public class SegmentNarrationController {
     rvd.setDescription(
         "The Whole F'n Show - High-flying ECW legend known for his laid-back attitude and"
             + " innovative offense");
+    rvd.setHailingFrom("Battle Creek, Michigan");
     MoveSet rvdMoves = new MoveSet();
     rvdMoves.setFinishers(
         Arrays.asList(
@@ -294,6 +301,7 @@ public class SegmentNarrationController {
     angle.setDescription(
         "Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate"
             + " amateur background");
+    angle.setHailingFrom("Pittsburgh, Pennsylvania");
     MoveSet angleMoves = new MoveSet();
     angleMoves.setFinishers(
         Arrays.asList(
@@ -330,22 +338,60 @@ public class SegmentNarrationController {
     commentator2.setDescription("Former ECW champion providing expert analysis");
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
-    VenueContext venue = new VenueContext();
-    venue.setName("Madison Square Garden");
-    venue.setLocation("New York City, New York");
-    venue.setType("Indoor Arena");
-    venue.setCapacity(20000);
-    venue.setDescription("The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
-    venue.setAtmosphere("Electric and historic - where legends are made");
-    venue.setSignificance(
-        "The Mecca of professional wrestling, host to countless legendary segments");
-    venue.setNotableSegments(
-        Arrays.asList(
-            "Hulk Hogan vs Andre the Giant (1988)",
-            "Shawn Michaels vs Razor Ramon Ladder Segment (1994)",
-            "Stone Cold vs The Rock (1999)"));
-    context.setVenue(venue);
-    context.setAudience("Sold-out crowd of 20,000 with strong ECW contingent");
+
+    List<Arena> allArenas = arenaService.findAll();
+    if (!allArenas.isEmpty()) {
+      Arena selectedArena = allArenas.get(new java.util.Random().nextInt(allArenas.size()));
+
+      VenueContext venue = new VenueContext();
+      venue.setName(selectedArena.getName());
+      venue.setDescription(selectedArena.getDescription());
+      venue.setLocation(selectedArena.getLocation().getName());
+      venue.setType("Wrestling Arena");
+      venue.setCapacity(selectedArena.getCapacity());
+      venue.setAlignmentBias(selectedArena.getAlignmentBias().getDisplayName());
+      venue.setEnvironmentalTraits(
+          new java.util.ArrayList<>(selectedArena.getEnvironmentalTraits()));
+      venue.setImageUrl(selectedArena.getImageUrl());
+      venue.setCulturalTags(
+          new java.util.ArrayList<>(selectedArena.getLocation().getCulturalTags()));
+      venue.setAtmosphere("Electric and historic - where legends are made");
+      venue.setSignificance("A key venue in the All Time Wrestling circuit.");
+      context.setVenue(venue);
+    } else {
+      // Fallback: try to at least get a random location if no arenas exist
+      List<Location> allLocations = locationService.findAll();
+
+      VenueContext venue = new VenueContext();
+      if (!allLocations.isEmpty()) {
+        Location selectedLocation =
+            allLocations.get(new java.util.Random().nextInt(allLocations.size()));
+        venue.setLocation(selectedLocation.getName());
+        venue.setCulturalTags(new java.util.ArrayList<>(selectedLocation.getCulturalTags()));
+      } else {
+        venue.setLocation("New York City");
+        venue.setCulturalTags(Arrays.asList("USA", "Metropolis", "Traditional"));
+      }
+
+      venue.setName("Madison Square Garden");
+      venue.setDescription(
+          "The World's Most Famous Arena - Iconic venue in the heart of Manhattan");
+      venue.setCapacity(20000);
+      venue.setAlignmentBias("Neutral");
+      venue.setEnvironmentalTraits(Arrays.asList("Historic", "Electric", "Intimate"));
+      venue.setType("Indoor Arena");
+      venue.setAtmosphere("Electric and historic - where legends are made");
+      venue.setSignificance(
+          "The Mecca of professional wrestling, host to countless legendary segments");
+      venue.setNotableSegments(
+          Arrays.asList(
+              "Hulk Hogan vs Andre the Giant (1988)",
+              "Shawn Michaels vs Razor Ramon Ladder Segment (1994)",
+              "Stone Cold vs The Rock (1999)"));
+      context.setVenue(venue);
+    }
+
+    context.setAudience("Sold-out crowd with high energy and anticipation");
     context.setDeterminedOutcome(
         "Rob Van Dam wins the World Championship after hitting the Five-Star Frog Splash, ending"
             + " Kurt Angle's 6-month reign");
@@ -353,6 +399,7 @@ public class SegmentNarrationController {
         Arrays.asList(
             "Previous segment saw intense back-and-forth action with multiple near-falls...",
             "Last encounter ended in controversy when Angle used the ropes for leverage..."));
+
     return context;
   }
 }

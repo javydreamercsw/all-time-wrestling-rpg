@@ -253,10 +253,7 @@ public class TeamFormDialog extends Dialog {
     binder
         .forField(managerField)
         .bind(
-            dto ->
-                dto.getManagerId() != null
-                    ? npcService.findById(dto.getManagerId()).orElse(null)
-                    : null,
+            dto -> dto.getManagerId() != null ? npcService.findById(dto.getManagerId()) : null,
             (dto, manager) -> {
               if (manager != null) {
                 dto.setManagerId(manager.getId());

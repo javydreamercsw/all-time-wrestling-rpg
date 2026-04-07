@@ -10,11 +10,3 @@ Access your personal settings by clicking the Profile button in the top navigati
 
 ---
 
-## Theme Switching
-
-Customize your visual experience by toggling between Light and Dark modes, or choose from other available color themes to suit your preference.
-
-![Theme Switching](/screenshots/profile-drawer.png)
-
----
-
