@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.relationship;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -92,5 +93,26 @@ class WrestlerRelationshipServiceTest {
 
     // Spouse at Level 100 multiplier is 0.15
     assertEquals(0.15, bonus, 0.001);
+  }
+
+  @Test
+  void testImproveGameplayRelationships() {
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+
+    // Initial state: no relationship
+    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of());
+    when(relationshipRepository.save(any(WrestlerRelationship.class)))
+        .thenAnswer(i -> i.getArguments()[0]);
+
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
+
+    // Should have created a BEST_FRIEND relationship
+    verify(relationshipRepository)
+        .save(
+            argThat(
+                r ->
+                    r.getType() == RelationshipType.BEST_FRIEND
+                        && r.getLevel() == 10)); // Initial level for new gameplay relationship
   }
 }

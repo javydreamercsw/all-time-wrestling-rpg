@@ -475,6 +475,11 @@ public class SegmentAdjudicationService {
     }
 
     assignBumps(segment);
+
+    // Improve relationships between participants based on match quality
+    if (roll >= 15) {
+      relationshipService.improveGameplayRelationships(segment.getWrestlers(), roll >= 18 ? 2 : 1);
+    }
   }
 
   private long applyVenueBonuses(Segment segment, Wrestler wrestler, long amount) {
@@ -544,6 +549,11 @@ public class SegmentAdjudicationService {
                     log.debug(
                         "Awarded {} fans to wrestler {} during promo", awardToGrant, w.getName()));
       }
+    }
+
+    // Improve relationships between participants based on promo quality
+    if (roll >= 15) {
+      relationshipService.improveGameplayRelationships(segment.getWrestlers(), roll >= 18 ? 2 : 1);
     }
   }
 

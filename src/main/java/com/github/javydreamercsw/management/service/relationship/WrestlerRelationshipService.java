@@ -111,6 +111,53 @@ public class WrestlerRelationshipService {
     return saved;
   }
 
+  /**
+   * Improves relationships based on gameplay (e.g., tagging together). If no relationship exists,
+   * it might create a BEST_FRIEND one if they work together enough.
+   */
+  @Transactional
+  public void improveGameplayRelationships(List<Wrestler> wrestlers, int points) {
+    if (wrestlers == null || wrestlers.size() < 2) {
+      return;
+    }
+
+    for (int i = 0; i < wrestlers.size(); i++) {
+      for (int j = i + 1; j < wrestlers.size(); j++) {
+        Wrestler w1 = wrestlers.get(i);
+        Wrestler w2 = wrestlers.get(j);
+
+        List<WrestlerRelationship> existing = relationshipRepository.findBetweenWrestlers(w1, w2);
+
+        if (existing.isEmpty()) {
+          // Potentially create a new friendship if they are on the same side and performed well
+          // For now, let's just create a level 10 BEST_FRIEND bond if they didn't have one
+          createOrUpdateRelationship(
+              w1.getId(),
+              w2.getId(),
+              RelationshipType.BEST_FRIEND,
+              10,
+              true,
+              "Formed through tagging together");
+        } else {
+          // Improve all existing positive relationships
+          for (WrestlerRelationship rel : existing) {
+            if (isPositiveType(rel.getType())) {
+              int newLevel = Math.min(100, rel.getLevel() + points);
+              rel.setLevel(newLevel);
+              relationshipRepository.save(rel);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private boolean isPositiveType(RelationshipType type) {
+    return switch (type) {
+      case SPOUSE, SIBLING, BEST_FRIEND, MENTOR, PROTEGE, ROMANCE, FAMILY -> true;
+    };
+  }
+
   /** Calculate chemistry bonus for a set of wrestlers. */
   public double calculateChemistryBonus(List<Wrestler> wrestlers) {
     if (wrestlers == null || wrestlers.size() < 2) {
