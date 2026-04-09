@@ -32,7 +32,7 @@ class WrestlerTest {
     w.setName("Johnny All Time");
 
     Wrestler partner1 = new Wrestler();
-    partner1.setName("Taya");
+    partner1.setName("Taya Valkyrie");
 
     Wrestler partner2 = new Wrestler();
     partner2.setName("The Beast");
