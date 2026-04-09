@@ -138,6 +138,13 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
             + " wrestler is from during their entrance or early in the match.\n\n");
 
     prompt.append(
+        "If relationships are present in the wrestler's context, incorporate them into the"
+            + " narration. Acknowledge family ties, marriages, and friendships. For example, if"
+            + " two wrestlers are spouses, the commentators should mention it if they are"
+            + " interacting or if one is at ringside. Use these social bonds to add emotional"
+            + " weight to the storytelling.\n\n");
+
+    prompt.append(
         "If venue context is present, use the name, description, location, capacity, type,"
             + " atmosphere, significance, alignmentBias, and environmentalTraits to ground the"
             + " narration in the specific setting. Incorporate culturalTags to add local flair."

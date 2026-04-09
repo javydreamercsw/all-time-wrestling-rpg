@@ -124,6 +124,9 @@ public class DataInitializer implements Initializable {
   private final CampaignUpgradeService campaignUpgradeService;
   private final LocationRepository locationRepository;
   private final ArenaRepository arenaRepository;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
   private final Environment env;
   private final AchievementRepository achievementRepository;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
@@ -157,6 +160,8 @@ public class DataInitializer implements Initializable {
       ResourcePatternResolver resourcePatternResolver,
       LocationRepository locationRepository,
       ArenaRepository arenaRepository,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService,
       ObjectMapper objectMapper) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
@@ -182,6 +187,7 @@ public class DataInitializer implements Initializable {
     this.resourcePatternResolver = resourcePatternResolver;
     this.locationRepository = locationRepository;
     this.arenaRepository = arenaRepository;
+    this.relationshipService = relationshipService;
     this.objectMapper = objectMapper;
   }
 
@@ -201,6 +207,7 @@ public class DataInitializer implements Initializable {
       syncLocationsFromFile();
       syncArenasFromFile();
       syncWrestlersFromFile();
+      syncRelationshipsFromFile();
       syncChampionshipsFromFile();
       syncDecksFromFile();
       syncFactionsFromFile();
@@ -1293,6 +1300,53 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Arenas file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncRelationshipsFromFile() {
+    ClassPathResource resource = new ClassPathResource("relationships.json");
+    if (resource.exists()) {
+      log.info("Loading relationships from file: {}", resource.getPath());
+      try (var is = resource.getInputStream()) {
+        var dtos =
+            objectMapper.readValue(
+                is,
+                new com.fasterxml.jackson.core.type.TypeReference<
+                    List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+
+        for (com.github.javydreamercsw.management.dto.RelationshipImportDTO dto : dtos) {
+          Optional<Wrestler> w1 = wrestlerRepository.findByName(dto.getWrestler1());
+          Optional<Wrestler> w2 = wrestlerRepository.findByName(dto.getWrestler2());
+
+          if (w1.isPresent() && w2.isPresent()) {
+            relationshipService.createOrUpdateRelationship(
+                w1.get().getId(),
+                w2.get().getId(),
+                dto.getType(),
+                dto.getLevel(),
+                dto.getIsStoryline(),
+                dto.getNotes());
+            log.debug(
+                "Loaded relationship: {} {} {} (Level: {})",
+                dto.getWrestler1(),
+                dto.getType(),
+                dto.getWrestler2(),
+                dto.getLevel());
+          } else {
+            if (w1.isEmpty()) {
+              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler1());
+            }
+            if (w2.isEmpty()) {
+              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler2());
+            }
+          }
+        }
+        log.info("Relationship loading completed - {} relationships processed", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading relationships from file", e);
+      }
+    } else {
+      log.warn("Relationships file not found: {}", resource.getPath());
     }
   }
 }

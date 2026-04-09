@@ -121,6 +121,12 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "is_main_event", nullable = false)
   private boolean isMainEvent;
 
+  @Column(name = "segment_rating")
+  private Integer segmentRating;
+
+  @Column(name = "duration_minutes")
+  private Integer durationMinutes;
+
   // Segment participants
   @OneToMany(
       mappedBy = "segment",

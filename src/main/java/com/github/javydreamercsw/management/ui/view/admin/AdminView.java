@@ -98,7 +98,8 @@ public class AdminView extends VerticalLayout {
         new Tab("Holidays"),
         new Tab("Season Settings"),
         new Tab("Campaign Cards"),
-        new Tab("Expansion Management"));
+        new Tab("Expansion Management"),
+        new Tab("Wrestler Relationships"));
   }
 
   private Div createPages(Tabs tabs) {
@@ -114,6 +115,8 @@ public class AdminView extends VerticalLayout {
         instantiator.getOrCreate(CampaignAbilityCardListView.class);
     ExpansionManagementView expansionManagementView =
         instantiator.getOrCreate(ExpansionManagementView.class);
+    WrestlerRelationshipManagementView relationshipManagementView =
+        instantiator.getOrCreate(WrestlerRelationshipManagementView.class);
 
     Div pages =
         new Div(
@@ -123,7 +126,8 @@ public class AdminView extends VerticalLayout {
             holidayListView,
             seasonSettingsView,
             campaignAbilityCardListView,
-            expansionManagementView);
+            expansionManagementView,
+            relationshipManagementView);
     pages.setSizeFull();
 
     Map<Tab, Component> tabsToPages =
@@ -134,7 +138,8 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(3), holidayListView,
             tabs.getTabAt(4), seasonSettingsView,
             tabs.getTabAt(5), campaignAbilityCardListView,
-            tabs.getTabAt(6), expansionManagementView);
+            tabs.getTabAt(6), expansionManagementView,
+            tabs.getTabAt(7), relationshipManagementView);
 
     tabs.addSelectedChangeListener(
         event -> {
@@ -143,6 +148,9 @@ public class AdminView extends VerticalLayout {
           selectedPage.setVisible(true);
           if (selectedPage instanceof ExpansionManagementView emv) {
             emv.refresh();
+          }
+          if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
+            rmv.refresh();
           }
         });
 

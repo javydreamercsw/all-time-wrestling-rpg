@@ -148,6 +148,7 @@ public interface SegmentNarrationService {
     private String hailingFrom;
     private MoveSet moveSet;
     private List<String> feudsAndHeat;
+    private List<String> relationships;
     private List<String> recentSegments;
     private Map<String, Object> attributes;
   }

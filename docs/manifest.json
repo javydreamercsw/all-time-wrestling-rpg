@@ -1,5 +1,19 @@
 {
   "features": [ {
+    "id": "wrestler-profile-wrestler-profile-relationships",
+    "category": "Wrestler Profile",
+    "title": "Personal Relationships",
+    "description": "Wrestler profiles now include a 'Relationships' section showing their social connections. These bonds provide chemistry bonuses when related wrestlers perform together.",
+    "imagePath": "screenshots/wrestler-profile-relationships.png",
+    "order": 0
+  }, {
+    "id": "admin-admin-wrestler-relationships",
+    "category": "Admin",
+    "title": "Wrestler Relationships Management",
+    "description": "Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.",
+    "imagePath": "screenshots/admin-wrestler-relationships.png",
+    "order": 10
+  }, {
     "id": "admin-admin-expansion-management",
     "category": "Admin",
     "title": "Expansion Management",

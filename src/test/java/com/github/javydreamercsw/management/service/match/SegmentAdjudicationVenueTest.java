@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -78,6 +79,7 @@ class SegmentAdjudicationVenueTest {
   @Mock private RingsideAiService ringsideAiService;
   @Mock private RetirementService retirementService;
   @Mock private GameSettingService gameSettingService;
+  @Mock private WrestlerRelationshipService relationshipService;
 
   private SegmentAdjudicationService adjudicationService;
 
@@ -98,6 +100,7 @@ class SegmentAdjudicationVenueTest {
             ringsideAiService,
             retirementService,
             gameSettingService,
+            relationshipService,
             random);
 
     when(segment.getShow()).thenReturn(show);

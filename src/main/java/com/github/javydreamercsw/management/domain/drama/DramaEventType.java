@@ -66,7 +66,11 @@ public enum DramaEventType {
   CAMPAIGN_RIVAL("Campaign Rival", "A rival encounter in the solo campaign"),
 
   /** Campaign specific: Outsider encounter */
-  CAMPAIGN_OUTSIDER("Campaign Outsider", "An outsider encounter in the solo campaign");
+  CAMPAIGN_OUTSIDER("Campaign Outsider", "An outsider encounter in the solo campaign"),
+
+  /** Relationship milestones: Anniversaries, personal growth, family news */
+  RELATIONSHIP_MILESTONE(
+      "Relationship Milestone", "Key moments in wrestler's personal relationships");
 
   private final String displayName;
   private final String description;
@@ -102,7 +106,8 @@ public enum DramaEventType {
           ALLIANCE_FORMED,
           CHAMPIONSHIP_CHALLENGE,
           CAMPAIGN_RIVAL,
-          CAMPAIGN_OUTSIDER ->
+          CAMPAIGN_OUTSIDER,
+          RELATIONSHIP_MILESTONE ->
           true;
       case SOCIAL_MEDIA_DRAMA,
           INJURY_INCIDENT,
@@ -133,7 +138,8 @@ public enum DramaEventType {
           ALLIANCE_FORMED,
           SURPRISE_RETURN,
           RETIREMENT_TEASE,
-          PERSONAL_ISSUE ->
+          PERSONAL_ISSUE,
+          RELATIONSHIP_MILESTONE ->
           false;
     };
   }
@@ -146,7 +152,8 @@ public enum DramaEventType {
           BETRAYAL,
           ALLIANCE_FORMED,
           MEDIA_CONTROVERSY,
-          CAMPAIGN_OUTSIDER ->
+          CAMPAIGN_OUTSIDER,
+          RELATIONSHIP_MILESTONE ->
           true;
       case BACKSTAGE_INCIDENT,
           SOCIAL_MEDIA_DRAMA,
@@ -174,7 +181,8 @@ public enum DramaEventType {
           CHAMPIONSHIP_CHALLENGE,
           PERSONAL_ISSUE,
           MEDIA_CONTROVERSY,
-          CAMPAIGN_RIVAL ->
+          CAMPAIGN_RIVAL,
+          RELATIONSHIP_MILESTONE ->
           false;
     };
   }

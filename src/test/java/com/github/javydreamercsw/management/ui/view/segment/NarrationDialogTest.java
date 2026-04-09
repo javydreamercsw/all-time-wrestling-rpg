@@ -63,6 +63,10 @@ class NarrationDialogTest {
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
   @Mock private RingsideActionService ringsideActionService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      relationshipService;
+
   private NarrationDialog narrationDialog;
   private Segment segment;
   private Wrestler wrestler;
@@ -126,7 +130,8 @@ class NarrationDialogTest {
             rivalryService,
             segmentNarrationController,
             segmentNarrationServiceFactory,
-            ringsideActionService);
+            ringsideActionService,
+            relationshipService);
 
     // Create mocks for the UI components that teamsLayout would contain
     VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
@@ -207,5 +212,42 @@ class NarrationDialogTest {
     SegmentNarrationService.WrestlerContext wrestlerContext = wrestlerContexts.get(0);
     assertEquals("Roman Reigns", wrestlerContext.getName());
     assertEquals("Paul Heyman", wrestlerContext.getManagerName());
+  }
+
+  @Test
+  void testBuildWrestlerContexts_withRelationships() {
+    // Given
+    Wrestler partner = new Wrestler();
+    partner.setId(99L);
+    partner.setName("Seth Rollins");
+
+    com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship rel =
+        new com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship();
+    rel.setWrestler1(wrestler);
+    rel.setWrestler2(partner);
+    rel.setType(
+        com.github.javydreamercsw.management.domain.relationship.RelationshipType.BEST_FRIEND);
+    rel.setLevel(80);
+    rel.setIsStoryline(true);
+
+    when(wrestlerService.findById(wrestler.getId())).thenReturn(java.util.Optional.of(wrestler));
+    when(relationshipService.getRelationshipsForWrestler(wrestler.getId()))
+        .thenReturn(List.of(rel));
+
+    // When
+    List<SegmentNarrationService.WrestlerContext> wrestlerContexts =
+        narrationDialog.buildWrestlerContexts();
+
+    // Then
+    assertNotNull(wrestlerContexts);
+    assertFalse(wrestlerContexts.isEmpty());
+    SegmentNarrationService.WrestlerContext wrestlerContext = wrestlerContexts.get(0);
+    assertNotNull(wrestlerContext.getRelationships());
+    assertEquals(1, wrestlerContext.getRelationships().size());
+    String relText = wrestlerContext.getRelationships().get(0);
+    assertTrue(relText.contains("Best Friend"));
+    assertTrue(relText.contains("Seth Rollins"));
+    assertTrue(relText.contains("80"));
+    assertTrue(relText.contains("Storyline"));
   }
 }

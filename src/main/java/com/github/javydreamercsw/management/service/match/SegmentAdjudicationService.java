@@ -74,6 +74,9 @@ public class SegmentAdjudicationService {
   private final RingsideAiService ringsideAiService;
   private final RetirementService retirementService;
   private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -90,7 +93,9 @@ public class SegmentAdjudicationService {
       RingsideActionService ringsideActionService,
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
-      GameSettingService gameSettingService) {
+      GameSettingService gameSettingService,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService) {
     this(
         rivalryService,
         wrestlerService,
@@ -105,6 +110,7 @@ public class SegmentAdjudicationService {
         ringsideAiService,
         retirementService,
         gameSettingService,
+        relationshipService,
         new Random());
   }
 
@@ -122,6 +128,8 @@ public class SegmentAdjudicationService {
       RingsideAiService ringsideAiService,
       RetirementService retirementService,
       GameSettingService gameSettingService,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -136,6 +144,7 @@ public class SegmentAdjudicationService {
     this.ringsideAiService = ringsideAiService;
     this.retirementService = retirementService;
     this.gameSettingService = gameSettingService;
+    this.relationshipService = relationshipService;
     this.random = random;
   }
 
@@ -201,6 +210,12 @@ public class SegmentAdjudicationService {
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
     processRewards(segment, multiplier);
+
+    // Update segment rating
+    double chemistryBonus = relationshipService.calculateChemistryBonus(segment.getWrestlers());
+    int baseRating = calculateBaseRating(segment);
+    int finalRating = (int) Math.min(100, baseRating * (1.0 + chemistryBonus));
+    segment.setSegmentRating(finalRating);
 
     // Apply wear and tear
     applyWearAndTear(segment);
@@ -460,6 +475,11 @@ public class SegmentAdjudicationService {
     }
 
     assignBumps(segment);
+
+    // Improve relationships between participants based on match quality
+    if (roll >= 15) {
+      relationshipService.improveGameplayRelationships(segment.getWrestlers(), roll >= 18 ? 2 : 1);
+    }
   }
 
   private long applyVenueBonuses(Segment segment, Wrestler wrestler, long amount) {
@@ -529,6 +549,11 @@ public class SegmentAdjudicationService {
                     log.debug(
                         "Awarded {} fans to wrestler {} during promo", awardToGrant, w.getName()));
       }
+    }
+
+    // Improve relationships between participants based on promo quality
+    if (roll >= 15) {
+      relationshipService.improveGameplayRelationships(segment.getWrestlers(), roll >= 18 ? 2 : 1);
     }
   }
 
@@ -678,5 +703,18 @@ public class SegmentAdjudicationService {
       // Check for retirement
       retirementService.checkRetirement(wrestler);
     }
+  }
+
+  private int calculateBaseRating(@NonNull Segment segment) {
+    DiceBag d20 = new DiceBag(random, new int[] {20});
+    int roll = d20.roll();
+
+    // 1-20 roll mapped to 0-100 base rating
+    if (roll <= 5) return roll * 4; // 1-5 -> 4-20
+    if (roll <= 10) return 20 + (roll - 5) * 6; // 6-10 -> 26-50
+    if (roll <= 15) return 50 + (roll - 10) * 6; // 11-15 -> 56-80
+    if (roll <= 18) return 80 + (roll - 15) * 5; // 16-18 -> 85-95
+    if (roll == 19) return 96 + random.nextInt(2); // 96-97
+    return 98 + random.nextInt(3); // 98-100
   }
 }

@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -80,6 +81,7 @@ class AchievementSystemTest {
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
+  @Mock private WrestlerRelationshipService relationshipService;
 
   @Mock
   private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
@@ -111,6 +113,7 @@ class AchievementSystemTest {
             ringsideAiService,
             retirementService,
             gameSettingService,
+            relationshipService,
             new Random());
 
     account = new Account();

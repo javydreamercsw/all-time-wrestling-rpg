@@ -47,7 +47,13 @@ The `SegmentNarrationService` will be updated to include relationship context in
 - New entity `WrestlerRelationship` with a join table or self-referential many-to-many.
 - Update `Wrestler` entity to have a list of `relationships`.
 
-### 3.2. UI
+### 3.2. JSON Data Import
+
+Relationships can be bulk-imported or defined in expansion packs via `src/main/resources/relationships.json`.
+- **Format:** Array of objects containing `wrestler1` (name), `wrestler2` (name), `type` (enum), `level` (0-100), and `isStoryline` (boolean).
+- **Automation:** `DataInitializer` automatically syncs this file during application startup, linking wrestlers by their unique names.
+
+### 3.3. UI
 
 - **Wrestler Profile:** Add a "Personal" tab showing active relationships.
 - **Relationship Editor:** Admin tool to define "Real Life" relationships for expansions.

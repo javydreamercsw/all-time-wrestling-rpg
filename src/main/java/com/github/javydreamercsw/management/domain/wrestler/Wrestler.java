@@ -183,6 +183,18 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private List<Rivalry> rivalriesAsWrestler2 = new ArrayList<>();
 
+  @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      relationshipsAsWrestler1 = new ArrayList<>();
+
+  @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      relationshipsAsWrestler2 = new ArrayList<>();
+
   @OneToMany(
       mappedBy = "wrestler",
       cascade = CascadeType.ALL,
@@ -271,6 +283,16 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   }
 
   // ==================== ATW RPG RELATIONSHIP METHODS ====================
+
+  @JsonIgnore
+  public List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      getAllRelationships() {
+    List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+        allRelationships = new ArrayList<>();
+    allRelationships.addAll(relationshipsAsWrestler1);
+    allRelationships.addAll(relationshipsAsWrestler2);
+    return allRelationships;
+  }
 
   @JsonIgnore
   public List<Rivalry> getActiveRivalries() {

@@ -100,6 +100,10 @@ class ShowDetailViewTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private ArenaService arenaService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      relationshipService;
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -162,7 +166,8 @@ class ShowDetailViewTest {
               leagueRepository,
               commentaryTeamRepository,
               ringsideActionService,
-              arenaService);
+              arenaService,
+              relationshipService);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -240,7 +245,8 @@ class ShowDetailViewTest {
               leagueRepository,
               commentaryTeamRepository,
               ringsideActionService,
-              arenaService);
+              arenaService,
+              relationshipService);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));
