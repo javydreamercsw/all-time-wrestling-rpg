@@ -215,7 +215,7 @@ public class DraftService {
     wrestlerRepository.saveAndFlush(wrestler);
 
     // Set as active wrestler if none set
-    if (reloadedUser.getActiveWrestlerId() == null) {
+    if (reloadedUser.getActiveWrestlerId() == null && wrestler.getId() != null) {
       reloadedUser.setActiveWrestlerId(wrestler.getId());
       accountRepository.saveAndFlush(reloadedUser);
     }

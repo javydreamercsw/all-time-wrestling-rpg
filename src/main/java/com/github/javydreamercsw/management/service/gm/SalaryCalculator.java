@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.gm;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
 /** Calculates wrestler salaries based on their fan count and tier. */
@@ -31,18 +33,17 @@ public class SalaryCalculator {
   /**
    * Calculates the weekly salary for a wrestler. Formula: Base Salary + (Fans / 1000) * Multiplier
    */
-  public BigDecimal calculateWeeklySalary(Wrestler wrestler) {
-    if (wrestler == null) {
-      return BigDecimal.ZERO;
-    }
-
+  public BigDecimal calculateWeeklySalary(@NonNull Wrestler wrestler) {
+    long fans = wrestler.getFans();
     BigDecimal fanBonus =
-        BigDecimal.valueOf(wrestler.getFans())
+        BigDecimal.valueOf(fans)
             .divide(new BigDecimal("1000"), 0, RoundingMode.FLOOR)
             .multiply(MULTIPLIER_PER_1000_FANS);
 
+    WrestlerTier tier = wrestler.getTier();
+
     BigDecimal tierMultiplier =
-        switch (wrestler.getTier()) {
+        switch (tier) {
           case ROOKIE -> new BigDecimal("0.5");
           case RISER -> new BigDecimal("0.8");
           case CONTENDER -> new BigDecimal("1.0");

@@ -22,6 +22,9 @@ CREATE TABLE wrestler_contract (
     is_initial_draft BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     creation_date TIMESTAMP NOT NULL,
+    external_id VARCHAR(255) UNIQUE,
+    last_sync TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE,
     FOREIGN KEY (league_id) REFERENCES league(id) ON DELETE CASCADE
 );

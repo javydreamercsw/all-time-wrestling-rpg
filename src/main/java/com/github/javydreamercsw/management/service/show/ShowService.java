@@ -42,7 +42,6 @@ import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
-import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -83,14 +82,9 @@ public class ShowService {
   private final LegacyService legacyService;
   private final SecurityUtils securityUtils;
   private final ArenaRepository arenaRepository;
-  private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
-  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository
-      contractRepository;
-  private final com.github.javydreamercsw.management.service.gm.SalaryCalculator salaryCalculator;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
+  private final LeagueRosterRepository leagueRosterRepository;
+  private final WrestlerContractRepository contractRepository;
+  private final SalaryCalculator salaryCalculator;
 
   ShowService(
       ShowRepository showRepository,
@@ -112,8 +106,7 @@ public class ShowService {
       ArenaRepository arenaRepository,
       LeagueRosterRepository leagueRosterRepository,
       WrestlerContractRepository contractRepository,
-      SalaryCalculator salaryCalculator,
-      WrestlerRelationshipService relationshipService) {
+      SalaryCalculator salaryCalculator) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -134,7 +127,6 @@ public class ShowService {
     this.leagueRosterRepository = leagueRosterRepository;
     this.contractRepository = contractRepository;
     this.salaryCalculator = salaryCalculator;
-    this.relationshipService = relationshipService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -580,7 +572,7 @@ public class ShowService {
             .average()
             .orElse(0.0);
 
-    if (show.getArena() != null) {
+    if (show.getArena() != null && show.getArena().getCapacity() != null) {
       // Revenue = Capacity * (Rating/100) * $10 per head (simplified)
       totalRevenue =
           java.math.BigDecimal.valueOf(show.getArena().getCapacity())

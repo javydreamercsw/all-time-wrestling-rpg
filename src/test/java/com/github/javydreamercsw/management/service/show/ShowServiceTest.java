@@ -111,8 +111,7 @@ class ShowServiceTest {
             arenaRepository,
             leagueRosterRepository,
             contractRepository,
-            salaryCalculator,
-            relationshipService);
+            salaryCalculator);
     show = new Show();
     show.setId(1L);
 
