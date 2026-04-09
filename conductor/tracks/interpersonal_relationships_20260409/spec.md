@@ -24,25 +24,31 @@ This enhancement introduces a social layer to the All Time Wrestling RPG, allowi
 ## 2. Gameplay Impact
 
 ### 2.1. Chemistry Bonus
+
 Segments involving wrestlers with high-level positive relationships (e.g., Tag Team matches between Siblings or Spouses) receive a **Chemistry Bonus** to the final segment rating.
 
 ### 2.2. Automatic Support
+
 If a wrestler is in a high-stakes match (Title match or Main Event), their Spouse or Best Friend has a high probability of appearing at ringside or in a backstage segment, even if not explicitly booked.
 
 ### 2.3. AI Narration
+
 The `SegmentNarrationService` will be updated to include relationship context in the prompt.
 *Example prompt injection:* "Wrestler A and Wrestler B are real-life spouses. Mention how B's ringside presence affects A's performance."
 
 ### 2.4. Drama Integration
+
 `DramaEventService` will include new event templates for relationship milestones (e.g., Anniversaries, Betrayals, Family Feuds).
 
 ## 3. Technical Requirements
 
 ### 3.1. Persistence
+
 - New entity `WrestlerRelationship` with a join table or self-referential many-to-many.
 - Update `Wrestler` entity to have a list of `relationships`.
 
 ### 3.2. UI
+
 - **Wrestler Profile:** Add a "Personal" tab showing active relationships.
 - **Relationship Editor:** Admin tool to define "Real Life" relationships for expansions.
 
@@ -51,3 +57,4 @@ The `SegmentNarrationService` will be updated to include relationship context in
 - **Unit Tests:** Relationship creation and level modification.
 - **Integration Tests:** Chemistry bonus calculation in `SegmentAdjudicationService`.
 - **E2E Tests:** Verification of relationship display on the Wrestler Profile.
+
