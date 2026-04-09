@@ -56,7 +56,7 @@ class WrestlerRelationshipServiceTest {
 
     w2 = new Wrestler();
     w2.setId(2L);
-    w2.setName("Taya");
+    w2.setName("Taya Valkyrie");
   }
 
   @Test
