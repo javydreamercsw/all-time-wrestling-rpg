@@ -72,6 +72,9 @@ public class NarrationDialog extends Dialog {
   private final RivalryService rivalryService;
   private final RingsideActionService ringsideActionService;
   private final SegmentNarrationServiceFactory aiFactory;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -99,7 +102,9 @@ public class NarrationDialog extends Dialog {
       RivalryService rivalryService,
       SegmentNarrationController segmentNarrationController,
       SegmentNarrationServiceFactory aiFactory,
-      RingsideActionService ringsideActionService) {
+      RingsideActionService ringsideActionService,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService) {
     this.segmentService = segmentService;
     this.segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
     this.objectMapper = new ObjectMapper();
@@ -110,6 +115,7 @@ public class NarrationDialog extends Dialog {
     this.segmentNarrationController = segmentNarrationController;
     this.aiFactory = aiFactory;
     this.ringsideActionService = ringsideActionService;
+    this.relationshipService = relationshipService;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -476,6 +482,24 @@ public class NarrationDialog extends Dialog {
               String.format("Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
         }
         wc.setFeudsAndHeat(feuds);
+
+        List<String> relationships = new ArrayList<>();
+        relationshipService
+            .getRelationshipsForWrestler(wrestler.getId())
+            .forEach(
+                rel -> {
+                  Wrestler partner =
+                      rel.getPartner(wrestlerService.findById(wrestler.getId()).get());
+                  relationships.add(
+                      String.format(
+                          "%s with %s (Level: %d%s)",
+                          rel.getType().getDisplayName(),
+                          partner.getName(),
+                          rel.getLevel(),
+                          rel.getIsStoryline() ? ", Storyline" : ""));
+                });
+        wc.setRelationships(relationships);
+
         wrestlerContexts.add(wc);
       }
     }

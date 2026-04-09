@@ -203,6 +203,7 @@ public class DramaEvent extends AbstractEntity<Long> {
       case MEDIA_CONTROVERSY -> "📺";
       case CAMPAIGN_RIVAL -> "🤼";
       case CAMPAIGN_OUTSIDER -> "👤";
+      case RELATIONSHIP_MILESTONE -> "💍";
     };
   }
 

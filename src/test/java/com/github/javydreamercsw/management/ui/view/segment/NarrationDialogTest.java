@@ -63,6 +63,10 @@ class NarrationDialogTest {
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
   @Mock private RingsideActionService ringsideActionService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      relationshipService;
+
   private NarrationDialog narrationDialog;
   private Segment segment;
   private Wrestler wrestler;
@@ -126,7 +130,8 @@ class NarrationDialogTest {
             rivalryService,
             segmentNarrationController,
             segmentNarrationServiceFactory,
-            ringsideActionService);
+            ringsideActionService,
+            relationshipService);
 
     // Create mocks for the UI components that teamsLayout would contain
     VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);

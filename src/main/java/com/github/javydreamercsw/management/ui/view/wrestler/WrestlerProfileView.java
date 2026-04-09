@@ -96,6 +96,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final NpcService npcService;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -109,6 +112,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
+  private final VerticalLayout relationshipsLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
   private final HorizontalLayout header;
   private final Image wrestlerImage = new Image();
@@ -129,7 +133,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       NpcService npcService,
       @Qualifier("baseAccountService") AccountService accountService,
       CampaignService campaignService,
-      ImageStorageService imageStorageService) {
+      ImageStorageService imageStorageService,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -142,6 +148,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.accountService = accountService;
     this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
+    this.relationshipService = relationshipService;
 
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
@@ -214,6 +221,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     add(
         header,
         biographyLayout,
+        relationshipsLayout,
         careerHighlightsLayout,
         titleHistoryLayout,
         injuriesLayout,
@@ -310,6 +318,28 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         biographyLayout.add(new Paragraph(wrestler.getDescription()));
       } else {
         biographyLayout.add(new Paragraph("No biography available."));
+      }
+
+      // Relationships
+      relationshipsLayout.removeAll();
+      relationshipsLayout.add(new H3("Relationships"));
+      List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+          relationships = relationshipService.getRelationshipsForWrestler(wrestler.getId());
+      if (relationships.isEmpty()) {
+        relationshipsLayout.add(new Paragraph("No active social relationships."));
+      } else {
+        relationships.forEach(
+            rel -> {
+              Wrestler partner = rel.getPartner(wrestler);
+              String text =
+                  String.format(
+                      "%s: %s (Level: %d%s)",
+                      rel.getType().getDisplayName(),
+                      partner.getName(),
+                      rel.getLevel(),
+                      rel.getIsStoryline() ? ", Storyline" : "");
+              relationshipsLayout.add(new Paragraph(text));
+            });
       }
 
       // Career Highlights
