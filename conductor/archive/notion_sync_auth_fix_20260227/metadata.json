@@ -1,8 +1,0 @@
-{
-  "track_id": "notion_sync_auth_fix_20260227",
-  "type": "bug",
-  "status": "new",
-  "created_at": "2026-02-27T14:45:00Z",
-  "updated_at": "2026-02-27T14:45:00Z",
-  "description": "I was doing a manual test around and tried to sync with Notion and got an error: Sync failed: Sync failed: An Authentication object was not found in the SecurityContext. I want to look into this as I would want to sync my live server outbound and I fear it is failing too often."
-}
