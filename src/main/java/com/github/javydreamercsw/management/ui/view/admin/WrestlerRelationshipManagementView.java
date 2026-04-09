@@ -202,6 +202,6 @@ public class WrestlerRelationshipManagementView extends VerticalLayout {
   }
 
   public void refresh() {
-    grid.setItems(relationshipRepository.findAll());
+    grid.setItems(relationshipRepository.findAllWithWrestlers());
   }
 }

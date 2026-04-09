@@ -27,8 +27,8 @@ import org.springframework.stereotype.Repository;
 public interface WrestlerRelationshipRepository extends JpaRepository<WrestlerRelationship, Long> {
 
   @Query(
-      "SELECT r FROM WrestlerRelationship r WHERE r.wrestler1 = :wrestler OR r.wrestler2 ="
-          + " :wrestler")
+      "SELECT r FROM WrestlerRelationship r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2"
+          + " WHERE r.wrestler1 = :wrestler OR r.wrestler2 = :wrestler")
   List<WrestlerRelationship> findAllByWrestler(@Param("wrestler") Wrestler wrestler);
 
   @Query(
@@ -36,4 +36,7 @@ public interface WrestlerRelationshipRepository extends JpaRepository<WrestlerRe
           + " (r.wrestler1 = :w2 AND r.wrestler2 = :w1)")
   List<WrestlerRelationship> findBetweenWrestlers(
       @Param("w1") Wrestler w1, @Param("w2") Wrestler w2);
+
+  @Query("SELECT r FROM WrestlerRelationship r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2")
+  List<WrestlerRelationship> findAllWithWrestlers();
 }
