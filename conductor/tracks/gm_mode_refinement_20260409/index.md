@@ -9,7 +9,7 @@ This track focuses on evolving the Booker role into a strategic General Manager,
 
 ## Status
 
-- **Status:** Drafting
+- **Status:** In Progress
 - **Owner:** Gemini CLI
 - **Started:** 2026-04-09
 

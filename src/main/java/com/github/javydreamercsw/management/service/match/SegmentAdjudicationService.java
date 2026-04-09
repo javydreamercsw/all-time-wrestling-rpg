@@ -213,9 +213,13 @@ public class SegmentAdjudicationService {
 
     // Update segment rating
     double chemistryBonus = relationshipService.calculateChemistryBonus(segment.getWrestlers());
-    int baseRating = calculateBaseRating(segment);
+    int baseRating = calculateBaseRating();
     int finalRating = (int) Math.min(100, baseRating * (1.0 + chemistryBonus));
     segment.setSegmentRating(finalRating);
+
+    // Set crowd noise level (Rating with some random variance)
+    int noiseVariance = random.nextInt(11) - 5; // -5 to +5
+    segment.setCrowdNoiseLevel(Math.clamp(finalRating + noiseVariance, 0, 100));
 
     // Apply wear and tear
     applyWearAndTear(segment);
@@ -357,8 +361,7 @@ public class SegmentAdjudicationService {
           List<Wrestler> wrestlers = segment.getWrestlers();
           if (!wrestlers.isEmpty()) {
             Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
-            for (int i = 0; i < wrestlers.size(); i++) {
-              Wrestler other = wrestlers.get(i);
+            for (Wrestler other : wrestlers) {
               if (!baseWrestler.equals(other)) {
                 attemptRivalryResolution(baseWrestler, other);
               }
@@ -705,7 +708,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private int calculateBaseRating(@NonNull Segment segment) {
+  private int calculateBaseRating() {
     DiceBag d20 = new DiceBag(random, new int[] {20});
     int roll = d20.roll();
 

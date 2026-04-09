@@ -90,6 +90,14 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Min(0) @Builder.Default
   private Long fans = 0L;
 
+  @Column(name = "morale", nullable = false)
+  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
+  private Integer morale = 100;
+
+  @Column(name = "management_stamina", nullable = false)
+  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
+  private Integer managementStamina = 100;
+
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
   @Builder.Default
@@ -258,7 +266,16 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   public boolean addBump() {
     bumps++;
-    if (bumps >= 3) {
+    // Basic threshold: 3 bumps = automatic injury
+    int threshold = 3;
+
+    // Increase risk if management stamina is low (below 40)
+    if (managementStamina != null && managementStamina < 40) {
+      // Injuries occur faster when exhausted
+      threshold = 2;
+    }
+
+    if (bumps >= threshold) {
       bumps = 0; // Reset bumps - injury creation handled by service layer
       return true; // Indicates injury occurred
     }

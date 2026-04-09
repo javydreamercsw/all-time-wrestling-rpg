@@ -44,6 +44,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -126,6 +127,9 @@ public class Segment extends AbstractEntity<Long> {
 
   @Column(name = "duration_minutes")
   private Integer durationMinutes;
+
+  @Column(name = "crowd_noise_level")
+  @Min(0) @jakarta.validation.constraints.Max(100) private Integer crowdNoiseLevel = 0;
 
   // Segment participants
   @OneToMany(
@@ -252,8 +256,8 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   /** Add a segment rule to this segment. */
-  public void addSegmentRule(SegmentRule segmentRule) {
-    if (segmentRule != null && !segmentRules.contains(segmentRule)) {
+  public void addSegmentRule(@NonNull SegmentRule segmentRule) {
+    if (!segmentRules.contains(segmentRule)) {
       segmentRules.add(segmentRule);
     }
   }

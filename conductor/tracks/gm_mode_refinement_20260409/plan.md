@@ -2,11 +2,11 @@
 
 ## Phase 1: Financial & Logistics Model
 
-- [ ] Update `Season` and `League` entities with budget and duration fields.
-- [ ] Create `WrestlerContract` entity with `durationWeeks` and `isInitialDraft` flag.
-- [ ] Add `morale` and `managementStamina` (1-100) fields to `Wrestler` entity.
-- [ ] Implement `SalaryCalculator` to tie contract costs to `fans` count.
-- [ ] Create Flyway migration for new fields and tables.
+- [x] Update `Season` and `League` entities with budget and duration fields.
+- [x] Create `WrestlerContract` entity with `durationWeeks` and `isInitialDraft` flag.
+- [x] Add `morale` and `managementStamina` (1-100) fields to `Wrestler` entity.
+- [x] Implement `SalaryCalculator` to tie contract costs to `fans` count.
+- [x] Create Flyway migration for new fields and tables.
 
 ## Phase 2: GM Mode Lifecycle & Draft
 
