@@ -20,7 +20,7 @@
 ### [ ] Track: General Manager (GM) Mode Refinement
 
 *Link: [./tracks/gm_mode_refinement_20260409/index.md](./tracks/gm_mode_refinement_20260409/index.md)*
-*Status: Drafting (2026-04-09)*
+*Status: In Progress (2026-04-09)*
 
 ---
 

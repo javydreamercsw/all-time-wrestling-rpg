@@ -51,6 +51,12 @@ public class MenuService {
         new MenuItem(
             "Booker Dashboard", VaadinIcon.NOTEBOOK, "booker", RoleName.ADMIN, RoleName.BOOKER);
 
+    // General Manager: Only BOOKER and ADMIN
+    MenuItem gmMenu =
+        new MenuItem("General Manager", VaadinIcon.OFFICE, null, RoleName.ADMIN, RoleName.BOOKER);
+    gmMenu.addChild(new MenuItem("GM Dashboard", VaadinIcon.DASHBOARD, "gm-dashboard"));
+    gmMenu.addChild(new MenuItem("Contract Management", VaadinIcon.CLIPBOARD_CHECK, "contracts"));
+
     // Player Dashboard: Only PLAYER, BOOKER, and ADMIN
     MenuItem playerDashboard =
         new MenuItem(
@@ -136,6 +142,7 @@ public class MenuService {
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);
+    menuItems.add(gmMenu);
     menuItems.add(playerDashboard);
     menuItems.add(campaignMenu);
     menuItems.add(multiplayer);

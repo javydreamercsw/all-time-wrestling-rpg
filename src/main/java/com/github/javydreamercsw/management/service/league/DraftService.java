@@ -46,9 +46,11 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.league.DraftBroadcaster;
 import com.github.javydreamercsw.management.event.league.DraftUpdateEvent;
+import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.Comparator;
 import java.util.List;
@@ -76,6 +78,8 @@ public class DraftService {
 
   private final WrestlerRepository wrestlerRepository;
   private final AccountRepository accountRepository;
+  private final WrestlerContractRepository contractRepository;
+  private final SalaryCalculator salaryCalculator;
   private final DraftBroadcaster draftBroadcaster;
   private final InboxService inboxService;
   private final InboxEventType draftStartedEventType;
@@ -88,6 +92,8 @@ public class DraftService {
       LeagueRepository leagueRepository,
       WrestlerRepository wrestlerRepository,
       AccountRepository accountRepository,
+      WrestlerContractRepository contractRepository,
+      SalaryCalculator salaryCalculator,
       DraftBroadcaster draftBroadcaster,
       InboxService inboxService,
       @Qualifier("DRAFT_STARTED") InboxEventType draftStartedEventType) {
@@ -98,6 +104,8 @@ public class DraftService {
     this.leagueRepository = leagueRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.accountRepository = accountRepository;
+    this.contractRepository = contractRepository;
+    this.salaryCalculator = salaryCalculator;
     this.draftBroadcaster = draftBroadcaster;
     this.inboxService = inboxService;
     this.draftStartedEventType = draftStartedEventType;
@@ -177,6 +185,21 @@ public class DraftService {
     roster.setOwner(user);
     roster.setWrestler(wrestler);
     leagueRosterRepository.save(roster);
+
+    // Create Contract
+    League league = draft.getLeague();
+    int duration = league.getDurationWeeks() != null ? league.getDurationWeeks() : 12;
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerContract contract =
+        com.github.javydreamercsw.management.domain.wrestler.WrestlerContract.builder()
+            .wrestler(wrestler)
+            .league(league)
+            .salaryPerShow(salaryCalculator.calculateWeeklySalary(wrestler))
+            .durationWeeks(duration)
+            .isInitialDraft(true)
+            .isActive(true)
+            .startDate(java.time.Instant.now())
+            .build();
+    contractRepository.save(contract);
 
     // Reload account to get fresh state including lazy collections and activeWrestlerId
     Account reloadedUser =
