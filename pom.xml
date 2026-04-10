@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.1</version>
+    <version>4.0.5</version>
     <relativePath/>
   </parent>
 
@@ -43,12 +43,12 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.41.0</selenium.version>
+    <selenium.version>4.43.0</selenium.version>
     <skipTests>false</skipTests>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.4</testcontainers.version>
-    <vaadin.version>25.0.7</vaadin.version>
+    <vaadin.version>25.1.1</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -78,7 +78,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.10.Final</version>
+        <version>4.2.12.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -243,7 +243,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>6.10.0</version>
+      <version>6.11.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -399,7 +399,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.18</version>
+      <version>11.0.21</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -416,7 +416,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>6.2.0-M1</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
@@ -561,7 +561,7 @@
     <dependency>
       <groupId>io.github.bonigarcia</groupId>
       <artifactId>webdrivermanager</artifactId>
-      <version>6.3.3</version>
+      <version>6.3.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -582,7 +582,7 @@
     <dependency>
       <groupId>org.passay</groupId>
       <artifactId>passay</artifactId>
-      <version>1.6.6</version>
+      <version>2.0.0</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
@@ -1574,7 +1574,7 @@
               <configuration>
                 <type>runtime</type>
                 <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/html</cargo.tomcat.manager.url>
+                  <cargo.tomcat.manager.url>http://localhost:8080/manager/text</cargo.tomcat.manager.url>
                   <cargo.remote.username>${env.tomcat.username}</cargo.remote.username>
                   <cargo.remote.password>${env.tomcat.password}</cargo.remote.password>
                 </properties>
