@@ -24,3 +24,6 @@
 
 ---
 
+- [ ] **Track: Redesign of Wrestler Profile**
+*Link: [./tracks/redesign_wrestler_profile_20260409/](./tracks/redesign_wrestler_profile_20260409/)*
+
