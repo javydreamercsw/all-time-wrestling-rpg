@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
@@ -95,6 +97,8 @@ class ShowDetailViewTest {
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRepository leagueRepository;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private ArenaService arenaService;
 
   @BeforeEach
   void setUp() {
@@ -156,7 +160,9 @@ class ShowDetailViewTest {
               showController,
               matchFulfillmentRepository,
               leagueRepository,
-              commentaryTeamRepository);
+              commentaryTeamRepository,
+              ringsideActionService,
+              arenaService);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -232,7 +238,9 @@ class ShowDetailViewTest {
               showController,
               matchFulfillmentRepository,
               leagueRepository,
-              commentaryTeamRepository);
+              commentaryTeamRepository,
+              ringsideActionService,
+              arenaService);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));

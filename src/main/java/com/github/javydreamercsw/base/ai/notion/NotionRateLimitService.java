@@ -106,6 +106,15 @@ public class NotionRateLimitService {
     return permits.availablePermits();
   }
 
+  /**
+   * Check if the rate limiter is currently active (i.e., has no available permits).
+   *
+   * @return true if rate limited, false otherwise
+   */
+  public boolean isRateLimited() {
+    return permits.availablePermits() == 0;
+  }
+
   /** Reset the rate limiter (useful for testing or manual intervention). */
   public void reset() {
     permits.drainPermits();

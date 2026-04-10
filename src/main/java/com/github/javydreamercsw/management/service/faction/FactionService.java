@@ -16,15 +16,18 @@
 */
 package com.github.javydreamercsw.management.service.faction;
 
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,20 +40,48 @@ import org.springframework.transaction.annotation.Transactional;
  * and faction operations.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class FactionService {
 
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final ExpansionService expansionService;
   private final Clock clock; // Injected via constructor
+  private final DefaultImageService imageService;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public FactionService(
+      FactionRepository factionRepository,
+      WrestlerRepository wrestlerRepository,
+      ExpansionService expansionService,
+      Clock clock,
+      DefaultImageService imageService) {
+    this.factionRepository = factionRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.expansionService = expansionService;
+    this.clock = clock;
+    this.imageService = imageService;
+  }
 
   /** Get all factions. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAll() {
-    return factionRepository.findAll();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAll().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /** Get all factions (alias for findAll for UI compatibility). */
@@ -64,21 +95,79 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembers() {
-    return factionRepository.findAllWithMembers();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAllWithMembers().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /** Get all factions with both members and teams eagerly loaded for UI display. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembersAndTeams() {
-    return factionRepository.findAllWithMembersAndTeams();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findAllWithMembersAndTeams().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<Faction> getAllFactions(Pageable pageable) {
-    return factionRepository.findAllBy(pageable);
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+
+    // Fetch all since we need to filter based on member properties and manually paginate.
+    List<Faction> allFiltered =
+        factionRepository.findAll().stream()
+            .filter(
+                faction ->
+                    faction.getMembers().stream()
+                        .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+            .peek(
+                faction -> {
+                  if (faction.getManager() != null
+                      && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                    faction.setManager(null);
+                  }
+                })
+            .collect(Collectors.toList());
+
+    if (pageable.isUnpaged()) {
+      return new org.springframework.data.domain.PageImpl<>(
+          allFiltered, pageable, allFiltered.size());
+    }
+
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+
+    List<Faction> pageContent = new java.util.ArrayList<>();
+    if (start < allFiltered.size()) {
+      pageContent = allFiltered.subList(start, end);
+    }
+
+    return new org.springframework.data.domain.PageImpl<>(
+        pageContent, pageable, allFiltered.size());
   }
 
   /** Get faction by ID. */
@@ -113,7 +202,27 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> getActiveFactions() {
-    return factionRepository.findByIsActiveTrue();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findByIsActiveTrue().stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+        .peek(
+            faction -> {
+              // Hide manager if their expansion is disabled
+              if (faction.getManager() != null
+                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
+                faction.setManager(null);
+              }
+            })
+        .collect(Collectors.toList());
+  }
+
+  @org.springframework.context.event.EventListener
+  public void onExpansionToggled(
+      com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
+    log.info("Expansion '{}' toggled, clear faction caches if any.", event.getExpansionCode());
   }
 
   /** Create a new faction. */
@@ -395,5 +504,58 @@ public class FactionService {
   @PreAuthorize("isAuthenticated()")
   public long count() {
     return factionRepository.count();
+  }
+
+  /** Add affinity points to a faction. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void addAffinity(@NonNull Long factionId, int points) {
+    factionRepository
+        .findById(factionId)
+        .ifPresent(
+            faction -> {
+              int oldAffinity = faction.getAffinity();
+              int newAffinity = Math.min(100, oldAffinity + points);
+              faction.setAffinity(newAffinity);
+              factionRepository.saveAndFlush(faction);
+              log.info(
+                  "Added {} affinity to faction: {} (Total: {})",
+                  points,
+                  faction.getName(),
+                  faction.getAffinity());
+            });
+  }
+
+  /**
+   * Gets the shared faction affinity between two wrestlers.
+   *
+   * @param w1 First wrestler.
+   * @param w2 Second wrestler.
+   * @return Shared affinity (0-100), or 0 if they share no active faction.
+   */
+  @Transactional(readOnly = true)
+  public int getAffinityBetween(Wrestler w1, Wrestler w2) {
+    if (w1 == null || w2 == null) {
+      return 0;
+    }
+    Optional<Faction> f1 = factionRepository.findActiveFactionByMember(w1);
+    Optional<Faction> f2 = factionRepository.findActiveFactionByMember(w2);
+
+    if (f1.isPresent() && f2.isPresent() && f1.get().equals(f2.get())) {
+      return f1.get().getAffinity();
+    }
+    return 0;
+  }
+
+  /**
+   * Resolves the image URL for a faction, using the default image system if no specific URL is set.
+   *
+   * @param faction The faction entity.
+   * @return The resolved image URL.
+   */
+  public String resolveFactionImage(Faction faction) {
+    if (faction.getImageUrl() != null && !faction.getImageUrl().isBlank()) {
+      return faction.getImageUrl();
+    }
+    return imageService.resolveImage(faction.getName(), ImageCategory.FACTION).url();
   }
 }

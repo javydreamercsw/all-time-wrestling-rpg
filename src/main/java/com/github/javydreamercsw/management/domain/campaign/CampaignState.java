@@ -172,6 +172,10 @@ public class CampaignState {
   @JoinColumn(name = "current_match_id")
   private com.github.javydreamercsw.management.domain.show.segment.Segment currentMatch;
 
+  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "active_storyline_id")
+  private CampaignStoryline activeStoryline;
+
   @Column(name = "feature_data")
   @Lob
   private String featureData;

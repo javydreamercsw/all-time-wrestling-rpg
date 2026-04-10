@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
@@ -44,6 +46,7 @@ class ShowSchedulerServiceTest {
 
   @Mock private ShowService showService;
   @Mock private ShowTemplateService showTemplateService;
+  @Mock private ArenaService arenaService;
 
   @InjectMocks private ShowSchedulerService showSchedulerService;
 
@@ -75,7 +78,7 @@ class ShowSchedulerServiceTest {
 
     ShowType pleType = new ShowType();
     pleType.setId(2L);
-    pleType.setName("PLE");
+    pleType.setName("Premium Live Event (PLE)");
 
     pleTemplate = new ShowTemplate();
     pleTemplate.setId(2L);
@@ -86,6 +89,9 @@ class ShowSchedulerServiceTest {
     pleTemplate.setWeekOfMonth(-1); // Last
     pleTemplate.setDayOfWeek(DayOfWeek.SUNDAY);
     pleTemplate.setDurationDays(2);
+
+    // Mock arena service behavior
+    when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L); // Default arena ID
   }
 
   @Test
@@ -105,7 +111,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -115,7 +122,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -125,7 +133,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -135,7 +144,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Weekly Show"),
@@ -145,7 +155,13 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(1L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
+
+    verify(arenaService, atLeastOnce()).assignArenaToShow(eq(false)); // Verify for regular show
+
+    // Reset mocks for next test
+    org.mockito.Mockito.reset(arenaService);
   }
 
   @Test
@@ -166,7 +182,8 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(2L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
             eq("Big Event - Night 2"),
@@ -176,14 +193,20 @@ class ShowSchedulerServiceTest {
             eq(1L),
             eq(2L),
             any(),
-            any());
+            any(),
+            eq(100L)); // Verify arenaId is passed
+
+    verify(arenaService, atLeastOnce()).assignArenaToShow(eq(true)); // Verify for PLE
+
+    // Reset mocks for next test
+    org.mockito.Mockito.reset(arenaService);
   }
 
   @Test
   void testGenerateAnnualShowMissingDayOfWeek() {
     ShowType pleType = new ShowType();
     pleType.setId(2L);
-    pleType.setName("PLE");
+    pleType.setName("Premium Live Event (PLE)");
 
     ShowTemplate invalidTemplate = new ShowTemplate();
     invalidTemplate.setId(3L);
@@ -195,6 +218,8 @@ class ShowSchedulerServiceTest {
     // DayOfWeek is intentionally NULL
 
     when(showTemplateService.findAll()).thenReturn(List.of(invalidTemplate));
+    // Making this lenient because it's not strictly related to the main assertion of this test
+    lenient().when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L);
 
     // The season is in Feb/March, but the template is for January.
     // Even if it were in January, it should be skipped because DayOfWeek is missing.
@@ -202,6 +227,6 @@ class ShowSchedulerServiceTest {
 
     // Verify no shows were created
     verify(showService, org.mockito.Mockito.never())
-        .createShow(any(), any(), any(), any(), any(), any(), any(), any());
+        .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any());
   }
 }
