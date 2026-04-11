@@ -41,38 +41,6 @@ public class DeckService {
     this.clock = clock;
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
-  public long count() {
-    return deckRepository.count();
-  }
-
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
-  public void delete(@NonNull Deck deck) {
-    deckRepository.delete(deck);
-  }
-
-  @PreAuthorize("hasRole('ADMIN')")
-  public List<Deck> findAll() {
-    return deckRepository.findAll();
-  }
-
-  public Deck findById(@NonNull Long id) {
-    return deckRepository
-        .findById(id)
-        .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
-  }
-
-  @PreAuthorize("hasRole('ADMIN')")
-  public List<Deck> list(@NonNull Pageable pageable) {
-    return deckRepository.findAll(pageable).getContent();
-  }
-
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
-  public Deck save(@NonNull Deck deck) {
-    deck.setCreationDate(clock.instant());
-    return deckRepository.saveAndFlush(deck);
-  }
-
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
   public Deck createDeck(@NonNull Wrestler wrestler) {
     Deck deck = new Deck();
@@ -81,7 +49,40 @@ public class DeckService {
     return deck;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#wrestler)")
+  @PreAuthorize("isAuthenticated()")
+  public List<Deck> list(Pageable pageable) {
+    return deckRepository.findAllBy(pageable).toList();
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public long count() {
+    return deckRepository.count();
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
+  public Deck save(@NonNull Deck deck) {
+    deck.setCreationDate(clock.instant());
+    return deckRepository.saveAndFlush(deck);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Deck> findAll() {
+    return deckRepository.findAll();
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
+  public void delete(Deck deck) {
+    deckRepository.delete(deck);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public Deck findById(@NonNull Long id) {
+    return deckRepository
+        .findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
+  }
+
+  @PreAuthorize("isAuthenticated()")
   public List<Deck> findByWrestler(Wrestler wrestler) {
     return deckRepository.findByWrestler(wrestler);
   }

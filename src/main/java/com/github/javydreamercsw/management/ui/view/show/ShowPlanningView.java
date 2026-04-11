@@ -24,18 +24,14 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -77,11 +73,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
   private final WrestlerService wrestlerService;
-  private final ShowTemplateService showTemplateService;
-  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -99,25 +92,19 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
       WrestlerService wrestlerService,
-      ShowTemplateService showTemplateService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
       SegmentTypeRepository segmentTypeRepository,
       SegmentRuleRepository segmentRuleRepository,
-      NpcService npcService,
       ObjectMapper objectMapper,
-      SegmentNarrationServiceFactory aiFactory,
-      ArenaService arenaService) {
+      SegmentNarrationServiceFactory aiFactory) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
     this.wrestlerService = wrestlerService;
-    this.showTemplateService = showTemplateService;
-    this.npcService = npcService;
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
-    this.arenaService = arenaService;
 
     templateImage = new Image();
 
@@ -137,23 +124,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             .collect(Collectors.toList()));
     showComboBox.setItemLabelGenerator(Show::getName);
 
-    ComboBox<Arena> arenaComboBox = new ComboBox<>("Select Arena");
-    arenaComboBox.setId("select-arena-combo-box");
-    arenaComboBox.setItems(
-        arenaService.findAll().stream()
-            .sorted(Comparator.comparing(Arena::getName))
-            .collect(Collectors.toList()));
-    arenaComboBox.setItemLabelGenerator(Arena::getName);
-    arenaComboBox.addValueChangeListener(
-        event -> {
-          Show selectedShow = showComboBox.getValue();
-          if (selectedShow != null && event.getValue() != null) {
-            selectedShow.setArena(event.getValue());
-            showService.save(selectedShow);
-            updateTemplateImage(selectedShow);
-          }
-        });
-
     loadContextButton = new Button("Load Context");
     loadContextButton.addClickListener(e -> loadContext());
     loadContextButton.setEnabled(false);
@@ -167,11 +137,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           loadContextButton.setEnabled(event.getValue() != null);
           viewDetailsButton.setEnabled(event.getValue() != null);
           updateTemplateImage(event.getValue());
-          if (event.getValue() != null && event.getValue().getArena() != null) {
-            arenaComboBox.setValue(event.getValue().getArena());
-          } else {
-            arenaComboBox.clear();
-          }
         });
 
     contextArea = new TextArea("Show Planning Context");
@@ -231,7 +196,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                         titleService,
                         segmentTypeRepository,
                         segmentRuleRepository,
-                        npcService,
                         constraint,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
@@ -258,7 +222,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         new VerticalLayout(
             templateImage,
             showComboBox,
-            arenaComboBox,
             loadContextButton,
             viewDetailsButton, // Added here
             proposeSegmentsButton,
@@ -269,8 +232,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   }
 
   private void updateTemplateImage(Show show) {
-    if (show != null && show.getTemplate() != null) {
-      templateImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
+    if (show != null
+        && show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
       templateImage.setVisible(true);
     } else {
       templateImage.setVisible(false);

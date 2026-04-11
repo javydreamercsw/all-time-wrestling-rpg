@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
@@ -64,7 +63,6 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
 
   private final ShowService showService;
   private final GameSettingService gameSettingService;
-  private final ShowTemplateService showTemplateService;
   private final DateTimeFormatter monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
 
   @Getter private FullCalendar calendar;
@@ -75,12 +73,9 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   private H5 currentDateLabel;
 
   public ShowCalendarView(
-      @NonNull ShowService showService,
-      @NonNull GameSettingService gameSettingService,
-      @NonNull ShowTemplateService showTemplateService) {
+      @NonNull ShowService showService, @NonNull GameSettingService gameSettingService) {
     this.showService = showService;
     this.gameSettingService = gameSettingService;
-    this.showTemplateService = showTemplateService;
     this.currentYearMonth = YearMonth.from(gameSettingService.getCurrentGameDate());
 
     initializeComponents();
@@ -409,10 +404,12 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     showType.addClassNames(LumoUtility.TextColor.TERTIARY, LumoUtility.FontSize.XSMALL);
 
     Image templateImage = new Image();
-    if (show.getTemplate() != null) {
-      templateImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
+    if (show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
     } else {
-      templateImage.setSrc("images/generic-show.png");
+      templateImage.setSrc("https://via.placeholder.com/100");
     }
     templateImage.setHeight("60px");
     templateImage.setWidth("60px");

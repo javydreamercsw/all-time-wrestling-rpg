@@ -67,7 +67,6 @@ class AbstractMatchNarrationServiceTest {
         .contains("Generate a compelling wrestling narration as a DIALOGUE")
         .contains("The JSON object contains instructions that you must follow.")
         .contains("Each line MUST start with the speaker's name")
-        .contains("ground the narration in the specific setting")
         .contains("Here is the JSON context:")
         .contains(jsonContext);
   }
@@ -123,9 +122,6 @@ class AbstractMatchNarrationServiceTest {
     venue.setSignificance("The Mecca of professional wrestling");
     venue.setNotableSegments(
         Arrays.asList("Hulk Hogan vs Andre the Giant", "Shawn Michaels vs Razor Ramon"));
-    venue.setAlignmentBias("Heel Favorable");
-    venue.setEnvironmentalTraits(List.of("Holographic Displays"));
-    venue.setCulturalTags(List.of("Cyberpunk", "Japan"));
     context.setVenue(venue);
 
     // Wrestlers

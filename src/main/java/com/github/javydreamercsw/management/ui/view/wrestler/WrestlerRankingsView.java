@@ -203,7 +203,7 @@ public class WrestlerRankingsView extends Main {
             .collect(Collectors.toSet());
 
     Gender selectedGender = genderComboBox.getValue();
-    List<Wrestler> wrestlers = wrestlerService.findAllIncludingInactive();
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
     if (selectedGender != null) {
       wrestlers =
           wrestlers.stream()

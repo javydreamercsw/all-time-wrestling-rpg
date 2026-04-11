@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @TestConfiguration
-@Profile({"test", "e2e"})
+@Profile("test")
 public class TestAIConfiguration {
 
   @Bean

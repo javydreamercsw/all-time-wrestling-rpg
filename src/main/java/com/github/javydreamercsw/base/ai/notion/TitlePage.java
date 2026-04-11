@@ -18,91 +18,68 @@ package com.github.javydreamercsw.base.ai.notion;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
 public class TitlePage extends NotionPage {
+  // This class can be expanded to include specific properties from the Notion
+  // database for Titles, such as relation IDs for the current champion.
 
   public String getName() {
-    return extractPropertyAsString("Name");
+    if (getRawProperties() != null && getRawProperties().containsKey("Name")) {
+      Object nameProp = getRawProperties().get("Name");
+      if (nameProp instanceof String) {
+        return (String) nameProp;
+      }
+      // Handle other Notion property types for 'Name' if necessary in future
+    }
+    return null;
   }
 
   public List<String> getChampionRelationIds() {
-    return extractRelationIds("Current Champion");
+    if (getRawProperties() != null && getRawProperties().containsKey("Current Champion")) {
+      Object championProp = getRawProperties().get("Current Champion");
+      if (championProp instanceof String) {
+        return List.of(((String) championProp).split(",")).stream()
+            .map(String::trim)
+            .collect(Collectors.toList());
+      }
+    }
+    return new ArrayList<>();
   }
 
   public List<String> getContenderRelationIds() {
-    return extractRelationIds("#1 Contender");
+    if (getRawProperties() != null && getRawProperties().containsKey("#1 Contender")) {
+      Object contenderProp = getRawProperties().get("#1 Contender");
+      if (contenderProp instanceof String) {
+        return List.of(((String) contenderProp).split(",")).stream()
+            .map(String::trim)
+            .collect(Collectors.toList());
+      }
+    }
+    return new ArrayList<>();
   }
 
   public String getTier() {
-    return extractPropertyAsString("Tier");
-  }
-
-  public String getDescription() {
-    return extractPropertyAsString("Description");
-  }
-
-  public String getGender() {
-    return extractPropertyAsString("Gender");
-  }
-
-  public String getChampionshipType() {
-    return extractPropertyAsString("Title Type");
-  }
-
-  public Boolean getIncludeInRankings() {
-    Object prop = getRawProperties() != null ? getRawProperties().get("Include in Rankings") : null;
-    return prop instanceof Boolean ? (Boolean) prop : null;
-  }
-
-  public Boolean getIsActive() {
-    Object prop = getRawProperties() != null ? getRawProperties().get("Active") : null;
-    if (prop == null) {
-      prop = getRawProperties() != null ? getRawProperties().get("Status") : null;
-    }
-    return prop instanceof Boolean ? (Boolean) prop : null;
-  }
-
-  public Integer getDefenseFrequency() {
-    Object prop =
-        getRawProperties() != null ? getRawProperties().get("Defense Cadence (weeks)") : null;
-    if (prop == null) {
-      prop = getRawProperties() != null ? getRawProperties().get("Defense Frequency") : null;
-    }
-    return prop instanceof Number ? ((Number) prop).intValue() : null;
-  }
-
-  private String extractPropertyAsString(String name) {
-    if (getRawProperties() != null && getRawProperties().containsKey(name)) {
-      Object prop = getRawProperties().get(name);
-      if (prop instanceof String) {
-        return (String) prop;
+    if (getRawProperties() != null && getRawProperties().containsKey("Tier")) {
+      Object tierProp = getRawProperties().get("Tier");
+      if (tierProp instanceof String) {
+        return (String) tierProp;
       }
     }
     return null;
   }
 
-  private List<String> extractRelationIds(String name) {
-    List<String> ids = new ArrayList<>();
-    if (getRawProperties() != null && getRawProperties().containsKey(name)) {
-      Object prop = getRawProperties().get(name);
-      if (prop instanceof List<?> list) {
-        for (Object item : list) {
-          if (item instanceof String str) {
-            ids.add(str);
-          } else if (item instanceof Map<?, ?> map) {
-            Object id = map.get("id");
-            if (id instanceof String str) ids.add(str);
-          }
-        }
-      } else if (prop instanceof String str) {
-        ids.add(str);
+  public String getGender() {
+    if (getRawProperties() != null && getRawProperties().containsKey("Gender")) {
+      Object genderProp = getRawProperties().get("Gender");
+      if (genderProp instanceof String) {
+        return (String) genderProp;
       }
     }
-    return ids;
+    return null;
   }
 }

@@ -233,7 +233,11 @@ public class RankingView extends Main {
     championshipImage.setVisible(true);
     championLayout.setVisible(true);
 
-    String imageUrl = championship.getImageUrl();
+    // Update championship image using static resource URL
+    // Resources in META-INF/resources are served relative to the context path
+    String imageName = championship.getImageName();
+    // Use relative path (no leading slash) so Vaadin automatically includes context path
+    String imageUrl = "images/championships/" + imageName;
 
     log.debug("Loading championship image for '{}' at URL: {}", championship.getName(), imageUrl);
 

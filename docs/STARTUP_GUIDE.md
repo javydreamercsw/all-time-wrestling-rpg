@@ -92,10 +92,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ## Quick Reference
 
-**Start (Dev):** `mvn spring-boot:run -Dspring-boot.run.profiles=dev`
-**Start (JAR):** `java -jar target/all-time-wrestling-rpg-*.jar`
-**Build Installer:** `mvn package -Pproduction,desktop -DskipTests`
-**Stop:** `pkill -f "spring-boot:run"` or `Ctrl+C`
+**Start:** `mvn spring-boot:run -Dspring-boot.run.profiles=dev`
+**Stop:** `pkill -f "spring-boot:run"`
 **URL:** http://localhost:8080/atw-rpg
 **Login:** admin / admin123
 

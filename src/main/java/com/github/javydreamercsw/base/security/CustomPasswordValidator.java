@@ -17,14 +17,13 @@
 package com.github.javydreamercsw.base.security;
 
 import java.util.Arrays;
-import org.passay.DefaultPasswordValidator;
+import org.passay.CharacterRule;
+import org.passay.EnglishCharacterData;
+import org.passay.LengthRule;
 import org.passay.PasswordData;
 import org.passay.PasswordValidator;
-import org.passay.ValidationResult;
-import org.passay.data.EnglishCharacterData;
-import org.passay.rule.CharacterRule;
-import org.passay.rule.LengthRule;
-import org.passay.rule.WhitespaceRule;
+import org.passay.RuleResult;
+import org.passay.WhitespaceRule;
 
 public class CustomPasswordValidator {
 
@@ -34,7 +33,7 @@ public class CustomPasswordValidator {
 
   public static boolean isValid(String password) {
     PasswordValidator validator =
-        new DefaultPasswordValidator(
+        new PasswordValidator(
             Arrays.asList(
                 new LengthRule(8, 30),
                 new CharacterRule(EnglishCharacterData.UpperCase, 1),
@@ -43,7 +42,7 @@ public class CustomPasswordValidator {
                 new CharacterRule(EnglishCharacterData.Special, 1),
                 new WhitespaceRule()));
 
-    ValidationResult result = validator.validate(new PasswordData(password));
+    RuleResult result = validator.validate(new PasswordData(password));
     return result.isValid();
   }
 }

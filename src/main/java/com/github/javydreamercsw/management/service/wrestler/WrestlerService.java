@@ -26,8 +26,6 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.image.DefaultImageService;
-import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -36,8 +34,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
-import com.github.javydreamercsw.management.service.expansion.ExpansionService;
-import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -72,7 +68,6 @@ public class WrestlerService {
   @Autowired private AccountRepository accountRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
-  @Autowired private ExpansionService expansionService;
   @Autowired private InjuryService injuryService;
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private SegmentService segmentService;
@@ -80,7 +75,6 @@ public class WrestlerService {
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
   @Autowired private LegacyService legacyService;
-  @Autowired private DefaultImageService imageService;
 
   /**
    * Find all active wrestlers filtered by alignment and gender.
@@ -168,7 +162,6 @@ public class WrestlerService {
             .bumps(0)
             .tier(tier)
             .account(account) // Set account here
-            .expansionCode("BASE_GAME")
             .build();
 
     return save(wrestler);
@@ -207,18 +200,12 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> list(@NonNull Pageable pageable) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return wrestlerRepository.findAllBy(pageable).stream()
-        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
-        .collect(Collectors.toList());
+    return wrestlerRepository.findAllBy(pageable).toList();
   }
 
   @PreAuthorize("isAuthenticated()")
   public long count() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return wrestlerRepository.findAllByActiveTrue().stream()
-        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
-        .count();
+    return wrestlerRepository.count();
   }
 
   @CacheEvict(
@@ -243,26 +230,12 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllIncludingInactive() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans")).stream()
-        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
-        .collect(Collectors.toList());
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
   }
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return wrestlerRepository.findAllByActiveTrue().stream()
-        .filter(w -> enabledExpansions.contains(w.getExpansionCode()))
-        .collect(Collectors.toList());
-  }
-
-  @org.springframework.context.event.EventListener
-  @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      allEntries = true)
-  public void onExpansionToggled(ExpansionToggledEvent event) {
-    log.info("Expansion '{}' toggled, evicting wrestler caches.", event.getExpansionCode());
+    return wrestlerRepository.findAllByActiveTrue();
   }
 
   /** Get wrestler by ID. */
@@ -500,53 +473,7 @@ public class WrestlerService {
 
   @PreAuthorize("isAuthenticated()")
   public List<WrestlerDTO> findAllAsDTO() {
-    return findAll().stream().map(this::toDTO).toList();
-  }
-
-  /**
-   * Find a wrestler by ID and return it as a DTO.
-   *
-   * @param id The wrestler ID
-   * @return Optional containing the wrestler DTO if found, otherwise empty
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id) {
-    return wrestlerRepository.findById(id).map(this::toDTO);
-  }
-
-  /**
-   * Find all wrestlers for a segment as DTOs.
-   *
-   * @param segment The segment
-   * @return List of wrestler DTOs
-   */
-  @PreAuthorize("isAuthenticated()")
-  public List<WrestlerDTO> findAllBySegment(
-      @NonNull com.github.javydreamercsw.management.domain.show.segment.Segment segment) {
-    return wrestlerRepository.findAllBySegment(segment).stream().map(this::toDTO).toList();
-  }
-
-  private WrestlerDTO toDTO(Wrestler wrestler) {
-    WrestlerDTO dto = new WrestlerDTO(wrestler);
-    if (dto.getImageUrl() == null || dto.getImageUrl().isBlank()) {
-      dto.setImageUrl(resolveWrestlerImage(wrestler));
-    }
-    return dto;
-  }
-
-  /**
-   * Resolves the image URL for a wrestler, using the default image system if no specific URL is
-   * set.
-   *
-   * @param wrestler The wrestler entity.
-   * @return The resolved image URL.
-   */
-  public String resolveWrestlerImage(Wrestler wrestler) {
-    if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isBlank()) {
-      return wrestler.getImageUrl();
-    }
-    return imageService.resolveImage(wrestler.getName(), ImageCategory.WRESTLER).url();
+    return findAll().stream().map(WrestlerDTO::new).toList();
   }
 
   /**
@@ -615,20 +542,5 @@ public class WrestlerService {
     }
     wrestlerRepository.saveAll(wrestlers);
     log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE.");
-  }
-
-  /** Resets the physical condition of all wrestlers to 100%. */
-  @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN')")
-  @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      allEntries = true)
-  public void resetAllWearAndTear() {
-    List<Wrestler> wrestlers = wrestlerRepository.findAll();
-    for (Wrestler wrestler : wrestlers) {
-      wrestler.setPhysicalCondition(100);
-    }
-    wrestlerRepository.saveAll(wrestlers);
-    log.info("Reset physical condition for all wrestlers to 100%.");
   }
 }

@@ -14,8 +14,6 @@ All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows 
 - [Notion Synchronization](#notion-synchronization)
 - [Development](#development)
 - [Running the Application](#running-the-application)
-- [Executable JAR](#executable-jar)
-- [Native Desktop Installers](#native-desktop-installers)
 - [Docker](#docker)
 	- [Prerequisites](#prerequisites)
 	- [Building the Docker Image](#building-the-docker-image)
@@ -181,34 +179,6 @@ To build the application in production mode, run:
 ./mvnw -Pproduction package
 ```
 
-This will produce an executable JAR in the `target/` directory.
-
-### Executable JAR
-
-The application can be run directly as a standalone executable JAR. This is the recommended way for most users as it includes an embedded Tomcat server.
-
-1.  **Build the JAR**:
-	```bash
-	./mvnw clean package -DskipTests
-	```
-2.  **Run the JAR**:
-	```bash
-	java -jar target/all-time-wrestling-rpg-*.jar
-	```
-
-The application will be available at `http://localhost:8080/atw-rpg`.
-
-### Native Desktop Installers
-
-For non-technical users, you can generate native installers (DMG for macOS, DEB for Linux, MSI for Windows) that bundle a minimal Java runtime.
-
-1.  **Build the Installer**:
-	```bash
-	./mvnw clean package -Pproduction,desktop -DskipTests
-	```
-2.  **Find the Installer**:
-	The generated installer will be located in `target/dist/`.
-
 ### Docker
 
 This project can be built and run using Docker.
@@ -274,7 +244,7 @@ You can also deploy the application to a standalone Tomcat server.
 1.  **Build the .war file**:
 
 	```bash
-	./mvnw clean package -Pproduction,war -DskipTests
+	./mvnw -Pproduction package
 	```
 
 2.  **Deploy the .war file**:
@@ -289,13 +259,11 @@ You can also deploy the application to a standalone Tomcat server.
 
 	Create a `setenv.sh` (for Linux/macOS) or `setenv.bat` (for Windows) file to define the required environment variables.
 
-	**Important (Homebrew on macOS):** To prevent your settings and deployed applications from being overwritten during a `brew upgrade`, do not use the default Tomcat directories. Instead, create persistent locations and symlink them:
+	**Important (Homebrew on macOS):** To prevent your settings from being overwritten during a `brew upgrade`, do not create the file directly in the Tomcat `bin` directory. Instead, create it in a persistent location and symlink it:
 
 	```bash
-	# 1. Create persistent config and webapps directories
-	sudo mkdir -p /opt/homebrew/etc/tomcat/webapps
-
-	# 2. Create the setenv.sh file
+	# 1. Create the persistent config file
+	sudo mkdir -p /opt/homebrew/etc/tomcat
 	cat <<EOF > /opt/homebrew/etc/tomcat/setenv.sh
 export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/atw"
 export SPRING_DATASOURCE_USERNAME="root"
@@ -306,73 +274,26 @@ export SPRING_PROFILES_ACTIVE="mysql,prod"
 EOF
 	chmod +x /opt/homebrew/etc/tomcat/setenv.sh
 
-	# 3. Create the relink script to handle upgrades automatically
-	cat <<EOF > /opt/homebrew/etc/tomcat/relink.sh
-#!/bin/bash
-# Re-establish symlinks after a Homebrew upgrade
-
-# Symlink setenv.sh
-ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
-
-# Symlink webapps directory
-# Remove the default webapps directory first if it's not a symlink
-if [ ! -L /opt/homebrew/opt/tomcat/libexec/webapps ]; then
-	rm -rf /opt/homebrew/opt/tomcat/libexec/webapps
-fi
-ln -sfn /opt/homebrew/etc/tomcat/webapps /opt/homebrew/opt/tomcat/libexec/webapps
-
-# Restart the service to apply changes
-/opt/homebrew/bin/brew services restart tomcat
-EOF
-	chmod +x /opt/homebrew/etc/tomcat/relink.sh
-
-	# 4. Run the relink script for the first time
-	/opt/homebrew/etc/tomcat/relink.sh
+	# 2. Symlink it to Tomcat's bin directory
+	ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
 	```
 
-	**Note (Automating Homebrew Updates):** To automatically re-establish the symlinks and restart Tomcat whenever Homebrew updates the server, you can set up a background LaunchAgent:
+	**Note:** You will need to re-run the link command (step 2) after every Homebrew upgrade (`brew upgrade tomcat`), as Homebrew installs new versions into fresh directories. You can create a shell alias to make this easier:
+	`alias fix-tomcat='ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh && brew services restart tomcat'`
+
+	**Example `setenv.sh` (Standard Installation):**
+
 	```bash
-	printf '<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Label</key>
-	<string>com.atwrpg.relink-tomcat</string>
-	<key>ProgramArguments</key>
-	<array>
-		<string>/opt/homebrew/etc/tomcat/relink.sh</string>
-	</array>
-	<key>WatchPaths</key>
-	<array>
-		<string>/opt/homebrew/opt/tomcat</string>
-	</array>
-	<key>RunAtLoad</key>
-	<true/>
-</dict>
-</plist>' > ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
-
-	launchctl load ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+	#!/bin/bash
+	# Use a file-based database for persistence
+	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+	export SPRING_DATASOURCE_USERNAME="sa"
+	export SPRING_DATASOURCE_PASSWORD=""
+	export SPRING_H2_CONSOLE_ENABLED="true"
 	```
+	Replace the placeholder values with your actual Notion token and desired database path. AI settings can also be configured here via environment variables (e.g., `AI_GEMINI_API_KEY`).
 
-4.  **Increase Upload Limits (Optional)**:
-
-	By default, Tomcat's Manager application limits uploads to 50 MiB. If your `.war` file exceeds this size (e.g., the 148 MiB full build), you must increase the limit:
-
-	1. Open the Manager app's `web.xml` file:
-	- **Homebrew**: `/opt/homebrew/opt/tomcat/libexec/webapps/manager/WEB-INF/web.xml`
-	- **Standard**: `webapps/manager/WEB-INF/web.xml`
-	2. Locate the `<multipart-config>` section and update the following values (e.g., to 250 MiB):
-	```xml
-	<multipart-config>
-	<!-- 250 MiB max -->
-	<max-file-size>262144000</max-file-size>
-	<max-request-size>262144000</max-request-size>
-	<file-size-threshold>0</file-size-threshold>
-	</multipart-config>
-	```
-	3. Restart Tomcat to apply the changes.
-
-5.  **Start Tomcat**:
+4.  **Start Tomcat**:
 
 	Run `startup.sh` or `startup.bat` from the `bin` directory of your Tomcat installation, or use Homebrew:
 	```bash

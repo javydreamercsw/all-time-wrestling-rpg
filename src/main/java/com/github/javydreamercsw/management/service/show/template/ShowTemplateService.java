@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.show.template;
 
-import com.github.javydreamercsw.base.image.DefaultImageService;
-import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -27,6 +25,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  * retrieving, and managing show templates.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class ShowTemplateService {
@@ -49,7 +49,6 @@ public class ShowTemplateService {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private CommentaryTeamRepository commentaryTeamRepository;
   @Autowired private Clock clock;
-  @Autowired private DefaultImageService imageService;
 
   /**
    * Get paginated list of show templates.
@@ -486,19 +485,5 @@ public class ShowTemplateService {
       log.warn("Show template not found with ID: {}", id);
       return false;
     }
-  }
-
-  /**
-   * Resolves the image URL for a show template, using the default image system if no specific URL
-   * is set.
-   *
-   * @param template The show template entity.
-   * @return The resolved image URL.
-   */
-  public String resolveShowTemplateImage(ShowTemplate template) {
-    if (template.getImageUrl() != null && !template.getImageUrl().isBlank()) {
-      return template.getImageUrl();
-    }
-    return imageService.resolveImage(template.getName(), ImageCategory.SHOW).url();
   }
 }

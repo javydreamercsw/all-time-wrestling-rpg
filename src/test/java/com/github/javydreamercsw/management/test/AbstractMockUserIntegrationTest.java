@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.test;
 
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -33,11 +35,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 
+@Import(TestSecurityConfig.class)
 @DirtiesContext
 public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {
 
-  @Autowired protected AccountRepository accountRepository;
-  @Autowired protected WrestlerRepository wrestlerRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
 
   @BeforeEach
   public void defaultLogin() {

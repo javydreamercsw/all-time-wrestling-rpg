@@ -66,12 +66,6 @@ public class Season extends AbstractEntity<Long> {
   @Column(name = "shows_per_ppv", nullable = false)
   @Min(4) private Integer showsPerPpv = 5; // Default: Every 5 shows → 1 PPV
 
-  @Column(name = "budget")
-  private java.math.BigDecimal budget = java.math.BigDecimal.ZERO;
-
-  @Column(name = "duration_weeks")
-  private Integer durationWeeks;
-
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

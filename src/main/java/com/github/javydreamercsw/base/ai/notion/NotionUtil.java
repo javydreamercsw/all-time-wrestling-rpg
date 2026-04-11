@@ -34,18 +34,12 @@ import notion.api.v1.model.users.User;
 @Slf4j
 @UtilityClass
 public class NotionUtil {
-  public String getValue(
-      @NonNull NotionClient client, @org.jspecify.annotations.Nullable PageProperty value) {
+  public String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
     return getValue(client, value, true);
   }
 
   public String getValue(
-      @NonNull NotionClient client,
-      @org.jspecify.annotations.Nullable PageProperty value,
-      boolean resolveRelationships) {
-    if (value == null) {
-      return "N/A";
-    }
+      @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
     try {
       // Handle cases where type is null but we can infer the type from populated fields
       String propertyType;

@@ -18,13 +18,10 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -39,23 +36,18 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.world.ArenaRepository;
-import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
-import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -72,7 +64,6 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -80,7 +71,6 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -94,8 +84,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.ResourcePatternResolver;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -119,29 +107,21 @@ class DataInitializerTest {
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
   @Mock private CommentaryService commentaryService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-      relationshipService;
-
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
   @Mock private Environment env;
   @Mock private CampaignUpgradeService campaignUpgradeService;
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
-  @Mock private LocationRepository locationRepository;
-  @Mock private ArenaRepository arenaRepository;
-  @Mock private RingsideActionDataService ringsideActionDataService;
-  @Mock private ResourcePatternResolver resourcePatternResolver;
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  void setUp() throws IOException {
+  void setUp() {
     // Manually instantiate DataInitializer with mocked dependencies
     dataInitializer =
         new DataInitializer(
             true, // Enabled parameter
             showTemplateService,
+            wrestlerService,
             wrestlerRepository,
             showTypeService,
             segmentRuleService,
@@ -160,17 +140,9 @@ class DataInitializerTest {
             campaignUpgradeService,
             env,
             achievementRepository,
-            ringsideActionDataService,
-            resourcePatternResolver,
-            locationRepository,
-            arenaRepository,
-            relationshipService,
-            objectMapper);
+            accountRepository);
 
     // Mock count methods to prevent issues during init()
-    lenient()
-        .when(resourcePatternResolver.getResources(anyString()))
-        .thenReturn(new org.springframework.core.io.Resource[0]);
     lenient().when(wrestlerService.count()).thenReturn(0L);
     lenient().when(cardSetService.count()).thenReturn(0L);
     lenient().when(cardService.count()).thenReturn(0L);
@@ -194,15 +166,14 @@ class DataInitializerTest {
     lenient()
         .when(
             segmentRuleService.createOrUpdateRule(
-                anyString(), anyString(), anyBoolean(), anyBoolean(), any(BumpAddition.class)))
+                anyString(), anyString(), anyBoolean(), any(BumpAddition.class)))
         .thenAnswer(
             invocation -> {
               SegmentRule rule = new SegmentRule();
               rule.setName(invocation.getArgument(0));
               rule.setDescription(invocation.getArgument(1));
               rule.setRequiresHighHeat(invocation.getArgument(2));
-              rule.setNoDq(invocation.getArgument(3));
-              rule.setBumpAddition(invocation.getArgument(4));
+              rule.setBumpAddition(invocation.getArgument(3));
               return rule;
             });
     lenient()
@@ -442,7 +413,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncWrestlersFromFile_existingWrestler() throws IOException {
+  void testSyncWrestlersFromFile_existingWrestler() {
     // Given
     Wrestler existingWrestler = new Wrestler();
     existingWrestler.setName("Rob Van Dam");
@@ -454,10 +425,6 @@ class DataInitializerTest {
         .when(wrestlerRepository.findByName("Rob Van Dam"))
         .thenReturn(Optional.of(existingWrestler));
     lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
-
-    Resource wrestlersResource = new ClassPathResource("wrestlers.json");
-    when(resourcePatternResolver.getResources("classpath*:wrestlers*.json"))
-        .thenReturn(new Resource[] {wrestlersResource});
 
     // When
     dataInitializer.syncWrestlersFromFile();
@@ -491,86 +458,5 @@ class DataInitializerTest {
 
     // Should NOT overwrite existing DB value unless forceOverride is enabled
     verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
-  }
-
-  @Test
-  void validateRelationshipsJson() {
-    assertDoesNotThrow(
-        () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("relationships.json").getInputStream(),
-                  new TypeReference<
-                      List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
-        });
-  }
-
-  @Test
-  void testSyncRelationshipsFromFile() throws IOException {
-    // Given
-    Wrestler w1 = new Wrestler();
-    w1.setId(1L);
-    w1.setName("Johnny All Time");
-
-    Wrestler w2 = new Wrestler();
-    w2.setId(2L);
-    w2.setName("Taya Valkyrie");
-
-    when(wrestlerRepository.findByName("Johnny All Time")).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findByName("Taya Valkyrie")).thenReturn(Optional.of(w2));
-
-    // When
-    dataInitializer.init();
-
-    // Then
-    verify(relationshipService, atLeastOnce())
-        .createOrUpdateRelationship(
-            eq(1L),
-            eq(2L),
-            eq(com.github.javydreamercsw.management.domain.relationship.RelationshipType.SPOUSE),
-            anyInt(),
-            anyBoolean(),
-            anyString());
-  }
-
-  @Test
-  void validateLocationsJson() throws IOException {
-    ClassPathResource resource = new ClassPathResource("locations.json");
-    try (var is = resource.getInputStream()) {
-      var locations = objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
-      assertNotNull(locations);
-      assertFalse(locations.isEmpty());
-    }
-  }
-
-  @Test
-  void validateArenasJson() throws IOException {
-    ClassPathResource resource = new ClassPathResource("arenas.json");
-    try (var is = resource.getInputStream()) {
-      var arenas = objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
-      assertNotNull(arenas);
-      assertFalse(arenas.isEmpty());
-    }
-  }
-
-  @Test
-  void testSyncNpcsFromFile() throws IOException {
-    // Given
-    Npc npc = new Npc();
-    npc.setName("Mock NPC");
-    when(npcService.findByName(anyString())).thenReturn(null);
-    when(npcService.save(any(Npc.class))).thenAnswer(i -> i.getArguments()[0]);
-
-    // When
-    dataInitializer.syncNpcsFromFile();
-
-    // Then
-    ArgumentCaptor<Npc> npcCaptor = ArgumentCaptor.forClass(Npc.class);
-    verify(npcService, atLeastOnce()).save(npcCaptor.capture());
-
-    Npc savedNpc =
-        npcCaptor.getAllValues().stream().filter(n -> n.getName() != null).findFirst().orElse(null);
-
-    assertNotNull(savedNpc);
   }
 }

@@ -49,11 +49,6 @@ public class DashboardCard extends Composite<Div> {
     getContent().add(content);
   }
 
-  public DashboardCard(@NonNull String title, Component... components) {
-    this(title);
-    add(components);
-  }
-
   public void add(Component... components) {
     content.add(components);
   }

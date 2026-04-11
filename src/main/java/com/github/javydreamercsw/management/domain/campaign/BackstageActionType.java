@@ -20,6 +20,5 @@ public enum BackstageActionType {
   TRAINING,
   RECOVERY,
   PROMO,
-  ATTACK,
-  SITUATION
+  ATTACK
 }

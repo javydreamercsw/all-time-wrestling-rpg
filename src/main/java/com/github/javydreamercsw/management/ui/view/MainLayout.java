@@ -27,6 +27,7 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.JustifyContent;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
+import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
@@ -37,7 +38,6 @@ import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -52,7 +52,6 @@ import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
@@ -62,8 +61,7 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
-@PermitAll
-@AnonymousAllowed
+@PermitAll // When security is enabled, allow all authenticated users
 public class MainLayout extends AppLayout {
 
   private MenuService menuService;
@@ -97,16 +95,12 @@ public class MainLayout extends AppLayout {
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
-    Scroller navScroller = new Scroller(sideNav);
-    navScroller.addClassNames(Margin.Bottom.AUTO);
+    Div footer = createFooter();
+    Div content = new Div(sideNav, footer);
+    content.setSizeFull(); // Ensure content takes full size for proper scrolling
 
-    com.vaadin.flow.component.html.Section drawerContainer =
-        new com.vaadin.flow.component.html.Section(createHeader(), navScroller, createFooter());
-    drawerContainer.setSizeFull();
-    drawerContainer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.STRETCH);
-
-    addToDrawer(drawerContainer);
-    addToNavbar(new DrawerToggle(), createNavbar());
+    addToDrawer(createHeader(), new Scroller(content));
+    addToNavbar(createNavbar());
   }
 
   private Div createHeader() {
@@ -118,13 +112,11 @@ public class MainLayout extends AppLayout {
     appName.addClassNames(FontWeight.SEMIBOLD, FontSize.LARGE);
 
     Div header = new Div(appLogo, appName);
-    header.addClassNames(
-        Display.FLEX, JustifyContent.CENTER, Padding.MEDIUM, Gap.MEDIUM, AlignItems.CENTER);
-    header.addClassName("drawer-header");
+    header.addClassNames(Display.FLEX, Padding.MEDIUM, Gap.MEDIUM, AlignItems.CENTER);
     return header;
   }
 
-  private com.vaadin.flow.component.html.Footer createFooter() {
+  private Div createFooter() {
     Span versionSpan = new Span();
     versionSpan.setId("version-span");
     if (buildProperties != null) { // Needed for tests
@@ -132,15 +124,15 @@ public class MainLayout extends AppLayout {
     } else {
       versionSpan.setText("Version: N/A");
     }
-
+    versionSpan.addClassNames(
+        FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
     Anchor githubLink =
         new Anchor("https://github.com/javydreamercsw/all-time-wrestling-rpg", "Source Code");
-    githubLink.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
-
-    com.vaadin.flow.component.html.Footer footer =
-        new com.vaadin.flow.component.html.Footer(versionSpan, githubLink);
-    footer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.CENTER, Padding.MEDIUM);
-    footer.addClassName("drawer-footer");
+    githubLink.addClassNames(
+        FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
+    Div footer = new Div(versionSpan, githubLink);
+    footer.addClassNames(
+        Display.FLEX, JustifyContent.CENTER, Width.FULL, FlexDirection.COLUMN, AlignItems.CENTER);
     return footer;
   }
 
@@ -154,12 +146,10 @@ public class MainLayout extends AppLayout {
   private SideNavItem createSideNavItem(MenuItem menuItem) {
     SideNavItem item = new SideNavItem(menuItem.getTitle());
     item.setPrefixComponent(menuItem.getIcon().create());
-    String path = menuItem.getPath();
-    if (menuItem.isExternal() && path != null && !path.startsWith("http")) {
-      item.getElement().setAttribute("router-ignore", "");
+    item.setPath(menuItem.getPath());
+    if (menuItem.isExternal()) {
       item.getElement().setAttribute("target", "_blank");
     }
-    item.setPath(path);
     if (!menuItem.getChildren().isEmpty()) {
       menuItem.getChildren().forEach(child -> item.addItem(createSideNavItem(child)));
     }
@@ -169,7 +159,13 @@ public class MainLayout extends AppLayout {
   private Div createNavbar() {
     Div navbar = new Div();
     navbar.addClassNames(
-        Display.FLEX, AlignItems.CENTER, Gap.MEDIUM, Margin.Left.AUTO, Padding.Horizontal.MEDIUM);
+        Display.FLEX,
+        AlignItems.CENTER,
+        JustifyContent.END,
+        Padding.Horizontal.MEDIUM,
+        Padding.Vertical.SMALL,
+        Gap.MEDIUM,
+        Width.FULL);
 
     if (securityUtils != null && securityUtils.isAuthenticated()) {
       String username = securityUtils.getCurrentUsername();
@@ -186,14 +182,20 @@ public class MainLayout extends AppLayout {
       Button profileButton = new Button("Profile", VaadinIcon.USER.create());
       profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       profileButton.addClickListener(
-          e ->
-              securityUtils
-                  .getAuthenticatedUser()
-                  .flatMap(user -> accountService.findByUsername(user.getUsername()))
-                  .ifPresent(
-                      account ->
-                          new ProfileDrawer(account, accountService, passwordEncoder, themeService)
-                              .open()));
+          e -> {
+            securityUtils
+                .getAuthenticatedUser()
+                .ifPresent(
+                    user -> {
+                      accountService
+                          .findByUsername(user.getUsername())
+                          .ifPresent(
+                              account ->
+                                  new ProfileDrawer(
+                                          account, accountService, passwordEncoder, themeService)
+                                      .open());
+                    });
+          });
 
       // Logout button
       Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());

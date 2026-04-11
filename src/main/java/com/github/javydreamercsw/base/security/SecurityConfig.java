@@ -23,35 +23,30 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
+@Profile("!test & !e2e")
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final UserDetailsService userDetailsService;
+  private final CustomUserDetailsService userDetailsService;
   private final Environment environment;
 
   @Value("${https.enforcement.disabled:false}")
   private boolean httpsEnforcementDisabled;
 
   @Bean
-  public WebSecurityCustomizer webSecurityCustomizer() {
-    return (web) ->
-        web.ignoring().requestMatchers("/docs/**", "/images/**", "/icons/**", "/public/**");
-  }
-
-  @Bean
-  @Profile("!test & !e2e")
-  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
     http.authorizeHttpRequests(
         auth ->
@@ -62,7 +57,7 @@ public class SecurityConfig {
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
 
     // Allow framing for H2 console
-    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+    http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
     // Apply Vaadin security configurer and set the login view
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
@@ -100,13 +95,13 @@ public class SecurityConfig {
     return http.build();
   }
 
+  /**
+   * Password encoder bean. Uses BCrypt with strength 10.
+   *
+   * @return the password encoder
+   */
   @Bean
-  @Profile("test")
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
-        .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
-
-    return http.build();
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(10);
   }
 }

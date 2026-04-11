@@ -35,11 +35,5 @@ public class TeamPage extends NotionPage {
     private Property FormedDate;
     private Property DisbandedDate;
     private Property Faction;
-    private Property Artist;
-    private Property TeamFinisher;
-    private Property ThemeSong;
-    private Property Member1;
-    private Property Member2;
-    private Property Manager;
   }
 }

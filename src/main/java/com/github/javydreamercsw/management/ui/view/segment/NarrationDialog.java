@@ -23,13 +23,13 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
-import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -70,11 +70,7 @@ public class NarrationDialog extends Dialog {
   private final ShowService showService;
   private final SegmentService segmentService;
   private final RivalryService rivalryService;
-  private final RingsideActionService ringsideActionService;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -101,26 +97,20 @@ public class NarrationDialog extends Dialog {
       Consumer<Segment> onSaveCallback,
       RivalryService rivalryService,
       SegmentNarrationController segmentNarrationController,
-      SegmentNarrationServiceFactory aiFactory,
-      RingsideActionService ringsideActionService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService) {
-    this.segmentService = segmentService;
-    this.segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
+      SegmentNarrationServiceFactory aiFactory) {
+    this.segment = segment;
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.showService = showService;
+    this.segmentService = segmentService;
     this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
     this.segmentNarrationController = segmentNarrationController;
     this.aiFactory = aiFactory;
-    this.ringsideActionService = ringsideActionService;
-    this.relationshipService = relationshipService;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
     setMaxWidth("90vw");
-    setId("narration-dialog");
 
     progressBar = new ProgressBar();
     progressBar.setIndeterminate(true);
@@ -233,10 +223,9 @@ public class NarrationDialog extends Dialog {
       narrationDisplay.setText(segment.getNarration());
       saveButton.setEnabled(true);
     }
-    if (segment.getReferee() != null) {
-      refereeField.setValue(segment.getReferee());
+    for (Wrestler wrestler : segment.getWrestlers()) {
+      addTeamSelector(new WrestlerDTO(wrestler));
     }
-    wrestlerService.findAllBySegment(segment).forEach(this::addTeamSelector);
 
     VerticalLayout layout =
         new VerticalLayout(
@@ -261,7 +250,8 @@ public class NarrationDialog extends Dialog {
     wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setItems(
-        wrestlerService.findAllAsDTO().stream()
+        wrestlerService.findAll().stream()
+            .map(WrestlerDTO::new)
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
@@ -460,14 +450,8 @@ public class NarrationDialog extends Dialog {
             .findByName(wrestler.getName())
             .ifPresent(
                 w -> {
-                  Object supporter = ringsideActionService.getBestSupporter(segment, w);
-                  if (supporter != null) {
-                    if (supporter
-                        instanceof com.github.javydreamercsw.management.domain.npc.Npc n) {
-                      wc.setManagerName(n.getName());
-                    } else if (supporter instanceof Wrestler other) {
-                      wc.setManagerName(other.getName());
-                    }
+                  if (w.getManager() != null) {
+                    wc.setManagerName(w.getManager().getName());
                   }
                 });
         wc.setTeam("Team " + (i + 1));
@@ -475,31 +459,18 @@ public class NarrationDialog extends Dialog {
         wc.setTier(wrestler.getTier().name());
         wc.setMoveSet(wrestler.getMoveSet());
         List<String> feuds = new ArrayList<>();
-        for (RivalryDTO rivalry :
-            rivalryService.getActiveRivalriesForWrestlerAsDTO(wrestler.getId())) {
-          WrestlerDTO opponent = rivalry.getOpponent(wrestler);
-          feuds.add(
-              String.format("Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
-        }
-        wc.setFeudsAndHeat(feuds);
-
-        List<String> relationships = new ArrayList<>();
-        relationshipService
-            .getRelationshipsForWrestler(wrestler.getId())
-            .forEach(
-                rel -> {
-                  Wrestler partner =
-                      rel.getPartner(wrestlerService.findById(wrestler.getId()).get());
-                  relationships.add(
-                      String.format(
-                          "%s with %s (Level: %d%s)",
-                          rel.getType().getDisplayName(),
-                          partner.getName(),
-                          rel.getLevel(),
-                          rel.getIsStoryline() ? ", Storyline" : ""));
+        wrestlerService
+            .findByName(wrestler.getName())
+            .ifPresent(
+                w -> {
+                  for (Rivalry rivalry : rivalryService.getRivalriesForWrestler(w.getId())) {
+                    Wrestler opponent = rivalry.getOpponent(w);
+                    feuds.add(
+                        String.format(
+                            "Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
+                  }
                 });
-        wc.setRelationships(relationships);
-
+        wc.setFeudsAndHeat(feuds);
         wrestlerContexts.add(wc);
       }
     }
@@ -557,27 +528,23 @@ public class NarrationDialog extends Dialog {
 
   private SegmentNarrationService.SegmentNarrationContext buildPreviousSegmentContext(
       @NonNull Segment segment) {
-    // Fetch full segment details to avoid LazyInitializationException
-    Segment loadedSegment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
-
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
-    context.setSegmentOrder(loadedSegment.getSegmentOrder());
-    context.setMainEvent(loadedSegment.isMainEvent());
+    context.setSegmentOrder(segment.getSegmentOrder());
+    context.setMainEvent(segment.isMainEvent());
 
-    if (!loadedSegment.getTitles().isEmpty()) {
+    if (!segment.getTitles().isEmpty()) {
       String championshipNames =
-          loadedSegment.getTitles().stream()
+          segment.getTitles().stream()
               .map(Title::getName)
               .collect(java.util.stream.Collectors.joining(" and "));
       context.setSegmentChampionship(championshipNames);
     }
 
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
-    // Use transactional DTO fetching for wrestlers
-    List<WrestlerDTO> wrestlers = wrestlerService.findAllBySegment(loadedSegment);
-    for (WrestlerDTO wrestler : wrestlers) {
+    for (SegmentParticipant participant : segment.getParticipants()) {
+      WrestlerDTO wrestler = new WrestlerDTO(participant.getWrestler());
       SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
       wc.setName(wrestler.getName());
       wc.setDescription(wrestler.getDescription());
@@ -586,12 +553,17 @@ public class NarrationDialog extends Dialog {
       wc.setTier(wrestler.getTier().name());
       wc.setMoveSet(wrestler.getMoveSet());
       List<String> feuds = new ArrayList<>();
-      for (RivalryDTO rivalry :
-          rivalryService.getActiveRivalriesForWrestlerAsDTO(wrestler.getId())) {
-        WrestlerDTO opponent = rivalry.getOpponent(wrestler);
-        feuds.add(
-            String.format("Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
-      }
+      wrestlerService
+          .findByName(wrestler.getName())
+          .ifPresent(
+              w -> {
+                for (Rivalry rivalry : rivalryService.getRivalriesForWrestler(w.getId())) {
+                  Wrestler opponent = rivalry.getOpponent(w);
+                  feuds.add(
+                      String.format(
+                          "Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
+                }
+              });
       wc.setFeudsAndHeat(feuds);
       wrestlerContexts.add(wc);
     }
@@ -599,11 +571,11 @@ public class NarrationDialog extends Dialog {
 
     SegmentNarrationService.SegmentTypeContext mtc =
         new SegmentNarrationService.SegmentTypeContext();
-    mtc.setSegmentType(loadedSegment.getSegmentType().getName());
+    mtc.setSegmentType(segment.getSegmentType().getName());
     context.setSegmentType(mtc);
 
-    context.setNarration(loadedSegment.getNarration());
-    context.setDeterminedOutcome(loadedSegment.getSummary());
+    context.setNarration(segment.getNarration());
+    context.setDeterminedOutcome(segment.getSummary());
 
     return context;
   }
@@ -698,9 +670,6 @@ public class NarrationDialog extends Dialog {
   private void saveNarration() {
     try {
       segment.setNarration(narrationDisplay.getText());
-      if (refereeField.getValue() != null) {
-        segment.setReferee(refereeField.getValue());
-      }
       segmentService.updateSegment(segment);
 
       getUI()

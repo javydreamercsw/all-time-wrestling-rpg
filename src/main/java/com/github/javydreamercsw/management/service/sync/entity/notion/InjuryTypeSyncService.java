@@ -68,7 +68,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
     if (!syncServiceDependencies
         .getNotionSyncProperties()
         .isEntityEnabled(SyncEntityType.INJURY_TYPES.getKey())) {
-      log.debug("Injury types synchronization is disabled in configuration");
+      log.debug("Injuries synchronization is disabled in configuration");
       return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 0, 0, 0);
     }
 
@@ -93,90 +93,86 @@ public class InjuryTypeSyncService extends BaseSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   private SyncResult performInjuryTypesSync(@NonNull String operationId) {
-    log.info(
-        "🩹 Starting injury types synchronization from Notion with operation ID: {}", operationId);
+    log.info("🏥 Starting injuries synchronization from Notion with operation ID: {}", operationId);
     long startTime = System.currentTimeMillis();
 
     try {
       // Check if NOTION_TOKEN is available
       if (!isNotionHandlerAvailable()) {
-        String errorMsg = "NotionHandler is not available for injury types sync";
+        String errorMsg = "NotionHandler is not available for injuries sync";
         log.error(errorMsg);
         return SyncResult.failure(SyncEntityType.INJURY_TYPES.getKey(), errorMsg);
       }
 
       // Perform the actual sync
-      return performInjuryTypesSyncActual(operationId, startTime);
+      return performInjuriesSync(operationId, startTime);
     } catch (Exception e) {
-      log.error("Failed to sync injury types from Notion", e);
+      log.error("Failed to sync injuries from Notion", e);
       return SyncResult.failure(
-          SyncEntityType.INJURY_TYPES.getKey(), "Failed to sync injury types: " + e.getMessage());
+          SyncEntityType.INJURY_TYPES.getKey(), "Failed to sync injuries: " + e.getMessage());
     }
   }
 
   /**
-   * Performs the actual injury types synchronization from Notion to database.
+   * Performs the actual injuries synchronization from Notion to database.
    *
    * @param operationId Operation ID for progress tracking
    * @param startTime Start time for performance tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  private SyncResult performInjuryTypesSyncActual(@NonNull String operationId, long startTime) {
+  private SyncResult performInjuriesSync(@NonNull String operationId, long startTime) {
     try {
       // Initialize progress tracking
+      syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Injuries", 4);
       syncServiceDependencies
           .getProgressTracker()
-          .startOperation(operationId, "Sync Injury Types", 4);
-      syncServiceDependencies
-          .getProgressTracker()
-          .updateProgress(operationId, 1, "Loading injury types from Notion...");
+          .updateProgress(operationId, 1, "Loading injuries from Notion...");
 
-      // Load injury types from Notion
+      // Load injuries from Notion
       List<InjuryPage> injuryPages =
-          executeWithRateLimit(
-              () -> syncServiceDependencies.getNotionHandler().loadAllInjuryTypes());
-      log.info("📥 Loaded {} injury types from Notion", injuryPages.size());
+          executeWithRateLimit(() -> syncServiceDependencies.getNotionHandler().loadAllInjuries());
+      log.info("📥 Loaded {} injuries from Notion", injuryPages.size());
 
       if (injuryPages.isEmpty()) {
-        log.info("No injury types found in Notion database");
+        log.info("No injuries found in Notion database");
         syncServiceDependencies
             .getProgressTracker()
-            .completeOperation(operationId, true, "No injury types to sync", 0);
+            .completeOperation(operationId, true, "No injuries to sync", 0);
         return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 0, 0, 0);
       }
 
       // Convert to DTOs with parallel processing
       syncServiceDependencies
           .getProgressTracker()
-          .updateProgress(operationId, 2, "Converting injury types to DTOs...");
+          .updateProgress(operationId, 2, "Converting injuries to DTOs...");
       List<InjuryDTO> injuryDTOs = convertInjuriesToDTOs(injuryPages, operationId);
-      log.info("🔄 Converted {} injury types to DTOs", injuryDTOs.size());
+      log.info("🔄 Converted {} injuries to DTOs", injuryDTOs.size());
 
       // Save to database with parallel processing and caching
       syncServiceDependencies
           .getProgressTracker()
-          .updateProgress(operationId, 3, "Saving injury types to database...");
+          .updateProgress(operationId, 3, "Saving injuries to database...");
       int syncedCount = saveInjuriesToDatabase(injuryDTOs, operationId);
-      log.info("💾 Saved {} injury types to database", syncedCount);
+      log.info("💾 Saved {} injuries to database", syncedCount);
 
       // Validate sync results
       syncServiceDependencies
           .getProgressTracker()
-          .updateProgress(operationId, 4, "Validating injury type sync results...");
+          .updateProgress(operationId, 4, "Validating injury sync results...");
       boolean validationPassed = validateInjurySyncResults(injuryDTOs, syncedCount);
 
       if (!validationPassed) {
         return SyncResult.failure(
-            SyncEntityType.INJURY_TYPES.getKey(), "Injury type sync validation failed");
+            SyncEntityType.INJURY_TYPES.getKey(), "Injury sync validation failed");
       }
 
       long totalTime = System.currentTimeMillis() - startTime;
-      log.info("🎉 Injury types sync completed successfully in {}ms", totalTime);
+      log.info("🎉 Injuries sync completed successfully in {}ms", totalTime);
 
       syncServiceDependencies
           .getProgressTracker()
           .completeOperation(
-              operationId, true, "Injury types sync completed successfully", syncedCount);
+              operationId, true, "Injuries sync completed successfully", syncedCount);
 
       // Record success in health monitor
       syncServiceDependencies
@@ -186,15 +182,15 @@ public class InjuryTypeSyncService extends BaseSyncService {
       return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), syncedCount, 0, 0);
 
     } catch (Exception e) {
-      log.error("Failed to perform injury types sync", e);
+      log.error("Failed to perform injuries sync", e);
       syncServiceDependencies
           .getProgressTracker()
-          .failOperation(operationId, "Failed to sync injury types: " + e.getMessage());
+          .failOperation(operationId, "Failed to sync injuries: " + e.getMessage());
       syncServiceDependencies
           .getHealthMonitor()
           .recordFailure(SyncEntityType.INJURY_TYPES.getKey(), e.getMessage());
       return SyncResult.failure(
-          SyncEntityType.INJURY_TYPES.getKey(), "Failed to sync injury types: " + e.getMessage());
+          SyncEntityType.INJURY_TYPES.getKey(), "Failed to sync injuries: " + e.getMessage());
     }
   }
 

@@ -30,11 +30,9 @@ public class FactionPage extends NotionPage {
     // Faction-specific properties only (common properties inherited from base)
     private Property Description;
     private Property Leader;
-    private Property Manager;
     private Property Members;
     private Property Teams;
     private Property Alignment;
-    private Property Active;
     private Property Status;
     private Property FormedDate;
     private Property DisbandedDate;

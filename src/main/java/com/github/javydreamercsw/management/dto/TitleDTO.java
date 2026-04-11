@@ -28,7 +28,6 @@ public class TitleDTO {
   private WrestlerTier tier;
   private Gender gender;
   private String currentChampionName;
-  private String imageUrl;
   private ChampionshipType championshipType;
   private Boolean includeInRankings;
 }

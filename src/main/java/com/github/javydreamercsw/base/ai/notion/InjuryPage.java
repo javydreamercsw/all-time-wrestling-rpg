@@ -20,8 +20,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * Represents an injury page from Notion. Contains injury-specific properties for both injury types
- * and individual wrestler injury tracking.
+ * Represents an injury page from the Notion Injuries database. Contains injury-specific properties
+ * for wrestler injury tracking.
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -31,30 +31,21 @@ public class InjuryPage extends NotionPage {
   @Data
   @EqualsAndHashCode(callSuper = false)
   public static class NotionProperties extends NotionPage.BaseNotionProperties {
-    // Properties for Injury Types
+    // Injury-specific properties based on REAL Notion structure
+
     /** Name of the injury type (e.g., "Head injury", "Back injury") */
-    private Property injuryName;
+    private Property InjuryName;
 
     /** Health effect penalty (numeric, e.g., -3, -1, -2) */
-    private Property healthEffect;
+    private Property HealthEffect;
 
     /** Stamina effect penalty (numeric, e.g., 0, -3, -2) */
-    private Property staminaEffect;
+    private Property StaminaEffect;
 
     /** Card effect penalty (numeric, e.g., -2, 0, -1) */
-    private Property cardEffect;
+    private Property CardEffect;
 
     /** Special game effects description (text, e.g., "No reversal ability") */
-    private Property specialEffects;
-
-    // Properties for Individual Injuries
-    private Property wrestler;
-    private Property severity;
-    private Property active;
-    private Property injuryDate;
-    private Property healedDate;
-    private Property healingCost;
-    private Property injuryNotes;
-    private Property handSizePenalty;
+    private Property SpecialEffects;
   }
 }

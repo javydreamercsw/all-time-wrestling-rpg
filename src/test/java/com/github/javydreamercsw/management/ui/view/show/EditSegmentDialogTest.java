@@ -51,7 +51,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @MockitoBean private TitleService titleService;
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
-  @MockitoBean private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private ProposedSegment segment;
   private Runnable onSave;
 
@@ -77,9 +76,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     when(wrestlerRepository.findByName("Wrestler 1")).thenReturn(Optional.of(wrestler1));
     when(wrestlerRepository.findByName("Wrestler 2")).thenReturn(Optional.of(wrestler2));
 
-    // Mock NpcService for referees
-    when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
-
     // Mock TitleService and available titles
     Title title1 = new Title(); // Use no-arg constructor
     title1.setId(1L);
@@ -102,7 +98,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
             titleService,
             mock(SegmentTypeRepository.class),
             mock(SegmentRuleRepository.class),
-            npcService,
             null,
             onSave);
     dialog.open();
@@ -154,7 +149,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
             titleService,
             mock(SegmentTypeRepository.class),
             mock(SegmentRuleRepository.class),
-            npcService,
             null,
             onSave);
     dialog.open();

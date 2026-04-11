@@ -18,19 +18,14 @@ package com.github.javydreamercsw.base.config;
 
 import static org.mockito.Mockito.mock;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
-import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -46,50 +41,24 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Profile("e2e")
-@Import(InboxEventTypeConfig.class)
 public class TestE2ESecurityConfig {
 
   @Bean
-  @ConditionalOnMissingBean
-  public ObjectMapper objectMapper() {
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.findAndRegisterModules();
-    return mapper;
-  }
-
-  @Bean
-  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
-    return new WithCustomMockUserSecurityContextFactory();
-  }
-
-  @Bean
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    // Configure public access to static resources FIRST
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(
                     "/login",
                     "/login/**",
                     "/images/**",
-                    "/icons/**",
-                    "/public/**",
-                    "/api/**",
-                    "/docs/**",
                     "/VAADIN/**",
                     "/line-awesome/**",
-                    "/frontend/**")
+                    "/icons/**",
+                    "/frontend/**",
+                    "/docs/**")
                 .permitAll());
-
-    // Apply Vaadin security configurer AFTER specific matchers
-    // This will add its own matchers and then anyRequest().authenticated()
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
-
-    // Basic form login for the "login" action used in LoginView
-    http.formLogin(form -> form.loginPage("/login").permitAll());
-
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
-    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
-
+    http.csrf(AbstractHttpConfigurer::disable);
     return http.build();
   }
 

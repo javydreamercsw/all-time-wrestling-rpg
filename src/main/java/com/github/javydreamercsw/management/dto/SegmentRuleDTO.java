@@ -24,6 +24,5 @@ public class SegmentRuleDTO {
   private String name;
   private String description;
   private boolean requiresHighHeat;
-  private boolean noDq;
   private BumpAddition bumpAddition;
 }

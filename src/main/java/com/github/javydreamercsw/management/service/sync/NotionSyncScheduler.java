@@ -66,7 +66,7 @@ public class NotionSyncScheduler {
    *
    * @return List of SyncEntityType in dependency order
    */
-  public List<SyncEntityType> getSyncEntities() {
+  private List<SyncEntityType> getSyncEntities() {
     log.info("🤖 Using automatic dependency analysis for sync order");
     List<SyncEntityType> automaticEntities = dependencyAnalyzer.getAutomaticSyncOrder();
     log.info("📋 Determined sync order: {}", automaticEntities);
@@ -93,20 +93,13 @@ public class NotionSyncScheduler {
               }
 
               log.info("=== STARTING SCHEDULED NOTION SYNC ===");
-              String operationId = "scheduled-sync-" + System.currentTimeMillis();
-              if (!syncServiceDependencies.getSyncLockService().acquireLock(operationId)) {
-                log.warn("⏭️ Scheduled sync skipped: another synchronization is in progress.");
-                return null;
-              }
-
               try {
                 List<NotionSyncService.SyncResult> results = new ArrayList<>();
                 // Sync each entity in dependency order
                 for (SyncEntityType entity : getSyncEntities()) {
                   try {
                     NotionSyncService.SyncResult result =
-                        syncEntity(
-                            entity, operationId + "-" + entity.getKey(), SyncDirection.OUTBOUND);
+                        syncEntity(entity, SyncDirection.OUTBOUND);
                     results.add(result);
                     if (result.isSuccess()) {
                       log.info(
@@ -127,8 +120,6 @@ public class NotionSyncScheduler {
                 logSyncSummary(results);
               } catch (Exception e) {
                 log.error("❌ Critical error during scheduled sync", e);
-              } finally {
-                syncServiceDependencies.getSyncLockService().releaseLock(operationId);
               }
               log.info("=== SCHEDULED NOTION SYNC COMPLETED ===");
               return null;
@@ -166,7 +157,6 @@ public class NotionSyncScheduler {
           case FACTION_RIVALRIES -> notionSyncService.syncFactionRivalries(operationId, direction);
           case SEGMENTS -> notionSyncService.syncSegments(operationId, direction);
           case TITLE_REIGN -> notionSyncService.syncTitleReigns(operationId);
-          case INJURIES -> notionSyncService.syncInjuries(operationId, direction);
         };
     if (result.isSuccess()) {
       syncProperties.setLastSyncTime(entityType.getKey(), LocalDateTime.now());
@@ -216,13 +206,16 @@ public class NotionSyncScheduler {
    *
    * @param results List of sync results to summarize
    */
-  private void logSyncSummary(List<NotionSyncService.SyncResult> results) {
+  private void logSyncSummary(
+      List<com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult>
+          results) {
     int successCount = 0;
     int failureCount = 0;
     int totalSynced = 0;
 
     log.info("=== SYNC SUMMARY ===");
-    for (NotionSyncService.SyncResult result : results) {
+    for (com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult result :
+        results) {
       if (result.isSuccess()) {
         successCount++;
         totalSynced += result.getSyncedCount();
@@ -254,48 +247,17 @@ public class NotionSyncScheduler {
    */
   @PreAuthorize("hasRole('ADMIN')")
   public List<NotionSyncService.SyncResult> triggerManualSync() {
-    String operationId = "sync-all-" + System.currentTimeMillis();
-    return triggerManualSync(operationId);
-  }
+    log.info("=== MANUAL NOTION SYNC TRIGGERED ===");
 
-  /**
-   * Manual trigger for immediate sync of all entities with a specific operation ID.
-   *
-   * @param operationId The operation ID to use for all sync operations
-   * @return List of sync results for all entities
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public List<NotionSyncService.SyncResult> triggerManualSync(@NonNull String operationId) {
-    log.info("=== MANUAL NOTION SYNC TRIGGERED WITH ID: {} ===", operationId);
-
-    if (!syncServiceDependencies.getSyncLockService().acquireLock(operationId)) {
-      log.warn("❌ Manual sync rejected: another synchronization is in progress.");
-      return List.of(NotionSyncService.SyncResult.failure("All", "Sync already in progress"));
-    }
+    // Clear sync session at the start of batch operation
+    syncServiceDependencies.getSyncSessionManager().clearSyncSession();
 
     List<NotionSyncService.SyncResult> results = new ArrayList<>();
+
     try {
-      // Clear sync session at the start of batch operation
-      syncServiceDependencies.getSyncSessionManager().clearSyncSession();
-
-      List<SyncEntityType> entities = getSyncEntities();
-      syncServiceDependencies
-          .getProgressTracker()
-          .startOperation(operationId, "Full Notion Sync", entities.size());
-
-      int processedEntities = 0;
-      int totalSyncedItems = 0;
-
-      for (SyncEntityType entity : entities) {
+      for (SyncEntityType entity : getSyncEntities()) {
         try {
-          String subOperationId = operationId + "-" + entity.getKey();
-          syncServiceDependencies
-              .getProgressTracker()
-              .updateProgress(
-                  operationId, processedEntities, "Starting sync for " + entity.getKey() + "...");
-
-          NotionSyncService.SyncResult result =
-              syncEntity(entity, subOperationId, SyncDirection.OUTBOUND);
+          NotionSyncService.SyncResult result = syncEntity(entity, SyncDirection.OUTBOUND);
           results.add(result);
 
           if (result.isSuccess()) {
@@ -303,7 +265,6 @@ public class NotionSyncScheduler {
                 "✅ Manual {} sync completed: {} items synchronized",
                 entity,
                 result.getSyncedCount());
-            totalSyncedItems += result.getSyncedCount();
           } else {
             log.error("❌ Manual {} sync failed: {}", entity, result.getErrorMessage());
           }
@@ -312,50 +273,17 @@ public class NotionSyncScheduler {
           log.error("❌ Unexpected error during manual {} sync: {}", entity, e.getMessage(), e);
           results.add(NotionSyncService.SyncResult.failure(entity.getKey(), e.getMessage()));
         }
-        processedEntities++;
-        syncServiceDependencies
-            .getProgressTracker()
-            .updateProgress(
-                operationId, processedEntities, "Completed sync for " + entity.getKey());
       }
 
       logSyncSummary(results);
       log.info("=== MANUAL NOTION SYNC COMPLETED ===");
 
-      syncServiceDependencies
-          .getProgressTracker()
-          .completeOperation(
-              operationId, true, "Full sync completed successfully", totalSyncedItems);
-
     } finally {
-      syncServiceDependencies.getSyncLockService().releaseLock(operationId);
       // Clean up sync session thread local
       syncServiceDependencies.getSyncSessionManager().cleanupSyncSession();
     }
 
     return results;
-  }
-
-  /**
-   * Synchronizes all entities in parallel using the ParallelSyncOrchestrator.
-   *
-   * @param operationId The operation ID to use
-   * @return Summary results
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public NotionSyncService.SyncResult triggerParallelSync(@NonNull String operationId) {
-    com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator
-            .ParallelSyncResult
-        parallelResult = notionSyncService.syncAllEntitiesParallel(operationId);
-
-    int totalSynced =
-        parallelResult.getEntityResults().stream()
-            .map(er -> er.getSyncResult())
-            .filter(java.util.Objects::nonNull)
-            .mapToInt(sr -> sr.getSyncedCount())
-            .sum();
-
-    return NotionSyncService.SyncResult.success("All (Parallel)", 0, totalSynced, 0);
   }
 
   /**
@@ -367,12 +295,6 @@ public class NotionSyncScheduler {
   @PreAuthorize("hasRole('ADMIN')")
   public NotionSyncService.SyncResult triggerEntitySync(@NonNull String entityName) {
     log.info("=== MANUAL {} SYNC TRIGGERED ===", entityName.toUpperCase());
-
-    String operationId = "manual-sync-" + entityName + "-" + System.currentTimeMillis();
-    if (!syncServiceDependencies.getSyncLockService().acquireLock(operationId)) {
-      log.warn("❌ Manual {} sync rejected: another synchronization is in progress.", entityName);
-      return NotionSyncService.SyncResult.failure(entityName, "Sync already in progress");
-    }
 
     try {
       NotionSyncService.SyncResult result = syncEntity(entityName, SyncDirection.OUTBOUND);
@@ -391,8 +313,6 @@ public class NotionSyncScheduler {
     } catch (Exception e) {
       log.error("❌ Unexpected error during manual {} sync: {}", entityName, e.getMessage(), e);
       return NotionSyncService.SyncResult.failure(entityName, e.getMessage());
-    } finally {
-      syncServiceDependencies.getSyncLockService().releaseLock(operationId);
     }
   }
 

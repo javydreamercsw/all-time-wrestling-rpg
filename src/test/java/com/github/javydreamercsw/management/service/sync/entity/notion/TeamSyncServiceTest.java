@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
-import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -38,13 +37,13 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 class TeamSyncServiceTest extends AbstractSyncTest {
 
   @Mock private WrestlerService wrestlerService;
   @Mock private TeamService teamService;
+  // NotionPageDataExtractor is mocked in AbstractSyncTest
 
   private TeamSyncService teamSyncService;
 
@@ -65,39 +64,33 @@ class TeamSyncServiceTest extends AbstractSyncTest {
   void shouldSyncTeamsSuccessfully() {
     // Given
     List<TeamPage> teamPages = createMockTeamPages();
-    lenient().when(notionHandler.loadAllTeams()).thenReturn(teamPages);
-    lenient()
-        .doReturn("Test Team")
+    when(notionHandler.loadAllTeams()).thenReturn(teamPages);
+    doReturn("Test Team")
         .when(notionPageDataExtractor)
         .extractNameFromNotionPage(any(TeamPage.class));
+    doReturn("John Doe")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Member 1"));
+    doReturn("Jane Smith")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Member 2"));
+    doReturn("Active")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Status"));
+    doReturn(null).when(notionPageDataExtractor).extractFactionFromNotionPage(any(TeamPage.class));
 
     // Mock wrestlers
-    Wrestler wrestler1 = createMockWrestler("John Doe", "wrestler-1");
-    Wrestler wrestler2 = createMockWrestler("Jane Smith", "wrestler-2");
-    lenient()
-        .when(wrestlerService.findByExternalId("wrestler-1"))
-        .thenReturn(Optional.of(wrestler1));
-    lenient()
-        .when(wrestlerService.findByExternalId("wrestler-2"))
-        .thenReturn(Optional.of(wrestler2));
-
-    // Mock Manager
-    Npc manager = new Npc();
-    manager.setId(10L);
-    manager.setName("Paul Heyman");
-    manager.setExternalId("manager-id");
-    lenient().when(npcRepository.findByExternalId("manager-id")).thenReturn(Optional.of(manager));
+    Wrestler wrestler1 = createMockWrestler("John Doe");
+    Wrestler wrestler2 = createMockWrestler("Jane Smith");
+    when(wrestlerService.findByName("John Doe")).thenReturn(Optional.of(wrestler1));
+    when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.of(wrestler2));
 
     // Mock team service
-    lenient().when(teamService.getTeamByExternalId(anyString())).thenReturn(Optional.empty());
-    lenient().when(teamService.getTeamByName(anyString())).thenReturn(Optional.empty());
-
-    Team mockTeam = createMockTeam();
-    lenient()
-        .when(
-            teamService.createTeam(
-                anyString(), nullable(String.class), anyLong(), anyLong(), any(), any()))
-        .thenReturn(Optional.of(mockTeam));
+    when(teamService.getTeamByExternalId(anyString())).thenReturn(Optional.empty());
+    when(teamService.getTeamByName(anyString())).thenReturn(Optional.empty());
+    when(teamService.createTeam(
+            anyString(), nullable(String.class), anyLong(), anyLong(), any(), any()))
+        .thenReturn(Optional.of(createMockTeam()));
 
     // When
     BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
@@ -107,16 +100,18 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getEntityType()).isEqualTo("Teams");
     assertThat(result.getSyncedCount()).isEqualTo(1);
+    assertThat(result.getErrorCount()).isEqualTo(0);
 
-    ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
-    verify(teamRepository).saveAndFlush(teamCaptor.capture());
-    Team savedTeam = teamCaptor.getValue();
-
-    assertThat(savedTeam.getName()).isEqualTo("Test Team");
-    assertThat(savedTeam.getThemeSong()).isEqualTo("Test Theme");
-    assertThat(savedTeam.getArtist()).isEqualTo("Test Artist");
-    assertThat(savedTeam.getTeamFinisher()).isEqualTo("Test Finisher");
-    assertThat(savedTeam.getManager()).isEqualTo(manager);
+    // Verify interactions
+    verify(notionHandler).loadAllTeams();
+    verify(teamService)
+        .createTeam(
+            anyString(),
+            nullable(String.class),
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class));
   }
 
   @Test
@@ -132,6 +127,7 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getEntityType()).isEqualTo("Teams");
     assertThat(result.getSyncedCount()).isEqualTo(0);
+    assertThat(result.getErrorCount()).isEqualTo(0);
   }
 
   @Test
@@ -151,19 +147,104 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     verify(healthMonitor).recordFailure(eq("Teams"), anyString());
   }
 
+  @Test
+  void shouldSkipTeamWithMissingWrestlers() {
+    // Given
+    List<TeamPage> teamPages = createMockTeamPages();
+    when(notionHandler.loadAllTeams()).thenReturn(teamPages);
+    doReturn("Test Team")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(any(TeamPage.class));
+    doReturn("John Doe")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Member 1"));
+    doReturn("Jane Smith")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Member 2"));
+    doReturn("Active")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Status"));
+    doReturn(null).when(notionPageDataExtractor).extractFactionFromNotionPage(any(TeamPage.class));
+
+    // Mock missing wrestlers (lenient to avoid unnecessary stubbing warnings)
+    lenient().when(wrestlerService.findByName("John Doe")).thenReturn(Optional.empty());
+    lenient().when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.empty());
+
+    // When
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getSyncedCount()).isEqualTo(0); // No teams saved due to missing wrestlers
+
+    verify(teamService, never())
+        .createTeam(
+            anyString(),
+            nullable(String.class),
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class));
+  }
+
+  @Test
+  void shouldUpdateExistingTeam() {
+    // Given
+    List<TeamPage> teamPages = createMockTeamPages();
+    Team existingTeam = createMockTeam();
+    when(notionHandler.loadAllTeams()).thenReturn(teamPages);
+    when(teamService.getTeamByExternalId(anyString())).thenReturn(Optional.of(existingTeam));
+    doReturn("Test Team")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(any(TeamPage.class));
+    doReturn("John Doe")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Member 1"));
+    doReturn("Jane Smith")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Member 2"));
+    doReturn("Active")
+        .when(notionPageDataExtractor)
+        .extractPropertyAsString(anyMap(), eq("Status"));
+    doReturn(null).when(notionPageDataExtractor).extractFactionFromNotionPage(any(TeamPage.class));
+
+    // Mock wrestlers
+    Wrestler wrestler1 = createMockWrestler("John Doe");
+    Wrestler wrestler2 = createMockWrestler("Jane Smith");
+    when(wrestlerService.findByName("John Doe")).thenReturn(Optional.of(wrestler1));
+    when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.of(wrestler2));
+
+    // When
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getSyncedCount()).isEqualTo(1);
+
+    verify(syncServiceDependencies.getTeamRepository()).saveAndFlush(existingTeam);
+    verify(teamService, never())
+        .createTeam(
+            anyString(),
+            nullable(String.class),
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class));
+  }
+
   private List<TeamPage> createMockTeamPages() {
     TeamPage teamPage = new TeamPage();
     teamPage.setId("team-123");
 
+    // Create mock raw properties following the pattern from other tests
     Map<String, Object> rawProperties = new HashMap<>();
     rawProperties.put("Name", "Test Team");
-    rawProperties.put("Member 1", List.of(Map.of("id", "wrestler-1")));
-    rawProperties.put("Member 2", List.of(Map.of("id", "wrestler-2")));
-    rawProperties.put("Status", true);
-    rawProperties.put("Theme Song", "Test Theme");
-    rawProperties.put("Artist", "Test Artist");
-    rawProperties.put("Team Finisher", "Test Finisher");
-    rawProperties.put("Manager", List.of(Map.of("id", "manager-id")));
+    rawProperties.put("Member 1", "John Doe");
+    rawProperties.put("Member 2", "Jane Smith");
+    rawProperties.put("Status", "Active");
+    rawProperties.put("FormedDate", "2024-01-01T00:00:00Z");
     rawProperties.put("Description", "This is a test team description.");
 
     teamPage.setRawProperties(rawProperties);
@@ -174,14 +255,14 @@ class TeamSyncServiceTest extends AbstractSyncTest {
   }
 
   private SyncProgressTracker.SyncProgress createMockProgress() {
-    return mock(SyncProgressTracker.SyncProgress.class);
+    SyncProgressTracker.SyncProgress progress = mock(SyncProgressTracker.SyncProgress.class);
+    return progress;
   }
 
-  private Wrestler createMockWrestler(String name, String externalId) {
+  private Wrestler createMockWrestler(String name) {
     Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setId(name.equals("John Doe") ? 1L : 2L);
+    wrestler.setId(name.equals("John Doe") ? 1L : 2L); // Different IDs for different wrestlers
     wrestler.setName(name);
-    wrestler.setExternalId(externalId);
     return wrestler;
   }
 

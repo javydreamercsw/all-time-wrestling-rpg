@@ -53,9 +53,7 @@ class RankingViewTest extends AbstractViewTest {
 
   @BeforeEach
   void setUp() {
-    championshipDTO =
-        new ChampionshipDTO(
-            1L, "Test Title", "images/championships/test.png", WrestlerTier.MIDCARDER);
+    championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png", WrestlerTier.MIDCARDER);
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))
         .thenReturn(

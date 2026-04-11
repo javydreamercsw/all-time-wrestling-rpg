@@ -57,7 +57,6 @@ class RankingServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionRepository factionRepository;
   @Mock private TeamRepository teamRepository;
-  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
   @InjectMocks private RankingService rankingService;
 
   private Title title;
@@ -108,14 +107,12 @@ class RankingServiceTest {
   @Test
   void testGetChampionships() {
     when(titleRepository.findAll()).thenReturn(List.of(title));
-    when(imageService.resolveImage(any(), any()))
-        .thenReturn(new com.github.javydreamercsw.base.image.ImageResolution("default.png", true));
 
     List<ChampionshipDTO> championships = rankingService.getChampionships();
 
     assertEquals(1, championships.size());
     assertEquals("World Heavyweight Championship", championships.get(0).getName());
-    assertEquals("default.png", championships.get(0).getImageUrl());
+    assertEquals("world-heavyweight-championship.png", championships.get(0).getImageName());
   }
 
   @Test

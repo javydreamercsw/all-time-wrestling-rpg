@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.domain.show.segment;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -36,7 +35,7 @@ import org.junit.jupiter.api.Test;
 
 class SegmentSerializationTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   void testSegmentSerialization() throws Exception {

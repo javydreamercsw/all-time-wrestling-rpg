@@ -4,23 +4,31 @@
 
 ## Archived Tracks
 
-### [x] Track: Interpersonal Relationships Enhancement
+### [x] Track: Enhanced Filtering Controls (Alignment & Gender)
 
-*Status: Completed (2026-04-09)*
+*Link: [./conductor/archive/enhanced_filtering_controls_20260214/](./conductor/archive/enhanced_filtering_controls_20260214/)*
+*Status: Completed (2026-02-14)*
 
-### [ ] Track: General Manager (GM) Mode Refinement
+### [x] Track: Wrestler Career Legacy & Hall of Fame
 
-*Status: Removed (2026-04-10)*
+*Link: [./conductor/archive/wrestler_career_legacy_20260214/index.md](./conductor/archive/wrestler_career_legacy_20260214/index.md)*
+*Status: Completed (2026-02-14)*
 
-### [x] Track: Redesign of Wrestler Profile
+### [x] Track: Data-Driven Achievements
 
-*Status: Completed (2026-04-10)*
-
-*(All previous tracks have been moved to project documentation)*
+*Link: [./conductor/archive/data_driven_achievements_20260214/spec.md](./conductor/archive/data_driven_achievements_20260214/spec.md)*
+*Status: Completed (2026-02-14)*
 
 ---
 
 ## Active Tracks
 
----
+### [ ] Track: Inbox Visibility Fix
 
+*Link: [./conductor/tracks/inbox_visibility_fix/spec.md](./conductor/tracks/inbox_visibility_fix/spec.md)*
+*Status: Active (2026-02-15)*
+
+### [ ] Track: Pollinations AI Video Generation
+
+*Link: [./conductor/tracks/pollinations_video_generation_20260215/](./conductor/tracks/pollinations_video_generation_20260215/)*
+*Status: Active (2026-02-15)*

@@ -31,7 +31,6 @@ public class ProposedSegment {
   private Boolean isTitleSegment = false;
   private Set<Title> titles = new java.util.HashSet<>();
   private List<String> rules;
-  private String refereeName;
 
   public void setTitles(Set<Title> titles) {
     this.titles = titles;

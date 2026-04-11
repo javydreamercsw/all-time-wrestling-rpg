@@ -36,7 +36,6 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -61,19 +60,12 @@ class ShowPlanningViewTest {
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.show.template.ShowTemplateService
-      showTemplateService;
-
   private ShowPlanningView showPlanningView;
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
-  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private ObjectMapper objectMapper;
-  @Mock private SegmentNarrationServiceFactory aiFactory;
-  @Mock private ArenaService arenaService;
+  private SegmentNarrationServiceFactory aiFactory;
 
   @BeforeEach
   void setUp() {
@@ -85,15 +77,12 @@ class ShowPlanningViewTest {
             showPlanningService,
             showPlanningAiService,
             wrestlerService,
-            showTemplateService,
             wrestlerRepository,
             titleService,
             segmentTypeRepository,
             segmentRuleRepository,
-            npcService,
             objectMapper,
-            aiFactory,
-            arenaService);
+            aiFactory);
     // Mock the UI since we are not in a Vaadin environment
     UI ui = mock(UI.class);
     UI.setCurrent(ui);

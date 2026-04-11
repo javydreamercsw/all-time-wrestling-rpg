@@ -41,12 +41,6 @@ public class StorageProperties {
   /** Directory for generated images. If not absolute, it will be resolved relative to baseDir. */
   private String imageDir = "images/generated";
 
-  /**
-   * Directory for default images (manual/external). If not absolute, it will be resolved relative
-   * to baseDir.
-   */
-  private String defaultImageDir = "images/defaults";
-
   /** Directory for backups. If not absolute, it will be resolved relative to baseDir. */
   private String backupDir = "backups";
 
@@ -57,15 +51,6 @@ public class StorageProperties {
    */
   public Path getResolvedImageDir() {
     return resolveAndCreate(imageDir);
-  }
-
-  /**
-   * Resolves and returns the absolute path for default image storage. Ensures the directory exists.
-   *
-   * @return The absolute path to the default image directory.
-   */
-  public Path getResolvedDefaultImageDir() {
-    return resolveAndCreate(defaultImageDir);
   }
 
   /**

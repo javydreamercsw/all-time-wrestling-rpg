@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -26,12 +25,10 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -45,19 +42,13 @@ public class GameSettingsView extends VerticalLayout {
 
   private final GameSettingService gameSettingService;
   private final ThemeService themeService;
-  private final NotionHandler notionHandler;
   private DatePicker gameDatePicker;
   private ComboBox<String> defaultThemeSelection;
-  private PasswordField notionTokenField;
 
   @Autowired
-  public GameSettingsView(
-      GameSettingService gameSettingService,
-      ThemeService themeService,
-      Optional<NotionHandler> notionHandler) {
+  public GameSettingsView(GameSettingService gameSettingService, ThemeService themeService) {
     this.gameSettingService = gameSettingService;
     this.themeService = themeService;
-    this.notionHandler = notionHandler.orElse(null);
     init();
   }
 
@@ -82,21 +73,6 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    notionTokenField = new PasswordField("Notion Integration Token");
-    notionTokenField.setValue(
-        gameSettingService.getNotionToken() != null ? gameSettingService.getNotionToken() : "");
-    notionTokenField.setPlaceholder("Enter your Notion API token");
-    notionTokenField.setWidthFull();
-    notionTokenField.addValueChangeListener(
-        event -> {
-          gameSettingService.setNotionToken(event.getValue());
-          if (notionHandler != null) {
-            notionHandler.reinitialize();
-          }
-          Notification.show("Notion token updated")
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
-
     Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
 
     aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
@@ -106,15 +82,6 @@ public class GameSettingsView extends VerticalLayout {
           gameSettingService.setAiNewsEnabled(event.getValue());
 
           Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
-
-    Checkbox wearAndTearEnabled = new Checkbox("Enable Persistent Wear & Tear");
-    wearAndTearEnabled.setValue(gameSettingService.isWearAndTearEnabled());
-    wearAndTearEnabled.addValueChangeListener(
-        event -> {
-          gameSettingService.setWearAndTearEnabled(event.getValue());
-          Notification.show("Persistent Wear & Tear " + (event.getValue() ? "enabled" : "disabled"))
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
@@ -152,13 +119,7 @@ public class GameSettingsView extends VerticalLayout {
 
     VerticalLayout layout =
         new VerticalLayout(
-            gameDatePicker,
-            defaultThemeSelection,
-            notionTokenField,
-            aiNewsEnabled,
-            wearAndTearEnabled,
-            rumorChance,
-            newsStrategy);
+            gameDatePicker, defaultThemeSelection, aiNewsEnabled, rumorChance, newsStrategy);
 
     add(layout);
   }

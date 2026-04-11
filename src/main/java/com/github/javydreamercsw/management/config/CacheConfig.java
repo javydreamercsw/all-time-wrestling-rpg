@@ -54,9 +54,9 @@ public class CacheConfig {
   public static final String WRESTLER_STATS_CACHE = "wrestlerStats";
   public static final String CALENDAR_CACHE = "calendar";
   public static final String NOTION_SYNC_CACHE = "notionSync";
-  public static final String NOTION_PAGES_CACHE = "notionPages";
-  public static final String NOTION_QUERIES_CACHE = "notionQueries";
-  public static final String NPCS_CACHE = "npcs";
+  public static final String NOTION_PAGES_CACHE = "notionPages"; // Cache for Notion pages
+  public static final String NOTION_QUERIES_CACHE =
+      "notionQueries"; // Cache for Notion database queries
 
   /**
    * Configures the cache manager with optimized cache settings. Uses Caffeine for thread-safe
@@ -83,8 +83,7 @@ public class CacheConfig {
             CALENDAR_CACHE,
             NOTION_SYNC_CACHE,
             NOTION_PAGES_CACHE,
-            NOTION_QUERIES_CACHE,
-            NPCS_CACHE));
+            NOTION_QUERIES_CACHE));
 
     // Default spec for all caches
     cacheManager.setCaffeine(
@@ -99,23 +98,16 @@ public class CacheConfig {
 
   /** Cache statistics and monitoring bean. Provides insights into cache performance. */
   @Bean
-  public CacheMonitor cacheMonitor(
-      CacheManager cacheManager,
-      @org.springframework.context.annotation.Lazy
-          com.github.javydreamercsw.management.service.npc.NpcService npcService) {
-    return new CacheMonitor(cacheManager, npcService);
+  public CacheMonitor cacheMonitor(CacheManager cacheManager) {
+    return new CacheMonitor(cacheManager);
   }
 
   /** Cache monitoring utility for performance analysis. */
   public static class CacheMonitor {
     private final CacheManager cacheManager;
-    private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
 
-    public CacheMonitor(
-        CacheManager cacheManager,
-        com.github.javydreamercsw.management.service.npc.NpcService npcService) {
+    public CacheMonitor(CacheManager cacheManager) {
       this.cacheManager = cacheManager;
-      this.npcService = npcService;
     }
 
     /** Logs cache statistics for monitoring performance. */
@@ -201,15 +193,9 @@ public class CacheConfig {
      */
     public void warmUpCaches() {
       log.info("🔥 Warming up caches...");
-      try {
-        // Warm up NPCs cache
-        log.debug("Warming up NPCs cache...");
-        npcService.findAll();
-
-        log.info("✅ Cache warm-up completed");
-      } catch (Exception e) {
-        log.error("❌ Error during cache warm-up", e);
-      }
+      // Cache warming would be implemented by the services
+      // This is a placeholder for cache warming logic
+      log.info("✅ Cache warm-up completed");
     }
   }
 

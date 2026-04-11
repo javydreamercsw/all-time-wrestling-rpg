@@ -21,14 +21,11 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
@@ -81,7 +78,7 @@ class TitleSyncIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should Sync Titles From Notion with all properties")
+  @DisplayName("Should Sync Titles From Notion")
   void shouldSyncTitlesFromNotion() {
     log.info("🚀 Starting real title sync integration test...");
 
@@ -89,13 +86,8 @@ class TitleSyncIT extends ManagementIntegrationTest {
     String titleId = UUID.randomUUID().toString();
     when(titlePage.getId()).thenReturn(titleId);
     when(titlePage.getRawProperties()).thenReturn(Map.of("Name", "Test Title"));
-    when(titlePage.getDescription()).thenReturn("Test Description");
     when(titlePage.getTier()).thenReturn("Main Event");
     when(titlePage.getGender()).thenReturn("MALE");
-    when(titlePage.getChampionshipType()).thenReturn("SINGLE");
-    when(titlePage.getIncludeInRankings()).thenReturn(true);
-    when(titlePage.getIsActive()).thenReturn(true);
-    when(titlePage.getDefenseFrequency()).thenReturn(30);
 
     when(notionHandler.loadAllTitles()).thenReturn(List.of(titlePage));
 
@@ -106,7 +98,7 @@ class TitleSyncIT extends ManagementIntegrationTest {
     // Assert
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getEntityType()).isEqualTo(SyncEntityType.TITLES.getKey());
+    assertThat(result.getEntityType()).isEqualTo("titles");
     assertThat(result.getSyncedCount()).isEqualTo(1);
 
     List<Title> titles = titleRepository.findAll();
@@ -115,12 +107,6 @@ class TitleSyncIT extends ManagementIntegrationTest {
     assertThat(title.getName()).isEqualTo("Test Title");
     assertThat(title.getExternalId()).isEqualTo(titleId);
     assertThat(title.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
-    assertThat(title.getDescription()).isEqualTo("Test Description");
-    assertThat(title.getChampionshipType()).isEqualTo(ChampionshipType.SINGLE);
-    assertThat(title.getGender()).isEqualTo(Gender.MALE);
-    assertThat(title.getIncludeInRankings()).isTrue();
-    assertThat(title.getIsActive()).isTrue();
-    assertThat(title.getDefenseFrequency()).isEqualTo(30);
 
     log.info("✅ Title sync completed successfully!");
   }

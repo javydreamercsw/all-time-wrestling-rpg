@@ -21,19 +21,19 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
-import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,22 +43,25 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @DisplayName("Injury Sync Integration Tests")
+@WithMockUser(
+    username = "injury-user",
+    roles = {"ADMIN"})
 class InjurySyncIT extends ManagementIntegrationTest {
 
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
-  @Autowired private InjuryRepository injuryRepository;
-  @Autowired private TransactionTemplate transactionTemplate;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
+  @Autowired private SyncSessionManager syncSessionManager;
   @MockitoBean private NotionHandler notionHandler;
 
-  private InjuryPage injuryPage;
-  private Wrestler wrestler;
+  private InjuryPage injuryPage1;
+  private InjuryPage injuryPage2;
 
   private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -83,70 +86,115 @@ class InjurySyncIT extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     clearAllRepositories();
-    injuryPage = Mockito.mock(InjuryPage.class);
-
-    wrestler = createTestWrestler("Test Wrestler");
-    wrestler.setExternalId("test-wrestler-id");
-    wrestlerRepository.saveAndFlush(wrestler);
+    injuryPage1 = Mockito.mock(InjuryPage.class);
+    injuryPage2 = Mockito.mock(InjuryPage.class);
   }
 
   @Test
-  @DisplayName("Should sync individual injuries from Notion")
-  void shouldSyncInjuriesFromNotion() {
-    log.info("🏥 Testing individual injuries sync from Notion");
+  @DisplayName("Should sync injury types from Notion")
+  void shouldSyncInjuryTypesFromNotion() {
+    log.info("🏥 Testing injury types sync from Notion");
 
     // Given
-    String injuryId = UUID.randomUUID().toString();
-    when(injuryPage.getId()).thenReturn(injuryId);
-
-    Instant injuryDate = Instant.now();
-
-    when(injuryPage.getRawProperties())
+    String injury1Id = UUID.randomUUID().toString();
+    when(injuryPage1.getId()).thenReturn(injury1Id);
+    when(injuryPage1.getRawProperties())
         .thenReturn(
             Map.of(
                 "Name",
-                "Broken Ribs",
-                "Wrestler",
-                Map.of("relation", List.of(Map.of("id", "test-wrestler-id"))),
-                "Severity",
-                "MODERATE",
-                "Active",
-                true,
-                "Injury Date",
-                injuryDate.toString(),
-                "Health Penalty",
-                2.0,
-                "Stamina Penalty",
-                1.0,
-                "Healing Cost",
-                5000.0,
-                "Injury Notes",
-                "Sustained during a ladder match."));
+                "Head Injury",
+                "Health Effect",
+                -1,
+                "Stamina Effect",
+                0,
+                "Card Effect",
+                0,
+                "Special Effects",
+                "Cannot use headbutts."));
 
-    when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage));
+    String injury2Id = UUID.randomUUID().toString();
+    when(injuryPage2.getId()).thenReturn(injury2Id);
+    when(injuryPage2.getRawProperties())
+        .thenReturn(
+            Map.of(
+                "Name",
+                "Leg Injury",
+                "Health Effect",
+                0,
+                "Stamina Effect",
+                -1,
+                "Card Effect",
+                0,
+                "Special Effects",
+                "Cannot use leg attacks."));
 
-    // When
+    when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage1, injuryPage2));
+
+    // When - Sync injury types from Notion
+    // Run as admin to ensure permissions are available in async threads
     BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuries("test-injuries-op", SyncDirection.INBOUND);
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<BaseSyncService.SyncResult>)
+                () ->
+                    notionSyncService.syncInjuryTypes(
+                        "integration-test-operation", SyncDirection.INBOUND));
 
-    // Then
+    // Then - Verify sync was successful
+    assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1);
+    assertThat(result.getEntityType()).isEqualTo(SyncEntityType.INJURY_TYPES.getKey());
+    assertThat(result.getSyncedCount()).isEqualTo(2);
+    assertThat(result.getErrorCount()).isEqualTo(0);
+    assertThat(result.getErrorMessage()).isNull();
 
-    transactionTemplate.executeWithoutResult(
-        status -> {
-          Optional<Injury> injuryOpt = injuryRepository.findByExternalId(injuryId);
-          assertThat(injuryOpt).isPresent();
-          Injury injury = injuryOpt.get();
+    log.info("✅ Sync result: {} injury types synced", result.getSyncedCount());
 
-          assertThat(injury.getName()).isEqualTo("Broken Ribs");
-          assertThat(injury.getWrestler().getName()).isEqualTo("Test Wrestler");
-          assertThat(injury.getSeverity()).isEqualTo(InjurySeverity.MODERATE);
-          assertThat(injury.getIsActive()).isTrue();
-          assertThat(injury.getHealthPenalty()).isEqualTo(2);
-          assertThat(injury.getStaminaPenalty()).isEqualTo(1);
-          assertThat(injury.getHealingCost()).isEqualTo(5000L);
-          assertThat(injury.getInjuryNotes()).isEqualTo("Sustained during a ladder match.");
-        });
+    // Verify database state
+    List<InjuryType> allInjuryTypes = injuryTypeRepository.findAll();
+    assertThat(allInjuryTypes).hasSize(2);
+
+    InjuryType headInjury =
+        allInjuryTypes.stream()
+            .filter(it -> it.getInjuryName().equals("Head Injury"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Head Injury not found"));
+    assertThat(headInjury.getExternalId()).isEqualTo(injury1Id);
+    assertThat(headInjury.getHealthEffect()).isEqualTo(-1);
+    assertThat(headInjury.getSpecialEffects()).isEqualTo("Cannot use headbutts.");
+
+    // Run sync again to test updates and no duplicates
+    syncSessionManager.clearSyncSession(); // Reset session to allow second sync
+    when(injuryPage1.getRawProperties())
+        .thenReturn(
+            Map.of(
+                "Name",
+                "Head Injury",
+                "Health Effect",
+                -2, // Changed
+                "Stamina Effect",
+                0,
+                "Card Effect",
+                0,
+                "Special Effects",
+                "Cannot use headbutts. Dizzy."));
+
+    // Need to mock loadAllInjuries again for the second call
+    when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage1, injuryPage2));
+
+    BaseSyncService.SyncResult secondResult =
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<BaseSyncService.SyncResult>)
+                () ->
+                    notionSyncService.syncInjuryTypes(
+                        "second-sync-operation", SyncDirection.INBOUND));
+    assertThat(secondResult.isSuccess()).isTrue();
+    assertThat(injuryTypeRepository.findAll()).hasSize(2); // No new injuries
+
+    InjuryType updatedHeadInjury =
+        injuryTypeRepository
+            .findByExternalId(injury1Id)
+            .orElseThrow(() -> new AssertionError("Updated Head Injury not found"));
+    assertThat(updatedHeadInjury.getHealthEffect()).isEqualTo(-2);
+    assertThat(updatedHeadInjury.getSpecialEffects()).isEqualTo("Cannot use headbutts. Dizzy.");
   }
 }

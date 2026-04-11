@@ -29,7 +29,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashSet;
 import java.util.Set;
@@ -65,15 +64,6 @@ public class League {
       joinColumns = @JoinColumn(name = "league_id"),
       inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
   private Set<Wrestler> excludedWrestlers = new HashSet<>();
-
-  @Column(name = "budget")
-  private java.math.BigDecimal budget = java.math.BigDecimal.ZERO;
-
-  @Column(name = "duration_weeks")
-  private Integer durationWeeks;
-
-  @Column(name = "locker_room_morale", nullable = false)
-  @Min(0) @jakarta.validation.constraints.Max(100) private Integer lockerRoomMorale = 100;
 
   public enum LeagueStatus {
     PRE_DRAFT,

@@ -18,8 +18,6 @@ package com.github.javydreamercsw.management.service.ranking;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.image.DefaultImageService;
-import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -43,12 +41,14 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class RankingService {
@@ -57,21 +57,6 @@ public class RankingService {
   private final WrestlerRepository wrestlerRepository;
   private final FactionRepository factionRepository;
   private final TeamRepository teamRepository;
-  private final DefaultImageService imageService;
-
-  @org.springframework.beans.factory.annotation.Autowired
-  public RankingService(
-      TitleRepository titleRepository,
-      WrestlerRepository wrestlerRepository,
-      FactionRepository factionRepository,
-      TeamRepository teamRepository,
-      DefaultImageService imageService) {
-    this.titleRepository = titleRepository;
-    this.wrestlerRepository = wrestlerRepository;
-    this.factionRepository = factionRepository;
-    this.teamRepository = teamRepository;
-    this.imageService = imageService;
-  }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -269,16 +254,9 @@ public class RankingService {
     return ChampionshipDTO.builder()
         .id(title.getId())
         .name(title.getName())
-        .imageUrl(resolveTitleImage(title))
+        .imageName(toImageName(title.getName()))
         .tier(title.getTier())
         .build();
-  }
-
-  private String resolveTitleImage(Title title) {
-    if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
-      return title.getImageUrl();
-    }
-    return imageService.resolveImage(title.getName(), ImageCategory.TITLE).url();
   }
 
   private RankedWrestlerDTO toRankedWrestlerDTO(@NonNull Wrestler wrestler, int rank) {
@@ -327,5 +305,9 @@ public class RankingService {
         .championshipName(reign.getTitle().getName())
         .championshipTier(reign.getTitle().getTier().getDisplayWithEmoji())
         .build();
+  }
+
+  private String toImageName(@NonNull String name) {
+    return name.toLowerCase().replaceAll("\\s+", "-") + ".png";
   }
 }

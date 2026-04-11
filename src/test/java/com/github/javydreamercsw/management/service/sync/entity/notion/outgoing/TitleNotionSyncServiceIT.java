@@ -17,105 +17,176 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
+import dev.failsafe.FailsafeException;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.request.pages.CreatePageRequest;
+import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "test.mock.notion-handler=false")
 class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleNotionSyncService titleNotionSyncService;
-
-  @MockitoBean private NotionHandler notionHandler;
-
-  @Mock private NotionClient notionClient;
-  @Mock private Page newPage;
-
-  @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
-  @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
+  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private NotionHandler notionHandler;
 
   @BeforeEach
-  public void setup() {
+  void setUp() {
     clearAllRepositories();
   }
 
   @Test
   void testSyncToNotion() {
-    when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
+    Title title = null;
+    Wrestler testChampion = null;
+    Wrestler testContender = null;
+    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
+    if (clientOptional.isEmpty()) {
+      Assertions.fail("Unable to create Notion client, skipping test.");
+    }
+    try (NotionClient client = clientOptional.get()) {
+      testChampion = createTestWrestler("Test Champion " + UUID.randomUUID());
+      wrestlerRepository.save(testChampion);
 
-    String newPageId = UUID.randomUUID().toString();
-    when(newPage.getId()).thenReturn(newPageId);
+      testContender = createTestWrestler("Test Contender " + UUID.randomUUID());
+      wrestlerRepository.save(testContender);
 
-    when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
-    when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
-    when(notionHandler.getDatabaseId("Championships")).thenReturn("test-db-id");
-    when(notionHandler.executeWithRetry(any()))
-        .thenAnswer(
-            (Answer<Page>)
-                invocation -> {
-                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
-                  return supplier.get();
-                });
+      // Sync dependencies to Notion to get external IDs
+      wrestlerNotionSyncService.syncToNotion(
+          "test-prep-wrestlers", List.of(testChampion.getId(), testContender.getId()));
+      testChampion = wrestlerRepository.findById(testChampion.getId()).get();
+      testContender = wrestlerRepository.findById(testContender.getId()).get();
 
-    // Create a new Title
-    Title title = new Title();
-    title.setName("Test Title " + UUID.randomUUID());
-    title.setChampionshipType(ChampionshipType.SINGLE);
-    title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
-    title.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
-    titleRepository.save(title);
+      // Create a new Title
+      title = new Title();
+      title.setName("World Championship " + UUID.randomUUID());
+      title.setDescription("The most prestigious title");
+      title.setTier(WrestlerTier.MAIN_EVENTER);
+      title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+      title.setChampionshipType(
+          com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
+      title.setIsActive(true);
+      title.awardTitleTo(List.of(testChampion), Instant.now());
+      title.addChallenger(testContender);
+      titleRepository.save(title);
 
-    // Sync to Notion for the first time
-    titleNotionSyncService.syncToNotion("test-op-1");
+      // Sync to Notion for the first time
+      titleNotionSyncService.syncToNotion("test-op-1", List.of(title.getId()));
 
-    // Verify that the externalId and lastSync fields are updated
-    assertNotNull(title.getId());
-    Title updatedTitle = titleRepository.findById(title.getId()).get();
-    assertNotNull(updatedTitle.getExternalId());
-    assertEquals(newPageId, updatedTitle.getExternalId());
-    assertNotNull(updatedTitle.getLastSync());
+      // Verify that the externalId and lastSync fields are updated
+      assertNotNull(title.getId());
+      Title updatedTitle = titleRepository.findById(title.getId()).get();
+      assertNotNull(updatedTitle.getExternalId());
+      assertNotNull(updatedTitle.getLastSync());
 
-    // Verify properties sent to Notion
-    Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
-    CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
-    assertEquals(
-        title.getName(),
-        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+      // Retrieve the page from Notion and verify properties
+      Page page =
+          notionHandler.executeWithRetry(
+              () -> client.retrievePage(updatedTitle.getExternalId(), Collections.emptyList()));
+      Map<String, PageProperty> props = page.getProperties();
+      assertEquals(
+          updatedTitle.getName(),
+          Objects.requireNonNull(
+                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
+              .getContent());
+      assertEquals(
+          WrestlerTier.MAIN_EVENTER.getDisplayName(),
+          Objects.requireNonNull(props.get("Tier").getSelect()).getName());
+      assertEquals(
+          com.github.javydreamercsw.base.domain.wrestler.Gender.MALE.name(),
+          Objects.requireNonNull(props.get("Gender").getSelect()).getName().toUpperCase());
+      assertTrue(Objects.requireNonNull(props.get("Active").getCheckbox()));
+      assertNotNull(props.get("Current Champion").getRelation());
+      assertFalse(props.get("Current Champion").getRelation().isEmpty());
+      assertEquals(
+          testChampion.getExternalId(), props.get("Current Champion").getRelation().get(0).getId());
+      assertNotNull(props.get("#1 Contender").getRelation());
+      assertFalse(props.get("#1 Contender").getRelation().isEmpty());
+      assertEquals(
+          testContender.getExternalId(), props.get("#1 Contender").getRelation().get(0).getId());
 
-    // Sync to Notion again with updates
-    updatedTitle.setName("Test Title Updated " + UUID.randomUUID());
-    titleRepository.save(updatedTitle);
-    titleNotionSyncService.syncToNotion("test-op-2");
-    Title updatedTitle2 = titleRepository.findById(title.getId()).get();
-    assertTrue(updatedTitle2.getLastSync().isAfter(updatedTitle.getLastSync()));
+      // Sync to Notion again with updates
+      updatedTitle.setName("Unified World Championship " + UUID.randomUUID());
+      updatedTitle.setDescription("The undisputed title");
+      updatedTitle.setTier(WrestlerTier.ICON);
+      updatedTitle.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
+      updatedTitle.setIsActive(false);
+      updatedTitle.vacateTitle(Instant.now()); // Vacate title
+      titleRepository.save(updatedTitle);
+      titleNotionSyncService.syncToNotion("test-op-2", List.of(title.getId()));
+      Title updatedTitle2 = titleRepository.findById(title.getId()).get();
+      assertTrue(updatedTitle2.getLastSync().isAfter(updatedTitle.getLastSync()));
 
-    // Verify updated properties sent to Notion
-    Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
-    UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
-    assertEquals(
-        updatedTitle2.getName(),
-        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+      // Verify updated properties
+      page =
+          notionHandler.executeWithRetry(
+              () -> client.retrievePage(updatedTitle.getExternalId(), Collections.emptyList()));
+      props = page.getProperties();
+      assertEquals(
+          updatedTitle2.getName(),
+          Objects.requireNonNull(
+                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
+              .getContent());
+      assertEquals(
+          WrestlerTier.ICON.getDisplayName(),
+          Objects.requireNonNull(props.get("Tier").getSelect()).getName());
+      assertEquals(
+          com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE.name(),
+          Objects.requireNonNull(props.get("Gender").getSelect()).getName().toUpperCase());
+      assertFalse(Objects.requireNonNull(props.get("Active").getCheckbox()));
+      // Champion relation should be empty if vacated
+      assertTrue(props.get("Current Champion").getRelation().isEmpty());
+
+    } finally {
+      if (title != null && title.getExternalId() != null) {
+        // Clean up
+        try (NotionClient client = clientOptional.get()) {
+          UpdatePageRequest request =
+              new UpdatePageRequest(title.getExternalId(), new HashMap<>(), true, null, null);
+          notionHandler.executeWithRetry(() -> client.updatePage(request));
+        } catch (FailsafeException e) {
+          // Ignore timeout on cleanup
+        }
+      }
+      if (title != null && title.getId() != null) {
+        titleRepository.delete(title);
+      }
+      if (testChampion != null && testChampion.getId() != null) {
+        wrestlerRepository.delete(testChampion);
+      }
+      if (testContender != null && testContender.getId() != null) {
+        wrestlerRepository.delete(testContender);
+      }
+    }
   }
 }

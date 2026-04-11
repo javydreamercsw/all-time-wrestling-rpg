@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
-import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -39,7 +38,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -47,7 +45,6 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
@@ -124,11 +121,6 @@ public class ShowDetailView extends Main
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final LeagueRepository leagueRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
-  private final RingsideActionService ringsideActionService;
-  private final ArenaService arenaService;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -155,11 +147,7 @@ public class ShowDetailView extends Main
       ShowController showController,
       MatchFulfillmentRepository matchFulfillmentRepository,
       LeagueRepository leagueRepository,
-      CommentaryTeamRepository commentaryTeamRepository,
-      RingsideActionService ringsideActionService,
-      ArenaService arenaService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService) {
+      CommentaryTeamRepository commentaryTeamRepository) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -178,9 +166,6 @@ public class ShowDetailView extends Main
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.leagueRepository = leagueRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
-    this.ringsideActionService = ringsideActionService;
-    this.arenaService = arenaService;
-    this.relationshipService = relationshipService;
     initializeComponents();
   }
 
@@ -269,7 +254,6 @@ public class ShowDetailView extends Main
     } else {
       showNotFound();
     }
-    refreshSegmentsGrid();
   }
 
   private void displayShow(@NonNull Show show) {
@@ -315,7 +299,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  loadShow(currentShowId);
+                  refreshSegmentsGrid();
                 }
               });
           dialog.open();
@@ -340,23 +324,23 @@ public class ShowDetailView extends Main
           LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
     }
 
-    Image showImage = new Image();
-    if (show.getTemplate() != null) {
-      showImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
-    } else if (show.getArena() != null) {
-      showImage.setSrc(arenaService.resolveArenaImage(show.getArena()));
+    Image templateImage = new Image();
+    if (show.getTemplate() != null
+        && show.getTemplate().getImageUrl() != null
+        && !show.getTemplate().getImageUrl().isEmpty()) {
+      templateImage.setSrc(show.getTemplate().getImageUrl());
     } else {
-      showImage.setSrc("images/generic-show.png");
+      templateImage.setSrc("https://via.placeholder.com/150");
     }
-    showImage.setHeight("100px");
-    showImage.setWidth("100px");
-    showImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Right.MEDIUM);
+    templateImage.setHeight("100px");
+    templateImage.setWidth("100px");
+    templateImage.addClassNames(LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Right.MEDIUM);
 
     VerticalLayout titleInfo = new VerticalLayout(title, typeBadge);
     titleInfo.setSpacing(false);
     titleInfo.setPadding(false);
 
-    HorizontalLayout titleLayout = new HorizontalLayout(showImage, titleInfo, editNameButton);
+    HorizontalLayout titleLayout = new HorizontalLayout(templateImage, titleInfo, editNameButton);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
 
@@ -420,22 +404,6 @@ public class ShowDetailView extends Main
                 : "No commentary team assigned");
     detailsLayout.add(commentaryLayout);
 
-    // Arena
-    HorizontalLayout arenaLayout =
-        createDetailRow(
-            "Arena:",
-            show.getArena() != null
-                ? show.getArena().getName()
-                    + " ("
-                    + show.getArena().getLocation().getName()
-                    + ", Capacity: "
-                    + show.getArena().getCapacity()
-                    + ", Bias: "
-                    + show.getArena().getAlignmentBias().getDisplayName()
-                    + ")"
-                : "No arena assigned");
-    detailsLayout.add(arenaLayout);
-
     // Show ID
     assert show.getId() != null;
     HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());
@@ -486,12 +454,11 @@ public class ShowDetailView extends Main
                   showTemplateService,
                   leagueRepository,
                   commentaryTeamRepository,
-                  arenaService,
                   show);
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  loadShow(currentShowId);
+                  refreshSegmentsGrid();
                 }
               });
           dialog.open();
@@ -832,9 +799,7 @@ public class ShowDetailView extends Main
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   segmentNarrationController,
-                  segmentNarrationServiceFactory,
-                  ringsideActionService,
-                  relationshipService);
+                  segmentNarrationServiceFactory);
           dialog.open();
         });
 
@@ -909,16 +874,6 @@ public class ShowDetailView extends Main
     rulesCombo.setWidthFull();
     rulesCombo.setId("segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
-
-    // Referee selection
-    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
-    refereeCombo.setItems(
-        npcService.findAllByType("Referee").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
-    refereeCombo.setItemLabelGenerator(Npc::getName);
-    refereeCombo.setWidthFull();
-    refereeCombo.setId("add-referee-combo-box");
 
     // Alignment and Gender Filters
     ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
@@ -1015,7 +970,6 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
-        refereeCombo,
         alignmentFilter,
         genderFilter,
         wrestlersCombo,
@@ -1049,7 +1003,6 @@ public class ShowDetailView extends Main
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
               newSegment.setSegmentType(segmentTypeCombo.getValue());
               newSegment.setWinners(new ArrayList<>(winners));
-              newSegment.setReferee(refereeCombo.getValue());
 
               // If it's a title segment, set the selected titles
               if (isTitleSegment) {
@@ -1121,17 +1074,6 @@ public class ShowDetailView extends Main
     rulesCombo.setValue(segment.getSegmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
-
-    // Referee selection
-    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
-    refereeCombo.setItems(
-        npcService.findAllByType("Referee").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
-    refereeCombo.setItemLabelGenerator(Npc::getName);
-    refereeCombo.setWidthFull();
-    refereeCombo.setValue(segment.getReferee());
-    refereeCombo.setId("edit-referee-combo-box");
 
     // Alignment and Gender Filters
     ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
@@ -1239,7 +1181,6 @@ public class ShowDetailView extends Main
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
-        refereeCombo,
         alignmentFilter,
         genderFilter,
         wrestlersCombo,
@@ -1256,7 +1197,6 @@ public class ShowDetailView extends Main
             e -> {
               segment.setNarration(narrationArea.getValue());
               segment.setSummary(summaryArea.getValue());
-              segment.setReferee(refereeCombo.getValue());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
               segment.setIsTitleSegment(isTitleSegment);
