@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "wrestler-profile-wrestler-profile-redesign",
+    "category": "Wrestler Profile",
+    "title": "Modernized Wrestler Dashboard",
+    "description": "The redesigned wrestler profile features a prominent 'Hero' section with the wrestler's image, biography, and personal relationships always visible. Secondary information is organized into a clean, mobile-friendly accordion layout.",
+    "imagePath": "screenshots/wrestler-profile-redesign.png",
+    "order": 0
+  }, {
     "id": "general-manager-admin-gm-dashboard",
     "category": "General Manager",
     "title": "GM Dashboard",
