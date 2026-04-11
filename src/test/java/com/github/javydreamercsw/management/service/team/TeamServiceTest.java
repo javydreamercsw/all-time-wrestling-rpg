@@ -17,16 +17,12 @@
 package com.github.javydreamercsw.management.service.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.expansion.ExpansionService;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -36,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
@@ -48,7 +43,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 @DisplayName("TeamService Integration Tests")
 class TeamServiceTest extends ManagementIntegrationTest {
 
-  @MockitoSpyBean private ExpansionService expansionService;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private Wrestler wrestler3;
@@ -57,52 +51,13 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @BeforeEach
   public void setUp() {
     clearAllRepositories();
-    wrestler1 = createTestWrestler("Wrestler 1");
-    wrestler1.setExpansionCode("BASE_GAME");
-    wrestler1 = wrestlerRepository.save(wrestler1);
-
-    wrestler2 = createTestWrestler("Wrestler 2");
-    wrestler2.setExpansionCode("BASE_GAME");
-    wrestler2 = wrestlerRepository.save(wrestler2);
-
-    wrestler3 = createTestWrestler("Wrestler 3");
-    wrestler3.setExpansionCode("BASE_GAME");
-    wrestler3 = wrestlerRepository.save(wrestler3);
+    wrestler1 = wrestlerRepository.save(createTestWrestler("Wrestler 1"));
+    wrestler2 = wrestlerRepository.save(createTestWrestler("Wrestler 2"));
+    wrestler3 = wrestlerRepository.save(createTestWrestler("Wrestler 3"));
 
     faction = Faction.builder().build();
     faction.setName("Test Faction");
     faction = factionRepository.save(faction);
-
-    // Default mock behavior
-    when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
-  }
-
-  @Test
-  @WithMockUser(
-      username = "admin",
-      roles = {"ADMIN"})
-  @DisplayName("Should filter active teams by enabled expansions")
-  void shouldFilterActiveTeamsByEnabledExpansions() {
-    // Given
-    wrestler3.setExpansionCode("EXTREME");
-    wrestler3 = wrestlerRepository.save(wrestler3);
-
-    teamService.createTeam("Base Team", "Desc", wrestler1.getId(), wrestler2.getId(), null, null);
-    teamService.createTeam("Mixed Team", "Desc", wrestler1.getId(), wrestler3.getId(), null, null);
-
-    // Case 1: Both expansions enabled
-    when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
-    List<Team> activeTeams = teamService.getActiveTeams();
-    assertThat(activeTeams).hasSize(2);
-
-    // Case 2: Only BASE_GAME enabled
-    when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(Collections.singletonList("BASE_GAME"));
-    activeTeams = teamService.getActiveTeams();
-    assertThat(activeTeams).hasSize(1);
-    assertThat(activeTeams.get(0).getName()).isEqualTo("Base Team");
   }
 
   @Test

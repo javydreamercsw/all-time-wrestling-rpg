@@ -10,16 +10,4 @@
   "description": "",
   "gender": "MALE",
   "championshipType": "TEAM"
-}, {
-  "name": "ATW Women's",
-  "tier": "MAIN_EVENTER",
-  "description": "",
-  "gender": "FEMALE",
-  "championshipType": "SINGLE"
-}, {
-  "name": "WOW Women's",
-  "tier": "MAIN_EVENTER",
-  "description": "",
-  "gender": "FEMALE",
-  "championshipType": "SINGLE"
 } ]

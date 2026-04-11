@@ -28,5 +28,5 @@ public interface NpcRepository extends JpaRepository<Npc, Long> {
 
   Optional<Npc> findByName(String name);
 
-  Optional<Npc> findByExternalId(String externalId);
+  Npc findByExternalId(String externalId);
 }

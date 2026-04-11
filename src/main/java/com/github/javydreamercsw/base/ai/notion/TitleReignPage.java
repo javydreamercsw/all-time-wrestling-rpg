@@ -16,9 +16,6 @@
 */
 package com.github.javydreamercsw.base.ai.notion;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,66 +24,62 @@ import lombok.Setter;
 public class TitleReignPage extends NotionPage {
 
   public String getTitleRelationId() {
-    return extractRelationId("Title");
-  }
-
-  public List<String> getChampionRelationIds() {
-    return extractRelationIds("Champion");
-  }
-
-  public String getWonAtSegmentRelationId() {
-    return extractRelationId("Won at Segment");
-  }
-
-  public String getStartDate() {
-    return extractPropertyAsString("Start Date");
-  }
-
-  public String getEndDate() {
-    return extractPropertyAsString("End Date");
-  }
-
-  public Integer getReignNumber() {
-    Object prop = getRawProperties() != null ? getRawProperties().get("Reign Number") : null;
-    return prop instanceof Number ? ((Number) prop).intValue() : null;
-  }
-
-  public String getNotes() {
-    return extractPropertyAsString("Notes");
-  }
-
-  private String extractPropertyAsString(String name) {
-    if (getRawProperties() != null && getRawProperties().containsKey(name)) {
-      Object prop = getRawProperties().get(name);
-      if (prop instanceof String) {
-        return (String) prop;
+    if (getRawProperties() != null && getRawProperties().containsKey("Title")) {
+      Object titleProp = getRawProperties().get("Title");
+      if (titleProp instanceof String) {
+        return (String) titleProp;
       }
     }
     return null;
   }
 
-  private String extractRelationId(String name) {
-    List<String> ids = extractRelationIds(name);
-    return ids.isEmpty() ? null : ids.get(0);
-  }
-
-  private List<String> extractRelationIds(String name) {
-    List<String> ids = new ArrayList<>();
-    if (getRawProperties() != null && getRawProperties().containsKey(name)) {
-      Object prop = getRawProperties().get(name);
-      if (prop instanceof List<?> list) {
-        for (Object item : list) {
-          if (item instanceof String str) {
-            ids.add(str);
-          } else if (item instanceof Map<?, ?> map) {
-            Object id = map.get("id");
-            if (id instanceof String str) ids.add(str);
-          }
-        }
-      } else if (prop instanceof String str) {
-        ids.add(str);
+  public String getChampionRelationId() {
+    if (getRawProperties() != null && getRawProperties().containsKey("Champion")) {
+      Object championProp = getRawProperties().get("Champion");
+      if (championProp instanceof String) {
+        return (String) championProp;
       }
     }
-    return ids;
+    return null;
+  }
+
+  public String getStartDate() {
+    if (getRawProperties() != null && getRawProperties().containsKey("Start Date")) {
+      Object dateProp = getRawProperties().get("Start Date");
+      if (dateProp instanceof String) {
+        return (String) dateProp;
+      }
+    }
+    return null;
+  }
+
+  public String getEndDate() {
+    if (getRawProperties() != null && getRawProperties().containsKey("End Date")) {
+      Object dateProp = getRawProperties().get("End Date");
+      if (dateProp instanceof String) {
+        return (String) dateProp;
+      }
+    }
+    return null;
+  }
+
+  public Integer getReignNumber() {
+    if (getRawProperties() != null && getRawProperties().containsKey("Reign Number")) {
+      Object numberProp = getRawProperties().get("Reign Number");
+      if (numberProp instanceof Integer) {
+        return (Integer) numberProp;
+      }
+    }
+    return null;
+  }
+
+  public String getNotes() {
+    if (getRawProperties() != null && getRawProperties().containsKey("Notes")) {
+      Object notesProp = getRawProperties().get("Notes");
+      if (notesProp instanceof String) {
+        return (String) notesProp;
+      }
+    }
+    return null;
   }
 }

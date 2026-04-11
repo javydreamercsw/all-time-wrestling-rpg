@@ -22,9 +22,9 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,7 +32,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /** A utility class for general security-related operations. */
-@Slf4j
 public final class GeneralSecurityUtils {
 
   private GeneralSecurityUtils() {
@@ -46,7 +45,7 @@ public final class GeneralSecurityUtils {
    * @param supplier The supplier to run.
    * @return The result of the supplier.
    */
-  public static <T> T runAsAdmin(@NonNull Supplier<T> supplier) {
+  public static <T> T runAsAdmin(Supplier<T> supplier) {
     return runAs(supplier, "admin", "password", "ADMIN");
   }
 
@@ -59,27 +58,8 @@ public final class GeneralSecurityUtils {
             });
   }
 
-  /**
-   * Runs the given {@link Supplier} with the provided {@link SecurityContext}.
-   *
-   * @param <T> The type of the result.
-   * @param context The security context to use.
-   * @param supplier The supplier to run.
-   * @return The result of the supplier.
-   */
-  public static <T> T runWithContext(
-      @NonNull SecurityContext context, @NonNull Supplier<T> supplier) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
-    try {
-      SecurityContextHolder.setContext(context);
-      return supplier.get();
-    } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        SecurityContextHolder.setContext(originalContext);
-      } else {
-        SecurityContextHolder.clearContext();
-      }
-    }
+  public static <T> T runAsAdmin(@NonNull Callable<T> callable) {
+    return runAsAdmin((Callable<T>) () -> callable.call());
   }
 
   /**
@@ -90,7 +70,7 @@ public final class GeneralSecurityUtils {
    * @return The result of the supplier.
    */
   public static <T> T runAs(
-      @NonNull Supplier<T> supplier,
+      Supplier<T> supplier,
       @NonNull String username,
       @NonNull String password,
       @NonNull String role) {
@@ -100,60 +80,27 @@ public final class GeneralSecurityUtils {
 
       // Create a mock account and role for the principal
       Account account = new Account(username, password, username + "@example.com");
-      // Set ID to 1L to match WithCustomMockUserSecurityContextFactory
-      account.setId(1L);
       try {
         RoleName roleName = RoleName.valueOf(role);
         Role r = new Role(roleName, roleName.name() + " role");
-        r.setId((long) roleName.ordinal() + 100);
         account.setRoles(Collections.singleton(r));
       } catch (IllegalArgumentException e) {
-        log.warn("Invalid role provided: {}", role);
+        // Fallback for custom roles not in enum if needed, or just skip
       }
 
       CustomUserDetails userDetails = new CustomUserDetails(account, null);
 
-      // Spring Security 6 works best when authorities are consistent with UserDetails
       List<SimpleGrantedAuthority> authorities = new ArrayList<>();
       authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      // Add the raw role as well for compatibility with different annotation styles
       authorities.add(new SimpleGrantedAuthority(role));
 
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
-
-      log.info(
-          "Setting SecurityContext for user '{}' with role '{}' in thread '{}'",
-          username,
-          role,
-          Thread.currentThread().getName());
       SecurityContextHolder.setContext(context);
-
-      // Verification log to catch immediate failure
-      Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-      if (currentAuth == null) {
-        log.error(
-            "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
-            username,
-            Thread.currentThread().getName());
-      } else {
-        log.info(
-            "SecurityContext successfully set for '{}' with authorities: {}",
-            username,
-            currentAuth.getAuthorities());
-      }
-
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        log.info(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.setContext(originalContext);
-      } else {
-        log.info("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.clearContext();
-      }
+      SecurityContextHolder.setContext(originalContext);
     }
   }
 }

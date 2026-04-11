@@ -46,8 +46,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
-import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
-import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -79,8 +77,6 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private StorylineDirectorService storylineDirectorService;
-  @Autowired private StorylineExportService storylineExportService;
 
   @Autowired
   private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
@@ -157,8 +153,7 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
             objectMapper,
             chapterService,
             titleService,
-            titleRepository,
-            storylineExportService);
+            titleRepository);
     UI.getCurrent().add(dashboard);
   }
 

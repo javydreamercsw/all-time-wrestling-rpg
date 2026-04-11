@@ -19,14 +19,12 @@ package com.github.javydreamercsw.management.test;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
-import com.github.javydreamercsw.base.security.WithCustomMockUser;
-import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
@@ -61,15 +59,16 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
-@Slf4j
-@WithCustomMockUser(roles = {"ADMIN"})
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestAIConfiguration.class, TestNotionConfiguration.class})
+@Import({TestSecurityConfig.class, TestNotionConfiguration.class})
+@Slf4j
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
@@ -132,9 +131,6 @@ public abstract class AbstractIntegrationTest {
 
   @Autowired protected com.github.javydreamercsw.management.DatabaseCleanup databaseCleanup;
   @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
 
   @Autowired
   protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
@@ -214,27 +210,24 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void cleanupLeagues() {
-    GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          log.info("Cleaning up database using DatabaseCleanup...");
-          databaseCleanup.clearRepositories();
+    log.info("Cleaning up database using DatabaseCleanup...");
+    databaseCleanup.clearRepositories();
 
-          if (cacheManager != null) {
-            log.info("Clearing all caches...");
-            cacheManager
-                .getCacheNames()
-                .forEach(
-                    cacheName -> {
-                      var cache = cacheManager.getCache(cacheName);
-                      if (cache != null) {
-                        cache.clear();
-                      }
-                    });
-          }
+    if (cacheManager != null) {
+      log.info("Clearing all caches...");
+      cacheManager
+          .getCacheNames()
+          .forEach(
+              cacheName -> {
+                var cache = cacheManager.getCache(cacheName);
+                if (cache != null) {
+                  cache.clear();
+                }
+              });
+    }
 
-          log.info("Re-initializing data using DataInitializer...");
-          dataInitializer.init();
-          log.info("Database reset complete.");
-        });
+    log.info("Re-initializing data using DataInitializer...");
+    dataInitializer.init();
+    log.info("Database reset complete.");
   }
 }

@@ -29,11 +29,8 @@ import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /** Service responsible for synchronizing seasons from Notion to the database. */
 @Service
@@ -41,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class SeasonSyncService extends BaseSyncService {
 
   @Autowired private SeasonService seasonService;
-  @Autowired @Lazy private SeasonSyncService self;
 
   public SeasonSyncService(
       ObjectMapper objectMapper,
@@ -50,7 +46,6 @@ public class SeasonSyncService extends BaseSyncService {
       NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.seasonService = seasonService;
-    this.self = this;
   }
 
   /**
@@ -209,14 +204,55 @@ public class SeasonSyncService extends BaseSyncService {
 
     for (SeasonDTO seasonDTO : seasonDTOs) {
       try {
-        Boolean result = self.processSingleSeason(seasonDTO);
-        if (result == null) {
-          skippedCount++;
-        } else if (result) {
-          savedCount++;
-        } else {
-          updatedCount++;
+        Season existingSeason = null;
+
+        // Find by external ID first
+        if (seasonDTO.getNotionId() != null && !seasonDTO.getNotionId().isBlank()) {
+          existingSeason = seasonService.findByExternalId(seasonDTO.getNotionId()).orElse(null);
         }
+
+        // If not found, find by name
+        if (existingSeason == null) {
+          existingSeason = seasonService.findByName(seasonDTO.getName());
+        }
+
+        if (existingSeason != null) {
+          boolean updated = false;
+          if (existingSeason.getExternalId() == null
+              || !existingSeason.getExternalId().equals(seasonDTO.getNotionId())) {
+            existingSeason.setExternalId(seasonDTO.getNotionId());
+            updated = true;
+          }
+          if (existingSeason.getName() == null
+              || !existingSeason.getName().equals(seasonDTO.getName())) {
+            existingSeason.setName(seasonDTO.getName());
+            updated = true;
+          }
+          if (existingSeason.getDescription() == null
+              || !existingSeason.getDescription().equals(seasonDTO.getDescription())) {
+            existingSeason.setDescription(seasonDTO.getDescription());
+            updated = true;
+          }
+
+          if (updated) {
+            seasonService.save(existingSeason);
+            updatedCount++;
+            log.info("Updating existing season: {}", seasonDTO.getName());
+          } else {
+            skippedCount++;
+          }
+        } else {
+          // Create new season
+          Season newSeason = new Season();
+          newSeason.setName(seasonDTO.getName());
+          newSeason.setDescription(seasonDTO.getDescription());
+          newSeason.setExternalId(seasonDTO.getNotionId());
+
+          seasonService.save(newSeason);
+          savedCount++;
+          log.info("Created new season: {}", seasonDTO.getName());
+        }
+
       } catch (Exception e) {
         log.error("Failed to save season '{}': {}", seasonDTO.getName(), e.getMessage(), e);
         skippedCount++;
@@ -229,63 +265,6 @@ public class SeasonSyncService extends BaseSyncService {
         updatedCount,
         skippedCount);
     return savedCount;
-  }
-
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Boolean processSingleSeason(SeasonDTO seasonDTO) {
-    try {
-      Season existingSeason = null;
-
-      // Find by external ID first
-      if (seasonDTO.getNotionId() != null && !seasonDTO.getNotionId().isBlank()) {
-        existingSeason = seasonService.findByExternalId(seasonDTO.getNotionId()).orElse(null);
-      }
-
-      // If not found, find by name
-      if (existingSeason == null) {
-        existingSeason = seasonService.findByName(seasonDTO.getName());
-      }
-
-      if (existingSeason != null) {
-        boolean updated = false;
-        if (existingSeason.getExternalId() == null
-            || !existingSeason.getExternalId().equals(seasonDTO.getNotionId())) {
-          existingSeason.setExternalId(seasonDTO.getNotionId());
-          updated = true;
-        }
-        if (existingSeason.getName() == null
-            || !existingSeason.getName().equals(seasonDTO.getName())) {
-          existingSeason.setName(seasonDTO.getName());
-          updated = true;
-        }
-        if (existingSeason.getDescription() == null
-            || !existingSeason.getDescription().equals(seasonDTO.getDescription())) {
-          existingSeason.setDescription(seasonDTO.getDescription());
-          updated = true;
-        }
-
-        if (updated) {
-          seasonService.save(existingSeason);
-          log.info("Updating existing season: {}", seasonDTO.getName());
-          return false; // updated
-        } else {
-          return null; // skipped
-        }
-      } else {
-        // Create new season
-        Season newSeason = new Season();
-        newSeason.setName(seasonDTO.getName());
-        newSeason.setDescription(seasonDTO.getDescription());
-        newSeason.setExternalId(seasonDTO.getNotionId());
-
-        seasonService.save(newSeason);
-        log.info("Created new season: {}", seasonDTO.getName());
-        return true; // created
-      }
-    } catch (Exception e) {
-      log.error("Failed to process single season: {}", seasonDTO.getName(), e);
-      throw e;
-    }
   }
 
   /** Creates a default season if no seasons exist in the database. */

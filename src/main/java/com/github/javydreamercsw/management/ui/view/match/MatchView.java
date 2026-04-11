@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.CommentatorCont
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
@@ -32,8 +31,6 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.world.Arena;
-import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
@@ -102,20 +99,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final PromoService promoService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final NarrationParserService narrationParserService;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideActionService
-      ringsideActionService;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideAiService
-      ringsideAiService;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
-  private final com.github.javydreamercsw.management.service.team.TeamService teamService;
 
   private Segment segment;
   private TextArea narrationArea;
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private CommentaryComponent commentaryComponent;
-  private DashboardCard narrationCard;
 
   @Autowired
   public MatchView(
@@ -131,13 +120,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       MatchFulfillmentService matchFulfillmentService,
       PromoService promoService,
       CommentaryTeamRepository commentaryTeamRepository,
-      NarrationParserService narrationParserService,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionService
-          ringsideActionService,
-      com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-          ringsideActionDataService,
-      com.github.javydreamercsw.management.service.team.TeamService teamService) {
+      NarrationParserService narrationParserService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -151,10 +134,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.promoService = promoService;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.narrationParserService = narrationParserService;
-    this.ringsideActionService = ringsideActionService;
-    this.ringsideAiService = ringsideAiService;
-    this.ringsideActionDataService = ringsideActionDataService;
-    this.teamService = teamService;
   }
 
   @Override
@@ -164,17 +143,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       String matchId = event.getRouteParameters().get("matchId").orElse(null);
       log.info("Entering MatchView for matchId: {}", matchId);
       if (matchId != null) {
-        Long id = Long.valueOf(matchId);
-        // Try finding as a fulfillment first to get full context
-        Optional<MatchFulfillment> fulfillment = matchFulfillmentRepository.findByIdWithDetails(id);
-        if (fulfillment.isPresent()) {
-          segment = fulfillment.get().getSegment();
-        } else {
-          // Fallback to direct segment lookup with all details
-          segment = segmentService.findByIdWithDetails(id).orElse(null);
-        }
-
-        if (segment != null) {
+        Optional<Segment> foundSegment = segmentService.findByIdWithShow(Long.valueOf(matchId));
+        if (foundSegment.isPresent()) {
+          segment = foundSegment.get();
           List<Wrestler> wrestlers = segment.getWrestlers();
           log.info(
               "Found segment: {} with {} wrestlers",
@@ -203,19 +174,20 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     buildHeader(playerWrestler);
 
-    boolean isPromo =
-        segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
-
     // Initialize narrationArea
-    narrationArea = new TextArea(isPromo ? "Promo Transcript" : "Match Story");
+    narrationArea = new TextArea("Match Story");
     narrationArea.setWidthFull();
     narrationArea.setMinHeight("200px");
-    narrationArea.setPlaceholder("The story will appear here...");
+    narrationArea.setPlaceholder("The story of the match will appear here...");
     narrationArea.setValue(segment.getNarration() == null ? "" : segment.getNarration());
     narrationArea.setId("narration-area");
 
-    buildMatchInterface(playerWrestler);
+    if (segment.getSegmentType() != null
+        && "Promo".equalsIgnoreCase(segment.getSegmentType().getName())) {
+      buildPromoInterface(playerWrestler);
+    } else {
+      buildMatchInterface(playerWrestler);
+    }
   }
 
   private void buildHeader(Wrestler playerWrestler) {
@@ -271,9 +243,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
   }
 
-  private void showInteractivePromoInterface(Wrestler playerWrestler) {
-    DashboardCard promoCard = new DashboardCard("Interactive Promo Chat");
-    promoCard.setId("interactive-promo-chat-card");
+  private void buildPromoInterface(Wrestler playerWrestler) {
+    DashboardCard promoCard = new DashboardCard("Interactive Promo");
     VerticalLayout promoLayout = new VerticalLayout();
     promoLayout.setPadding(false);
     promoLayout.setSpacing(true);
@@ -285,10 +256,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     // Populate existing narration if any
     if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+      // Simple parsing: assuming lines are separated by newlines
+      // In a real scenario, we might want structured data
       String[] lines = segment.getNarration().split("\n");
       List<MessageListItem> items = new ArrayList<>();
       for (String line : lines) {
         if (!line.isBlank()) {
+          // Determine user based on prefix if possible, else default
           items.add(new MessageListItem(line, java.time.Instant.now(), "History"));
         }
       }
@@ -309,6 +283,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           messageList.setItems(items);
 
           // Generate Retort
+          // Find opponent (anyone not the player)
           Wrestler opponent =
               segment.getWrestlers().stream()
                   .filter(w -> !w.equals(playerWrestler))
@@ -331,32 +306,23 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
             segment.setNarration(narrationArea.getValue());
             segmentService.updateSegment(segment);
-            UI.getCurrent().push();
           }
         });
 
-    Button closeChatBtn =
-        new Button(
-            "Close Chat Mode",
-            event -> {
-              remove(promoCard);
-              narrationCard.setVisible(true);
-              updateCommentaryDisplay();
-            });
-    closeChatBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-
-    promoLayout.add(messageList, messageInput, closeChatBtn);
+    promoLayout.add(messageList, messageInput);
     promoCard.add(promoLayout);
-
-    // Insert before narration card or at the end
     add(promoCard);
+
+    // Also add the Save Transcript button for manual saves/viewing
+    DashboardCard transcriptCard = new DashboardCard("Transcript");
+    transcriptCard.add(narrationArea);
+    Button saveButton = new Button("Save Transcript", event -> saveNarration());
+    saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+    transcriptCard.add(saveButton);
+    add(transcriptCard);
   }
 
   private void buildMatchInterface(Wrestler playerWrestler) {
-    boolean isPromo =
-        segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
-
     // Main Content Grid
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setWidthFull();
@@ -424,21 +390,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           });
     }
 
-    infoCard.add(new Span("Referee"));
-    if (segment.getReferee() != null) {
-      Span p = new Span("⚖️ " + segment.getReferee().getName());
-      p.addClassNames(FontSize.SMALL, FontWeight.BOLD, Margin.Left.MEDIUM);
-      infoCard.add(p);
-
-      Span awareness = new Span("Awareness: " + segment.getRefereeAwarenessLevel() + "%");
-      awareness.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Left.LARGE);
-      infoCard.add(awareness);
-    } else {
-      Span p = new Span("None assigned");
-      p.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Left.MEDIUM);
-      infoCard.add(p);
-    }
-
     infoCard.add(new Span("Titles Contested"));
     var titles = segment.getTitles();
     if (titles == null || titles.isEmpty()) {
@@ -456,61 +407,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           });
     }
     sideCol.add(infoCard);
-
-    // Ringside Actions Section
-    if (!isPromo) {
-      final com.github.javydreamercsw.management.ui.component.RingsideActionComponent[]
-          actionComponentWrapper =
-              new com.github.javydreamercsw.management.ui.component.RingsideActionComponent[1];
-
-      actionComponentWrapper[0] =
-          new com.github.javydreamercsw.management.ui.component.RingsideActionComponent(
-              ringsideActionService,
-              ringsideActionDataService,
-              segment,
-              playerWrestler,
-              (action, result) -> {
-                if (result.success()) {
-                  // Add action to feedback for next generation
-                  String currentFeedback = feedbackArea.getValue();
-                  if (currentFeedback == null) currentFeedback = "";
-                  feedbackArea.setValue(
-                      currentFeedback + "\nIncorporate successful " + action.getName() + ".");
-                }
-
-                // Chance for NPC opponent to retaliate if they have a manager or faction member
-                segment.getWrestlers().stream()
-                    .filter(w -> w != null && !w.equals(playerWrestler))
-                    .forEach(
-                        opponent -> {
-                          if (opponent.getManager() != null) {
-                            ringsideAiService
-                                .evaluateRingsideAction(segment, opponent.getManager(), opponent)
-                                .ifPresent(
-                                    npcResult -> {
-                                      Notification.show(
-                                              "Opponent Retaliation: " + npcResult.message())
-                                          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
-                                      if (npcResult.success()) {
-                                        String currentFeedback = feedbackArea.getValue();
-                                        feedbackArea.setValue(
-                                            (currentFeedback == null ? "" : currentFeedback)
-                                                + "\n"
-                                                + "Incorporate successful opponent ringside action:"
-                                                + " "
-                                                + npcResult.action().getName()
-                                                + ".");
-                                      }
-                                      // Update UI to reflect new awareness level
-                                      if (actionComponentWrapper[0] != null) {
-                                        actionComponentWrapper[0].updateUI();
-                                      }
-                                    });
-                          }
-                        });
-              });
-      sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
-    }
 
     // Winners Section
     DashboardCard winnersCard = new DashboardCard("Match Result");
@@ -544,30 +440,26 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     add(mainContent);
 
     // Full Width: Narration Section
-    narrationCard = new DashboardCard(isPromo ? "Promo Narration" : "Match Narration");
+    DashboardCard narrationCard = new DashboardCard("Match Narration");
     narrationCard.setMaxWidth("1200px");
     VerticalLayout narrationContent = new VerticalLayout();
     narrationContent.setPadding(false);
 
-    feedbackArea = new TextArea(isPromo ? "Promo Notes" : "Generation Feedback");
+    feedbackArea = new TextArea("Generation Feedback");
     feedbackArea.setWidthFull();
     feedbackArea.setPlaceholder(
-        isPromo
-            ? "Provide bullet points or a general idea of the promo content..."
-            : "Provide specific details about the match (key spots, ringside actions, etc.) to"
-                + " guide the AI...");
+        "Provide specific details about the match (key spots, interference, etc.) to guide the"
+            + " AI...");
     feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();
     narrationButtons.setWidthFull();
 
-    String generateLabel = isPromo ? "Auto-Generate Promo (AI)" : "Generate Match Narration (AI)";
-    Button aiGenerateButton = new Button(generateLabel, event -> generateAiNarration());
+    Button aiGenerateButton = new Button("Generate with Feedback", event -> generateAiNarration());
     aiGenerateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     aiGenerateButton.setId("ai-generate-narration-button");
 
-    Button saveButton =
-        new Button(isPromo ? "Save Transcript" : "Save Narration", event -> saveNarration());
+    Button saveButton = new Button("Save Narration", event -> saveNarration());
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.setId("save-narration-button");
 
@@ -601,67 +493,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (showGenerateButton) {
       narrationButtons.add(aiGenerateButton);
     }
-
-    Long currentAccountId = securityUtils.getCurrentAccountId().orElse(null);
-    Wrestler roleplayWrestler = playerWrestler;
-    if (roleplayWrestler == null && currentAccountId != null) {
-      roleplayWrestler =
-          segment.getWrestlers().stream()
-              .filter(
-                  w ->
-                      w != null
-                          && w.getAccount() != null
-                          && w.getAccount().getId().equals(currentAccountId))
-              .findFirst()
-              .orElse(null);
-    }
-
-    final Wrestler finalPlayerWrestler = roleplayWrestler;
-    boolean isPlayerParticipant = finalPlayerWrestler != null;
-
-    if (isPromo && isPlayerParticipant) {
-      // 1. Full Smart Promo (Hooks/Choices)
-      Button hooksBtn =
-          new Button(
-              "Use Smart Promo (Hooks)",
-              e -> {
-                Wrestler opponent =
-                    segment.getWrestlers().stream()
-                        .filter(w -> w != null && !w.getId().equals(finalPlayerWrestler.getId()))
-                        .findFirst()
-                        .orElse(null);
-
-                String route = "campaign/promo";
-                if (opponent != null) {
-                  route += "/" + opponent.getId();
-                }
-
-                java.util.Map<String, List<String>> params = new java.util.HashMap<>();
-                params.put("playerWrestler", List.of(finalPlayerWrestler.getId().toString()));
-                params.put("segment", List.of(segment.getId().toString()));
-
-                UI.getCurrent().navigate(route, new com.vaadin.flow.router.QueryParameters(params));
-              });
-      hooksBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-      hooksBtn.setId("go-smart-promo-hooks-button");
-      hooksBtn.setTooltipText(
-          "Switch to the choice-based Smart Promo system. Story progression only in Campaigns.");
-      narrationButtons.add(hooksBtn);
-
-      // 2. Interactive Chat (Free-form)
-      Button interactiveBtn =
-          new Button(
-              "Start Interactive Chat",
-              e -> {
-                narrationCard.setVisible(false);
-                showInteractivePromoInterface(finalPlayerWrestler);
-              });
-      interactiveBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-      interactiveBtn.setId("go-interactive-promo-button");
-      interactiveBtn.setTooltipText("Switch to real-time chat with AI opponent.");
-      narrationButtons.add(interactiveBtn);
-    }
-
     narrationButtons.add(saveButton);
 
     if (showGenerateButton) {
@@ -722,22 +553,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     Wrestler w = p.getWrestler();
                     wc.setName(w.getName());
                     wc.setDescription(w.getDescription());
-                    wc.setHailingFrom(w.getHeritageTag());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
-
-                    // Set manager/supporter context
-                    Object supporter = ringsideActionService.getBestSupporter(segment, w);
-                    if (supporter != null) {
-                      if (supporter
-                          instanceof com.github.javydreamercsw.management.domain.npc.Npc n) {
-                        wc.setManagerName(n.getName());
-                      } else if (supporter instanceof Wrestler other) {
-                        wc.setManagerName(other.getName());
-                      }
-                    }
-
                     return wc;
                   })
               .toList());
@@ -796,54 +614,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 .toList());
       }
 
-      // Venue Context
-      if (segment.getShow().getArena() != null) {
-        Arena arena = segment.getShow().getArena();
-        VenueContext vc = new VenueContext();
-        vc.setName(arena.getName());
-        vc.setDescription(arena.getDescription());
-        vc.setCapacity(arena.getCapacity());
-        vc.setAlignmentBias(arena.getAlignmentBias().getDisplayName());
-        vc.setEnvironmentalTraits(List.copyOf(arena.getEnvironmentalTraits()));
-        vc.setImageUrl(arena.getImageUrl());
-        vc.setAtmosphere("Electric and historic - where legends are made");
-        vc.setSignificance("A key venue in the All Time Wrestling circuit.");
-
-        if (arena.getLocation() != null) {
-          Location location = arena.getLocation();
-          vc.setLocation(location.getName());
-          vc.setCulturalTags(List.copyOf(location.getCulturalTags()));
-        }
-        context.setVenue(vc);
-      }
-
       String feedback = feedbackArea.getValue();
-      String segmentType = segment.getSegmentType().getName();
-      boolean isPromo = "Promo".equalsIgnoreCase(segmentType);
-
       String instructions =
-          "Narrate a compelling "
-              + (isPromo ? "wrestling promo transcript" : "wrestling match")
-              + " based on the provided wrestlers and rules. "
-              + (isPromo
-                  ? "The transcript should focus on the dialogue and character work of the"
-                      + " wrestlers involved, with occasional descriptive flair. Include some"
-                      + " reactions from the commentary team to ground it in the broadcast. "
-                  : "The match should be narrated as a conversation between the commentary team"
-                      + " members provided in the context. ")
-              + "Each commentator has a distinct persona (Alignment, Style, Catchphrase) that MUST"
-              + " be respected. Ensure the narration flows as dynamic dialogue, capturing their"
-              + " different perspectives. IMPORTANT: You MUST ONLY use the wrestlers, commentators"
-              + " and NPCs provided in the context. Do NOT invent new characters, announcers, or"
-              + " managers. Stick strictly to the All Time Wrestling roster provided.";
+          "Narrate a compelling wrestling match based on the provided wrestlers and rules. The"
+              + " match should be narrated as a conversation between the commentary team members"
+              + " provided in the context. Each commentator has a distinct persona (Alignment,"
+              + " Style, Catchphrase) that MUST be respected. Ensure the narration flows as dynamic"
+              + " dialogue, capturing their different perspectives on the match. IMPORTANT: You"
+              + " MUST ONLY use the wrestlers, commentators and NPCs provided in the context. Do"
+              + " NOT invent new characters, announcers, or managers. Stick strictly to the All"
+              + " Time Wrestling roster provided.";
 
       if (feedback != null && !feedback.isBlank()) {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
-      }
-
-      if (segment.getReferee() != null) {
-        instructions +=
-            "\n\nThe assigned referee for this match is: " + segment.getReferee().getName() + ".";
       }
 
       context.setInstructions(instructions);
@@ -851,19 +634,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
 
       if (generated != null && !generated.isEmpty()) {
-        getUI()
-            .ifPresent(
-                ui ->
-                    ui.access(
-                        () -> {
-                          narrationArea.setValue(generated);
-                          segment.setNarration(generated);
-                          segmentService.updateSegment(segment);
-                          updateCommentaryDisplay();
-                          Notification.show("Narration generated!")
-                              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                          ui.push();
-                        }));
+        narrationArea.setValue(generated);
+        segment.setNarration(generated);
+        segmentService.updateSegment(segment);
+        updateCommentaryDisplay();
+        Notification.show("Narration generated!")
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
     } catch (Exception e) {
       log.error("Failed to generate AI narration", e);

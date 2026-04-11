@@ -35,14 +35,13 @@ public enum SyncEntityType {
   TEMPLATES("Templates", "ShowTemplate"),
   SEASONS("Seasons", "Season"),
   SHOW_TYPES("Show-types", "ShowType"),
-  INJURY_TYPES("Injury Types", "InjuryType"),
+  INJURY_TYPES("Injuries", "InjuryType"),
   NPCS("Npcs", "Npc"),
   TITLES("Titles", "Title"),
   RIVALRIES("Rivalries", "Rivalry"),
   FACTION_RIVALRIES("Faction-rivalries", "FactionRivalry"),
   SEGMENTS("Segments", "Segment"),
-  TITLE_REIGN("Title-reigns", "TitleReign"),
-  INJURIES("Injuries", "Injury");
+  TITLE_REIGN("Title-reigns", "TitleReign");
 
   /** The string key used for configuration and logging */
   private final String key;

@@ -71,7 +71,6 @@ public class ShowPlanningService {
   private final WrestlerService wrestlerService;
   private final FactionService factionService;
   private final SegmentRuleRepository segmentRuleRepository;
-  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
@@ -260,10 +259,6 @@ public class ShowPlanningService {
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
         segment.setTitles(proposedSegment.getTitles());
-      }
-
-      if (proposedSegment.getRefereeName() != null) {
-        segment.setReferee(npcService.findByName(proposedSegment.getRefereeName()));
       }
 
       // First, clear existing participants if any, to re-sync

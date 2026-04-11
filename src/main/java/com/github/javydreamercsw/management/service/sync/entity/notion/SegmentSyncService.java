@@ -37,8 +37,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,8 +50,6 @@ public class SegmentSyncService extends BaseSyncService {
   private final WrestlerService wrestlerService;
   private final SegmentTypeService segmentTypeService;
   private final ShowSyncService showSyncService;
-
-  @Autowired @Lazy private SegmentSyncService self;
 
   public SegmentSyncService(
       ObjectMapper objectMapper,
@@ -70,9 +66,9 @@ public class SegmentSyncService extends BaseSyncService {
     this.wrestlerService = wrestlerService;
     this.segmentTypeService = segmentTypeService;
     this.showSyncService = showSyncService;
-    this.self = this;
   }
 
+  @Transactional
   public SyncResult syncSegments(@NonNull String operationId) {
     log.info("🤼 Starting segments synchronization from Notion with operation ID: {}", operationId);
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segments Sync", 4);
@@ -302,7 +298,7 @@ public class SegmentSyncService extends BaseSyncService {
     int savedCount = 0;
     for (SegmentDTO segmentDTO : segmentDTOs) {
       try {
-        if (self.processSingleSegment(segmentDTO, messageConsumer)) {
+        if (processSingleSegment(segmentDTO, messageConsumer)) {
           savedCount++;
         }
       } catch (Exception e) {
@@ -316,12 +312,12 @@ public class SegmentSyncService extends BaseSyncService {
     return savedCount;
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @org.springframework.transaction.annotation.Transactional(
+      propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(@NonNull SegmentDTO segmentDTO) {
-    return self.processSingleSegment(segmentDTO, (msg) -> {});
+    return processSingleSegment(segmentDTO, (msg) -> {});
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(
       @NonNull SegmentDTO segmentDTO, Consumer<String> messageConsumer) {
     try {
@@ -410,24 +406,14 @@ public class SegmentSyncService extends BaseSyncService {
       segment.syncParticipants(participants);
 
       if (!winners.isEmpty()) {
-        List<Wrestler> currentWinners = segment.getWinners();
-        if (!new java.util.HashSet<>(currentWinners).equals(new java.util.HashSet<>(winners))) {
-          segment.setWinners(winners);
-        }
+        segment.setWinners(winners);
       }
 
-      if (segmentDTO.getSegmentDate() != null
-          && !segmentDTO.getSegmentDate().equals(segment.getSegmentDate())) {
-        segment.setSegmentDate(segmentDTO.getSegmentDate());
-      }
+      segment.setSegmentDate(segmentDTO.getSegmentDate());
 
-      if (segmentDTO.getNarration() != null
-          && !segmentDTO.getNarration().equals(segment.getNarration())) {
-        segment.setNarration(segmentDTO.getNarration());
-      }
+      segment.setNarration(segmentDTO.getNarration());
 
       segmentService.updateSegment(segment);
-
       return true;
     } catch (Exception e) {
       String msg =

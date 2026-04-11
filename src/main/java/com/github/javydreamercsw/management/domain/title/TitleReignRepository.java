@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,6 +31,4 @@ public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
   Optional<TitleReign> findByTitleAndReignNumber(Title title, Integer reignNumber);
 
   Optional<TitleReign> findByExternalId(String externalId);
-
-  List<TitleReign> findByChampionsContaining(Wrestler wrestler);
 }

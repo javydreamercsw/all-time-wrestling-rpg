@@ -30,10 +30,7 @@ import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
-import com.github.javydreamercsw.management.domain.npc.NpcRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -53,7 +50,6 @@ import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
-import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +74,6 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private TitleSyncService titleSyncService;
   @Mock private TitleReignSyncService titleReignSyncService;
   @Mock private InjuryTypeSyncService injuryTypeSyncService;
-  @Mock private InjurySyncService injurySyncService;
   @Mock private NpcSyncService npcSyncService;
   @Mock private SegmentSyncService segmentSyncService;
   @Mock private RivalrySyncService rivalrySyncService;
@@ -95,7 +90,6 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
   @Mock private SyncSessionManager syncSessionManager;
-  @Mock private SyncLockService syncLockService;
   private SyncServiceDependencies syncServiceDependencies; // No longer a mock
   @Mock private RetryService retryService;
   @Mock private CircuitBreakerService circuitBreakerService;
@@ -105,14 +99,11 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private EntitySyncConfiguration entitySyncConfig;
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private InjuryRepository injuryRepository;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private ShowTypeRepository showTypeRepository;
   @Mock private TeamRepository teamRepository;
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private TitleRepository titleRepository;
-  @Mock private NpcRepository npcRepository;
-  @Mock private SegmentRepository segmentRepository;
   @Mock private NotionSyncServicesManager notionSyncServicesManager;
   @Mock private NotionApiExecutor notionApiExecutor;
   @Mock private NotionPageDataExtractor notionPageDataExtractor;
@@ -142,21 +133,13 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             notionHandler,
             notionPageDataExtractor,
             syncSessionManager,
-            syncLockService,
             factionRepository,
             wrestlerRepository,
-            injuryRepository,
             injuryTypeRepository,
-            seasonRepository,
-            rivalryRepository,
-            showRepository,
-            showTemplateRepository,
             showTypeRepository,
             teamRepository,
             titleReignRepository,
-            titleRepository,
-            npcRepository,
-            segmentRepository);
+            titleRepository);
     when(syncProperties.getParallelThreads()).thenReturn(1);
     when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
 
@@ -172,7 +155,6 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
     when(notionSyncServicesManager.getTitleReignSyncService()).thenReturn(titleReignSyncService);
     when(notionSyncServicesManager.getInjuryTypeSyncService()).thenReturn(injuryTypeSyncService);
-    when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
     when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
     when(notionSyncServicesManager.getSegmentSyncService()).thenReturn(segmentSyncService);
     when(notionSyncServicesManager.getRivalrySyncService()).thenReturn(rivalrySyncService);
@@ -331,26 +313,6 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     assertNotNull(result, "Sync result should not be null");
     assertThat(result).isEqualTo(expectedResult);
     verify(injuryTypeSyncService, times(1)).syncInjuryTypes(anyString());
-  }
-
-  @Test
-  @DisplayName("Should sync injuries from Notion to database")
-  void shouldSyncInjuriesFromNotionToDatabase() {
-    log.info("🏥 Testing injuries sync from Notion to database");
-
-    // Given
-    BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success(SyncEntityType.INJURIES.getKey(), 1, 0, 0);
-    when(injurySyncService.syncInjuries(anyString())).thenReturn(expectedResult);
-
-    // When - Sync injuries from Notion
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuries("integration-test-injuries", SyncDirection.INBOUND);
-
-    // Then - Verify sync result
-    assertNotNull(result, "Sync result should not be null");
-    assertThat(result).isEqualTo(expectedResult);
-    verify(injurySyncService, times(1)).syncInjuries(anyString());
   }
 
   @Test

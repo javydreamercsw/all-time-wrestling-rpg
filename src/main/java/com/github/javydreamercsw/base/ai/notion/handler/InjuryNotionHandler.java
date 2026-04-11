@@ -39,28 +39,15 @@ public class InjuryNotionHandler {
    * @return List of all InjuryPage objects from the Injuries database
    */
   public List<InjuryPage> loadAllInjuries() {
-    return loadAllFromDatabase("Injuries", "Injury");
-  }
-
-  /**
-   * Loads all injury types from the Notion Injury Types database.
-   *
-   * @return List of all InjuryPage objects from the Injury Types database
-   */
-  public List<InjuryPage> loadAllInjuryTypes() {
-    return loadAllFromDatabase("Injury Types", "Injury Type");
-  }
-
-  private List<InjuryPage> loadAllFromDatabase(String databaseName, String entityName) {
-    log.debug("Loading all {} from {} database", entityName, databaseName);
+    log.debug("Loading all injuries from Injuries database");
 
     if (!notionHandler.isNotionTokenAvailable()) {
       throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
     }
 
-    String dbId = notionHandler.getDatabaseId(databaseName);
-    if (dbId == null) {
-      log.warn("{} database not found in workspace", databaseName);
+    String injuryDbId = notionHandler.getDatabaseId("Injuries");
+    if (injuryDbId == null) {
+      log.warn("Injuries database not found in workspace");
       return new ArrayList<>();
     }
 
@@ -70,11 +57,11 @@ public class InjuryNotionHandler {
             client -> {
               try {
                 return notionHandler.loadAllEntitiesFromDatabase(
-                    client, dbId, entityName, this::mapPageToInjuryPage);
+                    client, injuryDbId, "Injury", this::mapPageToInjuryPage);
               } catch (Exception e) {
-                log.error("Failed to load all {}", entityName, e);
+                log.error("Failed to load all injuries", e);
                 throw new RuntimeException(
-                    "Failed to load " + entityName + " from Notion: " + e.getMessage(), e);
+                    "Failed to load injuries from Notion: " + e.getMessage(), e);
               }
             })
         .orElse(new ArrayList<>());

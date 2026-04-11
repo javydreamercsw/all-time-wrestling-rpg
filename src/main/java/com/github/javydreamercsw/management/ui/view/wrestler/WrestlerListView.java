@@ -136,10 +136,6 @@ public class WrestlerListView extends Main {
     wrestlerGrid.addColumn(Wrestler::getLowStamina).setHeader("Low Stamina").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getBumps).setHeader("Bumps").setSortable(true);
-    wrestlerGrid
-        .addColumn(wrestler -> wrestler.getManager() != null ? wrestler.getManager().getName() : "")
-        .setHeader("Manager")
-        .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
     wrestlerGrid
         .addComponentColumn(

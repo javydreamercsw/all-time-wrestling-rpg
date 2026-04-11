@@ -26,20 +26,13 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "npc")
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Npc extends AbstractEntity<Long> {
 
@@ -49,10 +42,6 @@ public class Npc extends AbstractEntity<Long> {
 
   @Column(unique = true, nullable = false)
   private String name;
-
-  @Column(name = "expansion_code", nullable = false)
-  @Builder.Default
-  private String expansionCode = "BASE_GAME";
 
   @Column(length = 4000)
   private String description;
@@ -65,29 +54,14 @@ public class Npc extends AbstractEntity<Long> {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  @Builder.Default
   private Gender gender = Gender.MALE;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "alignment", nullable = false)
-  @Builder.Default
   private AlignmentType alignment = AlignmentType.NEUTRAL;
-
-  @jakarta.persistence.Convert(converter = NpcAttributesConverter.class)
-  @Column(columnDefinition = "TEXT")
-  @Builder.Default
-  private java.util.Map<String, Object> attributes =
-      new java.util.HashMap<>(); // Stores JSON data for additional stats like "Awareness"
 
   @Override
   public Long getId() {
     return id;
-  }
-
-  @PrePersist
-  protected void onCreate() {
-    if (expansionCode == null) {
-      expansionCode = "BASE_GAME";
-    }
   }
 }

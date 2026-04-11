@@ -63,12 +63,6 @@ class DraftServiceTest {
   @Mock private InboxService inboxService;
   @Mock private InboxEventType draftStartedEventType;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository
-      contractRepository;
-
-  @Mock private com.github.javydreamercsw.management.service.gm.SalaryCalculator salaryCalculator;
-
   @InjectMocks private DraftService draftService;
 
   @Test
@@ -165,7 +159,5 @@ class DraftServiceTest {
 
     verify(leagueRosterRepository, times(4)).save(any(LeagueRoster.class));
     verify(draftPickRepository, times(4)).save(any(DraftPick.class));
-    verify(contractRepository, times(4))
-        .save(any(com.github.javydreamercsw.management.domain.wrestler.WrestlerContract.class));
   }
 }

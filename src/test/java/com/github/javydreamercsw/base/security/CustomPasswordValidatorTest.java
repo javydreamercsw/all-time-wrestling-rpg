@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2026 Software Consulting Dreams LLC
+* Copyright (C) 2025 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,20 +16,43 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class CustomPasswordValidatorTest {
+public class CustomPasswordValidatorTest {
 
   @Test
-  void testIsValid() {
-    assertThat(CustomPasswordValidator.isValid("Password123!")).isTrue();
-    assertThat(CustomPasswordValidator.isValid("short")).isFalse();
-    assertThat(CustomPasswordValidator.isValid("nouppercase123!")).isFalse();
-    assertThat(CustomPasswordValidator.isValid("NOLOWERCASE123!")).isFalse();
-    assertThat(CustomPasswordValidator.isValid("NoSpecialChar123")).isFalse();
-    assertThat(CustomPasswordValidator.isValid("NoDigit!")).isFalse();
-    assertThat(CustomPasswordValidator.isValid("Has Whitespace123!")).isFalse();
+  void testValidPassword() {
+    Assertions.assertTrue(CustomPasswordValidator.isValid("Password123!"));
+  }
+
+  @Test
+  void testPasswordTooShort() {
+    Assertions.assertFalse(CustomPasswordValidator.isValid("Pass1!"));
+  }
+
+  @Test
+  void testPasswordMissingUppercase() {
+    Assertions.assertFalse(CustomPasswordValidator.isValid("password123!"));
+  }
+
+  @Test
+  void testPasswordMissingLowercase() {
+    Assertions.assertFalse(CustomPasswordValidator.isValid("PASSWORD123!"));
+  }
+
+  @Test
+  void testPasswordMissingDigit() {
+    Assertions.assertFalse(CustomPasswordValidator.isValid("Password!!"));
+  }
+
+  @Test
+  void testPasswordMissingSpecialCharacter() {
+    Assertions.assertFalse(CustomPasswordValidator.isValid("Password123"));
+  }
+
+  @Test
+  void testPasswordWithWhitespace() {
+    Assertions.assertFalse(CustomPasswordValidator.isValid("Password 123!"));
   }
 }

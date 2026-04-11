@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.ui.component;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Header;
@@ -35,12 +36,15 @@ public final class ViewToolbar extends Composite<Header> {
         FlexDirection.Breakpoint.Medium.ROW,
         AlignItems.Breakpoint.Medium.CENTER);
 
-    H1 title = new H1(viewTitle);
+    var drawerToggle = new DrawerToggle();
+    drawerToggle.addClassNames(Margin.NONE);
+
+    var title = new H1(viewTitle);
     title.addClassNames(FontSize.XLARGE, Margin.NONE, FontWeight.LIGHT);
 
-    Div titleDiv = new Div(title);
-    titleDiv.addClassNames(Display.FLEX, AlignItems.CENTER);
-    getContent().add(titleDiv);
+    var toggleAndTitle = new Div(drawerToggle, title);
+    toggleAndTitle.addClassNames(Display.FLEX, AlignItems.CENTER);
+    getContent().add(toggleAndTitle);
 
     if (components.length > 0) {
       var actions = new Div(components);

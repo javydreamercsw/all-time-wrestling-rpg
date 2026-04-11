@@ -22,7 +22,6 @@ import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.LocalDate;
@@ -34,30 +33,22 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 public class TitleReignSyncService extends BaseSyncService {
 
-  private final TitleReignNotionSyncService titleReignNotionSyncService;
-
   @Autowired
   public TitleReignSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      TitleReignNotionSyncService titleReignNotionSyncService,
       NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
-    this.titleReignNotionSyncService = titleReignNotionSyncService;
   }
 
-  @Transactional
   public SyncResult syncTitleReigns(@NonNull String operationId) {
-    if (syncServiceDependencies
-        .getSyncSessionManager()
-        .isAlreadySyncedInSession(SyncEntityType.TITLE_REIGN.getKey())) {
-      return SyncResult.success(SyncEntityType.TITLE_REIGN.getKey(), 0, 0, 0);
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("titlereigns")) {
+      return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
     log.info("👑 Starting title reigns synchronization from Notion...");
@@ -66,30 +57,25 @@ public class TitleReignSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitleReignsSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncServiceDependencies
-            .getSyncSessionManager()
-            .markAsSyncedInSession(SyncEntityType.TITLE_REIGN.getKey());
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("titlereigns");
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync title reigns", e);
-      return SyncResult.failure(SyncEntityType.TITLE_REIGN.getKey(), e.getMessage());
+      return SyncResult.failure("TitleReigns", e.getMessage());
     }
   }
 
   private SyncResult performTitleReignsSync(@NonNull String operationId, long startTime) {
-    if (!syncServiceDependencies
-        .getNotionSyncProperties()
-        .isEntityEnabled(SyncEntityType.TITLE_REIGN.getKey())) {
+    if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("titlereigns")) {
       log.info("Title Reigns sync is disabled in configuration");
-      return SyncResult.success(SyncEntityType.TITLE_REIGN.getKey(), 0, 0, 0);
+      return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
     if (!isNotionHandlerAvailable()) {
       log.warn("NotionHandler not available. Cannot sync title reigns from Notion.");
       return SyncResult.failure(
-          SyncEntityType.TITLE_REIGN.getKey(),
-          "NotionHandler is not available for sync operations");
+          "TitleReigns", "NotionHandler is not available for sync operations");
     }
 
     try {
@@ -97,69 +83,60 @@ public class TitleReignSyncService extends BaseSyncService {
           executeWithRateLimit(
               () -> syncServiceDependencies.getNotionHandler().loadAllTitleReigns());
       log.info("✅ Retrieved {} title reigns from Notion", titleReignPages.size());
+      // Log each retrieved page
+      titleReignPages.forEach(page -> log.info("Retrieved Title Reign Page: {}", page));
 
       for (TitleReignPage page : titleReignPages) {
-        String titleExtId = page.getTitleRelationId();
-        List<String> championExtIds = page.getChampionRelationIds();
+        String titleId = page.getTitleRelationId();
+        String championIds = page.getChampionRelationId();
 
-        if (titleExtId == null || championExtIds.isEmpty()) {
-          log.warn(
-              "Skipping title reign with missing title or champion relation: {}", page.getId());
+        if (titleId == null || championIds == null) {
+          log.warn("Skipping title reign with missing title or champion ID: {}", page.getId());
           continue;
         }
 
         Optional<Title> titleOpt =
-            syncServiceDependencies.getTitleRepository().findByExternalId(titleExtId);
+            syncServiceDependencies.getTitleRepository().findByExternalId(titleId);
 
         if (titleOpt.isEmpty()) {
-          log.warn("Skipping title reign: Title with ID '{}' not found locally.", titleExtId);
+          log.warn("Skipping title reign: Title with ID '{}' not found locally.", titleId);
           continue;
         }
 
         Title title = titleOpt.get();
-        List<Wrestler> champions =
-            championExtIds.stream()
-                .map(
-                    id ->
-                        syncServiceDependencies
-                            .getWrestlerRepository()
-                            .findByExternalId(id.trim())
-                            .orElse(null))
-                .filter(java.util.Objects::nonNull)
-                .toList();
+        String[] championExtIds = championIds.split(",");
+        List<Wrestler> champions = new java.util.ArrayList<>();
+        for (String championExtId : championExtIds) {
+          syncServiceDependencies
+              .getWrestlerRepository()
+              .findByExternalId(championExtId.trim())
+              .ifPresent(champions::add);
+        }
 
         if (champions.isEmpty()) {
-          log.warn("Skipping title reign: No champions found for IDs '{}'.", championExtIds);
+          log.warn("Skipping title reign: No champions found for IDs '{}'.", championIds);
           continue;
         }
 
-        // Attempt to find existing reign
-        TitleReign reign =
-            syncServiceDependencies
-                .getTitleReignRepository()
-                .findByExternalId(page.getId())
-                .or(
-                    () ->
-                        (page.getReignNumber() != null)
-                            ? syncServiceDependencies
-                                .getTitleReignRepository()
-                                .findByTitleAndReignNumber(title, page.getReignNumber())
-                            : Optional.empty())
-                .orElseGet(TitleReign::new);
+        // Attempt to find existing reign by external ID first
+        Optional<TitleReign> existingReignOpt =
+            syncServiceDependencies.getTitleReignRepository().findByExternalId(page.getId());
 
-        reign.setExternalId(page.getId());
+        if (existingReignOpt.isEmpty() && page.getReignNumber() != null) {
+          // Fallback to title and reign number
+          existingReignOpt =
+              syncServiceDependencies
+                  .getTitleReignRepository()
+                  .findByTitleAndReignNumber(title, page.getReignNumber());
+        }
+
+        TitleReign reign = existingReignOpt.orElse(new TitleReign());
+        reign.setExternalId(page.getId()); // Set external ID
         reign.setTitle(title);
         reign.getChampions().clear();
         reign.getChampions().addAll(champions);
-        reign.setReignNumber(page.getReignNumber() != null ? page.getReignNumber() : 1);
+        reign.setReignNumber(page.getReignNumber() != null ? page.getReignNumber() : 0);
         reign.setNotes(page.getNotes());
-
-        if (page.getWonAtSegmentRelationId() != null) {
-          syncServiceDependencies
-              .getSegmentRepository()
-              .findByExternalId(page.getWonAtSegmentRelationId())
-              .ifPresent(reign::setWonAtSegment);
-        }
 
         // Parse dates
         try {
@@ -176,24 +153,32 @@ public class TitleReignSyncService extends BaseSyncService {
         }
 
         syncServiceDependencies.getTitleReignRepository().save(reign);
+        log.info(
+            "Saved title reign for {} - {} (Reign #{}): {} to {}",
+            title.getName(),
+            reign.getChampions().stream()
+                .map(Wrestler::getName)
+                .collect(java.util.stream.Collectors.joining(" & ")),
+            reign.getReignNumber(),
+            reign.getStartDate(),
+            reign.getEndDate());
       }
 
       long totalTime = System.currentTimeMillis() - startTime;
+      log.info(
+          "🎉 Successfully synchronized {} title reigns in {}ms total",
+          titleReignPages.size(),
+          totalTime);
       syncServiceDependencies
           .getHealthMonitor()
-          .recordSuccess(SyncEntityType.TITLE_REIGN.getKey(), totalTime, titleReignPages.size());
-      return SyncResult.success(SyncEntityType.TITLE_REIGN.getKey(), titleReignPages.size(), 0, 0);
+          .recordSuccess("TitleReigns", totalTime, titleReignPages.size());
+      return SyncResult.success("TitleReigns", titleReignPages.size(), 0, 0);
 
     } catch (Exception e) {
-      log.error("❌ Failed to synchronize title reigns from Notion", e);
-      syncServiceDependencies
-          .getHealthMonitor()
-          .recordFailure(SyncEntityType.TITLE_REIGN.getKey(), e.getMessage());
-      return SyncResult.failure(SyncEntityType.TITLE_REIGN.getKey(), e.getMessage());
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.error("❌ Failed to synchronize title reigns from Notion after {}ms", totalTime, e);
+      syncServiceDependencies.getHealthMonitor().recordFailure("TitleReigns", e.getMessage());
+      return SyncResult.failure("TitleReigns", e.getMessage());
     }
-  }
-
-  public SyncResult syncToNotion(@NonNull String operationId) {
-    return titleReignNotionSyncService.syncToNotion(operationId);
   }
 }

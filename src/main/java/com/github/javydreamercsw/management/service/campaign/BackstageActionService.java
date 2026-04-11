@@ -49,7 +49,6 @@ public class BackstageActionService {
   private final CampaignService campaignService;
   private final SegmentRuleRepository segmentRuleRepository;
   private final WrestlerService wrestlerService;
-  private final BackstageEncounterService backstageEncounterService;
 
   public BackstageActionService(
       CampaignStateRepository campaignStateRepository,
@@ -57,19 +56,13 @@ public class BackstageActionService {
       InjuryService injuryService,
       @Lazy CampaignService campaignService,
       SegmentRuleRepository segmentRuleRepository,
-      WrestlerService wrestlerService,
-      BackstageEncounterService backstageEncounterService) {
+      WrestlerService wrestlerService) {
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
     this.campaignService = campaignService;
     this.segmentRuleRepository = segmentRuleRepository;
     this.wrestlerService = wrestlerService;
-    this.backstageEncounterService = backstageEncounterService;
-  }
-
-  public BackstageEncounterService getBackstageEncounterService() {
-    return backstageEncounterService;
   }
 
   /**

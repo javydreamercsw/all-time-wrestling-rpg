@@ -112,17 +112,6 @@ public class SegmentRuleListView extends Main {
         .setSortable(true);
 
     segmentRuleGrid
-        .addComponentColumn(
-            segmentRule -> {
-              Checkbox checkbox = new Checkbox();
-              checkbox.setValue(segmentRule.getNoDq());
-              checkbox.setReadOnly(true); // Make it read-only
-              return checkbox;
-            })
-        .setHeader("No DQ")
-        .setSortable(true);
-
-    segmentRuleGrid
         .addColumn(SegmentRule::getBumpAddition)
         .setHeader("Bump Addition")
         .setSortable(true);
@@ -181,7 +170,6 @@ public class SegmentRuleListView extends Main {
     TextArea editDescription = new TextArea("Description");
     editDescription.setWidthFull();
     Checkbox editRequiresHighHeat = new Checkbox("Requires High Heat");
-    Checkbox editNoDq = new Checkbox("No DQ");
     ComboBox<BumpAddition> bumpAdditionComboBox = new ComboBox<>("Bump Addition");
     bumpAdditionComboBox.setItems(
         Arrays.stream(BumpAddition.values())
@@ -197,7 +185,6 @@ public class SegmentRuleListView extends Main {
     binder
         .forField(editRequiresHighHeat)
         .bind(SegmentRule::getRequiresHighHeat, SegmentRule::setRequiresHighHeat);
-    binder.forField(editNoDq).bind(SegmentRule::getNoDq, SegmentRule::setNoDq);
     binder
         .forField(bumpAdditionComboBox)
         .bind(SegmentRule::getBumpAddition, SegmentRule::setBumpAddition);
@@ -213,12 +200,7 @@ public class SegmentRuleListView extends Main {
 
     VerticalLayout dialogLayout =
         new VerticalLayout(
-            editName,
-            editDescription,
-            editRequiresHighHeat,
-            editNoDq,
-            bumpAdditionComboBox,
-            buttons);
+            editName, editDescription, editRequiresHighHeat, bumpAdditionComboBox, buttons);
     dialogLayout.setPadding(false);
     dialogLayout.setSpacing(true);
 
@@ -232,7 +214,6 @@ public class SegmentRuleListView extends Main {
             editingSegmentRule.getName(),
             editingSegmentRule.getDescription(),
             editingSegmentRule.getRequiresHighHeat(),
-            editingSegmentRule.getNoDq(),
             editingSegmentRule.getBumpAddition());
         Notification.show(
                 "Segment rule saved successfully!", 3000, Notification.Position.BOTTOM_START)

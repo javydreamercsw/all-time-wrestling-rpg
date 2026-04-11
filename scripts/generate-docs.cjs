@@ -74,26 +74,7 @@ Object.entries(categories).forEach(([category, catFeatures]) => {
 // 4. Build VitePress Site
 console.log('Building VitePress site...');
 try {
-  // Read context path from application.properties
-  let contextPath = '/atw-rpg'; // default fallback
-  const propsPath = path.join(rootDir, 'src', 'main', 'resources', 'application.properties');
-  if (fs.existsSync(propsPath)) {
-    const props = fs.readFileSync(propsPath, 'utf8');
-    const match = props.match(/server\.servlet\.context-path\s*=\s*(.+)/);
-    if (match && match[1]) {
-      contextPath = match[1].trim();
-    }
-  }
-  
-  // Set BASE_URL for local build to include context path and docs sub-path
-  const baseUrl = contextPath.endsWith('/') ? `${contextPath}docs/` : `${contextPath}/docs/`;
-  console.log(`Using base URL: ${baseUrl}`);
-  
-  execSync('npm run docs:build', { 
-    cwd: path.join(rootDir, 'docs', 'site'), 
-    stdio: 'inherit',
-    env: { ...process.env, BASE_URL: baseUrl }
-  });
+  execSync('npm run docs:build', { cwd: path.join(rootDir, 'docs', 'site'), stdio: 'inherit' });
 } catch (error) {
   console.error('VitePress build failed:', error);
   process.exit(1);
@@ -106,11 +87,9 @@ console.log('Created .nojekyll file');
 
 // 6. Copy to App Static Resources
 console.log('Embedding docs in Spring Boot application...');
-if (fs.existsSync(appStaticDocsDir)) {
-  console.log(`Clearing existing docs in: ${appStaticDocsDir}`);
-  fs.rmSync(appStaticDocsDir, { recursive: true, force: true });
+if (!fs.existsSync(appStaticDocsDir)) {
+  fs.mkdirSync(appStaticDocsDir, { recursive: true });
 }
-fs.mkdirSync(appStaticDocsDir, { recursive: true });
 
 // Simple recursive copy
 function copyRecursiveSync(src, dest) {

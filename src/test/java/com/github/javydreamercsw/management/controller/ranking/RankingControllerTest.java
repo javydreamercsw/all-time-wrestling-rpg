@@ -44,7 +44,7 @@ class RankingControllerTest extends AbstractControllerTest {
         ChampionshipDTO.builder()
             .id(1L)
             .name("World Championship")
-            .imageUrl("world-championship.png")
+            .imageName("world-championship.png")
             .build();
 
     when(rankingService.getChampionships()).thenReturn(List.of(championship));

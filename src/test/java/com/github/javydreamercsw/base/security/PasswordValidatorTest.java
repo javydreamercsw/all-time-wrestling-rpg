@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2026 Software Consulting Dreams LLC
+* Copyright (C) 2025 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,35 +16,59 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.vaadin.flow.data.binder.ValidationResult;
-import com.vaadin.flow.data.binder.ValueContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class PasswordValidatorTest {
 
-  private final PasswordValidator validator = new PasswordValidator("Invalid password");
+  private PasswordValidator validator;
+
+  @BeforeEach
+  void setUp() {
+    validator = new PasswordValidator("Invalid password");
+  }
 
   @Test
-  void testApply() {
-    ValueContext context = new ValueContext();
+  void testValidPassword() {
+    ValidationResult result = validator.apply("Valid123", null);
+    assertFalse(result.isError());
+  }
 
-    assertThat(validator.apply(null, context)).isEqualTo(ValidationResult.ok());
-    assertThat(validator.apply("", context)).isEqualTo(ValidationResult.ok());
+  @Test
+  void testTooShort() {
+    ValidationResult result = validator.apply("Short1", null);
+    assertTrue(result.isError());
+    assertEquals("Password must be at least 8 characters long", result.getErrorMessage());
+  }
 
-    ValidationResult result = validator.apply("short", context);
-    assertThat(result.isError()).isTrue();
-    assertThat(result.getErrorMessage()).contains("at least 8 characters");
+  @Test
+  void testNoLetter() {
+    ValidationResult result = validator.apply("12345678", null);
+    assertTrue(result.isError());
+    assertEquals("Password must contain at least one letter", result.getErrorMessage());
+  }
 
-    result = validator.apply("nonumbers", context);
-    assertThat(result.isError()).isTrue();
-    assertThat(result.getErrorMessage()).contains("at least one number");
+  @Test
+  void testNoNumber() {
+    ValidationResult result = validator.apply("Password", null);
+    assertTrue(result.isError());
+    assertEquals("Password must contain at least one number", result.getErrorMessage());
+  }
 
-    result = validator.apply("12345678", context);
-    assertThat(result.isError()).isTrue();
-    assertThat(result.getErrorMessage()).contains("at least one letter");
+  @Test
+  void testNullPassword() {
+    ValidationResult result = validator.apply(null, null);
+    assertFalse(result.isError());
+  }
 
-    assertThat(validator.apply("password123", context)).isEqualTo(ValidationResult.ok());
+  @Test
+  void testEmptyPassword() {
+    ValidationResult result = validator.apply("", null);
+    assertFalse(result.isError());
   }
 }

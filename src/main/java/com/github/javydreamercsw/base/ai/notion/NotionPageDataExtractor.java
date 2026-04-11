@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.model.pages.PageProperty;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -212,83 +211,6 @@ public class NotionPageDataExtractor {
     return extractPropertyAsString(page.getRawProperties(), "Recurrence Type");
   }
 
-  /**
-   * Extracts a single relation ID from a Notion page.
-   *
-   * @param page The Notion page
-   * @param propertyName The property name
-   * @return The relation ID or null
-   */
-  public String extractRelationId(@NonNull NotionPage page, @NonNull String propertyName) {
-    String val = extractPropertyAsString(page.getRawProperties(), propertyName);
-    if (val != null
-        && val.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-      return val;
-    }
-    return null;
-  }
-
-  /**
-   * Extracts multiple relation IDs from a Notion page.
-   *
-   * @param page The Notion page
-   * @param propertyName The property name
-   * @return List of relation IDs
-   */
-  public java.util.List<String> extractRelationIds(
-      @NonNull NotionPage page, @NonNull String propertyName) {
-    Object property = page.getRawProperties().get(propertyName);
-    if (property == null) {
-      return java.util.Collections.emptyList();
-    }
-
-    java.util.List<String> ids = new java.util.ArrayList<>();
-
-    // Handle Map objects that mimic Notion's relation structure
-    if (property instanceof Map) {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> map = (Map<String, Object>) property;
-      if (map.containsKey("relation")) {
-        Object relationObj = map.get("relation");
-        if (relationObj instanceof List) {
-          @SuppressWarnings("unchecked")
-          List<Object> relationList = (List<Object>) relationObj;
-          for (Object item : relationList) {
-            if (item instanceof Map) {
-              @SuppressWarnings("unchecked")
-              Map<String, Object> itemMap = (Map<String, Object>) item;
-              if (itemMap.containsKey("id")) {
-                ids.add(itemMap.get("id").toString());
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Handle PageProperty objects (from Notion API)
-    if (property instanceof notion.api.v1.model.pages.PageProperty pageProperty) {
-      if (pageProperty.getRelation() != null) {
-        for (PageProperty.PageReference relation : pageProperty.getRelation()) {
-          if (relation.getId() != null) {
-            ids.add(relation.getId());
-          }
-        }
-      }
-    }
-
-    // Fallback: check if the string representation is a single ID
-    if (ids.isEmpty()) {
-      String val = extractTextFromProperty(property);
-      if (val != null
-          && val.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-        ids.add(val);
-      }
-    }
-
-    return ids;
-  }
-
   public String extractDayOfWeekFromNotionPage(@NonNull NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Day of Week");
   }
@@ -321,41 +243,5 @@ public class NotionPageDataExtractor {
 
   public String extractMonthFromNotionPage(@NonNull NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Month");
-  }
-
-  /**
-   * Extracts the ID from any NotionPage type.
-   *
-   * @param page The Notion page to extract the ID from
-   * @return The page ID
-   */
-  public String extractIdFromNotionPage(@NonNull NotionPage page) {
-    return page.getId();
-  }
-
-  /**
-   * Extracts date from any NotionPage type using raw properties.
-   *
-   * @param page The Notion page to extract the date from
-   * @return The extracted LocalDate or null if not found or invalid
-   */
-  public java.time.LocalDate extractDateFromNotionPage(@NonNull NotionPage page) {
-    String dateStr = extractPropertyAsString(page.getRawProperties(), "Date");
-    if (dateStr != null && !dateStr.trim().isEmpty()) {
-      try {
-        // Handle full ISO date-time or just date
-        if (dateStr.length() > 10) {
-          return java.time.OffsetDateTime.parse(dateStr).toLocalDate();
-        }
-        return java.time.LocalDate.parse(dateStr);
-      } catch (Exception e) {
-        log.warn(
-            "Failed to parse date string '{}' from page {}: {}",
-            dateStr,
-            page.getId(),
-            e.getMessage());
-      }
-    }
-    return null;
   }
 }

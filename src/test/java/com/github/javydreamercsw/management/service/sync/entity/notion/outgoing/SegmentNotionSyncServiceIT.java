@@ -169,12 +169,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     segment.addParticipant(wrestler); // Add wrestler as a participant
     segmentRepository.save(segment);
 
-    // Ensure it has unsynced changes by setting updatedAt to the future
-    segment.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
-    segmentRepository.saveAndFlush(segment);
-
     // Sync to Notion for the first time
-
     segmentNotionSyncService.syncToNotion("test-op-1");
 
     // Verify that the externalId and lastSync fields are updated
@@ -188,12 +183,11 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        String.format("Segment: %s (%s)", segment.getSegmentType().getName(), wrestler.getName()),
+        segment.getSegmentType().getName() + " - " + segment.getShow().getName(),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         segment.getShow().getExternalId(),
         capturedRequest.getProperties().get("Shows").getRelation().get(0).getId());
-
     assertEquals(
         segment.getSegmentType().getExternalId(),
         capturedRequest.getProperties().get("Segment Type").getRelation().get(0).getId());
@@ -202,13 +196,13 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         Instant.parse(capturedRequest.getProperties().get("Date").getDate().getStart())
             .truncatedTo(java.time.temporal.ChronoUnit.MILLIS));
     assertEquals(
-        segment.getSegmentRules().iterator().next().getExternalId(),
+        segment.getSegmentRules().get(0).getExternalId(),
         capturedRequest.getProperties().get("Rules").getRelation().get(0).getId());
     assertEquals(
         segment.getNarration(),
         capturedRequest
             .getProperties()
-            .get("Narration")
+            .get("Description")
             .getRichText()
             .get(0)
             .getText()
@@ -225,9 +219,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     updatedSegment.setSummary("Updated summary " + UUID.randomUUID());
     updatedSegment.setSegmentOrder(2);
     updatedSegment.setMainEvent(false);
-    // Ensure it's treated as changed
-    updatedSegment.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
-    segmentRepository.saveAndFlush(updatedSegment);
+    segmentRepository.save(updatedSegment);
     segmentNotionSyncService.syncToNotion("test-op-2");
     Segment updatedSegment2 = segmentRepository.findById(segment.getId()).get();
     assertTrue(updatedSegment2.getLastSync().isAfter(updatedSegment.getLastSync()));
@@ -239,7 +231,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedSegment2.getNarration(),
         capturedUpdateRequest
             .getProperties()
-            .get("Narration")
+            .get("Description")
             .getRichText()
             .get(0)
             .getText()

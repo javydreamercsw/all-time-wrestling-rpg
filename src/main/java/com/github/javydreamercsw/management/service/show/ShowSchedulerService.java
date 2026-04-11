@@ -21,7 +21,6 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.world.ArenaService;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
@@ -42,7 +41,6 @@ public class ShowSchedulerService {
 
   private final ShowService showService;
   private final ShowTemplateService showTemplateService;
-  private final ArenaService arenaService;
 
   /**
    * Generates empty show shells for a season based on available show templates and their recurrence
@@ -116,8 +114,7 @@ public class ShowSchedulerService {
                 season.getId(),
                 template.getId(),
                 null, // League ID - might need to be passed in
-                template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null,
-                arenaService.assignArenaToShow(template.isPremiumLiveEvent()));
+                template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null);
           }
         }
       }

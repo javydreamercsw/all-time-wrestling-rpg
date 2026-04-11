@@ -23,20 +23,12 @@ import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.config.StorageProperties;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
-import com.github.javydreamercsw.management.domain.npc.NpcRepository;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,21 +54,13 @@ public class SyncServiceDependencies {
   private final NotionHandler notionHandler;
   private final NotionPageDataExtractor notionPageDataExtractor;
   private final SyncSessionManager syncSessionManager;
-  private final SyncLockService syncLockService;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
-  private final InjuryRepository injuryRepository;
   private final InjuryTypeRepository injuryTypeRepository;
-  private final SeasonRepository seasonRepository;
-  private final ShowRepository showRepository;
-  private final ShowTemplateRepository showTemplateRepository;
   private final ShowTypeRepository showTypeRepository;
   private final TeamRepository teamRepository;
   private final TitleReignRepository titleReignRepository;
   private final TitleRepository titleRepository;
-  private final NpcRepository npcRepository;
-  private final RivalryRepository rivalryRepository;
-  private final SegmentRepository segmentRepository;
 
   @Autowired
   public SyncServiceDependencies(
@@ -96,21 +80,13 @@ public class SyncServiceDependencies {
       @NonNull NotionHandler notionHandler,
       @NonNull NotionPageDataExtractor notionPageDataExtractor,
       @NonNull SyncSessionManager syncSessionManager,
-      @NonNull SyncLockService syncLockService,
       @NonNull FactionRepository factionRepository,
       @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull InjuryRepository injuryRepository,
       @NonNull InjuryTypeRepository injuryTypeRepository,
-      @NonNull SeasonRepository seasonRepository,
-      @NonNull RivalryRepository rivalryRepository,
-      @NonNull ShowRepository showRepository,
-      @NonNull ShowTemplateRepository showTemplateRepository,
       @NonNull ShowTypeRepository showTypeRepository,
       @NonNull TeamRepository teamRepository,
       @NonNull TitleReignRepository titleReignRepository,
-      @NonNull TitleRepository titleRepository,
-      @NonNull NpcRepository npcRepository,
-      @NonNull SegmentRepository segmentRepository) {
+      @NonNull TitleRepository titleRepository) {
     this.progressTracker = progressTracker;
     this.healthMonitor = healthMonitor;
     this.retryService = retryService;
@@ -127,20 +103,12 @@ public class SyncServiceDependencies {
     this.notionHandler = notionHandler;
     this.notionPageDataExtractor = notionPageDataExtractor;
     this.syncSessionManager = syncSessionManager;
-    this.syncLockService = syncLockService;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
-    this.injuryRepository = injuryRepository;
     this.injuryTypeRepository = injuryTypeRepository;
-    this.seasonRepository = seasonRepository;
-    this.rivalryRepository = rivalryRepository;
-    this.showRepository = showRepository;
-    this.showTemplateRepository = showTemplateRepository;
     this.showTypeRepository = showTypeRepository;
     this.teamRepository = teamRepository;
     this.titleReignRepository = titleReignRepository;
     this.titleRepository = titleRepository;
-    this.npcRepository = npcRepository;
-    this.segmentRepository = segmentRepository;
   }
 }

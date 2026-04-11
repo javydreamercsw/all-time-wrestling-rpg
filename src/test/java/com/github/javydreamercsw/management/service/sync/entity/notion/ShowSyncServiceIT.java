@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2026 Software Consulting Dreams LLC
+* Copyright (C) 2025 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,90 +16,181 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
+import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
+import com.github.javydreamercsw.management.service.sync.RetryService;
+import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
+import com.github.javydreamercsw.management.service.sync.SyncValidationService;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class ShowSyncServiceIT extends ManagementIntegrationTest {
 
-  @Autowired private NotionSyncService notionSyncService;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private ShowTypeService showTypeService;
+  @Mock private ShowService showService;
+  @Mock private ShowTypeService showTypeService;
+  @Mock private SeasonService seasonService;
+  @Mock private ShowTemplateService showTemplateService;
+  @Mock private NotionHandler notionHandler;
+  @Mock private NotionSyncProperties syncProperties;
+  @Mock private SyncProgressTracker progressTracker;
+  @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private ObjectMapper objectMapper;
+  @Mock private NotionRateLimitService rateLimitService;
+  @Mock private NotionApiExecutor notionApiExecutor;
+  @Mock private CircuitBreakerService circuitBreakerService;
+  @Mock private RetryService retryService;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
+  @Mock private SyncValidationService syncValidationService;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
 
-  @MockitoBean private NotionHandler notionHandler;
-  @MockitoBean private NotionPageDataExtractor notionPageDataExtractor;
-
-  private MockedStatic<EnvironmentVariableUtil> mockedEnv;
+  private ShowSyncService showSyncService;
 
   @BeforeEach
+  @SneakyThrows
   void setUp() {
-    clearAllRepositories();
-    mockedEnv = Mockito.mockStatic(EnvironmentVariableUtil.class);
-    mockedEnv.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
-  }
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+    lenient()
+        .when(objectMapper.getTypeFactory())
+        .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient()
+        .when(syncServiceDependencies.getCircuitBreakerService())
+        .thenReturn(circuitBreakerService);
+    lenient().when(syncServiceDependencies.getRetryService()).thenReturn(retryService);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient()
+        .when(syncServiceDependencies.getValidationService())
+        .thenReturn(syncValidationService);
+    lenient()
+        .when(syncValidationService.validateSyncPrerequisites())
+        .thenReturn(
+            new SyncValidationService.ValidationResult(
+                true, new java.util.ArrayList<>(), new java.util.ArrayList<>()));
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
 
-  @AfterEach
-  public void tearDown() {
-    if (mockedEnv != null) {
-      mockedEnv.close();
-    }
+    lenient()
+        .when(notionApiExecutor.getSyncExecutorService())
+        .thenReturn(java.util.concurrent.Executors.newSingleThreadExecutor());
+
+    showSyncService =
+        new ShowSyncService(
+            objectMapper,
+            syncServiceDependencies,
+            showService,
+            showTypeService,
+            seasonService,
+            showTemplateService,
+            notionApiExecutor);
+
+    // Mock resilience services to execute immediately
+    lenient()
+        .when(
+            circuitBreakerService.execute(
+                anyString(), any(CircuitBreakerService.SyncOperation.class)))
+        .thenAnswer(
+            invocation -> {
+              try {
+                return ((CircuitBreakerService.SyncOperation<Object>) invocation.getArgument(1))
+                    .execute();
+              } catch (Throwable e) {
+                throw new RuntimeException(e);
+              }
+            });
+    lenient()
+        .when(retryService.executeWithRetry(anyString(), any(RetryService.AttemptCallable.class)))
+        .thenAnswer(
+            invocation -> {
+              try {
+                return ((RetryService.AttemptCallable<Object>) invocation.getArgument(1))
+                    .call(1); // Pass attempt number 1
+              } catch (Throwable e) {
+                throw new RuntimeException(e);
+              }
+            });
   }
 
   @Test
-  void testSyncShows() {
+  void syncShows_WhenSuccessful_ShouldReturnCorrectResult() {
     // Given
-    String showId = UUID.randomUUID().toString();
+    when(showService.getAllExternalIds()).thenReturn(java.util.Collections.emptyList());
+    when(notionHandler.getDatabasePageIds(anyString())).thenReturn(java.util.List.of("show-1"));
+
     ShowPage showPage = new ShowPage();
-    showPage.setId(showId);
-
-    // Create a required ShowType
-    ShowType testShowType = new ShowType();
-    testShowType.setName("Weekly");
-    testShowType.setDescription("Weekly show type");
-    showTypeService.save(testShowType);
-
-    when(notionHandler.getDatabasePageIds("Shows")).thenReturn(List.of(showId));
-    when(notionHandler.loadShowById(showId)).thenReturn(Optional.of(showPage));
-    when(notionHandler.loadAllShowsForSync()).thenReturn(List.of(showPage));
+    showPage.setId("show-1");
+    java.util.Map<String, Object> properties = new java.util.HashMap<>();
+    properties.put("Name", "Test Show");
+    properties.put("Show Type", "Weekly");
+    showPage.setRawProperties(properties);
+    when(notionHandler.loadShowById(anyString())).thenReturn(java.util.Optional.of(showPage));
     when(notionPageDataExtractor.extractNameFromNotionPage(any())).thenReturn("Test Show");
-    when(notionPageDataExtractor.extractDateFromNotionPage(any())).thenReturn(LocalDate.now());
-    when(notionPageDataExtractor.extractIdFromNotionPage(any())).thenReturn(showId);
-    when(notionPageDataExtractor.extractDescriptionFromNotionPage(any()))
-        .thenReturn("Test Description");
-    when(notionPageDataExtractor.extractRelationId(any(), Mockito.eq("Show Type")))
-        .thenReturn(testShowType.getExternalId());
-    when(notionPageDataExtractor.extractPropertyAsString(any(), Mockito.eq("Show Type")))
+    when(notionPageDataExtractor.extractPropertyAsString(any(), eq("Show Type")))
         .thenReturn("Weekly");
 
+    ShowType showType = new ShowType();
+    showType.setName("Weekly");
+    when(showTypeService.findAll()).thenReturn(java.util.List.of(showType));
+
+    when(showService.save(any(Show.class))).thenAnswer(i -> i.getArguments()[0]);
+
     // When
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncShows("test-op-shows", SyncDirection.INBOUND);
+    SyncResult result = showSyncService.syncShows("test-operation");
 
     // Then
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getCreatedCount()).isGreaterThanOrEqualTo(1);
+    assertTrue(result.isSuccess());
+    assertEquals("shows", result.getEntityType());
+    assertEquals(1, result.getSyncedCount());
+    verify(healthMonitor, never()).recordFailure(anyString(), anyString());
+  }
+
+  @Test
+  void syncShows_NoNewShows_ShouldReturnSuccess() {
+    // Given
+    when(showService.getAllExternalIds()).thenReturn(java.util.List.of("show-1"));
+    when(notionHandler.getDatabasePageIds(anyString())).thenReturn(java.util.List.of("show-1"));
+
+    // When
+    SyncResult result = showSyncService.syncShows("test-operation");
+
+    // Then
+    assertTrue(result.isSuccess(), result.getErrorMessage());
+    assertEquals("shows", result.getEntityType());
+    assertEquals(0, result.getSyncedCount());
+    verify(healthMonitor, never()).recordSuccess(eq("shows"), anyLong(), anyInt());
   }
 }

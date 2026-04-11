@@ -19,12 +19,11 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.Initializable;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -38,19 +37,13 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.world.Arena;
-import com.github.javydreamercsw.management.domain.world.ArenaRepository;
-import com.github.javydreamercsw.management.domain.world.Location;
-import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
-import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -69,13 +62,13 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -92,10 +85,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,6 +98,7 @@ public class DataInitializer implements Initializable {
 
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;
+  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowTypeService showTypeService;
   private final SegmentRuleService segmentRuleService;
@@ -122,22 +115,15 @@ public class DataInitializer implements Initializable {
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final CommentaryService commentaryService;
   private final CampaignUpgradeService campaignUpgradeService;
-  private final LocationRepository locationRepository;
-  private final ArenaRepository arenaRepository;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
   private final Environment env;
   private final AchievementRepository achievementRepository;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
-  private final ResourcePatternResolver resourcePatternResolver;
-  private final ObjectMapper objectMapper;
+  private final AccountRepository accountRepository;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") boolean enabled,
       ShowTemplateService showTemplateService,
+      @Lazy WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       ShowTypeService showTypeService,
       SegmentRuleService segmentRuleService,
@@ -156,15 +142,10 @@ public class DataInitializer implements Initializable {
       CampaignUpgradeService campaignUpgradeService,
       Environment env,
       AchievementRepository achievementRepository,
-      RingsideActionDataService ringsideActionDataService,
-      ResourcePatternResolver resourcePatternResolver,
-      LocationRepository locationRepository,
-      ArenaRepository arenaRepository,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      ObjectMapper objectMapper) {
+      AccountRepository accountRepository) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
+    this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.showTypeService = showTypeService;
     this.segmentRuleService = segmentRuleService;
@@ -183,12 +164,7 @@ public class DataInitializer implements Initializable {
     this.campaignUpgradeService = campaignUpgradeService;
     this.env = env;
     this.achievementRepository = achievementRepository;
-    this.ringsideActionDataService = ringsideActionDataService;
-    this.resourcePatternResolver = resourcePatternResolver;
-    this.locationRepository = locationRepository;
-    this.arenaRepository = arenaRepository;
-    this.relationshipService = relationshipService;
-    this.objectMapper = objectMapper;
+    this.accountRepository = accountRepository;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -203,13 +179,10 @@ public class DataInitializer implements Initializable {
       loadShowTemplatesFromFile();
       syncSetsFromFile();
       syncCardsFromFile();
-      syncNpcsFromFile();
-      syncLocationsFromFile();
-      syncArenasFromFile();
       syncWrestlersFromFile();
-      syncRelationshipsFromFile();
       syncChampionshipsFromFile();
       syncDecksFromFile();
+      syncNpcsFromFile();
       syncFactionsFromFile();
       syncTeamsFromFile();
       syncCampaignAbilityCardsFromFile();
@@ -217,66 +190,6 @@ public class DataInitializer implements Initializable {
       syncCommentatorsFromFile();
       syncCommentaryTeamsFromFile();
       loadAchievements();
-      syncRingsideActions();
-    }
-  }
-
-  private void syncRingsideActions() {
-    syncRingsideActionTypesFromFile();
-    syncRingsideActionsFromFile();
-  }
-
-  private void syncRingsideActionTypesFromFile() {
-    ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
-    if (resource.exists()) {
-      log.info("Loading ringside action types from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
-      try (var is = resource.getInputStream()) {
-        var dtos =
-            mapper.readValue(
-                is,
-                new TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RingsideActionTypeDTO>>() {});
-        for (com.github.javydreamercsw.management.dto.RingsideActionTypeDTO dto : dtos) {
-          ringsideActionDataService.createOrUpdateType(
-              dto.getName(),
-              dto.isIncreasesAwareness(),
-              dto.isCanCauseDq(),
-              dto.getBaseRiskMultiplier());
-          log.debug("Loaded ringside action type: {}", dto.getName());
-        }
-        log.info("Ringside action type loading completed - {} types loaded", dtos.size());
-      } catch (IOException e) {
-        log.error("Error loading ringside action types from file", e);
-      }
-    }
-  }
-
-  private void syncRingsideActionsFromFile() {
-    ClassPathResource resource = new ClassPathResource("ringside_actions.json");
-    if (resource.exists()) {
-      log.info("Loading ringside actions from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
-      try (var is = resource.getInputStream()) {
-        var dtos =
-            mapper.readValue(
-                is,
-                new TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RingsideActionDTO>>() {});
-        for (com.github.javydreamercsw.management.dto.RingsideActionDTO dto : dtos) {
-          ringsideActionDataService.createOrUpdateAction(
-              dto.getName(),
-              dto.getType(),
-              dto.getDescription(),
-              dto.getImpact(),
-              dto.getRisk(),
-              dto.getAlignment());
-          log.debug("Loaded ringside action: {}", dto.getName());
-        }
-        log.info("Ringside action loading completed - {} actions loaded", dtos.size());
-      } catch (IOException e) {
-        log.error("Error loading ringside actions from file", e);
-      }
     }
   }
 
@@ -509,16 +422,11 @@ public class DataInitializer implements Initializable {
 
         for (SegmentRuleDTO dto : segmentRulesFromFile) {
           segmentRuleService.createOrUpdateRule(
-              dto.getName(),
-              dto.getDescription(),
-              dto.isRequiresHighHeat(),
-              dto.isNoDq(),
-              dto.getBumpAddition());
+              dto.getName(), dto.getDescription(), dto.isRequiresHighHeat(), dto.getBumpAddition());
           log.info(
-              "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
+              "Loaded segment rule: {} (High Heat: {}, Bump Addition: {})",
               dto.getName(),
               dto.isRequiresHighHeat(),
-              dto.isNoDq(),
               dto.getBumpAddition());
         }
         log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
@@ -731,152 +639,109 @@ public class DataInitializer implements Initializable {
   }
 
   protected void syncWrestlersFromFile() {
-    try {
-      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
-      for (Resource resource : resources) {
-        if (resource.exists()) {
-          log.info("Loading wrestlers from file: {}", resource.getFilename());
-          // Load wrestlers from JSON file
-          ObjectMapper mapper = new ObjectMapper();
-          try (var is = resource.getInputStream()) {
-            var wrestlersFromFile =
-                mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
-            // Map existing wrestlers by name (handle duplicates by keeping the first one)
-            Map<String, Wrestler> existing =
-                wrestlerRepository.findAll().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
-            for (WrestlerImportDTO w : wrestlersFromFile) {
-              // Smart duplicate handling - prefer external ID, fallback to name
-              Wrestler existingWrestler = null;
-              if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
-                existingWrestler =
-                    wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
-              }
-              if (existingWrestler == null) {
-                existingWrestler = existing.get(w.getName());
-              }
+    ClassPathResource resource = new ClassPathResource("wrestlers.json");
+    if (resource.exists()) {
+      log.info("Loading wrestlers from file: {}", resource.getPath());
+      // Load wrestlers from JSON file
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var wrestlersFromFile =
+            mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
+        // Map existing wrestlers by name (handle duplicates by keeping the first one)
+        Map<String, Wrestler> existing =
+            wrestlerRepository.findAll().stream()
+                .collect(
+                    Collectors.toMap(
+                        Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
+        for (WrestlerImportDTO w : wrestlersFromFile) {
+          // Smart duplicate handling - prefer external ID, fallback to name
+          Wrestler existingWrestler = null;
+          if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
+            existingWrestler = wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
+          }
+          if (existingWrestler == null) {
+            existingWrestler = existing.get(w.getName());
+          }
 
-              if (existingWrestler != null) {
-                // Update fields
-                existingWrestler.setDeckSize(w.getDeckSize());
-                existingWrestler.setStartingHealth(w.getStartingHealth());
-                existingWrestler.setLowHealth(w.getLowHealth());
-                existingWrestler.setStartingStamina(w.getStartingStamina());
-                existingWrestler.setLowStamina(w.getLowStamina());
-                existingWrestler.setDescription(w.getDescription());
-                existingWrestler.setGender(w.getGender());
+          if (existingWrestler != null) {
+            // Update fields
+            existingWrestler.setDeckSize(w.getDeckSize());
+            existingWrestler.setStartingHealth(w.getStartingHealth());
+            existingWrestler.setLowHealth(w.getLowHealth());
+            existingWrestler.setStartingStamina(w.getStartingStamina());
+            existingWrestler.setLowStamina(w.getLowStamina());
+            existingWrestler.setDescription(w.getDescription());
+            existingWrestler.setGender(w.getGender());
 
-                if (w.getFans() != null) {
-                  if (w.getFans() > existingWrestler.getFans()) {
-                    existingWrestler.setFans(w.getFans());
-                  }
-                }
-
-                if (w.getBumps() != null) {
-                  if (w.getBumps() > existingWrestler.getBumps()) {
-                    existingWrestler.setBumps(w.getBumps());
-                  }
-                }
-
-                if (w.getImageUrl() != null) {
-                  existingWrestler.setImageUrl(w.getImageUrl());
-                }
-
-                if (w.getHeritageTag() != null) {
-                  existingWrestler.setHeritageTag(w.getHeritageTag());
-                }
-
-                if (w.getSet() != null) {
-                  existingWrestler.setExpansionCode(w.getSet());
-                }
-
-                if (w.getAlignment() != null) {
-                  if (existingWrestler.getAlignment() == null
-                      || existingWrestler.getAlignment().getAlignmentType() == null) {
-                    try {
-                      AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
-                      existingWrestler.setAlignment(
-                          WrestlerAlignment.builder()
-                              .wrestler(existingWrestler)
-                              .alignmentType(at)
-                              .level(0)
-                              .build());
-                      log.debug(
-                          "Initialized alignment for existing wrestler {}: {}",
-                          existingWrestler.getName(),
-                          at);
-                    } catch (IllegalArgumentException e) {
-                      log.warn(
-                          "Invalid alignment '{}' for wrestler '{}'",
-                          w.getAlignment(),
-                          w.getName());
-                    }
-                  }
-                }
-
-                if (w.getExternalId() != null) {
-                  existingWrestler.setExternalId(w.getExternalId());
-                }
-
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    existingWrestler.setManager(manager);
-                  }
-                }
-
-                if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
-
-                wrestlerRepository.save(existingWrestler);
-                log.debug("Updated existing wrestler: {}", existingWrestler.getName());
-              } else {
-                Wrestler newWrestler = new Wrestler();
-                newWrestler.setName(w.getName());
-                newWrestler.setDeckSize(w.getDeckSize());
-                newWrestler.setStartingHealth(w.getStartingHealth());
-                newWrestler.setLowHealth(w.getLowHealth());
-                newWrestler.setStartingStamina(w.getStartingStamina());
-                newWrestler.setLowStamina(w.getLowStamina());
-                newWrestler.setDescription(w.getDescription());
-                newWrestler.setGender(w.getGender());
-                newWrestler.setFans(w.getFans());
-                newWrestler.setBumps(w.getBumps());
-                newWrestler.setImageUrl(w.getImageUrl());
-                newWrestler.setHeritageTag(w.getHeritageTag());
-                if (w.getSet() != null) {
-                  newWrestler.setExpansionCode(w.getSet());
-                }
-                newWrestler.setTier(WrestlerTier.ROOKIE);
-                if (w.getExternalId() != null) {
-                  newWrestler.setExternalId(w.getExternalId());
-                }
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    newWrestler.setManager(manager);
-                  }
-                }
-                if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
-
-                wrestlerRepository.save(newWrestler);
-                log.debug("Saved new wrestler: {}", newWrestler.getName());
+            if (w.getFans() != null) {
+              if (w.getFans() > existingWrestler.getFans()) {
+                existingWrestler.setFans(w.getFans());
               }
             }
-          } catch (IOException e) {
-            log.error("Error loading wrestlers from file", e);
+
+            if (w.getBumps() != null) {
+              if (w.getBumps() > existingWrestler.getBumps()) {
+                existingWrestler.setBumps(w.getBumps());
+              }
+            }
+
+            if (w.getImageUrl() != null) {
+              existingWrestler.setImageUrl(w.getImageUrl());
+            }
+
+            if (w.getExternalId() != null) {
+              existingWrestler.setExternalId(w.getExternalId());
+            }
+
+            if (w.getManager() != null) {
+              Npc manager = npcService.findByName(w.getManager());
+              if (manager != null) {
+                existingWrestler.setManager(manager);
+              }
+            }
+
+            if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
+            if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
+            if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
+            if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
+
+            wrestlerRepository.save(existingWrestler);
+            log.debug("Updated existing wrestler: {}", existingWrestler.getName());
+          } else {
+            Wrestler newWrestler = new Wrestler();
+            newWrestler.setName(w.getName());
+            newWrestler.setDeckSize(w.getDeckSize());
+            newWrestler.setStartingHealth(w.getStartingHealth());
+            newWrestler.setLowHealth(w.getLowHealth());
+            newWrestler.setStartingStamina(w.getStartingStamina());
+            newWrestler.setLowStamina(w.getLowStamina());
+            newWrestler.setDescription(w.getDescription());
+            newWrestler.setGender(w.getGender());
+            newWrestler.setFans(w.getFans());
+            newWrestler.setBumps(w.getBumps());
+            newWrestler.setImageUrl(w.getImageUrl());
+            newWrestler.setTier(WrestlerTier.ROOKIE);
+            if (w.getExternalId() != null) {
+              newWrestler.setExternalId(w.getExternalId());
+            }
+            if (w.getManager() != null) {
+              Npc manager = npcService.findByName(w.getManager());
+              if (manager != null) {
+                newWrestler.setManager(manager);
+              }
+            }
+            if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
+            if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
+            if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
+            if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
+
+            wrestlerRepository.save(newWrestler);
+            log.debug("Saved new wrestler: {}", newWrestler.getName());
           }
         }
+      } catch (IOException e) {
+        log.error("Error loading wrestlers from file", e);
       }
-    } catch (IOException e) {
-      log.error("Error resolving wrestler resources", e);
     }
   }
 
@@ -1067,7 +932,7 @@ public class DataInitializer implements Initializable {
     }
   }
 
-  void syncNpcsFromFile() {
+  private void syncNpcsFromFile() {
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
       log.info("Loading npcs from file: {}", resource.getPath());
@@ -1082,20 +947,6 @@ public class DataInitializer implements Initializable {
           }
           npc.setDescription(dto.getDescription());
           npc.setNpcType(dto.getType());
-          if (dto.getSet() != null) {
-            npc.setExpansionCode(dto.getSet());
-          }
-          if (dto.getAwareness() != null) {
-            npcService.setAwareness(npc, dto.getAwareness());
-          }
-          if (dto.getAlignment() != null) {
-            try {
-              AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
-              npc.setAlignment(at);
-            } catch (IllegalArgumentException e) {
-              log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
-            }
-          }
           npcService.save(npc);
           log.debug("Loaded npc: {}", dto.getName());
         }
@@ -1193,160 +1044,6 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Teams file not found: {}", resource.getPath());
-    }
-  }
-
-  private void syncLocationsFromFile() {
-    ClassPathResource resource = new ClassPathResource("locations.json");
-    if (resource.exists()) {
-      log.info("Loading locations from file: {}", resource.getPath());
-      try (var is = resource.getInputStream()) {
-        var locationsFromFile =
-            objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
-        if (locationsFromFile == null) {
-          log.warn("No locations found in {}", resource.getPath());
-          return;
-        }
-        log.info("Found {} locations in JSON file", locationsFromFile.size());
-        for (LocationImportDTO dto : locationsFromFile) {
-          Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
-          if (existingLocation.isEmpty()) {
-            Location location =
-                Location.builder()
-                    .name(dto.getName())
-                    .description(dto.getDescription())
-                    .imageUrl(dto.getImageUrl())
-                    .culturalTags(dto.getCulturalTags())
-                    .build();
-            locationRepository.save(location);
-            log.info("Saved new location: {}", location.getName());
-          } else {
-            Location existing = existingLocation.get();
-            existing.setDescription(dto.getDescription());
-            existing.setImageUrl(dto.getImageUrl());
-            existing.setCulturalTags(dto.getCulturalTags());
-            locationRepository.save(existing);
-            log.info("Updated existing location: {}", existing.getName());
-          }
-        }
-        locationRepository.flush();
-        log.info("Location loading completed - {} locations processed", locationsFromFile.size());
-
-      } catch (IOException e) {
-        log.error("Error loading locations from file", e);
-      }
-    } else {
-      log.warn("Locations file not found: {}", resource.getPath());
-    }
-  }
-
-  private void syncArenasFromFile() {
-    ClassPathResource resource = new ClassPathResource("arenas.json");
-    if (resource.exists()) {
-      log.info("Loading arenas from file: {}", resource.getPath());
-      try (var is = resource.getInputStream()) {
-        var arenasFromFile =
-            objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
-        if (arenasFromFile == null) {
-          log.warn("No arenas found in {}", resource.getPath());
-          return;
-        }
-        log.info("Found {} arenas in JSON file", arenasFromFile.size());
-        for (ArenaImportDTO dto : arenasFromFile) {
-          Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
-          if (existingArena.isEmpty()) {
-            Optional<Location> location = locationRepository.findByName(dto.getLocation());
-            if (location.isPresent()) {
-              Arena arena =
-                  Arena.builder()
-                      .name(dto.getName())
-                      .description(dto.getDescription())
-                      .location(location.get())
-                      .capacity(dto.getCapacity())
-                      .alignmentBias(dto.getAlignmentBias())
-                      .imageUrl(dto.getImageUrl())
-                      .environmentalTraits(dto.getEnvironmentalTraits())
-                      .build();
-              arenaRepository.save(arena);
-              log.info("Saved new arena: {}", arena.getName());
-            } else {
-              log.warn(
-                  "Location '{}' not found for arena '{}'. Skipping arena.",
-                  dto.getLocation(),
-                  dto.getName());
-            }
-          } else {
-            Arena existing = existingArena.get();
-            existing.setDescription(dto.getDescription());
-            existing.setCapacity(dto.getCapacity());
-            existing.setAlignmentBias(dto.getAlignmentBias());
-            existing.setImageUrl(dto.getImageUrl());
-            existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
-            Optional<Location> location = locationRepository.findByName(dto.getLocation());
-            location.ifPresentOrElse(
-                existing::setLocation,
-                () ->
-                    log.warn(
-                        "Location '{}' not found for existing arena '{}'. Location not updated.",
-                        dto.getLocation(),
-                        dto.getName()));
-            arenaRepository.save(existing);
-            log.info("Updated existing arena: {}", existing.getName());
-          }
-        }
-        log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());
-      } catch (IOException e) {
-        log.error("Error loading arenas from file", e);
-      }
-    } else {
-      log.warn("Arenas file not found: {}", resource.getPath());
-    }
-  }
-
-  private void syncRelationshipsFromFile() {
-    ClassPathResource resource = new ClassPathResource("relationships.json");
-    if (resource.exists()) {
-      log.info("Loading relationships from file: {}", resource.getPath());
-      try (var is = resource.getInputStream()) {
-        var dtos =
-            objectMapper.readValue(
-                is,
-                new com.fasterxml.jackson.core.type.TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
-
-        for (com.github.javydreamercsw.management.dto.RelationshipImportDTO dto : dtos) {
-          Optional<Wrestler> w1 = wrestlerRepository.findByName(dto.getWrestler1());
-          Optional<Wrestler> w2 = wrestlerRepository.findByName(dto.getWrestler2());
-
-          if (w1.isPresent() && w2.isPresent()) {
-            relationshipService.createOrUpdateRelationship(
-                w1.get().getId(),
-                w2.get().getId(),
-                dto.getType(),
-                dto.getLevel(),
-                dto.getIsStoryline(),
-                dto.getNotes());
-            log.debug(
-                "Loaded relationship: {} {} {} (Level: {})",
-                dto.getWrestler1(),
-                dto.getType(),
-                dto.getWrestler2(),
-                dto.getLevel());
-          } else {
-            if (w1.isEmpty()) {
-              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler1());
-            }
-            if (w2.isEmpty()) {
-              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler2());
-            }
-          }
-        }
-        log.info("Relationship loading completed - {} relationships processed", dtos.size());
-      } catch (IOException e) {
-        log.error("Error loading relationships from file", e);
-      }
-    } else {
-      log.warn("Relationships file not found: {}", resource.getPath());
     }
   }
 }

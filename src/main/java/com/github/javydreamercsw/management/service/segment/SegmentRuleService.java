@@ -219,7 +219,6 @@ public class SegmentRuleService {
       @NonNull String name,
       String description,
       boolean requiresHighHeat,
-      boolean noDq,
       BumpAddition bumpAddition) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
 
@@ -235,7 +234,6 @@ public class SegmentRuleService {
     segmentRule.setName(name);
     segmentRule.setDescription(description);
     segmentRule.setRequiresHighHeat(requiresHighHeat);
-    segmentRule.setNoDq(noDq);
     segmentRule.setBumpAddition(bumpAddition);
 
     return segmentRuleRepository.save(segmentRule);

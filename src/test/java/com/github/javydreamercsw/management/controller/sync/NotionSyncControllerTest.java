@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -39,7 +40,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
   @MockitoBean private NotionSyncService notionSyncService;
   @MockitoBean private NotionSyncScheduler notionSyncScheduler;
-  @MockitoBean private NotionSyncProperties syncProperties;
+  @Autowired private NotionSyncProperties syncProperties;
   @MockitoBean private EntityDependencyAnalyzer dependencyAnalyzer;
 
   @Test

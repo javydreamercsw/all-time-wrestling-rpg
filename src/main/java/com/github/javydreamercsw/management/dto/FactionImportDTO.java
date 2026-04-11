@@ -26,5 +26,4 @@ public class FactionImportDTO {
   private String leader;
   private String manager;
   private List<String> members;
-  private int affinity;
 }
