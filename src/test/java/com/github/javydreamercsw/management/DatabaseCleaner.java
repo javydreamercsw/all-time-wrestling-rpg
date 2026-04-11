@@ -155,6 +155,44 @@ public class DatabaseCleaner implements DatabaseCleanup {
       // This might fail if the table doesn't exist yet on first run, which is fine.
       log.warn("Could not nullify wrestler.account_id: {}", e.getMessage());
     }
+    try {
+      entityManager
+          .createNativeQuery("UPDATE campaign_storyline SET current_milestone_id = NULL")
+          .executeUpdate();
+      log.debug("✅ Nullified campaign_storyline.current_milestone_id");
+    } catch (Exception e) {
+      log.warn("Could not nullify campaign_storyline.current_milestone_id: {}", e.getMessage());
+    }
+    try {
+      entityManager
+          .createNativeQuery(
+              "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL")
+          .executeUpdate();
+      log.debug("✅ Nullified storyline_milestone self-references");
+    } catch (Exception e) {
+      log.warn("Could not nullify storyline_milestone self-references: {}", e.getMessage());
+    }
+    try {
+      entityManager
+          .createNativeQuery("UPDATE campaign_state SET active_storyline_id = NULL")
+          .executeUpdate();
+      log.debug("✅ Nullified campaign_state.active_storyline_id");
+    } catch (Exception e) {
+      log.warn("Could not nullify campaign_state.active_storyline_id: {}", e.getMessage());
+    }
+
+    try {
+      entityManager.createNativeQuery("DELETE FROM storyline_milestone").executeUpdate();
+      log.debug("✅ Explicitly cleared storyline_milestone");
+    } catch (Exception e) {
+      log.warn("Could not explicitly clear storyline_milestone: {}", e.getMessage());
+    }
+    try {
+      entityManager.createNativeQuery("DELETE FROM campaign_storyline").executeUpdate();
+      log.debug("✅ Explicitly cleared campaign_storyline");
+    } catch (Exception e) {
+      log.warn("Could not explicitly clear campaign_storyline: {}", e.getMessage());
+    }
   }
 
   /**

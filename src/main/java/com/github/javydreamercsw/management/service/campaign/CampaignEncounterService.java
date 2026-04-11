@@ -24,6 +24,10 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
+import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
+import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -46,9 +50,11 @@ public class CampaignEncounterService {
   private final CampaignStateRepository stateRepository;
   private final CampaignChapterService chapterService;
   private final CampaignService campaignService;
+  private final StorylineDirectorService storylineDirectorService;
   private final WrestlerRepository wrestlerRepository;
   private final TeamRepository teamRepository;
   private final FactionRepository factionRepository;
+  private final CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper;
 
   public CampaignEncounterService(
@@ -57,18 +63,22 @@ public class CampaignEncounterService {
       CampaignStateRepository stateRepository,
       CampaignChapterService chapterService,
       @org.springframework.context.annotation.Lazy CampaignService campaignService,
+      StorylineDirectorService storylineDirectorService,
       WrestlerRepository wrestlerRepository,
       TeamRepository teamRepository,
       FactionRepository factionRepository,
+      CommentatorRepository commentatorRepository,
       ObjectMapper objectMapper) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
     this.chapterService = chapterService;
     this.campaignService = campaignService;
+    this.storylineDirectorService = storylineDirectorService;
     this.wrestlerRepository = wrestlerRepository;
     this.teamRepository = teamRepository;
     this.factionRepository = factionRepository;
+    this.commentatorRepository = commentatorRepository;
     this.objectMapper = objectMapper;
   }
 
@@ -76,8 +86,8 @@ public class CampaignEncounterService {
   public CampaignEncounterResponseDTO generateEncounter(Campaign campaign) {
     CampaignState state = campaign.getState();
     CampaignChapterDTO chapter =
-        chapterService
-            .getChapter(state.getCurrentChapterId())
+        campaignService
+            .getCurrentChapter(campaign)
             .orElseThrow(
                 () ->
                     new IllegalStateException("Chapter not found: " + state.getCurrentChapterId()));
@@ -124,6 +134,17 @@ public class CampaignEncounterService {
     StringBuilder sb = new StringBuilder();
     sb.append(chapter.getAiSystemPrompt()).append("\n\n");
 
+    if (campaign.getState().getActiveStoryline() != null) {
+      CampaignStoryline storyline = campaign.getState().getActiveStoryline();
+      StorylineMilestone milestone = storyline.getCurrentMilestone();
+      sb.append("CURRENT STORYLINE ARC: ").append(storyline.getTitle()).append("\n");
+      sb.append("STORYLINE DESCRIPTION: ").append(storyline.getDescription()).append("\n");
+      if (milestone != null) {
+        sb.append("CURRENT NARRATIVE GOAL: ").append(milestone.getNarrativeGoal()).append("\n");
+      }
+      sb.append("\n");
+    }
+
     sb.append("PLAYER CONTEXT:\n");
     sb.append("- Wrestler: ").append(campaign.getWrestler().getName()).append("\n");
     if (campaign.getWrestler().getDescription() != null) {
@@ -151,6 +172,24 @@ public class CampaignEncounterService {
 
     if (campaign.getState().getRival() != null) {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
+    }
+
+    // Official ATW Commentators
+    List<Commentator> commentators = commentatorRepository.findAll();
+    if (!commentators.isEmpty()) {
+      sb.append("\nOFFICIAL ATW COMMENTARY TEAM:\n");
+      for (Commentator c : commentators) {
+        sb.append("- ")
+            .append(c.getNpc().getName())
+            .append(" (")
+            .append(c.getNpc().getAlignment())
+            .append("): ")
+            .append(c.getNpc().getDescription())
+            .append("\n");
+      }
+      sb.append(
+          "Use these commentators for post-match analysis or to frame the story narrative where"
+              + " appropriate.\n");
     }
 
     // Check for partner ID in feature data
@@ -381,6 +420,18 @@ public class CampaignEncounterService {
 
     // Apply consequences
     campaignService.shiftAlignment(campaign, choice.getAlignmentShift());
+
+    // Evaluate storyline progress
+    // If it's a POST_MATCH encounter, we already evaluated the match.
+    // For other encounters, we can consider the choice as a "success" unless we add failure logic
+    // to choices.
+    // For now, any choice made advances the current milestone if it's the intended path.
+    if (campaign.getState().getActiveStoryline() != null) {
+      // In this simple implementation, we assume choosing ANY option in a narrative encounter
+      // counts as a 'success' for that beat of the story, as failure is usually reserved for
+      // matches.
+      storylineDirectorService.evaluateProgress(campaign, true);
+    }
 
     CampaignState state = campaign.getState();
     state.setVictoryPoints(state.getVictoryPoints() + finalVp);

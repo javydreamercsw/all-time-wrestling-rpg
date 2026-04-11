@@ -25,18 +25,24 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -65,10 +71,12 @@ class ShowServiceTest {
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private LegacyService legacyService;
   @Mock private SecurityUtils securityUtils;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository
-      commentaryTeamRepository;
+  @Mock private ArenaRepository arenaRepository;
+  @Mock private LeagueRosterRepository leagueRosterRepository;
+  @Mock private WrestlerContractRepository contractRepository;
+  @Mock private SalaryCalculator salaryCalculator;
+  @Mock private WrestlerRelationshipService relationshipService;
+  @Mock private CommentaryTeamRepository commentaryTeamRepository;
 
   @InjectMocks private ShowService showService;
 
@@ -85,10 +93,10 @@ class ShowServiceTest {
     showService =
         new ShowService(
             showRepository,
-            null, // ShowTypeRepository
-            null, // SeasonRepository
-            null, // ShowTemplateRepository
-            null, // LeagueRepository
+            null,
+            null,
+            null,
+            null,
             java.time.Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
@@ -99,7 +107,11 @@ class ShowServiceTest {
             commentaryTeamRepository,
             newsGenerationService,
             legacyService,
-            securityUtils);
+            securityUtils,
+            arenaRepository,
+            leagueRosterRepository,
+            contractRepository,
+            salaryCalculator);
     show = new Show();
     show.setId(1L);
 

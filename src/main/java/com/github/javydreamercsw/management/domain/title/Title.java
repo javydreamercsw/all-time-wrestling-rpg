@@ -71,6 +71,9 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
+  @Column(name = "image_url")
+  private String imageUrl;
+
   @Column(name = "defense_frequency")
   private Integer defenseFrequency;
 

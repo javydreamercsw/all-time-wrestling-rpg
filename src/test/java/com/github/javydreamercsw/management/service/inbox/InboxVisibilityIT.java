@@ -17,14 +17,12 @@
 package com.github.javydreamercsw.management.service.inbox;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -37,8 +35,6 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private InboxEventTypeRegistry eventTypeRegistry;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private DataInitializer dataInitializer;
 
   private Account userA;
   private Account userB;
@@ -49,38 +45,23 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
   public void setUp() {
     inboxRepository.deleteAll();
 
-    // Clean up specifically for these tests
-    accountRepository
-        .findByUsername("testUserA")
-        .ifPresent(
-            a -> {
-              wrestlerRepository.findByAccount(a).forEach(wrestlerRepository::delete);
-              accountRepository.delete(a);
-            });
-    accountRepository
-        .findByUsername("testUserB")
-        .ifPresent(
-            a -> {
-              wrestlerRepository.findByAccount(a).forEach(wrestlerRepository::delete);
-              accountRepository.delete(a);
-            });
-
-    userA = accountRepository.save(new Account("testUserA", "password123", "a@test.com"));
-    userB = accountRepository.save(new Account("testUserB", "password123", "b@test.com"));
+    userA = accountRepository.findByUsername("player").orElseThrow();
+    userB = accountRepository.findByUsername("booker").orElseThrow();
 
     wrestlerA = new Wrestler();
     wrestlerA.setName("Wrestler A");
     wrestlerA.setAccount(userA);
-    wrestlerA = wrestlerRepository.save(wrestlerA);
+    wrestlerA = wrestlerRepository.saveAndFlush(wrestlerA);
 
     wrestlerB = new Wrestler();
     wrestlerB.setName("Wrestler B");
     wrestlerB.setAccount(userB);
-    wrestlerB = wrestlerRepository.save(wrestlerB);
+    wrestlerB = wrestlerRepository.saveAndFlush(wrestlerB);
   }
 
   @Test
   void testVisibilityBetweenUsers() {
+    loginAs("admin");
     // Create message for User A (Account target)
     inboxService.createInboxItem(
         eventTypeRegistry.getEventTypes().getFirst(),
@@ -96,7 +77,7 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
         InboxItemTarget.TargetType.WRESTLER);
 
     // User A searches for their items
-    loginAs("testUserA");
+    loginAs("player");
     List<InboxItem> resultsA =
         inboxService.search(Collections.singleton(wrestlerA), "All", "All", false, userA.getId());
 
@@ -104,7 +85,7 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
     Assertions.assertEquals("For User A", resultsA.getFirst().getDescription());
 
     // User B searches for their items
-    loginAs("testUserB");
+    loginAs("booker");
     List<InboxItem> resultsB =
         inboxService.search(Collections.singleton(wrestlerB), "All", "All", false, userB.getId());
     Assertions.assertEquals(1, resultsB.size(), "User B should see exactly one message");
@@ -113,6 +94,7 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
 
   @Test
   void testUserCannotSeeOtherWrestlerMessages() {
+    loginAs("admin");
     // Create message for Wrestler B
     inboxService.createInboxItem(
         eventTypeRegistry.getEventTypes().get(0),
@@ -120,8 +102,8 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
         wrestlerB.getId().toString(),
         InboxItemTarget.TargetType.WRESTLER);
 
-    // Login as User A
-    loginAs("testUserA");
+    // Login as User A (player)
+    loginAs("player");
 
     // User A tries to search for Wrestler B's items
     List<InboxItem> results =
@@ -134,6 +116,7 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
 
   @Test
   void testBugReproduction_NoFilters() {
+    loginAs("admin");
     // Create a message for someone else
     inboxService.createInboxItem(
         eventTypeRegistry.getEventTypes().getFirst(),
@@ -141,8 +124,8 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
         "999",
         InboxItemTarget.TargetType.ACCOUNT);
 
-    // Login as a regular user (User A)
-    loginAs("testUserA");
+    // Login as a regular user (player)
+    loginAs("player");
 
     // If accountId is null and targets is empty, we should NOT see it if we are a regular user.
     List<InboxItem> results =
@@ -155,15 +138,13 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
 
   @Test
   void testAdminCanSeeEverything() {
+    loginAs("admin");
     // Create a message for someone else
     inboxService.createInboxItem(
         eventTypeRegistry.getEventTypes().getFirst(),
         "Secret Message",
         "999",
         InboxItemTarget.TargetType.ACCOUNT);
-
-    // Login as admin
-    loginAs("admin");
 
     // Admin should see it even with no filters
     List<InboxItem> results =

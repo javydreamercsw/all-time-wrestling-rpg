@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -31,10 +32,13 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
@@ -59,6 +63,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@lombok.extern.slf4j.Slf4j
 public class ShowService {
   private final ShowRepository showRepository;
   private final ShowTypeRepository showTypeRepository;
@@ -76,6 +81,10 @@ public class ShowService {
   private final NewsGenerationService newsGenerationService;
   private final LegacyService legacyService;
   private final SecurityUtils securityUtils;
+  private final ArenaRepository arenaRepository;
+  private final LeagueRosterRepository leagueRosterRepository;
+  private final WrestlerContractRepository contractRepository;
+  private final SalaryCalculator salaryCalculator;
 
   ShowService(
       ShowRepository showRepository,
@@ -93,7 +102,11 @@ public class ShowService {
       CommentaryTeamRepository commentaryTeamRepository,
       NewsGenerationService newsGenerationService,
       LegacyService legacyService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      ArenaRepository arenaRepository,
+      LeagueRosterRepository leagueRosterRepository,
+      WrestlerContractRepository contractRepository,
+      SalaryCalculator salaryCalculator) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -110,6 +123,10 @@ public class ShowService {
     this.newsGenerationService = newsGenerationService;
     this.legacyService = legacyService;
     this.securityUtils = securityUtils;
+    this.arenaRepository = arenaRepository;
+    this.leagueRosterRepository = leagueRosterRepository;
+    this.contractRepository = contractRepository;
+    this.salaryCalculator = salaryCalculator;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -296,7 +313,8 @@ public class ShowService {
       Long seasonId,
       Long templateId,
       Long leagueId,
-      Long commentaryTeamId) {
+      Long commentaryTeamId,
+      Long arenaId) {
 
     Show show = new Show();
     show.setName(name);
@@ -349,6 +367,14 @@ public class ShowService {
                           "Commentary team not found: " + commentaryTeamId)));
     }
 
+    // Set arena (optional)
+    if (arenaId != null) {
+      show.setArena(
+          arenaRepository
+              .findById(arenaId)
+              .orElseThrow(() -> new IllegalArgumentException("Arena not found: " + arenaId)));
+    }
+
     return showRepository.saveAndFlush(show);
   }
 
@@ -381,7 +407,8 @@ public class ShowService {
       Long seasonId,
       Long templateId,
       Long leagueId,
-      Long commentaryTeamId) {
+      Long commentaryTeamId,
+      Long arenaId) {
 
     return showRepository
         .findById(id)
@@ -445,6 +472,16 @@ public class ShowService {
                                     "Commentary team not found: " + commentaryTeamId)));
               } else {
                 show.setCommentaryTeam(null);
+              }
+
+              if (arenaId != null) {
+                show.setArena(
+                    arenaRepository
+                        .findById(arenaId)
+                        .orElseThrow(
+                            () -> new IllegalArgumentException("Arena not found: " + arenaId)));
+              } else {
+                show.setArena(null);
               }
 
               return showRepository.saveAndFlush(show);
@@ -516,7 +553,101 @@ public class ShowService {
         .getAuthenticatedUser()
         .ifPresent(details -> legacyService.incrementShowsBooked(details.getAccount()));
 
+    processGmModeUpdates(show, participatingWrestlerIds);
+
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
+  }
+
+  private void processGmModeUpdates(Show show, Set<Long> participatingWrestlerIds) {
+    League league = show.getLeague();
+    if (league == null) return;
+
+    java.math.BigDecimal totalExpenses = java.math.BigDecimal.ZERO;
+    java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO;
+
+    // 1. Calculate Revenue (Base on ratings and arena)
+    double averageRating =
+        segmentRepository.findByShow(show).stream()
+            .mapToDouble(s -> s.getSegmentRating() != null ? s.getSegmentRating() : 0)
+            .average()
+            .orElse(0.0);
+
+    if (show.getArena() != null && show.getArena().getCapacity() != null) {
+      // Revenue = Capacity * (Rating/100) * $10 per head (simplified)
+      totalRevenue =
+          java.math.BigDecimal.valueOf(show.getArena().getCapacity())
+              .multiply(java.math.BigDecimal.valueOf(averageRating / 100.0))
+              .multiply(new java.math.BigDecimal("10.00"));
+    }
+
+    // 2. Process Wrestler Fatigue, Morale, and Salaries
+    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
+    for (Wrestler w : allWrestlers) {
+      boolean participated = participatingWrestlerIds.contains(w.getId());
+
+      // Stamina Logic
+      int currentStamina = w.getManagementStamina() != null ? w.getManagementStamina() : 100;
+      if (participated) {
+        // Decrease stamina by 10-20% per show
+        w.setManagementStamina(
+            Math.max(0, currentStamina - (10 + new java.util.Random().nextInt(11))));
+      } else {
+        // Recover stamina by 15-25% if resting
+        w.setManagementStamina(
+            Math.min(100, currentStamina + (15 + new java.util.Random().nextInt(11))));
+      }
+
+      // Morale Logic (Simple: +2 if booked, -5 if not booked and high tier)
+      int currentMorale = w.getMorale() != null ? w.getMorale() : 100;
+      if (participated) {
+        w.setMorale(Math.min(100, currentMorale + 2));
+      } else if (w.getTier().ordinal()
+          >= com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER.ordinal()) {
+        w.setMorale(Math.max(0, currentMorale - 5));
+      }
+
+      wrestlerRepository.save(w);
+
+      // Contract Salaries
+      if (participated) {
+        contractRepository
+            .findByWrestlerAndLeagueAndIsActiveTrue(w, league)
+            .ifPresent(
+                contract -> {
+                  // Expense = salary per show
+                  // We could add complex logic here, but let's keep it simple for now
+                });
+
+        // Simplified salary deduction: subtract current calculated salary from budget
+        totalExpenses = totalExpenses.add(salaryCalculator.calculateWeeklySalary(w));
+      }
+    }
+
+    // 3. Update League Budget & Morale
+    java.math.BigDecimal currentBudget =
+        league.getBudget() != null ? league.getBudget() : java.math.BigDecimal.ZERO;
+    league.setBudget(currentBudget.add(totalRevenue).subtract(totalExpenses));
+
+    // Calculate Average Morale for the League
+    List<Wrestler> leagueRoster =
+        leagueRosterRepository.findByLeague(league).stream()
+            .map(com.github.javydreamercsw.management.domain.league.LeagueRoster::getWrestler)
+            .toList();
+
+    if (!leagueRoster.isEmpty()) {
+      double avgMorale =
+          leagueRoster.stream().mapToInt(Wrestler::getMorale).average().orElse(100.0);
+      league.setLockerRoomMorale((int) avgMorale);
+    }
+
+    leagueRepository.save(league);
+
+    log.info(
+        "GM Mode Update for {}: Revenue: {}, Expenses: {}, New Budget: {}",
+        show.getName(),
+        totalRevenue,
+        totalExpenses,
+        league.getBudget());
   }
 
   @PreAuthorize("isAuthenticated()")

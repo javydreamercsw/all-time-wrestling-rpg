@@ -5,15 +5,15 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.1</version>
+    <version>4.0.5</version>
     <relativePath/>
   </parent>
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.6.0</version>
+  <version>1.7.0-SNAPSHOT</version>
 
-  <packaging>war</packaging>
+  <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
 
   <properties>
@@ -39,14 +39,16 @@
     <jacoco.version>0.8.14</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
-    <lombok.version>1.18.42</lombok.version>
+    <lombok.version>1.18.44</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.40.0</selenium.version>
+    <selenium.version>4.43.0</selenium.version>
+    <skipTests>false</skipTests>
+    <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
-    <testcontainers.version>2.0.3</testcontainers.version>
-    <vaadin.version>25.0.4</vaadin.version>
+    <testcontainers.version>2.0.4</testcontainers.version>
+    <vaadin.version>25.1.1</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -76,7 +78,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.10.Final</version>
+        <version>4.2.12.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -88,12 +90,12 @@
       <dependency>
         <groupId>com.squareup.okio</groupId>
         <artifactId>okio</artifactId>
-        <version>3.16.4</version>
+        <version>3.17.0</version>
       </dependency>
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.18.42</version>
+        <version>1.18.44</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -104,7 +106,7 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
-        <version>2.0.3</version>
+        <version>2.0.4</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -180,6 +182,16 @@
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-flyway</artifactId>
     </dependency>
     <dependency>
@@ -231,21 +243,16 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>6.9.3</version>
+      <version>6.11.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
       <artifactId>apexcharts</artifactId>
-      <version>24.0.2</version>
+      <version>25.0.1</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-webmvc-test</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -254,12 +261,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-tomcat</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
-      <version>7.0.1</version>
+      <version>7.1.6</version>
     </dependency>
     <!-- Persistence -->
     <dependency>
@@ -387,14 +393,13 @@
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
-      <version>2.5</version>
+      <version>2.6</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.18</version>
-      <scope>provided</scope>
+      <version>11.0.21</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -411,7 +416,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>6.2.0-M1</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
@@ -455,13 +460,13 @@
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v10</artifactId>
-      <version>2.6.2</version>
+      <version>2.7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v24</artifactId>
-      <version>2.6.2</version>
+      <version>2.7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -498,19 +503,19 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>4.40.0</version>
+      <version>${selenium.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>4.40.0</version>
+      <version>${selenium.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-chromium-driver</artifactId>
-      <version>4.40.0</version>
+      <version>${selenium.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -539,11 +544,6 @@
       <version>1.5.32</version>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-core</artifactId>
       <scope>test</scope>
@@ -561,13 +561,13 @@
     <dependency>
       <groupId>io.github.bonigarcia</groupId>
       <artifactId>webdrivermanager</artifactId>
-      <version>6.3.3</version>
+      <version>6.3.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-chrome-driver</artifactId>
-      <version>4.40.0</version>
+      <version>${selenium.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -582,12 +582,12 @@
     <dependency>
       <groupId>org.passay</groupId>
       <artifactId>passay</artifactId>
-      <version>1.6.6</version>
+      <version>2.0.0</version>
     </dependency>
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
-      <version>2.2.42</version>
+      <version>2.2.46</version>
     </dependency>
     <dependency>
       <groupId>jakarta.persistence</groupId>
@@ -600,7 +600,6 @@
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -625,7 +624,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-models-jakarta</artifactId>
-      <version>2.2.43</version>
+      <version>2.2.46</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -767,10 +766,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.4</version>
+        <version>3.5.5</version>
         <configuration>
+          <skipTests>${surefire.skip}</skipTests>
           <!-- Enable parallel execution for unit tests -->
           <parallel>classes</parallel>
+
           <threadCount>4</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
@@ -796,14 +797,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.5.4</version>
+        <version>3.5.5</version>
         <configuration>
           <!-- Skip by default unless explicitly enabled. -->
           <skipITs>${e2e.skipITs}</skipITs>
 
-          <!-- Enable parallel execution -->
-          <parallel>classes</parallel>
-          <threadCount>4</threadCount>
+          <!-- Parallel execution disabled to prevent database interference between tests sharing the same context -->
+          <parallel>none</parallel>
+          <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
           <!-- Optimize for faster execution -->
@@ -840,7 +841,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.4.0</version>
         <configuration>
           <!-- optional: limit format enforcement to just the files changed by this feature branch
                 <ratchetFrom>origin/master</ratchetFrom>-->
@@ -1039,6 +1040,7 @@
             <!--Only used with H2-->
             <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-flyway</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-test</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa-test</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-webmvc-test</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-aop</ignoredUnusedDeclaredDependency>
@@ -1132,6 +1134,44 @@
 
   <profiles>
     <profile>
+      <id>war</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-tomcat</artifactId>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.tomcat.embed</groupId>
+          <artifactId>tomcat-embed-core</artifactId>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-annotations-api</artifactId>
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.4.0</version>
+            <executions>
+              <execution>
+                <id>default-war</id>
+                <goals>
+                  <goal>war</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>vaadin-upgrade</id>
       <properties>
         <!-- Force a clean frontend regeneration to avoid stale Vite/Vaadin artifacts after version bumps -->
@@ -1179,6 +1219,49 @@
       </build>
     </profile>
 
+    <profile>
+      <id>desktop</id>
+      <properties>
+        <jpackage.appVersion>1.7.0</jpackage.appVersion>
+        <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
+        <jpackage.type>DMG</jpackage.type>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.panteleyev</groupId>
+            <artifactId>jpackage-maven-plugin</artifactId>
+            <version>1.6.0</version>
+            <executions>
+              <execution>
+                <id>jpackage</id>
+                <goals>
+                  <goal>jpackage</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <name>AllTimeWrestling</name>
+                  <vendor>javydreamercsw</vendor>
+                  <appVersion>${jpackage.appVersion}</appVersion>
+                  <input>${project.build.directory}</input>
+                  <mainJar>${project.build.finalName}.jar</mainJar>
+                  <mainClass>com.github.javydreamercsw.Application</mainClass>
+                  <destination>${project.build.directory}/dist</destination>
+                  <javaOptions>
+                    <option>-Dspring.profiles.active=prod</option>
+                  </javaOptions>
+                  <type>${jpackage.type}</type>
+                  <icon>${jpackage.icon}</icon>
+                  <!-- Platform specific configurations -->
+                  <macPackageName>All Time Wrestling RPG</macPackageName>
+                  <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>production</id>
       <dependencies>
@@ -1246,6 +1329,7 @@
       <id>integration-test</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1289,6 +1373,7 @@
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
         <jacoco.it.destFile>${project.build.directory}/jacoco-e2e.exec</jacoco.it.destFile>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1302,7 +1387,11 @@
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
+              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
                 <webdriver.chrome.whitelistedIps/>
                 <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
@@ -1342,6 +1431,7 @@
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
         <jacoco.it.destFile>${jacoco.notion.it.destFile}</jacoco.it.destFile>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1353,6 +1443,10 @@
                 <include>**/*Notion*IT.java</include>
                 <include>**/Notion*IT.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*E2ETest.java</exclude>
+                <exclude>**/DockerPackageIT.java</exclude>
+              </excludes>
             </configuration>
           </plugin>
           <plugin>
@@ -1380,6 +1474,7 @@
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
         <jacoco.it.destFile>${jacoco.notion.e2e.destFile}</jacoco.it.destFile>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1387,10 +1482,17 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
+              <!-- Ensure E2E is not skipped in this profile. -->
+              <skipITs>false</skipITs>
+
               <includes>
                 <include>**/*Notion*E2ETest.java</include>
               </includes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
+              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
                 <webdriver.chrome.whitelistedIps/>
                 <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
@@ -1422,16 +1524,10 @@
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
@@ -1440,6 +1536,12 @@
               <includes>
                 <include>**/*DocsE2ETest.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+                <!-- Exclude non-Docs E2Es -->
+                <exclude>**/*E2ETest.java</exclude>
+              </excludes>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
               </systemPropertyVariables>
@@ -1472,15 +1574,25 @@
               <configuration>
                 <type>runtime</type>
                 <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/html</cargo.tomcat.manager.url>
-                  <!-- Reference the server ID from settings.xml -->
-                  <cargo.remote.username>${tomcat.username}</cargo.remote.username>
-                  <cargo.remote.password>${tomcat.password}</cargo.remote.password>
+                  <cargo.tomcat.manager.url>http://localhost:8080/manager/text</cargo.tomcat.manager.url>
+                  <cargo.remote.username>${env.tomcat.username}</cargo.remote.username>
+                  <cargo.remote.password>${env.tomcat.password}</cargo.remote.password>
                 </properties>
               </configuration>
               <deployer>
                 <type>remote</type>
               </deployer>
+              <deployables>
+                <deployable>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>${project.artifactId}</artifactId>
+                  <type>war</type>
+                  <location>${project.build.directory}/${project.build.finalName}.war</location>
+                  <properties>
+                    <context>/atw-rpg</context>
+                  </properties>
+                </deployable>
+              </deployables>
             </configuration>
             <executions>
               <execution>
@@ -1522,6 +1634,7 @@
       <id>docker-it</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
+        <surefire.skip>true</surefire.skip>
       </properties>
       <build>
         <plugins>
@@ -1539,6 +1652,7 @@
               </goals>
               <profiles>
                 <profile>production</profile>
+                <profile>war</profile>
               </profiles>
             </configuration>
             <executions>
@@ -1553,18 +1667,17 @@
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
                 <include>**/DockerPackageIT.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*E2ETest.java</exclude>
+                <!-- Exclude other ITs -->
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
             </configuration>
             <executions>
               <execution>
