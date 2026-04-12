@@ -1233,6 +1233,43 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.8.1</version>
+            <executions>
+              <execution>
+                <id>copy-dependencies-for-jpackage</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <includeScope>runtime</includeScope>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>prepare-jpackage-input</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <target>
+                    <copy file="${project.build.directory}/${project.build.finalName}.jar.original" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <groupId>org.panteleyev</groupId>
             <artifactId>jpackage-maven-plugin</artifactId>
             <version>1.6.0</version>
@@ -1242,13 +1279,13 @@
                 <goals>
                   <goal>jpackage</goal>
                 </goals>
-                <phase>package</phase>
+                <phase>verify</phase>
                 <configuration>
                   <name>AllTimeWrestling</name>
                   <vendor>javydreamercsw</vendor>
                   <appVersion>${jpackage.appVersion}</appVersion>
-                  <input>${project.build.directory}</input>
-                  <mainJar>${project.build.finalName}.jar</mainJar>
+                  <input>${project.build.directory}/jpackage-input</input>
+                  <mainJar>${project.build.finalName}-thin.jar</mainJar>
                   <mainClass>com.github.javydreamercsw.Application</mainClass>
                   <destination>${project.build.directory}/dist</destination>
                   <javaOptions>
