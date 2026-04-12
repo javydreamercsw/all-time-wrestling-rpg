@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ui.view;
 import com.github.javydreamercsw.management.ui.view.account.ForgotPasswordView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
@@ -97,16 +98,14 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         LumoUtility.Gap.MEDIUM,
         LumoUtility.Margin.Bottom.LARGE);
 
-    // Placeholder logo - will be replaced later
-    // For now, using a styled div with text
-    Div logoPlaceholder = new Div();
-    logoPlaceholder.setText("🤼");
-    logoPlaceholder.addClassNames(
-        LumoUtility.FontSize.XXXLARGE,
-        LumoUtility.Padding.LARGE,
-        LumoUtility.Background.CONTRAST_5,
-        LumoUtility.BorderRadius.LARGE);
-    logoPlaceholder.getStyle().set("font-size", "4rem");
+    // Application logo
+    Image logo = new Image("images/logo.png", "All Time Wrestling RPG Logo");
+    logo.setWidth("120px");
+    logo.setHeight("120px");
+    logo.addClassNames(
+        LumoUtility.Margin.Bottom.MEDIUM,
+        LumoUtility.BorderRadius.LARGE,
+        LumoUtility.BoxShadow.MEDIUM);
 
     H1 appName = new H1("All Time Wrestling RPG");
     appName.addClassNames(LumoUtility.Margin.NONE, LumoUtility.FontSize.XXLARGE);
@@ -115,7 +114,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     tagline.addClassNames(
         LumoUtility.Margin.NONE, LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.MEDIUM);
 
-    header.add(logoPlaceholder, appName, tagline);
+    header.add(logo, appName, tagline);
     return header;
   }
 

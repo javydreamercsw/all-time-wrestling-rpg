@@ -60,7 +60,7 @@ class DesktopIntegrationTest {
     // This test ensures that even if enabled, it doesn't crash in a headless environment (standard
     // for CI)
     contextRunner
-        .withPropertyValues("atw.desktop.enabled=true")
+        .withPropertyValues("atw.desktop.enabled=true", "server.servlet.context-path=/test-path")
         .withBean(
             ResourceLoader.class,
             () -> {
@@ -78,6 +78,7 @@ class DesktopIntegrationTest {
             context -> {
               DesktopIntegration integration = context.getBean(DesktopIntegration.class);
               ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
+              when(event.getApplicationContext()).thenReturn(context);
 
               // This should run without throwing any AWT related HeadlessExceptions
               // because of the internal checks.

@@ -218,7 +218,7 @@ If you don't want to install the game, you can use the portable ZIP distribution
 	./mvnw clean package -Pproduction,portable -DskipTests
 	```
 2.  **Run the Game**:
-	Unzip the archive in `target/` and run `start-windows.bat` or `start-mac-linux.sh`.
+	Unzip the archive in `target/` and run `start-windows.bat`, `start-macos.sh`, or `start-linux.sh`.
 
 ### GraalVM Native Image
 

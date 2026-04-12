@@ -23,6 +23,7 @@ import java.awt.Image;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
+import java.awt.Taskbar;
 import java.awt.TrayIcon;
 import java.io.IOException;
 import java.net.URI;
@@ -70,8 +71,13 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
       port = serverContext.getWebServer().getPort();
     }
 
-    String contextPath = "";
-    if (servletContext != null) {
+    String contextPath =
+        event
+            .getApplicationContext()
+            .getEnvironment()
+            .getProperty("server.servlet.context-path", "");
+
+    if (contextPath.isEmpty() && servletContext != null) {
       contextPath = servletContext.getContextPath();
     }
 
@@ -86,8 +92,39 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     String url = String.format("http://localhost:%d%s/", port, contextPath);
     log.info("Constructed application URL: {}", url);
 
-    setupSystemTray(url);
+    // Try to load icon for both Tray and Dock/Taskbar
+    Image iconImage = loadIcon();
+
+    if (iconImage != null) {
+      setupDockIcon(iconImage);
+      setupSystemTray(url, iconImage);
+    }
+
     launchBrowser(url);
+  }
+
+  private Image loadIcon() {
+    try {
+      // Use the high-res source icon if available, otherwise fallback to the PNG
+      Resource resource = resourceLoader.getResource("classpath:jpackage/source-icon.png");
+      if (!resource.exists()) {
+        resource = resourceLoader.getResource("classpath:jpackage/linux/icon.png");
+      }
+      return ImageIO.read(resource.getInputStream());
+    } catch (IOException e) {
+      log.error("Failed to load application icon", e);
+      return null;
+    }
+  }
+
+  private void setupDockIcon(Image image) {
+    if (Taskbar.isTaskbarSupported()) {
+      Taskbar taskbar = Taskbar.getTaskbar();
+      if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
+        taskbar.setIconImage(image);
+        log.info("Dock/Taskbar icon set.");
+      }
+    }
   }
 
   private void launchBrowser(String url) {
@@ -103,7 +140,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     }
   }
 
-  private void setupSystemTray(String url) {
+  private void setupSystemTray(String url, Image image) {
     if (!SystemTray.isSupported()) {
       log.warn("System Tray not supported on this platform.");
       return;
@@ -111,15 +148,6 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
 
     try {
       SystemTray tray = SystemTray.getSystemTray();
-
-      // Try to load icon
-      Resource resource = resourceLoader.getResource("classpath:jpackage/linux/icon.png");
-      Image image = ImageIO.read(resource.getInputStream());
-
-      if (image == null) {
-        log.warn("Could not load tray icon. Skipping System Tray setup.");
-        return;
-      }
 
       PopupMenu popup = new PopupMenu();
       MenuItem openItem = new MenuItem("Open Game");
@@ -139,7 +167,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
       tray.add(trayIcon);
       log.info("System Tray icon added.");
 
-    } catch (IOException | AWTException e) {
+    } catch (AWTException e) {
       log.error("Failed to setup System Tray", e);
     }
   }

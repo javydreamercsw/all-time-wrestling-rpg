@@ -20,7 +20,8 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>start-windows.bat</include>
-                <include>start-mac-linux.sh</include>
+                <include>start-macos.sh</include>
+                <include>start-linux.sh</include>
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>
