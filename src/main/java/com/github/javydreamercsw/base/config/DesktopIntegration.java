@@ -94,8 +94,12 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
       Resource resource = resourceLoader.getResource("classpath:jpackage/linux/icon.png");
       Image image = ImageIO.read(resource.getInputStream());
 
-      PopupMenu popup = new PopupMenu();
+      if (image == null) {
+        log.warn("Could not load tray icon. Skipping System Tray setup.");
+        return;
+      }
 
+      PopupMenu popup = new PopupMenu();
       MenuItem openItem = new MenuItem("Open Game");
       openItem.addActionListener(e -> launchBrowser(url));
       popup.add(openItem);
