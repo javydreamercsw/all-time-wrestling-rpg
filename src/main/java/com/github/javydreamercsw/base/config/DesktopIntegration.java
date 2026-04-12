@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import jakarta.servlet.ServletContext;
 import java.awt.AWTException;
 import java.awt.Desktop;
 import java.awt.Image;
@@ -29,9 +30,11 @@ import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.web.server.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -49,20 +52,39 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
 
   private final ResourceLoader resourceLoader;
 
-  @Value("${server.port:8080}")
-  private int port;
+  @Autowired(required = false)
+  private ServletContext servletContext;
 
-  @Value("${server.servlet.context-path:/}")
-  private String contextPath;
+  @Value("${server.port:8080}")
+  private int defaultPort;
 
   @Override
   public void onApplicationEvent(ApplicationReadyEvent event) {
-    String url = String.format("http://localhost:%d%s", port, contextPath);
-
     if (java.awt.GraphicsEnvironment.isHeadless()) {
       log.warn("Desktop integration enabled but environment is headless. Skipping.");
       return;
     }
+
+    int port = defaultPort;
+    if (event.getApplicationContext() instanceof ServletWebServerApplicationContext serverContext) {
+      port = serverContext.getWebServer().getPort();
+    }
+
+    String contextPath = "";
+    if (servletContext != null) {
+      contextPath = servletContext.getContextPath();
+    }
+
+    // Ensure context path starts with / if not empty, and doesn't end with /
+    if (!contextPath.isEmpty() && !contextPath.startsWith("/")) {
+      contextPath = "/" + contextPath;
+    }
+    if (contextPath.equals("/")) {
+      contextPath = "";
+    }
+
+    String url = String.format("http://localhost:%d%s/", port, contextPath);
+    log.info("Constructed application URL: {}", url);
 
     setupSystemTray(url);
     launchBrowser(url);
