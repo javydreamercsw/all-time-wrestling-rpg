@@ -61,6 +61,7 @@ For a more seamless experience on personal computers, you can enable **Desktop M
 - **Dynamic Port**: The app automatically finds a free port, avoiding conflicts.
 
 ### Running in Desktop Mode
+
 ```bash
 ./mvnw spring-boot:run -Pdesktop
 ```
@@ -72,35 +73,44 @@ For a more seamless experience on personal computers, you can enable **Desktop M
 If you are not a developer, you likely want one of these pre-packaged options:
 
 ### 1. Native Installers (Recommended for Users)
+
 Native installers bundle everything you need, including a minimal Java runtime.
 - **macOS**: `.dmg` file
 - **Windows**: `.msi` file
 - **Linux**: `.deb` file
 
 **How to build:**
+
 ```bash
 ./mvnw clean verify -Pproduction,desktop -DskipTests
 ```
+
 The installer will be in `target/dist/`.
 
 ### 2. Portable ZIP (Zero-Install)
+
 A simple ZIP file you can extract and run anywhere without administrative privileges.
 
 **How to build:**
+
 ```bash
 ./mvnw clean package -Pportable -DskipTests
 ```
+
 **How to run:**
 1. Unzip the file in `target/`.
 2. Run `start-windows.bat`, `start-macos.sh`, or `start-linux.sh`.
 
 ### 3. GraalVM Native Image
+
 A single, high-performance binary with near-instant startup.
 
 **How to build:**
+
 ```bash
 ./mvnw clean package -Pproduction,native -DskipTests
 ```
+
 The binary will be available in `target/all-time-wrestling-rpg`.
 
 ---
@@ -108,6 +118,7 @@ The binary will be available in `target/all-time-wrestling-rpg`.
 ## Troubleshooting
 
 ### Port Already in Use
+
 In standard mode, the app uses port 8080. If it's busy, the app will fail.
 **Solution**: Use **Desktop Mode** (`-Pdesktop`), which uses port 0 (dynamic allocation) to automatically find an available port.
 

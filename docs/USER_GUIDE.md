@@ -25,12 +25,14 @@ The application uses a role-based access control system to manage what users can
 For the best experience, you should use one of the following methods to start the game:
 
 ### Native Installer (Easy)
+
 1. Download the installer for your operating system (.dmg for Mac, .msi for Windows).
 2. Install the application.
 3. Launch **All Time Wrestling** from your Applications folder or Start Menu.
 4. The game will automatically open in your web browser.
 
 ### Portable ZIP (No Install)
+
 1. Download the **Portable ZIP** file.
 2. Extract the contents to a folder.
 3. Run `start-macos.sh`, `start-windows.bat`, or `start-linux.sh`.
