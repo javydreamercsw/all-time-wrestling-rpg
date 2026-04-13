@@ -200,7 +200,7 @@ The application will be available at `http://localhost:8080/atw-rpg`.
 
 ### Native Desktop Installers
 
-For non-technical users, you can generate native installers (DMG for macOS, DEB for Linux, MSI for Windows) that bundle a minimal Java runtime.
+For non-technical users, you can generate native installers (DMG for macOS, DEB for Linux, MSI for Windows) that bundle a minimal Java runtime and include system tray integration and automatic browser launching.
 
 1.  **Build the Installer**:
 	```bash
@@ -208,6 +208,27 @@ For non-technical users, you can generate native installers (DMG for macOS, DEB 
 	```
 2.  **Find the Installer**:
 	The generated installer will be located in `target/dist/`.
+
+### Portable Distribution (Zero-Install)
+
+If you don't want to install the game, you can use the portable ZIP distribution.
+
+1.  **Build the Portable ZIP**:
+	```bash
+	./mvnw clean package -Pproduction,portable -DskipTests
+	```
+2.  **Run the Game**:
+	Unzip the archive in `target/` and run `start-windows.bat`, `start-macos.sh`, or `start-linux.sh`.
+
+### GraalVM Native Image
+
+For the fastest startup and lowest memory usage, you can build a native executable.
+
+1.  **Build the Native Image**:
+	```bash
+	./mvnw clean package -Pproduction,native -DskipTests
+	```
+	*Note: Requires GraalVM JDK with `native-image` installed.*
 
 ### Docker
 

@@ -263,6 +263,10 @@
       <artifactId>spring-boot-starter-tomcat</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-web-server</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
       <version>7.1.6</version>
@@ -1229,6 +1233,53 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.9.0</version>
+            <executions>
+              <execution>
+                <id>dependency-analyze</id>
+                <goals>
+                  <goal>analyze</goal>
+                </goals>
+                <configuration>
+                  <skip>true</skip>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-dependencies-for-jpackage</id>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <includeScope>runtime</includeScope>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>prepare-jpackage-input</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <target>
+                    <mkdir dir="${project.build.directory}/jpackage-input"/>
+                    <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <groupId>org.panteleyev</groupId>
             <artifactId>jpackage-maven-plugin</artifactId>
             <version>1.6.0</version>
@@ -1238,23 +1289,91 @@
                 <goals>
                   <goal>jpackage</goal>
                 </goals>
-                <phase>package</phase>
+                <phase>verify</phase>
                 <configuration>
                   <name>AllTimeWrestling</name>
                   <vendor>javydreamercsw</vendor>
                   <appVersion>${jpackage.appVersion}</appVersion>
-                  <input>${project.build.directory}</input>
-                  <mainJar>${project.build.finalName}.jar</mainJar>
+                  <input>${project.build.directory}/jpackage-input</input>
+                  <mainJar>${project.build.finalName}-thin.jar</mainJar>
                   <mainClass>com.github.javydreamercsw.Application</mainClass>
                   <destination>${project.build.directory}/dist</destination>
                   <javaOptions>
                     <option>-Dspring.profiles.active=prod</option>
+                    <option>-Djava.awt.headless=false</option>
+                    <option>-Datw.desktop.enabled=true</option>
+                    <option>-Dserver.port=0</option>
                   </javaOptions>
                   <type>${jpackage.type}</type>
                   <icon>${jpackage.icon}</icon>
                   <!-- Platform specific configurations -->
                   <macPackageName>All Time Wrestling RPG</macPackageName>
                   <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true -Dserver.port=0</jvmArguments>
+              <classifier>exec</classifier>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>native</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>0.11.3</version>
+            <extensions>true</extensions>
+            <configuration>
+              <imageName>${project.artifactId}</imageName>
+              <mainClass>com.github.javydreamercsw.Application</mainClass>
+              <buildArgs>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>-Dspring.profiles.active=prod</buildArg>
+              </buildArgs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-native</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>portable</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>3.7.1</version>
+            <executions>
+              <execution>
+                <id>make-portable</id>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <descriptors>
+                    <descriptor>src/main/assembly/portable.xml</descriptor>
+                  </descriptors>
+                  <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
               </execution>
             </executions>

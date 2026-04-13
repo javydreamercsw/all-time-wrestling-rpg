@@ -22,7 +22,6 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.FlexDirection;
 import static com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import static com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Gap;
-import static com.vaadin.flow.theme.lumo.LumoUtility.IconSize;
 import static com.vaadin.flow.theme.lumo.LumoUtility.JustifyContent;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
@@ -43,8 +42,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -54,6 +53,7 @@ import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
@@ -110,9 +110,10 @@ public class MainLayout extends AppLayout {
   }
 
   private Div createHeader() {
-    // TODO Replace with real application logo and name
-    Icon appLogo = VaadinIcon.CUBES.create();
-    appLogo.addClassNames(TextColor.PRIMARY, IconSize.LARGE);
+    Image appLogo = new Image("images/logo.png", "ATW Logo");
+    appLogo.setWidth("32px");
+    appLogo.setHeight("32px");
+    appLogo.addClassNames(LumoUtility.BorderRadius.SMALL);
 
     Span appName = new Span("All Time Wrestling RPG");
     appName.addClassNames(FontWeight.SEMIBOLD, FontSize.LARGE);

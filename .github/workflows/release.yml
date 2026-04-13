@@ -151,6 +151,9 @@ jobs:
       - name: Build WAR with Maven
         run: mvn -B package -Pwar -DskipTests --file pom.xml
 
+      - name: Build Portable ZIP
+        run: mvn -B package -Pportable -DskipTests --file pom.xml
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
@@ -164,6 +167,7 @@ jobs:
           files: |
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.jar
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.war
+            ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.zip
 
   build_desktop_installers:
     needs: build_and_release
