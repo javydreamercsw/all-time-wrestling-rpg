@@ -1238,23 +1238,23 @@
             <version>3.9.0</version>
             <executions>
               <execution>
-                <id>copy-dependencies-for-jpackage</id>
-                <goals>
-                  <goal>copy-dependencies</goal>
-                </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
-                  <includeScope>runtime</includeScope>
-                </configuration>
-              </execution>
-              <execution>
                 <id>dependency-analyze</id>
                 <goals>
                   <goal>analyze</goal>
                 </goals>
                 <configuration>
                   <skip>true</skip>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-dependencies-for-jpackage</id>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <includeScope>runtime</includeScope>
                 </configuration>
               </execution>
             </executions>
@@ -1272,7 +1272,8 @@
                 <phase>verify</phase>
                 <configuration>
                   <target>
-                    <copy file="${project.build.directory}/${project.build.finalName}.jar.original" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
+                    <mkdir dir="${project.build.directory}/jpackage-input"/>
+                    <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
                   </target>
                 </configuration>
               </execution>
@@ -1301,6 +1302,7 @@
                     <option>-Dspring.profiles.active=prod</option>
                     <option>-Djava.awt.headless=false</option>
                     <option>-Datw.desktop.enabled=true</option>
+                    <option>-Dserver.port=0</option>
                   </javaOptions>
                   <type>${jpackage.type}</type>
                   <icon>${jpackage.icon}</icon>
@@ -1315,7 +1317,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-maven-plugin</artifactId>
             <configuration>
-              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true</jvmArguments>
+              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true -Dserver.port=0</jvmArguments>
+              <classifier>exec</classifier>
             </configuration>
           </plugin>
         </plugins>
@@ -1328,7 +1331,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>0.10.5</version>
+            <version>0.11.3</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
