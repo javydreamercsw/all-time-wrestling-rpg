@@ -313,10 +313,14 @@ class DataInitializerTest {
   void validateCardsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("cards.json").getInputStream(),
-                  new TypeReference<List<CardDTO>>() {});
+          org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
+              new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
+          org.springframework.core.io.Resource[] resources =
+              resolver.getResources("classpath*:cards/*.json");
+          for (org.springframework.core.io.Resource resource : resources) {
+            new ObjectMapper()
+                .readValue(resource.getInputStream(), new TypeReference<List<CardDTO>>() {});
+          }
         });
   }
 

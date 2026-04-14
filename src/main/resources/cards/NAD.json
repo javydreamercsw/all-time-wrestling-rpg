@@ -1,0 +1,43 @@
+[ {
+  "name": "Side Slam",
+  "type": "Throw",
+  "damage": 2,
+  "stamina": 2,
+  "target": 3,
+  "momentum": 2,
+  "signature": false,
+  "finisher": false,
+  "taunt": true,
+  "recover": false,
+  "pin": false,
+  "number": 1,
+  "set": "NAD"
+}, {
+  "name": "Diving Elbow",
+  "type": "Aerial",
+  "damage": 3,
+  "stamina": 3,
+  "target": 4,
+  "momentum": 3,
+  "signature": true,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 2,
+  "set": "NAD"
+}, {
+  "name": "King's Lynn Cloverleaf",
+  "type": "Grapple",
+  "damage": 5,
+  "stamina": 2,
+  "target": 6,
+  "momentum": 3,
+  "signature": false,
+  "finisher": true,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 3,
+  "set": "NAD"
+} ]

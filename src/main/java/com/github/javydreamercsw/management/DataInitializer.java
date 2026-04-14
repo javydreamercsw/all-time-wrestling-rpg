@@ -674,59 +674,72 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCardsFromFile() {
-    ClassPathResource resource = new ClassPathResource("cards.json");
-    if (resource.exists()) {
-      log.info("Loading cards from file: {}", resource.getPath());
-      // Load cards from JSON file
-      ObjectMapper mapper = new ObjectMapper();
-      try (var is = resource.getInputStream()) {
-        var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
-        Map<String, Card> existing =
-            cardService.findAll().stream()
-                .collect(
-                    Collectors.toMap(
-                        c ->
-                            c.getSet().getCode()
-                                + "#"
-                                + c.getNumber(), // Unique key: set code + number
-                        c -> c,
-                        (existingCard, duplicateCard) -> existingCard));
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
+      Map<String, CardSet> setCache = new HashMap<>();
+      Map<String, Card> existing =
+          cardService.findAll().stream()
+              .collect(
+                  Collectors.toMap(
+                      c ->
+                          c.getSet().getCode()
+                              + "#"
+                              + c.getNumber(), // Unique key: set code + number
+                      c -> c,
+                      (existingCard, duplicateCard) -> existingCard));
 
-        for (CardDTO dto : cardsFromFile) {
-          Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
-          if (setOpt.isEmpty()) {
-            log.warn(
-                "CardSet with code {} not found for card {}. Skipping card.",
-                dto.getSet(),
-                dto.getName());
-            continue;
-          }
-          CardSet set = setOpt.get();
-          final String key = dto.getSet() + "#" + dto.getNumber();
-          Card card = existing.getOrDefault(key, new Card());
-          card.setName(dto.getName());
-          card.setDamage(dto.getDamage());
-          card.setFinisher(dto.isFinisher());
-          card.setSignature(dto.isSignature());
-          card.setStamina(dto.getStamina());
-          card.setMomentum(dto.getMomentum());
-          card.setTarget(dto.getTarget());
-          card.setNumber(dto.getNumber());
-          card.setSet(set);
-          card.setType(dto.getType());
-          card.setTaunt(dto.isTaunt());
-          card.setPin(dto.isPin());
-          card.setRecover(dto.isRecover());
-          cardService.save(card);
-          if (existing.containsKey(dto.getName())) {
-            log.debug("Updated existing card: {}", card.getName());
-          } else {
-            log.debug("Saved new card: {}", card.getName());
+      for (Resource resource : resources) {
+        if (resource.exists()) {
+          log.info("Loading cards from file: {}", resource.getFilename());
+          // Load cards from JSON file
+          ObjectMapper mapper = new ObjectMapper();
+          try (var is = resource.getInputStream()) {
+            var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
+
+            for (CardDTO dto : cardsFromFile) {
+              CardSet set = setCache.get(dto.getSet());
+              if (set == null) {
+                Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
+                if (setOpt.isEmpty()) {
+                  log.warn(
+                      "CardSet with code {} not found for card {}. Skipping card.",
+                      dto.getSet(),
+                      dto.getName());
+                  continue;
+                }
+                set = setOpt.get();
+                setCache.put(dto.getSet(), set);
+              }
+
+              final String key = dto.getSet() + "#" + dto.getNumber();
+              Card card = existing.getOrDefault(key, new Card());
+              card.setName(dto.getName());
+              card.setDamage(dto.getDamage());
+              card.setFinisher(dto.isFinisher());
+              card.setSignature(dto.isSignature());
+              card.setStamina(dto.getStamina());
+              card.setMomentum(dto.getMomentum());
+              card.setTarget(dto.getTarget());
+              card.setNumber(dto.getNumber());
+              card.setSet(set);
+              card.setType(dto.getType());
+              card.setTaunt(dto.isTaunt());
+              card.setPin(dto.isPin());
+              card.setRecover(dto.isRecover());
+              cardService.save(card);
+              if (existing.containsKey(key)) {
+                log.debug("Updated existing card: {}", card.getName());
+              } else {
+                log.debug("Saved new card: {}", card.getName());
+              }
+            }
+          } catch (IOException e) {
+            log.error("Error loading cards from file: {}", resource.getFilename(), e);
           }
         }
-      } catch (IOException e) {
-        log.error("Error loading cards from file", e);
       }
+    } catch (IOException e) {
+      log.error("Error resolving card resources", e);
     }
   }
 
