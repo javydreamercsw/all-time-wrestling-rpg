@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -161,5 +162,28 @@ class SegmentAdjudicationVenueTest {
 
     // Base 9,000 * (1.0 + 0.25 + 0.10) = 9,000 * 1.35 = 12,150
     verify(wrestlerService).awardFans(eq(1L), eq(12150L));
+  }
+
+  @Test
+  void testHomeTerritoryBonus_CommaDelimitedHeritage() {
+    when(arena.getAlignmentBias()).thenReturn(Arena.AlignmentBias.NEUTRAL);
+    // Wrestler is from both Texas and USA
+    when(wrestler.getHeritageTag()).thenReturn("Texas, USA");
+
+    // Case 1: Match by second tag (USA)
+    when(location.getName()).thenReturn("New York MSG");
+    when(location.getCulturalTags()).thenReturn(Set.of("USA", "Historic"));
+
+    adjudicationService.adjudicateMatch(segment);
+    // Base 9,000 * 1.10 = 9,900
+    verify(wrestlerService).awardFans(eq(1L), eq(9900L));
+
+    // Case 2: Match by first tag (Texas)
+    when(location.getName()).thenReturn("Texas Stadium");
+    when(location.getCulturalTags()).thenReturn(Set.of("Southern"));
+
+    adjudicationService.adjudicateMatch(segment);
+    // Base 9,000 * 1.10 = 9,900
+    verify(wrestlerService, times(2)).awardFans(eq(1L), eq(9900L));
   }
 }

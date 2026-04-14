@@ -514,14 +514,26 @@ public class SegmentAdjudicationService {
     // Home Territory Bonus (+10%)
     if (segment.getShow().getArena() != null
         && segment.getShow().getArena().getLocation() != null
-        && wrestler.getHeritageTag() != null) {
+        && wrestler.getHeritageTag() != null
+        && !wrestler.getHeritageTag().isBlank()) {
       com.github.javydreamercsw.management.domain.world.Location location =
           segment.getShow().getArena().getLocation();
-      String heritage = wrestler.getHeritageTag().toLowerCase();
+      String[] heritageTags = wrestler.getHeritageTag().toLowerCase().split(",");
+      boolean matched = false;
+      for (String heritage : heritageTags) {
+        String trimmedHeritage = heritage.trim();
+        if (trimmedHeritage.isEmpty()) {
+          continue;
+        }
+        if (location.getName().toLowerCase().contains(trimmedHeritage)
+            || location.getCulturalTags().stream()
+                .anyMatch(tag -> tag.toLowerCase().contains(trimmedHeritage))) {
+          matched = true;
+          break;
+        }
+      }
 
-      if (location.getName().toLowerCase().contains(heritage)
-          || location.getCulturalTags().stream()
-              .anyMatch(tag -> tag.toLowerCase().contains(heritage))) {
+      if (matched) {
         modifier += 0.10;
         log.info(
             "Applying 10% Home Territory bonus to {} in {}",
