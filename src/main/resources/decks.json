@@ -1455,4 +1455,59 @@
     "set": "KA",
     "amount": 1
   } ]
+}, {
+  "wrestler": "Bobby Lashley",
+  "cards": [ {
+    "number": 1,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 2,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 3,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 4,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 5,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 6,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 7,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 8,
+    "set": "BBL",
+    "amount": 1
+  }, {
+    "number": 1,
+    "set": "ATW",
+    "amount": 2
+  }, {
+    "number": 7,
+    "set": "ATW",
+    "amount": 2
+  }, {
+    "number": 35,
+    "set": "ATW",
+    "amount": 1
+  }, {
+    "number": 100,
+    "set": "ATW",
+    "amount": 1
+  }, {
+    "number": 60,
+    "set": "ATW",
+    "amount": 1
+  } ]
 } ]
