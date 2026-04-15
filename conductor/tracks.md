@@ -4,86 +4,24 @@
 
 ## Archived Tracks
 
-### [ ] Track: Pollinations AI Video Generation
+### [x] Track: Interpersonal Relationships Enhancement
 
-*Status: Canceled (2026-02-16)*
+*Status: Completed (2026-04-09)*
 
-### [x] Track: Inbox Visibility Fix
+### [ ] Track: General Manager (GM) Mode Refinement
 
-*Status: Completed (2026-02-16) (Pruned)*
+*Status: Removed (2026-04-10)*
 
-### [x] Track: Achievement Notifications
+### [x] Track: Redesign of Wrestler Profile
 
-*Status: Completed (2026-02-16) (Pruned)*
+*Status: Completed (2026-04-10)*
 
-### [ ] Track: Add Season summary to player dashboard
-
-*Link: [./conductor/archive/season_summary_20260219/plan.md](./conductor/archive/season_summary_20260219/plan.md)*
-*Status: Archived (2026-02-21)*
-
-### [x] Track: AI-Driven "Smart Promo" Response System
-
-*Link: [./conductor/archive/smart_promo_20260221/plan.md](./conductor/archive/smart_promo_20260221/plan.md)*
-*Status: Completed (2026-02-21)*
-
-### [x] Track: AI Storyline "Director" with Branching Milestones
-
-*Link: [./conductor/archive/ai_storyline_director_20260221/plan.md](./conductor/archive/ai_storyline_director_20260221/plan.md)*
-*Status: Completed (2026-02-21)*
-
-### [x] Track: AI-Generated "Wrestling World" News Feed
-
-*Link: [./conductor/archive/news_feed_20260222/plan.md](./conductor/archive/news_feed_20260222/plan.md)*
-*Status: Completed (2026-02-22)*
-
-### [x] Track: Dynamic Faction Chemistry & Synergies
-
-*Link: [./conductor/archive/faction_synergy_20260222/plan.md](./conductor/archive/faction_synergy_20260222/plan.md)*
-*Status: Completed (2026-02-22)*
-
-### [x] Track: Match Interference & Manager Mechanics
-
-*Link: [./conductor/archive/interference_mechanics_20260222/plan.md](./conductor/archive/interference_mechanics_20260222/plan.md)*
-*Status: Completed (2026-02-22)*
-
-### [x] Track: Interactive Backstage "Dialogue Tree" Events
-
-*Link: [./conductor/archive/backstage_events_20260224/plan.md](./conductor/archive/backstage_events_20260224/plan.md)*
-*Status: Completed (2026-02-24)*
-
-### [x] Track: Persistent "Wear & Tear" & Career Longevity
-
-*Link: [./conductor/archive/career_longevity_20260224/plan.md](./conductor/archive/career_longevity_20260224/plan.md)*
-*Status: Completed (2026-02-24)*
-
-### [x] Track: Global Tour & Dynamic Arenas
-
-*Link: [./conductor/archive/world_arenas_20260225/plan.md](./conductor/archive/world_arenas_20260225/plan.md)*
-*Status: Completed (2026-02-25)*
-
-### [x] Track: Visual Arena Customizer (AI-Assisted)
-
-*Link: [./conductor/archive/arena_customizer_20260224/plan.md](./conductor/archive/arena_customizer_20260224/plan.md)*
-*Status: Discarded (2026-02-24)*
-
-### [x] Track: Fix Authentication error during outbound Notion sync
-
-*Link: [./archive/notion_sync_auth_fix_20260227/plan.md](./archive/notion_sync_auth_fix_20260227/plan.md)*
-*Status: Completed (2026-02-27)*
-
-### [x] Track: Improve Notion sync UI feedback and progress tracking
-
-*Link: [./archive/notion_sync_ui_details_20260227/plan.md](./archive/notion_sync_ui_details_20260227/plan.md)*
-*Status: Completed (2026-02-28)*
-
-### [x] Track: Allow grouping content by expansion packs
-
-*Link: [./archive/content_set_grouping_20260318/plan.md](./archive/content_set_grouping_20260318/plan.md)*
-*Status: Completed (2026-03-18)*
+*(All previous tracks have been moved to project documentation)*
 
 ---
 
-## Active Tracks
+*Link: [./tracks/gm_mode_refinement_20260409/index.md](./tracks/gm_mode_refinement_20260409/index.md)*
+*Status: In Progress (2026-04-09)*
 
 ---
 

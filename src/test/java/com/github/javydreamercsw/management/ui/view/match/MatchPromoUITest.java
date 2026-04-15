@@ -81,6 +81,9 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private RingsideActionDataService ringsideActionDataService;
   @Mock private TeamService teamService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService;
+
   private MatchView matchView;
 
   @BeforeEach
@@ -103,7 +106,8 @@ class MatchPromoUITest extends AbstractViewTest {
             ringsideActionService,
             ringsideAiService,
             ringsideActionDataService,
-            teamService);
+            teamService,
+            titleScriptService);
   }
 
   @Test

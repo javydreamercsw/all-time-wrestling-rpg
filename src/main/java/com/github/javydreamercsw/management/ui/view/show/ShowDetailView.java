@@ -126,6 +126,9 @@ public class ShowDetailView extends Main
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final RingsideActionService ringsideActionService;
   private final ArenaService arenaService;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -154,7 +157,9 @@ public class ShowDetailView extends Main
       LeagueRepository leagueRepository,
       CommentaryTeamRepository commentaryTeamRepository,
       RingsideActionService ringsideActionService,
-      ArenaService arenaService) {
+      ArenaService arenaService,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -175,6 +180,7 @@ public class ShowDetailView extends Main
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.ringsideActionService = ringsideActionService;
     this.arenaService = arenaService;
+    this.relationshipService = relationshipService;
     initializeComponents();
   }
 
@@ -827,7 +833,8 @@ public class ShowDetailView extends Main
                   rivalryService,
                   segmentNarrationController,
                   segmentNarrationServiceFactory,
-                  ringsideActionService);
+                  ringsideActionService,
+                  relationshipService);
           dialog.open();
         });
 

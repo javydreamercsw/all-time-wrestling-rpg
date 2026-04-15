@@ -25,7 +25,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -42,12 +41,6 @@ public class SecurityConfig {
 
   @Value("${https.enforcement.disabled:false}")
   private boolean httpsEnforcementDisabled;
-
-  @Bean
-  public WebSecurityCustomizer webSecurityCustomizer() {
-    return (web) ->
-        web.ignoring().requestMatchers("/docs/**", "/images/**", "/icons/**", "/public/**");
-  }
 
   @Bean
   @Profile("!test & !e2e")
@@ -103,7 +96,7 @@ public class SecurityConfig {
   @Bean
   @Profile("test")
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.disable())
+    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
 

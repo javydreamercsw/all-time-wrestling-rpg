@@ -1,0 +1,53 @@
+[ {
+  "name": "Strangle",
+  "type": "Grapple",
+  "damage": 2,
+  "stamina": 2,
+  "target": 4,
+  "momentum": 1,
+  "signature": true,
+  "finisher": false,
+  "taunt": true,
+  "pin": false,
+  "number": 1,
+  "set": "DMN"
+}, {
+  "name": "Fireball",
+  "type": "Grapple",
+  "damage": 3,
+  "stamina": 1,
+  "target": 5,
+  "momentum": 3,
+  "signature": true,
+  "finisher": false,
+  "taunt": true,
+  "pin": true,
+  "number": 2,
+  "set": "DMN"
+}, {
+  "name": "Chaos",
+  "type": "Strike",
+  "damage": 3,
+  "stamina": 3,
+  "target": 4,
+  "momentum": 1,
+  "signature": true,
+  "finisher": false,
+  "recover": false,
+  "pin": true,
+  "number": 3,
+  "set": "DMN"
+}, {
+  "name": "Smile",
+  "type": "Grapple",
+  "damage": 5,
+  "stamina": 2,
+  "target": 6,
+  "momentum": 3,
+  "signature": false,
+  "finisher": true,
+  "recover": false,
+  "pin": true,
+  "number": 4,
+  "set": "DMN"
+} ]

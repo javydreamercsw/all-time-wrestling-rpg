@@ -90,6 +90,14 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Min(0) @Builder.Default
   private Long fans = 0L;
 
+  @Column(name = "morale", nullable = false)
+  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
+  private Integer morale = 100;
+
+  @Column(name = "management_stamina", nullable = false)
+  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
+  private Integer managementStamina = 100;
+
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
   @Builder.Default
@@ -183,6 +191,18 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private List<Rivalry> rivalriesAsWrestler2 = new ArrayList<>();
 
+  @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      relationshipsAsWrestler1 = new ArrayList<>();
+
+  @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      relationshipsAsWrestler2 = new ArrayList<>();
+
   @OneToMany(
       mappedBy = "wrestler",
       cascade = CascadeType.ALL,
@@ -246,7 +266,16 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   public boolean addBump() {
     bumps++;
-    if (bumps >= 3) {
+    // Basic threshold: 3 bumps = automatic injury
+    int threshold = 3;
+
+    // Increase risk if management stamina is low (below 40)
+    if (managementStamina != null && managementStamina < 40) {
+      // Injuries occur faster when exhausted
+      threshold = 2;
+    }
+
+    if (bumps >= threshold) {
       bumps = 0; // Reset bumps - injury creation handled by service layer
       return true; // Indicates injury occurred
     }
@@ -271,6 +300,16 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   }
 
   // ==================== ATW RPG RELATIONSHIP METHODS ====================
+
+  @JsonIgnore
+  public List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      getAllRelationships() {
+    List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+        allRelationships = new ArrayList<>();
+    allRelationships.addAll(relationshipsAsWrestler1);
+    allRelationships.addAll(relationshipsAsWrestler2);
+    return allRelationships;
+  }
 
   @JsonIgnore
   public List<Rivalry> getActiveRivalries() {

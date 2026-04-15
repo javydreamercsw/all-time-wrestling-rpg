@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
+import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -53,8 +54,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -96,22 +96,30 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final NpcService npcService;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
 
   private final H2 wrestlerName = new H2();
   private final Paragraph wrestlerDetails = new Paragraph();
+  private final Image wrestlerImage = new Image();
+  private final FlexLayout heroSection = new FlexLayout();
+  private final VerticalLayout heroDetailsColumn = new VerticalLayout();
+  private final VerticalLayout biographyContainer = new VerticalLayout();
+  private final VerticalLayout relationshipsContainer = new VerticalLayout();
+  private final VerticalLayout highlightsContainer = new VerticalLayout();
+
+  private final Accordion secondaryInfoAccordion = new Accordion();
   private final VerticalLayout statsLayout = new VerticalLayout();
-  private final VerticalLayout biographyLayout = new VerticalLayout();
-  private final VerticalLayout careerHighlightsLayout = new VerticalLayout();
   private final VerticalLayout titleHistoryLayout = new VerticalLayout();
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
+  private final VerticalLayout relationshipsLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
-  private final HorizontalLayout header;
-  private final Image wrestlerImage = new Image();
 
   @Autowired private SecurityUtils securityUtils;
 
@@ -129,7 +137,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       NpcService npcService,
       @Qualifier("baseAccountService") AccountService accountService,
       CampaignService campaignService,
-      ImageStorageService imageStorageService) {
+      ImageStorageService imageStorageService,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -142,10 +152,22 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.accountService = accountService;
     this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
+    this.relationshipService = relationshipService;
 
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
+    // Allow the image to be much larger to match the height of the text content
+    wrestlerImage.setMaxWidth("600px");
+    wrestlerImage.setWidthFull();
+    wrestlerImage.getStyle().set("height", "auto");
+    wrestlerImage.getStyle().set("max-height", "600px");
+    wrestlerImage.getStyle().set("object-fit", "contain");
+    wrestlerImage.addClassNames(
+        LumoUtility.BorderRadius.LARGE,
+        LumoUtility.BoxShadow.MEDIUM,
+        LumoUtility.Margin.SMALL,
+        LumoUtility.AlignSelf.START); // Align to top of the hero section
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -158,11 +180,35 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         new ViewToolbar(
             "Wrestler Profile", new RouterLink("Back to List", WrestlerListView.class)));
 
-    VerticalLayout nameDetailsAndStatsLayout = new VerticalLayout();
-    nameDetailsAndStatsLayout.add(wrestlerName, wrestlerDetails, statsLayout);
-    header = new HorizontalLayout(wrestlerImage, nameDetailsAndStatsLayout);
-    header.setAlignItems(Alignment.CENTER);
+    // Hero Section Setup
+    heroSection.setWidthFull();
+    heroSection.addClassNames(
+        LumoUtility.Display.FLEX,
+        LumoUtility.FlexDirection.COLUMN,
+        LumoUtility.FlexDirection.Breakpoint.Medium.ROW,
+        LumoUtility.Gap.MEDIUM,
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Background.BASE);
 
+    heroDetailsColumn.setPadding(false);
+    heroDetailsColumn.setSpacing(false);
+    heroDetailsColumn.addClassNames(LumoUtility.Flex.GROW);
+    heroDetailsColumn.add(
+        wrestlerName,
+        wrestlerDetails,
+        biographyContainer,
+        relationshipsContainer,
+        highlightsContainer);
+
+    heroSection.add(wrestlerImage, heroDetailsColumn);
+
+    // Accordion Setup
+    secondaryInfoAccordion.setWidthFull();
+    secondaryInfoAccordion.add("Stats", statsLayout);
+    secondaryInfoAccordion.add("Championships", titleHistoryLayout);
+    secondaryInfoAccordion.add("Medical Record", injuriesLayout);
+
+    // Match Logs Section
     List<Season> seasons =
         seasonService.getAllSeasons(Pageable.unpaged()).getContent().stream()
             .sorted(Comparator.comparing(Season::getName))
@@ -180,6 +226,12 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       seasonFilter.setValue(seasons.getLast()); // Default to latest season
     }
 
+    recentMatchesLayout.setPadding(false);
+    recentMatchesLayout.add(seasonFilter, recentMatchesGrid);
+    secondaryInfoAccordion.add("Match Logs", recentMatchesLayout);
+    secondaryInfoAccordion.add("Rivalry History", feudHistoryLayout);
+
+    // Configure Grid
     recentMatchesGrid.removeAllColumns();
     recentMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
     recentMatchesGrid.addColumn(segment -> segment.getSegmentType().getName()).setHeader("Type");
@@ -211,15 +263,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
                 segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(", ")))
         .setHeader("Championships");
 
-    add(
-        header,
-        biographyLayout,
-        careerHighlightsLayout,
-        titleHistoryLayout,
-        injuriesLayout,
-        seasonFilter,
-        recentMatchesLayout,
-        feudHistoryLayout);
+    add(heroSection, secondaryInfoAccordion);
   }
 
   @Override
@@ -243,8 +287,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private void updateView() {
     if (wrestler != null && wrestler.getId() != null) {
-      header.getChildren().filter(c -> c instanceof WrestlerActionMenu).forEach(header::remove);
-      header.add(
+      heroDetailsColumn
+          .getChildren()
+          .filter(c -> c instanceof WrestlerActionMenu)
+          .forEach(heroDetailsColumn::remove);
+      heroDetailsColumn.add(
           new WrestlerActionMenu(
               wrestler,
               wrestlerService,
@@ -269,7 +316,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());
       statsLayout.removeAll();
-      statsLayout.add(new H3("Stats"));
+      statsLayout.add(new H3("Career Stats"));
 
       Paragraph conditionPara =
           new Paragraph("Physical Condition: " + wrestler.getPhysicalCondition() + "%");
@@ -298,28 +345,53 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       }
 
       // Populate biography
-      biographyLayout.removeAll();
-      biographyLayout.add(new H3("Biography"));
+      biographyContainer.removeAll();
+      biographyContainer.setPadding(false);
+      biographyContainer.add(new H3("Biography"));
       if (wrestler.getManager() != null) {
         Paragraph managerParagraph =
             new Paragraph("Managed by: " + wrestler.getManager().getName());
         managerParagraph.setId("manager-name");
-        biographyLayout.add(managerParagraph);
+        biographyContainer.add(managerParagraph);
       }
       if (wrestler.getDescription() != null && !wrestler.getDescription().isEmpty()) {
-        biographyLayout.add(new Paragraph(wrestler.getDescription()));
+        biographyContainer.add(new Paragraph(wrestler.getDescription()));
       } else {
-        biographyLayout.add(new Paragraph("No biography available."));
+        biographyContainer.add(new Paragraph("No biography available."));
+      }
+
+      // Relationships
+      relationshipsContainer.removeAll();
+      relationshipsContainer.setPadding(false);
+      relationshipsContainer.add(new H3("Relationships"));
+      List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+          relationships = relationshipService.getRelationshipsForWrestler(wrestler.getId());
+      if (relationships.isEmpty()) {
+        relationshipsContainer.add(new Paragraph("No active social relationships."));
+      } else {
+        relationships.forEach(
+            rel -> {
+              Wrestler partner = rel.getPartner(wrestler);
+              String text =
+                  String.format(
+                      "%s: %s (Level: %d%s)",
+                      rel.getType().getDisplayName(),
+                      partner.getName(),
+                      rel.getLevel(),
+                      rel.getIsStoryline() ? ", Storyline" : "");
+              relationshipsContainer.add(new Paragraph(text));
+            });
       }
 
       // Career Highlights
-      careerHighlightsLayout.removeAll();
-      careerHighlightsLayout.add(new H3("Career Highlights"));
+      highlightsContainer.removeAll();
+      highlightsContainer.setPadding(false);
+      highlightsContainer.add(new H3("Career Highlights"));
       List<Title> titlesWon = titleService.findTitlesByChampion(wrestler);
       if (titlesWon.isEmpty()) {
-        careerHighlightsLayout.add(new Paragraph("No titles won yet."));
+        highlightsContainer.add(new Paragraph("No titles won yet."));
       } else {
-        titlesWon.forEach(title -> careerHighlightsLayout.add(new Paragraph(title.getName())));
+        titlesWon.forEach(title -> highlightsContainer.add(new Paragraph(title.getName())));
       }
 
       // Title History

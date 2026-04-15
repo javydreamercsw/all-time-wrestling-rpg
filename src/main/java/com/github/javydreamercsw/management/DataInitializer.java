@@ -124,6 +124,9 @@ public class DataInitializer implements Initializable {
   private final CampaignUpgradeService campaignUpgradeService;
   private final LocationRepository locationRepository;
   private final ArenaRepository arenaRepository;
+  private final com.github.javydreamercsw.management.service.relationship
+          .WrestlerRelationshipService
+      relationshipService;
   private final Environment env;
   private final AchievementRepository achievementRepository;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
@@ -157,6 +160,8 @@ public class DataInitializer implements Initializable {
       ResourcePatternResolver resourcePatternResolver,
       LocationRepository locationRepository,
       ArenaRepository arenaRepository,
+      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+          relationshipService,
       ObjectMapper objectMapper) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
@@ -182,6 +187,7 @@ public class DataInitializer implements Initializable {
     this.resourcePatternResolver = resourcePatternResolver;
     this.locationRepository = locationRepository;
     this.arenaRepository = arenaRepository;
+    this.relationshipService = relationshipService;
     this.objectMapper = objectMapper;
   }
 
@@ -201,6 +207,7 @@ public class DataInitializer implements Initializable {
       syncLocationsFromFile();
       syncArenasFromFile();
       syncWrestlersFromFile();
+      syncRelationshipsFromFile();
       syncChampionshipsFromFile();
       syncDecksFromFile();
       syncFactionsFromFile();
@@ -667,59 +674,72 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCardsFromFile() {
-    ClassPathResource resource = new ClassPathResource("cards.json");
-    if (resource.exists()) {
-      log.info("Loading cards from file: {}", resource.getPath());
-      // Load cards from JSON file
-      ObjectMapper mapper = new ObjectMapper();
-      try (var is = resource.getInputStream()) {
-        var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
-        Map<String, Card> existing =
-            cardService.findAll().stream()
-                .collect(
-                    Collectors.toMap(
-                        c ->
-                            c.getSet().getCode()
-                                + "#"
-                                + c.getNumber(), // Unique key: set code + number
-                        c -> c,
-                        (existingCard, duplicateCard) -> existingCard));
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
+      Map<String, CardSet> setCache = new HashMap<>();
+      Map<String, Card> existing =
+          cardService.findAll().stream()
+              .collect(
+                  Collectors.toMap(
+                      c ->
+                          c.getSet().getCode()
+                              + "#"
+                              + c.getNumber(), // Unique key: set code + number
+                      c -> c,
+                      (existingCard, duplicateCard) -> existingCard));
 
-        for (CardDTO dto : cardsFromFile) {
-          Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
-          if (setOpt.isEmpty()) {
-            log.warn(
-                "CardSet with code {} not found for card {}. Skipping card.",
-                dto.getSet(),
-                dto.getName());
-            continue;
-          }
-          CardSet set = setOpt.get();
-          final String key = dto.getSet() + "#" + dto.getNumber();
-          Card card = existing.getOrDefault(key, new Card());
-          card.setName(dto.getName());
-          card.setDamage(dto.getDamage());
-          card.setFinisher(dto.isFinisher());
-          card.setSignature(dto.isSignature());
-          card.setStamina(dto.getStamina());
-          card.setMomentum(dto.getMomentum());
-          card.setTarget(dto.getTarget());
-          card.setNumber(dto.getNumber());
-          card.setSet(set);
-          card.setType(dto.getType());
-          card.setTaunt(dto.isTaunt());
-          card.setPin(dto.isPin());
-          card.setRecover(dto.isRecover());
-          cardService.save(card);
-          if (existing.containsKey(dto.getName())) {
-            log.debug("Updated existing card: {}", card.getName());
-          } else {
-            log.debug("Saved new card: {}", card.getName());
+      for (Resource resource : resources) {
+        if (resource.exists()) {
+          log.info("Loading cards from file: {}", resource.getFilename());
+          // Load cards from JSON file
+          ObjectMapper mapper = new ObjectMapper();
+          try (var is = resource.getInputStream()) {
+            var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
+
+            for (CardDTO dto : cardsFromFile) {
+              CardSet set = setCache.get(dto.getSet());
+              if (set == null) {
+                Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
+                if (setOpt.isEmpty()) {
+                  log.warn(
+                      "CardSet with code {} not found for card {}. Skipping card.",
+                      dto.getSet(),
+                      dto.getName());
+                  continue;
+                }
+                set = setOpt.get();
+                setCache.put(dto.getSet(), set);
+              }
+
+              final String key = dto.getSet() + "#" + dto.getNumber();
+              Card card = existing.getOrDefault(key, new Card());
+              card.setName(dto.getName());
+              card.setDamage(dto.getDamage());
+              card.setFinisher(dto.isFinisher());
+              card.setSignature(dto.isSignature());
+              card.setStamina(dto.getStamina());
+              card.setMomentum(dto.getMomentum());
+              card.setTarget(dto.getTarget());
+              card.setNumber(dto.getNumber());
+              card.setSet(set);
+              card.setType(dto.getType());
+              card.setTaunt(dto.isTaunt());
+              card.setPin(dto.isPin());
+              card.setRecover(dto.isRecover());
+              cardService.save(card);
+              if (existing.containsKey(key)) {
+                log.debug("Updated existing card: {}", card.getName());
+              } else {
+                log.debug("Saved new card: {}", card.getName());
+              }
+            }
+          } catch (IOException e) {
+            log.error("Error loading cards from file: {}", resource.getFilename(), e);
           }
         }
-      } catch (IOException e) {
-        log.error("Error loading cards from file", e);
       }
+    } catch (IOException e) {
+      log.error("Error resolving card resources", e);
     }
   }
 
@@ -894,6 +914,8 @@ public class DataInitializer implements Initializable {
             log.debug("Title {} already exists, skipping creation.", dto.getName());
           }
           title.setChampionshipType(dto.getChampionshipType());
+          title.setEffectScript(dto.getEffectScript());
+          titleService.save(title);
 
           // Award title if currentChampionName is provided
           if (dto.getCurrentChampionName() != null
@@ -1293,6 +1315,53 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Arenas file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncRelationshipsFromFile() {
+    ClassPathResource resource = new ClassPathResource("relationships.json");
+    if (resource.exists()) {
+      log.info("Loading relationships from file: {}", resource.getPath());
+      try (var is = resource.getInputStream()) {
+        var dtos =
+            objectMapper.readValue(
+                is,
+                new com.fasterxml.jackson.core.type.TypeReference<
+                    List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+
+        for (com.github.javydreamercsw.management.dto.RelationshipImportDTO dto : dtos) {
+          Optional<Wrestler> w1 = wrestlerRepository.findByName(dto.getWrestler1());
+          Optional<Wrestler> w2 = wrestlerRepository.findByName(dto.getWrestler2());
+
+          if (w1.isPresent() && w2.isPresent()) {
+            relationshipService.createOrUpdateRelationship(
+                w1.get().getId(),
+                w2.get().getId(),
+                dto.getType(),
+                dto.getLevel(),
+                dto.getIsStoryline(),
+                dto.getNotes());
+            log.debug(
+                "Loaded relationship: {} {} {} (Level: {})",
+                dto.getWrestler1(),
+                dto.getType(),
+                dto.getWrestler2(),
+                dto.getLevel());
+          } else {
+            if (w1.isEmpty()) {
+              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler1());
+            }
+            if (w2.isEmpty()) {
+              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler2());
+            }
+          }
+        }
+        log.info("Relationship loading completed - {} relationships processed", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading relationships from file", e);
+      }
+    } else {
+      log.warn("Relationships file not found: {}", resource.getPath());
     }
   }
 }

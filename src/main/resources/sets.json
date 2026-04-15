@@ -70,4 +70,40 @@
 }, {
   "name": "Kurt Angle",
   "set_code": "KA"
+}, {
+  "name": "Bobby Lashley",
+  "set_code": "BBL"
+}, {
+  "name": "Shelton Benjamin",
+  "set_code": "SHB"
+}, {
+  "name": "WOW",
+  "set_code": "WOW"
+}, {
+  "name": "Gail Kim",
+  "set_code": "GKI"
+}, {
+  "name": "BLK",
+  "set_code": "BLK"
+}, {
+  "name": "Abilene Maverick",
+  "set_code": "GOV"
+}, {
+  "name": "GRC",
+  "set_code": "GRC"
+}, {
+  "name": "PYT",
+  "set_code": "PYT"
+}, {
+  "name": "AUS",
+  "set_code": "AUS"
+}, {
+  "name": "TYV",
+  "set_code": "TYV"
+}, {
+  "name": "BST",
+  "set_code": "BST"
+}, {
+  "name": "Tormenta",
+  "set_code": "TOR"
 } ]

@@ -98,21 +98,24 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   public void prepareTestEnvironment() {
     // Clean up database and re-initialize default accounts
     databaseCleaner.clearRepositories();
+
     // Refresh security context to ensure the principal has persistent entities
     refreshSecurityContext();
 
-    // If no authentication was established (e.g. first run with empty DB), default to admin
+    // If no authentication was established (e.g. first run with empty DB or not using
+    // @WithCustomMockUser), default to admin
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       log.info("No authentication found after cleanup. logging in as 'admin'.");
       loginAs("admin");
     }
 
-    if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      log.error("Failed to establish authentication context even after fallback login!");
-    } else {
+    if (SecurityContextHolder.getContext().getAuthentication() != null) {
       log.info(
           "Security context established for: {}",
           SecurityContextHolder.getContext().getAuthentication().getName());
+    } else {
+      log.warn(
+          "Failed to establish security context for test: {}", this.getClass().getSimpleName());
     }
   }
 
@@ -150,31 +153,35 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     }
 
     if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
-      log.info("Refreshing security context for user: {}", details.getUsername());
-      var accountOpt = accountRepository.findByUsername(details.getUsername());
-      if (accountOpt.isPresent()) {
-        log.info("Found persistent account for {}, logging in...", details.getUsername());
-        this.login(accountOpt.get());
-      } else {
-        log.warn(
-            "Persistent account for {} not found after cleanup. Clearing context.",
-            details.getUsername());
-        clearSecurityContext();
-      }
+      log.debug("Refreshing security context for user: {}", details.getUsername());
+      accountRepository
+          .findByUsername(details.getUsername())
+          .ifPresentOrElse(
+              account -> {
+                log.debug("Found persistent account for {}, logging in...", details.getUsername());
+                this.login(account);
+              },
+              () -> {
+                log.warn(
+                    "Persistent account for {} not found after cleanup. Clearing context.",
+                    details.getUsername());
+                clearSecurityContext();
+              });
     } else if (auth != null
         && auth.getPrincipal()
             instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-      log.info(
+      log.debug(
           "Refreshing security context for standard UserDetails: {}", userDetails.getUsername());
-      var accountOpt = accountRepository.findByUsername(userDetails.getUsername());
-      if (accountOpt.isPresent()) {
-        this.login(accountOpt.get());
-      } else {
-        log.warn(
-            "Persistent account for {} not found after cleanup. Clearing context.",
-            userDetails.getUsername());
-        clearSecurityContext();
-      }
+      accountRepository
+          .findByUsername(userDetails.getUsername())
+          .ifPresentOrElse(
+              this::login,
+              () -> {
+                log.warn(
+                    "Persistent account for {} not found after cleanup. Clearing context.",
+                    userDetails.getUsername());
+                clearSecurityContext();
+              });
     }
   }
 

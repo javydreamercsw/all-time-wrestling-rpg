@@ -1,5 +1,40 @@
 {
   "features": [ {
+    "id": "wrestler-profile-wrestler-profile-redesign",
+    "category": "Wrestler Profile",
+    "title": "Modernized Wrestler Dashboard",
+    "description": "The redesigned wrestler profile features a prominent 'Hero' section with the wrestler's image, biography, and personal relationships always visible. Secondary information is organized into a clean, mobile-friendly accordion layout.",
+    "imagePath": "screenshots/wrestler-profile-redesign.png",
+    "order": 0
+  }, {
+    "id": "general-manager-admin-gm-dashboard",
+    "category": "General Manager",
+    "title": "GM Dashboard",
+    "description": "The GM Dashboard provides a high-level overview of brand performance, including total budget, roster health, and locker room morale. GMs can track financial trends and identify exhausted or unhappy wrestlers at a glance.",
+    "imagePath": "screenshots/admin-gm-dashboard.png",
+    "order": 0
+  }, {
+    "id": "general-manager-admin-contract-management",
+    "category": "General Manager",
+    "title": "Contract Management",
+    "description": "View and manage active wrestler contracts. Salaries are dynamically tied to fan count, forcing GMs to balance the cost of superstars with the development of new talent.",
+    "imagePath": "screenshots/admin-contract-management.png",
+    "order": 10
+  }, {
+    "id": "wrestler-profile-wrestler-profile-relationships",
+    "category": "Wrestler Profile",
+    "title": "Personal Relationships",
+    "description": "Wrestler profiles now include a 'Relationships' section showing their social connections. These bonds provide chemistry bonuses when related wrestlers perform together.",
+    "imagePath": "screenshots/wrestler-profile-relationships.png",
+    "order": 0
+  }, {
+    "id": "admin-admin-wrestler-relationships",
+    "category": "Admin",
+    "title": "Wrestler Relationships Management",
+    "description": "Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.",
+    "imagePath": "screenshots/admin-wrestler-relationships.png",
+    "order": 10
+  }, {
     "id": "admin-admin-expansion-management",
     "category": "Admin",
     "title": "Expansion Management",

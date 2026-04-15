@@ -52,17 +52,75 @@ pkill -f "spring-boot:run"
 # Or press Ctrl+C in the terminal where it's running
 ```
 
-## Troubleshooting
+## Desktop Integration Mode
 
-### Port 8080 Already in Use
+For a more seamless experience on personal computers, you can enable **Desktop Mode**. This provides:
+- **Auto-launch**: The application automatically opens your default browser to the correct URL.
+- **System Tray**: An icon appears in your System Tray (Windows) or Menu Bar (macOS) for background management.
+- **Dock Branding**: The application uses the custom ATW logo in your Dock/Taskbar.
+- **Dynamic Port**: The app automatically finds a free port, avoiding conflicts.
+
+### Running in Desktop Mode
 
 ```bash
-# Find the process
-lsof -i :8080
-
-# Kill it
-kill -9 <PID>
+./mvnw spring-boot:run -Pdesktop
 ```
+
+---
+
+## Alternative Distribution Formats
+
+If you are not a developer, you likely want one of these pre-packaged options:
+
+### 1. Native Installers (Recommended for Users)
+
+Native installers bundle everything you need, including a minimal Java runtime.
+- **macOS**: `.dmg` file
+- **Windows**: `.msi` file
+- **Linux**: `.deb` file
+
+**How to build:**
+
+```bash
+./mvnw clean verify -Pproduction,desktop -DskipTests
+```
+
+The installer will be in `target/dist/`.
+
+### 2. Portable ZIP (Zero-Install)
+
+A simple ZIP file you can extract and run anywhere without administrative privileges.
+
+**How to build:**
+
+```bash
+./mvnw clean package -Pportable -DskipTests
+```
+
+**How to run:**
+1. Unzip the file in `target/`.
+2. Run `start-windows.bat`, `start-macos.sh`, or `start-linux.sh`.
+
+### 3. GraalVM Native Image
+
+A single, high-performance binary with near-instant startup.
+
+**How to build:**
+
+```bash
+./mvnw clean package -Pproduction,native -DskipTests
+```
+
+The binary will be available in `target/all-time-wrestling-rpg`.
+
+---
+
+## Troubleshooting
+
+### Port Already in Use
+
+In standard mode, the app uses port 8080. If it's busy, the app will fail.
+**Solution**: Use **Desktop Mode** (`-Pdesktop`), which uses port 0 (dynamic allocation) to automatically find an available port.
 
 ### Database Locked
 

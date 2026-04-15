@@ -22,7 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -117,6 +119,10 @@ class DataInitializerTest {
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
   @Mock private CommentaryService commentaryService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      relationshipService;
+
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private GameSettingService gameSettingService;
   @Mock private Environment env;
@@ -158,6 +164,7 @@ class DataInitializerTest {
             resourcePatternResolver,
             locationRepository,
             arenaRepository,
+            relationshipService,
             objectMapper);
 
     // Mock count methods to prevent issues during init()
@@ -306,10 +313,14 @@ class DataInitializerTest {
   void validateCardsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("cards.json").getInputStream(),
-                  new TypeReference<List<CardDTO>>() {});
+          org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
+              new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
+          org.springframework.core.io.Resource[] resources =
+              resolver.getResources("classpath*:cards/*.json");
+          for (org.springframework.core.io.Resource resource : resources) {
+            new ObjectMapper()
+                .readValue(resource.getInputStream(), new TypeReference<List<CardDTO>>() {});
+          }
         });
   }
 
@@ -484,6 +495,46 @@ class DataInitializerTest {
 
     // Should NOT overwrite existing DB value unless forceOverride is enabled
     verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
+  }
+
+  @Test
+  void validateRelationshipsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("relationships.json").getInputStream(),
+                  new TypeReference<
+                      List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void testSyncRelationshipsFromFile() throws IOException {
+    // Given
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    w1.setName("Johnny All Time");
+
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    w2.setName("Taya Valkyrie");
+
+    when(wrestlerRepository.findByName("Johnny All Time")).thenReturn(Optional.of(w1));
+    when(wrestlerRepository.findByName("Taya Valkyrie")).thenReturn(Optional.of(w2));
+
+    // When
+    dataInitializer.init();
+
+    // Then
+    verify(relationshipService, atLeastOnce())
+        .createOrUpdateRelationship(
+            eq(1L),
+            eq(2L),
+            eq(com.github.javydreamercsw.management.domain.relationship.RelationshipType.SPOUSE),
+            anyInt(),
+            anyBoolean(),
+            anyString());
   }
 
   @Test

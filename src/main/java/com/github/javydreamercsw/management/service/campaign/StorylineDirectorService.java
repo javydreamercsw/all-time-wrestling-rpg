@@ -72,6 +72,10 @@ public class StorylineDirectorService {
       Each milestone MUST include a 'narrativeGoal' which provides instructions for the AI Director
       during future encounters.
 
+      The AI should also consider deep personal social relationships. It can generate goals that
+      forge or test bonds, such as 'Recruit a tag team partner who could become a Best Friend'
+      or 'Address family tension during a backstage promo.'
+
       Milestones can branch: 'nextOnSuccessIndex' and 'nextOnFailureIndex' should point to the
       0-based index of the next milestone in the list. Use null if the storyline ends.
 

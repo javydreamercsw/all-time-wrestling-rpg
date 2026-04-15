@@ -109,6 +109,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
   private final com.github.javydreamercsw.management.service.team.TeamService teamService;
+  private final com.github.javydreamercsw.management.service.title.TitleScriptService
+      titleScriptService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -137,7 +139,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService,
       com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
           ringsideActionDataService,
-      com.github.javydreamercsw.management.service.team.TeamService teamService) {
+      com.github.javydreamercsw.management.service.team.TeamService teamService,
+      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -155,6 +158,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.ringsideAiService = ringsideAiService;
     this.ringsideActionDataService = ringsideActionDataService;
     this.teamService = teamService;
+    this.titleScriptService = titleScriptService;
   }
 
   @Override
@@ -723,6 +727,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     wc.setName(w.getName());
                     wc.setDescription(w.getDescription());
                     wc.setHailingFrom(w.getHeritageTag());
+                    wc.setHealth(w.getStartingHealth());
+                    wc.setStamina(w.getStartingStamina());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
@@ -847,6 +853,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       }
 
       context.setInstructions(instructions);
+
+      // Apply Title Effects
+      if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
+        titleScriptService.applyTitleEffects(context, segment.getTitles());
+      }
 
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
 

@@ -21,6 +21,8 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRoster;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
@@ -38,6 +40,7 @@ public class LeagueService {
   private final LeagueRepository leagueRepository;
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final ShowRepository showRepository;
+  private final LeagueRosterRepository leagueRosterRepository;
 
   @Transactional
   public League createLeague(
@@ -169,5 +172,12 @@ public class LeagueService {
 
   public Optional<League> getLeagueWithExcludedWrestlers(Long id) {
     return leagueRepository.findByIdWithExcludedWrestlers(id);
+  }
+
+  public List<LeagueRoster> getRoster(Long id) {
+    return leagueRepository
+        .findById(id)
+        .map(leagueRosterRepository::findByLeague)
+        .orElse(java.util.List.of());
   }
 }

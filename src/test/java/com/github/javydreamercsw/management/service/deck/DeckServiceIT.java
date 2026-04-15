@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -55,25 +56,25 @@ class DeckServiceIT extends ManagementIntegrationTest {
     viewerUsername = "deck_viewer_" + suffix;
     adminUsername = "deck_admin_" + suffix;
 
-    Account booker = createTestAccount(bookerUsername, RoleName.BOOKER);
-    Account player = createTestAccount(playerUsername, RoleName.PLAYER);
-    createTestAccount(viewerUsername, RoleName.VIEWER);
-    createTestAccount(adminUsername, RoleName.ADMIN);
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          Account booker = createTestAccount(bookerUsername, RoleName.BOOKER);
+          Account player = createTestAccount(playerUsername, RoleName.PLAYER);
+          createTestAccount(viewerUsername, RoleName.VIEWER);
+          createTestAccount(adminUsername, RoleName.ADMIN);
 
-    // Ensure accounts are flushed to DB so PermissionService can find them
-    accountRepository.flush();
+          bookerWrestler = new Wrestler();
+          bookerWrestler.setName("Booker " + suffix);
+          bookerWrestler.setAccount(booker);
+          bookerWrestler.setIsPlayer(true);
+          bookerWrestler = wrestlerRepository.saveAndFlush(bookerWrestler);
 
-    bookerWrestler = new Wrestler();
-    bookerWrestler.setName("Booker " + suffix);
-    bookerWrestler.setAccount(booker);
-    bookerWrestler.setIsPlayer(true);
-    wrestlerRepository.saveAndFlush(bookerWrestler);
-
-    playerWrestler = new Wrestler();
-    playerWrestler.setName("Player " + suffix);
-    playerWrestler.setAccount(player);
-    playerWrestler.setIsPlayer(true);
-    wrestlerRepository.saveAndFlush(playerWrestler);
+          playerWrestler = new Wrestler();
+          playerWrestler.setName("Player " + suffix);
+          playerWrestler.setAccount(player);
+          playerWrestler.setIsPlayer(true);
+          playerWrestler = wrestlerRepository.saveAndFlush(playerWrestler);
+        });
   }
 
   @Test
@@ -97,6 +98,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
       username = "player",
       roles = {"PLAYER"})
   void testPlayerCannotCreateDeckForSomeoneElse() {
+    loginAs(playerUsername);
     Assertions.assertThrows(
         AccessDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
@@ -179,6 +181,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
       username = "player",
       roles = {"PLAYER"})
   void testPlayerCannotSaveSomeoneElsesDeck() {
+    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     deck.setCreationDate(Instant.now());
@@ -216,6 +219,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
       username = "player",
       roles = {"PLAYER"})
   void testPlayerCannotDeleteSomeoneElsesDeck() {
+    loginAs(playerUsername);
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     deck.setCreationDate(Instant.now());
