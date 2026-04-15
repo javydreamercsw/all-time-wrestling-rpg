@@ -1573,4 +1573,55 @@
     "set": "DYN",
     "amount": 1
   } ]
+}, {
+  "wrestler": "Gail Kim",
+  "cards": [ {
+    "number": 1,
+    "set": "GKI",
+    "amount": 1
+  }, {
+    "number": 2,
+    "set": "GKI",
+    "amount": 2
+  }, {
+    "number": 3,
+    "set": "GKI",
+    "amount": 2
+  }, {
+    "number": 4,
+    "set": "GKI",
+    "amount": 1
+  }, {
+    "number": 5,
+    "set": "GKI",
+    "amount": 2
+  }, {
+    "number": 6,
+    "set": "GKI",
+    "amount": 1
+  }, {
+    "number": 7,
+    "set": "GKI",
+    "amount": 1
+  }, {
+    "number": 8,
+    "set": "GKI",
+    "amount": 1
+  }, {
+    "number": 9,
+    "set": "GKI",
+    "amount": 1
+  }, {
+    "number": 3,
+    "set": "WOW",
+    "amount": 1
+  }, {
+    "number": 21,
+    "set": "WOW",
+    "amount": 2
+  }, {
+    "number": 10,
+    "set": "WOW",
+    "amount": 1
+  } ]
 } ]

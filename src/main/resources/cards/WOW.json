@@ -1,0 +1,43 @@
+[ {
+  "name": "Irish Whip",
+  "type": "Grapple",
+  "damage": 1,
+  "stamina": 1,
+  "target": 2,
+  "momentum": 1,
+  "signature": false,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": false,
+  "number": 3,
+  "set": "WOW"
+}, {
+  "name": "Arm Drag",
+  "type": "Grapple",
+  "damage": 1,
+  "stamina": 1,
+  "target": 2,
+  "momentum": 1,
+  "signature": false,
+  "finisher": false,
+  "taunt": true,
+  "recover": false,
+  "pin": false,
+  "number": 21,
+  "set": "WOW"
+}, {
+  "name": "Clothesline",
+  "type": "Strike",
+  "damage": 2,
+  "stamina": 2,
+  "target": 3,
+  "momentum": 2,
+  "signature": false,
+  "finisher": false,
+  "taunt": true,
+  "recover": false,
+  "pin": false,
+  "number": 10,
+  "set": "WOW"
+} ]
