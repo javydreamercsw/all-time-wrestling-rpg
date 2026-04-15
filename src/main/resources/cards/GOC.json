@@ -1,0 +1,15 @@
+[ {
+  "name": "Foot Choke",
+  "type": "Grapple",
+  "damage": 3,
+  "stamina": 2,
+  "target": 3,
+  "momentum": 2,
+  "signature": false,
+  "finisher": false,
+  "taunt": true,
+  "recover": false,
+  "pin": false,
+  "number": 1,
+  "set": "GOC"
+} ]

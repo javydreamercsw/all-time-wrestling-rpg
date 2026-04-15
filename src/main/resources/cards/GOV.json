@@ -1,0 +1,43 @@
+[ {
+  "name": "Foot Choke",
+  "type": "Grapple",
+  "damage": 3,
+  "stamina": 2,
+  "target": 3,
+  "momentum": 2,
+  "signature": false,
+  "finisher": false,
+  "taunt": true,
+  "recover": false,
+  "pin": false,
+  "number": 1,
+  "set": "GOV"
+}, {
+  "name": "Neckbreaker",
+  "type": "Grapple",
+  "damage": 3,
+  "stamina": 2,
+  "target": 4,
+  "momentum": 2,
+  "signature": true,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 2,
+  "set": "GOV"
+}, {
+  "name": "Arm Bar",
+  "type": "Grapple",
+  "damage": 4,
+  "stamina": 2,
+  "target": 5,
+  "momentum": 2,
+  "signature": true,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 3,
+  "set": "GOV"
+} ]
