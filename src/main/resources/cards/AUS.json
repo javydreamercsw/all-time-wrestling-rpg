@@ -1,0 +1,15 @@
+[ {
+  "name": "Arm Drag",
+  "type": "Grapple",
+  "damage": 1,
+  "stamina": 1,
+  "target": 2,
+  "momentum": 1,
+  "signature": false,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": false,
+  "number": 1,
+  "set": "AUS"
+} ]
