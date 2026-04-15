@@ -31,4 +31,7 @@ public class TitleDTO {
   private String imageUrl;
   private ChampionshipType championshipType;
   private Boolean includeInRankings;
+
+  @com.fasterxml.jackson.annotation.JsonProperty("effect_script")
+  private String effectScript;
 }

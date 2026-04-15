@@ -914,6 +914,8 @@ public class DataInitializer implements Initializable {
             log.debug("Title {} already exists, skipping creation.", dto.getName());
           }
           title.setChampionshipType(dto.getChampionshipType());
+          title.setEffectScript(dto.getEffectScript());
+          titleService.save(title);
 
           // Award title if currentChampionName is provided
           if (dto.getCurrentChampionName() != null

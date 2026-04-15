@@ -1,25 +1,28 @@
 [ {
   "name": "ATW World",
   "tier": "MAIN_EVENTER",
-  "description": "",
+  "description": "The top title in All Time Wrestling.",
   "gender": "MALE",
-  "championshipType": "SINGLE"
+  "championshipType": "SINGLE",
+  "effect_script": "gainInitiative()"
 }, {
   "name": "ATW Tag Team",
   "tier": "MIDCARDER",
-  "description": "",
+  "description": "Tag team championship.",
   "gender": "MALE",
   "championshipType": "TEAM"
 }, {
   "name": "ATW Women",
   "tier": "MAIN_EVENTER",
-  "description": "",
+  "description": "Women's world title.",
   "gender": "FEMALE",
-  "championshipType": "SINGLE"
+  "championshipType": "SINGLE",
+  "effect_script": "modifyRoll(1)"
 }, {
   "name": "WOW Women",
   "tier": "MAIN_EVENTER",
-  "description": "",
+  "description": "WOW Championship.",
   "gender": "FEMALE",
-  "championshipType": "SINGLE"
+  "championshipType": "SINGLE",
+  "effect_script": "gainHitPoints(2)"
 } ]
