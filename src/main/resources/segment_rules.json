@@ -100,4 +100,10 @@
   "requiresHighHeat": false,
   "noDq": false,
   "bumpAddition": "NONE"
+}, {
+  "name": "Survivor War Match",
+  "description": "A team vs. Team match. No tags allowed. The first team to eliminate all members of the opposing team wins.",
+  "requiresHighHeat": true,
+  "noDq": false,
+  "bumpAddition": "NONE"
 } ]
