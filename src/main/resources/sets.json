@@ -100,4 +100,10 @@
 }, {
   "name": "TYV",
   "set_code": "TYV"
+}, {
+  "name": "BST",
+  "set_code": "BST"
+}, {
+  "name": "Tormenta",
+  "set_code": "TOR"
 } ]

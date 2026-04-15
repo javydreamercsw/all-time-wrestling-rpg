@@ -292,4 +292,18 @@
   "pin": false,
   "number": 8,
   "set": "WOW"
+}, {
+  "name": "Rolling Forearm Smash",
+  "type": "Strike",
+  "damage": 3,
+  "stamina": 2,
+  "target": 4,
+  "momentum": 1,
+  "signature": true,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 23,
+  "set": "WOW"
 } ]
