@@ -8,6 +8,8 @@ Ability cards in the campaign (Face/Heel cards, Ally/Valet cards) use a simple s
 
 Scripts are stored in the `effect_script` and `secondary_effect_script` columns of the `campaign_ability_card` table.
 
+> **Note:** This same scripting engine is also used for **Title Abilities**. Titles can use a subset of these methods to influence AI narration. See the [Content Management Guide](CONTENT_GUIDE.md) for details.
+
 ## Script Syntax
 
 Scripts are Groovy snippets. You can call available methods directly. Multiple commands should be separated by a semicolon (`;`).

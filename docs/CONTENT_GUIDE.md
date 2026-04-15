@@ -24,6 +24,31 @@ Card sets are defined in `src/main/resources/sets.json`.
 
 To add a new set, add an entry to this file. The `set_code` is used to link cards to the set.
 
+## Title Abilities
+
+Titles can have scripted abilities that influence the AI narration of a match. These are defined in `src/main/resources/championships.json` using the `effect_script` field.
+
+**Example:**
+
+```json
+{
+  "name": "ATW World",
+  "tier": "MAIN_EVENTER",
+  "championshipType": "SINGLE",
+  "effect_script": "gainInitiative()"
+}
+```
+
+### Available Title Methods
+
+Title scripts use a subset of the logic described in the [Campaign Scripting Guide](CAMPAIGN_SCRIPTING.md), specifically:
+
+| Method                      | Description                                                               |
+|:----------------------------|:--------------------------------------------------------------------------|
+| `gainInitiative()`          | Explicitly tells the AI that the champion starts with the initiative.     |
+| `gainHitPoints(int amount)` | Increases the champion's starting HP for the match.                       |
+| `modifyRoll(int modifier)`  | Informs the AI that the champion has a one-time bonus to a critical roll. |
+
 ## Cards
 
 Cards are stored in the `src/main/resources/cards/` directory. Each card set has its own JSON file named after its `set_code` (e.g., `ATW.json`, `BBL.json`).
