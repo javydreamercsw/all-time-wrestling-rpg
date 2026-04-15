@@ -23,10 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("coverage-main-config") // Use a profile that is NOT test or e2e
+@DirtiesContext
 class SecurityConfigTest {
 
   @Autowired private ApplicationContext context;
