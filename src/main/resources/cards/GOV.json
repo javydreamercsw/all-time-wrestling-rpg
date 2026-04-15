@@ -40,4 +40,18 @@
   "pin": true,
   "number": 3,
   "set": "GOV"
+}, {
+  "name": "Draping DDT",
+  "type": "Grapple",
+  "damage": 5,
+  "stamina": 2,
+  "target": 6,
+  "momentum": 3,
+  "signature": false,
+  "finisher": true,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 4,
+  "set": "GOV"
 } ]
