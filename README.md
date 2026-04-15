@@ -49,6 +49,7 @@ You can also start the application from the command line by running:
 The application will be available at `http://localhost:8080/atw-rpg`.
 
 For project-specific startup instructions, see the [Application Startup Guide](./docs/STARTUP_GUIDE.md).
+For instructions on how to add and manage game content (wrestlers, cards, sets), see the [Content Management Guide](./docs/CONTENT_GUIDE.md).
 For general Vaadin information, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
 
 ## Features
