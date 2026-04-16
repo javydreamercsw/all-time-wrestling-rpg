@@ -36,6 +36,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -198,10 +199,14 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   private void configureAvailableGrid() {
-    availableWrestlersGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
+    Grid.Column<Wrestler> nameColumn =
+        availableWrestlersGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
     availableWrestlersGrid.addColumn(w -> w.getTier().name()).setHeader("Tier").setSortable(true);
     availableWrestlersGrid.addColumn(Wrestler::getStartingStamina).setHeader("Stamina");
     availableWrestlersGrid.addColumn(Wrestler::getStartingHealth).setHeader("Health");
+
+    // Default sorting by Name
+    availableWrestlersGrid.sort(GridSortOrder.asc(nameColumn).build());
 
     availableWrestlersGrid.setItemDetailsRenderer(
         new ComponentRenderer<>(this::createWrestlerDetails));

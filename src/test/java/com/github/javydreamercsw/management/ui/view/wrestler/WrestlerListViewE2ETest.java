@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,6 +106,33 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         });
 
     assertEquals(initialSize + 1, wrestlerRepository.count());
+  }
+
+  @Test
+  void testDefaultSorting() {
+    wrestlerRepository.deleteAll();
+    wrestlerService.save(TestUtils.createWrestler("Zack"));
+    wrestlerService.save(TestUtils.createWrestler("Adam"));
+    wrestlerService.save(TestUtils.createWrestler("Ben"));
+
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+
+    // Wait for the grid to settle
+    waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
+
+    // Get all cell contents
+    List<WebElement> cells = driver.findElements(By.tagName("vaadin-grid-cell-content"));
+    List<String> namesInOrder =
+        cells.stream()
+            .map(WebElement::getText)
+            .map(String::trim)
+            .filter(text -> text.equals("Adam") || text.equals("Ben") || text.equals("Zack"))
+            .toList();
+
+    assertEquals(3, namesInOrder.size(), "Should find all three wrestler names in the grid");
+    assertEquals("Adam", namesInOrder.get(0));
+    assertEquals("Ben", namesInOrder.get(1));
+    assertEquals("Zack", namesInOrder.get(2));
   }
 
   @Test

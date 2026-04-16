@@ -33,6 +33,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -516,12 +517,17 @@ public class FactionListView extends Main {
       membersInfo.add(new H3("Members (" + loadedFaction.getMemberCount() + ")"));
 
       Grid<Wrestler> membersGrid = new Grid<>(Wrestler.class, false);
-      membersGrid.addColumn(Wrestler::getName).setHeader("Name");
+      Grid.Column<Wrestler> nameColumn =
+          membersGrid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
       membersGrid
           .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
-          .setHeader("Tier");
+          .setHeader("Tier")
+          .setSortable(true);
       membersGrid.setItems(loadedFaction.getMembers());
       membersGrid.setHeight("200px");
+
+      // Default sorting by Name
+      membersGrid.sort(GridSortOrder.asc(nameColumn).build());
 
       membersInfo.add(membersGrid);
       layout.add(membersInfo);
@@ -563,12 +569,17 @@ public class FactionListView extends Main {
     // Current members grid
     H3 currentMembersTitle = new H3("Current Members (" + loadedFaction.getMemberCount() + ")");
     Grid<Wrestler> currentMembersGrid = new Grid<>(Wrestler.class, false);
-    currentMembersGrid.addColumn(Wrestler::getName).setHeader("Name");
+    Grid.Column<Wrestler> nameColumn =
+        currentMembersGrid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
     currentMembersGrid
         .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
-        .setHeader("Tier");
-    currentMembersGrid.addColumn(Wrestler::getFans).setHeader("Fans");
+        .setHeader("Tier")
+        .setSortable(true);
+    currentMembersGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
     currentMembersGrid.setId("members-grid");
+
+    // Default sorting by Name
+    currentMembersGrid.sort(GridSortOrder.asc(nameColumn).build());
 
     // Remove member button
     currentMembersGrid

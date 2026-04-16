@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -87,7 +88,8 @@ public class GmDashboardView extends VerticalLayout {
   }
 
   private void configureRosterGrid() {
-    rosterGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
+    Grid.Column<Wrestler> nameColumn =
+        rosterGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
     rosterGrid.addColumn(w -> w.getTier().getDisplayName()).setHeader("Tier");
 
     rosterGrid
@@ -106,6 +108,9 @@ public class GmDashboardView extends VerticalLayout {
         .setSortable(true);
 
     rosterGrid.addClassNames(LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM);
+
+    // Default sorting by Name
+    rosterGrid.sort(GridSortOrder.asc(nameColumn).build());
   }
 
   private VerticalLayout createCard(String title, Span valueSpan) {
