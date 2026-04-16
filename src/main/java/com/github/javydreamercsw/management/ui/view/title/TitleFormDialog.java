@@ -50,6 +50,7 @@ public class TitleFormDialog extends Dialog {
 
   private final Title title;
   private final Binder<Title> binder = new Binder<>(Title.class);
+  private final TitleService titleService;
   private final WrestlerRepository wrestlerRepository;
   private final ImageStorageService imageStorageService;
   private final TextField name;
@@ -70,6 +71,7 @@ public class TitleFormDialog extends Dialog {
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.title = title;
+    this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
     this.imageStorageService = imageStorageService;
     name = new TextField("Name");
@@ -208,9 +210,7 @@ public class TitleFormDialog extends Dialog {
       champion.setValue(title.getChampion());
     }
 
-    if (this.title.getImageUrl() != null && !this.title.getImageUrl().isEmpty()) {
-      updatePreviewImage(this.title.getImageUrl());
-    }
+    updatePreviewImage(titleService.resolveTitleImage(this.title));
   }
 
   private void updatePreviewImage(String url) {

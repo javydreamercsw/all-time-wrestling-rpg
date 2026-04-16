@@ -31,6 +31,7 @@ import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -104,6 +105,16 @@ public class TitleListView extends Main {
   private void setupGrid() {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
+    grid.addComponentColumn(
+            title -> {
+              Image image = new Image(titleService.resolveTitleImage(title), "Title Image");
+              image.setHeight("100px");
+              image.setWidth("100px");
+              image.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+              return image;
+            })
+        .setHeader("Image")
+        .setAutoWidth(true);
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
     grid.addColumn(title -> title.getGender() != null ? title.getGender().name() : "")
         .setHeader("Gender")
