@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -30,6 +31,7 @@ import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -61,6 +63,7 @@ public class TitleListView extends Main {
   private final WrestlerRepository wrestlerRepository;
   private final TierRecalculationService tierRecalculationService;
   private final SecurityUtils securityUtils;
+  private final ImageStorageService imageStorageService;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
   public TitleListView(
@@ -68,12 +71,14 @@ public class TitleListView extends Main {
       @NonNull WrestlerService wrestlerService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull TierRecalculationService tierRecalculationService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull ImageStorageService imageStorageService) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.tierRecalculationService = tierRecalculationService;
     this.securityUtils = securityUtils;
+    this.imageStorageService = imageStorageService;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -100,7 +105,20 @@ public class TitleListView extends Main {
   private void setupGrid() {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
+    grid.addComponentColumn(
+            title -> {
+              Image image = new Image(titleService.resolveTitleImage(title), "Title Image");
+              image.setHeight("100px");
+              image.setWidth("100px");
+              image.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+              return image;
+            })
+        .setHeader("Image")
+        .setAutoWidth(true);
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
+    grid.addColumn(title -> title.getGender() != null ? title.getGender().name() : "")
+        .setHeader("Gender")
+        .setSortable(true);
     grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
@@ -188,6 +206,7 @@ public class TitleListView extends Main {
             titleService,
             wrestlerRepository,
             tierRecalculationService,
+            imageStorageService,
             newTitle,
             this::refreshGrid,
             securityUtils);
@@ -201,6 +220,7 @@ public class TitleListView extends Main {
             titleService,
             wrestlerRepository,
             tierRecalculationService,
+            imageStorageService,
             title,
             this::refreshGrid,
             securityUtils);

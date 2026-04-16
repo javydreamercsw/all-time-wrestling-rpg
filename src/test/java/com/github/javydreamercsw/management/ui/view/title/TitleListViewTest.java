@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -60,6 +61,7 @@ class TitleListViewTest extends AbstractViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
   @Mock private TierRecalculationService tierRecalculationService;
+  @Mock private ImageStorageService imageStorageService;
 
   private TitleListView titleListView;
   private Title testTitle;
@@ -118,7 +120,8 @@ class TitleListViewTest extends AbstractViewTest {
             wrestlerService,
             wrestlerRepository,
             tierRecalculationService,
-            securityUtils);
+            securityUtils,
+            imageStorageService);
   }
 
   @Test

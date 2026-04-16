@@ -30,12 +30,15 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStorylineRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -56,7 +59,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
-import com.github.javydreamercsw.management.service.match.MatchRewardService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -89,8 +91,10 @@ public class CampaignService {
   private final CampaignAbilityCardRepository campaignAbilityCardRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignChapterService chapterService;
+  private final AlignmentService alignmentService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
+  private final ShowRepository showRepository;
   private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
   private final SegmentRuleRepository segmentRuleRepository;
@@ -100,13 +104,15 @@ public class CampaignService {
   private final ShowTemplateRepository showTemplateRepository;
   private final SegmentParticipantRepository participantRepository;
   private final TournamentService tournamentService;
+  private final CampaignStorylineRepository storylineRepository;
   private final TitleRepository titleRepository;
   private final TitleReignRepository titleReignRepository;
   private final TeamRepository teamRepository;
   private final TitleService titleService;
   private final SegmentAdjudicationService adjudicationService;
-  private final MatchRewardService matchRewardService;
   private final NewsGenerationService newsGenerationService;
+  private final StorylineDirectorService storylineDirectorService;
+  private final StorylineExportService storylineExportService;
   private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
@@ -220,7 +226,9 @@ public class CampaignService {
 
     updateAbilityCards(campaign);
 
-    return campaignRepository.save(campaign);
+    campaign = campaignRepository.save(campaign);
+
+    return campaign;
   }
 
   /**
@@ -254,7 +262,9 @@ public class CampaignService {
     Show show = getOrCreateCampaignShow(campaign);
 
     // Finale Logic Override
-    CampaignChapterDTO chapter = getCurrentChapter(campaign);
+    CampaignChapterDTO chapter =
+        getCurrentChapter(campaign)
+            .orElseThrow(() -> new IllegalStateException("No active chapter for match encounter"));
     boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
     boolean isNarrativeFinale = isFinalsPhase && !chapter.isTournament();
 
@@ -383,63 +393,63 @@ public class CampaignService {
    * @param amount The shift amount.
    */
   public void shiftAlignment(@NonNull Campaign campaign, int amount) {
-    if (amount == 0) {
-      return;
-    }
-
-    WrestlerAlignment alignment =
-        wrestlerAlignmentRepository
-            .findByWrestler(campaign.getWrestler())
-            .orElseThrow(() -> new IllegalStateException("Alignment not found"));
-
-    int oldLevel = alignment.getLevel();
-    AlignmentType oldType = alignment.getAlignmentType();
-
-    // Logic for bidirectional shift
-    if (oldType == AlignmentType.NEUTRAL) {
-      if (amount > 0) {
-        alignment.setAlignmentType(AlignmentType.FACE);
-        alignment.setLevel(amount);
-      } else {
-        alignment.setAlignmentType(AlignmentType.HEEL);
-        alignment.setLevel(Math.abs(amount));
-      }
-    } else if (oldType == AlignmentType.FACE) {
-      int newLevel = oldLevel + amount;
-      if (newLevel <= 0) {
-        alignment.setAlignmentType(AlignmentType.NEUTRAL);
-        alignment.setLevel(0);
-      } else {
-        alignment.setLevel(Math.min(5, newLevel));
-      }
-    } else { // HEEL
-      // amount > 0 moves toward Neutral (reduces level)
-      // amount < 0 moves further toward Heel (increases level)
-      int newLevel = oldLevel - amount;
-      if (newLevel <= 0) {
-        alignment.setAlignmentType(AlignmentType.NEUTRAL);
-        alignment.setLevel(0);
-      } else {
-        alignment.setLevel(Math.min(5, newLevel));
-      }
-    }
-
-    wrestlerAlignmentRepository.save(alignment);
-    handleLevelChange(campaign, oldLevel, alignment.getLevel());
-
-    // If type changed (e.g. turned), update ability cards
-    if (alignment.getAlignmentType() != oldType) {
-      updateAbilityCards(campaign);
-    }
+    alignmentService.shiftAlignment(campaign, amount);
   }
 
-  public CampaignChapterDTO getCurrentChapter(@NonNull Campaign campaign) {
-    return chapterService
-        .getChapter(campaign.getState().getCurrentChapterId())
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    "Chapter config not found: " + campaign.getState().getCurrentChapterId()));
+  public Optional<CampaignChapterDTO> getCurrentChapter(@NonNull Campaign campaign) {
+    CampaignState state = campaign.getState();
+    String currentChapterId = state.getCurrentChapterId();
+    if (currentChapterId == null) {
+      return Optional.empty();
+    }
+
+    Optional<CampaignChapterDTO> chapter = chapterService.getChapter(currentChapterId);
+    if (chapter.isPresent()) {
+      return chapter;
+    }
+
+    // Not found in static chapters, check if it's an active AI storyline
+    if (state.getActiveStoryline() != null
+        && currentChapterId.equals(state.getActiveStoryline().getTitle())) {
+      return Optional.of(storylineExportService.toChapterDTO(state.getActiveStoryline()));
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * Retrieves all storylines for a campaign, initialized for view usage.
+   *
+   * @param campaign The campaign.
+   * @return List of storylines.
+   */
+  public List<CampaignStoryline> getStorylineHistory(@NonNull Campaign campaign) {
+    List<CampaignStoryline> storylines =
+        storylineRepository.findByCampaignOrderByStartedAtDesc(campaign);
+    storylines.forEach(s -> s.getMilestones().size());
+    return storylines;
+  }
+
+  /**
+   * Retrieves the active campaign for a wrestler and initializes necessary lazy collections.
+   *
+   * @param wrestler The wrestler.
+   * @return Optional campaign.
+   */
+  public Optional<Campaign> getCampaignForWrestler(@NonNull Wrestler wrestler) {
+    return campaignRepository
+        .findActiveByWrestler(wrestler)
+        .map(
+            campaign -> {
+              CampaignState state = campaign.getState();
+              if (state != null && state.getActiveStoryline() != null) {
+                // Initialize milestones to prevent LazyInitializationException in views
+                state.getActiveStoryline().getMilestones().size();
+              }
+              // Initialize wrestler reigns as they are used in many views/criteria
+              campaign.getWrestler().getReigns().size();
+              return campaign;
+            });
   }
 
   /**
@@ -465,8 +475,10 @@ public class CampaignService {
     // Initialize lazy collections to prevent LazyInitializationException in ChapterService
     wrestler.getReigns().size();
 
-    CampaignChapterDTO.ChapterRules rules = getCurrentChapter(campaign).getRules();
-    CampaignChapterDTO currentChapter = getCurrentChapter(campaign);
+    CampaignChapterDTO currentChapter =
+        getCurrentChapter(campaign)
+            .orElseThrow(() -> new IllegalStateException("No active chapter for match result"));
+    CampaignChapterDTO.ChapterRules rules = currentChapter.getRules();
 
     // Update Segment if it exists
     if (state.getCurrentMatch() != null) {
@@ -620,6 +632,9 @@ public class CampaignService {
 
     state.setCurrentPhase(CampaignPhase.POST_MATCH);
 
+    // Evaluate storyline progress
+    storylineDirectorService.evaluateProgress(campaign, won);
+
     // Unlock backstage actions after first match
     if (state.getMatchesPlayed() == 1 && state.getCompletedChapterIds().isEmpty()) {
       WrestlerAlignment alignment =
@@ -712,7 +727,7 @@ public class CampaignService {
     final String finalShowName = showName;
     final Long finalTemplateId = templateId;
     final java.time.LocalDate finalDate = date;
-    return showService.findByName(finalShowName).stream()
+    return showRepository.findByName(finalShowName).stream()
         .filter(s -> s.getShowDate().equals(finalDate))
         .findFirst()
         .orElseGet(
@@ -720,7 +735,18 @@ public class CampaignService {
               ShowType weekly =
                   showTypeRepository
                       .findByName("Weekly")
-                      .orElseGet(() -> showTypeRepository.findAll().get(0));
+                      .orElseGet(
+                          () -> {
+                            var all = showTypeRepository.findAll();
+                            if (!all.isEmpty()) {
+                              return all.get(0);
+                            }
+                            // Last resort: create it
+                            ShowType st = new ShowType();
+                            st.setName("Weekly");
+                            st.setDescription("Default Weekly Show");
+                            return showTypeRepository.save(st);
+                          });
 
               return showService.createShow(
                   finalShowName,
@@ -729,6 +755,7 @@ public class CampaignService {
                   finalDate,
                   season.getId(),
                   finalTemplateId,
+                  null,
                   null,
                   null);
             });
@@ -741,7 +768,18 @@ public class CampaignService {
             () ->
                 segmentTypeRepository
                     .findByName("One on One")
-                    .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
+                    .orElseGet(
+                        () -> {
+                          var all = segmentTypeRepository.findAll();
+                          if (!all.isEmpty()) {
+                            return all.get(0);
+                          }
+                          // Last resort: create it
+                          SegmentType st = new SegmentType();
+                          st.setName("Promo");
+                          st.setDescription("Standard Promo");
+                          return segmentTypeRepository.save(st);
+                        }));
   }
 
   public void saveSegment(@NonNull Segment segment) {
@@ -757,6 +795,9 @@ public class CampaignService {
 
     CampaignState state = campaign.getState();
     String oldId = state.getCurrentChapterId();
+
+    // Capture current chapter context before it's cleared/abandoned
+    CampaignChapterDTO contextChapter = getCurrentChapter(campaign).orElse(null);
 
     // Initialize lazy collections accessed by criteria checks (e.g. isChampion checks reigns)
     campaign.getWrestler().getReigns().size();
@@ -791,8 +832,19 @@ public class CampaignService {
       log.info("Advanced to chapter: {}", state.getCurrentChapterId());
       return Optional.of(newChapterId);
     } else {
-      completeCampaign(campaign);
-      return Optional.empty();
+      // No predefined chapter found, so create an AI-driven storyline to bridge.
+      log.info("No predefined next chapter found. Initializing AI-driven storyline.");
+      // First, ensure any old storyline is completed/abandoned
+      if (state.getActiveStoryline() != null) {
+        storylineDirectorService.abandonStoryline(state.getActiveStoryline());
+      }
+      CampaignStoryline newStoryline =
+          storylineDirectorService.initializeStoryline(campaign, contextChapter);
+      state.setActiveStoryline(newStoryline);
+      state.setCurrentChapterId(
+          newStoryline.getTitle()); // Use storyline title as a pseudo-chapter ID
+      campaignStateRepository.save(state);
+      return Optional.of(newStoryline.getTitle());
     }
   }
 

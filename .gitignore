@@ -6,6 +6,7 @@
 .settings
 .project
 .classpath
+.env
 
 *.iml
 .DS_Store
@@ -45,4 +46,18 @@ replay_pid*
 /.run/
 /models/
 src/main/resources/META-INF/resources/images/generated/
-conductor/archive/
+.vaadin-node-tasks.lock
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
+
+# Beads internal state
+.beads/backup/
+.beads/dolt-server.*
+.beads/interactions.jsonl
+.beads/last-touched
+.beads/.local_version
+
+# Vaadin bundles
+src/main/bundles/

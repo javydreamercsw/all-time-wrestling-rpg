@@ -44,11 +44,15 @@ class TitleControllerTest extends AbstractControllerTest {
     title.setTier(WrestlerTier.MIDCARDER);
 
     when(titleService.titleNameExists(any())).thenReturn(false);
-    when(titleService.createTitle(any(), any(), any(), any())).thenReturn(title);
+    when(titleService.createTitle(any(), any(), any(), any(), any())).thenReturn(title);
 
     TitleController.CreateTitleRequest request =
         new TitleController.CreateTitleRequest(
-            "Test Title", "Description", WrestlerTier.MIDCARDER, ChampionshipType.SINGLE);
+            "Test Title",
+            "Description",
+            WrestlerTier.MIDCARDER,
+            ChampionshipType.SINGLE,
+            com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
 
     mockMvc
         .perform(

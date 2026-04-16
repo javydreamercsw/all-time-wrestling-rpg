@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerListView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -166,13 +167,18 @@ public class BookerView extends VerticalLayout {
   private Grid<Wrestler> createRosterOverviewGrid() {
     Grid<Wrestler> grid = new Grid<>();
     grid.setId("roster-overview-grid");
-    grid.addColumn(Wrestler::getName).setHeader("Name");
-    grid.addColumn(Wrestler::getTier).setHeader("Tier");
-    grid.addColumn(Wrestler::getGender).setHeader("Gender");
-    grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?");
+    Grid.Column<Wrestler> nameColumn =
+        grid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
+    grid.addColumn(Wrestler::getTier).setHeader("Tier").setSortable(true);
+    grid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
+    grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?").setSortable(true);
 
     grid.setItems(wrestlerService.findAll());
     grid.setSizeFull();
+
+    // Default sorting by Name
+    grid.sort(GridSortOrder.asc(nameColumn).build());
+
     return grid;
   }
 

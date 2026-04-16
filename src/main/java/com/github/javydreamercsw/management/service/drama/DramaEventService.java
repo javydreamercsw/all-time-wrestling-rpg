@@ -501,10 +501,50 @@ public class DramaEventService {
       case MEDIA_CONTROVERSY -> generateMediaControversy(severity, primaryName);
       case CAMPAIGN_RIVAL -> generateCampaignRival(severity, primaryName, secondaryName);
       case CAMPAIGN_OUTSIDER -> generateCampaignOutsider(severity, primaryName, secondaryName);
+      case RELATIONSHIP_MILESTONE ->
+          generateRelationshipMilestone(severity, primaryName, secondaryName);
     };
   }
 
   // ==================== EVENT TEMPLATE GENERATORS ====================
+
+  private DramaEventTemplate generateRelationshipMilestone(
+      DramaEventSeverity severity, String primary, String secondary) {
+    return switch (severity) {
+      case POSITIVE ->
+          new DramaEventTemplate(
+              primary + " and " + secondary + " Personal Milestone",
+              "A heartwarming personal milestone for "
+                  + primary
+                  + " and "
+                  + secondary
+                  + " has captured the fans' hearts, boosting their popularity.");
+      case NEUTRAL ->
+          new DramaEventTemplate(
+              primary + " and " + secondary + " Family News",
+              "Some personal news regarding "
+                  + primary
+                  + " and "
+                  + secondary
+                  + " has surfaced, generating buzz in the wrestling community.");
+      case NEGATIVE ->
+          new DramaEventTemplate(
+              primary + " and " + secondary + " Relationship Strain",
+              "Reports are circulating about personal friction between "
+                  + primary
+                  + " and "
+                  + secondary
+                  + ", potentially affecting their chemistry.");
+      case MAJOR ->
+          new DramaEventTemplate(
+              "SHOCKING NEWS: " + primary + " and " + secondary,
+              "A major personal development involving "
+                  + primary
+                  + " and "
+                  + secondary
+                  + " has shocked the industry, creating a significant narrative shift.");
+    };
+  }
 
   private DramaEventTemplate generateCampaignRival(
       DramaEventSeverity severity, String primary, String secondary) {
@@ -903,6 +943,22 @@ public class DramaEventService {
                   + " is at the center of a major media scandal that is generating widespread"
                   + " negative publicity and fan backlash.");
     };
+  }
+
+  /**
+   * Get count of active injuries for a wrestler.
+   *
+   * @param wrestlerId ID of the wrestler
+   * @return Count of active injuries
+   */
+  public long getActiveInjuryCount(Long wrestlerId) {
+    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
+    if (wrestlerOpt.isEmpty()) {
+      return 0;
+    }
+    return wrestlerOpt.get().getInjuries().stream()
+        .filter(com.github.javydreamercsw.management.domain.injury.Injury::getIsActive)
+        .count();
   }
 
   /** Record for event templates. */

@@ -2,35 +2,35 @@
 
 Welcome to the Campaign guide. This documentation is automatically generated from the latest game features.
 
-## Gang Warfare
+## Backstage Encounters
 
-In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.
+Random encounters can occur when you visit the backstage area. These interactive dialogue segments force you to make choices that affect your alignment and momentum.
 
-![Gang Warfare](/screenshots/campaign-gang-warfare.png)
-
----
-
-## Fighting Champion
-
-As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.
-
-![Fighting Champion](/screenshots/campaign-fighting-champion.png)
+![Backstage Encounters](/screenshots/campaign-backstage-encounter.png)
 
 ---
 
-## Backstage Actions
+## Encounter Outcomes
 
-Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.
+Every choice in a backstage encounter has a narrative outcome and mechanical consequences, such as alignment shifts or bonuses for your next match.
 
-![Backstage Actions](/screenshots/campaign-backstage-actions.png)
+![Encounter Outcomes](/screenshots/campaign-backstage-encounter-outcome.png)
 
 ---
 
-## Tournament Bracket
+## Smart Promo Hooks
 
-The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.
+The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your wrestler's personality and current rivalries. Choose your strategy to connect with the audience or draw heat.
 
-![Tournament Bracket](/screenshots/campaign-tournament-bracket.png)
+![Smart Promo Hooks](/screenshots/campaign-promo-hooks.png)
+
+---
+
+## Smart Promo Outcome
+
+Your choices have consequences. The crowd reaction, opponent retorts, and alignment shifts are all dynamically calculated, affecting your wrestler's momentum and reputation.
+
+![Smart Promo Outcome](/screenshots/campaign-promo-outcome.png)
 
 ---
 
@@ -39,6 +39,14 @@ The tournament chapter challenges you to climb the ranks in a single-elimination
 Your journey starts here. Establish your reputation through backstage encounters and initial matches as you find your footing in All Time Wrestling.
 
 ![The Beginning](/screenshots/campaign-beginning.png)
+
+---
+
+## Tournament Bracket
+
+The tournament chapter challenges you to climb the ranks in a single-elimination bracket. Win your matches to advance to the finals and claim the trophy.
+
+![Tournament Bracket](/screenshots/campaign-tournament-bracket.png)
 
 ---
 
@@ -58,6 +66,22 @@ Trust is a luxury you can no longer afford. Face the consequences of a broken al
 
 ---
 
+## Fighting Champion
+
+As the Fighting Champion, you must defend your title against a series of challengers. Each defense increases your prestige but tests your stamina.
+
+![Fighting Champion](/screenshots/campaign-fighting-champion.png)
+
+---
+
+## Gang Warfare
+
+In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or crush rivals as you fight for control of the locker room.
+
+![Gang Warfare](/screenshots/campaign-gang-warfare.png)
+
+---
+
 ## Corporate Power Trip
 
 The authorities are against you. Survive impossible odds and unfair stipulations as you challenge the corrupt management's control.
@@ -66,11 +90,19 @@ The authorities are against you. Survive impossible odds and unfair stipulations
 
 ---
 
-## Interactive Promos
+## Backstage Actions
 
-Cut promos against your rivals. Choose your words carefully to sway the crowd, intimidate your opponent, or build your own popularity. Your choices affect your alignment and feud heat.
+Take daily actions to improve your stats, recover from injuries, or build hype for your next match. Choose wisely, as you have limited time each day.
 
-![Interactive Promos](/screenshots/campaign-backstage-actions.png)
+![Backstage Actions](/screenshots/campaign-backstage-actions.png)
+
+---
+
+## Story Journal
+
+Your AI-generated adventures are preserved in the Story Journal. Here you can review past storyline arcs and download them as JSON chapter files to share or preserve.
+
+![Story Journal](/screenshots/campaign-story-journal.png)
 
 ---
 

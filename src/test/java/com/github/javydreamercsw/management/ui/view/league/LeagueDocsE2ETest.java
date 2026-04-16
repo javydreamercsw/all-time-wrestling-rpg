@@ -37,7 +37,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,8 +129,14 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "league-draft-room");
 
     // Complete Draft to show other features
-    List<Wrestler> wrestlers = wrestlerRepository.findAll();
-    Random random = new Random();
+    List<Wrestler> wrestlers =
+        new java.util.ArrayList<>(
+            wrestlerRepository.findAll().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                .toList());
+    // Sort by name to match DraftView grid default order
+    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+
     Wrestler w1 = wrestlers.get(0);
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
 

@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
@@ -59,17 +60,23 @@ class TitleControllerIT extends AbstractControllerTest {
             "World Championship",
             "The top championship",
             WrestlerTier.MAIN_EVENTER,
-            ChampionshipType.SINGLE);
+            ChampionshipType.SINGLE,
+            Gender.MALE);
 
     Title createdTitle = new Title();
     createdTitle.setId(1L);
     createdTitle.setName(request.name());
     createdTitle.setDescription(request.description());
     createdTitle.setTier(request.tier());
+    createdTitle.setGender(request.gender());
     createdTitle.setIsActive(true);
 
     when(titleService.createTitle(
-            anyString(), anyString(), any(WrestlerTier.class), any(ChampionshipType.class)))
+            anyString(),
+            anyString(),
+            any(WrestlerTier.class),
+            any(ChampionshipType.class),
+            any(Gender.class)))
         .thenReturn(createdTitle);
 
     mockMvc
@@ -95,7 +102,11 @@ class TitleControllerIT extends AbstractControllerTest {
     // Try to create duplicate
     CreateTitleRequest request =
         new CreateTitleRequest(
-            "World Championship", "Duplicate title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
+            "World Championship",
+            "Duplicate title",
+            WrestlerTier.ROOKIE,
+            ChampionshipType.SINGLE,
+            Gender.MALE);
 
     mockMvc
         .perform(
@@ -109,7 +120,7 @@ class TitleControllerIT extends AbstractControllerTest {
   @Test
   @DisplayName("Should validate required fields when creating title")
   void shouldValidateRequiredFieldsWhenCreatingTitle() throws Exception {
-    CreateTitleRequest request = new CreateTitleRequest("", null, null, null);
+    CreateTitleRequest request = new CreateTitleRequest("", null, null, null, null);
 
     mockMvc
         .perform(
@@ -411,16 +422,18 @@ class TitleControllerIT extends AbstractControllerTest {
     Title title = createTestTitle("Original Name", WrestlerTier.MAIN_EVENTER);
 
     UpdateTitleRequest request =
-        new UpdateTitleRequest("Updated Name", "Updated description", false);
+        new UpdateTitleRequest("Updated Name", "Updated description", false, Gender.MALE);
 
     Title updatedTitle = new Title();
     updatedTitle.setId(title.getId());
     updatedTitle.setName(request.name());
     updatedTitle.setDescription(request.description());
+    updatedTitle.setGender(request.gender());
     updatedTitle.setIsActive(request.isActive());
     updatedTitle.setTier(title.getTier());
 
-    when(titleService.updateTitle(anyLong(), anyString(), anyString(), anyBoolean()))
+    when(titleService.updateTitle(
+            anyLong(), anyString(), anyString(), anyBoolean(), any(Gender.class)))
         .thenReturn(Optional.of(updatedTitle));
 
     mockMvc

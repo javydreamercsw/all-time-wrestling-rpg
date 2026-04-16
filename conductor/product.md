@@ -18,7 +18,7 @@ The core gameplay mechanics and features of All Time Wrestling RPG include:
 * **Dynamic Ranking System:** Wrestlers are ranked based on fan count, with a refined fan acquisition and loss system that adds consequence to match outcomes.
 * **Season Management:** Options for "soft reset" of roster fan standings and tier definitions at the end of each season, including fan recalibration and tier boundary resets.
 * **Segment Rules with Bump Addition:** Configurable segment rules to automatically add bumps to participants based on winners, losers, or all participants.
-* **Notion Synchronization:** The application can synchronize data from Notion databases to local JSON files and the application's database, with features for high performance, configurability, a REST API, and a UI for management.
+* **Notion Synchronization:** Advanced synchronization engine providing real-time UI feedback, detailed logging, and intelligent duplicate detection when bridging local data with Notion databases.
 * **Multi-Database Support & Migration:** Support for multiple database engines (H2, MySQL) with a built-in data transfer wizard for seamless migration between environments.
 * **Title History & Lineal tracking:** Comprehensive visualization of championship histories and wrestler accomplishments through chronological timelines and detailed reign records.
 * **Solo Campaign Mode:** A persistent, narrative-driven single-player experience ("All or Nothing") featuring character progression, alignment tracking (Face/Heel), backstage actions, and AI-driven story branching.
@@ -26,7 +26,9 @@ The core gameplay mechanics and features of All Time Wrestling RPG include:
 * **Interactive Promos:** Role-playing elements where players can cut promos to influence feud heat, alignment, and match hype, with AI providing dynamic feedback and rewards.
 * **Match Narration Feedback:** Players can rate and provide specific feedback on AI-generated match narration to train the system for better future storytelling.
 * **On-Demand Theme Switching:** User-configurable UI themes allowing instant switching between Light, Dark, and custom color presets.
+* **Expansion Pack Management:** Administrative interface to group game content (wrestlers, NPCs, teams, factions) into expansions that can be toggled on or off to customize the active roster and staff.
 * **AI Image Generation:** Integrated generation of wrestler, NPC, and show template visual assets using local or remote AI models.
+* **Default Image System:** A centralized resolution service that provides high-quality default silhouettes and specific artwork for all game entities (Wrestlers, NPCs, Shows, Venues, etc.), ensuring a visually complete and immersive experience regardless of custom content availability.
 
 ## Technical Considerations
 

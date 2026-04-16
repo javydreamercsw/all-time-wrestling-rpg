@@ -20,10 +20,10 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -45,13 +45,11 @@ import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import org.springframework.transaction.annotation.Transactional;
 
 @Route("rivalry-list")
 @PageTitle("Rivalry List")
 @Menu(order = 1, icon = "vaadin:flame", title = "Rivalry List")
 @PermitAll
-@Transactional(readOnly = true)
 public class RivalryListView extends Main {
 
   private final RivalryService rivalryService;
@@ -60,7 +58,7 @@ public class RivalryListView extends Main {
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
 
-  final Grid<Rivalry> rivalryGrid;
+  final Grid<RivalryDTO> rivalryGrid;
 
   public RivalryListView(
       @NonNull RivalryService rivalryService,
@@ -111,7 +109,11 @@ public class RivalryListView extends Main {
     createButton.setVisible(securityUtils.canCreate());
 
     rivalryGrid.setItems(
-        query -> rivalryService.getAllRivalriesWithWrestlers(toSpringPageRequest(query)).stream());
+        query ->
+            rivalryService
+                .getAllRivalriesWithWrestlers(toSpringPageRequest(query))
+                .map(rivalryService.getRivalryMapper()::toRivalryDTO)
+                .stream());
     rivalryGrid
         .addColumn(rivalry -> rivalry.getWrestler1().getName())
         .setHeader("Wrestler 1")
@@ -123,22 +125,22 @@ public class RivalryListView extends Main {
         .setSortable(true)
         .setSortProperty("wrestler2.name");
     rivalryGrid
-        .addColumn(Rivalry::getHeat)
+        .addColumn(RivalryDTO::getHeat)
         .setHeader("Heat")
         .setSortable(true)
         .setSortProperty("heat");
     rivalryGrid
-        .addColumn(Rivalry::getStorylineNotes)
+        .addColumn(RivalryDTO::getStorylineNotes)
         .setHeader("Notes")
         .setSortable(true)
         .setSortProperty("storylineNotes");
     rivalryGrid
-        .addColumn(Rivalry::getStartedDate)
+        .addColumn(RivalryDTO::getStartedDate)
         .setHeader("Start Date")
         .setSortable(true)
         .setSortProperty("startedDate");
     rivalryGrid
-        .addColumn(Rivalry::getEndedDate)
+        .addColumn(RivalryDTO::getEndedDate)
         .setHeader("End Date")
         .setSortable(true)
         .setSortProperty("endedDate");

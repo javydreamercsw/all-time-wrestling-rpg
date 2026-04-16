@@ -1,0 +1,1 @@
+ALTER TABLE title ADD COLUMN effect_script VARCHAR(255);

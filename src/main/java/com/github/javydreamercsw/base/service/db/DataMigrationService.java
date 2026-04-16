@@ -1454,13 +1454,14 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         "INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, "
-            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, FORMED_DATE,"
-                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID FROM faction");
+                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY FROM"
+                    + " faction");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1483,6 +1484,7 @@ public class DataMigrationService {
         } else {
           targetStatement.setObject(10, null);
         }
+        targetStatement.setInt(11, resultSet.getInt("AFFINITY"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {

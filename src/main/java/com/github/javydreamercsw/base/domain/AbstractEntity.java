@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
 @MappedSuperclass
 @Getter
 @Setter
-public abstract class AbstractEntity<ID> {
+public abstract class AbstractEntity<ID> implements NamedEntity {
 
   /** Maximum length for description fields across all entities */
   public static final int DESCRIPTION_MAX_LENGTH = 255;
@@ -39,7 +39,44 @@ public abstract class AbstractEntity<ID> {
   @Column(name = "last_sync")
   private Instant lastSync;
 
+  @Column(name = "updated_at")
+  private Instant updatedAt = Instant.now();
+
   public abstract @Nullable ID getId();
+
+  /**
+   * Checks if the entity has changed since the last synchronization.
+   *
+   * @return true if there are unsynced changes, false otherwise
+   */
+  public boolean hasUnsyncedChanges() {
+    if (lastSync == null) {
+      return true; // Never synced
+    }
+    if (updatedAt == null) {
+      return true; // Missing update record - sync to be safe
+    }
+    // Any update at or after the last sync time should be synced.
+    // We use !isBefore to include equal timestamps.
+    return !updatedAt.isBefore(lastSync);
+  }
+
+  @jakarta.persistence.PrePersist
+  protected void onBaseCreate() {
+    if (updatedAt == null) {
+      updatedAt = Instant.now();
+    }
+  }
+
+  @jakarta.persistence.PreUpdate
+  protected void onBaseUpdate() {
+    updatedAt = Instant.now();
+  }
+
+  @Override
+  public @Nullable String getName() {
+    return null;
+  }
 
   @Override
   public String toString() {

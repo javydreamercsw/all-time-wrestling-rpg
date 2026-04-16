@@ -159,27 +159,94 @@ class TournamentServiceTest {
   }
 
   @Test
-  void testIsPlayerChampion() {
-    // Manually construct a completed tournament state where player won finals
-    TournamentDTO tournament = new TournamentDTO();
-    tournament.setTotalRounds(1);
+  void testInitializeTournamentLargeRoster() {
+    List<Wrestler> roster = new ArrayList<>();
+    for (long i = 2; i <= 20; i++) {
+      Wrestler w = new Wrestler();
+      w.setId(i);
+      w.setName("Wrestler " + i);
+      roster.add(w);
+    }
+    when(wrestlerRepository.findAll()).thenReturn(roster);
 
-    TournamentDTO.TournamentMatch finalMatch = new TournamentDTO.TournamentMatch();
-    finalMatch.setId("R1-M1");
-    finalMatch.setRound(1);
-    finalMatch.setWrestler1Id(player.getId());
-    finalMatch.setWrestler2Id(2L);
-    finalMatch.setWinnerId(player.getId());
+    tournamentService.initializeTournament(campaign);
 
-    tournament.setMatches(List.of(finalMatch));
+    TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+    assertThat(tournament.getTotalRounds()).isEqualTo(4); // 16 slots
+    assertThat(tournament.getMatches()).hasSize(15);
+  }
 
-    try {
-      String json = "{\"tournamentState\":" + objectMapper.writeValueAsString(tournament) + "}";
-      campaign.getState().setFeatureData(json);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+  @Test
+  void testAdvanceTournamentPlayerLoss() {
+    List<Wrestler> roster = new ArrayList<>();
+    Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
+    opponent.setName("Opponent");
+    roster.add(opponent);
+    when(wrestlerRepository.findAll()).thenReturn(roster);
+
+    tournamentService.initializeTournament(campaign);
+    TournamentDTO.TournamentMatch playerMatch = tournamentService.getCurrentPlayerMatch(campaign);
+
+    // Advance - Player LOSES
+    tournamentService.advanceTournament(campaign, false, null);
+
+    TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+    TournamentDTO.TournamentMatch updatedMatch =
+        tournament.getMatches().stream()
+            .filter(m -> m.getId().equals(playerMatch.getId()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(updatedMatch.getWinnerId()).isEqualTo(opponent.getId());
+  }
+
+  @Test
+  void testAdvanceTournamentWithShow() {
+    List<Wrestler> roster = new ArrayList<>();
+    // Add 3 opponents + Player = 4 participants. Perfect power of 2.
+    for (long i = 2; i <= 4; i++) {
+      Wrestler w = new Wrestler();
+      w.setId(i);
+      w.setName("Wrestler " + i);
+      roster.add(w);
     }
 
-    assertThat(tournamentService.isPlayerChampion(campaign)).isTrue();
+    when(wrestlerRepository.findAll()).thenReturn(roster);
+    // Mock finds for all 4 participants - use lenient() as random matching might skip some in a
+    // single run
+    for (long i = 1; i <= 4; i++) {
+      Wrestler w = new Wrestler();
+      w.setId(i);
+      w.setName("Wrestler " + i);
+      org.mockito.Mockito.lenient()
+          .when(wrestlerRepository.findById(i))
+          .thenReturn(java.util.Optional.of(w));
+    }
+    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType type =
+        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+    when(segmentTypeRepository.findByName("One on One")).thenReturn(java.util.Optional.of(type));
+
+    com.github.javydreamercsw.management.domain.show.segment.Segment mockSegment =
+        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    when(segmentService.createSegment(any(), any(), any())).thenReturn(mockSegment);
+
+    tournamentService.initializeTournament(campaign);
+
+    com.github.javydreamercsw.management.domain.show.Show show =
+        new com.github.javydreamercsw.management.domain.show.Show();
+
+    // Advance until all round 1 matches are done
+    while (tournamentService.getTournamentState(campaign).getCurrentRound() == 1) {
+      tournamentService.advanceTournament(campaign, true, show);
+    }
+
+    // Verify NPC match was simulated and segment created
+    verify(segmentService, org.mockito.Mockito.atLeastOnce()).createSegment(any(), any(), any());
+  }
+
+  @Test
+  void testIsPlayerChampionFalse() {
+    assertThat(tournamentService.isPlayerChampion(campaign)).isFalse();
   }
 }

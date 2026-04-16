@@ -121,6 +121,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
             season.getId(),
             null,
             null,
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();

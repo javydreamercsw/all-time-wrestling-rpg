@@ -183,6 +183,8 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    expandAccordionPanel("Rivalry History");
+
     wait.until(
         ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Feud History']")));
 
@@ -218,6 +220,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             season.getId(),
             null,
             null,
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();
@@ -240,6 +243,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    expandAccordionPanel("Match Logs");
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
 
     wait.until(
@@ -300,6 +304,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             season.getId(),
             null,
             null,
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();
@@ -323,6 +328,8 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    expandAccordionPanel("Championships");
+
     wait.until(
         ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Title History']")));
 
@@ -340,5 +347,22 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Click and verify navigation
     clickElement(link);
     wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
+  }
+
+  private void expandAccordionPanel(String label) {
+    waitForVaadinClientToLoad();
+    List<WebElement> panels = driver.findElements(By.tagName("vaadin-accordion-panel"));
+    for (WebElement panel : panels) {
+      if (panel.getText().contains(label)) {
+        clickElement(panel);
+        // Wait for animation
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
+        return;
+      }
+    }
+    throw new RuntimeException("Could not find accordion panel with label: " + label);
   }
 }

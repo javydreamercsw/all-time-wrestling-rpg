@@ -1,0 +1,16 @@
+[ {
+  "name": "Legal Support",
+  "increasesAwareness": false,
+  "canCauseDq": false,
+  "baseRiskMultiplier": 0.0
+}, {
+  "name": "Tactical Distraction",
+  "increasesAwareness": true,
+  "canCauseDq": false,
+  "baseRiskMultiplier": 1.0
+}, {
+  "name": "Illegal Interference",
+  "increasesAwareness": true,
+  "canCauseDq": true,
+  "baseRiskMultiplier": 1.2
+} ]

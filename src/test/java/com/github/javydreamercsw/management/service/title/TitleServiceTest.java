@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -64,6 +65,7 @@ class TitleServiceTest {
   @Mock private ApplicationEventPublisher eventPublisher;
 
   @Mock private TierBoundaryService tierBoundaryService;
+  @Mock private DefaultImageService imageService;
 
   private TitleService titleService;
 
@@ -73,7 +75,8 @@ class TitleServiceTest {
   @BeforeEach
   void setUp() {
     titleService =
-        new TitleService(tierBoundaryService, titleRepository, wrestlerRepository, clock);
+        new TitleService(
+            tierBoundaryService, titleRepository, wrestlerRepository, clock, imageService);
     Mockito.lenient().doNothing().when(eventPublisher).publishEvent(any());
     when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
         .thenAnswer(

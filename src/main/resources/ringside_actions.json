@@ -1,0 +1,50 @@
+[ {
+  "name": "Encouraging Call",
+  "type": "Legal Support",
+  "description": "A motivational shout from ringside. Provides a small win probability boost with no risk.",
+  "impact": 5,
+  "risk": 0,
+  "alignment": "FACE"
+}, {
+  "name": "Coaching Advice",
+  "type": "Legal Support",
+  "description": "Shout technical advice to the wrestler. Legal and helps strategy.",
+  "impact": 8,
+  "risk": 0,
+  "alignment": "NEUTRAL"
+}, {
+  "name": "Referee Distraction",
+  "type": "Tactical Distraction",
+  "description": "Distract the official to allow for recovery. The AI will narrate a recovery spot.",
+  "impact": 12,
+  "risk": 20,
+  "alignment": "HEEL"
+}, {
+  "name": "Protective Shield",
+  "type": "Tactical Distraction",
+  "description": "A distraction aimed at neutralizing an opponent's ringside help. Moderate risk of being spotted.",
+  "impact": 10,
+  "risk": 15,
+  "alignment": "FACE"
+}, {
+  "name": "Weapon Slide",
+  "type": "Illegal Interference",
+  "description": "Introduce a foreign object into the ring. High impact, high risk.",
+  "impact": 25,
+  "risk": 40,
+  "alignment": "HEEL"
+}, {
+  "name": "Cheap Shot",
+  "type": "Illegal Interference",
+  "description": "A direct illegal strike when the ref isn't looking. Extreme risk of DQ.",
+  "impact": 35,
+  "risk": 55,
+  "alignment": "HEEL"
+}, {
+  "name": "Trip/Ankle Pull",
+  "type": "Illegal Interference",
+  "description": "Ground the opponent illegally. Narrates a momentum shift.",
+  "impact": 18,
+  "risk": 30,
+  "alignment": "HEEL"
+} ]

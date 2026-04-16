@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -61,6 +62,7 @@ public class WrestlerListView extends Main {
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private Set<Long> injuredWrestlerIds;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
@@ -83,45 +85,41 @@ public class WrestlerListView extends Main {
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
-    Set<Long> injuredWrestlerIds =
-        injuryService.getWrestlersWithActiveInjuries().stream()
-            .map(Wrestler::getId)
-            .collect(Collectors.toSet());
-
-    wrestlerGrid
-        .addComponentColumn(
-            wrestler -> {
-              HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-              if (wrestler.getActive()) {
-                Icon activeIcon = new Icon(VaadinIcon.CHECK);
-                activeIcon.setColor("green");
-                activeIcon.getStyle().set("margin-right", "5px");
-                nameLayout.add(activeIcon);
-              } else {
-                Icon inactiveIcon = new Icon(VaadinIcon.MINUS_CIRCLE);
-                inactiveIcon.setColor("red");
-                inactiveIcon.getStyle().set("margin-right", "5px");
-                nameLayout.add(inactiveIcon);
-              }
-              if (injuredWrestlerIds.contains(wrestler.getId())) {
-                Icon injuryIcon = new Icon(VaadinIcon.AMBULANCE);
-                injuryIcon.setColor("red");
-                injuryIcon.getStyle().set("margin-right", "5px");
-                nameLayout.add(injuryIcon);
-              }
-              if (wrestler.getAccount() != null) {
-                Icon userIcon = new Icon(VaadinIcon.USER);
-                userIcon.setColor("blue");
-                userIcon.getStyle().set("margin-right", "5px");
-                nameLayout.add(userIcon);
-              }
-              nameLayout.add(new Span(wrestler.getName()));
-              return nameLayout;
-            })
-        .setHeader("Name")
-        .setComparator(Comparator.comparing(Wrestler::getName))
-        .setSortable(true);
+    Grid.Column<Wrestler> nameColumn =
+        wrestlerGrid
+            .addComponentColumn(
+                wrestler -> {
+                  HorizontalLayout nameLayout = new HorizontalLayout();
+                  nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                  if (wrestler.getActive()) {
+                    Icon activeIcon = new Icon(VaadinIcon.CHECK);
+                    activeIcon.setColor("green");
+                    activeIcon.getStyle().set("margin-right", "5px");
+                    nameLayout.add(activeIcon);
+                  } else {
+                    Icon inactiveIcon = new Icon(VaadinIcon.MINUS_CIRCLE);
+                    inactiveIcon.setColor("red");
+                    inactiveIcon.getStyle().set("margin-right", "5px");
+                    nameLayout.add(inactiveIcon);
+                  }
+                  if (injuredWrestlerIds.contains(wrestler.getId())) {
+                    Icon injuryIcon = new Icon(VaadinIcon.AMBULANCE);
+                    injuryIcon.setColor("red");
+                    injuryIcon.getStyle().set("margin-right", "5px");
+                    nameLayout.add(injuryIcon);
+                  }
+                  if (wrestler.getAccount() != null) {
+                    Icon userIcon = new Icon(VaadinIcon.USER);
+                    userIcon.setColor("blue");
+                    userIcon.getStyle().set("margin-right", "5px");
+                    nameLayout.add(userIcon);
+                  }
+                  nameLayout.add(new Span(wrestler.getName()));
+                  return nameLayout;
+                })
+            .setHeader("Name")
+            .setComparator(Comparator.comparing(Wrestler::getName))
+            .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getDeckSize).setHeader("Deck Size").setSortable(true);
     wrestlerGrid
@@ -136,7 +134,15 @@ public class WrestlerListView extends Main {
     wrestlerGrid.addColumn(Wrestler::getLowStamina).setHeader("Low Stamina").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getBumps).setHeader("Bumps").setSortable(true);
+    wrestlerGrid
+        .addColumn(wrestler -> wrestler.getManager() != null ? wrestler.getManager().getName() : "")
+        .setHeader("Manager")
+        .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
+
+    // Default sorting by Name
+    wrestlerGrid.sort(GridSortOrder.asc(nameColumn).build());
+
     wrestlerGrid
         .addComponentColumn(
             wrestler -> {
@@ -159,6 +165,7 @@ public class WrestlerListView extends Main {
         .setFlexGrow(1)
         .setWidth("200px");
     wrestlerGrid.setSizeFull();
+    wrestlerGrid.setId("wrestler-list-grid");
 
     setSizeFull();
     addClassNames(
@@ -199,6 +206,11 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
+    injuredWrestlerIds =
+        injuryService.getWrestlersWithActiveInjuries().stream()
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
+
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
       wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
     } else {

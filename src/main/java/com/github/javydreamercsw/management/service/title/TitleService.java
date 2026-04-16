@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.title;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -45,6 +47,7 @@ public class TitleService {
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
   private final Clock clock;
+  private final DefaultImageService imageService;
 
   public boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
@@ -68,10 +71,24 @@ public class TitleService {
       @NonNull String description,
       @NonNull WrestlerTier tier,
       @NonNull ChampionshipType type) {
+    return createTitle(name, description, tier, type, null);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public Title createTitle(
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull WrestlerTier tier,
+      @NonNull ChampionshipType type,
+      Gender gender) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
     title.setTier(tier);
+    title.setGender(gender);
     title.setCreationDate(Instant.now(clock));
     title.setChampionshipType(type);
     return titleRepository.save(title);
@@ -186,6 +203,15 @@ public class TitleService {
       allEntries = true)
   public Optional<Title> updateTitle(
       @NonNull Long id, String name, String description, Boolean isActive) {
+    return updateTitle(id, name, description, isActive, null);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public Optional<Title> updateTitle(
+      @NonNull Long id, String name, String description, Boolean isActive, Gender gender) {
 
     return titleRepository
         .findById(id)
@@ -204,6 +230,10 @@ public class TitleService {
               if (isActive != null) {
 
                 title.setIsActive(isActive);
+              }
+
+              if (gender != null) {
+                title.setGender(gender);
               }
 
               return titleRepository.save(title);
@@ -392,6 +422,19 @@ public class TitleService {
   public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     return wrestlerOpt.map(titleRepository::findTitlesHeldByWrestler).orElse(List.of());
+  }
+
+  /**
+   * Resolves the image URL for a title, using the default image system if no specific URL is set.
+   *
+   * @param title The title entity.
+   * @return The resolved image URL.
+   */
+  public String resolveTitleImage(Title title) {
+    if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
+      return title.getImageUrl();
+    }
+    return imageService.resolveImage(title.getName(), ImageCategory.TITLE).url();
   }
 
   // Nested records for API responses/requests

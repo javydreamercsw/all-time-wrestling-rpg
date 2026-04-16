@@ -151,9 +151,13 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     waitForPageSourceToContain("Current Turn: admin");
 
     // Draft a wrestler as admin
-    List<Wrestler> wrestlers = new java.util.ArrayList<>(wrestlerRepository.findAll());
-    // Sort by ID to match default repository order and likely grid order
-    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getId));
+    List<Wrestler> wrestlers =
+        new java.util.ArrayList<>(
+            wrestlerRepository.findAll().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                .toList());
+    // Sort by name to match DraftView grid default order
+    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
 
     Wrestler w1 = wrestlers.removeFirst();
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));

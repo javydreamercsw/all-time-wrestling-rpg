@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -31,6 +33,8 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -46,23 +50,30 @@ public class TitleFormDialog extends Dialog {
 
   private final Title title;
   private final Binder<Title> binder = new Binder<>(Title.class);
+  private final TitleService titleService;
   private final WrestlerRepository wrestlerRepository;
+  private final ImageStorageService imageStorageService;
   private final TextField name;
   private final TextArea description;
   private final ComboBox<WrestlerTier> tier;
   private final ComboBox<Gender> gender;
   private final MultiSelectComboBox<Wrestler> champion;
+  private final TextField imageUrl;
+  private final Image previewImage;
   private final Button saveButton;
 
   public TitleFormDialog(
       @NonNull TitleService titleService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull TierRecalculationService tierRecalculationService,
+      @NonNull ImageStorageService imageStorageService,
       @NonNull Title title,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.title = title;
+    this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
+    this.imageStorageService = imageStorageService;
     name = new TextField("Name");
     name.setReadOnly(!securityUtils.canEdit());
     description = new TextArea("Description");
@@ -93,6 +104,29 @@ public class TitleFormDialog extends Dialog {
     champion.setItemLabelGenerator(Wrestler::getName);
     champion.setReadOnly(!securityUtils.canEdit());
 
+    imageUrl = new TextField("Image URL");
+    imageUrl.setReadOnly(true);
+    imageUrl.setWidthFull();
+
+    previewImage = new Image();
+    previewImage.setAlt("Title Preview");
+    previewImage.setHeight("100px");
+    previewImage.setVisible(false);
+
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(
+            imageStorageService,
+            url -> {
+              imageUrl.setValue(url);
+              updatePreviewImage(url);
+            });
+    imageUpload.setUploadButtonText("Upload Image");
+    imageUpload.setVisible(securityUtils.canEdit());
+
+    HorizontalLayout imageLayout = new HorizontalLayout(previewImage, imageUrl, imageUpload);
+    imageLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
+    imageLayout.setWidthFull();
+
     binder.forField(name).asRequired().bind(Title::getName, Title::setName);
     binder.bind(description, Title::getDescription, Title::setDescription);
     binder.forField(tier).asRequired().bind(Title::getTier, Title::setTier);
@@ -103,6 +137,7 @@ public class TitleFormDialog extends Dialog {
         .bind(Title::getChampionshipType, Title::setChampionshipType);
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
     binder.bind(includeInRankings, Title::getIncludeInRankings, Title::setIncludeInRankings);
+    binder.forField(imageUrl).bind(Title::getImageUrl, Title::setImageUrl);
 
     Runnable populateChampions =
         () -> {
@@ -137,7 +172,9 @@ public class TitleFormDialog extends Dialog {
             championshipType,
             isActive,
             includeInRankings,
-            champion);
+            champion,
+            imageLayout);
+    formLayout.setColspan(imageLayout, 2);
     add(formLayout);
 
     saveButton =
@@ -171,6 +208,17 @@ public class TitleFormDialog extends Dialog {
 
     if (title.getChampion() != null) {
       champion.setValue(title.getChampion());
+    }
+
+    updatePreviewImage(titleService.resolveTitleImage(this.title));
+  }
+
+  private void updatePreviewImage(String url) {
+    if (url != null && !url.isEmpty()) {
+      previewImage.setSrc(url);
+      previewImage.setVisible(true);
+    } else {
+      previewImage.setVisible(false);
     }
   }
 }
