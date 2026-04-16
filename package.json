@@ -143,7 +143,9 @@
     "@vaadin/react-components": "25.1.0",
     "react-dom": "$react-dom",
     "react": "$react",
-    "react-router": "$react-router"
+    "react-router": "$react-router",
+    "serialize-javascript": "7.0.5",
+    "brace-expansion": "2.0.3"
   },
   "vaadin": {
     "dependencies": {
