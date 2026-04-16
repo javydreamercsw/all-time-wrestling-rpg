@@ -78,7 +78,7 @@ public class TitleController {
 
     Title title =
         titleService.createTitle(
-            request.name(), request.description(), request.tier(), request.type);
+            request.name(), request.description(), request.tier(), request.type, request.gender());
     return ResponseEntity.status(HttpStatus.CREATED).body(title);
   }
 
@@ -228,7 +228,8 @@ public class TitleController {
   public ResponseEntity<Title> updateTitle(
       @PathVariable Long id, @Valid @RequestBody UpdateTitleRequest request) {
     Optional<Title> title =
-        titleService.updateTitle(id, request.name(), request.description(), request.isActive());
+        titleService.updateTitle(
+            id, request.name(), request.description(), request.isActive(), request.gender());
     return title.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 
@@ -264,12 +265,14 @@ public class TitleController {
       @NotBlank(message = "Title name is required") @Size(max = 255, message = "Title name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       @NotNull(message = "Title tier is required") WrestlerTier tier,
-      @NotNull(message = "Title type is required") ChampionshipType type) {}
+      @NotNull(message = "Title type is required") ChampionshipType type,
+      com.github.javydreamercsw.base.domain.wrestler.Gender gender) {}
 
   public record UpdateTitleRequest(
       @Size(max = 255, message = "Title name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
-      Boolean isActive) {}
+      Boolean isActive,
+      com.github.javydreamercsw.base.domain.wrestler.Gender gender) {}
 
   public record ErrorResponse(String message) {}
 }

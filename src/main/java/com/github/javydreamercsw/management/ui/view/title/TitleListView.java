@@ -105,7 +105,9 @@ public class TitleListView extends Main {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
-    grid.addColumn(Title::getGender).setHeader("Gender").setSortable(true);
+    grid.addColumn(title -> title.getGender() != null ? title.getGender().name() : "")
+        .setHeader("Gender")
+        .setSortable(true);
     grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);

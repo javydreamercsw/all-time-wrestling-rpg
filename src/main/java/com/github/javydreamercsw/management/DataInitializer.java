@@ -906,7 +906,11 @@ public class DataInitializer implements Initializable {
           if (existingTitle.isEmpty()) {
             title =
                 titleService.createTitle(
-                    dto.getName(), dto.getDescription(), dto.getTier(), dto.getChampionshipType());
+                    dto.getName(),
+                    dto.getDescription(),
+                    dto.getTier(),
+                    dto.getChampionshipType(),
+                    dto.getGender());
             log.debug(
                 "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {
@@ -915,6 +919,11 @@ public class DataInitializer implements Initializable {
           }
           title.setChampionshipType(dto.getChampionshipType());
           title.setEffectScript(dto.getEffectScript());
+          title.setGender(dto.getGender());
+          title.setImageUrl(dto.getImageUrl());
+          if (dto.getIncludeInRankings() != null) {
+            title.setIncludeInRankings(dto.getIncludeInRankings());
+          }
           titleService.save(title);
 
           // Award title if currentChampionName is provided
