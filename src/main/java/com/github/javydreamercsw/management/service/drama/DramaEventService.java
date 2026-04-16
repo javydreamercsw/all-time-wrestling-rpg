@@ -945,6 +945,22 @@ public class DramaEventService {
     };
   }
 
+  /**
+   * Get count of active injuries for a wrestler.
+   *
+   * @param wrestlerId ID of the wrestler
+   * @return Count of active injuries
+   */
+  public long getActiveInjuryCount(Long wrestlerId) {
+    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
+    if (wrestlerOpt.isEmpty()) {
+      return 0;
+    }
+    return wrestlerOpt.get().getInjuries().stream()
+        .filter(com.github.javydreamercsw.management.domain.injury.Injury::getIsActive)
+        .count();
+  }
+
   /** Record for event templates. */
   private record DramaEventTemplate(String title, String description) {}
 }

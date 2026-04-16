@@ -80,7 +80,14 @@ public class DramaEventScheduler {
 
       for (int i = 0; i < eventsToGenerate; i++) {
         Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
-        generateSingleRandomEvent(randomWrestlerId);
+        
+        // Safety check: skip if this wrestler already has too many active injuries (max 3)
+        // This helps prevent injury accumulation if the scheduler runs too frequently.
+        if (dramaEventService.getActiveInjuryCount(randomWrestlerId) < 3) {
+          generateSingleRandomEvent(randomWrestlerId);
+        } else {
+          log.debug("Skipping drama event for wrestler {} - too many active injuries", randomWrestlerId);
+        }
       }
 
       log.info("Completed scheduled drama event generation");
