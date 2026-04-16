@@ -177,7 +177,8 @@ public class TierRecalculationService implements RankingService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateTier(Wrestler wrestler) {
-    WrestlerTier newTier = calculateTier(wrestler.getFans(), wrestler.getGender());
+    Long fans = wrestler.getFans() != null ? wrestler.getFans() : 0L;
+    WrestlerTier newTier = calculateTier(fans, wrestler.getGender());
     if (wrestler.getTier() != newTier) {
       log.info("Updating {}'s tier from {} to {}", wrestler.getName(), wrestler.getTier(), newTier);
       wrestler.setTier(newTier);
