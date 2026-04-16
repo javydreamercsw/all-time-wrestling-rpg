@@ -1,5 +1,46 @@
 # Changelog
 
+## [v1.7.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.0) (2026-04-16)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.6.0...v1.7.0)
+
+**Implemented enhancements:**
+
+- Release 1.7.0 [\#246](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/246) ([javydreamercsw](https://github.com/javydreamercsw))
+- Redesign wrestler profile [\#237](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/237) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Add step to push release branch to origin [\#249](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/249) ([javydreamercsw](https://github.com/javydreamercsw))
+- Revert "Redesign wrestler profile" [\#239](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/239) ([javydreamercsw](https://github.com/javydreamercsw))
+- Build\(deps-dev\): Bump the npm\_and\_yarn group across 1 directory with 2 updates [\#238](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/238) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump io.swagger.core.v3:swagger-models-jakarta from 2.2.42 to 2.2.43 [\#204](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/204) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.codehaus.cargo:cargo-maven3-plugin from 1.10.18 to 1.10.26 [\#176](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/176) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump ch.qos.logback:logback-classic from 1.5.31 to 1.5.32 [\#175](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/175) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.codehaus.mojo:exec-maven-plugin from 3.5.1 to 3.6.3 [\#174](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/174) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump ch.qos.logback:logback-core from 1.5.31 to 1.5.32 [\#173](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/173) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Release 1.6.0 [\#172](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/172) ([javydreamercsw](https://github.com/javydreamercsw))
+
+## [v1.6.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.6.0) (2026-02-15)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.5.0...v1.6.0)
+
+**Implemented enhancements:**
+
+- AI image generation [\#153](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/153) ([javydreamercsw](https://github.com/javydreamercsw))
+- Stability Hardening [\#144](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/144) ([javydreamercsw](https://github.com/javydreamercsw))
+- Release 1.5.0 [\#137](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/137) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Revert "Achievement Notifications" [\#170](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/170) ([javydreamercsw](https://github.com/javydreamercsw))
+- Achievement Notifications [\#168](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/168) ([javydreamercsw](https://github.com/javydreamercsw))
+- Revert "AI image generation" [\#154](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/154) ([javydreamercsw](https://github.com/javydreamercsw))
+- Build\(deps\): Bump io.swagger.core.v3:swagger-models-jakarta from 2.2.41 to 2.2.42 [\#143](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/143) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump org.vaadin.stefan:fullcalendar2 from 7.0.0 to 7.0.1 [\#142](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/142) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump com.diffplug.spotless:spotless-maven-plugin from 3.1.0 to 3.2.0 [\#141](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/141) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump com.github.oshi:oshi-core from 6.7.0 to 6.9.2 [\#140](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/140) ([dependabot[bot]](https://github.com/apps/dependabot))
+
 ## [v1.5.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.5.0) (2026-01-26)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.4...v1.5.0)
