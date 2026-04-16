@@ -70,10 +70,19 @@ public class ArenaFormDialog extends Dialog {
       ImageStorageService storageService,
       Arena arena,
       Runnable onSave) {
+    setId("arena-form-dialog");
     this.arenaService = arenaService;
     this.locationService = locationService;
     this.arena = arena;
     this.onSave = onSave;
+
+    name.setId("arena-name-field");
+    description.setId("arena-description-field");
+    locationCombo.setId("arena-location-field");
+    capacity.setId("arena-capacity-field");
+    alignmentBias.setId("arena-bias-field");
+    environmentalTraits.setId("arena-traits-field");
+    imageUrl.setId("arena-image-url-field");
 
     configureBinder();
     initUI(storageService);
@@ -184,15 +193,18 @@ public class ArenaFormDialog extends Dialog {
     formLayout.setColspan(environmentalTraits, 2);
 
     Button saveButton = new Button(arena == null ? "Add" : "Save", e -> saveArena());
+    saveButton.setId("arena-save-button");
     saveButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
     saveButton.setEnabled(false); // Disable initially
     binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
 
     Button deleteButton = new Button("Delete", e -> deleteArena());
+    deleteButton.setId("arena-delete-button");
     deleteButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_ERROR);
     deleteButton.setVisible(arena != null && arena.getId() != null);
 
     Button cancelButton = new Button("Cancel", e -> close());
+    cancelButton.setId("arena-cancel-button");
 
     HorizontalLayout buttons = new HorizontalLayout(saveButton, deleteButton, cancelButton);
     buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);

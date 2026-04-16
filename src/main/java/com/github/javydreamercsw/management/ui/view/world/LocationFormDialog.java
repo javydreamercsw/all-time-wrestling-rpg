@@ -60,9 +60,15 @@ public class LocationFormDialog extends Dialog {
       ImageStorageService storageService,
       Location location,
       Runnable onSave) {
+    setId("location-form-dialog");
     this.service = service;
     this.location = location;
     this.onSave = onSave;
+
+    name.setId("location-name-field");
+    description.setId("location-description-field");
+    culturalTags.setId("location-tags-field");
+    imageUrl.setId("location-image-url-field");
 
     configureBinder();
     initUI(storageService);
@@ -139,15 +145,18 @@ public class LocationFormDialog extends Dialog {
     formLayout.setColspan(culturalTags, 2);
 
     Button saveButton = new Button(location == null ? "Add" : "Save", e -> saveLocation());
+    saveButton.setId("location-save-button");
     saveButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
     saveButton.setEnabled(false); // Disable initially
     binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
 
     Button deleteButton = new Button("Delete", e -> deleteLocation());
+    deleteButton.setId("location-delete-button");
     deleteButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_ERROR);
     deleteButton.setVisible(location != null && location.getId() != null);
 
     Button cancelButton = new Button("Cancel", e -> close());
+    cancelButton.setId("location-cancel-button");
 
     HorizontalLayout buttons = new HorizontalLayout(saveButton, deleteButton, cancelButton);
     buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);

@@ -82,6 +82,7 @@ public class ArenaListView extends Main {
   }
 
   private Component createGrid() {
+    grid.setId("arena-grid");
     grid.addColumn(Arena::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
     grid.addColumn(arena -> arena.getLocation().getName())
         .setHeader("Location")
@@ -121,10 +122,12 @@ public class ArenaListView extends Main {
 
   private Component createActionButtons(Arena arena) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
+    editButton.setId("edit-arena-" + arena.getId());
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.addClickListener(e -> editItem(arena));
 
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+    deleteButton.setId("delete-arena-" + arena.getId());
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.addClickListener(e -> deleteItem(arena));
 
@@ -133,6 +136,7 @@ public class ArenaListView extends Main {
 
   private void deleteItem(Arena arena) {
     Dialog confirmDialog = new Dialog();
+    confirmDialog.setId("delete-arena-dialog");
     confirmDialog.setHeaderTitle("Delete Arena");
     confirmDialog.add(
         new Span(
@@ -153,9 +157,11 @@ public class ArenaListView extends Main {
                 Notification.show("Error deleting arena: " + ex.getMessage());
               }
             });
+    confirmBtn.setId("confirm-delete-arena-button");
     confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
 
     Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+    cancelBtn.setId("cancel-delete-arena-button");
 
     confirmDialog.getFooter().add(cancelBtn, confirmBtn);
     confirmDialog.open();
@@ -163,6 +169,7 @@ public class ArenaListView extends Main {
 
   private HorizontalLayout createToolbar() {
     Button addItemButton = new Button("Add Arena", new Icon(VaadinIcon.PLUS));
+    addItemButton.setId("add-arena-button");
     addItemButton.addClickListener(e -> addItem());
     return new HorizontalLayout(addItemButton);
   }

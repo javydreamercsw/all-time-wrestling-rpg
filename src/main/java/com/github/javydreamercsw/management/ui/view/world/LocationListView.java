@@ -76,6 +76,7 @@ public class LocationListView extends Main {
   }
 
   private Component createGrid() {
+    grid.setId("location-grid");
     grid.addColumn(Location::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
     grid.addColumn(Location::getDescription).setHeader("Description").setFlexGrow(1);
     grid.addComponentColumn(
@@ -107,10 +108,12 @@ public class LocationListView extends Main {
 
   private Component createActionButtons(Location location) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
+    editButton.setId("edit-location-" + location.getId());
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.addClickListener(e -> editItem(location));
 
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+    deleteButton.setId("delete-location-" + location.getId());
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.addClickListener(e -> deleteItem(location));
 
@@ -119,6 +122,7 @@ public class LocationListView extends Main {
 
   private void deleteItem(Location location) {
     Dialog confirmDialog = new Dialog();
+    confirmDialog.setId("delete-location-dialog");
     confirmDialog.setHeaderTitle("Delete Location");
     confirmDialog.add(
         new Span(
@@ -139,9 +143,11 @@ public class LocationListView extends Main {
                 Notification.show("Error deleting location: " + ex.getMessage());
               }
             });
+    confirmBtn.setId("confirm-delete-location-button");
     confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_PRIMARY);
 
     Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+    cancelBtn.setId("cancel-delete-location-button");
 
     confirmDialog.getFooter().add(cancelBtn, confirmBtn);
     confirmDialog.open();
@@ -149,6 +155,7 @@ public class LocationListView extends Main {
 
   private HorizontalLayout createToolbar() {
     Button addItemButton = new Button("Add Location", new Icon(VaadinIcon.PLUS));
+    addItemButton.setId("add-location-button");
     addItemButton.addClickListener(e -> addItem());
     return new HorizontalLayout(addItemButton);
   }
