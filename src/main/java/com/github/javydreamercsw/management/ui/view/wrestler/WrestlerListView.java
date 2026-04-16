@@ -62,6 +62,7 @@ public class WrestlerListView extends Main {
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private Set<Long> injuredWrestlerIds;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
@@ -83,11 +84,6 @@ public class WrestlerListView extends Main {
     this.imageStorageService = imageStorageService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
-
-    Set<Long> injuredWrestlerIds =
-        injuryService.getWrestlersWithActiveInjuries().stream()
-            .map(Wrestler::getId)
-            .collect(Collectors.toSet());
 
     Grid.Column<Wrestler> nameColumn =
         wrestlerGrid
@@ -210,6 +206,11 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
+    injuredWrestlerIds =
+        injuryService.getWrestlersWithActiveInjuries().stream()
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
+
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
       wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
     } else {

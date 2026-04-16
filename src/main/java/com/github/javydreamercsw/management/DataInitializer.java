@@ -786,6 +786,9 @@ public class DataInitializer implements Initializable {
                     existingWrestler.setFans(w.getFans());
                   }
                 }
+                
+                existingWrestler.setTier(WrestlerTier.fromFanCount(existingWrestler.getFans()));
+                tierRecalculationService.recalculateTier(existingWrestler);
 
                 if (w.getBumps() != null) {
                   if (w.getBumps() > existingWrestler.getBumps()) {
@@ -864,7 +867,8 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                newWrestler.setTier(WrestlerTier.ROOKIE);
+                newWrestler.setTier(WrestlerTier.fromFanCount(newWrestler.getFans()));
+                tierRecalculationService.recalculateTier(newWrestler);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
                 }

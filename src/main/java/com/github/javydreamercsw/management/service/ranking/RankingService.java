@@ -187,8 +187,17 @@ public class RankingService {
                     return passesFilter;
                   })
               .collect(Collectors.toList());
+      
+      // Fallback: if no contenders meet the tier requirement, show all active wrestlers of this gender
+      if (contenders.isEmpty() && !initialContenders.isEmpty()) {
+        log.info("No contenders found for tier {}. Falling back to all active {} wrestlers.", tier, gender);
+        contenders = initialContenders.stream()
+            .filter(wrestler -> Boolean.TRUE.equals(wrestler.getActive()))
+            .collect(Collectors.toList());
+      }
+      
       log.debug(
-          "After tier filter. Count: {}, Names: {}",
+          "After tier filter (with fallback). Count: {}, Names: {}",
           contenders.size(),
           contenders.stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
 
