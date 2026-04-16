@@ -74,6 +74,9 @@ jobs:
       - name: Install changelog generator
         run: gem install github_changelog_generator
 
+      - name: Push release branch to origin
+        run: git push -u origin "release/${{ github.event.inputs.version }}"  
+
       - name: Generate Changelog
         run: |
           github_changelog_generator \
