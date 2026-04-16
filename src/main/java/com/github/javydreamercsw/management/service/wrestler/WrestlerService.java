@@ -165,6 +165,7 @@ public class WrestlerService {
             .fans(0L)
             .gender(Gender.MALE)
             .isPlayer(isPlayer)
+            .active(true)
             .bumps(0)
             .tier(tier)
             .account(account) // Set account here

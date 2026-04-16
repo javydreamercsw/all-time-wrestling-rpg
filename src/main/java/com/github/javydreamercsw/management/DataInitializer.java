@@ -852,6 +852,9 @@ public class DataInitializer implements Initializable {
                 if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
                 if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
 
+                if (existingWrestler.getActive() == null) existingWrestler.setActive(true);
+                if (existingWrestler.getIsPlayer() == null) existingWrestler.setIsPlayer(false);
+
                 wrestlerRepository.save(existingWrestler);
                 log.debug("Updated existing wrestler: {}", existingWrestler.getName());
               } else {
@@ -866,6 +869,8 @@ public class DataInitializer implements Initializable {
                 newWrestler.setGender(w.getGender());
                 newWrestler.setFans(w.getFans());
                 newWrestler.setBumps(w.getBumps());
+                newWrestler.setActive(true);
+                newWrestler.setIsPlayer(false);
                 newWrestler.setImageUrl(w.getImageUrl());
                 newWrestler.setHeritageTag(w.getHeritageTag());
                 if (w.getSet() != null) {
