@@ -19,12 +19,15 @@ package com.github.javydreamercsw.management.service.drama;
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -33,7 +36,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Scheduler service for automatically generating drama events in the ATW RPG system. This service
- * runs periodically to create random drama events that keep storylines dynamic and engaging.
+ * runs when the game date advances to create random drama events that keep storylines dynamic and
+ * engaging.
  *
  * <p>Can be enabled/disabled via application properties: drama.events.scheduler.enabled=true/false
  */
@@ -51,11 +55,39 @@ public class DramaEventScheduler {
   private final Random random = new Random();
 
   /**
-   * Generate random drama events every week (7 days) by default. This keeps the storylines dynamic
-   * by introducing unexpected events that can affect rivalries, fan counts, and wrestler
-   * development.
+   * Listen for game date changes and trigger drama events if enough game time has passed.
+   *
+   * @param event The game date changed event
    */
-  @Scheduled(fixedRateString = "${drama.events.scheduler.rate:604800000}") // Every 7 days default
+  @EventListener
+  public void onGameDateChanged(GameDateChangedEvent event) {
+    long daysPassed = ChronoUnit.DAYS.between(event.getOldDate(), event.getNewDate());
+
+    if (daysPassed <= 0) {
+      return;
+    }
+
+    log.info("Game date advanced by {} days. Checking for drama events...", daysPassed);
+
+    // If game date advanced by a week or more, trigger drama events
+    // We could also make this more granular, but for now let's stick to the "weekly" logic
+    // but in game time.
+    if (daysPassed >= 7) {
+      generateRandomDramaEvents();
+    } else {
+      // If less than a week passed, we still have a chance proportional to the time passed
+      // e.g. 1 day = 1/7 chance
+      if (random.nextDouble() < (double) daysPassed / 7.0) {
+        log.debug("Small time jump triggered random drama event check");
+        generateRandomDramaEvents();
+      }
+    }
+  }
+
+  /**
+   * Generate random drama events. This keeps the storylines dynamic by introducing unexpected
+   * events that can affect rivalries, fan counts, and wrestler development.
+   */
   public void generateRandomDramaEvents() {
     try {
       setSystemAuthentication();
@@ -80,13 +112,14 @@ public class DramaEventScheduler {
 
       for (int i = 0; i < eventsToGenerate; i++) {
         Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
-        
+
         // Safety check: skip if this wrestler already has too many active injuries (max 3)
         // This helps prevent injury accumulation if the scheduler runs too frequently.
         if (dramaEventService.getActiveInjuryCount(randomWrestlerId) < 3) {
           generateSingleRandomEvent(randomWrestlerId);
         } else {
-          log.debug("Skipping drama event for wrestler {} - too many active injuries", randomWrestlerId);
+          log.debug(
+              "Skipping drama event for wrestler {} - too many active injuries", randomWrestlerId);
         }
       }
 

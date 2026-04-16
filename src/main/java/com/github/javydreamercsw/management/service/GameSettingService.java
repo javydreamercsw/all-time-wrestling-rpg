@@ -18,12 +18,14 @@ package com.github.javydreamercsw.management.service;
 
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,7 @@ public class GameSettingService {
   public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
   public static final String NOTION_TOKEN_KEY = "notion_token";
   private final GameSettingRepository repository;
+  private final ApplicationEventPublisher eventPublisher;
 
   @PreAuthorize("hasRole('ADMIN')")
   public String getNotionToken() {
@@ -120,10 +123,16 @@ public class GameSettingService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public void saveCurrentGameDate(LocalDate date) {
+    LocalDate oldDate = getCurrentGameDate();
     GameSetting setting = repository.findById(CURRENT_GAME_DATE_KEY).orElseGet(GameSetting::new);
     setting.setId(CURRENT_GAME_DATE_KEY);
     setting.setValue(date.format(DateTimeFormatter.ISO_LOCAL_DATE));
     repository.save(setting);
+
+    if (!date.equals(oldDate)) {
+      log.info("Game date changed from {} to {}", oldDate, date);
+      eventPublisher.publishEvent(new GameDateChangedEvent(this, oldDate, date));
+    }
   }
 
   @PreAuthorize("permitAll()")

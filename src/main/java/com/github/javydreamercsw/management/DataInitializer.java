@@ -69,6 +69,7 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -119,6 +120,7 @@ public class DataInitializer implements Initializable {
   private final FactionService factionService;
   private final TeamService teamService;
   private final TeamRepository teamRepository;
+  private final TierRecalculationService tierRecalculationService;
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final CommentaryService commentaryService;
   private final CampaignUpgradeService campaignUpgradeService;
@@ -151,6 +153,7 @@ public class DataInitializer implements Initializable {
       FactionService factionService,
       TeamService teamService,
       TeamRepository teamRepository,
+      TierRecalculationService tierRecalculationService,
       CampaignAbilityCardService campaignAbilityCardService,
       CommentaryService commentaryService,
       CampaignUpgradeService campaignUpgradeService,
@@ -178,6 +181,7 @@ public class DataInitializer implements Initializable {
     this.factionService = factionService;
     this.teamService = teamService;
     this.teamRepository = teamRepository;
+    this.tierRecalculationService = tierRecalculationService;
     this.campaignAbilityCardService = campaignAbilityCardService;
     this.commentaryService = commentaryService;
     this.campaignUpgradeService = campaignUpgradeService;
@@ -786,7 +790,7 @@ public class DataInitializer implements Initializable {
                     existingWrestler.setFans(w.getFans());
                   }
                 }
-                
+
                 existingWrestler.setTier(WrestlerTier.fromFanCount(existingWrestler.getFans()));
                 tierRecalculationService.recalculateTier(existingWrestler);
 

@@ -72,6 +72,7 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -116,6 +117,7 @@ class DataInitializerTest {
   @Mock private FactionService factionService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
+  @Mock private TierRecalculationService tierRecalculationService;
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
   @Mock private CommentaryService commentaryService;
 
@@ -155,6 +157,7 @@ class DataInitializerTest {
             factionService,
             teamService,
             teamRepository,
+            tierRecalculationService,
             campaignAbilityCardService,
             commentaryService,
             campaignUpgradeService,
