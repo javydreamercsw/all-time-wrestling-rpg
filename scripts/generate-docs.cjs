@@ -74,19 +74,24 @@ Object.entries(categories).forEach(([category, catFeatures]) => {
 // 4. Build VitePress Site
 console.log('Building VitePress site...');
 try {
-  // Read context path from application.properties
-  let contextPath = '/atw-rpg'; // default fallback
-  const propsPath = path.join(rootDir, 'src', 'main', 'resources', 'application.properties');
-  if (fs.existsSync(propsPath)) {
-    const props = fs.readFileSync(propsPath, 'utf8');
-    const match = props.match(/server\.servlet\.context-path\s*=\s*(.+)/);
-    if (match && match[1]) {
-      contextPath = match[1].trim();
+  // Use BASE_URL from environment if provided, otherwise calculate from application.properties
+  let baseUrl = process.env.BASE_URL;
+  
+  if (!baseUrl) {
+    // Read context path from application.properties
+    let contextPath = '/atw-rpg'; // default fallback
+    const propsPath = path.join(rootDir, 'src', 'main', 'resources', 'application.properties');
+    if (fs.existsSync(propsPath)) {
+      const props = fs.readFileSync(propsPath, 'utf8');
+      const match = props.match(/server\.servlet\.context-path\s*=\s*(.+)/);
+      if (match && match[1]) {
+        contextPath = match[1].trim();
+      }
     }
+    // Set BASE_URL for local build to include context path and docs sub-path
+    baseUrl = contextPath.endsWith('/') ? `${contextPath}docs/` : `${contextPath}/docs/`;
   }
   
-  // Set BASE_URL for local build to include context path and docs sub-path
-  const baseUrl = contextPath.endsWith('/') ? `${contextPath}docs/` : `${contextPath}/docs/`;
   console.log(`Using base URL: ${baseUrl}`);
   
   execSync('npm run docs:build', { 
