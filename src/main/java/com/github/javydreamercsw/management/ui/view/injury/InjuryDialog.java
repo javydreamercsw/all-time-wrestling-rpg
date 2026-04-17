@@ -33,6 +33,7 @@ import lombok.NonNull;
 public class InjuryDialog extends Dialog {
 
   private final Wrestler wrestler;
+  private final Long universeId;
   private final InjuryService injuryService;
   private final Runnable onSave;
   private final Grid<Injury> injuryGrid = new Grid<>(Injury.class);
@@ -40,10 +41,12 @@ public class InjuryDialog extends Dialog {
 
   public InjuryDialog(
       @NonNull Wrestler wrestler,
+      @NonNull Long universeId,
       @NonNull InjuryService injuryService,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.wrestler = wrestler;
+    this.universeId = universeId;
     this.injuryService = injuryService;
     this.onSave = onSave;
     this.securityUtils = securityUtils;
@@ -61,6 +64,7 @@ public class InjuryDialog extends Dialog {
               CreateInjuryDialog createDialog =
                   new CreateInjuryDialog(
                       wrestler,
+                      universeId,
                       injuryService,
                       () -> {
                         updateGrid();
@@ -77,7 +81,7 @@ public class InjuryDialog extends Dialog {
   }
 
   private void updateGrid() {
-    injuryGrid.setItems(injuryService.getAllInjuriesForWrestler(wrestler.getId()));
+    injuryGrid.setItems(injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId));
     injuryGrid.removeAllColumns();
     injuryGrid.addColumn(Injury::getName).setHeader("Name");
     injuryGrid.addColumn(Injury::getDescription).setHeader("Description");

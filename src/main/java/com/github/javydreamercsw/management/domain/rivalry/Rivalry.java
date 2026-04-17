@@ -60,6 +60,10 @@ public class Rivalry extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
   private Wrestler wrestler2;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "league_id")
+  private com.github.javydreamercsw.management.domain.league.League league;
+
   @Column(name = "heat", nullable = false)
   @Min(0) private Integer heat = 0;
 

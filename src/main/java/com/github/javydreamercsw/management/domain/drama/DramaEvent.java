@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.drama;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -84,6 +85,10 @@ public class DramaEvent extends AbstractEntity<Long> {
   @JoinColumn(name = "secondary_wrestler_id")
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Wrestler secondaryWrestler;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   @Column(name = "event_date", nullable = false)
   private Instant eventDate;

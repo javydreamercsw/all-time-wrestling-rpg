@@ -23,9 +23,11 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -49,9 +51,6 @@ import jakarta.annotation.security.RolesAllowed;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
-import com.github.javydreamercsw.management.service.league.LeagueContextService;
-
 @Route(value = "booker", layout = MainLayout.class)
 @PageTitle("Booker Dashboard | ATW RPG")
 @RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
@@ -61,7 +60,7 @@ public class BookerView extends VerticalLayout {
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
   private final NewsService newsService;
-  private final LeagueContextService leagueContextService;
+  private final UniverseContextService universeContextService;
 
   @Autowired
   public BookerView(
@@ -69,12 +68,12 @@ public class BookerView extends VerticalLayout {
       RivalryService rivalryService,
       WrestlerService wrestlerService,
       NewsService newsService,
-      LeagueContextService leagueContextService) {
+      UniverseContextService universeContextService) {
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.newsService = newsService;
-    this.leagueContextService = leagueContextService;
+    this.universeContextService = universeContextService;
 
     setHeightFull();
     setPadding(false);
@@ -178,9 +177,9 @@ public class BookerView extends VerticalLayout {
 
     grid.addColumn(
             wrestler -> {
-              LeagueWrestlerState state =
+              WrestlerState state =
                   wrestlerService.getOrCreateState(
-                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
               return state.getTier().getDisplayWithEmoji();
             })
         .setHeader("Tier")

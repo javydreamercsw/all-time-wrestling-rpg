@@ -125,7 +125,8 @@ public interface SegmentRepository
       AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
       AND s.status = 'COMPLETED'
       """)
-  long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler, @Param("leagueId") Long leagueId);
+  long countMatchSegmentsByWrestler(
+      @Param("wrestler") Wrestler wrestler, @Param("leagueId") Long leagueId);
 
   /** Count wins for a wrestler, excluding 'Promo' segments and only for completed segments. */
   @Query(

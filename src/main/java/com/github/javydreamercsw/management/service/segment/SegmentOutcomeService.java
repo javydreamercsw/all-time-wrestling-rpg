@@ -22,9 +22,9 @@ import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
-import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +47,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   private final WrestlerRepository wrestlerRepository;
+  private final com.github.javydreamercsw.management.service.wrestler.WrestlerService
+      wrestlerService;
+  private final InjuryService injuryService;
   private final Random random;
 
   /**
@@ -80,11 +83,12 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     }
 
     // Determine outcome based on number of wrestlers
+    Long universeId = context.getUniverseId() != null ? context.getUniverseId() : 1L;
     String outcome =
         switch (context.getWrestlers().size()) {
           case 1 -> determineSingleWrestlerOutcome(context.getWrestlers().get(0));
-          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers());
-          default -> determineMultiWrestlerOutcome(context.getWrestlers());
+          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers(), universeId);
+          default -> determineMultiWrestlerOutcome(context.getWrestlers(), universeId);
         };
 
     context.setDeterminedOutcome(outcome);
@@ -99,7 +103,8 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
   }
 
   /** Determines outcome for a two-wrestler match using weighted probability. */
-  private String determineTwoWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
+  private String determineTwoWrestlerOutcome(
+      @NonNull List<WrestlerContext> wrestlers, @NonNull Long universeId) {
     WrestlerContext wrestler1 = wrestlers.get(0);
     WrestlerContext wrestler2 = wrestlers.get(1);
 
@@ -108,8 +113,8 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     Optional<Wrestler> dbWrestler2 = findWrestlerByName(wrestler2.getName());
 
     // Calculate weights
-    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1);
-    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2);
+    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1, universeId);
+    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2, universeId);
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
@@ -135,14 +140,16 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
   }
 
   /** Determines outcome for a multi-wrestler match. */
-  private String determineMultiWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
+  private String determineMultiWrestlerOutcome(
+      @NonNull List<WrestlerContext> wrestlers, @NonNull Long universeId) {
     // Calculate weights for all wrestlers
     List<WrestlerWeight> wrestlerWeights =
         wrestlers.stream()
             .map(
                 wrestler -> {
                   Optional<Wrestler> dbWrestler = findWrestlerByName(wrestler.getName());
-                  int weight = calculateWrestlerWeight(dbWrestler.orElse(null), wrestler);
+                  int weight =
+                      calculateWrestlerWeight(dbWrestler.orElse(null), wrestler, universeId);
                   return new WrestlerWeight(wrestler, weight);
                 })
             .toList();
@@ -169,8 +176,9 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         winnerContext.getName(), wrestlers.size(), finishingMove);
   }
 
-  /** Calculates wrestler weight for match outcome determination. */
-  private int calculateWrestlerWeight(Wrestler dbWrestler, WrestlerContext contextWrestler) {
+  /** Calculates wrestler weight for match outcome determination in a specific universe. */
+  private int calculateWrestlerWeight(
+      Wrestler dbWrestler, WrestlerContext contextWrestler, Long universeId) {
     if (dbWrestler == null) {
       // Use default weight if wrestler not found in database
       log.debug(
@@ -178,41 +186,44 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
       return 50; // Default weight
     }
 
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        wrestlerService.getOrCreateState(dbWrestler.getId(), universeId);
+
     // Base weight from fan weight
-    int fanWeight = dbWrestler.getFanWeight();
+    int fanWeight = Math.toIntExact(state.getFans() / 5);
 
     // Tier bonus
-    int tierBonus = getTierBonus(dbWrestler);
+    int tierBonus = getTierBonus(state);
 
     // Health penalty from bumps and active injuries
-    int healthPenalty = dbWrestler.getBumps(); // Each bump = -1 penalty
+    int healthPenalty = state.getBumps(); // Each bump = -1 penalty
 
     // Add injury penalties (active injuries significantly reduce effectiveness)
-    long activeInjuries =
-        dbWrestler.getInjuries().stream().filter(Injury::isCurrentlyActive).count();
-    healthPenalty += (int) activeInjuries * 3; // Each active injury = -3 penalty
+    healthPenalty += injuryService.getTotalHealthPenaltyForWrestler(dbWrestler.getId(), universeId);
 
     // Calculate total weight (minimum 1)
     int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty);
 
     log.debug(
-        "Calculated weight for {}: {} (fan: {}, tier: {}, health: {})",
+        "Calculated weight for {}: {} (fan: {}, tier: {}, health: {}) in universe {}",
         dbWrestler.getName(),
         totalWeight,
         fanWeight,
         tierBonus,
-        healthPenalty);
+        healthPenalty,
+        universeId);
 
     return totalWeight;
   }
 
   /** Gets tier bonus for wrestler weight calculation. */
-  private int getTierBonus(Wrestler wrestler) {
-    if (wrestler.getTier() == null) {
+  private int getTierBonus(
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+    if (state.getTier() == null) {
       return 0;
     }
 
-    return switch (wrestler.getTier()) {
+    return switch (state.getTier()) {
       case ROOKIE -> 0;
       case RISER -> 2;
       case CONTENDER -> 4;

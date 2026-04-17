@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -67,6 +69,10 @@ public class Faction extends AbstractEntity<Long> {
   private String description;
 
   @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
+
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "leader_id")
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   private Wrestler leader;
@@ -107,7 +113,7 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   @Builder.Default
   @ToString.Exclude
-  private Set<Wrestler> members = new HashSet<>();
+  private Set<WrestlerState> members = new HashSet<>();
 
   // Teams associated with this faction
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -148,24 +154,25 @@ public class Faction extends AbstractEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add a member to the faction. */
-  public void addMember(Wrestler wrestler) {
-    if (wrestler != null && !members.contains(wrestler)) {
-      members.add(wrestler);
-      wrestler.setFaction(this);
+  public void addMember(com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+    if (state != null && !members.contains(state)) {
+      members.add(state);
+      state.setFaction(this);
     }
   }
 
   /** Remove a member from the faction. */
-  public void removeMember(Wrestler wrestler) {
-    if (wrestler != null && members.contains(wrestler)) {
-      members.remove(wrestler);
-      wrestler.setFaction(null);
+  public void removeMember(
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+    if (state != null && members.contains(state)) {
+      members.remove(state);
+      state.setFaction(null);
     }
   }
 
   /** Check if a wrestler is a member of this faction. */
   public boolean hasMember(Wrestler wrestler) {
-    return members.contains(wrestler);
+    return members.stream().anyMatch(m -> m.getWrestler().equals(wrestler));
   }
 
   /** Get the number of active members. */
@@ -194,7 +201,8 @@ public class Faction extends AbstractEntity<Long> {
     this.disbandedDate = Instant.now();
 
     // Remove all members from faction
-    for (Wrestler member : new ArrayList<>(members)) {
+    for (com.github.javydreamercsw.management.domain.wrestler.WrestlerState member :
+        new ArrayList<>(members)) {
       removeMember(member);
     }
   }

@@ -14,16 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.league;
+package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.npc.Npc;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -34,10 +32,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
@@ -48,57 +43,60 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Stores the dynamic state of a wrestler within a specific universe playthrough. This isolates
+ * fans, health, and other progression metrics per playthrough instance.
+ */
 @Entity
-@Table(
-    name = "wrestler_league_state",
-    uniqueConstraints = {
-      @UniqueConstraint(columnNames = {"wrestler_id", "league_id"})
-    })
+@Table(name = "wrestler_state")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LeagueWrestlerState implements WrestlerData {
+public class WrestlerState implements com.github.javydreamercsw.base.domain.WrestlerData {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @NotNull @ManyToOne
-  @JoinColumn(name = "wrestler_id")
+  @NotNull @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "wrestler_id", nullable = false)
+  @JsonIgnore
   private Wrestler wrestler;
 
-  @NotNull @ManyToOne
-  @JoinColumn(name = "league_id")
-  private League league;
+  @NotNull @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id", nullable = false)
+  @JsonIgnore
+  private Universe universe;
 
-  @Column(name = "fans")
+  @NotNull @Column(nullable = false)
   @Min(0) @Builder.Default
   private Long fans = 0L;
 
-  @Column(name = "morale", nullable = false)
-  @Min(0) @Max(100) @Builder.Default
-  private Integer morale = 100;
-
-  @Column(name = "management_stamina", nullable = false)
-  @Min(0) @Max(100) @Builder.Default
-  private Integer managementStamina = 100;
-
-  @Column(name = "tier", nullable = false)
-  @Enumerated(EnumType.STRING)
+  @NotNull @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   @Builder.Default
-  private WrestlerTier tier = WrestlerTier.MIDCARDER;
+  private WrestlerTier tier = WrestlerTier.ROOKIE;
 
-  @Column(name = "bumps")
-  @Min(0) @Builder.Default
+  @NotNull @Column(name = "current_health", nullable = false)
+  @Builder.Default
+  private Integer currentHealth = 15;
+
+  @NotNull @Column(nullable = false)
+  @Builder.Default
   private Integer bumps = 0;
 
-  @Column(name = "current_health")
-  private Integer currentHealth;
+  @NotNull @Column(nullable = false)
+  @Min(0) @Builder.Default
+  private Integer morale = 100;
+
+  @Column(name = "management_stamina")
+  @Min(0) @Builder.Default
+  private Integer managementStamina = 100;
 
   @Column(name = "physical_condition")
-  @Min(0) @Max(100) @Builder.Default
+  @Min(0) @Builder.Default
   private Integer physicalCondition = 100;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -111,11 +109,6 @@ public class LeagueWrestlerState implements WrestlerData {
   @JsonIgnore
   private Npc manager;
 
-  @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-  @JsonIgnore
-  @Builder.Default
-  private List<Injury> injuries = new ArrayList<>();
-  
   // ==================== WRESTLER DATA IMPLEMENTATION ====================
 
   @Override
@@ -129,20 +122,11 @@ public class LeagueWrestlerState implements WrestlerData {
   public Gender getGender() {
     return wrestler != null ? wrestler.getGender() : Gender.MALE;
   }
-  
+
   // ==================== LOGIC METHODS ====================
 
-  @JsonIgnore
-  public List<Injury> getActiveInjuries() {
-    return injuries.stream()
-        .filter(i -> i.getWrestler().getId().equals(this.wrestler.getId()))
-        .filter(Injury::isCurrentlyActive)
-        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-  }
-
-  @JsonIgnore
-  public Integer getTotalInjuryPenalty() {
-    return getActiveInjuries().stream().mapToInt(Injury::getHealthPenalty).sum();
+  public boolean canAfford(long cost) {
+    return fans != null && fans >= cost;
   }
 
   public boolean addBump() {
@@ -157,9 +141,27 @@ public class LeagueWrestlerState implements WrestlerData {
     }
 
     if (bumps >= threshold) {
-      bumps = 0; // Reset bumps - injury creation handled by service layer
-      return true; // Indicates injury occurred
+      bumps = 0; // Reset bumps after injury
+      return true;
     }
     return false;
+  }
+
+  @JsonIgnore
+  public List<com.github.javydreamercsw.management.domain.injury.Injury> getActiveInjuries() {
+    // This is now handled by InjuryService, but we'll keep a placeholder if needed
+    return new ArrayList<>();
+  }
+
+  @JsonIgnore
+  public Integer getTotalInjuryPenalty() {
+    // This is now handled by InjuryService
+    return 0;
+  }
+
+  @JsonIgnore
+  public List<com.github.javydreamercsw.management.domain.injury.Injury> getInjuries() {
+    // This is now handled by InjuryService
+    return new ArrayList<>();
   }
 }

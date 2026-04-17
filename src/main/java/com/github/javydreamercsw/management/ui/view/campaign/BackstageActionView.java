@@ -24,6 +24,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
@@ -57,6 +59,8 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
+  private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
 
@@ -68,12 +72,16 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       WrestlerService wrestlerService,
+      InjuryService injuryService,
+      UniverseContextService universeContextService,
       SecurityUtils securityUtils,
       CampaignService campaignService) {
     this.backstageActionService = backstageActionService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
+    this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
 
@@ -157,7 +165,13 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     leftCol.setFlexGrow(1);
 
     DashboardCard statusCard = new DashboardCard("Your Status");
-    statusCard.add(new WrestlerSummaryCard(wrestler, wrestlerService, true));
+    statusCard.add(
+        new WrestlerSummaryCard(
+            wrestler,
+            universeContextService.getCurrentUniverseId(),
+            wrestlerService,
+            injuryService,
+            true));
 
     Span actionsCount = new Span("Actions taken today: " + state.getActionsTaken() + " / 2");
     actionsCount.addClassNames(

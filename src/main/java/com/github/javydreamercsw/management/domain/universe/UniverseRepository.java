@@ -14,15 +14,13 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.league;
+package com.github.javydreamercsw.management.domain.universe;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LeagueWrestlerStateRepository extends JpaRepository<LeagueWrestlerState, Long> {
-  Optional<LeagueWrestlerState> findByWrestlerAndLeague(Wrestler wrestler, League league);
-  Optional<LeagueWrestlerState> findByWrestlerIdAndLeagueId(Long wrestlerId, Long leagueId);
+public interface UniverseRepository extends JpaRepository<Universe, Long> {
+  Optional<Universe> findByName(String name);
 }

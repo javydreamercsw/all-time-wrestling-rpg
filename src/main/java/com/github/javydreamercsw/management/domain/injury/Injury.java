@@ -20,6 +20,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -45,9 +46,9 @@ public class Injury extends AbstractEntity<Long> {
   private Wrestler wrestler;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "league_id")
+  @JoinColumn(name = "universe_id")
   @JsonIgnore
-  private com.github.javydreamercsw.management.domain.league.League league;
+  private Universe universe;
 
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;

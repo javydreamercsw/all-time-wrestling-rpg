@@ -30,11 +30,14 @@ import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
@@ -58,6 +61,8 @@ public class RankingService {
   private final FactionRepository factionRepository;
   private final TeamRepository teamRepository;
   private final DefaultImageService imageService;
+  private final WrestlerService wrestlerService;
+  private final WrestlerStateRepository wrestlerStateRepository;
 
   @org.springframework.beans.factory.annotation.Autowired
   public RankingService(
@@ -65,12 +70,16 @@ public class RankingService {
       WrestlerRepository wrestlerRepository,
       FactionRepository factionRepository,
       TeamRepository teamRepository,
-      DefaultImageService imageService) {
+      DefaultImageService imageService,
+      WrestlerService wrestlerService,
+      WrestlerStateRepository wrestlerStateRepository) {
     this.titleRepository = titleRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.factionRepository = factionRepository;
     this.teamRepository = teamRepository;
     this.imageService = imageService;
+    this.wrestlerService = wrestlerService;
+    this.wrestlerStateRepository = wrestlerStateRepository;
   }
 
   @Transactional(readOnly = true)
@@ -151,12 +160,21 @@ public class RankingService {
               });
 
       AtomicInteger rank = new AtomicInteger(1);
+      final Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
       return contenders.stream()
           .sorted(
               Comparator.comparing(
-                      (Team team) -> team.getWrestler1().getFans() + team.getWrestler2().getFans())
+                      (Team team) -> {
+                        WrestlerState s1 =
+                            wrestlerService.getOrCreateState(
+                                team.getWrestler1().getId(), universeId);
+                        WrestlerState s2 =
+                            wrestlerService.getOrCreateState(
+                                team.getWrestler2().getId(), universeId);
+                        return s1.getFans() + s2.getFans();
+                      })
                   .reversed())
-          .map(t -> toRankedTeamDTO(t, rank.getAndIncrement()))
+          .map(t -> toRankedTeamDTO(t, rank.getAndIncrement(), universeId))
           .collect(Collectors.toList());
     } else {
       log.debug(
@@ -169,18 +187,22 @@ public class RankingService {
           initialContenders.size(),
           initialContenders.stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
 
+      final Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
+
       List<Wrestler> filteredContenders =
           initialContenders.stream()
               .filter(wrestler -> Boolean.TRUE.equals(wrestler.getActive()))
               .filter(
                   wrestler -> {
-                    boolean passesFilter = wrestler.getTier().ordinal() >= tier.ordinal();
+                    WrestlerState state =
+                        wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+                    boolean passesFilter = state.getTier().ordinal() >= tier.ordinal();
                     log.debug(
                         "Wrestler {} (Tier: {}, Ordinal: {}) vs Title Tier {} (Ordinal: {})."
                             + " Passes: {}",
                         wrestler.getName(),
-                        wrestler.getTier(),
-                        wrestler.getTier().ordinal(),
+                        state.getTier(),
+                        state.getTier().ordinal(),
                         tier,
                         tier.ordinal(),
                         passesFilter);
@@ -223,9 +245,12 @@ public class RankingService {
       return contenders.stream()
           .sorted(
               (w1, w2) -> {
+                WrestlerState s1 = wrestlerService.getOrCreateState(w1.getId(), universeId);
+                WrestlerState s2 = wrestlerService.getOrCreateState(w2.getId(), universeId);
+
                 // Primary sort: wrestlers in the exact title tier come first
-                boolean w1IsTitleTier = w1.getTier() == tier;
-                boolean w2IsTitleTier = w2.getTier() == tier;
+                boolean w1IsTitleTier = s1.getTier() == tier;
+                boolean w2IsTitleTier = s2.getTier() == tier;
 
                 if (w1IsTitleTier && !w2IsTitleTier) {
                   return -1; // w1 is in title tier, w2 is not, so w1 comes first
@@ -236,20 +261,16 @@ public class RankingService {
 
                 // Secondary sort: if both are in title tier or both are not, sort by tier (highest
                 // first).
-                // Actual WrestlerTier ordinals: ROOKIE(0), RISER(1), CONTENDER(2), MIDCARDER(3),
-                // MAIN_EVENTER(4), ICON(5).
-                // Higher ordinal means higher tier.
                 int tierComparison =
-                    Integer.compare(w1.getTier().ordinal(), w2.getTier().ordinal());
+                    Integer.compare(s1.getTier().ordinal(), s2.getTier().ordinal());
                 if (tierComparison != 0) {
-                  return tierComparison
-                      * -1; // Invert to sort by highest tier (highest ordinal) first
+                  return tierComparison * -1;
                 }
 
                 // Tertiary sort: if tiers are the same, sort by fans (descending)
-                return Long.compare(w2.getFans(), w1.getFans());
+                return Long.compare(s2.getFans(), s1.getFans());
               })
-          .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement()))
+          .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement(), universeId))
           .toList();
     }
   }
@@ -257,20 +278,27 @@ public class RankingService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<ChampionDTO> getCurrentChampions(@NonNull Long championshipId) {
-    return titleRepository
-        .findById(championshipId)
-        .flatMap(Title::getCurrentReign)
+    Optional<Title> titleOpt = titleRepository.findById(championshipId);
+    if (titleOpt.isEmpty()) return Collections.emptyList();
+    Title title = titleOpt.get();
+    final Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
+
+    return title
+        .getCurrentReign()
         .map(
             reign ->
                 reign.getChampions().stream()
                     .map(
-                        champion ->
-                            ChampionDTO.builder()
-                                .id(champion.getId())
-                                .name(champion.getName())
-                                .fans(champion.getFans())
-                                .reignDays(reign.getReignLengthDays(Instant.now()))
-                                .build())
+                        champion -> {
+                          WrestlerState state =
+                              wrestlerService.getOrCreateState(champion.getId(), universeId);
+                          return ChampionDTO.builder()
+                              .id(champion.getId())
+                              .name(champion.getName())
+                              .fans(state.getFans())
+                              .reignDays(reign.getReignLengthDays(Instant.now()))
+                              .build();
+                        })
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }
@@ -291,30 +319,39 @@ public class RankingService {
     return imageService.resolveImage(title.getName(), ImageCategory.TITLE).url();
   }
 
-  private RankedWrestlerDTO toRankedWrestlerDTO(@NonNull Wrestler wrestler, int rank) {
+  private RankedWrestlerDTO toRankedWrestlerDTO(
+      @NonNull Wrestler wrestler, int rank, @NonNull Long universeId) {
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
     return RankedWrestlerDTO.builder()
         .id(wrestler.getId())
         .name(wrestler.getName())
-        .fans(wrestler.getFans())
+        .fans(state.getFans())
         .rank(rank)
-        .tier(wrestler.getTier())
+        .tier(state.getTier())
         .build();
   }
 
-  private RankedTeamDTO toRankedTeamDTO(@NonNull Team team, int rank) {
+  private RankedTeamDTO toRankedTeamDTO(@NonNull Team team, int rank, @NonNull Long universeId) {
+    WrestlerState s1 = wrestlerService.getOrCreateState(team.getWrestler1().getId(), universeId);
+    WrestlerState s2 = wrestlerService.getOrCreateState(team.getWrestler2().getId(), universeId);
     return RankedTeamDTO.builder()
         .id(team.getId())
         .name(team.getName())
-        .fans(team.getWrestler1().getFans() + team.getWrestler2().getFans())
+        .fans(s1.getFans() + s2.getFans())
         .rank(rank)
         .build();
   }
 
-  private RankedTeamDTO toRankedTeamDTO(@NonNull Faction faction, int rank) {
+  private RankedTeamDTO toRankedTeamDTO(
+      @NonNull Faction faction, int rank, @NonNull Long universeId) {
     return RankedTeamDTO.builder()
         .id(faction.getId())
         .name(faction.getName())
-        .fans(faction.getMembers().stream().mapToLong(Wrestler::getFans).sum())
+        .fans(
+            faction.getMembers().stream()
+                .map(w -> wrestlerService.getOrCreateState(w.getId(), universeId))
+                .mapToLong(WrestlerState::getFans)
+                .sum())
         .rank(rank)
         .build();
   }

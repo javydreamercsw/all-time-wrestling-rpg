@@ -103,7 +103,7 @@ public class LeagueService {
             .findById(id)
             .orElseThrow(() -> new IllegalArgumentException("League not found: " + id));
 
-    if (showRepository.existsByLeague(league)) {
+    if (league.getUniverse() != null && showRepository.existsByUniverse(league.getUniverse())) {
       throw new IllegalStateException("Cannot delete league with associated shows.");
     }
 

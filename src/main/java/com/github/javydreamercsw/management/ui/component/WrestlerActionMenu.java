@@ -20,9 +20,11 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.injury.InjuryDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerDialog;
@@ -46,9 +48,7 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.RouteParameters;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
-import com.github.javydreamercsw.management.service.league.LeagueContextService;
-import com.vaadin.flow.component.UI;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @Slf4j
 public class WrestlerActionMenu extends MenuBar {
@@ -65,11 +65,11 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull SecurityUtils securityUtils,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull ImageStorageService imageStorageService,
-      @NonNull LeagueContextService leagueContextService) {
+      @NonNull UniverseContextService universeContextService) {
     this.accountService = accountService;
 
-    Long leagueId = leagueContextService.getCurrentLeagueId();
-    LeagueWrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+    Long universeId = universeContextService.getCurrentUniverseId();
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
@@ -111,7 +111,8 @@ public class WrestlerActionMenu extends MenuBar {
                       imageStorageService,
                       wrestler,
                       refreshProvider,
-                      securityUtils);
+                      securityUtils,
+                      universeContextService);
               dialog.open();
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
@@ -149,7 +150,7 @@ public class WrestlerActionMenu extends MenuBar {
                   event -> {
                     if (fanAmount.getValue() != null) {
                       wrestlerService
-                          .awardFans(wrestler.getId(), leagueId, fanAmount.getValue().longValue())
+                          .awardFans(wrestler.getId(), universeId, fanAmount.getValue().longValue())
                           .ifPresent(
                               w -> {
                                 refreshProvider.run();
@@ -187,7 +188,8 @@ public class WrestlerActionMenu extends MenuBar {
                   event -> {
                     if (fanAmount.getValue() != null) {
                       wrestlerService
-                          .awardFans(wrestler.getId(), leagueId, -fanAmount.getValue().longValue())
+                          .awardFans(
+                              wrestler.getId(), universeId, -fanAmount.getValue().longValue())
                           .ifPresent(
                               w -> {
                                 refreshProvider.run();
@@ -217,7 +219,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Add Bump",
             e -> {
               wrestlerService
-                  .addBump(wrestler.getId(), leagueId)
+                  .addBump(wrestler.getId(), universeId)
                   .ifPresent(
                       w -> {
                         refreshProvider.run();
@@ -237,7 +239,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Heal Bump",
             e -> {
               wrestlerService
-                  .healBump(wrestler.getId(), leagueId)
+                  .healBump(wrestler.getId(), universeId)
                   .ifPresent(
                       w -> {
                         refreshProvider.run();
@@ -258,7 +260,8 @@ public class WrestlerActionMenu extends MenuBar {
             "Manage Injuries",
             e -> {
               InjuryDialog dialog =
-                  new InjuryDialog(wrestler, injuryService, refreshProvider, securityUtils);
+                  new InjuryDialog(
+                      wrestler, universeId, injuryService, refreshProvider, securityUtils);
               dialog.setId("injury-dialog");
               dialog.open();
             });

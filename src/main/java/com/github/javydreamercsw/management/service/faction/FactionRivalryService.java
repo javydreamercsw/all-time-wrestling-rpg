@@ -169,8 +169,16 @@ public class FactionRivalryService {
                       oldHeat,
                       reason,
                       Stream.concat(
-                              rivalry.getFaction1().getMembers().stream(),
-                              rivalry.getFaction2().getMembers().stream())
+                              rivalry.getFaction1().getMembers().stream()
+                                  .map(
+                                      com.github.javydreamercsw.management.domain.wrestler
+                                              .WrestlerState
+                                          ::getWrestler),
+                              rivalry.getFaction2().getMembers().stream()
+                                  .map(
+                                      com.github.javydreamercsw.management.domain.wrestler
+                                              .WrestlerState
+                                          ::getWrestler))
                           .collect(Collectors.toList())));
 
               return savedRivalry;

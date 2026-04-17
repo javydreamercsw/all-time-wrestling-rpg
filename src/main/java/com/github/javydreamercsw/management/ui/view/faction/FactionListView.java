@@ -22,670 +22,354 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.binder.ValidationException;
-import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.time.ZoneOffset;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * View for managing Factions. Provides a list of factions with create, edit, and delete
- * functionality, including member management.
- */
-@Route("faction-list")
-@PageTitle("Faction List")
-@Menu(order = 5, icon = "vaadin:group", title = "Factions")
+@Route(value = "factions", layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
+@PageTitle("Factions | ATW RPG")
 @PermitAll
-@Slf4j
-public class FactionListView extends Main {
+public class FactionListView extends VerticalLayout {
 
   private final FactionService factionService;
   private final WrestlerService wrestlerService;
   private final NpcService npcService;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private Dialog editDialog;
   private Faction editingFaction;
   private Binder<Faction> binder;
   final TextField name;
-  final Button createBtn;
-  final Grid<Faction> factionGrid;
+  final TextArea description;
+  final ComboBox<Wrestler> leader;
+  final ComboBox<Npc> manager;
+  final TextField alignment;
+  final Grid<Faction> factionGrid = new Grid<>(Faction.class, false);
 
+  @Autowired
   public FactionListView(
       @NonNull FactionService factionService,
       @NonNull WrestlerService wrestlerService,
       @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull UniverseContextService universeContextService) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
     this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
+    this.universeContextService = universeContextService;
 
     // Create form components
     name = new TextField();
     name.setPlaceholder("Enter faction name...");
     name.setAriaLabel("Faction Name");
-    name.setId("name");
-    name.setMaxLength(255);
-    name.setMinWidth("20em");
+    name.setRequired(true);
 
-    createBtn = new Button("Create Faction", new Icon(VaadinIcon.PLUS));
-    createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    createBtn.setId("create-faction-button");
-    createBtn.addClickListener(e -> openCreateDialog());
-    createBtn.setVisible(securityUtils.canCreate());
+    description = new TextArea();
+    description.setPlaceholder("Enter faction description...");
+    description.setAriaLabel("Faction Description");
 
-    // Initialize grid
-    factionGrid = new Grid<>(Faction.class, false);
-    factionGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-    factionGrid.setId("faction-grid");
+    leader = new ComboBox<>("Leader");
+    leader.setItems(wrestlerService.findAllIncludingInactive());
+    leader.setItemLabelGenerator(Wrestler::getName);
+    leader.setClearButtonVisible(true);
 
-    setupGrid();
-    setupEditDialog();
+    manager = new ComboBox<>("Manager");
+    manager.setItems(npcService.findAllIncludingInactive());
+    manager.setItemLabelGenerator(Npc::getName);
+    manager.setClearButtonVisible(true);
 
-    setSizeFull();
+    alignment = new TextField("Alignment");
+    alignment.setPlaceholder("e.g., Face, Heel...");
+
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
         LumoUtility.FlexDirection.COLUMN,
-        LumoUtility.Padding.MEDIUM,
-        LumoUtility.Gap.SMALL);
+        LumoUtility.Height.FULL,
+        LumoUtility.Padding.NONE);
+    setSpacing(false);
+    setPadding(false);
+    setSizeFull();
 
-    // Create form layout
-    FormLayout formLayout = new FormLayout();
-    formLayout.add(name, createBtn);
-    formLayout.setResponsiveSteps(
-        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
+    configureGrid();
+    setupEditDialog();
 
-    // Toolbar and form in a header row
-    add(new ViewToolbar("Faction List", ViewToolbar.group(formLayout)));
-    // Grid fills the rest
-    add(factionGrid);
+    Button createButton = null;
+    if (securityUtils.canCreate()) {
+      createButton =
+          new Button(
+              "Create Faction",
+              e -> {
+                editingFaction = new Faction();
+                editingFaction.setUniverse(
+                    universeContextService.getCurrentUniverse().orElse(null));
+                binder.setBean(editingFaction);
+                editDialog.setHeaderTitle("Create Faction");
+                editDialog.open();
+              });
+      createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    }
 
+    ViewToolbar toolbar =
+        createButton != null
+            ? new ViewToolbar("Factions", createButton)
+            : new ViewToolbar("Factions");
+
+    add(toolbar, factionGrid);
     refreshGrid();
   }
 
-  private void setupGrid() {
-    // Basic columns
-    factionGrid.addColumn(Faction::getName).setHeader("Name").setSortable(true);
-
+  private void configureGrid() {
+    factionGrid.addColumn(Faction::getName).setHeader("Name").setSortable(true).setFlexGrow(1);
     factionGrid
-        .addColumn(
-            faction -> faction.getLeader() != null ? faction.getLeader().getName() : "No Leader")
+        .addColumn(f -> f.getLeader() != null ? f.getLeader().getName() : "None")
         .setHeader("Leader")
         .setSortable(true);
-
     factionGrid
-        .addColumn(
-            faction -> faction.getManager() != null ? faction.getManager().getName() : "No Manager")
+        .addColumn(f -> f.getManager() != null ? f.getManager().getName() : "None")
         .setHeader("Manager")
         .setSortable(true);
+    factionGrid.addColumn(Faction::getMemberCount).setHeader("Members").setSortable(true);
+    factionGrid.addColumn(Faction::getAlignment).setHeader("Alignment").setSortable(true);
 
-    // Members column - show wrestler names instead of count
-    factionGrid
-        .addColumn(
+    factionGrid.addComponentColumn(
+        faction -> {
+          HorizontalLayout actions = new HorizontalLayout();
+          actions.setSpacing(true);
+
+          Button editButton = new Button(new Icon(VaadinIcon.EDIT), e -> editFaction(faction));
+          editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+          editButton.setTooltipText("Edit Faction");
+          editButton.setVisible(securityUtils.canEdit());
+
+          Button membersButton =
+              new Button(new Icon(VaadinIcon.USERS), e -> openMembersDialog(faction));
+          membersButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
+          membersButton.setTooltipText("Manage Members");
+          membersButton.setVisible(securityUtils.canEdit());
+
+          Button deleteButton =
+              new Button(
+                  new Icon(VaadinIcon.TRASH),
+                  e -> {
+                    factionService.deleteById(faction.getId());
+                    refreshGrid();
+                    Notification.show("Faction deleted.");
+                  });
+          deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+          deleteButton.setTooltipText("Delete Faction");
+          deleteButton.setVisible(securityUtils.canDelete());
+
+          actions.add(editButton, membersButton, deleteButton);
+          return actions;
+        });
+
+    factionGrid.setItemDetailsRenderer(
+        new com.vaadin.flow.data.renderer.ComponentRenderer<>(
             faction -> {
-              if (faction.getMembers() == null || faction.getMembers().isEmpty()) {
-                return "No members";
-              }
-              return faction.getMembers().stream()
-                  .map(Wrestler::getName)
-                  .collect(Collectors.joining(", "));
-            })
-        .setHeader("Members")
-        .setSortable(false)
-        .setFlexGrow(2); // Give more space for member names
+              VerticalLayout details = new VerticalLayout();
+              details.setPadding(true);
+              details.setSpacing(false);
 
-    factionGrid
-        .addColumn(faction -> faction.isActive() ? "Active" : "Disbanded")
-        .setHeader("Status")
-        .setSortable(true);
+              details.add(new H3("Faction Details"));
+              details.add(new Span(faction.getDescription()));
 
-    factionGrid
-        .addColumn(
-            faction ->
-                faction.getFormedDate() != null
-                    ? faction.getFormedDate().atZone(ZoneOffset.UTC).toLocalDate().toString()
-                    : "")
-        .setHeader("Formed Date")
-        .setSortable(true);
-
-    factionGrid
-        .addComponentColumn(
-            faction -> {
-              int affinity = faction.getAffinity();
-              Span badge = new Span();
-              badge.getElement().getThemeList().add("badge");
-
-              String level;
-              String description;
-              if (affinity >= 100) {
-                level = "MAX";
-                description = "Legendary Chemistry: All synergies active!";
-                badge.getElement().getThemeList().add("success");
-              } else if (affinity >= 80) {
-                level = "LVL 4";
-                description = "Momentum Synergy: Heat carries over between members.";
-                badge.getElement().getThemeList().add("success");
-              } else if (affinity >= 60) {
-                level = "LVL 3";
-                description = "Resilience Synergy: Bonus resilience when partners are present.";
-                badge.getElement().getThemeList().add("success");
-              } else if (affinity >= 40) {
-                level = "LVL 2";
-                description = "Finisher Synergy: +10% Tag Team maneuver damage.";
-              } else if (affinity >= 20) {
-                level = "LVL 1";
-                description = "Stamina Synergy: +5 Stamina recovery on tags.";
-              } else {
-                level = "NONE";
-                description = "No synergy yet. Win matches together to build affinity.";
-                badge.getElement().getThemeList().add("contrast");
+              if (faction.getMemberCount() > 0) {
+                details.add(new H3("Members"));
+                Grid<WrestlerState> membersGrid = new Grid<>(WrestlerState.class, false);
+                membersGrid
+                    .addColumn(s -> s.getWrestler().getName())
+                    .setHeader("Name")
+                    .setSortable(true);
+                membersGrid
+                    .addColumn(s -> s.getTier().getDisplayWithEmoji())
+                    .setHeader("Tier")
+                    .setSortable(true);
+                membersGrid.setItems(faction.getMembers());
+                membersGrid.setHeight("200px");
+                details.add(membersGrid);
               }
 
-              badge.setText(level + " (" + affinity + "%)");
-              Tooltip.forComponent(badge).setText(description);
-              return badge;
-            })
-        .setHeader("Synergy")
-        .setSortable(true)
-        .setComparator(Comparator.comparingInt(Faction::getAffinity));
-
-    // Actions column
-    factionGrid
-        .addComponentColumn(
-            faction -> {
-              HorizontalLayout actions = new HorizontalLayout();
-              actions.setSpacing(true);
-
-              Button viewBtn = new Button("View", new Icon(VaadinIcon.EYE));
-              viewBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
-              viewBtn.setId("view-" + faction.getId());
-              viewBtn.addClickListener(e -> openViewDialog(faction));
-
-              Button editBtn = new Button("Edit", new Icon(VaadinIcon.EDIT));
-              editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
-              editBtn.setId("edit-" + faction.getId());
-              editBtn.addClickListener(e -> openEditDialog(faction));
-              editBtn.setVisible(securityUtils.canEdit());
-
-              Button membersBtn = new Button("Members", new Icon(VaadinIcon.GROUP));
-              membersBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
-              membersBtn.setId("members-" + faction.getId());
-              membersBtn.addClickListener(e -> openMembersDialog(faction));
-
-              Button deleteBtn = new Button("Delete", new Icon(VaadinIcon.TRASH));
-              deleteBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
-              deleteBtn.setId("delete-" + faction.getId());
-              deleteBtn.addClickListener(e -> deleteFaction(faction));
-              deleteBtn.setVisible(securityUtils.canDelete());
-
-              actions.add(viewBtn, editBtn, membersBtn, deleteBtn);
-              return actions;
-            })
-        .setHeader("Actions")
-        .setFlexGrow(1);
+              return details;
+            }));
 
     factionGrid.setSizeFull();
   }
 
   @Transactional(readOnly = true)
   private void refreshGrid() {
-    List<Faction> factions = factionService.findAllWithMembersAndTeams();
+    Long universeId = universeContextService.getCurrentUniverseId();
+    List<Faction> factions = factionService.findAllByUniverse(universeId);
     factionGrid.setItems(factions);
   }
 
   private void setupEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("600px");
-    editDialog.setCloseOnEsc(true);
-    editDialog.setCloseOnOutsideClick(false);
+    editDialog.setWidth("500px");
 
-    // Form fields
-    TextField editName = new TextField("Name");
-    editName.setRequired(true);
-    editName.setId("edit-name");
-    editName.setMaxLength(255);
-
-    TextArea editDescription = new TextArea("Description");
-    editDescription.setMaxLength(1000);
-    editDescription.setId("edit-description");
-    editDescription.setHeight("100px");
-
-    ComboBox<Wrestler> editLeader = new ComboBox<>("Leader");
-    editLeader.setItems(
-        wrestlerRepository.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
-    editLeader.setId("edit-leader");
-    editLeader.setItemLabelGenerator(Wrestler::getName);
-
-    ComboBox<Npc> editManager = new ComboBox<>("Manager");
-    editManager.setItems(
-        npcService.findAllByType("Manager").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
-    editManager.setId("edit-manager");
-    editManager.setItemLabelGenerator(Npc::getName);
-
-    DatePicker editFormedDate = new DatePicker("Formed Date");
-    editFormedDate.setId("edit-formed-date");
-    DatePicker editDisbandedDate = new DatePicker("Disbanded Date");
-    editDisbandedDate.setId("edit-disbanded-date");
-
-    // Form layout
-    FormLayout formLayout = new FormLayout();
-    formLayout.add(
-        editName, editLeader, editManager, editFormedDate, editDisbandedDate, editDescription);
-    formLayout.setResponsiveSteps(
-        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
-    formLayout.setColspan(editDescription, 2);
-
-    // Buttons
-    Button saveBtn = new Button("Save", e -> saveFaction());
-    saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    saveBtn.setId("save-button");
-    saveBtn.setVisible(securityUtils.canEdit());
-
-    Button cancelBtn = new Button("Cancel", e -> editDialog.close());
-
-    HorizontalLayout buttonLayout = new HorizontalLayout(saveBtn, cancelBtn);
-    buttonLayout.setJustifyContentMode(HorizontalLayout.JustifyContentMode.END);
-
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
-    editDialog.add(dialogLayout);
-
-    // Setup binder
     binder = new Binder<>(Faction.class);
-    binder
-        .forField(editName)
-        .asRequired("Name is required")
-        .bind(Faction::getName, Faction::setName);
-    binder.forField(editDescription).bind(Faction::getDescription, Faction::setDescription);
+    binder.forField(name).asRequired("Name is required").bind(Faction::getName, Faction::setName);
+    binder.bind(description, Faction::getDescription, Faction::setDescription);
+    binder.bind(leader, Faction::getLeader, Faction::setLeader);
+    binder.bind(manager, Faction::getManager, Faction::setManager);
+    binder.bind(alignment, Faction::getAlignment, Faction::setAlignment);
 
-    binder.forField(editLeader).bind(Faction::getLeader, Faction::setLeader);
-    binder.forField(editManager).bind(Faction::getManager, Faction::setManager);
-    binder
-        .forField(editFormedDate)
-        .bind(
-            faction ->
-                faction.getFormedDate() != null
-                    ? faction.getFormedDate().atZone(ZoneOffset.UTC).toLocalDate()
-                    : null,
-            (faction, date) ->
-                faction.setFormedDate(
-                    date != null ? date.atStartOfDay().toInstant(ZoneOffset.UTC) : null));
-    binder
-        .forField(editDisbandedDate)
-        .bind(
-            faction ->
-                faction.getDisbandedDate() != null
-                    ? faction.getDisbandedDate().atZone(ZoneOffset.UTC).toLocalDate()
-                    : null,
-            (faction, date) ->
-                faction.setDisbandedDate(
-                    date != null ? date.atStartOfDay().toInstant(ZoneOffset.UTC) : null));
+    VerticalLayout layout = new VerticalLayout(name, description, leader, manager, alignment);
+    layout.setPadding(true);
+    layout.setSpacing(true);
+
+    Button saveButton = new Button("Save", e -> saveFaction());
+    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    Button cancelButton = new Button("Cancel", e -> editDialog.close());
+
+    editDialog.add(layout);
+    editDialog.getFooter().add(cancelButton, saveButton);
   }
 
-  private void openCreateDialog() {
-    editingFaction = Faction.builder().build();
-    editingFaction.setActive(true); // Default to active
-    editDialog.setHeaderTitle("Create Faction");
-    binder.readBean(editingFaction);
-    editDialog.open();
-  }
-
-  private void openEditDialog(@NonNull Faction faction) {
+  private void editFaction(Faction faction) {
     editingFaction = faction;
+    binder.setBean(editingFaction);
     editDialog.setHeaderTitle("Edit Faction: " + faction.getName());
-    binder.readBean(editingFaction);
     editDialog.open();
   }
 
   private void saveFaction() {
-    try {
-      binder.writeBean(editingFaction);
-
-      // Update status based on disbanded date
-      editingFaction.setActive(editingFaction.getDisbandedDate() == null);
-
+    if (binder.validate().isOk()) {
       factionService.save(editingFaction);
-      refreshGrid();
       editDialog.close();
-
-      Notification.show("Faction saved successfully", 3000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-
-    } catch (ValidationException e) {
-      Notification.show("Please fix the validation errors", 3000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-    } catch (Exception e) {
-      log.error("Error saving faction", e);
-      Notification.show(
-              "Error saving faction: " + e.getMessage(), 5000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      refreshGrid();
+      Notification.show("Faction saved successfully.");
     }
   }
 
-  private void deleteFaction(@NonNull Faction faction) {
-    ConfirmDialog confirmDialog = new ConfirmDialog();
-    confirmDialog.setHeader("Delete Faction");
-    confirmDialog.setText(
-        "Are you sure you want to delete the faction '"
-            + faction.getName()
-            + "'? "
-            + "This action cannot be undone.");
-    confirmDialog.setCancelable(true);
-    confirmDialog.setConfirmText("Delete");
-    confirmDialog.setConfirmButtonTheme("error primary");
-    confirmDialog.setId("delete-confirm-dialog");
+  private void openMembersDialog(Faction faction) {
+    Dialog dialog = new Dialog();
+    dialog.setWidth("800px");
+    dialog.setHeight("600px");
 
-    confirmDialog.addConfirmListener(
-        e -> {
-          try {
-            factionService.delete(faction);
-            refreshGrid();
-            Notification.show(
-                    "Faction deleted successfully", 3000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          } catch (Exception ex) {
-            log.error("Error deleting faction", ex);
-            Notification.show(
-                    "Error deleting faction: " + ex.getMessage(),
-                    5000,
-                    Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-          }
-        });
+    // Fetch fresh faction data to ensure members are loaded
+    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    if (updatedFaction.isEmpty()) return;
 
-    confirmDialog.open();
-  }
+    Faction loadedFaction = updatedFaction.get();
+    dialog.setHeaderTitle(
+        "Manage Members: " + loadedFaction.getName() + " (" + loadedFaction.getMemberCount() + ")");
 
-  private void openViewDialog(@NonNull Faction faction) {
-    // Reload faction with members to avoid lazy initialization issues
-    Optional<Faction> factionWithMembers =
-        factionService.getFactionByIdWithMembers(faction.getId());
-    if (factionWithMembers.isEmpty()) {
-      Notification.show("Faction not found", 3000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-      return;
-    }
+    VerticalLayout content = new VerticalLayout();
+    content.setSizeFull();
 
-    Faction loadedFaction = factionWithMembers.get();
-
-    Dialog viewDialog = new Dialog();
-    viewDialog.setWidth("800px");
-    viewDialog.setHeaderTitle("Faction Details: " + loadedFaction.getName());
-
-    VerticalLayout layout = new VerticalLayout();
-    layout.setSpacing(true);
-    layout.setPadding(true);
-
-    // Basic information
-    Div basicInfo = new Div();
-    basicInfo.add(new H3("Basic Information"));
-    basicInfo.add(new Div("Name: " + loadedFaction.getName()));
-    basicInfo.add(new Div("Status: " + (loadedFaction.isActive() ? "Active" : "Disbanded")));
-    basicInfo.add(
-        new Div(
-            "Leader: "
-                + (loadedFaction.getLeader() != null
-                    ? loadedFaction.getLeader().getName()
-                    : "No Leader")));
-
-    // Synergy info in View dialog
-    int affinity = loadedFaction.getAffinity();
-    String synergyDesc;
-    if (affinity >= 100) {
-      synergyDesc = "MAX - Legendary Chemistry: All synergies active!";
-    } else if (affinity >= 80) {
-      synergyDesc = "LVL 4 - Momentum Synergy: Heat carries over between members.";
-    } else if (affinity >= 60) {
-      synergyDesc = "LVL 3 - Resilience Synergy: Bonus resilience when partners are present.";
-    } else if (affinity >= 40) {
-      synergyDesc = "LVL 2 - Finisher Synergy: +10% Tag Team maneuver damage.";
-    } else if (affinity >= 20) {
-      synergyDesc = "LVL 1 - Stamina Synergy: +5 Stamina recovery on tags.";
-    } else {
-      synergyDesc = "None - Win matches together to build affinity.";
-    }
-    basicInfo.add(new Div("Affinity: " + affinity + "%"));
-    basicInfo.add(new Div("Synergy Level: " + synergyDesc));
-
-    if (loadedFaction.getFormedDate() != null) {
-      basicInfo.add(
-          new Div(
-              "Formed Date: "
-                  + loadedFaction.getFormedDate().atZone(ZoneOffset.UTC).toLocalDate()));
-    }
-
-    if (loadedFaction.getDisbandedDate() != null) {
-      basicInfo.add(
-          new Div(
-              "Disbanded Date: "
-                  + loadedFaction.getDisbandedDate().atZone(ZoneOffset.UTC).toLocalDate()));
-    }
-
-    if (loadedFaction.getDescription() != null
-        && !loadedFaction.getDescription().trim().isEmpty()) {
-      basicInfo.add(new Div("Description: " + loadedFaction.getDescription()));
-    }
-
-    layout.add(basicInfo);
-
-    // Members section
-    if (!loadedFaction.getMembers().isEmpty()) {
-      Div membersInfo = new Div();
-      membersInfo.add(new H3("Members (" + loadedFaction.getMemberCount() + ")"));
-
-      Grid<Wrestler> membersGrid = new Grid<>(Wrestler.class, false);
-      Grid.Column<Wrestler> nameColumn =
-          membersGrid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
-      membersGrid
-          .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
-          .setHeader("Tier")
-          .setSortable(true);
-      membersGrid.setItems(loadedFaction.getMembers());
-      membersGrid.setHeight("200px");
-
-      // Default sorting by Name
-      membersGrid.sort(GridSortOrder.asc(nameColumn).build());
-
-      membersInfo.add(membersGrid);
-      layout.add(membersInfo);
-    } else {
-      layout.add(new Div("No members in this faction."));
-    }
-
-    Button closeBtn = new Button("Close", e -> viewDialog.close());
-    closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-    HorizontalLayout buttonLayout = new HorizontalLayout(closeBtn);
-    buttonLayout.setJustifyContentMode(HorizontalLayout.JustifyContentMode.END);
-
-    layout.add(buttonLayout);
-    viewDialog.add(layout);
-    viewDialog.open();
-  }
-
-  private void openMembersDialog(@NonNull Faction faction) {
-    // Reload faction with members to avoid lazy initialization issues
-    Optional<Faction> factionWithMembers =
-        factionService.getFactionByIdWithMembers(faction.getId());
-    if (factionWithMembers.isEmpty()) {
-      Notification.show("Faction not found", 3000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-      return;
-    }
-
-    Faction loadedFaction = factionWithMembers.get();
-
-    Dialog membersDialog = new Dialog();
-    membersDialog.setWidth("700px");
-    membersDialog.setHeaderTitle("Manage Members: " + loadedFaction.getName());
-
-    VerticalLayout layout = new VerticalLayout();
-    layout.setSpacing(true);
-    layout.setPadding(true);
-
-    // Current members grid
     H3 currentMembersTitle = new H3("Current Members (" + loadedFaction.getMemberCount() + ")");
-    Grid<Wrestler> currentMembersGrid = new Grid<>(Wrestler.class, false);
-    Grid.Column<Wrestler> nameColumn =
-        currentMembersGrid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
+    Grid<WrestlerState> currentMembersGrid = new Grid<>(WrestlerState.class, false);
     currentMembersGrid
-        .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
+        .addColumn(s -> s.getWrestler().getName())
+        .setHeader("Name")
+        .setSortable(true);
+    currentMembersGrid
+        .addColumn(s -> s.getTier().getDisplayWithEmoji())
         .setHeader("Tier")
         .setSortable(true);
-    currentMembersGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
-    currentMembersGrid.setId("members-grid");
-
-    // Default sorting by Name
-    currentMembersGrid.sort(GridSortOrder.asc(nameColumn).build());
-
-    // Remove member button
     currentMembersGrid
-        .addComponentColumn(
-            wrestler -> {
-              Button removeBtn = new Button("Remove", new Icon(VaadinIcon.MINUS));
-              removeBtn.setId("remove-member-" + wrestler.getId());
-              removeBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
-              removeBtn.addClickListener(
-                  e -> {
-                    try {
-                      factionService.removeMemberFromFaction(
-                          loadedFaction.getId(), wrestler.getId(), "Removed via UI");
-                      refreshMembersDialog(loadedFaction, currentMembersGrid, membersDialog);
-                      refreshGrid(); // Refresh main grid
-                      Notification.show(
-                              wrestler.getName() + " removed from " + loadedFaction.getName(),
-                              3000,
-                              Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                    } catch (Exception ex) {
-                      log.error("Error removing member", ex);
-                      Notification.show(
-                              "Error removing member: " + ex.getMessage(),
-                              5000,
-                              Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                    }
-                  });
-              removeBtn.setVisible(securityUtils.canEdit());
-              return removeBtn;
-            })
-        .setHeader("Actions");
-
+        .addColumn(s -> String.format("%,d", s.getFans()))
+        .setHeader("Fans")
+        .setSortable(true);
+    currentMembersGrid.setId("members-grid");
     currentMembersGrid.setItems(loadedFaction.getMembers());
-    currentMembersGrid.setHeight("200px");
 
-    // Add member section
-    H3 addMemberTitle = new H3("Add Member");
-    ComboBox<Wrestler> wrestlerCombo = new ComboBox<>("Select Wrestler");
-    wrestlerCombo.setId("add-member-wrestler-combo");
-    wrestlerCombo.setItems(
-        wrestlerRepository.findAll().stream()
-            .filter(w -> !loadedFaction.hasMember(w))
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
-    wrestlerCombo.setItemLabelGenerator(Wrestler::getName);
-    wrestlerCombo.setWidth("300px");
-
-    Button addBtn = new Button("Add Member", new Icon(VaadinIcon.PLUS));
-    addBtn.setId("add-member-button");
-    addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    addBtn.addClickListener(
-        e -> {
-          Wrestler selectedWrestler = wrestlerCombo.getValue();
-          if (selectedWrestler != null) {
-            try {
-              factionService.addMemberToFaction(loadedFaction.getId(), selectedWrestler.getId());
-              wrestlerCombo.clear();
-              refreshMembersDialog(loadedFaction, currentMembersGrid, membersDialog);
-              refreshGrid(); // Refresh main grid
-              Notification.show(
-                      selectedWrestler.getName() + " added to " + loadedFaction.getName(),
-                      3000,
-                      Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            } catch (Exception ex) {
-              log.error("Error adding member", ex);
-              Notification.show(
-                      "Error adding member: " + ex.getMessage(),
-                      5000,
-                      Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            }
-          }
+    currentMembersGrid.addComponentColumn(
+        memberState -> {
+          Button removeBtn =
+              new Button(
+                  new Icon(VaadinIcon.MINUS),
+                  e -> {
+                    loadedFaction.removeMember(memberState);
+                    factionService.save(loadedFaction);
+                    dialog.close();
+                    openMembersDialog(loadedFaction);
+                    refreshGrid();
+                  });
+          removeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+          removeBtn.setTooltipText("Remove from Faction");
+          return removeBtn;
         });
 
-    HorizontalLayout addMemberLayout = new HorizontalLayout(wrestlerCombo, addBtn);
-    addMemberLayout.setAlignItems(HorizontalLayout.Alignment.END);
-    addMemberLayout.setVisible(securityUtils.canEdit());
+    H3 availableWrestlersTitle = new H3("Available Wrestlers");
+    Grid<WrestlerState> availableWrestlersGrid = new Grid<>(WrestlerState.class, false);
+    availableWrestlersGrid
+        .addColumn(s -> s.getWrestler().getName())
+        .setHeader("Name")
+        .setSortable(true);
+    availableWrestlersGrid
+        .addColumn(s -> s.getTier().getDisplayWithEmoji())
+        .setHeader("Tier")
+        .setSortable(true);
 
-    // Close button
-    Button closeBtn = new Button("Close", e -> membersDialog.close());
-    closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    Long universeId = universeContextService.getCurrentUniverseId();
+    List<WrestlerState> available =
+        wrestlerService.findAllIncludingInactive().stream()
+            .map(w -> wrestlerService.getOrCreateState(w.getId(), universeId))
+            .filter(s -> s.getFaction() == null)
+            .toList();
+    availableWrestlersGrid.setItems(available);
 
-    HorizontalLayout buttonLayout = new HorizontalLayout(closeBtn);
-    buttonLayout.setJustifyContentMode(HorizontalLayout.JustifyContentMode.END);
+    availableWrestlersGrid.addComponentColumn(
+        wState -> {
+          Button addBtn =
+              new Button(
+                  new Icon(VaadinIcon.PLUS),
+                  e -> {
+                    loadedFaction.addMember(wState);
+                    factionService.save(loadedFaction);
+                    dialog.close();
+                    openMembersDialog(loadedFaction);
+                    refreshGrid();
+                  });
+          addBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
+          addBtn.setTooltipText("Add to Faction");
+          return addBtn;
+        });
 
-    layout.add(
-        currentMembersTitle, currentMembersGrid, addMemberTitle, addMemberLayout, buttonLayout);
-    membersDialog.add(layout);
-    membersDialog.open();
-  }
+    content.add(
+        currentMembersTitle,
+        currentMembersGrid,
+        new Div(),
+        availableWrestlersTitle,
+        availableWrestlersGrid);
+    content.expand(currentMembersGrid, availableWrestlersGrid);
 
-  private void refreshMembersDialog(
-      @NonNull Faction faction, @NonNull Grid<Wrestler> membersGrid, @NonNull Dialog dialog) {
-    // Refresh faction data from database with members eagerly loaded
-    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
-    if (updatedFaction.isPresent()) {
-      membersGrid.setItems(updatedFaction.get().getMembers());
-      dialog.setHeaderTitle(
-          "Manage Members: "
-              + updatedFaction.get().getName()
-              + " ("
-              + updatedFaction.get().getMemberCount()
-              + ")");
-    }
+    Button closeButton = new Button("Done", e -> dialog.close());
+    dialog.getFooter().add(closeButton);
+    dialog.add(content);
+    dialog.open();
   }
 }

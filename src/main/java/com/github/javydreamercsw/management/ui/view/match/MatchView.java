@@ -36,12 +36,14 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
@@ -91,6 +93,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private final SegmentService segmentService;
   private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
+  private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
   private final CampaignRepository campaignRepository;
@@ -123,6 +127,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   public MatchView(
       SegmentService segmentService,
       WrestlerService wrestlerService,
+      InjuryService injuryService,
+      UniverseContextService universeContextService,
       SecurityUtils securityUtils,
       CampaignService campaignService,
       CampaignRepository campaignRepository,
@@ -143,6 +149,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
+    this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
     this.campaignRepository = campaignRepository;
@@ -378,8 +386,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     List<Wrestler> wrestlers = segment.getWrestlers();
     boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
 
+    Long universeId = universeContextService.getCurrentUniverseId();
     if (isPlayerInMatch) {
-      participantsCard.add(new WrestlerSummaryCard(playerWrestler, wrestlerService, true));
+      participantsCard.add(
+          new WrestlerSummaryCard(
+              playerWrestler, universeId, wrestlerService, injuryService, true));
 
       // Fetch player campaign to get opponent penalty
       int opponentPenalty = 0;
@@ -394,11 +405,16 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .forEach(
               opponent ->
                   participantsCard.add(
-                      new WrestlerSummaryCard(opponent, wrestlerService, false, penalty)));
+                      new WrestlerSummaryCard(
+                          opponent, universeId, wrestlerService, injuryService, false, penalty)));
     } else {
       wrestlers.stream()
           .filter(java.util.Objects::nonNull)
-          .forEach(w -> participantsCard.add(new WrestlerSummaryCard(w, wrestlerService, false)));
+          .forEach(
+              w ->
+                  participantsCard.add(
+                      new WrestlerSummaryCard(
+                          w, universeId, wrestlerService, injuryService, false)));
     }
     participantsCol.add(participantsCard);
 
@@ -712,6 +728,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     try {
       SegmentNarrationContext context = new SegmentNarrationContext();
+      context.setUniverseId(universeContextService.getCurrentUniverseId());
 
       SegmentTypeContext typeContext = new SegmentTypeContext();
       typeContext.setSegmentType(segment.getSegmentType().getName());

@@ -151,10 +151,11 @@ public class BackstageActionService {
           } else if (currentBumps > 0) {
             // No injuries, so heal up to 2 bumps
             int bumpsRemoved = 0;
-            wrestlerService.healBump(campaign.getWrestler().getId());
+            Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+            wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
             bumpsRemoved++;
             if (currentBumps > 1) {
-              wrestlerService.healBump(campaign.getWrestler().getId());
+              wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
               bumpsRemoved++;
             }
             // Update local state copy if needed, but entity is source of truth
@@ -171,7 +172,8 @@ public class BackstageActionService {
           }
         } else if (successes == 1) {
           if (currentBumps > 0) {
-            wrestlerService.healBump(campaign.getWrestler().getId());
+            Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+            wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
             // state.setBumps is removed
             outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
           } else if (!activeInjuries.isEmpty()) {

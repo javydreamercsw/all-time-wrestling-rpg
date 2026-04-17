@@ -209,9 +209,12 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
             })
         .setHeader("Actions");
 
-    // Fetch shows for this league
-    List<Show> leagueShows = showService.getShowsByLeague(league);
-    showGrid.setItems(leagueShows);
+    // Fetch shows for this universe
+    List<Show> universeShows =
+        league.getUniverse() != null
+            ? showService.getShowsByUniverse(league.getUniverse())
+            : List.of();
+    showGrid.setItems(universeShows);
     showGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
     layout.add(new H3("Show History"), showGrid);

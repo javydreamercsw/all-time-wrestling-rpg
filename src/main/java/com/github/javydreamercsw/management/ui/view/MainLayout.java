@@ -29,8 +29,11 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
@@ -40,6 +43,7 @@ import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
@@ -61,11 +65,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.github.javydreamercsw.management.domain.league.League;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.service.league.LeagueContextService;
-import com.vaadin.flow.component.combobox.ComboBox;
-
 @Layout
 @PermitAll
 @AnonymousAllowed
@@ -79,8 +78,8 @@ public class MainLayout extends AppLayout {
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
   private ThemeService themeService;
-  private LeagueContextService leagueContextService;
-  private LeagueRepository leagueRepository;
+  private UniverseContextService universeContextService;
+  private UniverseRepository universeRepository;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -94,8 +93,8 @@ public class MainLayout extends AppLayout {
       AccountService accountService,
       PasswordEncoder passwordEncoder,
       ThemeService themeService,
-      LeagueContextService leagueContextService,
-      LeagueRepository leagueRepository) {
+      UniverseContextService universeContextService,
+      UniverseRepository universeRepository) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -103,8 +102,8 @@ public class MainLayout extends AppLayout {
     this.accountService = accountService;
     this.passwordEncoder = passwordEncoder;
     this.themeService = themeService;
-    this.leagueContextService = leagueContextService;
-    this.leagueRepository = leagueRepository;
+    this.universeContextService = universeContextService;
+    this.universeRepository = universeRepository;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -113,7 +112,7 @@ public class MainLayout extends AppLayout {
 
     com.vaadin.flow.component.html.Section drawerContainer =
         new com.vaadin.flow.component.html.Section(
-            createHeader(), createLeagueSelector(), navScroller, createFooter());
+            createHeader(), createUniverseSelector(), navScroller, createFooter());
     drawerContainer.setSizeFull();
     drawerContainer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.STRETCH);
 
@@ -121,25 +120,25 @@ public class MainLayout extends AppLayout {
     addToNavbar(new DrawerToggle(), createNavbar());
   }
 
-  private Div createLeagueSelector() {
-    ComboBox<League> leagueSelector = new ComboBox<>("Active League");
-    leagueSelector.setItems(leagueRepository.findAll());
-    leagueSelector.setItemLabelGenerator(League::getName);
-    leagueSelector.setWidthFull();
-    leagueSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
+  private Div createUniverseSelector() {
+    ComboBox<Universe> universeSelector = new ComboBox<>("Active Universe");
+    universeSelector.setItems(universeRepository.findAll());
+    universeSelector.setItemLabelGenerator(Universe::getName);
+    universeSelector.setWidthFull();
+    universeSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
 
-    leagueContextService.getCurrentLeague().ifPresent(leagueSelector::setValue);
+    universeContextService.getCurrentUniverse().ifPresent(universeSelector::setValue);
 
-    leagueSelector.addValueChangeListener(
+    universeSelector.addValueChangeListener(
         event -> {
           if (event.getValue() != null) {
-            leagueContextService.setCurrentLeague(event.getValue());
+            universeContextService.setCurrentUniverse(event.getValue());
             UI.getCurrent().getPage().reload(); // Reload to refresh data context
           }
         });
 
-    Div container = new Div(leagueSelector);
-    container.addClassName("league-selector-container");
+    Div container = new Div(universeSelector);
+    container.addClassName("universe-selector-container");
     return container;
   }
 

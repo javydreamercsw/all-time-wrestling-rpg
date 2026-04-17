@@ -21,7 +21,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,21 +59,13 @@ public class WrestlerDTO implements Serializable {
   private Integer startingStamina;
   private Integer lowStamina;
 
-  public WrestlerDTO(@NonNull LeagueWrestlerState state) {
+  public WrestlerDTO(@NonNull WrestlerState state) {
     this(state.getWrestler());
     this.fans = state.getFans();
     this.tier = state.getTier();
-    this.injured = !state.getActiveInjuries().isEmpty();
     if (state.getManager() != null) {
       this.managerName = state.getManager().getName();
       this.managerExternalId = state.getManager().getExternalId();
-    }
-    if (state.getInjuries() != null) {
-      this.injuryExternalIds =
-          state.getInjuries().stream()
-              .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
-              .filter(Objects::nonNull)
-              .toList();
     }
     // Note: Faction and Alignment might need more careful mapping if they become league-specific
   }

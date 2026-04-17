@@ -62,7 +62,9 @@ public class InjuryController {
     this.wrestlerRepository = wrestlerRepository;
   }
 
-  @Operation(summary = "Create a new injury", description = "Creates a new injury for a wrestler")
+  @Operation(
+      summary = "Create a new injury",
+      description = "Creates a new injury for a wrestler in a specific universe")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "201", description = "Injury created successfully"),
@@ -74,6 +76,7 @@ public class InjuryController {
     Optional<Injury> injury =
         injuryService.createInjury(
             request.wrestlerId(),
+            request.universeId(),
             request.name(),
             request.description(),
             request.severity(),
@@ -89,7 +92,7 @@ public class InjuryController {
 
   @Operation(
       summary = "Create injury from bumps",
-      description = "Converts 3+ bumps into an injury for a wrestler")
+      description = "Converts 3+ bumps into an injury for a wrestler in a universe")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "201", description = "Injury created from bumps"),
@@ -99,7 +102,8 @@ public class InjuryController {
         @ApiResponse(responseCode = "404", description = "Wrestler not found")
       })
   @PostMapping("/from-bumps/{wrestlerId}")
-  public ResponseEntity<Object> createInjuryFromBumps(@PathVariable Long wrestlerId) {
+  public ResponseEntity<Object> createInjuryFromBumps(
+      @PathVariable Long wrestlerId, @RequestParam Long universeId) {
     // First check if wrestler exists and has enough bumps
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -107,13 +111,19 @@ public class InjuryController {
           .body(new ErrorResponse("Wrestler not found"));
     }
 
-    Wrestler wrestler = wrestlerOpt.get();
-    if (wrestler.getBumps() < 3) {
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        injuryService.getWrestlerState(wrestlerId, universeId);
+    if (state.getBumps() < 3) {
       return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Wrestler has less than 3 bumps (" + wrestler.getBumps() + ")"));
+          .body(
+              new ErrorResponse(
+                  "Wrestler has less than 3 bumps ("
+                      + state.getBumps()
+                      + ") in universe "
+                      + universeId));
     }
 
-    Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
+    Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId, universeId);
 
     if (injury.isPresent()) {
       return ResponseEntity.status(HttpStatus.CREATED).body(new InjuryResponseDTO(injury.get()));
@@ -147,19 +157,21 @@ public class InjuryController {
 
   @Operation(
       summary = "Get active injuries for wrestler",
-      description = "Gets all active injuries for a specific wrestler")
+      description = "Gets all active injuries for a specific wrestler in a universe")
   @GetMapping("/wrestler/{wrestlerId}/active")
-  public ResponseEntity<List<Injury>> getActiveInjuriesForWrestler(@PathVariable Long wrestlerId) {
-    List<Injury> injuries = injuryService.getActiveInjuriesForWrestler(wrestlerId);
+  public ResponseEntity<List<Injury>> getActiveInjuriesForWrestler(
+      @PathVariable Long wrestlerId, @RequestParam(defaultValue = "1") Long universeId) {
+    List<Injury> injuries = injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId);
     return ResponseEntity.ok(injuries);
   }
 
   @Operation(
       summary = "Get all injuries for wrestler",
-      description = "Gets all injuries (active and healed) for a specific wrestler")
+      description = "Gets all injuries (active and healed) for a specific wrestler in a universe")
   @GetMapping("/wrestler/{wrestlerId}")
-  public ResponseEntity<List<Injury>> getAllInjuriesForWrestler(@PathVariable Long wrestlerId) {
-    List<Injury> injuries = injuryService.getAllInjuriesForWrestler(wrestlerId);
+  public ResponseEntity<List<Injury>> getAllInjuriesForWrestler(
+      @PathVariable Long wrestlerId, @RequestParam(defaultValue = "1") Long universeId) {
+    List<Injury> injuries = injuryService.getAllInjuriesForWrestler(wrestlerId, universeId);
     return ResponseEntity.ok(injuries);
   }
 
@@ -183,10 +195,11 @@ public class InjuryController {
 
   @Operation(
       summary = "Get wrestlers with active injuries",
-      description = "Gets all wrestlers who have active injuries")
+      description = "Gets all wrestlers who have active injuries in a specific universe")
   @GetMapping("/wrestlers-with-injuries")
-  public ResponseEntity<List<Wrestler>> getWrestlersWithActiveInjuries() {
-    List<Wrestler> wrestlers = injuryService.getWrestlersWithActiveInjuries();
+  public ResponseEntity<List<Wrestler>> getWrestlersWithActiveInjuries(
+      @RequestParam(defaultValue = "1") Long universeId) {
+    List<Wrestler> wrestlers = injuryService.getWrestlersWithActiveInjuries(universeId);
     return ResponseEntity.ok(wrestlers);
   }
 
@@ -217,11 +230,12 @@ public class InjuryController {
 
   @Operation(
       summary = "Get total health penalty for wrestler",
-      description = "Gets the total health penalty from all active injuries for a wrestler")
+      description =
+          "Gets the total health penalty from all active injuries for a wrestler in a universe")
   @GetMapping("/wrestler/{wrestlerId}/health-penalty")
   public ResponseEntity<HealthPenaltyResponse> getTotalHealthPenaltyForWrestler(
-      @PathVariable Long wrestlerId) {
-    Integer penalty = injuryService.getTotalHealthPenaltyForWrestler(wrestlerId);
+      @PathVariable Long wrestlerId, @RequestParam(defaultValue = "1") Long universeId) {
+    Integer penalty = injuryService.getTotalHealthPenaltyForWrestler(wrestlerId, universeId);
     return ResponseEntity.ok(new HealthPenaltyResponse(penalty));
   }
 
@@ -237,11 +251,12 @@ public class InjuryController {
 
   @Operation(
       summary = "Get injury statistics for wrestler",
-      description = "Retrieves comprehensive injury statistics for a wrestler")
+      description = "Retrieves comprehensive injury statistics for a wrestler in a universe")
   @GetMapping("/wrestler/{wrestlerId}/stats")
   public ResponseEntity<InjuryService.InjuryStats> getInjuryStatsForWrestler(
-      @PathVariable Long wrestlerId) {
-    InjuryService.InjuryStats stats = injuryService.getInjuryStatsForWrestler(wrestlerId);
+      @PathVariable Long wrestlerId, @RequestParam(defaultValue = "1") Long universeId) {
+    InjuryService.InjuryStats stats =
+        injuryService.getInjuryStatsForWrestler(wrestlerId, universeId);
     if (stats != null) {
       return ResponseEntity.ok(stats);
     } else {
@@ -253,6 +268,7 @@ public class InjuryController {
 
   public record CreateInjuryRequest(
       @NotNull(message = "Wrestler ID is required") Long wrestlerId,
+      @NotNull(message = "Universe ID is required") Long universeId,
       @NotBlank(message = "Injury name is required") @Size(max = 255, message = "Injury name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       @NotNull(message = "Severity is required") InjurySeverity severity,

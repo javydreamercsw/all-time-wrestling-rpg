@@ -40,6 +40,7 @@ public class CreateInjuryDialog extends Dialog {
 
   public CreateInjuryDialog(
       @NonNull Wrestler wrestler,
+      @NonNull Long universeId,
       @NonNull InjuryService injuryService,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
@@ -82,6 +83,7 @@ public class CreateInjuryDialog extends Dialog {
               if (binder.writeBeanIfValid(injury)) {
                 injuryService.createInjury(
                     wrestler.getId(),
+                    universeId,
                     injury.getName(),
                     injury.getDescription(),
                     injury.getSeverity(),

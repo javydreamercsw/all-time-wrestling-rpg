@@ -180,7 +180,9 @@ public class ShowPlanningDtoMapper {
       dto.setLeader(faction.getLeader().getName());
     }
     dto.setMembers(
-        faction.getMembers().stream().map(Wrestler::getName).collect(Collectors.toList()));
+        faction.getMembers().stream()
+            .map(m -> m.getWrestler().getName())
+            .collect(Collectors.toList()));
     dto.setIsActive(faction.isActive());
     if (faction.getFormedDate() != null) {
       dto.setFormedDate(faction.getFormedDate().toString());

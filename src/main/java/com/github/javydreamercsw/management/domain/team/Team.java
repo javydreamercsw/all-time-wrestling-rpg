@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.team;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,6 +61,10 @@ public class Team extends AbstractEntity<Long> {
   @Lob
   @Column(name = "description")
   private String description;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   // First wrestler (required)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -173,17 +178,43 @@ public class Team extends AbstractEntity<Long> {
     return baseName;
   }
 
-  /** Check if both wrestlers belong to the same faction. */
+  /** Check if both wrestlers belong to the same faction in this team's universe. */
   public boolean areFromSameFaction() {
-    return wrestler1.getFaction() != null
-        && wrestler2.getFaction() != null
-        && wrestler1.getFaction().equals(wrestler2.getFaction());
+    if (universe == null) return false;
+    Long universeId = universe.getId();
+
+    Faction f1 =
+        wrestler1
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+    Faction f2 =
+        wrestler2
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+
+    return f1 != null && f2 != null && f1.equals(f2);
   }
 
-  /** Get the common faction if both wrestlers belong to the same one. */
+  /** Get the common faction if both wrestlers belong to the same one in this team's universe. */
   public Faction getCommonFaction() {
-    if (areFromSameFaction()) {
-      return wrestler1.getFaction();
+    if (universe == null) return null;
+    Long universeId = universe.getId();
+
+    Faction f1 =
+        wrestler1
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+    Faction f2 =
+        wrestler2
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+
+    if (f1 != null && f1.equals(f2)) {
+      return f1;
     }
     return null;
   }

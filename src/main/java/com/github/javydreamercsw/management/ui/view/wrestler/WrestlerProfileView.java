@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -39,6 +40,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
@@ -77,9 +79,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
-import com.github.javydreamercsw.management.service.league.LeagueContextService;
-
 @Route("wrestler-profile/:wrestlerId?")
 @PageTitle("Wrestler Profile")
 @PermitAll
@@ -99,7 +98,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final NpcService npcService;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
-  private final LeagueContextService leagueContextService;
+  private final UniverseContextService universeContextService;
   private final com.github.javydreamercsw.management.service.relationship
           .WrestlerRelationshipService
       relationshipService;
@@ -142,7 +141,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       @Qualifier("baseAccountService") AccountService accountService,
       CampaignService campaignService,
       ImageStorageService imageStorageService,
-      LeagueContextService leagueContextService,
+      UniverseContextService universeContextService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService) {
     this.wrestlerService = wrestlerService;
@@ -157,7 +156,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.accountService = accountService;
     this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
-    this.leagueContextService = leagueContextService;
+    this.universeContextService = universeContextService;
     this.relationshipService = relationshipService;
 
     wrestlerName.setId("wrestler-name");
@@ -293,8 +292,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private void updateView() {
     if (wrestler != null && wrestler.getId() != null) {
-      Long leagueId = leagueContextService.getCurrentLeagueId();
-      LeagueWrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+      Long universeId = universeContextService.getCurrentUniverseId();
+      WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
       heroDetailsColumn
           .getChildren()
@@ -312,7 +311,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               securityUtils,
               accountService,
               imageStorageService,
-              leagueContextService));
+              universeContextService));
       wrestlerName.setText(wrestler.getName());
       String details = String.format("Gender: %s, Fans: %d", wrestler.getGender(), state.getFans());
       if (wrestler.getHeritageTag() != null && !wrestler.getHeritageTag().isEmpty()) {
@@ -323,11 +322,13 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       wrestlerImage.setSrc(wrestlerService.resolveWrestlerImage(wrestler));
 
       // Fetch and display wrestler stats
-      Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId(), leagueId);
+      Optional<WrestlerStats> stats =
+          wrestlerService.getWrestlerStats(wrestler.getId(), universeId);
       statsLayout.removeAll();
-      statsLayout.add(new H3("Career Stats (League Context)"));
+      statsLayout.add(new H3("Career Stats (Universe Context)"));
 
-      Paragraph conditionPara = new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
+      Paragraph conditionPara =
+          new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
       conditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
       if (state.getPhysicalCondition() < 50) {
         conditionPara.addClassNames(LumoUtility.TextColor.ERROR);
@@ -394,9 +395,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       highlightsContainer.removeAll();
       highlightsContainer.setPadding(false);
       highlightsContainer.add(new H3("Career Highlights"));
-      List<Title> titlesWon = titleService.findTitlesByChampion(wrestler, leagueId);
+      List<Title> titlesWon = titleService.findTitlesByChampion(wrestler, universeId);
       if (titlesWon.isEmpty()) {
-        highlightsContainer.add(new Paragraph("No titles won yet in this league."));
+        highlightsContainer.add(new Paragraph("No titles won yet in this universe."));
       } else {
         titlesWon.forEach(title -> highlightsContainer.add(new Paragraph(title.getName())));
       }
@@ -438,7 +439,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         resetWearAndTearButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
         resetWearAndTearButton.addClickListener(
             e -> {
-              wrestlerService.resetWearAndTear(wrestler.getId(), leagueId);
+              wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
               updateView();
               com.vaadin.flow.component.notification.Notification.show(
                   "Wear & Tear reset to 100%!");
@@ -447,12 +448,13 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       }
 
       injuriesLayout.add(new Paragraph("Bumps: " + state.getBumps()));
-      if (state.getInjuries().isEmpty()) {
+      List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
+          injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
+      if (injuries.isEmpty()) {
         injuriesLayout.add(new Paragraph("No current injuries."));
       } else {
-        state
-            .getInjuries()
-            .forEach(injury -> injuriesLayout.add(new Paragraph("- " + injury.getDisplayString())));
+        injuries.forEach(
+            injury -> injuriesLayout.add(new Paragraph("- " + injury.getDisplayString())));
       }
 
       updateMatchAndFeudHistory(); // Initial call to populate match and feud history

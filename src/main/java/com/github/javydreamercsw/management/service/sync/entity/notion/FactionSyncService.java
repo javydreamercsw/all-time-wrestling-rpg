@@ -298,7 +298,15 @@ public class FactionSyncService extends BaseSyncService {
           syncServiceDependencies
               .getWrestlerRepository()
               .findByExternalId(extId)
-              .ifPresent(faction::addMember);
+              .ifPresent(
+                  wrestler -> {
+                    // Default to Universe ID 1
+                    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+                        syncServiceDependencies
+                            .getWrestlerService()
+                            .getOrCreateState(wrestler.getId(), 1L);
+                    faction.addMember(state);
+                  });
         }
       }
 

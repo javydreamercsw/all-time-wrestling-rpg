@@ -21,8 +21,10 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -49,9 +51,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
-import com.github.javydreamercsw.management.service.league.LeagueContextService;
-
 @Route("wrestler-rankings")
 @PageTitle("Wrestler Rankings")
 @Menu(order = 4, icon = "vaadin:trophy", title = "Wrestler Rankings")
@@ -63,7 +62,7 @@ public class WrestlerRankingsView extends Main {
   private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
   private final TierBoundaryService tierBoundaryService;
-  private final LeagueContextService leagueContextService;
+  private final UniverseContextService universeContextService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
   private Set<Long> championIds = new HashSet<>();
   private ComboBox<Gender> genderComboBox;
@@ -73,12 +72,12 @@ public class WrestlerRankingsView extends Main {
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
       TierBoundaryService tierBoundaryService,
-      LeagueContextService leagueContextService) {
+      UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
     this.tierBoundaryService = tierBoundaryService;
-    this.leagueContextService = leagueContextService;
+    this.universeContextService = universeContextService;
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -167,9 +166,8 @@ public class WrestlerRankingsView extends Main {
               HorizontalLayout layout = new HorizontalLayout();
               layout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-              Long leagueId = leagueContextService.getCurrentLeagueId();
-              LeagueWrestlerState state =
-                  wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+              Long universeId = universeContextService.getCurrentUniverseId();
+              WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
               Span nameSpan = new Span(wrestler.getName());
               nameSpan.addClassNames(
@@ -186,7 +184,7 @@ public class WrestlerRankingsView extends Main {
                           "Champion: "
                               + wrestler.getName()
                               + " holds "
-                              + titleService.findTitlesByChampion(wrestler, leagueId).size()
+                              + titleService.findTitlesByChampion(wrestler, universeId).size()
                               + " titles.");
                     });
                 layout.add(trophyIcon);
@@ -199,9 +197,9 @@ public class WrestlerRankingsView extends Main {
 
     grid.addColumn(
             wrestler -> {
-              LeagueWrestlerState state =
+              WrestlerState state =
                   wrestlerService.getOrCreateState(
-                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
               return String.format("%,d", state.getFans());
             })
         .setHeader("Fans")
@@ -209,9 +207,9 @@ public class WrestlerRankingsView extends Main {
 
     grid.addColumn(
             wrestler -> {
-              LeagueWrestlerState state =
+              WrestlerState state =
                   wrestlerService.getOrCreateState(
-                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
               return state.getTier().getDisplayWithEmoji();
             })
         .setHeader("Tier")
@@ -219,14 +217,14 @@ public class WrestlerRankingsView extends Main {
   }
 
   private void updateList() {
-    Long leagueId = leagueContextService.getCurrentLeagueId();
+    Long universeId = universeContextService.getCurrentUniverseId();
 
     this.championIds =
         titleService.findAll().stream()
             .filter(
                 title ->
-                    title.getLeague() != null
-                        && title.getLeague().getId().equals(leagueId)
+                    title.getUniverse() != null
+                        && title.getUniverse().getId().equals(universeId)
                         && title.getChampion() != null
                         && !title.getChampion().isEmpty())
             .flatMap(title -> title.getChampion().stream())

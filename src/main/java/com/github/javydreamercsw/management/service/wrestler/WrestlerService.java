@@ -30,9 +30,13 @@ import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
@@ -57,16 +61,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.github.javydreamercsw.management.domain.league.League;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
-import com.github.javydreamercsw.management.domain.league.LeagueWrestlerStateRepository;
 
 @Service
 @Transactional
@@ -76,13 +76,13 @@ public class WrestlerService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
-  @Autowired private LeagueRepository leagueRepository;
-  @Autowired private LeagueWrestlerStateRepository leagueWrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
   @Autowired private Clock clock;
   @Autowired private ExpansionService expansionService;
   @Autowired private InjuryService injuryService;
   @Autowired private ApplicationEventPublisher eventPublisher;
-  @Autowired private SegmentService segmentService;
+  @Autowired @Lazy private SegmentService segmentService;
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
@@ -169,17 +169,19 @@ public class WrestlerService {
             .lowHealth(0)
             .startingStamina(0)
             .lowStamina(0)
-            .fans(0L)
             .gender(Gender.MALE)
             .isPlayer(isPlayer)
             .active(true)
-            .bumps(0)
-            .tier(tier)
-            .account(account) // Set account here
+            .account(account)
             .expansionCode("BASE_GAME")
             .build();
 
-    return save(wrestler);
+    Wrestler savedWrestler = save(wrestler);
+
+    // Create default universe state (Universe ID 1)
+    getOrCreateState(savedWrestler.getId(), 1L).setTier(tier);
+
+    return savedWrestler;
   }
 
   /**
@@ -208,7 +210,7 @@ public class WrestlerService {
               }
 
               wrestler.setAccount(account);
-              wrestler.setIsPlayer(account != null); // Set isPlayer based on account presence
+              wrestler.setIsPlayer(account != null);
               return wrestlerRepository.saveAndFlush(wrestler);
             });
   }
@@ -317,9 +319,9 @@ public class WrestlerService {
     return wrestlerRepository.findByExternalId(externalId);
   }
 
-  public LeagueWrestlerState getOrCreateState(Long wrestlerId, Long leagueId) {
-    return leagueWrestlerStateRepository
-        .findByWrestlerIdAndLeagueId(wrestlerId, leagueId)
+  public WrestlerState getOrCreateState(Long wrestlerId, Long universeId) {
+    return wrestlerStateRepository
+        .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
         .orElseGet(
             () -> {
               Wrestler wrestler =
@@ -329,16 +331,17 @@ public class WrestlerService {
                           () ->
                               new IllegalArgumentException(
                                   "Wrestler not found with ID: " + wrestlerId));
-              League league =
-                  leagueRepository
-                      .findById(leagueId)
+              Universe universe =
+                  universeRepository
+                      .findById(universeId)
                       .orElseThrow(
                           () ->
-                              new IllegalArgumentException("League not found with ID: " + leagueId));
-              LeagueWrestlerState state =
-                  LeagueWrestlerState.builder()
+                              new IllegalArgumentException(
+                                  "Universe not found with ID: " + universeId));
+              WrestlerState state =
+                  WrestlerState.builder()
                       .wrestler(wrestler)
-                      .league(league)
+                      .universe(universe)
                       .currentHealth(wrestler.getStartingHealth())
                       .tier(WrestlerTier.ROOKIE)
                       .fans(0L)
@@ -347,7 +350,7 @@ public class WrestlerService {
                       .managementStamina(100)
                       .physicalCondition(100)
                       .build();
-              return leagueWrestlerStateRepository.save(state);
+              return wrestlerStateRepository.save(state);
             });
   }
 
@@ -358,9 +361,9 @@ public class WrestlerService {
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<LeagueWrestlerState> awardFans(
-      @NonNull Long wrestlerId, @NonNull Long leagueId, @NonNull Long fans) {
-    LeagueWrestlerState state = getOrCreateState(wrestlerId, leagueId);
+  public Optional<WrestlerState> awardFans(
+      @NonNull Long wrestlerId, @NonNull Long universeId, @NonNull Long fans) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
     if (fans < 0 && state.getFans() < -fans) {
       return Optional.empty(); // Not enough fans
     }
@@ -378,7 +381,7 @@ public class WrestlerService {
     }
     state.setFans(Math.max(0, state.getFans() + tempFans));
     tierRecalculationService.recalculateTier(state);
-    LeagueWrestlerState savedState = leagueWrestlerStateRepository.save(state);
+    WrestlerState savedState = wrestlerStateRepository.save(state);
     eventPublisher.publishEvent(new FanAwardedEvent(this, savedState.getWrestler(), tempFans));
 
     if (savedState.getWrestler().getAccount() != null) {
@@ -389,33 +392,10 @@ public class WrestlerService {
   }
 
   /**
-   * Attempt to heal a bump to a wrestler (injury system).
+   * Add a bump to a wrestler (injury system) in a specific universe.
    *
    * @param wrestlerId The wrestler's ID
-   * @return The updated wrestler, or empty if not found
-   */
-  @Transactional
-  @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      allEntries = true)
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<LeagueWrestlerState> addBump(@NonNull Long wrestlerId, @NonNull Long leagueId) {
-    LeagueWrestlerState state = getOrCreateState(wrestlerId, leagueId);
-    boolean injuryOccurred = state.addBump();
-    // Always publish WrestlerBumpEvent when a bump is added
-    eventPublisher.publishEvent(new WrestlerBumpEvent(this, state.getWrestler()));
-    if (injuryOccurred) {
-      // Create injury using the injury service only if a new injury occurred
-      injuryService.createInjuryFromBumps(wrestlerId, leagueId);
-    }
-    return Optional.of(leagueWrestlerStateRepository.save(state));
-  }
-
-  /**
-   * Heal a bump from a wrestler.
-   *
-   * @param wrestlerId The wrestler's ID
-   * @param leagueId The league's ID
+   * @param universeId The universe's ID
    * @return The updated state, or empty if not found
    */
   @Transactional
@@ -423,78 +403,103 @@ public class WrestlerService {
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<LeagueWrestlerState> healBump(@NonNull Long wrestlerId, @NonNull Long leagueId) {
-    LeagueWrestlerState state = getOrCreateState(wrestlerId, leagueId);
+  public Optional<WrestlerState> addBump(@NonNull Long wrestlerId, @NonNull Long universeId) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
+    boolean injuryOccurred = state.addBump();
+    eventPublisher.publishEvent(new WrestlerBumpEvent(this, state.getWrestler()));
+    if (injuryOccurred) {
+      injuryService.createInjuryFromBumps(wrestlerId, universeId);
+    }
+    return Optional.of(wrestlerStateRepository.save(state));
+  }
+
+  /**
+   * Heal a bump from a wrestler in a specific universe.
+   *
+   * @param wrestlerId The wrestler's ID
+   * @param universeId The universe's ID
+   * @return The updated state, or empty if not found
+   */
+  @Transactional
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public Optional<WrestlerState> healBump(@NonNull Long wrestlerId, @NonNull Long universeId) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
     if (state.getBumps() > 0) {
       state.setBumps(state.getBumps() - 1);
       log.info(
-          "Wrestler {} healed a bump: {} (was {}) in league {}",
+          "Wrestler {} healed a bump: {} (was {}) in universe {}",
           state.getWrestler().getName(),
           state.getBumps(),
           state.getBumps() + 1,
-          leagueId);
+          universeId);
       eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, state.getWrestler()));
     }
-    return Optional.of(leagueWrestlerStateRepository.save(state));
+    return Optional.of(wrestlerStateRepository.save(state));
   }
 
   /**
-   * Add a bump to a wrestler (injury system).
+   * Attempt to heal an injury or bump using a chance roll in a specific universe.
    *
    * @param wrestlerId The wrestler's ID
-   * @param leagueId The league's ID
+   * @param universeId The universe's ID
+   * @param diceBag The dice bag to use for the roll
    * @return The updated state, or empty if not found
    */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<LeagueWrestlerState> healChance(
-      @NonNull Long wrestlerId, @NonNull Long leagueId, @NonNull DiceBag diceBag) {
-    LeagueWrestlerState state = getOrCreateState(wrestlerId, leagueId);
-    state
-        .getActiveInjuries()
-        .forEach(
-            injury -> {
-              if (injuryService.attemptHealing(injury.getId(), new DiceBag(20).roll()).success()) {
-                log.info(
-                    "Wrestler {} healed an injury: {} ({}) in league {}",
-                    state.getWrestler().getName(),
-                    injury.getName(),
-                    injury.getSeverity().getDisplayName(),
-                    leagueId);
-              }
-            });
+  public Optional<WrestlerState> healChance(
+      @NonNull Long wrestlerId, @NonNull Long universeId, @NonNull DiceBag diceBag) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
+
+    List<com.github.javydreamercsw.management.domain.injury.Injury> activeInjuries =
+        injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId);
+
+    activeInjuries.forEach(
+        injury -> {
+          if (injuryService.attemptHealing(injury.getId(), new DiceBag(20).roll()).success()) {
+            log.info(
+                "Wrestler {} healed an injury: {} ({}) in universe {}",
+                state.getWrestler().getName(),
+                injury.getName(),
+                injury.getSeverity().getDisplayName(),
+                universeId);
+          }
+        });
 
     if (state.getBumps() > 0) {
       if (diceBag.roll() > 3) {
         state.setBumps(state.getBumps() - 1);
         log.info(
-            "Wrestler {} healed a bump: {} (was {}) in league {}",
+            "Wrestler {} healed a bump: {} (was {}) in universe {}",
             state.getWrestler().getName(),
             state.getBumps(),
             state.getBumps() + 1,
-            leagueId);
+            universeId);
         eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, state.getWrestler()));
       }
     }
 
-    return Optional.of(leagueWrestlerStateRepository.saveAndFlush(state));
+    return Optional.of(wrestlerStateRepository.saveAndFlush(state));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<LeagueWrestlerState> healChance(@NonNull Long wrestlerId, @NonNull Long leagueId) {
-    return healChance(wrestlerId, leagueId, new DiceBag(6));
+  public Optional<WrestlerState> healChance(@NonNull Long wrestlerId, @NonNull Long universeId) {
+    return healChance(wrestlerId, universeId, new DiceBag(6));
   }
 
   /**
-   * Get all wrestlers in a specific tier for a league.
+   * Get all wrestlers in a specific tier for a universe.
    *
    * @param tier The wrestler tier
-   * @param leagueId The league ID
-   * @return List of wrestlers in that tier for the league
+   * @param universeId The universe ID
+   * @return List of wrestlers in that tier for the universe
    */
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier, @NonNull Long leagueId) {
+  public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier, @NonNull Long universeId) {
     return findAll().stream()
-        .filter(w -> getOrCreateState(w.getId(), leagueId).getTier() == tier)
+        .filter(w -> getOrCreateState(w.getId(), universeId).getTier() == tier)
         .toList();
   }
 
@@ -519,55 +524,55 @@ public class WrestlerService {
   }
 
   /**
-   * Spend fans for a wrestler action.
+   * Spend fans for a wrestler action in a specific universe.
    *
    * @param wrestlerId The wrestler's ID
-   * @param leagueId The league's ID
+   * @param universeId The universe's ID
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long leagueId, @NonNull Long cost) {
-    return awardFans(wrestlerId, leagueId, -cost).isPresent();
+  public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long universeId, @NonNull Long cost) {
+    return awardFans(wrestlerId, universeId, -cost).isPresent();
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<WrestlerDTO> findAllAsDTO(@NonNull Long leagueId) {
-    return findAll().stream().map(w -> toDTO(w, leagueId)).toList();
+  public List<WrestlerDTO> findAllAsDTO(@NonNull Long universeId) {
+    return findAll().stream().map(w -> toDTO(w, universeId)).toList();
   }
 
   /**
-   * Find a wrestler by ID and return it as a DTO.
+   * Find a wrestler by ID and return it as a DTO in a specific universe.
    *
    * @param id The wrestler ID
-   * @param leagueId The league ID
+   * @param universeId The universe ID
    * @return Optional containing the wrestler DTO if found, otherwise empty
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id, @NonNull Long leagueId) {
-    return wrestlerRepository.findById(id).map(w -> toDTO(w, leagueId));
+  public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id, @NonNull Long universeId) {
+    return wrestlerRepository.findById(id).map(w -> toDTO(w, universeId));
   }
 
   /**
-   * Find all wrestlers for a segment as DTOs.
+   * Find all wrestlers for a segment as DTOs in a specific universe.
    *
    * @param segment The segment
-   * @param leagueId The league ID
+   * @param universeId The universe ID
    * @return List of wrestler DTOs
    */
   @PreAuthorize("isAuthenticated()")
   public List<WrestlerDTO> findAllBySegment(
       @NonNull com.github.javydreamercsw.management.domain.show.segment.Segment segment,
-      @NonNull Long leagueId) {
+      @NonNull Long universeId) {
     return wrestlerRepository.findAllBySegment(segment).stream()
-        .map(w -> toDTO(w, leagueId))
+        .map(w -> toDTO(w, universeId))
         .toList();
   }
 
-  private WrestlerDTO toDTO(Wrestler wrestler, Long leagueId) {
-    LeagueWrestlerState state = getOrCreateState(wrestler.getId(), leagueId);
+  private WrestlerDTO toDTO(Wrestler wrestler, Long universeId) {
+    WrestlerState state = getOrCreateState(wrestler.getId(), universeId);
     WrestlerDTO dto = new WrestlerDTO(state);
     if (dto.getImageUrl() == null || dto.getImageUrl().isBlank()) {
       dto.setImageUrl(resolveWrestlerImage(wrestler));
@@ -576,8 +581,7 @@ public class WrestlerService {
   }
 
   /**
-   * Resolves the image URL for a wrestler, using the default image system if no specific URL is
-   * set.
+   * Resolves the image URL for a wrestler.
    *
    * @param wrestler The wrestler entity.
    * @return The resolved image URL.
@@ -590,44 +594,44 @@ public class WrestlerService {
   }
 
   /**
-   * Get statistics for a wrestler, including wins, losses, and titles held.
+   * Get statistics for a wrestler in a specific universe.
    *
    * @param wrestlerId The ID of the wrestler
-   * @param leagueId The ID of the league
-   * @return An Optional containing WrestlerStats if the wrestler is found, otherwise empty.
+   * @param universeId The ID of the universe
+   * @return An Optional containing WrestlerStats if found, otherwise empty.
    */
-  @Cacheable(value = WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #leagueId")
+  @Cacheable(value = WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #universeId")
   @PreAuthorize("isAuthenticated()")
-  public Optional<WrestlerStats> getWrestlerStats(@NonNull Long wrestlerId, @NonNull Long leagueId) {
+  public Optional<WrestlerStats> getWrestlerStats(
+      @NonNull Long wrestlerId, @NonNull Long universeId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
             wrestler -> {
-              // Note: segmentService counts might need league context too
-              long wins = segmentService.countWinsByWrestler(wrestler, leagueId);
-              long totalMatchSegments = segmentService.countMatchSegmentsByWrestler(wrestler, leagueId);
+              long wins = segmentService.countWinsByWrestler(wrestler, universeId);
+              long totalMatchSegments =
+                  segmentService.countMatchSegmentsByWrestler(wrestler, universeId);
               long losses = totalMatchSegments - wins;
-              long titlesHeld = titleService.findTitlesByChampion(wrestler, leagueId).size();
-
+              long titlesHeld = titleService.findTitlesByChampion(wrestler, universeId).size();
               return new WrestlerStats(wins, losses, titlesHeld);
             });
   }
 
   /**
    * Recalibrates the fan counts of all wrestlers to the minimum of their respective tiers in a
-   * league.
+   * specific universe.
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  public void recalibrateFanCounts(@NonNull Long leagueId) {
+  public void recalibrateFanCounts(@NonNull Long universeId) {
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
     List<TierBoundary> boundaries = tierBoundaryRepository.findAll();
 
     for (Wrestler wrestler : wrestlers) {
-      LeagueWrestlerState state = getOrCreateState(wrestler.getId(), leagueId);
+      WrestlerState state = getOrCreateState(wrestler.getId(), universeId);
       if (state.getTier() != null && wrestler.getGender() != null) {
         WrestlerTier targetTier = state.getTier();
         if (targetTier == WrestlerTier.ICON) {
@@ -640,59 +644,103 @@ public class WrestlerService {
             .filter(b -> b.getTier() == finalTargetTier && b.getGender() == wrestler.getGender())
             .findFirst()
             .ifPresent(boundary -> state.setFans(boundary.getMinFans()));
-        leagueWrestlerStateRepository.save(state);
+        wrestlerStateRepository.save(state);
       }
     }
     log.info(
-        "Recalibrated fan counts for all wrestlers in league {}. Icons are reset to Main Eventer.",
-        leagueId);
+        "Recalibrated fan counts for all wrestlers in universe {}. Icons are reset to Main"
+            + " Eventer.",
+        universeId);
   }
 
-  /** Resets the fan counts of all wrestlers to 0 and their tier to ROOKIE in a league. */
+  /** Resets the fan counts of all wrestlers to 0 and their tier to ROOKIE in a universe. */
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  public void resetAllFanCountsToZero(@NonNull Long leagueId) {
+  public void resetAllFanCountsToZero(@NonNull Long universeId) {
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
     for (Wrestler wrestler : wrestlers) {
-      LeagueWrestlerState state = getOrCreateState(wrestler.getId(), leagueId);
+      WrestlerState state = getOrCreateState(wrestler.getId(), universeId);
       state.setFans(0L);
       state.setTier(WrestlerTier.ROOKIE);
-      leagueWrestlerStateRepository.save(state);
+      wrestlerStateRepository.save(state);
     }
-    log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE in league {}.", leagueId);
+    log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE in universe {}.", universeId);
   }
 
-  /** Resets the physical condition of a specific wrestler to 100% in a league. */
+  /** Resets the physical condition of a specific wrestler to 100% in a universe. */
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      key = "#wrestlerId + ':' + #leagueId")
-  public void resetWearAndTear(@NonNull Long wrestlerId, @NonNull Long leagueId) {
-    LeagueWrestlerState state = getOrCreateState(wrestlerId, leagueId);
+      key = "#wrestlerId + ':' + #universeId")
+  public void resetWearAndTear(@NonNull Long wrestlerId, @NonNull Long universeId) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
     state.setPhysicalCondition(100);
-    leagueWrestlerStateRepository.save(state);
+    wrestlerStateRepository.save(state);
     log.info(
-        "Reset physical condition for wrestler {} to 100% in league {}.", wrestlerId, leagueId);
+        "Reset physical condition for wrestler {} to 100% in universe {}.", wrestlerId, universeId);
   }
 
-  /** Resets the physical condition of all wrestlers to 100% in a league. */
+  /** Resets the physical condition of all wrestlers to 100% in a universe. */
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN')")
-  @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      allEntries = true)
-  public void resetAllWearAndTear(@NonNull Long leagueId) {
+  public void resetAllWearAndTear(@NonNull Long universeId) {
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
-    for (Wrestler wrestler : wrestlers) {
-      LeagueWrestlerState state = getOrCreateState(wrestler.getId(), leagueId);
-      state.setPhysicalCondition(100);
-      leagueWrestlerStateRepository.save(state);
+    for (Wrestler w : wrestlers) {
+      resetWearAndTear(w.getId(), universeId);
     }
-    log.info("Reset physical condition for all wrestlers to 100% in league {}.", leagueId);
+  }
+
+  // ==================== DEPRECATED FALLBACKS ====================
+
+  @Deprecated
+  @PreAuthorize("isAuthenticated()")
+  public Optional<WrestlerStats> getWrestlerStats(@NonNull Long wrestlerId) {
+    return getWrestlerStats(wrestlerId, 1L);
+  }
+
+  @Deprecated
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void recalibrateFanCounts() {
+    recalibrateFanCounts(1L);
+  }
+
+  @Deprecated
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void resetAllFanCountsToZero() {
+    resetAllFanCountsToZero(1L);
+  }
+
+  @Deprecated
+  @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN')")
+  public void resetAllWearAndTear() {
+    resetAllWearAndTear(1L);
+  }
+
+  @Deprecated
+  @PreAuthorize("isAuthenticated()")
+  public List<WrestlerDTO> findAllAsDTO() {
+    return findAllAsDTO(1L);
+  }
+
+  @Deprecated
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id) {
+    return findByIdAsDTO(id, 1L);
+  }
+
+  @Deprecated
+  @PreAuthorize("isAuthenticated()")
+  public List<WrestlerDTO> findAllBySegment(
+      @NonNull com.github.javydreamercsw.management.domain.show.segment.Segment segment) {
+    return findAllBySegment(segment, 1L);
   }
 }

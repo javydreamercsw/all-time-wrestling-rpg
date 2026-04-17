@@ -54,6 +54,8 @@ public class WrestlerSyncService extends BaseSyncService {
 
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
+  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
   private final WrestlerNotionSyncService wrestlerNotionSyncService;
   private final TierRecalculationService tierRecalculationService;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
@@ -77,6 +79,8 @@ public class WrestlerSyncService extends BaseSyncService {
       NotionApiExecutor notionApiExecutor,
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+          wrestlerStateRepository,
       WrestlerNotionSyncService wrestlerNotionSyncService,
       TierRecalculationService tierRecalculationService,
       WrestlerAlignmentRepository wrestlerAlignmentRepository,
@@ -86,6 +90,7 @@ public class WrestlerSyncService extends BaseSyncService {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     this.wrestlerNotionSyncService = wrestlerNotionSyncService;
     this.tierRecalculationService = tierRecalculationService;
     this.wrestlerAlignmentRepository = wrestlerAlignmentRepository;
@@ -552,9 +557,7 @@ public class WrestlerSyncService extends BaseSyncService {
         wrestler.setStartingStamina(
             dto.getStartingStamina() != null ? dto.getStartingStamina() : 0);
         wrestler.setLowStamina(dto.getLowStamina() != null ? dto.getLowStamina() : 0);
-        wrestler.setFans(dto.getFans() != null ? dto.getFans() : 0L);
         wrestler.setIsPlayer(dto.getIsPlayer() != null ? dto.getIsPlayer() : false);
-        wrestler.setBumps(dto.getBumps() != null ? dto.getBumps() : 0);
         wrestler.setCreationDate(java.time.Instant.now());
         changed = true;
       } else {
@@ -584,17 +587,9 @@ public class WrestlerSyncService extends BaseSyncService {
           wrestler.setLowStamina(dto.getLowStamina());
           changed = true;
         }
-        if (dto.getFans() != null && !Objects.equals(wrestler.getFans(), dto.getFans())) {
-          wrestler.setFans(dto.getFans());
-          changed = true;
-        }
         if (dto.getIsPlayer() != null
             && !Objects.equals(wrestler.getIsPlayer(), dto.getIsPlayer())) {
           wrestler.setIsPlayer(dto.getIsPlayer());
-          changed = true;
-        }
-        if (dto.getBumps() != null && !Objects.equals(wrestler.getBumps(), dto.getBumps())) {
-          wrestler.setBumps(dto.getBumps());
           changed = true;
         }
       }
@@ -625,43 +620,13 @@ public class WrestlerSyncService extends BaseSyncService {
 
       // Resolve relationships
       // 1. Faction
-      if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
-        java.util.Optional<com.github.javydreamercsw.management.domain.faction.Faction> factionOpt =
-            factionRepository.findByName(dto.getFaction());
-        if (factionOpt.isPresent() && !Objects.equals(wrestler.getFaction(), factionOpt.get())) {
-          wrestler.setFaction(factionOpt.get());
-          changed = true;
-        }
-      }
+      // Faction will be handled in WrestlerState
 
       // 2. Manager
-      if (dto.getManagerExternalId() != null) {
-        java.util.Optional<com.github.javydreamercsw.management.domain.npc.Npc> managerOpt =
-            npcRepository.findByExternalId(dto.getManagerExternalId());
-        if (managerOpt.isPresent() && !Objects.equals(wrestler.getManager(), managerOpt.get())) {
-          wrestler.setManager(managerOpt.get());
-          changed = true;
-        }
-      }
+      // Manager will be handled in WrestlerState
 
       // 3. Injuries
-      if (dto.getInjuryExternalIds() != null && !dto.getInjuryExternalIds().isEmpty()) {
-        // Simplified check: if sizes differ, it definitely changed.
-        // More robust check would compare actual IDs.
-        if (wrestler.getInjuries().size() != dto.getInjuryExternalIds().size()) {
-          wrestler.getInjuries().clear();
-          for (String id : dto.getInjuryExternalIds()) {
-            java.util.Optional<com.github.javydreamercsw.management.domain.injury.Injury>
-                injuryOpt = injuryRepository.findByExternalId(id);
-            if (injuryOpt.isPresent()) {
-              com.github.javydreamercsw.management.domain.injury.Injury injury = injuryOpt.get();
-              injury.setWrestler(wrestler);
-              wrestler.getInjuries().add(injury);
-            }
-          }
-          changed = true;
-        }
-      }
+      // Injuries will be handled in WrestlerState
 
       // Update alignment
       if (dto.getAlignment() != null && !dto.getAlignment().isBlank()) {
@@ -686,19 +651,55 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       if (changed) {
-        tierRecalculationService.recalculateTier(wrestler);
         log.info(
-            "💾 Saving wrestler to database: {} (ID: {}, isNew: {})",
+            "💾 Saving wrestler template to database: {} (ID: {}, isNew: {})",
             wrestler.getName(),
             wrestler.getId(),
             isNewWrestler);
 
+        Wrestler savedWrestler;
         if (isNewWrestler) {
-          wrestlerService.save(wrestler);
+          savedWrestler = wrestlerRepository.save(wrestler);
         } else {
-          wrestlerRepository.saveAndFlush(wrestler);
+          savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
         }
-        log.info("✅ Wrestler saved successfully: {}", wrestler.getName());
+
+        // Update Universe State (Default to Universe ID 1)
+        Long universeId = 1L;
+        com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+            wrestlerService.getOrCreateState(savedWrestler.getId(), universeId);
+
+        if (dto.getFans() != null) state.setFans(dto.getFans());
+        if (dto.getBumps() != null) state.setBumps(dto.getBumps());
+
+        // Faction
+        if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
+          factionRepository.findByName(dto.getFaction()).ifPresent(state::setFaction);
+        }
+
+        // Manager
+        if (dto.getManagerExternalId() != null) {
+          npcRepository.findByExternalId(dto.getManagerExternalId()).ifPresent(state::setManager);
+        }
+
+        // Injuries
+        if (dto.getInjuryExternalIds() != null) {
+          for (String id : dto.getInjuryExternalIds()) {
+            injuryRepository
+                .findByExternalId(id)
+                .ifPresent(
+                    i -> {
+                      i.setUniverse(state.getUniverse());
+                      injuryRepository.save(i);
+                    });
+          }
+        }
+
+        tierRecalculationService.recalculateTier(state);
+        wrestlerStateRepository.saveAndFlush(state);
+
+        log.info(
+            "✅ Wrestler template and universe state saved successfully: {}", wrestler.getName());
         return true;
       }
 

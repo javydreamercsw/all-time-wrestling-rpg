@@ -22,6 +22,8 @@ import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
@@ -56,6 +58,9 @@ public class DramaEventService {
 
   private final DramaEventRepository dramaEventRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseRepository universeRepository;
+  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
   private final WrestlerService wrestlerService;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
@@ -83,7 +88,8 @@ public class DramaEventService {
       DramaEventType eventType,
       DramaEventSeverity severity,
       String title,
-      String description) {
+      String description,
+      @NonNull Long universeId) {
 
     Optional<Wrestler> primaryWrestlerOpt = wrestlerRepository.findById(primaryWrestlerId);
     if (primaryWrestlerOpt.isEmpty()) {
@@ -103,6 +109,8 @@ public class DramaEventService {
       secondaryWrestler = secondaryWrestlerOpt.get();
     }
 
+    Universe universe = universeRepository.findById(universeId).orElseThrow();
+
     DramaEvent event = new DramaEvent();
     event.setPrimaryWrestler(primaryWrestler);
     event.setSecondaryWrestler(secondaryWrestler);
@@ -111,6 +119,7 @@ public class DramaEventService {
     event.setTitle(title);
     event.setDescription(description);
     event.setEventDate(clock.instant());
+    event.setUniverse(universe);
 
     // Calculate potential impacts based on event type and severity
     calculateEventImpacts(event);
@@ -375,16 +384,20 @@ public class DramaEventService {
   private void applyFanImpact(DramaEvent event, StringBuilder notes) {
     Wrestler wrestler = event.getPrimaryWrestler();
     Long fanChange = event.getFanImpact();
+    Long universeId = event.getUniverse() != null ? event.getUniverse().getId() : 1L;
 
-    Long oldFans = wrestler.getFans();
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+
+    Long oldFans = state.getFans();
     Long newFans = Math.max(0, oldFans + fanChange);
-    wrestler.setFans(newFans);
-    wrestlerRepository.save(wrestler);
+    state.setFans(newFans);
+    wrestlerStateRepository.save(state);
 
     notes.append(
         String.format(
-            "Fan impact: %s %d fans (%d → %d); ",
-            fanChange > 0 ? "+" : "", fanChange, oldFans, newFans));
+            "Fan impact: %s %d fans (%d → %d) in universe %d; ",
+            fanChange > 0 ? "+" : "", fanChange, oldFans, newFans, universeId));
   }
 
   /** Apply heat impact between wrestlers. */
@@ -407,15 +420,18 @@ public class DramaEventService {
   private void applyInjuryImpact(@NonNull DramaEvent event, @NonNull StringBuilder notes) {
     // Add bumps that might lead to injury
     Wrestler wrestler = event.getPrimaryWrestler();
-    boolean injuryOccurred = wrestler.addBump();
-    wrestlerRepository.save(wrestler);
+    Long universeId = event.getUniverse() != null ? event.getUniverse().getId() : 1L;
 
-    // If injury occurred (3 bumps reached), create injury
-    if (injuryOccurred) {
-      injuryService.createInjuryFromBumps(wrestler.getId());
-      notes.append("Injury created from bumps; ");
-    } else {
-      notes.append("Bump added; ");
+    Optional<com.github.javydreamercsw.management.domain.wrestler.WrestlerState> stateOpt =
+        wrestlerService.addBump(wrestler.getId(), universeId);
+
+    if (stateOpt.isPresent()) {
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state = stateOpt.get();
+      if (state.getBumps() == 0) { // Bump reset indicates injury occurred
+        notes.append("Injury created from bumps in universe ").append(universeId).append("; ");
+      } else {
+        notes.append("Bump added in universe ").append(universeId).append("; ");
+      }
     }
   }
 

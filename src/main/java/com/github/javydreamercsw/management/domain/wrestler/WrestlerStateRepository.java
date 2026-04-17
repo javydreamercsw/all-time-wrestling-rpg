@@ -14,20 +14,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.league;
+package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.stereotype.Repository;
 
-@RepositoryRestResource
-public interface LeagueRepository extends JpaRepository<League, Long> {
-  Optional<League> findByName(String name);
+@Repository
+public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Long> {
+  Optional<WrestlerState> findByWrestlerAndUniverse(Wrestler wrestler, Universe universe);
 
-  Optional<League> findByUniverse(Universe universe);
-
-  @Query("SELECT l FROM League l LEFT JOIN FETCH l.excludedWrestlers WHERE l.id = :id")
-  Optional<League> findByIdWithExcludedWrestlers(Long id);
+  Optional<WrestlerState> findByWrestlerIdAndUniverseId(Long wrestlerId, Long universeId);
 }

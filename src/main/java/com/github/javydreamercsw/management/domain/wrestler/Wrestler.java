@@ -177,8 +177,15 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private List<com.github.javydreamercsw.management.domain.league.LeagueWrestlerState>
-      leagueWrestlerStates = new ArrayList<>();
+  private List<WrestlerState> wrestlerStates = new ArrayList<>();
+
+  @JsonIgnore
+  public java.util.Optional<WrestlerState> getState(Long universeId) {
+    if (universeId == null) return java.util.Optional.empty();
+    return wrestlerStates.stream()
+        .filter(s -> s.getUniverse().getId().equals(universeId))
+        .findFirst();
+  }
 
   @Override
   public @NonNull Gender getGender() {
@@ -186,6 +193,50 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   }
 
   // ==================== ATW RPG METHODS ====================
+
+  @JsonIgnore
+  public Integer getFanWeight(Long universeId) {
+    return Math.toIntExact(getFans(universeId) / 5);
+  }
+
+  @JsonIgnore
+  public Long getFans(Long universeId) {
+    return wrestlerStates.stream()
+        .filter(s -> s.getUniverse().getId().equals(universeId))
+        .map(WrestlerState::getFans)
+        .findFirst()
+        .orElse(0L);
+  }
+
+  @JsonIgnore
+  public Integer getEffectiveStartingHealth(Long universeId) {
+    int bonus = 0;
+    int penalty = 0;
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      bonus = alignment.getCampaign().getState().getCampaignHealthBonus();
+      penalty = alignment.getCampaign().getState().getHealthPenalty();
+    }
+
+    WrestlerState state =
+        wrestlerStates.stream()
+            .filter(s -> s.getUniverse().getId().equals(universeId))
+            .findFirst()
+            .orElse(null);
+
+    int bumpsValue = state != null ? state.getBumps() : 0;
+    int condition = state != null ? state.getPhysicalCondition() : 100;
+    int injuryPenalty = state != null ? state.getTotalInjuryPenalty() : 0;
+
+    // Physical condition penalty: -1 health for every 5% lost from 100%
+    // Capped at -5 health points.
+    int conditionPenalty = Math.min(5, (100 - condition) / 5);
+
+    int effective =
+        startingHealth + bonus - penalty - bumpsValue - injuryPenalty - conditionPenalty;
+    return Math.max(1, effective); // Never go below 1
+  }
 
   @JsonIgnore
   public Integer getEffectiveStartingStamina() {
@@ -258,23 +309,168 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   }
 
   @PreUpdate
-  protected void onUpdate() {
+  protected void onUpdate() {}
+
+  @JsonIgnore
+  public java.util.Optional<WrestlerState> getDefaultState() {
+    return wrestlerStates.isEmpty()
+        ? java.util.Optional.empty()
+        : java.util.Optional.of(wrestlerStates.get(0));
   }
 
   @Override
   @JsonIgnore
+  @Deprecated
   public Long getFans() {
-    throw new UnsupportedOperationException("Fans are now league-specific. Use LeagueWrestlerState.");
+    return getDefaultState().map(WrestlerState::getFans).orElse(0L);
   }
 
   @Override
   @JsonIgnore
+  @Deprecated
   public WrestlerTier getTier() {
-    throw new UnsupportedOperationException("Tier is now league-specific. Use LeagueWrestlerState.");
+    return getDefaultState().map(WrestlerState::getTier).orElse(WrestlerTier.ROOKIE);
   }
 
   @Override
+  @Deprecated
   public void setTier(WrestlerTier tier) {
-    throw new UnsupportedOperationException("Tier is now league-specific. Use LeagueWrestlerState.");
+    getDefaultState().ifPresent(s -> s.setTier(tier));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getBumps() {
+    return getDefaultState().map(WrestlerState::getBumps).orElse(0);
+  }
+
+  @Deprecated
+  public void setBumps(Integer bumps) {
+    getDefaultState().ifPresent(s -> s.setBumps(bumps));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Faction getFaction() {
+    return getDefaultState().map(WrestlerState::getFaction).orElse(null);
+  }
+
+  @Deprecated
+  public void setFaction(Faction faction) {
+    getDefaultState().ifPresent(s -> s.setFaction(faction));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Npc getManager() {
+    return getDefaultState().map(WrestlerState::getManager).orElse(null);
+  }
+
+  @Deprecated
+  public void setManager(Npc manager) {
+    getDefaultState().ifPresent(s -> s.setManager(manager));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getPhysicalCondition() {
+    return getDefaultState().map(WrestlerState::getPhysicalCondition).orElse(100);
+  }
+
+  @Deprecated
+  public void setPhysicalCondition(Integer physicalCondition) {
+    getDefaultState().ifPresent(s -> s.setPhysicalCondition(physicalCondition));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getCurrentHealth() {
+    return getDefaultState().map(WrestlerState::getCurrentHealth).orElse(startingHealth);
+  }
+
+  @Deprecated
+  public void setCurrentHealth(Integer currentHealth) {
+    getDefaultState().ifPresent(s -> s.setCurrentHealth(currentHealth));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getMorale() {
+    return getDefaultState().map(WrestlerState::getMorale).orElse(100);
+  }
+
+  @Deprecated
+  public void setMorale(Integer morale) {
+    getDefaultState().ifPresent(s -> s.setMorale(morale));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getManagementStamina() {
+    return getDefaultState().map(WrestlerState::getManagementStamina).orElse(100);
+  }
+
+  @Deprecated
+  public void setManagementStamina(Integer managementStamina) {
+    getDefaultState().ifPresent(s -> s.setManagementStamina(managementStamina));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public List<Injury> getInjuries() {
+    return getDefaultState().map(WrestlerState::getInjuries).orElse(new ArrayList<>());
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public List<Injury> getActiveInjuries() {
+    return getDefaultState().map(WrestlerState::getActiveInjuries).orElse(new ArrayList<>());
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getTotalInjuryPenalty() {
+    return getDefaultState().map(WrestlerState::getTotalInjuryPenalty).orElse(0);
+  }
+
+  @Deprecated
+  public void addFans(long fanGain) {
+    getDefaultState().ifPresent(s -> s.setFans(Math.max(0, s.getFans() + fanGain)));
+  }
+
+  @Deprecated
+  public boolean addBump() {
+    return getDefaultState().map(WrestlerState::addBump).orElse(false);
+  }
+
+  @Deprecated
+  public boolean canAfford(Long cost) {
+    return getFans() >= cost;
+  }
+
+  @Deprecated
+  public boolean spendFans(Long cost) {
+    if (canAfford(cost)) {
+      addFans(-cost);
+      return true;
+    }
+    return false;
+  }
+
+  @Deprecated
+  public void refreshCurrentHealth() {
+    setCurrentHealth(getEffectiveStartingHealth(1L));
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getCurrentHealthWithPenalties() {
+    return Math.max(1, getCurrentHealth() - getBumps() - getTotalInjuryPenalty());
+  }
+
+  @JsonIgnore
+  @Deprecated
+  public Integer getFanWeight() {
+    return Math.toIntExact(getFans() / 5);
   }
 }

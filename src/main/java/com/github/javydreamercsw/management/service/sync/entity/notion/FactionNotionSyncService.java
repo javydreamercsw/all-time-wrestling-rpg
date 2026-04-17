@@ -86,9 +86,7 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
             entity.getMembers() == null
                 ? java.util.Collections.emptyList()
                 : entity.getMembers().stream()
-                    .map(
-                        com.github.javydreamercsw.management.domain.wrestler.Wrestler
-                            ::getExternalId)
+                    .map(m -> m.getWrestler().getExternalId())
                     .filter(Objects::nonNull)
                     .toList()));
 

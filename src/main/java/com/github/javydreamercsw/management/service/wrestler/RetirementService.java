@@ -51,7 +51,7 @@ public class RetirementService {
       return;
     }
 
-    com.github.javydreamercsw.management.domain.league.LeagueWrestlerState state =
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
         wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
     int condition = state.getPhysicalCondition();
 

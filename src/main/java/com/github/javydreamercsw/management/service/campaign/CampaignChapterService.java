@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
@@ -194,7 +195,16 @@ public class CampaignChapterService {
 
     // Check Faction Membership
     if (criteria.getHasFaction() != null) {
-      boolean inFaction = state.getCampaign().getWrestler().getFaction() != null;
+      Wrestler wrestler = state.getCampaign().getWrestler();
+      Long universeId =
+          state.getCampaign().getUniverse() != null
+              ? state.getCampaign().getUniverse().getId()
+              : 1L;
+      boolean inFaction =
+          wrestler
+              .getState(universeId)
+              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+              .isPresent();
       if (inFaction != criteria.getHasFaction()) {
         return false;
       }

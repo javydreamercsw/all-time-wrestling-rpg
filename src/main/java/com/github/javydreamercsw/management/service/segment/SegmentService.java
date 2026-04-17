@@ -20,6 +20,8 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -67,6 +69,7 @@ public class SegmentService {
   private final GameSettingService gameSettingService;
   private final SecurityUtils securityUtils;
   private final CampaignRepository campaignRepository;
+  private final LeagueRepository leagueRepository;
   private final LeagueRosterRepository leagueRosterRepository;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final InboxService inboxService;
@@ -83,6 +86,7 @@ public class SegmentService {
       GameSettingService gameSettingService,
       SecurityUtils securityUtils,
       CampaignRepository campaignRepository,
+      LeagueRepository leagueRepository,
       LeagueRosterRepository leagueRosterRepository,
       MatchFulfillmentRepository matchFulfillmentRepository,
       InboxService inboxService,
@@ -94,6 +98,7 @@ public class SegmentService {
     this.gameSettingService = gameSettingService;
     this.securityUtils = securityUtils;
     this.campaignRepository = campaignRepository;
+    this.leagueRepository = leagueRepository;
     this.leagueRosterRepository = leagueRosterRepository;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.inboxService = inboxService;
@@ -228,8 +233,6 @@ public class SegmentService {
               }
               existingSegment.setTitles(newTitles);
 
-              // TODO: Handle participants and segment type updates if needed from DTO
-
               return segmentRepository.save(existingSegment);
             })
         .orElseThrow(() -> new IllegalArgumentException("Segment not found with ID: " + id));
@@ -250,7 +253,7 @@ public class SegmentService {
 
   /**
    * Helper method for security checks. Checks if the current user is a participant in the segment
-   * and if the segment is part of an active campaign or league.
+   * and if the segment is part of an active campaign or universe.
    *
    * @param segmentId The ID of the segment.
    * @return true if the user is authorized to update the segment.
@@ -285,8 +288,6 @@ public class SegmentService {
                           return false;
                         }
 
-                        // Check if it's a campaign match (we still need a wrestler for this check,
-                        // try to find one owned by user)
                         Wrestler ownerWrestler =
                             segment.getParticipants().stream()
                                 .map(p -> p.getWrestler())
@@ -308,14 +309,14 @@ public class SegmentService {
                                   .orElse(false);
                         }
 
-                        // Check if it's a league match
-                        boolean isLeagueMatch =
-                            segment.getShow().getLeague() != null
+                        // Check if it's a universe match
+                        boolean isUniverseMatch =
+                            segment.getShow().getUniverse() != null
                                 || (segment.getSegmentType() != null
                                     && "Promo"
                                         .equalsIgnoreCase(segment.getSegmentType().getName()));
 
-                        return isCampaignMatch || isLeagueMatch;
+                        return isCampaignMatch || isUniverseMatch;
                       })
                   .orElse(false);
             })
@@ -470,21 +471,21 @@ public class SegmentService {
   }
 
   /**
-   * Counts wins for a wrestler in a specific league.
+   * Counts wins for a wrestler in a specific universe.
    *
    * @param wrestler The wrestler to count wins for
-   * @param leagueId The league ID
+   * @param universeId The universe ID
    * @return Number of wins
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public long countWinsByWrestler(@NonNull Wrestler wrestler, @NonNull Long leagueId) {
-    return segmentRepository.countWinsByWrestler(wrestler, leagueId);
+  public long countWinsByWrestler(@NonNull Wrestler wrestler, @NonNull Long universeId) {
+    return segmentRepository.countWinsByWrestler(wrestler, universeId);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public long countMatchSegmentsByWrestler(@NonNull Wrestler wrestler, @NonNull Long leagueId) {
-    return segmentRepository.countMatchSegmentsByWrestler(wrestler, leagueId);
+  public long countMatchSegmentsByWrestler(@NonNull Wrestler wrestler, @NonNull Long universeId) {
+    return segmentRepository.countMatchSegmentsByWrestler(wrestler, universeId);
   }
 
   /**
@@ -598,20 +599,26 @@ public class SegmentService {
 
   private void checkAndNotifyLeagueMatch(Segment segment) {
     Show show = segment.getShow();
-    if (show != null && show.getLeague() != null) {
-      for (Wrestler wrestler : segment.getWrestlers()) {
-        notifyLeagueParticipant(segment, show, wrestler);
-      }
+    if (show != null && show.getUniverse() != null) {
+      leagueRepository
+          .findByUniverse(show.getUniverse())
+          .ifPresent(
+              league -> {
+                for (Wrestler wrestler : segment.getWrestlers()) {
+                  notifyLeagueParticipant(segment, show, wrestler, league);
+                }
+              });
     }
   }
 
-  private void notifyLeagueParticipant(Segment segment, Show show, Wrestler wrestler) {
+  private void notifyLeagueParticipant(
+      Segment segment, Show show, Wrestler wrestler, League league) {
     leagueRosterRepository
-        .findByLeagueAndWrestler(show.getLeague(), wrestler)
+        .findByLeagueAndWrestler(league, wrestler)
         .ifPresent(
             roster -> {
               // If wrestler is owned by a player (not commissioner), track fulfillment
-              if (!roster.getOwner().equals(show.getLeague().getCommissioner())) {
+              if (!roster.getOwner().equals(league.getCommissioner())) {
                 MatchFulfillment fulfillment =
                     matchFulfillmentRepository
                         .findBySegment(segment)
@@ -619,7 +626,7 @@ public class SegmentService {
 
                 if (fulfillment.getId() == null) {
                   fulfillment.setSegment(segment);
-                  fulfillment.setLeague(show.getLeague());
+                  fulfillment.setLeague(league);
                   fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.PENDING_RESULTS);
                   matchFulfillmentRepository.save(fulfillment);
 
@@ -650,8 +657,8 @@ public class SegmentService {
     segmentRepository.save(segment);
 
     Show show = segment.getShow();
-    if (show != null && show.getLeague() != null) {
-      notifyLeagueParticipant(segment, show, wrestler);
+    if (show != null && show.getUniverse() != null) {
+      checkAndNotifyLeagueMatch(segment);
     }
   }
 

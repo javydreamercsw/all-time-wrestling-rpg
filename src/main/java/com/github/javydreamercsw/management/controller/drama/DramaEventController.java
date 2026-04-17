@@ -73,7 +73,8 @@ public class DramaEventController {
             request.eventType(),
             request.severity(),
             request.title(),
-            request.description());
+            request.description(),
+            request.leagueId());
 
     return event
         .<ResponseEntity<Object>>map(dramaEvent -> ResponseEntity.status(201).body(dramaEvent))
@@ -176,7 +177,8 @@ public class DramaEventController {
       @NotNull DramaEventType eventType,
       @NotNull DramaEventSeverity severity,
       @NotBlank String title,
-      @NotBlank String description) {}
+      @NotBlank String description,
+      @NotNull Long leagueId) {}
 
   /** Response DTO for processing results. */
   public record ProcessingResult(int processedCount, String message) {}

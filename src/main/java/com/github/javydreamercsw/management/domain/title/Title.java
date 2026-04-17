@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -84,9 +85,9 @@ public class Title extends AbstractEntity<Long> {
   private Instant creationDate;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "league_id")
+  @JoinColumn(name = "universe_id")
   @JsonIgnore
-  private com.github.javydreamercsw.management.domain.league.League league;
+  private Universe universe;
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(

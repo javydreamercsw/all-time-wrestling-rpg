@@ -1,99 +1,76 @@
-# Concurrent Leagues Refactoring & Migration Plan
+# Universe-Based State Isolation Plan
 
 ## Objective
-Decouple dynamic wrestler state (health, fans, injuries) from the static global `Wrestler` entity to allow the same wrestler to participate in multiple leagues concurrently without state interference. 
 
-**Critical Constraint:** The migration must preserve all existing user data (current fans, health, injuries, alignment, etc.) by mapping the current "global" state into a "default" league context.
+Decouple dynamic wrestler state (health, fans, injuries) from the static global `Wrestler` template. Introduce the **Universe** as a self-contained "playthrough instance" that can host different game modes (Leagues, Campaigns) without state interference.
+
+**Critical Constraint:** Preserve all existing user data by migrating current global stats into a "Default Universe".
 
 ---
 
-## 1. Schema Changes & The "Default League" Strategy
+## 1. Core Architecture: The Universe Concept
 
-Currently, `wrestler` holds both identity and state. We will introduce a new entity, `wrestler_league_state`, to hold the dynamic, league-specific state for a wrestler.
+### The `Universe` Entity
 
-### The New `wrestler_league_state` Table
-This table will map a `wrestler_id` to a `league_id` and store the dynamic attributes.
+A container representing a specific timeline or game instance.
 *   `id` (PK)
-*   `wrestler_id` (FK)
-*   `league_id` (FK) - *Nullable if we want a "Global Exhibition" state, or we explicitly create a "Base Universe" league.*
-*   `fans`
-*   `tier`
-*   `bumps`
-*   `current_health`
-*   `physical_condition`
-*   `morale`
-*   `management_stamina`
-*   `alignment` (Face/Heel)
-*   `faction_id` (Wrestlers can be in different factions in different leagues)
-*   `manager_id`
+*   `name` (e.g., "Default Universe", "Monday Night League")
+*   `type` (GLOBAL, LEAGUE, CAMPAIGN)
+*   `creation_date`
 
-### Updates to Related Tables
-*   **`injury` table:** Add a `league_id` (FK). An injury must be scoped to the league where it occurred.
-*   **`title` table:** Add a `league_id` (FK). Each league should have its own set of championships.
-*   **`wrestler` table:** Once data is safely migrated, the dynamic columns listed above will be dropped.
+### The `WrestlerState` Entity (Isolated Progress)
 
----
+Stores dynamic attributes for a wrestler *within* a specific `Universe`.
+*   `id` (PK)
+*   `wrestler_id` (FK to template)
+*   `universe_id` (FK)
+*   `fans`, `tier`, `bumps`, `current_health`, `physical_condition`, `morale`, `management_stamina`, `alignment`, `faction_id`, `manager_id`
 
-## 2. Safe Data Migration Steps (Flyway)
+### Entity Scoping (Universe-Specific)
 
-To prevent data loss, the migration must be done in sequential phases using Flyway scripts.
-
-### Phase 1: Schema Creation (VXXX__Create_League_State.sql)
-1. Create the `wrestler_league_state` table.
-2. Add `league_id` to the `injury` table.
-3. Ensure a "Global Universe" or "Default League" exists in the `league` table (ID 1) to act as the receptacle for all current global state.
-
-### Phase 2: Data Migration (VXXX__Migrate_Wrestler_State.sql)
-This is the critical step. We copy the data from the `wrestler` table *before* dropping the columns.
-
-```sql
--- 1. Create a default state for every wrestler in the "Default League" (e.g., League ID 1)
-INSERT INTO wrestler_league_state 
-(wrestler_id, league_id, fans, tier, bumps, current_health, physical_condition, morale, management_stamina, faction_id, manager_id)
-SELECT 
-wrestler_id, 1, fans, tier, bumps, current_health, physical_condition, morale, management_stamina, faction_id, manager_id
-FROM wrestler;
-
--- 2. If a wrestler is currently in a LeagueRoster, copy their state to that specific league as well
-INSERT INTO wrestler_league_state 
-(wrestler_id, league_id, fans, tier, bumps, current_health, physical_condition, morale, management_stamina, faction_id, manager_id)
-SELECT 
-w.wrestler_id, lr.league_id, w.fans, w.tier, w.bumps, w.current_health, w.physical_condition, w.morale, w.management_stamina, w.faction_id, w.manager_id
-FROM wrestler w
-JOIN league_roster lr ON w.wrestler_id = lr.wrestler_id
-WHERE lr.league_id != 1; -- Avoid duplicating the default league insert
-
--- 3. Link existing injuries to the Default League (or the league of their current roster)
-UPDATE injury 
-SET league_id = 1 
-WHERE league_id IS NULL;
-```
-
-### Phase 3: Cleanup (VXXX__Drop_Global_State_Columns.sql)
-Only after Phase 2 is verified, a subsequent script will drop the migrated columns (`fans`, `bumps`, `current_health`, etc.) from the `wrestler` table.
+The following entities are now scoped to a `Universe` instead of being global or linked to a `League`:
+*   `Injury`: Scoped via `universe_id`.
+*   `Title`: Scoped via `universe_id`.
+*   `Faction`: Scoped via `universe_id`.
+*   `Team`: Scoped via `universe_id`.
+*   `DramaEvent`: Scoped via `universe_id`.
+*   `League`: Links to a `Universe`.
+*   `Campaign`: Links to a `Universe`.
 
 ---
 
-## 3. Java Entity & Service Refactoring
+## 2. Implementation Phases
 
-### Entity Updates
-1.  **`Wrestler.java`**: Remove dynamic fields. Add a `@OneToMany` mapping to `LeagueWrestlerState`.
-2.  **`LeagueWrestlerState.java`**: Create this new entity mapping to `wrestler_league_state`.
-3.  **`Injury.java`**: Add a `@ManyToOne` mapping to `League`.
+### Phase 1: Database & Schema
 
-### Service Layer Updates
-The most extensive code changes will be in the service layer. Currently, services fetch a `Wrestler` and modify it. 
+1. **Flyway Script:** Create `universe` and `wrestler_state` tables.
+2. **Migration:**
+   * Create a "Default Universe" (ID 1).
+   * Insert `WrestlerState` records for all wrestlers using their current global stats.
+   * Update all existing Injuries, Titles, Factions, Teams, and DramaEvents to link to Universe 1.
+3. **Cleanup:** Drop dynamic columns from the `wrestler` table after verification.
 
-*   `WrestlerService`: Methods like `awardFans(Long wrestlerId, int amount)` must become `awardFans(Long wrestlerId, Long leagueId, int amount)`.
-*   `InjuryService`: Methods to create or heal injuries must operate within a specific `leagueId` context.
-*   `SegmentService` & `ShowService`: When booking a match and applying post-match effects (wear and tear, momentum shifts), the service must pull the correct `LeagueWrestlerState` using the `Show`'s associated league.
+### Phase 2: Java Refactoring
+
+1. **Domain:** Create `Universe.java` and `WrestlerState.java`.
+2. **Repositories:** Create `UniverseRepository` and `WrestlerStateRepository`.
+3. **Services:**
+   * Rename `LeagueContextService` $\rightarrow$ `UniverseContextService`.
+   * Refactor `WrestlerService` to operate on `universeId`.
+   * Refactor `InjuryService`, `TitleService`, `SegmentAdjudicationService` to be universe-aware.
+4. **Controllers:** Update REST endpoints to accept `universeId` (defaulting to 1).
+
+### Phase 3: UI & Documentation
+
+1. **UI Layout:** Replace "League Selector" with "Universe Selector" in the main drawer.
+2. **Context:** Ensure all views (Profile, Rankings, Dashboards) pull data from the active `Universe`.
+3. **Docs:** Update VitePress guides and `README.md` to reflect the Universe/Wrestler Template architecture.
 
 ---
 
-## 4. UI Context Awareness
+## 3. Verification Strategy
 
-The frontend (Vaadin/React) currently assumes a single global state.
+- **Isolation Test:** Modify a wrestler's fans in Universe A and verify they remain unchanged in Universe B.
+- **Migration Test:** Verify that after the update, all wrestlers in the "Global Universe" (ID 1) have the same stats they had before the refactor.
+- **Build Check:** Ensure no lingering references to old `WrestlerState` or removed `Wrestler` fields.
 
-*   **Global Context Switcher:** The UI needs a persistent state (e.g., in a session or context provider) indicating the "Current Active League." 
-*   **Wrestler Profile:** When viewing a wrestler profile, the UI must fetch the stats for the *Current Active League*. If no league is selected, it should default to the "Global Universe" state.
-*   **Dashboards:** News, rankings, and show histories must all be filtered by the currently active league context.

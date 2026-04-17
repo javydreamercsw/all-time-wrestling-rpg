@@ -109,7 +109,11 @@ public class FactionController {
   @PostMapping
   public ResponseEntity<Object> createFaction(@Valid @RequestBody CreateFactionRequest request) {
     Optional<Faction> faction =
-        factionService.createFaction(request.name(), request.description(), request.leaderId());
+        factionService.createFaction(
+            request.name(),
+            request.description(),
+            request.leaderId(),
+            request.universeId() != null ? request.universeId() : 1L);
 
     if (faction.isPresent()) {
       return ResponseEntity.ok(faction.get());
@@ -192,7 +196,8 @@ public class FactionController {
 
   // ==================== REQUEST/RESPONSE RECORDS ====================
 
-  public record CreateFactionRequest(String name, String description, Long leaderId) {}
+  public record CreateFactionRequest(
+      String name, String description, Long leaderId, Long universeId) {}
 
   public record AddMemberRequest(Long wrestlerId) {}
 

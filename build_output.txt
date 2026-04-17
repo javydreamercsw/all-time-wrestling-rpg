@@ -1,0 +1,116 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------< com.github.javydreamercsw:all-time-wrestling-rpg >----------
+[INFO] Building All Time Wrestling RPG 1.8.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ all-time-wrestling-rpg ---
+[INFO] Deleting /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/target
+[INFO] 
+[INFO] --- jacoco:0.8.14:prepare-agent (prepare-agent) @ all-time-wrestling-rpg ---
+[INFO] surefireArgLine set to -javaagent:/Users/javierortiz/.m2/repository/org/jacoco/org.jacoco.agent/0.8.14/org.jacoco.agent-0.8.14-runtime.jar=destfile=/Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/target/jacoco.exec
+[INFO] 
+[INFO] --- spring-boot:4.0.5:build-info (default) @ all-time-wrestling-rpg ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ all-time-wrestling-rpg ---
+[INFO] Copying 6 resources from src/main/resources to target/classes
+[INFO] Copying 353 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- vaadin:25.1.1:prepare-frontend (default) @ all-time-wrestling-rpg ---
+[INFO] ClassFinder initialized: 216 urls, 18688 classes scanned, 100 annotation types cached, 3667 subtype relationships cached, took 861ms
+[INFO] Visited 103 classes. Took 73 ms.
+[INFO] Copying frontend resources from jar files ...
+[INFO] Visited 226 resources. Took 134 ms.
+[INFO] 
+[INFO] --- exec:3.6.3:exec (sync-vaadin-frontend-versions) @ all-time-wrestling-rpg ---
+Synced @vaadin/* overrides to 25.1.1
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ all-time-wrestling-rpg ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 674 source files with javac [debug parameters release 25] to target/classes
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Permit
+WARNING: Please consider reporting this to the maintainers of class lombok.permit.Permit
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[WARNING] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/domain/league/League.java:[63,24] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/domain/league/League.java:[65,15] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/domain/league/League.java:[72,25] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/domain/league/League.java:[75,32] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/domain/league/League.java:[81,68] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[INFO] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/service/legacy/LegacyService.java: Some input files use or override a deprecated API.
+[INFO] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/management/service/legacy/LegacyService.java: Recompile with -Xlint:deprecation for details.
+[INFO] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/base/ai/image/OpenAIImageGenerationService.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg/src/main/java/com/github/javydreamercsw/base/ai/image/OpenAIImageGenerationService.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- spotless:3.4.0:check (default) @ all-time-wrestling-rpg ---
+[INFO] Index file does not exist. Fallback to an empty index
+[INFO] Spotless.Format is keeping 5 files clean - 0 needs changes to be clean, 5 were already clean, 0 were skipped because caching determined they were already clean
+[INFO] Spotless.Java is keeping 1050 files clean - 30 needs changes to be clean, 1020 were already clean, 0 were skipped because caching determined they were already clean
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  33.898 s
+[INFO] Finished at: 2026-04-17T15:45:44-05:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal com.diffplug.spotless:spotless-maven-plugin:3.4.0:check (default) on project all-time-wrestling-rpg: The following files had format violations:
+[ERROR]     src/main/java/com/github/javydreamercsw/management/ui/component/WrestlerActionMenu.java
+[ERROR]         @@ -23,8 +23,8 @@
+[ERROR]          import·com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+[ERROR]          import·com.github.javydreamercsw.management.service.campaign.CampaignService;
+[ERROR]          import·com.github.javydreamercsw.management.service.injury.InjuryService;
+[ERROR]         +import·com.github.javydreamercsw.management.service.npc.NpcService;
+[ERROR]          import·com.github.javydreamercsw.management.service.universe.UniverseContextService;
+[ERROR]         -import·com.github.javydreamercsw.management.service.npc.NpcService;
+[ERROR]          import·com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+[ERROR]          import·com.github.javydreamercsw.management.ui.view.injury.InjuryDialog;
+[ERROR]          import·com.github.javydreamercsw.management.ui.view.wrestler.WrestlerDialog;
+[ERROR]         @@ -188,7 +188,8 @@
+[ERROR]          ··················event·->·{
+[ERROR]          ····················if·(fanAmount.getValue()·!=·null)·{
+[ERROR]          ······················wrestlerService
+[ERROR]         -··························.awardFans(wrestler.getId(),·universeId,·-fanAmount.getValue().longValue())
+[ERROR]         +··························.awardFans(
+[ERROR]         +······························wrestler.getId(),·universeId,·-fanAmount.getValue().longValue())
+[ERROR]          ··························.ifPresent(
+[ERROR]          ······························w·->·{
+[ERROR]          ································refreshProvider.run();
+[ERROR]         @@ -259,7 +260,8 @@
+[ERROR]          ············"Manage·Injuries",
+[ERROR]          ············e·->·{
+[ERROR]          ··············InjuryDialog·dialog·=
+[ERROR]         -··················new·InjuryDialog(wrestler,·universeId,·injuryService,·refreshProvider,·securityUtils);
+[ERROR]         +··················new·InjuryDialog(
+[ERROR]         +······················wrestler,·universeId,·injuryService,·refreshProvider,·securityUtils);
+[ERROR]          ··············dialog.setId("injury-dialog");
+[ERROR]          ··············dialog.open();
+[ERROR]          ············});
+[ERROR]     src/main/java/com/github/javydreamercsw/management/ui/component/WrestlerSummaryCard.java
+[ERROR]         @@ -87,7 +87,8 @@
+[ERROR]          ····WrestlerState·state·=·wrestlerService.getOrCreateState(wrestler.getId(),·universeId);
+[ERROR]          
+[ERROR]          ····try·{
+[ERROR]         -······Optional<WrestlerStats>·stats·=·wrestlerService.getWrestlerStats(wrestler.getId(),·universeId);
+[ERROR]         +······Optional<WrestlerStats>·stats·=
+[ERROR]         +··········wrestlerService.getWrestlerStats(wrestler.getId(),·universeId);
+[ERROR]          ······if·(stats.isPresent())·{
+[ERROR]          ········WrestlerStats·wrestlerStats·=·stats.get();
+[ERROR]          ········statsRow.add(new·Span("Wins:·"·+·wrestlerStats.getWins()));
+[ERROR]         @@ -101,8 +102,7 @@
+[ERROR]          ····Span·bumps·=·new·Span("Bumps:·"·+·state.getBumps());
+[ERROR]          ····bumps.addClassNames(FontSize.SMALL,·FontWeight.MEDIUM);
+[ERROR]          
+[ERROR]         -····Span·condition·=
+[ERROR]         -········new·Span("💪·Physical·Condition:·"·+·state.getPhysicalCondition()·+·"%");
+[ERROR]         +····Span·condition·=·new·Span("💪·Physical·Condition:·"·+·state.getPhysicalCondition()·+·"%");
+[ERROR]          ····condition.addClassNames(FontSize.SMALL,·FontWeight.MEDIUM);
+[ERROR]     ... (2 more lines that didn't fit)
+[ERROR] Violations also present in 28 other files.
+[ERROR] Run 'mvn spotless:apply' to fix these violations.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
