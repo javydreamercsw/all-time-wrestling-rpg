@@ -209,6 +209,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build with Maven and JPackage
+        shell: bash
         run: |
           mvn spotless:apply -B package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
