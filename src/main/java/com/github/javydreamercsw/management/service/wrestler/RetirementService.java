@@ -35,21 +35,25 @@ public class RetirementService {
 
   private final WrestlerRepository wrestlerRepository;
   private final CampaignRepository campaignRepository;
+  private final WrestlerService wrestlerService;
   private final ApplicationEventPublisher eventPublisher;
   private final Random random = new Random();
 
   /**
-   * Checks if a wrestler should retire based on physical condition.
+   * Checks if a wrestler should retire based on physical condition in a league.
    *
    * @param wrestler The wrestler to check
+   * @param leagueId The league ID
    */
   @Transactional
-  public void checkRetirement(Wrestler wrestler) {
+  public void checkRetirement(Wrestler wrestler, Long leagueId) {
     if (!wrestler.getActive()) {
       return;
     }
 
-    int condition = wrestler.getPhysicalCondition();
+    com.github.javydreamercsw.management.domain.league.LeagueWrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+    int condition = state.getPhysicalCondition();
 
     // Retirement logic:
     // If condition < 10%, 50% chance of forced retirement.
@@ -61,12 +65,12 @@ public class RetirementService {
     if (condition < 10) {
       if (random.nextInt(100) < 50) {
         shouldRetire = true;
-        reason = "Severe physical degradation forced an immediate retirement.";
+        reason = "Severe physical degradation forced an immediate retirement in league " + leagueId;
       }
     } else if (condition < 20) {
       if (random.nextInt(100) < 10) {
         shouldRetire = true;
-        reason = "Accumulated wear and tear led to a career-ending injury.";
+        reason = "Accumulated wear and tear led to a career-ending injury in league " + leagueId;
       }
     }
 

@@ -103,6 +103,30 @@ public interface SegmentRepository
   /** Find segments between two dates. */
   List<Segment> findBySegmentDateBetween(Instant startDate, Instant endDate);
 
+  /** Count wins for a wrestler in a specific league. */
+  @Query(
+      """
+      SELECT COUNT(s) FROM Segment s
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler AND p.isWinner = true
+      AND s.show.league.id = :leagueId
+      AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
+      AND s.status = 'COMPLETED'
+      """)
+  long countWinsByWrestler(@Param("wrestler") Wrestler wrestler, @Param("leagueId") Long leagueId);
+
+  /** Count total match segments for a wrestler in a specific league. */
+  @Query(
+      """
+      SELECT COUNT(s) FROM Segment s
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler
+      AND s.show.league.id = :leagueId
+      AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
+      AND s.status = 'COMPLETED'
+      """)
+  long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler, @Param("leagueId") Long leagueId);
+
   /** Count wins for a wrestler, excluding 'Promo' segments and only for completed segments. */
   @Query(
       """

@@ -432,9 +432,11 @@ public class SegmentAdjudicationService {
       double difficultyMultiplier) {
     int matchQualityBonus = calculateMatchQualityBonus(segment, roll);
 
+    Long leagueId = segment.getShow().getLeague() != null ? segment.getShow().getLeague().getId() : 1L;
+
     // Deduct fan fees for challengers in title segments
     if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
-      handleTitleContenderFees(segment);
+      handleTitleContenderFees(segment, leagueId);
     }
 
     // Award fans to winners
@@ -450,8 +452,8 @@ public class SegmentAdjudicationService {
 
         final long awardToGrant = finalAward;
         GeneralSecurityUtils.runAsAdmin(
-                () -> wrestlerService.awardFans(winner.getId(), awardToGrant))
-            .ifPresent(w -> log.debug("Awarded {} fans to winner {}", awardToGrant, w.getName()));
+                () -> wrestlerService.awardFans(winner.getId(), leagueId, awardToGrant))
+            .ifPresent(w -> log.debug("Awarded {} fans to winner {}", awardToGrant, w.getWrestler().getName()));
       }
     }
 
@@ -470,14 +472,13 @@ public class SegmentAdjudicationService {
 
         final long changeToApply = finalChange;
         GeneralSecurityUtils.runAsAdmin(
-                (java.util.function.Supplier<java.util.Optional<Wrestler>>)
-                    () -> wrestlerService.awardFans(loser.getId(), changeToApply))
+                () -> wrestlerService.awardFans(loser.getId(), leagueId, changeToApply))
             .ifPresent(
-                w -> log.debug("Deducted/awarded {} fans to loser {}", changeToApply, w.getName()));
+                w -> log.debug("Deducted/awarded {} fans to loser {}", changeToApply, w.getWrestler().getName()));
       }
     }
 
-    assignBumps(segment);
+    assignBumps(segment, leagueId);
 
     // Improve relationships between participants based on match quality
     if (roll >= 15) {
@@ -547,6 +548,8 @@ public class SegmentAdjudicationService {
   private void handlePromoRewards(@NonNull Segment segment, int roll, double difficultyMultiplier) {
     int promoQualityBonus = calculatePromoQualityBonus(roll);
 
+    Long leagueId = segment.getShow().getLeague() != null ? segment.getShow().getLeague().getId() : 1L;
+
     // Assign fans to all participants
     for (Wrestler participant : segment.getWrestlers()) {
       if (participant.getId() != null) {
@@ -558,11 +561,11 @@ public class SegmentAdjudicationService {
 
         final long awardToGrant = finalAward;
         GeneralSecurityUtils.runAsAdmin(
-                () -> wrestlerService.awardFans(participant.getId(), awardToGrant))
+                () -> wrestlerService.awardFans(participant.getId(), leagueId, awardToGrant))
             .ifPresent(
                 w ->
                     log.debug(
-                        "Awarded {} fans to wrestler {} during promo", awardToGrant, w.getName()));
+                        "Awarded {} fans to wrestler {} during promo", awardToGrant, w.getWrestler().getName()));
       }
     }
 
@@ -609,7 +612,7 @@ public class SegmentAdjudicationService {
     return bonus;
   }
 
-  private void handleTitleContenderFees(Segment segment) {
+  private void handleTitleContenderFees(Segment segment, Long leagueId) {
     for (Title title : segment.getTitles()) {
       List<Wrestler> currentChampions = title.getCurrentChampions();
       Long contenderEntryFee = titleService.getContenderEntryFee(title);
@@ -617,12 +620,12 @@ public class SegmentAdjudicationService {
       for (Wrestler participant : segment.getWrestlers()) {
         if (!currentChampions.contains(participant)) {
           GeneralSecurityUtils.runAsAdmin(
-                  () -> wrestlerService.awardFans(participant.getId(), -contenderEntryFee))
+                  () -> wrestlerService.awardFans(participant.getId(), leagueId, -contenderEntryFee))
               .ifPresentOrElse(
                   w ->
                       log.info(
                           "Wrestler {} paid {} fans for contending in title segment {}",
-                          w.getName(),
+                          w.getWrestler().getName(),
                           contenderEntryFee,
                           segment.getId()),
                   () ->
@@ -636,7 +639,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private void assignBumps(Segment segment) {
+  private void assignBumps(Segment segment, Long leagueId) {
     for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
         segment.getSegmentRules()) {
       if (rule.getBumpAddition() == null) {
@@ -646,24 +649,24 @@ public class SegmentAdjudicationService {
         case WINNERS:
           for (Wrestler winner : segment.getWinners()) {
             if (winner.getId() != null) {
-              GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.addBump(winner.getId()))
-                  .ifPresent(w -> log.debug("Added bump to winner {}", w.getName()));
+              GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.addBump(winner.getId(), leagueId))
+                  .ifPresent(w -> log.debug("Added bump to winner {}", w.getWrestler().getName()));
             }
           }
           break;
         case LOSERS:
           for (Wrestler loser : segment.getLosers()) {
             if (loser.getId() != null) {
-              GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.addBump(loser.getId()))
-                  .ifPresent(w -> log.debug("Added bump to loser {}", w.getName()));
+              GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.addBump(loser.getId(), leagueId))
+                  .ifPresent(w -> log.debug("Added bump to loser {}", w.getWrestler().getName()));
             }
           }
           break;
         case ALL:
           for (Wrestler participant : segment.getWrestlers()) {
             if (participant.getId() != null) {
-              GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.addBump(participant.getId()))
-                  .ifPresent(w -> log.debug("Added bump to participant {}", w.getName()));
+              GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.addBump(participant.getId(), leagueId))
+                  .ifPresent(w -> log.debug("Added bump to participant {}", w.getWrestler().getName()));
             }
           }
           break;
@@ -685,9 +688,12 @@ public class SegmentAdjudicationService {
 
   private void applyWearAndTear(@NonNull Segment segment) {
     if (segment.getSegmentType().getName().equals("Promo")
-        || !gameSettingService.isWearAndTearEnabled()) {
+        || !gameSettingService.isWearAndTearEnabled()
+        || segment.getShow().getLeague() == null) {
       return;
     }
+
+    Long leagueId = segment.getShow().getLeague().getId();
 
     int baseLoss = 1 + random.nextInt(3); // 1-3% base loss
     boolean isIntense =
@@ -708,15 +714,16 @@ public class SegmentAdjudicationService {
     }
 
     for (Wrestler wrestler : segment.getWrestlers()) {
-      int current = wrestler.getPhysicalCondition();
-      wrestler.setPhysicalCondition(Math.max(0, current - baseLoss));
-      wrestlerService.save(wrestler);
+      com.github.javydreamercsw.management.domain.league.LeagueWrestlerState state =
+          wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+      int current = state.getPhysicalCondition();
+      state.setPhysicalCondition(Math.max(0, current - baseLoss));
       log.info(
-          "Applied {}% wear and tear to {}. New condition: {}%",
-          baseLoss, wrestler.getName(), wrestler.getPhysicalCondition());
+          "Applied {}% wear and tear to {} in league {}. New condition: {}%",
+          baseLoss, wrestler.getName(), leagueId, state.getPhysicalCondition());
 
       // Check for retirement
-      retirementService.checkRetirement(wrestler);
+      retirementService.checkRetirement(wrestler, leagueId);
     }
   }
 

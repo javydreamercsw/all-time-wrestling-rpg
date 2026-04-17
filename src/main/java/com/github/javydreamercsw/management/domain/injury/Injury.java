@@ -44,6 +44,11 @@ public class Injury extends AbstractEntity<Long> {
   @JsonIgnore
   private Wrestler wrestler;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "league_id")
+  @JsonIgnore
+  private com.github.javydreamercsw.management.domain.league.League league;
+
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 

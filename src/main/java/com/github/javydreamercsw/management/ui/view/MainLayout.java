@@ -61,6 +61,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.service.league.LeagueContextService;
+import com.vaadin.flow.component.combobox.ComboBox;
+
 @Layout
 @PermitAll
 @AnonymousAllowed
@@ -74,6 +79,8 @@ public class MainLayout extends AppLayout {
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
   private ThemeService themeService;
+  private LeagueContextService leagueContextService;
+  private LeagueRepository leagueRepository;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -86,7 +93,9 @@ public class MainLayout extends AppLayout {
       SecurityUtils securityUtils,
       AccountService accountService,
       PasswordEncoder passwordEncoder,
-      ThemeService themeService) {
+      ThemeService themeService,
+      LeagueContextService leagueContextService,
+      LeagueRepository leagueRepository) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -94,6 +103,8 @@ public class MainLayout extends AppLayout {
     this.accountService = accountService;
     this.passwordEncoder = passwordEncoder;
     this.themeService = themeService;
+    this.leagueContextService = leagueContextService;
+    this.leagueRepository = leagueRepository;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -101,12 +112,35 @@ public class MainLayout extends AppLayout {
     navScroller.addClassNames(Margin.Bottom.AUTO);
 
     com.vaadin.flow.component.html.Section drawerContainer =
-        new com.vaadin.flow.component.html.Section(createHeader(), navScroller, createFooter());
+        new com.vaadin.flow.component.html.Section(
+            createHeader(), createLeagueSelector(), navScroller, createFooter());
     drawerContainer.setSizeFull();
     drawerContainer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.STRETCH);
 
     addToDrawer(drawerContainer);
     addToNavbar(new DrawerToggle(), createNavbar());
+  }
+
+  private Div createLeagueSelector() {
+    ComboBox<League> leagueSelector = new ComboBox<>("Active League");
+    leagueSelector.setItems(leagueRepository.findAll());
+    leagueSelector.setItemLabelGenerator(League::getName);
+    leagueSelector.setWidthFull();
+    leagueSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
+
+    leagueContextService.getCurrentLeague().ifPresent(leagueSelector::setValue);
+
+    leagueSelector.addValueChangeListener(
+        event -> {
+          if (event.getValue() != null) {
+            leagueContextService.setCurrentLeague(event.getValue());
+            UI.getCurrent().getPage().reload(); // Reload to refresh data context
+          }
+        });
+
+    Div container = new Div(leagueSelector);
+    container.addClassName("league-selector-container");
+    return container;
   }
 
   private Div createHeader() {

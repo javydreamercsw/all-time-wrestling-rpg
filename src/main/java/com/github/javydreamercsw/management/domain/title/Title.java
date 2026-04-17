@@ -83,6 +83,11 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "league_id")
+  @JsonIgnore
+  private com.github.javydreamercsw.management.domain.league.League league;
+
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "title_contender",

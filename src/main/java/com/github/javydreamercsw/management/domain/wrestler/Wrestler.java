@@ -86,34 +86,10 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   // ==================== ATW RPG FIELDS ====================
 
-  @Column(name = "fans")
-  @Min(0) @Builder.Default
-  private Long fans = 0L;
-
-  @Column(name = "morale", nullable = false)
-  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
-  private Integer morale = 100;
-
-  @Column(name = "management_stamina", nullable = false)
-  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
-  private Integer managementStamina = 100;
-
-  @Column(name = "tier", nullable = false)
-  @Enumerated(EnumType.STRING)
-  @Builder.Default
-  private WrestlerTier tier = WrestlerTier.MIDCARDER;
-
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   @Builder.Default
   private Gender gender = Gender.MALE;
-
-  @Column(name = "bumps")
-  @Min(0) @Builder.Default
-  private Integer bumps = 0;
-
-  @Column(name = "current_health")
-  private Integer currentHealth;
 
   @Column(name = "is_player", nullable = false)
   @Builder.Default
@@ -128,10 +104,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @Column(name = "image_url")
   private String imageUrl;
-
-  @Column(name = "physical_condition")
-  @Min(0) @jakarta.validation.constraints.Max(100) @Builder.Default
-  private Integer physicalCondition = 100;
 
   @Column(name = "heritage_tag")
   private String heritageTag;
@@ -158,11 +130,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   private Integer brawl = 1;
 
   // ==================== ATW RPG RELATIONSHIPS ====================
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "manager_id")
-  @JsonIgnore
-  private Npc manager;
-
   @ManyToOne
   @JoinColumn(name = "account_id")
   private Account account;
@@ -175,11 +142,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JsonIgnore
   @Builder.Default
   private List<TitleReign> reigns = new ArrayList<>();
-
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-  @JsonIgnore
-  @Builder.Default
-  private List<Injury> injuries = new ArrayList<>();
 
   @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
@@ -212,10 +174,11 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private List<Deck> decks = new ArrayList<>();
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "faction_id")
-  @com.fasterxml.jackson.annotation.JsonIgnore
-  private Faction faction;
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<com.github.javydreamercsw.management.domain.league.LeagueWrestlerState>
+      leagueWrestlerStates = new ArrayList<>();
 
   @Override
   public @NonNull Gender getGender() {
@@ -223,31 +186,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   }
 
   // ==================== ATW RPG METHODS ====================
-
-  @JsonIgnore
-  public Integer getFanWeight() {
-    return Math.toIntExact(fans / 5);
-  }
-
-  @JsonIgnore
-  public Integer getEffectiveStartingHealth() {
-    int bonus = 0;
-    int penalty = 0;
-    if (alignment != null
-        && alignment.getCampaign() != null
-        && alignment.getCampaign().getState() != null) {
-      bonus = alignment.getCampaign().getState().getCampaignHealthBonus();
-      penalty = alignment.getCampaign().getState().getHealthPenalty();
-    }
-
-    // Physical condition penalty: -1 health for every 5% lost from 100%
-    // Capped at -5 health points.
-    int conditionPenalty = Math.min(5, (100 - physicalCondition) / 5);
-
-    int effective =
-        startingHealth + bonus - penalty - bumps - getTotalInjuryPenalty() - conditionPenalty;
-    return Math.max(1, effective); // Never go below 1
-  }
 
   @JsonIgnore
   public Integer getEffectiveStartingStamina() {
@@ -258,45 +196,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
             ? alignment.getCampaign().getState().getCampaignStaminaBonus()
             : 0;
     return startingStamina + bonus;
-  }
-
-  public void addFans(long fanGain) {
-    this.fans = Math.max(0, this.fans + fanGain);
-  }
-
-  public boolean addBump() {
-    bumps++;
-    // Basic threshold: 3 bumps = automatic injury
-    int threshold = 3;
-
-    // Increase risk if management stamina is low (below 40)
-    if (managementStamina != null && managementStamina < 40) {
-      // Injuries occur faster when exhausted
-      threshold = 2;
-    }
-
-    if (bumps >= threshold) {
-      bumps = 0; // Reset bumps - injury creation handled by service layer
-      return true; // Indicates injury occurred
-    }
-    return false;
-  }
-
-  @JsonIgnore
-  public String getDisplayNameWithTier() {
-    return tier.getEmoji() + " " + name;
-  }
-
-  public boolean canAfford(Long cost) {
-    return fans >= cost;
-  }
-
-  public boolean spendFans(Long cost) {
-    if (canAfford(cost)) {
-      fans -= cost;
-      return true;
-    }
-    return false;
   }
 
   // ==================== ATW RPG RELATIONSHIP METHODS ====================
@@ -325,31 +224,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
     return allRivalries;
   }
 
-  @JsonIgnore
-  public List<Injury> getActiveInjuries() {
-    return injuries.stream()
-        .filter(Injury::isCurrentlyActive)
-        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-  }
-
-  @JsonIgnore
-  public Integer getTotalInjuryPenalty() {
-    return getActiveInjuries().stream().mapToInt(Injury::getHealthPenalty).sum();
-  }
-
-  @JsonIgnore
-  public Integer getCurrentHealthWithPenalties() {
-    if (currentHealth == null) {
-      return getEffectiveStartingHealth();
-    }
-    int healthWithPenalties = currentHealth - bumps - getTotalInjuryPenalty();
-    return Math.max(1, healthWithPenalties); // Never go below 1
-  }
-
-  public void refreshCurrentHealth() {
-    this.currentHealth = getEffectiveStartingHealth();
-  }
-
   public boolean hasActiveRivalryWith(Wrestler otherWrestler) {
     return getActiveRivalries().stream()
         .anyMatch(rivalry -> rivalry.involvesWrestler(otherWrestler));
@@ -366,24 +240,6 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   protected void onCreate() {
     if (creationDate == null) {
       creationDate = Instant.now();
-    }
-    if (currentHealth == null) {
-      currentHealth = startingHealth;
-    }
-    if (lowHealth == null) {
-      lowHealth = startingHealth;
-    }
-    if (lowStamina == null) {
-      lowStamina = startingStamina;
-    }
-    if (fans == null) {
-      fans = 0L;
-    }
-    if (bumps == null) {
-      bumps = 0;
-    }
-    if (physicalCondition == null) {
-      physicalCondition = 100;
     }
     if (gender == null) {
       gender = Gender.MALE;
@@ -403,11 +259,22 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @PreUpdate
   protected void onUpdate() {
-    if (fans == null) {
-      fans = 0L;
-    }
-    if (bumps == null) {
-      bumps = 0;
-    }
+  }
+
+  @Override
+  @JsonIgnore
+  public Long getFans() {
+    throw new UnsupportedOperationException("Fans are now league-specific. Use LeagueWrestlerState.");
+  }
+
+  @Override
+  @JsonIgnore
+  public WrestlerTier getTier() {
+    throw new UnsupportedOperationException("Tier is now league-specific. Use LeagueWrestlerState.");
+  }
+
+  @Override
+  public void setTier(WrestlerTier tier) {
+    throw new UnsupportedOperationException("Tier is now league-specific. Use LeagueWrestlerState.");
   }
 }

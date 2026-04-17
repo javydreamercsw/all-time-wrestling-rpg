@@ -46,6 +46,7 @@ public class TitleService {
   private final TierBoundaryService tierBoundaryService;
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
   private final Clock clock;
   private final DefaultImageService imageService;
 
@@ -53,8 +54,16 @@ public class TitleService {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
       return false;
     }
+
+    if (title.getLeague() == null) {
+      return false;
+    }
+
     // A wrestler is eligible if their tier is the same or higher than the title's tier.
-    return wrestler.getTier().ordinal() >= title.getTier().ordinal();
+    WrestlerTier wrestlerTier =
+        wrestlerService.getOrCreateState(wrestler.getId(), title.getLeague().getId()).getTier();
+
+    return wrestlerTier.ordinal() >= title.getTier().ordinal();
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -278,6 +287,11 @@ public class TitleService {
         .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getContenderEntryFee)
         .orElse(title.getTier().getContenderEntryFee()); // Fallback to static
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler, @NonNull Long leagueId) {
+    return titleRepository.findTitlesHeldByWrestler(wrestler, leagueId);
   }
 
   @PreAuthorize("isAuthenticated()")

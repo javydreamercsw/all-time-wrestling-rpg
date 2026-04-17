@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.injury;
 
+import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -30,6 +31,13 @@ public interface InjuryRepository
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Injury> findAllBy(Pageable pageable);
+
+  /** Find all injuries for a specific wrestler in a league. */
+  List<Injury> findByWrestlerAndLeague(Wrestler wrestler, League league);
+
+  /** Find active injuries for a specific wrestler in a league. */
+  @Query("SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.league = :league AND i.isActive = true")
+  List<Injury> findActiveInjuriesForWrestler(@Param("wrestler") Wrestler wrestler, @Param("league") League league);
 
   /** Find all injuries for a specific wrestler. */
   List<Injury> findByWrestler(Wrestler wrestler);
@@ -73,6 +81,15 @@ public interface InjuryRepository
       """)
   long countActiveInjuriesForWrestler(@Param("wrestler") Wrestler wrestler);
 
+  /** Find wrestlers with active injuries in a league. */
+  @Query(
+      """
+      SELECT DISTINCT i.wrestler
+      FROM Injury i
+      WHERE i.isActive = true AND i.league = :league
+      """)
+  List<Wrestler> findWrestlersWithActiveInjuries(@Param("league") League league);
+
   /** Find wrestlers with active injuries. */
   @Query(
       """
@@ -85,6 +102,17 @@ public interface InjuryRepository
   /** Find injuries that can be healed (active injuries). */
   @Query("SELECT i FROM Injury i WHERE i.isActive = true ORDER BY i.injuryDate ASC")
   List<Injury> findHealableInjuries();
+
+  /** Find the most severe active injury for a wrestler in a league. */
+  @Query(
+      """
+      SELECT i FROM Injury i
+      WHERE i.wrestler = :wrestler AND i.league = :league AND i.isActive = true
+      ORDER BY i.severity DESC, i.healthPenalty DESC
+      LIMIT 1
+      """)
+  java.util.Optional<Injury> findMostSevereActiveInjuryForWrestler(
+      @Param("wrestler") Wrestler wrestler, @Param("league") League league);
 
   /** Find the most severe active injury for a wrestler. */
   @Query(

@@ -16,9 +16,14 @@
 */
 package com.github.javydreamercsw.management.service.injury;
 
+import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
+import com.github.javydreamercsw.management.domain.league.LeagueWrestlerStateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
@@ -47,6 +52,8 @@ public class InjuryService {
 
   @Autowired private InjuryRepository injuryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private LeagueRepository leagueRepository;
+  @Autowired private LeagueWrestlerStateRepository leagueWrestlerStateRepository;
   @Autowired private Clock clock;
   @Autowired private Random random;
   @Autowired private ApplicationEventPublisher eventPublisher;
@@ -58,6 +65,7 @@ public class InjuryService {
       allEntries = true)
   public Optional<Injury> createInjury(
       Long wrestlerId,
+      Long leagueId,
       String name,
       String description,
       InjurySeverity severity,
@@ -66,8 +74,10 @@ public class InjuryService {
         .findById(wrestlerId)
         .map(
             wrestler -> {
+              League league = leagueRepository.findById(leagueId).orElseThrow();
               Injury injury = new Injury();
               injury.setWrestler(wrestler);
+              injury.setLeague(league);
               injury.setName(name);
               injury.setDescription(description);
               injury.setSeverity(severity);
@@ -94,36 +104,34 @@ public class InjuryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
-  public Optional<Injury> createInjuryFromBumps(@NonNull Long wrestlerId) {
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(
-            wrestler -> {
-              InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
-              String injuryName = generateInjuryName(severity);
-              String description = generateInjuryDescription(severity);
+  public Optional<Injury> createInjuryFromBumps(@NonNull Long wrestlerId, @NonNull Long leagueId) {
+    LeagueWrestlerState state =
+        leagueWrestlerStateRepository.findByWrestlerIdAndLeagueId(wrestlerId, leagueId).orElseThrow();
+    Wrestler wrestler = state.getWrestler();
 
-              Injury injury = new Injury();
-              injury.setWrestler(wrestler);
-              injury.setName(injuryName);
-              injury.setDescription(description);
-              injury.setSeverity(severity);
-              injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
-              injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
-              injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
-              injury.setHealingCost(severity.getBaseHealingCost());
-              injury.setIsActive(true);
-              injury.setInjuryDate(Instant.now(clock));
-              injury.setInjuryNotes(
-                  "Generated from bump accumulation (tier: " + wrestler.getTier().name() + ")");
-              injury.setCreationDate(Instant.now(clock));
+    InjurySeverity severity = getRandomInjurySeverityForWrestler(state);
+    String injuryName = generateInjuryName(severity);
+    String description = generateInjuryDescription(severity);
 
-              wrestler.getInjuries().add(injury);
+    Injury injury = new Injury();
+    injury.setWrestler(wrestler);
+    injury.setLeague(state.getLeague());
+    injury.setName(injuryName);
+    injury.setDescription(description);
+    injury.setSeverity(severity);
+    injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
+    injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
+    injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
+    injury.setHealingCost(severity.getBaseHealingCost());
+    injury.setIsActive(true);
+    injury.setInjuryDate(Instant.now(clock));
+    injury.setInjuryNotes(
+        "Generated from bump accumulation (tier: " + state.getTier().name() + ")");
+    injury.setCreationDate(Instant.now(clock));
 
-              Injury savedInjury = injuryRepository.saveAndFlush(injury);
-              eventPublisher.publishEvent(new WrestlerInjuryEvent(this, wrestler, savedInjury));
-              return savedInjury;
-            });
+    Injury savedInjury = injuryRepository.saveAndFlush(injury);
+    eventPublisher.publishEvent(new WrestlerInjuryEvent(this, wrestler, savedInjury));
+    return Optional.of(savedInjury);
   }
 
   /** Attempt to heal an injury. */
@@ -156,7 +164,19 @@ public class InjuryService {
 
     // Check if wrestler can afford healing cost
     Wrestler wrestler = injury.getWrestler();
-    if (!wrestler.canAfford(injury.getHealingCost())) {
+    League league = injury.getLeague();
+
+    if (league == null) {
+      return new HealingResult(false, "Injury is not associated with a league", injury, 0, false);
+    }
+
+    // Use current league state to check if they can afford it
+    LeagueWrestlerState state =
+        leagueWrestlerStateRepository
+            .findByWrestlerAndLeague(wrestler, league)
+            .orElseThrow(() -> new IllegalStateException("Wrestler has no state in league"));
+
+    if (state.getFans() < injury.getHealingCost()) {
       return new HealingResult(
           false,
           String.format("Wrestler cannot afford %,d fans healing cost", injury.getHealingCost()),
@@ -170,14 +190,13 @@ public class InjuryService {
     boolean success = injury.getSeverity().isHealingSuccessful(roll);
 
     // Spend the fans regardless of success
-    wrestler.spendFans(injury.getHealingCost());
-    wrestlerRepository.saveAndFlush(wrestler);
+    state.setFans(state.getFans() - injury.getHealingCost());
+    leagueWrestlerStateRepository.saveAndFlush(state);
 
     if (success) {
       injury.heal();
       injuryRepository.saveAndFlush(injury);
-      eventPublisher.publishEvent(
-          new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
+      eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
     }
 
     String message =
@@ -217,29 +236,31 @@ public class InjuryService {
     return injuryRepository.findAllBy(pageable);
   }
 
-  /** Get active injuries for a wrestler. */
+  /** Get active injuries for a wrestler in a specific league. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
-      key = "'activeForWrestler:' + #wrestlerId")
-  public List<Injury> getActiveInjuriesForWrestler(@NonNull Long wrestlerId) {
+      key = "'activeForWrestler:' + #wrestlerId + ':' + #leagueId")
+  public List<Injury> getActiveInjuriesForWrestler(@NonNull Long wrestlerId, @NonNull Long leagueId) {
+    League league = leagueRepository.findById(leagueId).orElseThrow();
     return wrestlerRepository
         .findById(wrestlerId)
-        .map(injuryRepository::findActiveInjuriesForWrestler)
+        .map(w -> injuryRepository.findActiveInjuriesForWrestler(w, league))
         .orElse(List.of());
   }
 
-  /** Get all injuries for a wrestler. */
+  /** Get all injuries for a wrestler in a specific league. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
-      key = "'allForWrestler:' + #wrestlerId")
-  public List<Injury> getAllInjuriesForWrestler(@NonNull Long wrestlerId) {
+      key = "'allForWrestler:' + #wrestlerId + ':' + #leagueId")
+  public List<Injury> getAllInjuriesForWrestler(@NonNull Long wrestlerId, @NonNull Long leagueId) {
+    League league = leagueRepository.findById(leagueId).orElseThrow();
     return wrestlerRepository
         .findById(wrestlerId)
-        .map(injuryRepository::findByWrestler)
+        .map(w -> injuryRepository.findByWrestlerAndLeague(w, league))
         .orElse(List.of());
   }
 
@@ -261,6 +282,14 @@ public class InjuryService {
       key = "'allActive'")
   public List<Injury> getAllActiveInjuries() {
     return injuryRepository.findAllActiveInjuries();
+  }
+
+  /** Get wrestlers with active injuries in a specific league. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> getWrestlersWithActiveInjuries(@NonNull Long leagueId) {
+    League league = leagueRepository.findById(leagueId).orElseThrow();
+    return injuryRepository.findWrestlersWithActiveInjuries(league);
   }
 
   /** Get wrestlers with active injuries. */
@@ -340,42 +369,58 @@ public class InjuryService {
     return injuryRepository.findByExternalId(externalId);
   }
 
-  /** Get injury statistics for a wrestler. */
+  /** Get injury statistics for a wrestler in a specific league. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public InjuryStats getInjuryStatsForWrestler(Long wrestlerId) {
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(
-            wrestler -> {
-              List<Injury> activeInjuries =
-                  injuryRepository.findActiveInjuriesForWrestler(wrestler);
-              List<Injury> allInjuries = injuryRepository.findByWrestler(wrestler);
-              Integer totalHealthPenalty =
-                  injuryRepository.getTotalHealthPenaltyForWrestler(wrestler);
+  public InjuryStats getInjuryStatsForWrestler(Long wrestlerId, Long leagueId) {
+    LeagueWrestlerState state =
+        leagueWrestlerStateRepository.findByWrestlerIdAndLeagueId(wrestlerId, leagueId).orElseThrow();
+    Wrestler wrestler = state.getWrestler();
 
-              return new InjuryStats(
-                  wrestlerId,
-                  wrestler.getName(),
-                  activeInjuries.size(),
-                  allInjuries.size() - activeInjuries.size(),
-                  totalHealthPenalty,
-                  wrestler.getEffectiveStartingHealth(), // Already includes injury penalty
-                  activeInjuries.stream().mapToLong(Injury::getHealingCost).sum());
-            })
-        .orElse(null);
+    List<Injury> activeInjuries = state.getActiveInjuries();
+    List<Injury> allInjuries = state.getInjuries();
+    Integer totalHealthPenalty = state.getTotalInjuryPenalty();
+
+    // Calculate effective health manually since we moved it from Wrestler
+    int bonus = 0;
+    int penalty = 0;
+    if (wrestler.getAlignment() != null
+        && wrestler.getAlignment().getCampaign() != null
+        && wrestler.getAlignment().getCampaign().getState() != null) {
+      bonus = wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
+      penalty = wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
+    }
+
+    int conditionPenalty = Math.min(5, (100 - state.getPhysicalCondition()) / 5);
+    int effectiveHealth =
+        wrestler.getStartingHealth()
+            + bonus
+            - penalty
+            - state.getBumps()
+            - totalHealthPenalty
+            - conditionPenalty;
+    effectiveHealth = Math.max(1, effectiveHealth);
+
+    return new InjuryStats(
+        wrestlerId,
+        wrestler.getName(),
+        activeInjuries.size(),
+        allInjuries.size() - activeInjuries.size(),
+        totalHealthPenalty,
+        effectiveHealth,
+        activeInjuries.stream().mapToLong(Injury::getHealingCost).sum());
   }
 
   /**
    * Generate random injury severity based on wrestler tier. Higher tier wrestlers are more
    * resilient and get less severe injuries.
    */
-  private InjurySeverity getRandomInjurySeverityForWrestler(@NonNull Wrestler wrestler) {
+  private InjurySeverity getRandomInjurySeverityForWrestler(@NonNull WrestlerData wrestlerData) {
     int roll = random.nextInt(100) + 1;
 
     // Adjust probabilities based on wrestler tier
     // Higher tier wrestlers are more experienced and resilient
-    return switch (wrestler.getTier()) {
+    return switch (wrestlerData.getTier()) {
       case ROOKIE -> {
         // Rookies are more prone to severe injuries (inexperienced)
         if (roll <= 35) yield InjurySeverity.MINOR; // 35% chance

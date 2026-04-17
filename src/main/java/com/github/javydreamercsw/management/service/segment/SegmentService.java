@@ -470,6 +470,24 @@ public class SegmentService {
   }
 
   /**
+   * Counts wins for a wrestler in a specific league.
+   *
+   * @param wrestler The wrestler to count wins for
+   * @param leagueId The league ID
+   * @return Number of wins
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long countWinsByWrestler(@NonNull Wrestler wrestler, @NonNull Long leagueId) {
+    return segmentRepository.countWinsByWrestler(wrestler, leagueId);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public long countMatchSegmentsByWrestler(@NonNull Wrestler wrestler, @NonNull Long leagueId) {
+    return segmentRepository.countMatchSegmentsByWrestler(wrestler, leagueId);
+  }
+
+  /**
    * Counts wins for a wrestler.
    *
    * @param wrestler The wrestler to count wins for

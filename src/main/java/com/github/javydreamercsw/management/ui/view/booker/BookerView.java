@@ -49,6 +49,9 @@ import jakarta.annotation.security.RolesAllowed;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
+import com.github.javydreamercsw.management.service.league.LeagueContextService;
+
 @Route(value = "booker", layout = MainLayout.class)
 @PageTitle("Booker Dashboard | ATW RPG")
 @RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
@@ -58,17 +61,20 @@ public class BookerView extends VerticalLayout {
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
   private final NewsService newsService;
+  private final LeagueContextService leagueContextService;
 
   @Autowired
   public BookerView(
       ShowService showService,
       RivalryService rivalryService,
       WrestlerService wrestlerService,
-      NewsService newsService) {
+      NewsService newsService,
+      LeagueContextService leagueContextService) {
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.newsService = newsService;
+    this.leagueContextService = leagueContextService;
 
     setHeightFull();
     setPadding(false);
@@ -169,7 +175,17 @@ public class BookerView extends VerticalLayout {
     grid.setId("roster-overview-grid");
     Grid.Column<Wrestler> nameColumn =
         grid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
-    grid.addColumn(Wrestler::getTier).setHeader("Tier").setSortable(true);
+
+    grid.addColumn(
+            wrestler -> {
+              LeagueWrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+              return state.getTier().getDisplayWithEmoji();
+            })
+        .setHeader("Tier")
+        .setSortable(true);
+
     grid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?").setSortable(true);
 

@@ -46,7 +46,9 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.RouteParameters;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
+import com.github.javydreamercsw.management.service.league.LeagueContextService;
+import com.vaadin.flow.component.UI;
 
 @Slf4j
 public class WrestlerActionMenu extends MenuBar {
@@ -62,8 +64,12 @@ public class WrestlerActionMenu extends MenuBar {
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull ImageStorageService imageStorageService) {
+      @NonNull ImageStorageService imageStorageService,
+      @NonNull LeagueContextService leagueContextService) {
     this.accountService = accountService;
+
+    Long leagueId = leagueContextService.getCurrentLeagueId();
+    LeagueWrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
 
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
@@ -143,7 +149,7 @@ public class WrestlerActionMenu extends MenuBar {
                   event -> {
                     if (fanAmount.getValue() != null) {
                       wrestlerService
-                          .awardFans(wrestler.getId(), fanAmount.getValue().longValue())
+                          .awardFans(wrestler.getId(), leagueId, fanAmount.getValue().longValue())
                           .ifPresent(
                               w -> {
                                 refreshProvider.run();
@@ -181,7 +187,7 @@ public class WrestlerActionMenu extends MenuBar {
                   event -> {
                     if (fanAmount.getValue() != null) {
                       wrestlerService
-                          .awardFans(wrestler.getId(), -fanAmount.getValue().longValue())
+                          .awardFans(wrestler.getId(), leagueId, -fanAmount.getValue().longValue())
                           .ifPresent(
                               w -> {
                                 refreshProvider.run();
@@ -203,7 +209,7 @@ public class WrestlerActionMenu extends MenuBar {
               dialog.open();
             });
     removeFansItem.addComponentAsFirst(new Icon(VaadinIcon.MINUS));
-    removeFansItem.setEnabled(wrestler.getFans() > 0);
+    removeFansItem.setEnabled(state.getFans() > 0);
     removeFansItem.setVisible(securityUtils.canEdit());
 
     MenuItem addBumpItem =
@@ -211,7 +217,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Add Bump",
             e -> {
               wrestlerService
-                  .addBump(wrestler.getId())
+                  .addBump(wrestler.getId(), leagueId)
                   .ifPresent(
                       w -> {
                         refreshProvider.run();
@@ -231,7 +237,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Heal Bump",
             e -> {
               wrestlerService
-                  .healBump(wrestler.getId())
+                  .healBump(wrestler.getId(), leagueId)
                   .ifPresent(
                       w -> {
                         refreshProvider.run();
@@ -244,7 +250,7 @@ public class WrestlerActionMenu extends MenuBar {
             });
     healBump.addComponentAsFirst(new Icon(VaadinIcon.HEART));
     healBump.setId("heal-bump-" + wrestler.getId());
-    healBump.setEnabled(wrestler.getBumps() > 0);
+    healBump.setEnabled(state.getBumps() > 0);
     healBump.setVisible(securityUtils.canEdit());
 
     MenuItem manageInjuriesItem =

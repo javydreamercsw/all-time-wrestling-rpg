@@ -48,6 +48,9 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
+import com.github.javydreamercsw.management.service.league.LeagueContextService;
+
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
 @Menu(order = 0, icon = "vaadin:user", title = "Wrestler List")
@@ -62,6 +65,7 @@ public class WrestlerListView extends Main {
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private final LeagueContextService leagueContextService;
   private Set<Long> injuredWrestlerIds;
   final Grid<Wrestler> wrestlerGrid;
 
@@ -73,7 +77,8 @@ public class WrestlerListView extends Main {
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils,
       @NonNull CampaignService campaignService,
-      @NonNull ImageStorageService imageStorageService) {
+      @NonNull ImageStorageService imageStorageService,
+      @NonNull LeagueContextService leagueContextService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
@@ -82,6 +87,7 @@ public class WrestlerListView extends Main {
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
+    this.leagueContextService = leagueContextService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -132,12 +138,40 @@ public class WrestlerListView extends Main {
         .setHeader("Starting Stamina")
         .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getLowStamina).setHeader("Low Stamina").setSortable(true);
-    wrestlerGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
-    wrestlerGrid.addColumn(Wrestler::getBumps).setHeader("Bumps").setSortable(true);
+
     wrestlerGrid
-        .addColumn(wrestler -> wrestler.getManager() != null ? wrestler.getManager().getName() : "")
+        .addColumn(
+            wrestler -> {
+              LeagueWrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+              return state.getFans();
+            })
+        .setHeader("Fans")
+        .setSortable(true);
+
+    wrestlerGrid
+        .addColumn(
+            wrestler -> {
+              LeagueWrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+              return state.getBumps();
+            })
+        .setHeader("Bumps")
+        .setSortable(true);
+
+    wrestlerGrid
+        .addColumn(
+            wrestler -> {
+              LeagueWrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), leagueContextService.getCurrentLeagueId());
+              return state.getManager() != null ? state.getManager().getName() : "";
+            })
         .setHeader("Manager")
         .setSortable(true);
+
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
 
     // Default sorting by Name
@@ -157,7 +191,8 @@ public class WrestlerListView extends Main {
                       false,
                       securityUtils,
                       accountService,
-                      imageStorageService);
+                      imageStorageService,
+                      leagueContextService);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })
@@ -206,8 +241,9 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
+    Long leagueId = leagueContextService.getCurrentLeagueId();
     injuredWrestlerIds =
-        injuryService.getWrestlersWithActiveInjuries().stream()
+        injuryService.getWrestlersWithActiveInjuries(leagueId).stream()
             .map(Wrestler::getId)
             .collect(Collectors.toSet());
 

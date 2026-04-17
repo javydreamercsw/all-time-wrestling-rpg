@@ -77,6 +77,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.github.javydreamercsw.management.domain.league.LeagueWrestlerState;
+import com.github.javydreamercsw.management.service.league.LeagueContextService;
+
 @Route("wrestler-profile/:wrestlerId?")
 @PageTitle("Wrestler Profile")
 @PermitAll
@@ -96,6 +99,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final NpcService npcService;
   private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private final LeagueContextService leagueContextService;
   private final com.github.javydreamercsw.management.service.relationship
           .WrestlerRelationshipService
       relationshipService;
@@ -138,6 +142,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       @Qualifier("baseAccountService") AccountService accountService,
       CampaignService campaignService,
       ImageStorageService imageStorageService,
+      LeagueContextService leagueContextService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService) {
     this.wrestlerService = wrestlerService;
@@ -152,6 +157,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.accountService = accountService;
     this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
+    this.leagueContextService = leagueContextService;
     this.relationshipService = relationshipService;
 
     wrestlerName.setId("wrestler-name");
@@ -287,6 +293,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private void updateView() {
     if (wrestler != null && wrestler.getId() != null) {
+      Long leagueId = leagueContextService.getCurrentLeagueId();
+      LeagueWrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+
       heroDetailsColumn
           .getChildren()
           .filter(c -> c instanceof WrestlerActionMenu)
@@ -302,10 +311,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               true,
               securityUtils,
               accountService,
-              imageStorageService));
+              imageStorageService,
+              leagueContextService));
       wrestlerName.setText(wrestler.getName());
-      String details =
-          String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans());
+      String details = String.format("Gender: %s, Fans: %d", wrestler.getGender(), state.getFans());
       if (wrestler.getHeritageTag() != null && !wrestler.getHeritageTag().isEmpty()) {
         details += String.format(", Heritage: %s", wrestler.getHeritageTag());
       }
@@ -314,16 +323,15 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       wrestlerImage.setSrc(wrestlerService.resolveWrestlerImage(wrestler));
 
       // Fetch and display wrestler stats
-      Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());
+      Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId(), leagueId);
       statsLayout.removeAll();
-      statsLayout.add(new H3("Career Stats"));
+      statsLayout.add(new H3("Career Stats (League Context)"));
 
-      Paragraph conditionPara =
-          new Paragraph("Physical Condition: " + wrestler.getPhysicalCondition() + "%");
+      Paragraph conditionPara = new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
       conditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
-      if (wrestler.getPhysicalCondition() < 50) {
+      if (state.getPhysicalCondition() < 50) {
         conditionPara.addClassNames(LumoUtility.TextColor.ERROR);
-      } else if (wrestler.getPhysicalCondition() < 80) {
+      } else if (state.getPhysicalCondition() < 80) {
         conditionPara.addClassNames(LumoUtility.TextColor.WARNING);
       } else {
         conditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
@@ -348,9 +356,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       biographyContainer.removeAll();
       biographyContainer.setPadding(false);
       biographyContainer.add(new H3("Biography"));
-      if (wrestler.getManager() != null) {
-        Paragraph managerParagraph =
-            new Paragraph("Managed by: " + wrestler.getManager().getName());
+      if (state.getManager() != null) {
+        Paragraph managerParagraph = new Paragraph("Managed by: " + state.getManager().getName());
         managerParagraph.setId("manager-name");
         biographyContainer.add(managerParagraph);
       }
@@ -387,9 +394,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       highlightsContainer.removeAll();
       highlightsContainer.setPadding(false);
       highlightsContainer.add(new H3("Career Highlights"));
-      List<Title> titlesWon = titleService.findTitlesByChampion(wrestler);
+      List<Title> titlesWon = titleService.findTitlesByChampion(wrestler, leagueId);
       if (titlesWon.isEmpty()) {
-        highlightsContainer.add(new Paragraph("No titles won yet."));
+        highlightsContainer.add(new Paragraph("No titles won yet in this league."));
       } else {
         titlesWon.forEach(title -> highlightsContainer.add(new Paragraph(title.getName())));
       }
@@ -415,11 +422,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       injuriesLayout.add(new H3("Bumps & Injuries"));
 
       Paragraph physicalConditionPara =
-          new Paragraph("Physical Condition: " + wrestler.getPhysicalCondition() + "%");
+          new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
       physicalConditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
-      if (wrestler.getPhysicalCondition() < 50) {
+      if (state.getPhysicalCondition() < 50) {
         physicalConditionPara.addClassNames(LumoUtility.TextColor.ERROR);
-      } else if (wrestler.getPhysicalCondition() < 80) {
+      } else if (state.getPhysicalCondition() < 80) {
         physicalConditionPara.addClassNames(LumoUtility.TextColor.WARNING);
       } else {
         physicalConditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
@@ -431,8 +438,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         resetWearAndTearButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
         resetWearAndTearButton.addClickListener(
             e -> {
-              wrestler.setPhysicalCondition(100);
-              wrestlerService.save(wrestler);
+              wrestlerService.resetWearAndTear(wrestler.getId(), leagueId);
               updateView();
               com.vaadin.flow.component.notification.Notification.show(
                   "Wear & Tear reset to 100%!");
@@ -440,11 +446,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         injuriesLayout.add(resetWearAndTearButton);
       }
 
-      injuriesLayout.add(new Paragraph("Bumps: " + wrestler.getBumps()));
-      if (wrestler.getInjuries().isEmpty()) {
+      injuriesLayout.add(new Paragraph("Bumps: " + state.getBumps()));
+      if (state.getInjuries().isEmpty()) {
         injuriesLayout.add(new Paragraph("No current injuries."));
       } else {
-        wrestler
+        state
             .getInjuries()
             .forEach(injury -> injuriesLayout.add(new Paragraph("- " + injury.getDisplayString())));
       }
