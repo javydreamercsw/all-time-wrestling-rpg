@@ -34,3 +34,27 @@ Factions grow stronger as members work together. Affinity builds through shared 
 
 ---
 
+## Persistent Wear & Tear
+
+Matches take a toll on a wrestler's body. Physical condition degrades over time based on match intensity (Extreme matches double the wear) and positioning (Main Events are more demanding). Low condition results in health penalties and potential forced retirement.
+
+![Persistent Wear & Tear](/screenshots/mechanic-wear-and-tear.png)
+
+---
+
+## Expansion Packs
+
+The roster is modular. Content is grouped into Expansion Packs that can be enabled or disabled by administrators. This dynamic system automatically filters wrestlers, teams, and factions based on active sets, allowing for themed seasons and customized gameplay experiences.
+
+![Expansion Packs](/screenshots/mechanic-expansion-packs.png)
+
+---
+
+## Ringside Actions
+
+Managers and faction members can swing the match in your favor. Perform ringside actions like coaching, distracting the referee, or sliding in a weapon, but be careful - too much illegal interference will lead to ejections or disqualification!
+
+![Ringside Actions](/screenshots/mechanic-ringside-actions.png)
+
+---
+
