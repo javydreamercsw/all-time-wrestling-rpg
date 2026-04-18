@@ -183,7 +183,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   public java.util.Optional<WrestlerState> getState(Long universeId) {
     if (universeId == null) return java.util.Optional.empty();
     return wrestlerStates.stream()
-        .filter(s -> s.getUniverse().getId().equals(universeId))
+        .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
         .findFirst();
   }
 
@@ -202,7 +202,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JsonIgnore
   public Long getFans(Long universeId) {
     return wrestlerStates.stream()
-        .filter(s -> s.getUniverse().getId().equals(universeId))
+        .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
         .map(WrestlerState::getFans)
         .findFirst()
         .orElse(0L);

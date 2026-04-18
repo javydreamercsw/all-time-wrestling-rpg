@@ -18,6 +18,9 @@ package com.github.javydreamercsw.management.ui.view.match;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._assertOne;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +35,9 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -93,6 +98,7 @@ class MatchPromoUITest extends AbstractViewTest {
 
   @BeforeEach
   public void setup() {
+    lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     matchView =
         new MatchView(
             segmentService,
@@ -133,14 +139,24 @@ class MatchPromoUITest extends AbstractViewTest {
     Account account = new Account();
     account.setId(100L);
 
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
     Wrestler playerWrestler = new Wrestler();
     playerWrestler.setId(1L);
     playerWrestler.setName("Player Wrestler");
     playerWrestler.setAccount(account);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
 
     Wrestler opponent = new Wrestler();
     opponent.setId(2L);
     opponent.setName("Opponent");
+    opponent
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(opponent).universe(universe).build());
 
     segment.addParticipant(playerWrestler);
     segment.addParticipant(opponent);
@@ -162,6 +178,14 @@ class MatchPromoUITest extends AbstractViewTest {
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenAnswer(
+            invocation -> {
+              Long wrestlerId = invocation.getArgument(0);
+              if (wrestlerId == 1L) return playerWrestler.getState(1L).orElseThrow();
+              if (wrestlerId == 2L) return opponent.getState(1L).orElseThrow();
+              throw new RuntimeException("Unexpected wrestler ID: " + wrestlerId);
+            });
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
     // 5. Navigate to View
@@ -200,6 +224,12 @@ class MatchPromoUITest extends AbstractViewTest {
     playerWrestler.setId(3L);
     playerWrestler.setName("League Player");
     playerWrestler.setAccount(account);
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
 
     segment.addParticipant(playerWrestler);
 
@@ -210,6 +240,13 @@ class MatchPromoUITest extends AbstractViewTest {
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
     when(segmentService.findByIdWithDetails(2L)).thenReturn(Optional.of(segment));
+    when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenAnswer(
+            invocation -> {
+              Long wrestlerId = invocation.getArgument(0);
+              if (wrestlerId == 3L) return playerWrestler.getState(1L).orElseThrow();
+              throw new RuntimeException("Unexpected wrestler ID: " + wrestlerId);
+            });
     // No campaign
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.empty());
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
