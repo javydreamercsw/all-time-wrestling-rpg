@@ -103,30 +103,31 @@ public interface SegmentRepository
   /** Find segments between two dates. */
   List<Segment> findBySegmentDateBetween(Instant startDate, Instant endDate);
 
-  /** Count wins for a wrestler in a specific league. */
+  /** Count wins for a wrestler in a specific universe. */
   @Query(
       """
       SELECT COUNT(s) FROM Segment s
       JOIN s.participants p
       WHERE p.wrestler = :wrestler AND p.isWinner = true
-      AND s.show.league.id = :leagueId
+      AND s.show.universe.id = :universeId
       AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
       AND s.status = 'COMPLETED'
       """)
-  long countWinsByWrestler(@Param("wrestler") Wrestler wrestler, @Param("leagueId") Long leagueId);
+  long countWinsByWrestler(
+      @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
 
-  /** Count total match segments for a wrestler in a specific league. */
+  /** Count total match segments for a wrestler in a specific universe. */
   @Query(
       """
       SELECT COUNT(s) FROM Segment s
       JOIN s.participants p
       WHERE p.wrestler = :wrestler
-      AND s.show.league.id = :leagueId
+      AND s.show.universe.id = :universeId
       AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
       AND s.status = 'COMPLETED'
       """)
   long countMatchSegmentsByWrestler(
-      @Param("wrestler") Wrestler wrestler, @Param("leagueId") Long leagueId);
+      @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
 
   /** Count wins for a wrestler, excluding 'Promo' segments and only for completed segments. */
   @Query(
@@ -242,8 +243,6 @@ public interface SegmentRepository
       LEFT JOIN FETCH s.referee r
       LEFT JOIN FETCH s.participants p
       LEFT JOIN FETCH p.wrestler w
-      LEFT JOIN FETCH w.manager m
-      LEFT JOIN FETCH w.faction f
       WHERE s.id = :id
       """)
   Optional<Segment> findByIdWithDetails(@Param("id") Long id);

@@ -75,7 +75,7 @@ public interface FactionRepository
       """
       SELECT f FROM Faction f
       JOIN f.members m
-      WHERE m = :wrestler AND f.isActive = true
+      WHERE m.wrestler = :wrestler AND f.isActive = true
       """)
   Optional<Faction> findActiveFactionByMember(@Param("wrestler") Wrestler wrestler);
 
@@ -84,7 +84,7 @@ public interface FactionRepository
       """
       SELECT f FROM Faction f
       JOIN f.members m
-      WHERE m = :wrestler
+      WHERE m.wrestler = :wrestler
       """)
   List<Faction> findFactionsByMember(@Param("wrestler") Wrestler wrestler);
 
