@@ -25,9 +25,14 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,9 +55,14 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private UniverseRepository universeRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+
   @MockitoBean private NotionHandler notionHandler;
 
   private FactionRivalryPage factionRivalryPage;
+  private Universe defaultUniverse;
 
   private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -78,6 +88,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
   void setUp() {
     clearAllRepositories();
     factionRivalryPage = Mockito.mock(FactionRivalryPage.class);
+    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
   }
 
   @Test
@@ -88,18 +99,27 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
     String faction1Name = "Test Faction 1";
     Wrestler member1Faction1 =
         createTestWrestler("Member 1 for Faction 1"); // This creates and saves managed wrestler
+
+    WrestlerState state1 =
+        wrestlerService.getOrCreateState(member1Faction1.getId(), defaultUniverse.getId());
+
     Faction f1 = new Faction();
     f1.setName(faction1Name);
     f1.setActive(true);
-    f1.addMember(member1Faction1); // Add managed wrestler to faction
+    f1.setUniverse(defaultUniverse);
+    f1.addMember(state1); // Add managed wrestler state to faction
     factionRepository.saveAndFlush(f1); // Save or merge the faction with its managed members
 
     String faction2Name = "Test Faction 2";
     Wrestler member1Faction2 = createTestWrestler("Member 1 for Faction 2");
+    WrestlerState state2 =
+        wrestlerService.getOrCreateState(member1Faction2.getId(), defaultUniverse.getId());
+
     Faction f2 = new Faction();
     f2.setName(faction2Name);
     f2.setActive(true);
-    f2.addMember(member1Faction2);
+    f2.setUniverse(defaultUniverse);
+    f2.addMember(state2);
     factionRepository.saveAndFlush(f2);
 
     String rivalryId = UUID.randomUUID().toString();

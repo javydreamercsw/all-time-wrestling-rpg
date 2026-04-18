@@ -22,6 +22,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -44,7 +46,6 @@ import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -59,10 +60,9 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private Random random;
   @Mock private TitleService titleService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
+  @Mock private LeagueRosterRepository leagueRosterRepository;
 
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
@@ -81,7 +81,7 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
   @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
-  @InjectMocks private SegmentAdjudicationService adjudicationService;
+  private SegmentAdjudicationService adjudicationService;
 
   private Segment promoSegment;
   private Segment matchSegment;
@@ -99,6 +99,7 @@ class SegmentAdjudicationServiceUnitTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,

@@ -23,6 +23,9 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -38,14 +41,14 @@ class DataInitializerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private DataInitializer dataInitializer;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
   @Test
   void testWrestlerDataIsNotLostOnSync() {
     // 1. Create a Wrestler object with specific values.
     Wrestler existingWrestler = new Wrestler();
     existingWrestler.setName(UUID.randomUUID().toString());
-    existingWrestler.setFans(100L);
-    existingWrestler.setBumps(5);
     existingWrestler.setImageUrl("http://example.com/image.png");
     existingWrestler.setDeckSize(10);
     existingWrestler.setStartingHealth(10);
@@ -55,6 +58,11 @@ class DataInitializerIntegrationTest extends AbstractIntegrationTest {
     existingWrestler.setDescription("desc");
     existingWrestler.setGender(Gender.MALE);
     wrestlerRepository.save(existingWrestler);
+
+    WrestlerState state = wrestlerService.getOrCreateState(existingWrestler.getId(), 1L);
+    state.setFans(100L);
+    state.setBumps(5);
+    wrestlerStateRepository.save(state);
 
     // 2. dataInitializer.init() will be called automatically on startup,
     //    but we call it here explicitly to make sure it runs after our setup.

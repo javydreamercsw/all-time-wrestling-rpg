@@ -42,10 +42,14 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -80,21 +84,16 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
-      ringsideActionService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
-
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
+  @Mock private RingsideActionDataService ringsideActionDataService;
   @Mock private TeamService teamService;
+  @Mock private TitleScriptService titleScriptService;
+  @Mock private com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
 
   @Mock
-  private com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService;
+  private com.github.javydreamercsw.management.service.universe.UniverseContextService
+      universeContextService;
 
   private MatchView matchView;
 
@@ -104,6 +103,8 @@ class MatchViewTest extends AbstractViewTest {
         new MatchView(
             segmentService,
             wrestlerService,
+            injuryService,
+            universeContextService,
             securityUtils,
             campaignService,
             campaignRepository,
@@ -158,8 +159,8 @@ class MatchViewTest extends AbstractViewTest {
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
-    when(wrestlerService.findByIdWithInjuries(1L)).thenReturn(Optional.of(wrestler1));
-    when(wrestlerService.findByIdWithInjuries(2L)).thenReturn(Optional.of(wrestler2));
+    when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
+    when(wrestlerService.findById(2L)).thenReturn(Optional.of(wrestler2));
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));

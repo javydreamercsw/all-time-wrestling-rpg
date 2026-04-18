@@ -17,16 +17,16 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.html.Span;
@@ -37,28 +37,31 @@ import org.junit.jupiter.api.Test;
 public class WrestlerSummaryCardTest extends AbstractViewTest {
 
   private WrestlerService wrestlerService;
+  private InjuryService injuryService;
   private Wrestler wrestler;
 
   @BeforeEach
   public void setUp() {
     wrestlerService = mock(WrestlerService.class);
+    injuryService = mock(InjuryService.class);
 
     wrestler =
         Wrestler.builder()
             .id(1L)
             .name("Test Wrestler")
-            .tier(WrestlerTier.MIDCARDER)
             .startingHealth(15)
             .startingStamina(15)
-            .bumps(0)
             .drive(1)
             .resilience(2)
             .charisma(3)
             .brawl(4)
             .build();
 
-    CampaignState state = CampaignState.builder().build();
-    Campaign campaign = Campaign.builder().wrestler(wrestler).state(state).build();
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).bumps(0).physicalCondition(100).fans(0L).build();
+
+    CampaignState campaignState = CampaignState.builder().build();
+    Campaign campaign = Campaign.builder().wrestler(wrestler).state(campaignState).build();
 
     WrestlerAlignment alignment =
         WrestlerAlignment.builder()
@@ -69,13 +72,15 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
             .build();
     wrestler.setAlignment(alignment);
 
-    when(wrestlerService.getWrestlerStats(1L)).thenReturn(Optional.of(new WrestlerStats(10, 5, 1)));
-    when(wrestlerService.findByIdWithInjuries(1L)).thenReturn(Optional.of(wrestler));
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(state);
+    when(wrestlerService.getWrestlerStats(eq(1L), anyLong()))
+        .thenReturn(Optional.of(new WrestlerStats(10, 5, 1)));
   }
 
   @Test
   public void testSummaryContent() {
-    WrestlerSummaryCard card = new WrestlerSummaryCard(wrestler, wrestlerService, true);
+    WrestlerSummaryCard card =
+        new WrestlerSummaryCard(wrestler, 1L, wrestlerService, injuryService, true);
 
     // Verify Name
     _get(

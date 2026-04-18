@@ -73,6 +73,11 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private PromoService promoService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
+  @Mock private com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.universe.UniverseContextService
+      universeContextService;
 
   @Mock private RingsideActionService ringsideActionService;
 
@@ -92,6 +97,8 @@ class MatchPromoUITest extends AbstractViewTest {
         new MatchView(
             segmentService,
             wrestlerService,
+            injuryService,
+            universeContextService,
             securityUtils,
             campaignService,
             campaignRepository,

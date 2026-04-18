@@ -18,12 +18,15 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -58,11 +61,14 @@ class WearAndTearAdjudicationTest {
   @Mock private Random random;
   @Mock private Segment segment;
   @Mock private Wrestler wrestler;
+  @Mock private WrestlerState wrestlerState;
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
   @Mock private RetirementService retirementService;
+  @Mock private Universe universe;
 
   @Mock
   private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
@@ -89,6 +95,7 @@ class WearAndTearAdjudicationTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -99,9 +106,12 @@ class WearAndTearAdjudicationTest {
             relationshipService,
             random);
 
+    when(universe.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     when(wrestler.getId()).thenReturn(1L);
-    when(wrestler.getPhysicalCondition()).thenReturn(100);
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(wrestlerState);
+    when(wrestlerState.getPhysicalCondition()).thenReturn(100);
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(segmentType);
@@ -119,9 +129,8 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestler).setPhysicalCondition(98);
-    verify(wrestlerService).save(wrestler);
-    verify(retirementService).checkRetirement(wrestler);
+    verify(wrestlerState).setPhysicalCondition(98);
+    verify(retirementService).checkRetirement(eq(wrestler), anyLong());
   }
 
   @Test
@@ -139,8 +148,7 @@ class WearAndTearAdjudicationTest {
     // (3 * 2) + 1 = 7
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestler).setPhysicalCondition(93);
-    verify(wrestlerService).save(wrestler);
+    verify(wrestlerState).setPhysicalCondition(93);
   }
 
   @Test
@@ -149,6 +157,6 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestler, never()).setPhysicalCondition(anyInt());
+    verify(wrestlerState, never()).setPhysicalCondition(anyInt());
   }
 }

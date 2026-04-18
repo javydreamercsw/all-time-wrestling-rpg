@@ -25,10 +25,10 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -129,7 +129,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(securityUtils.canEdit()).thenReturn(true); // Default to true for tests
     when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
 
-    LeagueRepository leagueRepository = mock(LeagueRepository.class);
+    UniverseRepository universeRepository = mock(UniverseRepository.class);
     ImageGenerationServiceFactory imageGenerationServiceFactory =
         mock(ImageGenerationServiceFactory.class);
     ImageStorageService imageStorageService = mock(ImageStorageService.class);
@@ -142,7 +142,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             showTypeService,
             seasonService,
             showTemplateService,
-            leagueRepository,
+            universeRepository,
             securityUtils,
             imageGenerationServiceFactory,
             imageStorageService,

@@ -54,6 +54,14 @@ class RivalryControllerIT extends AbstractIntegrationTest {
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private DeckRepository deckRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
+
   @BeforeEach
   public void setUp() throws Exception {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
@@ -61,7 +69,20 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     // Delete in correct order to avoid foreign key constraint violations
     rivalryRepository.deleteAll();
     deckRepository.deleteAll();
+    wrestlerStateRepository.deleteAll();
     wrestlerRepository.deleteAll();
+
+    // Ensure default universe exists
+    if (universeRepository.findById(1L).isEmpty()) {
+      com.github.javydreamercsw.management.domain.universe.Universe universe =
+          com.github.javydreamercsw.management.domain.universe.Universe.builder()
+              .id(1L)
+              .name("Default Universe")
+              .type(
+                  com.github.javydreamercsw.management.domain.universe.Universe.UniverseType.GLOBAL)
+              .build();
+      universeRepository.save(universe);
+    }
   }
 
   @Test
@@ -257,7 +278,6 @@ class RivalryControllerIT extends AbstractIntegrationTest {
   private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
-    wrestler.setFans(fans);
     wrestler.setStartingHealth(15);
     wrestler.setStartingStamina(15);
     wrestler.setCurrentHealth(15);
@@ -267,7 +287,23 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
     wrestler.setTier(WrestlerTier.ROOKIE);
-    return wrestlerRepository.save(wrestler);
+    Wrestler savedWrestler = wrestlerRepository.save(wrestler);
+
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        universeRepository.findById(1L).get();
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
+            .wrestler(savedWrestler)
+            .universe(universe)
+            .fans(fans)
+            .tier(WrestlerTier.fromFanCount(fans))
+            .currentHealth(15)
+            .bumps(0)
+            .morale(100)
+            .build();
+    wrestlerStateRepository.save(state);
+
+    return savedWrestler;
   }
 
   private Rivalry createTestRivalry(

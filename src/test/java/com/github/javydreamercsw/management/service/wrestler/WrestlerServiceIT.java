@@ -33,7 +33,10 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -66,10 +69,14 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Autowired private InboxRepository inboxRepository;
   @Autowired private DataInitializer dataInitializer;
   @Autowired private InjuryService injuryService;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
 
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
   @Autowired private TierBoundaryService tierBoundaryService;
+
+  private Universe defaultUniverse;
 
   @BeforeEach
   void setUp() {
@@ -77,16 +84,26 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     tierBoundaryRepository.deleteAllInBatch();
     tierBoundaryService.resetTierBoundaries();
     dataInitializer.init();
+
+    defaultUniverse =
+        universeRepository
+            .findById(1L)
+            .orElseGet(
+                () ->
+                    universeRepository.save(
+                        Universe.builder().id(1L).name("Default Universe").build()));
   }
 
-  private static final Long DEFAULT_LEAGUE_ID = 1L;
+  private static final Long DEFAULT_UNIVERSE_ID = 1L;
 
   @Test
   @DisplayName("Should get wrestler stats")
   @Transactional
   void shouldGetWrestlerStats() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Stat Test", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Stat Test", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
     // Retrieve the wrestler again to ensure it's a managed entity
     wrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
@@ -102,7 +119,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
             null,
             season.getId(),
             null,
-            null,
+            DEFAULT_UNIVERSE_ID,
             null,
             null); // Added null for arenaId
 
@@ -115,7 +132,9 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
 
     Segment lossSegment = segmentService.createSegment(show, matchType, Instant.now());
     lossSegment.addParticipant(wrestler);
-    Wrestler opponent = wrestlerService.createWrestler("Opponent", false, null);
+    Wrestler opponent =
+        wrestlerService.createWrestler(
+            "Opponent", false, null, WrestlerTier.ROOKIE, defaultUniverse);
     lossSegment.addParticipant(opponent);
     lossSegment.setWinners(List.of(opponent));
     segmentService.updateSegment(lossSegment);
@@ -123,13 +142,17 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     // Create a title and have the wrestler win it
     Title title =
         titleService.createTitle(
-            "Test Title", "Test Title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
+            "Test Title",
+            "Test Title",
+            WrestlerTier.ROOKIE,
+            ChampionshipType.SINGLE,
+            DEFAULT_UNIVERSE_ID);
     titleService.awardTitleTo(title, List.of(wrestler));
     wrestlerRepository.flush();
 
     // When
     Optional<WrestlerStats> stats =
-        wrestlerService.getWrestlerStats(wrestler.getId(), DEFAULT_LEAGUE_ID);
+        wrestlerService.getWrestlerStats(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
     assertThat(stats).isPresent();
@@ -143,8 +166,10 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Transactional
   void shouldCreateWrestlerWithAtwRpgDefaults() {
     // When
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, "Test description");
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, "Test description", WrestlerTier.ROOKIE, defaultUniverse);
+    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
     assertThat(wrestler.getId()).isNotNull();
@@ -164,13 +189,15 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Transactional
   void shouldAwardFansAndPersistTierChanges() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
-    var initialState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
+    var initialState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertThat(initialState.getTier()).isEqualTo(WrestlerTier.ROOKIE);
 
     // When - Award enough fans to reach Contender tier
     Assertions.assertNotNull(wrestler.getId());
-    var updated = wrestlerService.awardFans(wrestler.getId(), DEFAULT_LEAGUE_ID, 45_000L);
+    var updated = wrestlerService.awardFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, 45_000L);
 
     // Then
     assertThat(updated).isPresent();
@@ -178,7 +205,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     assertThat(updated.get().getTier()).isEqualTo(WrestlerTier.CONTENDER);
 
     // Verify persistence
-    var fromDb = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var fromDb = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertThat(fromDb.getFans()).isEqualTo(45_000L);
     assertThat(fromDb.getTier()).isEqualTo(WrestlerTier.CONTENDER);
   }
@@ -188,20 +215,22 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Transactional
   void shouldHandleBumpSystemWithPersistence() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
 
     // When - Add bumps
     Assertions.assertNotNull(wrestler.getId());
-    wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
-    wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
-    var afterTwoBumps = wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var afterTwoBumps = wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then - Third bump should trigger injury
     assertThat(afterTwoBumps).isPresent();
     assertThat(afterTwoBumps.get().getBumps()).isEqualTo(0); // Reset after injury
 
     // Verify persistence
-    var fromDb = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var fromDb = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertThat(fromDb.getBumps()).isEqualTo(0);
   }
 
@@ -210,18 +239,20 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Transactional
   void shouldSpendFansAndUpdateTier() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    wrestlerService.awardFans(wrestler.getId(), DEFAULT_LEAGUE_ID, 50_000L); // Contender tier
+    wrestlerService.awardFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, 50_000L); // Contender tier
 
     // When
-    boolean success = wrestlerService.spendFans(wrestler.getId(), DEFAULT_LEAGUE_ID, 15_000L);
+    boolean success = wrestlerService.spendFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, 15_000L);
 
     // Then
     assertThat(success).isTrue();
 
     // Verify persistence and tier update
-    var fromDb = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var fromDb = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertThat(fromDb.getFans()).isEqualTo(35_000L);
     assertThat(fromDb.getTier()).isEqualTo(WrestlerTier.RISER);
   }
@@ -231,24 +262,27 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Transactional
   void shouldFilterWrestlersByTier() {
     // Given
-    wrestlerService.createWrestler("Rookie 1", true, null);
-    wrestlerService.createWrestler("Rookie 2", true, null);
+    wrestlerService.createWrestler("Rookie 1", true, null, WrestlerTier.ROOKIE, defaultUniverse);
+    wrestlerService.createWrestler("Rookie 2", true, null, WrestlerTier.ROOKIE, defaultUniverse);
 
-    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
+    Wrestler riser =
+        wrestlerService.createWrestler("Riser", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(riser.getId());
-    wrestlerService.awardFans(riser.getId(), DEFAULT_LEAGUE_ID, 30_000L);
+    wrestlerService.awardFans(riser.getId(), DEFAULT_UNIVERSE_ID, 30_000L);
 
-    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
+    Wrestler contender =
+        wrestlerService.createWrestler(
+            "Contender", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(contender.getId());
-    wrestlerService.awardFans(contender.getId(), DEFAULT_LEAGUE_ID, 45_000L);
+    wrestlerService.awardFans(contender.getId(), DEFAULT_UNIVERSE_ID, 45_000L);
 
     // When
     List<Wrestler> rookies =
-        wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE, DEFAULT_LEAGUE_ID);
+        wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE, DEFAULT_UNIVERSE_ID);
     List<Wrestler> risers =
-        wrestlerService.getWrestlersByTier(WrestlerTier.RISER, DEFAULT_LEAGUE_ID);
+        wrestlerService.getWrestlersByTier(WrestlerTier.RISER, DEFAULT_UNIVERSE_ID);
     List<Wrestler> contenders =
-        wrestlerService.getWrestlersByTier(WrestlerTier.CONTENDER, DEFAULT_LEAGUE_ID);
+        wrestlerService.getWrestlersByTier(WrestlerTier.CONTENDER, DEFAULT_UNIVERSE_ID);
 
     // Then
     assertThat(rookies).extracting(Wrestler::getName).contains("Rookie 1", "Rookie 2");
@@ -266,10 +300,10 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   void shouldFilterWrestlersByPlayerStatus() {
     int initialSize = wrestlerService.getPlayerWrestlers().size();
     // Given
-    wrestlerService.createWrestler("Player 1", true, null);
-    wrestlerService.createWrestler("Player 2", true, null);
-    wrestlerService.createWrestler("NPC 1", false, null);
-    wrestlerService.createWrestler("NPC 2", false, null);
+    wrestlerService.createWrestler("Player 1", true, null, WrestlerTier.ROOKIE, defaultUniverse);
+    wrestlerService.createWrestler("Player 2", true, null, WrestlerTier.ROOKIE, defaultUniverse);
+    wrestlerService.createWrestler("NPC 1", false, null, WrestlerTier.ROOKIE, defaultUniverse);
+    wrestlerService.createWrestler("NPC 2", false, null, WrestlerTier.ROOKIE, defaultUniverse);
 
     // When
     List<Wrestler> players = wrestlerService.getPlayerWrestlers();
@@ -289,18 +323,23 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     // Given
     Wrestler wrestler =
         wrestlerService.createWrestler(
-            "Complex Test", true, "Test wrestler for complex operations");
+            "Complex Test",
+            true,
+            "Test wrestler for complex operations",
+            WrestlerTier.ROOKIE,
+            defaultUniverse);
 
     // When - Perform multiple operations
     Assertions.assertNotNull(wrestler.getId());
-    wrestlerService.awardFans(wrestler.getId(), DEFAULT_LEAGUE_ID, 60_000L); // Intertemporal tier
-    wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
-    wrestlerService.spendFans(wrestler.getId(), DEFAULT_LEAGUE_ID, 10_000L); // Still Intertemporal
-    wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    wrestlerService.awardFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, 60_000L); // Intertemporal tier
+    wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    wrestlerService.spendFans(
+        wrestler.getId(), DEFAULT_UNIVERSE_ID, 10_000L); // Still Intertemporal
+    wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then - Verify final state
     Assertions.assertNotNull(wrestler.getId());
-    var finalState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var finalState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     assertThat(finalState.getFans()).isEqualTo(50_000L);
     assertThat(finalState.getTier())
@@ -316,12 +355,14 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Transactional
   void shouldCreateInboxItemOnFanAwardedEvent() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Inbox Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Inbox Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
     long initialInboxItemCount = inboxRepository.count();
 
     // When
-    wrestlerService.awardFans(wrestler.getId(), DEFAULT_LEAGUE_ID, 1_000L);
+    wrestlerService.awardFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, 1_000L);
 
     // Then
     assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);
@@ -335,38 +376,40 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   void shouldRecalibrateFanCounts() {
     // Create some wrestlers
     Wrestler icon =
-        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
-    var iconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_LEAGUE_ID);
+        wrestlerService.createWrestler(
+            "The Icon", false, "Iconic wrestler", WrestlerTier.ICON, defaultUniverse);
+    var iconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_UNIVERSE_ID);
     iconState.setFans(1_000_000L);
     wrestlerService.save(icon);
 
     Wrestler mainEventer =
         wrestlerService.createWrestler(
-            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER);
-    var meState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_LEAGUE_ID);
+            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER, defaultUniverse);
+    var meState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_UNIVERSE_ID);
     meState.setFans(800_000L);
     wrestlerService.save(mainEventer);
 
     Wrestler rookie =
-        wrestlerService.createWrestler("The Rookie", false, "Newcomer", WrestlerTier.ROOKIE);
-    var rookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_LEAGUE_ID);
+        wrestlerService.createWrestler(
+            "The Rookie", false, "Newcomer", WrestlerTier.ROOKIE, defaultUniverse);
+    var rookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_UNIVERSE_ID);
     rookieState.setFans(5_000L);
     wrestlerService.save(rookie);
 
     // Reset fan counts
-    wrestlerService.recalibrateFanCounts(DEFAULT_LEAGUE_ID);
+    wrestlerService.recalibrateFanCounts(DEFAULT_UNIVERSE_ID);
 
     // Verify Icon is now Main Eventer with min fans
-    var updatedIconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_LEAGUE_ID);
+    var updatedIconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(WrestlerTier.MAIN_EVENTER, updatedIconState.getTier());
     assertThat(updatedIconState.getFans()).isGreaterThanOrEqualTo(0L);
 
     // Verify Main Eventer is reset to min fans
-    var updatedMeState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_LEAGUE_ID);
+    var updatedMeState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedMeState.getFans());
 
     // Verify Rookie is reset to min fans
-    var updatedRookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_LEAGUE_ID);
+    var updatedRookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(0L, updatedRookieState.getFans());
   }
 
@@ -374,16 +417,17 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   void shouldRecalibrateIconToMainEventer() {
     // Create an Icon wrestler
     Wrestler icon =
-        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
-    var iconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_LEAGUE_ID);
+        wrestlerService.createWrestler(
+            "The Icon", false, "Iconic wrestler", WrestlerTier.ICON, defaultUniverse);
+    var iconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_UNIVERSE_ID);
     iconState.setFans(1_000_000L);
     wrestlerService.save(icon);
 
     // Reset fan counts
-    wrestlerService.recalibrateFanCounts(DEFAULT_LEAGUE_ID);
+    wrestlerService.recalibrateFanCounts(DEFAULT_UNIVERSE_ID);
 
     // Verify the wrestler is now a Main Eventer with min fans
-    var updatedState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_LEAGUE_ID);
+    var updatedState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(WrestlerTier.MAIN_EVENTER, updatedState.getTier());
     assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedState.getFans());
   }
@@ -392,34 +436,36 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   void shouldResetAllFanCountsToZero() {
     // Create some wrestlers
     Wrestler icon =
-        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
-    var iconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_LEAGUE_ID);
+        wrestlerService.createWrestler(
+            "The Icon", false, "Iconic wrestler", WrestlerTier.ICON, defaultUniverse);
+    var iconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_UNIVERSE_ID);
     iconState.setFans(1_000_000L);
 
     Wrestler mainEventer =
         wrestlerService.createWrestler(
-            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER);
-    var meState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_LEAGUE_ID);
+            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER, defaultUniverse);
+    var meState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_UNIVERSE_ID);
     meState.setFans(800_000L);
 
     Wrestler rookie =
-        wrestlerService.createWrestler("The Rookie", false, "Newcomer", WrestlerTier.ROOKIE);
-    var rookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_LEAGUE_ID);
+        wrestlerService.createWrestler(
+            "The Rookie", false, "Newcomer", WrestlerTier.ROOKIE, defaultUniverse);
+    var rookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_UNIVERSE_ID);
     rookieState.setFans(5_000L);
 
     // Reset fan counts
-    wrestlerService.resetAllFanCountsToZero(DEFAULT_LEAGUE_ID);
+    wrestlerService.resetAllFanCountsToZero(DEFAULT_UNIVERSE_ID);
 
     // Verify all wrestlers are now rookies with 0 fans
-    var updatedIconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_LEAGUE_ID);
+    var updatedIconState = wrestlerService.getOrCreateState(icon.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(WrestlerTier.ROOKIE, updatedIconState.getTier());
     assertEquals(0L, updatedIconState.getFans());
 
-    var updatedMeState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_LEAGUE_ID);
+    var updatedMeState = wrestlerService.getOrCreateState(mainEventer.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(WrestlerTier.ROOKIE, updatedMeState.getTier());
     assertEquals(0L, updatedMeState.getFans());
 
-    var updatedRookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_LEAGUE_ID);
+    var updatedRookieState = wrestlerService.getOrCreateState(rookie.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(WrestlerTier.ROOKIE, updatedRookieState.getTier());
     assertEquals(0L, updatedRookieState.getFans());
   }
@@ -428,9 +474,11 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @DisplayName("Should award fans and persist changes")
   void testAwardFans_PersistsChanges() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     state.setFans(100L);
     state.setTier(WrestlerTier.ROOKIE);
     wrestlerService.save(wrestler); // Save initial state
@@ -439,10 +487,10 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     long expectedFans = 100L + 1000L; // It rounds to nearest 1000. 1234 -> 1000
 
     // When
-    wrestlerService.awardFans(wrestler.getId(), DEFAULT_LEAGUE_ID, fansToAdd);
+    wrestlerService.awardFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, fansToAdd);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(expectedFans, updatedState.getFans());
   }
 
@@ -450,17 +498,19 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @DisplayName("Should add bump and persist changes")
   void testAddBump_PersistsChanges_Increment() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     state.setBumps(1);
     wrestlerService.save(wrestler); // Save initial state
 
     // When
-    wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(2, updatedState.getBumps());
   }
 
@@ -468,24 +518,26 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @DisplayName("Should add bump and reset to 0 and create an injury after 3 bumps")
   void testAddBump_PersistsChanges() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     state.setBumps(2);
     wrestlerService.save(wrestler); // Save initial state
     long initialInjuryCount =
-        injuryService.getAllInjuriesForWrestler(wrestler.getId(), DEFAULT_LEAGUE_ID).size();
+        injuryService.getAllInjuriesForWrestler(wrestler.getId(), DEFAULT_UNIVERSE_ID).size();
 
     // When
-    wrestlerService.addBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(0, updatedState.getBumps());
 
     // Verify an injury was created
     long newInjuryCount =
-        injuryService.getAllInjuriesForWrestler(wrestler.getId(), DEFAULT_LEAGUE_ID).size();
+        injuryService.getAllInjuriesForWrestler(wrestler.getId(), DEFAULT_UNIVERSE_ID).size();
     assertEquals(initialInjuryCount + 1, newInjuryCount);
   }
 
@@ -493,17 +545,19 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @DisplayName("Should heal bump and persist changes")
   void testHealBump_PersistsChanges() {
     // Given
-    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     state.setBumps(2);
     wrestlerService.save(wrestler); // Save initial state
 
     // When
-    wrestlerService.healBump(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    wrestlerService.healBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_LEAGUE_ID);
+    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
     assertEquals(1, updatedState.getBumps());
   }
 }

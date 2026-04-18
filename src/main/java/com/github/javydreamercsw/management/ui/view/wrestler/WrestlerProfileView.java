@@ -277,7 +277,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     RouteParameters parameters = event.getRouteParameters();
     if (parameters.get("wrestlerId").isPresent()) {
       Long wrestlerId = Long.valueOf(parameters.get("wrestlerId").get());
-      Optional<Wrestler> foundWrestler = wrestlerRepository.findByIdWithInjuries(wrestlerId);
+      Optional<Wrestler> foundWrestler = wrestlerService.findById(wrestlerId);
       if (foundWrestler.isPresent()) {
         wrestler = foundWrestler.get();
         updateView();

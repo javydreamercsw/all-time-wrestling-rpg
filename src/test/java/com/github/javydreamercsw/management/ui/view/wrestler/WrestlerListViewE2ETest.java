@@ -24,8 +24,13 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -45,18 +50,28 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Autowired private InjuryService injuryService;
   @Autowired private InjuryRepository injuryRepository;
+  @Autowired private UniverseRepository universeRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private WrestlerService wrestlerService;
+
+  private Universe defaultUniverse;
 
   @BeforeEach
   void setUp() {
     cleanupLeagues();
     injuryRepository.deleteAll();
     segmentRepository.deleteAll();
+    wrestlerStateRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    wrestlerService.findAll().forEach(wrestler -> wrestlerService.delete(wrestler));
+    universeRepository.deleteAll();
+
+    defaultUniverse =
+        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {
-      wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
+      Wrestler w = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
+      wrestlerService.getOrCreateState(w.getId(), defaultUniverse.getId());
     }
   }
 
@@ -110,10 +125,14 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testDefaultSorting() {
+    wrestlerStateRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    wrestlerService.save(TestUtils.createWrestler("Zack"));
-    wrestlerService.save(TestUtils.createWrestler("Adam"));
-    wrestlerService.save(TestUtils.createWrestler("Ben"));
+    Wrestler w1 = wrestlerService.save(TestUtils.createWrestler("Zack"));
+    wrestlerService.getOrCreateState(w1.getId(), defaultUniverse.getId());
+    Wrestler w2 = wrestlerService.save(TestUtils.createWrestler("Adam"));
+    wrestlerService.getOrCreateState(w2.getId(), defaultUniverse.getId());
+    Wrestler w3 = wrestlerService.save(TestUtils.createWrestler("Ben"));
+    wrestlerService.getOrCreateState(w3.getId(), defaultUniverse.getId());
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
@@ -140,7 +159,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     // Create a wrestler to edit
 
-    Wrestler wrestler = wrestlerService.save(createTestWrestler("Edit"));
+    Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Edit"));
+    wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
@@ -207,7 +227,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     // Create a wrestler to delete
 
-    Wrestler wrestler = wrestlerService.save(createTestWrestler("Delete"));
+    Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Delete"));
+    wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
@@ -251,6 +272,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Create a wrestler
 
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Bump"));
+    wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
@@ -276,7 +298,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
             Assertions.assertNotNull(wrestler.getId());
 
-            return wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps() == 1;
+            return wrestlerService
+                    .getOrCreateState(wrestler.getId(), defaultUniverse.getId())
+                    .getBumps()
+                == 1;
 
           } catch (Exception e) {
 
@@ -286,7 +311,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     Assertions.assertNotNull(wrestler.getId());
 
-    assertEquals(1, wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps());
+    assertEquals(
+        1, wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId()).getBumps());
   }
 
   @Test
@@ -295,10 +321,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Create a wrestler with a bump
 
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Heal Bump"));
-
-    wrestler.addBump();
-
-    wrestlerRepository.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setBumps(1);
+    wrestlerStateRepository.saveAndFlush(state);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
@@ -324,7 +350,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
             Assertions.assertNotNull(wrestler.getId());
 
-            return wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps() == 0;
+            return wrestlerService
+                    .getOrCreateState(wrestler.getId(), defaultUniverse.getId())
+                    .getBumps()
+                == 0;
 
           } catch (Exception e) {
 
@@ -334,7 +363,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     Assertions.assertNotNull(wrestler.getId());
 
-    assertEquals(0, wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps());
+    assertEquals(
+        0, wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId()).getBumps());
   }
 
   @Test
@@ -343,11 +373,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Create a wrestler
 
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Injuries"));
+    wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
     // Create a couple of injuries for the wrestler
 
     injuryService.createInjury(
         wrestler.getId(),
+        defaultUniverse.getId(),
         "Bruised Ribs",
         "Slightly bruised ribs.",
         InjurySeverity.MINOR,
@@ -357,6 +389,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         injuryService
             .createInjury(
                 wrestler.getId(),
+                defaultUniverse.getId(),
                 "Twisted Ankle",
                 "Twisted his ankle.",
                 InjurySeverity.MODERATE,

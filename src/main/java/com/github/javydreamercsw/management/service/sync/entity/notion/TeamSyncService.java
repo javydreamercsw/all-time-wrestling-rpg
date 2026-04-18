@@ -20,17 +20,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.management.domain.team.Team;
-import com.github.javydreamercsw.management.domain.team.TeamStatus;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.dto.TeamDTO;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -43,356 +46,228 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class TeamSyncService extends BaseSyncService {
 
-  private final TeamService teamService;
+  private final TeamRepository teamRepository;
   private final WrestlerService wrestlerService;
+  private final UniverseRepository universeRepository;
 
-  @Autowired @Lazy private TeamSyncService self;
+  @Autowired @Lazy protected TeamSyncService self;
 
-  @Autowired
+  protected TeamSyncService getSelf() {
+    return self != null ? self : this;
+  }
+
   public TeamSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      TeamService teamService,
+      NotionApiExecutor notionApiExecutor,
+      TeamRepository teamRepository,
       WrestlerService wrestlerService,
-      NotionApiExecutor notionApiExecutor) {
+      UniverseRepository universeRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
-    this.teamService = teamService;
+    this.teamRepository = teamRepository;
     this.wrestlerService = wrestlerService;
+    this.universeRepository = universeRepository;
     this.self = this;
   }
 
-  /**
-   * Synchronizes teams from Notion to the local database.
-   *
-   * @return SyncResult containing the operation status and details
-   */
   public SyncResult syncTeams(@NonNull String operationId) {
-    log.info("🔄 Starting teams synchronization from Notion...");
-    long startTime = System.currentTimeMillis();
+    log.info("🏘️ Starting teams synchronization from Notion with operation ID: {}", operationId);
+    syncServiceDependencies.getProgressTracker().startOperation(operationId, "Teams Sync", 4);
+
+    if (!syncServiceDependencies.getNotionSyncProperties().isEnabled()
+        || !syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("teams")) {
+      log.debug("Teams synchronization is disabled, skipping.");
+      return SyncResult.success("Teams", 0, 0, 0);
+    }
 
     try {
-      // Start progress tracking
-      SyncProgressTracker.SyncProgress progress =
+      // Step 1: Load all teams from Notion
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 1, "Loading teams from Notion...");
+      log.info("📥 Loading teams from Notion...");
+      long notionStart = System.currentTimeMillis();
+      List<TeamPage> teamPages =
+          executeWithRateLimit(() -> syncServiceDependencies.getNotionHandler().loadAllTeams());
+      log.info(
+          "✅ Retrieved {} teams from Notion in {}ms",
+          teamPages.size(),
+          System.currentTimeMillis() - notionStart);
+
+      // Step 2: Convert to DTOs
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 2, "Processing Notion data...");
+      log.info("⚙️ Processing Notion data...");
+      List<TeamSyncDTO> teamDTOs = new ArrayList<>();
+      for (TeamPage page : teamPages) {
+        teamDTOs.add(convertTeamPageToDTO(page));
+      }
+
+      // Step 3: Save to database
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId, 3, String.format("Saving %d teams to database...", teamDTOs.size()));
+      log.info("🗄️ Saving teams to database...");
+      long dbStart = System.currentTimeMillis();
+      int savedCount = 0;
+      int processedItems = 0;
+      for (TeamSyncDTO dto : teamDTOs) {
+        processedItems++;
+        if (processedItems % 5 == 0) {
           syncServiceDependencies
               .getProgressTracker()
-              .startOperation("Teams Sync", "Synchronizing teams from Notion", 0);
-      operationId = progress.getOperationId();
-
-      // Load teams from Notion
-      syncServiceDependencies
-          .getProgressTracker()
-          .addLogMessage(operationId, "📥 Loading teams from Notion database...", "INFO");
-
-      if (!isNotionHandlerAvailable()) {
-        log.warn("NotionHandler not available. Cannot sync teams from Notion.");
-        syncServiceDependencies
-            .getProgressTracker()
-            .failOperation(operationId, "NotionHandler is not available for sync operations");
-        return SyncResult.failure("Teams", "NotionHandler is not available for sync operations");
+              .updateProgress(
+                  operationId,
+                  4,
+                  String.format(
+                      "Saving teams to database... (%d/%d processed)",
+                      processedItems, teamDTOs.size()));
+        }
+        if (getSelf().processSingleTeam(dto)) {
+          savedCount++;
+        }
       }
+      log.info(
+          "✅ Saved {} teams to database in {}ms", savedCount, System.currentTimeMillis() - dbStart);
 
-      List<TeamPage> teamPages =
-          executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllTeams);
-
-      if (teamPages.isEmpty()) {
-        syncServiceDependencies
-            .getProgressTracker()
-            .addLogMessage(operationId, "⚠️ No teams found in Notion database", "WARN");
-        syncServiceDependencies
-            .getProgressTracker()
-            .completeOperation(operationId, true, "No teams to sync", 0);
-
-        // Record success in health monitor
-        long totalTime = System.currentTimeMillis() - startTime;
-        syncServiceDependencies.getHealthMonitor().recordSuccess("Teams", totalTime, 0);
-
-        return SyncResult.success("Teams", 0, 0, 0);
-      }
-
-      syncServiceDependencies
-          .getProgressTracker()
-          .addLogMessage(
-              operationId, String.format("📋 Found %d teams in Notion", teamPages.size()), "INFO");
-
-      // Convert to DTOs
-      List<TeamDTO> teamDTOs =
-          processWithControlledParallelism(
-              teamPages,
-              this::convertTeamPageToDTO,
-              10, // Batch size
-              operationId,
-              2, // Progress step
-              "Converted %d/%d teams");
-
-      syncServiceDependencies
-          .getProgressTracker()
-          .addLogMessage(
-              operationId,
-              String.format("✅ Successfully converted %d teams to DTOs", teamDTOs.size()),
-              "INFO");
-
-      // Save teams to database
-      syncServiceDependencies
-          .getProgressTracker()
-          .addLogMessage(operationId, "💾 Saving teams to database...", "INFO");
-      int savedCount =
-          (int)
-              processWithControlledParallelism(
-                      teamDTOs,
-                      self::saveOrUpdateTeam,
-                      10, // Batch size
-                      operationId,
-                      3, // Progress step
-                      "Saved %d/%d teams")
-                  .stream()
-                  .filter(java.util.Objects::nonNull)
-                  .count();
-
-      // Complete progress tracking
       syncServiceDependencies
           .getProgressTracker()
           .completeOperation(
               operationId,
               true,
-              String.format("Successfully synced %d teams", savedCount),
+              String.format("Successfully synchronized %d teams", savedCount),
               savedCount);
-
-      // Record success in health monitor
-      long totalTime = System.currentTimeMillis() - startTime;
-      syncServiceDependencies.getHealthMonitor().recordSuccess("Teams", totalTime, savedCount);
 
       return SyncResult.success("Teams", savedCount, 0, 0);
 
     } catch (Exception e) {
-      log.error("❌ Teams sync failed", e);
-
-      // Fail progress tracking
-      syncServiceDependencies
-          .getProgressTracker()
-          .addLogMessage(operationId, "❌ Team sync failed: " + e.getMessage(), "ERROR");
-      syncServiceDependencies
-          .getProgressTracker()
-          .failOperation(operationId, "Sync failed: " + e.getMessage());
-
-      // Record failure in health monitor
-      syncServiceDependencies.getHealthMonitor().recordFailure("Teams", e.getMessage());
-
-      return SyncResult.failure("Teams", e.getMessage());
+      String errorMessage = "Failed to synchronize teams from Notion: " + e.getMessage();
+      log.error(errorMessage, e);
+      syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMessage);
+      return SyncResult.failure("Teams", errorMessage);
     }
   }
 
-  /** Converts a TeamPage from Notion to a TeamDTO. */
-  private TeamDTO convertTeamPageToDTO(@NonNull TeamPage teamPage) {
-    try {
-      TeamDTO dto = new TeamDTO();
-      Map<String, Object> rawProperties = teamPage.getRawProperties();
+  private TeamSyncDTO convertTeamPageToDTO(@NonNull TeamPage teamPage) {
+    TeamSyncDTO dto = new TeamSyncDTO();
+    dto.setExternalId(teamPage.getId());
 
-      // Extract basic properties using existing methods
-      dto.setName(
-          syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(teamPage));
-      dto.setExternalId(teamPage.getId());
-      dto.setDescription(
-          syncServiceDependencies
-              .getNotionPageDataExtractor()
-              .extractDescriptionFromNotionPage(teamPage));
+    Map<String, Object> rawProperties = teamPage.getRawProperties();
 
-      // Extract wrestler IDs
-      dto.setWrestler1ExternalId(extractRelationId(rawProperties.get("Member 1")));
-      dto.setWrestler2ExternalId(extractRelationId(rawProperties.get("Member 2")));
+    // Extract Name
+    dto.setName(
+        syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(teamPage));
 
-      // Fallback to names if IDs aren't present (less reliable but preserves old behavior)
-      if (dto.getWrestler1ExternalId() == null) {
-        dto.setWrestler1Name(extractWrestlerNameFromTeamPage(teamPage, "Member 1"));
-      }
-      if (dto.getWrestler2ExternalId() == null) {
-        dto.setWrestler2Name(extractWrestlerNameFromTeamPage(teamPage, "Member 2"));
-      }
-
-      // Extract relationship IDs
-      dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
-      String factionId = extractRelationId(rawProperties.get("Faction"));
-      if (factionId != null) {
-        // We'll resolve the name during saving, or we could resolve it here if needed
-        dto.setFactionName(factionId); // Using ID as placeholder
-      }
-
-      // Extract new fields
-      Object themeSongObj = rawProperties.get("Theme Song");
-      if (themeSongObj instanceof String) {
-        dto.setThemeSong((String) themeSongObj);
-      }
-
-      Object artistObj = rawProperties.get("Artist");
-      if (artistObj instanceof String) {
-        dto.setArtist((String) artistObj);
-      }
-
-      Object teamFinisherObj = rawProperties.get("Team Finisher");
-      if (teamFinisherObj instanceof String) {
-        dto.setTeamFinisher((String) teamFinisherObj);
-      }
-
-      // Extract status
-      Object statusObj = rawProperties.get("Status");
-      if (statusObj instanceof Boolean) {
-        dto.setStatus((Boolean) statusObj ? TeamStatus.ACTIVE : TeamStatus.INACTIVE);
-      } else {
-        dto.setStatus(TeamStatus.ACTIVE); // Default status
-      }
-
-      log.debug("Successfully converted team page '{}' to DTO", dto.getName());
-      return dto;
-
-    } catch (Exception e) {
-      log.error("Failed to convert team page to DTO", e);
-      return null;
-    }
-  }
-
-  /** Extracts a single relation ID from a Notion property. */
-  private String extractRelationId(Object property) {
-    if (property == null) return null;
-    if (property instanceof String str) {
-      if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-        return str;
-      }
-    } else if (property instanceof java.util.List<?> list && !list.isEmpty()) {
-      Object first = list.get(0);
-      if (first instanceof String str) return str;
-      if (first instanceof Map<?, ?> map) {
-        Object id = map.get("id");
-        if (id instanceof String str) return str;
-      }
-    } else if (property instanceof Map<?, ?> map) {
-      Object id = map.get("id");
-      if (id instanceof String str) return str;
-    }
-    return null;
-  }
-
-  /** Extracts wrestler name from team page with enhanced relation handling. */
-  private String extractWrestlerNameFromTeamPage(
-      @NonNull TeamPage teamPage, @NonNull String propertyName) {
-    if (teamPage.getRawProperties() == null) {
-      return null;
-    }
-
-    // Use NotionPageDataExtractor to get the property string
-    String propertyStr =
+    // Extract Members (relations to Wrestlers)
+    dto.setMemberExternalIds(
         syncServiceDependencies
             .getNotionPageDataExtractor()
-            .extractPropertyAsString(teamPage.getRawProperties(), propertyName);
+            .extractRelationIds(teamPage, "Members"));
 
-    if (propertyStr == null || propertyStr.isEmpty()) {
-      return null;
-    }
+    // Description/Narration (from page content)
+    dto.setDescription(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractDescriptionFromNotionPage(teamPage));
 
-    // If it shows as "X items" or "X relations", this means the relation isn't resolved
-    if (propertyStr.matches("\\d+ (items?|relations?)")) {
-      return null;
-    }
-
-    // If it's a UUID, it's likely a relation ID that wasn't resolved
-    if (propertyStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-      return null;
-    }
-
-    return propertyStr;
+    return dto;
   }
 
-  /** Saves or updates a team in the database. */
+  /** Saves a single team DTO to the database. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Team saveOrUpdateTeam(TeamDTO dto) {
-    if (dto == null || dto.getName() == null || dto.getName().trim().isEmpty()) {
-      log.warn("Cannot save team: DTO is null or has no name");
-      return null;
-    }
-
+  public boolean processSingleTeam(@NonNull TeamSyncDTO dto) {
     try {
-      // Find wrestlers
-      Wrestler wrestler1 = null;
-      Wrestler wrestler2 = null;
+      // Smart duplicate handling - prefer external ID, fallback to name
+      Team team = null;
+      boolean isNewTeam = false;
 
-      if (dto.getWrestler1ExternalId() != null) {
-        wrestler1 = wrestlerService.findByExternalId(dto.getWrestler1ExternalId()).orElse(null);
-      }
-      if (wrestler1 == null && dto.getWrestler1Name() != null) {
-        wrestler1 = wrestlerService.findByName(dto.getWrestler1Name()).orElse(null);
-      }
-
-      if (dto.getWrestler2ExternalId() != null) {
-        wrestler2 = wrestlerService.findByExternalId(dto.getWrestler2ExternalId()).orElse(null);
-      }
-      if (wrestler2 == null && dto.getWrestler2Name() != null) {
-        wrestler2 = wrestlerService.findByName(dto.getWrestler2Name()).orElse(null);
-      }
-
-      // Try to find existing team
-      Team existingTeam = null;
+      // 1. Try to find by external ID first (most reliable)
       if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-        existingTeam = teamService.getTeamByExternalId(dto.getExternalId()).orElse(null);
-      }
-      if (existingTeam == null) {
-        existingTeam = teamService.getTeamByName(dto.getName()).orElse(null);
+        team = teamRepository.findByExternalId(dto.getExternalId()).orElse(null);
       }
 
-      Team team = existingTeam;
-      boolean isNew = (team == null);
+      // 2. Fallback to name matching if external ID didn't work
+      if (team == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
+        team = teamRepository.findByName(dto.getName()).orElse(null);
+      }
 
-      if (isNew) {
-        if (wrestler1 == null || wrestler2 == null) {
-          log.warn("Skipping new team '{}' due to missing wrestlers", dto.getName());
-          return null;
-        }
+      // 3. Create new team if no segment found
+      if (team == null) {
         team = new Team();
+        isNewTeam = true;
+        log.info(
+            "🆕 Creating new team: {} with external ID: {}", dto.getName(), dto.getExternalId());
+      } else {
+        log.info(
+            "🔄 Updating existing team: {} (ID: {}) with external ID: {}",
+            dto.getName(),
+            team.getId(),
+            dto.getExternalId());
+      }
+
+      // Set properties
+      boolean changed = false;
+      if (!Objects.equals(team.getName(), dto.getName())) {
         team.setName(dto.getName());
-        team.setWrestler1(wrestler1);
-        team.setWrestler2(wrestler2);
+        changed = true;
+      }
+      if (!Objects.equals(team.getExternalId(), dto.getExternalId())) {
+        team.setExternalId(dto.getExternalId());
+        changed = true;
+      }
+      if (dto.getDescription() != null
+          && !dto.getDescription().trim().isEmpty()
+          && !Objects.equals(team.getDescription(), dto.getDescription())) {
+        team.setDescription(dto.getDescription());
+        changed = true;
       }
 
-      // Update basic fields
-      team.setName(dto.getName());
-      team.setDescription(dto.getDescription());
-      team.setExternalId(dto.getExternalId());
-      team.setThemeSong(dto.getThemeSong());
-      team.setArtist(dto.getArtist());
-      team.setTeamFinisher(dto.getTeamFinisher());
-      if (dto.getStatus() != null) team.setStatus(dto.getStatus());
+      // Resolve Members (Team expects exactly 2 wrestlers)
+      if (dto.getMemberExternalIds() != null && dto.getMemberExternalIds().size() >= 2) {
+        Optional<Wrestler> w1 = wrestlerService.findByExternalId(dto.getMemberExternalIds().get(0));
+        Optional<Wrestler> w2 = wrestlerService.findByExternalId(dto.getMemberExternalIds().get(1));
 
-      if (wrestler1 != null) team.setWrestler1(wrestler1);
-      if (wrestler2 != null) team.setWrestler2(wrestler2);
-
-      // Resolve relationships
-      if (dto.getManagerExternalId() != null) {
-        syncServiceDependencies
-            .getNpcRepository()
-            .findByExternalId(dto.getManagerExternalId())
-            .ifPresent(team::setManager);
-      }
-
-      if (dto.getFactionName() != null) {
-        // If it's a UUID, resolve by external ID
-        if (dto.getFactionName()
-            .matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          syncServiceDependencies
-              .getFactionRepository()
-              .findByExternalId(dto.getFactionName())
-              .ifPresent(team::setFaction);
-        } else {
-          syncServiceDependencies
-              .getFactionRepository()
-              .findByName(dto.getFactionName())
-              .ifPresent(team::setFaction);
+        if (w1.isPresent() && !w1.get().equals(team.getWrestler1())) {
+          team.setWrestler1(w1.get());
+          changed = true;
+        }
+        if (w2.isPresent() && !w2.get().equals(team.getWrestler2())) {
+          team.setWrestler2(w2.get());
+          changed = true;
         }
       }
 
-      syncServiceDependencies.getTeamRepository().saveAndFlush(team);
-      log.info("✅ {} team: {}", isNew ? "Created" : "Updated", team.getName());
-      return team;
+      // Associate with Universe (Default ID 1)
+      if (team.getUniverse() == null) {
+        universeRepository.findById(1L).ifPresent(team::setUniverse);
+        changed = true;
+      }
 
+      if (changed) {
+        if (isNewTeam) {
+          teamRepository.save(team);
+        } else {
+          teamRepository.saveAndFlush(team);
+        }
+        return true;
+      }
+
+      return false;
     } catch (Exception e) {
-      log.error("Failed to save team '{}': {}", dto.getName(), e.getMessage(), e);
-      throw new RuntimeException("Failed to save team: " + dto.getName(), e);
+      log.error("❌ Failed to save team: {} - {}", dto.getName(), e.getMessage());
+      return false;
     }
+  }
+
+  /** DTO for Team data from Notion. */
+  @Setter
+  @Getter
+  public static class TeamSyncDTO {
+    private String name;
+    private String description;
+    private String externalId; // Notion page ID
+    private List<String> memberExternalIds = new ArrayList<>();
   }
 }

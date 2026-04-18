@@ -27,9 +27,14 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,16 +54,20 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private WrestlerService wrestlerService;
 
   private Wrestler maleWrestler;
   private Wrestler femaleWrestler;
   private Title womensTitle;
+  private Universe defaultUniverse;
 
   @BeforeEach
   public void setupTestData() {
@@ -73,44 +82,56 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     campaignEncounterRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
     titleRepository.deleteAll();
+    wrestlerStateRepository.deleteAll();
     wrestlerRepository.deleteAll();
+    universeRepository.deleteAll();
+
+    defaultUniverse =
+        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");
-    maleWrestler.setFans(WrestlerTier.MIDCARDER.getMaxFans());
     maleWrestler.setGender(Gender.MALE);
-    maleWrestler.setTier(WrestlerTier.MIDCARDER);
     maleWrestler.setDeckSize(15);
     maleWrestler.setStartingHealth(15);
     maleWrestler.setLowHealth(0);
     maleWrestler.setStartingStamina(0);
     maleWrestler.setLowStamina(0);
     maleWrestler.setIsPlayer(false);
-    maleWrestler.setBumps(0);
-    wrestlerRepository.saveAndFlush(maleWrestler);
+    maleWrestler = wrestlerRepository.saveAndFlush(maleWrestler);
+
+    WrestlerState maleState =
+        wrestlerService.getOrCreateState(maleWrestler.getId(), defaultUniverse.getId());
+    maleState.setFans(WrestlerTier.MIDCARDER.getMaxFans());
+    maleState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(maleState);
 
     femaleWrestler = new Wrestler();
     femaleWrestler.setName("Female Wrestler");
-    femaleWrestler.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000);
     femaleWrestler.setGender(Gender.FEMALE);
-    femaleWrestler.setTier(WrestlerTier.MIDCARDER);
     femaleWrestler.setDeckSize(15);
     femaleWrestler.setStartingHealth(15);
     femaleWrestler.setLowHealth(0);
     femaleWrestler.setStartingStamina(0);
     femaleWrestler.setLowStamina(0);
     femaleWrestler.setIsPlayer(false);
-    femaleWrestler.setBumps(0);
-    wrestlerRepository.saveAndFlush(femaleWrestler);
+    femaleWrestler = wrestlerRepository.saveAndFlush(femaleWrestler);
+
+    WrestlerState femaleState =
+        wrestlerService.getOrCreateState(femaleWrestler.getId(), defaultUniverse.getId());
+    femaleState.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000);
+    femaleState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(femaleState);
 
     womensTitle = new Title();
     womensTitle.setName("Women's World Championship");
     womensTitle.setGender(Gender.FEMALE);
     womensTitle.setTier(WrestlerTier.ROOKIE);
     womensTitle.setChampionshipType(ChampionshipType.SINGLE);
+    womensTitle.setUniverse(defaultUniverse);
     titleRepository.save(womensTitle);
 
-    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
+    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerStateRepository.findAll()));
   }
 
   @Test

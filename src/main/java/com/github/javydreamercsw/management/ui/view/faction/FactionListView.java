@@ -73,6 +73,7 @@ public class FactionListView extends VerticalLayout {
   final ComboBox<Npc> manager;
   final TextField alignment;
   final Grid<Faction> factionGrid = new Grid<>(Faction.class, false);
+  final Button createBtn;
 
   @Autowired
   public FactionListView(
@@ -125,9 +126,8 @@ public class FactionListView extends VerticalLayout {
     configureGrid();
     setupEditDialog();
 
-    Button createButton = null;
     if (securityUtils.canCreate()) {
-      createButton =
+      createBtn =
           new Button(
               "Create Faction",
               e -> {
@@ -138,12 +138,15 @@ public class FactionListView extends VerticalLayout {
                 editDialog.setHeaderTitle("Create Faction");
                 editDialog.open();
               });
-      createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    } else {
+      createBtn = new Button();
+      createBtn.setVisible(false);
     }
 
     ViewToolbar toolbar =
-        createButton != null
-            ? new ViewToolbar("Factions", createButton)
+        createBtn.isVisible()
+            ? new ViewToolbar("Factions", createBtn)
             : new ViewToolbar("Factions");
 
     add(toolbar, factionGrid);

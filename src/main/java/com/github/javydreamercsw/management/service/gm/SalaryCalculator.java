@@ -18,12 +18,15 @@ package com.github.javydreamercsw.management.service.gm;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
-/** Calculates wrestler salaries based on their fan count and tier. */
+/**
+ * Calculates wrestler salaries based on their fan count and tier within a specific universe state.
+ */
 @Component
 public class SalaryCalculator {
 
@@ -31,16 +34,18 @@ public class SalaryCalculator {
   private static final BigDecimal MULTIPLIER_PER_1000_FANS = new BigDecimal("10");
 
   /**
-   * Calculates the weekly salary for a wrestler. Formula: Base Salary + (Fans / 1000) * Multiplier
+   * Calculates the weekly salary for a wrestler in a specific universe state. Formula: Base Salary
+   * + (Fans / 1000) * Multiplier
    */
-  public BigDecimal calculateWeeklySalary(@NonNull Wrestler wrestler) {
-    long fans = wrestler.getFans();
+  public BigDecimal calculateWeeklySalary(
+      @NonNull Wrestler wrestler, @NonNull WrestlerState state) {
+    long fans = state.getFans();
     BigDecimal fanBonus =
         BigDecimal.valueOf(fans)
             .divide(new BigDecimal("1000"), 0, RoundingMode.FLOOR)
             .multiply(MULTIPLIER_PER_1000_FANS);
 
-    WrestlerTier tier = wrestler.getTier();
+    WrestlerTier tier = state.getTier();
 
     BigDecimal tierMultiplier =
         switch (tier) {
@@ -53,5 +58,11 @@ public class SalaryCalculator {
         };
 
     return BASE_SALARY.add(fanBonus).multiply(tierMultiplier).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  /** Calculates the weekly salary for a wrestler using their default universe state. */
+  @Deprecated
+  public BigDecimal calculateWeeklySalary(@NonNull Wrestler wrestler) {
+    return calculateWeeklySalary(wrestler, wrestler.getDefaultState().orElseThrow());
   }
 }

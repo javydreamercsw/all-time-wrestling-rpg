@@ -40,9 +40,14 @@ import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -66,8 +71,12 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private NpcService npcService;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
 
   private Wrestler testWrestler;
+  private Universe defaultUniverse;
 
   @BeforeEach
   void setUp() {
@@ -91,12 +100,19 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     multiWrestlerFeudRepository.deleteAll();
     segmentRepository.deleteAll();
     showRepository.deleteAll();
+    wrestlerStateRepository.deleteAll();
     wrestlerRepository.deleteAll();
+    universeRepository.deleteAll();
     seasonRepository.deleteAll();
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
 
+    defaultUniverse =
+        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+
     testWrestler = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Test Wrestler"));
+    wrestlerService.getOrCreateState(testWrestler.getId(), defaultUniverse.getId());
+
     // Ensure a default season exists for tests
     if (seasonService.findByName("Default Season") == null) {
       seasonService.createSeason("Default Season", "Default Season", 4);
@@ -140,7 +156,10 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     WebElement wrestlerDetails = driver.findElement(By.tagName("p"));
     assertTrue(wrestlerDetails.getText().contains("Gender: " + testWrestler.getGender()));
-    assertTrue(wrestlerDetails.getText().contains("Fans: " + testWrestler.getFans()));
+
+    WrestlerState state =
+        wrestlerService.getOrCreateState(testWrestler.getId(), defaultUniverse.getId());
+    assertTrue(wrestlerDetails.getText().contains("Fans: " + state.getFans()));
 
     // Verify that manager is not displayed
     assertTrue(driver.findElements(By.id("manager-name")).isEmpty());
@@ -151,13 +170,19 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Given
     Wrestler wrestler1 = TestUtils.createWrestler("Wrestler 1");
     wrestler1.setGender(Gender.MALE);
-    wrestler1.setFans(1000L);
-    wrestlerRepository.saveAndFlush(wrestler1);
+    wrestler1 = wrestlerRepository.saveAndFlush(wrestler1);
+    WrestlerState state1 =
+        wrestlerService.getOrCreateState(wrestler1.getId(), defaultUniverse.getId());
+    state1.setFans(1000L);
+    wrestlerStateRepository.saveAndFlush(state1);
 
     Wrestler wrestler2 = TestUtils.createWrestler("Wrestler 2");
     wrestler2.setGender(Gender.MALE);
-    wrestler2.setFans(1000L);
-    wrestlerRepository.saveAndFlush(wrestler2);
+    wrestler2 = wrestlerRepository.saveAndFlush(wrestler2);
+    WrestlerState state2 =
+        wrestlerService.getOrCreateState(wrestler2.getId(), defaultUniverse.getId());
+    state2.setFans(1000L);
+    wrestlerStateRepository.saveAndFlush(state2);
 
     Assertions.assertNotNull(wrestler1.getId());
     Assertions.assertNotNull(wrestler2.getId());
@@ -203,12 +228,19 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Given
     Wrestler wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
     wrestler1.setGender(Gender.MALE);
-    wrestler1.setFans(1000L);
-    wrestlerRepository.saveAndFlush(wrestler1);
+    wrestler1 = wrestlerRepository.saveAndFlush(wrestler1);
+    WrestlerState state1 =
+        wrestlerService.getOrCreateState(wrestler1.getId(), defaultUniverse.getId());
+    state1.setFans(1000L);
+    wrestlerStateRepository.saveAndFlush(state1);
 
     Title title =
         titleService.createTitle(
-            "Test Title", "Test Title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
+            "Test Title",
+            "Test Title",
+            WrestlerTier.ROOKIE,
+            ChampionshipType.SINGLE,
+            defaultUniverse.getId());
 
     Season season = seasonService.createSeason("Test Season", "Test Season", 5);
     Show show =
@@ -219,7 +251,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             null,
             season.getId(),
             null,
-            null,
+            defaultUniverse.getId(),
             null,
             null);
 
@@ -292,7 +324,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     Title title =
         titleService.createTitle(
-            "World Title", "The top title", WrestlerTier.MAIN_EVENTER, ChampionshipType.SINGLE);
+            "World Title",
+            "The top title",
+            WrestlerTier.MAIN_EVENTER,
+            ChampionshipType.SINGLE,
+            defaultUniverse.getId());
 
     Season season = seasonService.createSeason("History Season", "Season for history", 10);
     Show show =
@@ -303,7 +339,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             null,
             season.getId(),
             null,
-            null,
+            defaultUniverse.getId(),
             null,
             null);
 

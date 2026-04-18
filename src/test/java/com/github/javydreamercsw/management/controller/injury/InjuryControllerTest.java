@@ -56,12 +56,12 @@ class InjuryControllerTest extends AbstractControllerTest {
     injury.setHealthPenalty(10);
     injury.setIsActive(true);
 
-    when(injuryService.createInjury(any(), any(), any(), any(), any()))
+    when(injuryService.createInjury(any(), any(), any(), any(), any(), any()))
         .thenReturn(Optional.of(injury));
 
     InjuryController.CreateInjuryRequest request =
         new InjuryController.CreateInjuryRequest(
-            1L, "Broken Leg", "A severe break.", InjurySeverity.SEVERE, "Some notes");
+            1L, 1L, "Broken Leg", "A severe break.", InjurySeverity.SEVERE, "Some notes");
 
     mockMvc
         .perform(

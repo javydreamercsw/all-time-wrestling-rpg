@@ -42,7 +42,7 @@ class InjuryPenaltiesTest extends AbstractIntegrationTest {
 
     Optional<Injury> injury =
         injuryService.createInjury(
-            wrestler.getId(), "Test Injury", "Description", InjurySeverity.CRITICAL, "Notes");
+            wrestler.getId(), 1L, "Test Injury", "Description", InjurySeverity.CRITICAL, "Notes");
 
     assertThat(injury).isPresent();
     assertThat(injury.get().getHealthPenalty()).isPositive();

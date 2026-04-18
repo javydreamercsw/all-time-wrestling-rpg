@@ -26,8 +26,11 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -45,16 +48,23 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DramaEventService dramaEventService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerService wrestlerService;
   @Autowired private AccountRepository accountRepository;
   @Autowired private RoleRepository roleRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private PasswordEncoder passwordEncoder;
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
   private Wrestler playerWrestler;
+  private Universe defaultUniverse;
 
   @BeforeEach
   void setUp() {
+    clearAllRepositories();
+    defaultUniverse =
+        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+
     // Roles should be present in the DB from migrations or a general test data setup.
     Role playerRole =
         roleRepository
@@ -95,26 +105,21 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     testWrestler1 = new Wrestler();
     testWrestler1.setName("Test Wrestler 1");
     testWrestler1.setAccount(testAccount1);
-    wrestlerRepository.save(testWrestler1);
+    testWrestler1 = wrestlerRepository.save(testWrestler1);
+    wrestlerService.getOrCreateState(testWrestler1.getId(), defaultUniverse.getId());
 
     testWrestler2 = new Wrestler();
     testWrestler2.setName("Test Wrestler 2");
     testWrestler2.setAccount(testAccount2);
-    wrestlerRepository.save(testWrestler2);
+    testWrestler2 = wrestlerRepository.save(testWrestler2);
+    wrestlerService.getOrCreateState(testWrestler2.getId(), defaultUniverse.getId());
 
     playerWrestler = new Wrestler();
     playerWrestler.setName("Drama Player Wrestler");
     playerWrestler.setAccount(dramaPlayerAccount);
-    wrestlerRepository.save(playerWrestler);
+    playerWrestler = wrestlerRepository.save(playerWrestler);
+    wrestlerService.getOrCreateState(playerWrestler.getId(), defaultUniverse.getId());
   }
-
-  /*
-   * @AfterEach
-   *
-   * @Override public void tearDown() { wrestlerRepository.delete(testWrestler1);
-   * wrestlerRepository.delete(testWrestler2); accountRepository.delete(testAccount1);
-   * accountRepository.delete(testAccount2); super.tearDown(); }
-   */
 
   @Test
   @WithCustomMockUser(
@@ -128,7 +133,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
             DramaEventType.BACKSTAGE_INCIDENT,
             DramaEventSeverity.NEUTRAL,
             "Test Title",
-            "Test Description");
+            "Test Description",
+            defaultUniverse.getId());
     Assertions.assertTrue(event.isPresent());
   }
 
@@ -144,7 +150,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
             DramaEventType.BACKSTAGE_INCIDENT,
             DramaEventSeverity.NEUTRAL,
             "Test Title",
-            "Test Description");
+            "Test Description",
+            defaultUniverse.getId());
     Assertions.assertTrue(event.isPresent());
   }
 
@@ -160,7 +167,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
                 DramaEventType.BACKSTAGE_INCIDENT,
                 DramaEventSeverity.NEUTRAL,
                 "Test Title",
-                "Test Description"));
+                "Test Description",
+                defaultUniverse.getId()));
   }
 
   @Test
@@ -175,7 +183,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
                 DramaEventType.BACKSTAGE_INCIDENT,
                 DramaEventSeverity.NEUTRAL,
                 "Test Title",
-                "Test Description"));
+                "Test Description",
+                defaultUniverse.getId()));
   }
 
   @Test
@@ -183,7 +192,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
       username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanGenerateRandomDramaEvent() {
-    Optional<DramaEvent> event = dramaEventService.generateRandomDramaEvent(testWrestler1.getId());
+    Optional<DramaEvent> event =
+        dramaEventService.generateRandomDramaEvent(testWrestler1.getId(), defaultUniverse.getId());
     Assertions.assertTrue(event.isPresent());
   }
 
@@ -192,7 +202,9 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotGenerateRandomDramaEvent() {
     Assertions.assertThrows(
         AuthorizationDeniedException.class,
-        () -> dramaEventService.generateRandomDramaEvent(testWrestler1.getId()));
+        () ->
+            dramaEventService.generateRandomDramaEvent(
+                testWrestler1.getId(), defaultUniverse.getId()));
   }
 
   @Test
@@ -206,7 +218,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
         DramaEventType.BACKSTAGE_INCIDENT,
         DramaEventSeverity.NEUTRAL,
         "Test Title",
-        "Test Description");
+        "Test Description",
+        defaultUniverse.getId());
     dramaEventService.processUnprocessedEvents();
     // No exception means success
   }
@@ -230,7 +243,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
             DramaEventType.BACKSTAGE_INCIDENT,
             DramaEventSeverity.NEUTRAL,
             "Test Title",
-            "Test Description");
+            "Test Description",
+            defaultUniverse.getId());
     Assertions.assertTrue(event.isPresent());
     dramaEventService.processEvent(event.get());
     // No exception means success

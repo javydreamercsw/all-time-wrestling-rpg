@@ -24,8 +24,10 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ class FactionErrorHandlingTest {
   @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
+  @Mock private UniverseContextService universeContextService;
 
   private FactionListView factionListView;
 
@@ -64,13 +67,14 @@ class FactionErrorHandlingTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
   }
 
   @Test
   @DisplayName("Should handle service unavailable errors")
   void shouldHandleServiceUnavailableErrors() {
     // Given
-    when(factionService.findAllWithMembersAndTeams())
+    when(factionService.findAllByUniverse(anyLong()))
         .thenThrow(new RuntimeException("Database connection failed"));
 
     // When/Then - View should still be created but handle the error gracefully
@@ -78,7 +82,12 @@ class FactionErrorHandlingTest {
         RuntimeException.class,
         () -> {
           new FactionListView(
-              factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+              factionService,
+              wrestlerService,
+              npcService,
+              wrestlerRepository,
+              securityUtils,
+              universeContextService);
         });
   }
 
@@ -99,7 +108,12 @@ class FactionErrorHandlingTest {
           // Instantiate the view to ensure it can be created without null pointers
           FactionListView view =
               new FactionListView(
-                  factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+                  factionService,
+                  wrestlerService,
+                  npcService,
+                  wrestlerRepository,
+                  securityUtils,
+                  universeContextService);
           assertNotNull(view);
         });
   }
@@ -108,11 +122,16 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle faction save failures")
   void shouldHandleFactionSaveFailures() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     Faction factionToSave = Faction.builder().build();
     factionToSave.setName("Test Faction");
@@ -134,11 +153,16 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle faction deletion failures")
   void shouldHandleFactionDeletionFailures() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     Faction factionToDelete = Faction.builder().build();
     factionToDelete.setId(1L);
@@ -146,27 +170,32 @@ class FactionErrorHandlingTest {
 
     doThrow(new RuntimeException("Cannot delete faction with active members"))
         .when(factionService)
-        .delete(factionToDelete);
+        .deleteById(1L);
 
     // When/Then
     assertThrows(
         RuntimeException.class,
         () -> {
-          factionService.delete(factionToDelete);
+          factionService.deleteById(1L);
         });
 
-    verify(factionService).delete(factionToDelete);
+    verify(factionService).deleteById(1L);
   }
 
   @Test
   @DisplayName("Should handle member management failures")
   void shouldHandleMemberManagementFailures() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     Long factionId = 1L;
     Long wrestlerId = 2L;
@@ -188,11 +217,16 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle invalid faction data")
   void shouldHandleInvalidFactionData() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     // Test various invalid faction scenarios
     Faction invalidFaction1 = Faction.builder().build(); // No name, no alignment
@@ -218,8 +252,8 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle concurrent modification errors")
   void shouldHandleConcurrentModificationErrors() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     Faction faction = Faction.builder().build();
     faction.setId(1L);
     faction.setName("Concurrent Test Faction");
@@ -243,14 +277,18 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle missing faction for member operations")
   void shouldHandleMissingFactionForMemberOperations() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     Long nonExistentFactionId = 999L;
-    Long wrestlerId = 1L;
 
     when(factionService.getFactionById(nonExistentFactionId)).thenReturn(Optional.empty());
 
@@ -266,11 +304,16 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle missing wrestler for member operations")
   void shouldHandleMissingWrestlerForMemberOperations() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     Long factionId = 1L;
     Long nonExistentWrestlerId = 999L;
@@ -307,29 +350,35 @@ class FactionErrorHandlingTest {
       Wrestler wrestler = Wrestler.builder().build();
       wrestler.setId((long) i);
       wrestler.setName("Wrestler " + i);
-      wrestler.setFans((long) (50 + i));
       largeWrestlerList.add(wrestler);
+
+      WrestlerState state = WrestlerState.builder().wrestler(wrestler).fans(100L).build();
+      lenient().when(wrestlerService.getOrCreateState(eq((long) i), anyLong())).thenReturn(state);
     }
 
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(largeFactionList);
-    when(wrestlerService.findAll()).thenReturn(largeWrestlerList);
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(largeFactionList);
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(largeWrestlerList);
 
     // When
     FactionListView viewWithLargeDataset =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     // Then - Should handle large datasets without issues
     assertNotNull(viewWithLargeDataset);
-    verify(factionService).findAllWithMembersAndTeams();
-    verify(wrestlerRepository, atLeastOnce()).findAll();
+    verify(factionService).findAllByUniverse(anyLong());
   }
 
   @Test
   @DisplayName("Should handle network timeout errors")
   void shouldHandleNetworkTimeoutErrors() {
     // Given
-    when(factionService.findAllWithMembersAndTeams())
+    when(factionService.findAllByUniverse(anyLong()))
         .thenThrow(new RuntimeException("Connection timeout"));
 
     // When/Then
@@ -337,24 +386,34 @@ class FactionErrorHandlingTest {
         RuntimeException.class,
         () -> {
           new FactionListView(
-              factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+              factionService,
+              wrestlerService,
+              npcService,
+              wrestlerRepository,
+              securityUtils,
+              universeContextService);
         });
 
-    verify(factionService).findAllWithMembersAndTeams();
+    verify(factionService).findAllByUniverse(anyLong());
   }
 
   @Test
   @DisplayName("Should handle permission denied errors")
   void shouldHandlePermissionDeniedErrors() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     // Specifically set canEdit to false for this test case
     when(securityUtils.canEdit()).thenReturn(false);
 
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     Faction restrictedFaction = Faction.builder().build();
     restrictedFaction.setId(1L);
@@ -377,11 +436,16 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle validation errors gracefully")
   void shouldHandleValidationErrorsGracefully() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     // Test faction with name too long
     Faction factionWithLongName = Faction.builder().build();

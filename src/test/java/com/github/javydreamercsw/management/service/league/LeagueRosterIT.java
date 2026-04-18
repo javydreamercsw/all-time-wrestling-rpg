@@ -33,6 +33,8 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -53,6 +55,7 @@ class LeagueRosterIT extends ManagementIntegrationTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private LeagueRosterRepository leagueRosterRepository;
   @Autowired private SegmentAdjudicationService segmentAdjudicationService;
+  @Autowired private UniverseRepository universeRepository;
 
   @Test
   @Transactional
@@ -60,9 +63,14 @@ class LeagueRosterIT extends ManagementIntegrationTest {
     Account admin = new Account("admin_roster_test", "password123", "roster@test.com");
     accountRepository.save(admin);
 
+    Universe universe = new Universe();
+    universe.setName("Test Universe");
+    universeRepository.save(universe);
+
     League league = new League();
     league.setName("Stats League");
     league.setCommissioner(admin);
+    league.setUniverse(universe);
     leagueRepository.save(league);
 
     ShowType type = new ShowType();
@@ -74,7 +82,7 @@ class LeagueRosterIT extends ManagementIntegrationTest {
     show.setName("Show 1");
     show.setDescription("Desc");
     show.setType(type);
-    show.setLeague(league);
+    show.setUniverse(universe);
     show.setShowDate(LocalDate.now());
     showRepository.save(show);
 

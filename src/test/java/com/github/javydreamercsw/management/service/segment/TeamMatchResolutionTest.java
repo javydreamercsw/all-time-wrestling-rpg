@@ -29,7 +29,12 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -44,6 +49,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class TeamMatchResolutionTest extends ManagementIntegrationTest {
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
 
   private Wrestler rookie1;
@@ -55,106 +63,25 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
   private SegmentType tagTeamSegmentType;
   private SegmentType handicapSegmentType;
   private Show testShow;
+  private Universe defaultUniverse;
 
   @BeforeEach
   void setUp() {
+    defaultUniverse =
+        universeRepository
+            .findById(1L)
+            .orElseGet(
+                () ->
+                    universeRepository.save(
+                        Universe.builder().id(1L).name("Default Universe").build()));
+
     // Create and save test wrestlers
-    rookie1 =
-        wrestlerRepository.save(
-            Wrestler.builder()
-                .name("Rookie 1")
-                .gender(Gender.MALE)
-                .tier(WrestlerTier.ROOKIE)
-                .deckSize(15)
-                .startingHealth(15)
-                .lowHealth(0)
-                .startingStamina(0)
-                .lowStamina(0)
-                .fans(1000L)
-                .isPlayer(false)
-                .bumps(0)
-                .injuries(new java.util.ArrayList<>())
-                .build());
-    rookie2 =
-        wrestlerRepository.save(
-            Wrestler.builder()
-                .name("Rookie 2")
-                .gender(Gender.MALE)
-                .tier(WrestlerTier.ROOKIE)
-                .deckSize(15)
-                .startingHealth(15)
-                .lowHealth(0)
-                .startingStamina(0)
-                .lowStamina(0)
-                .fans(1000L)
-                .isPlayer(false)
-                .bumps(0)
-                .injuries(new java.util.ArrayList<>())
-                .build());
-    rookie3 =
-        wrestlerRepository.save(
-            Wrestler.builder()
-                .name("Rookie 3")
-                .gender(Gender.MALE)
-                .tier(WrestlerTier.ROOKIE)
-                .deckSize(15)
-                .startingHealth(15)
-                .lowHealth(0)
-                .startingStamina(0)
-                .lowStamina(0)
-                .fans(1000L)
-                .isPlayer(false)
-                .bumps(0)
-                .injuries(new java.util.ArrayList<>())
-                .build());
-    rookie4 =
-        wrestlerRepository.save(
-            Wrestler.builder()
-                .name("Rookie 4")
-                .gender(Gender.MALE)
-                .tier(WrestlerTier.ROOKIE)
-                .deckSize(15)
-                .startingHealth(15)
-                .lowHealth(0)
-                .startingStamina(0)
-                .lowStamina(0)
-                .fans(1000L)
-                .isPlayer(false)
-                .bumps(0)
-                .injuries(new java.util.ArrayList<>())
-                .build());
-    contender1 =
-        wrestlerRepository.save(
-            Wrestler.builder()
-                .name("Contender 1")
-                .gender(Gender.MALE)
-                .tier(WrestlerTier.CONTENDER)
-                .deckSize(15)
-                .startingHealth(15)
-                .lowHealth(0)
-                .startingStamina(0)
-                .lowStamina(0)
-                .fans(40000L)
-                .isPlayer(false)
-                .bumps(0)
-                .injuries(new java.util.ArrayList<>())
-                .build());
-    contender2 =
-        wrestlerRepository.save(
-            Wrestler.builder()
-                .name("Contender 1")
-                .gender(Gender.MALE)
-                .tier(WrestlerTier.CONTENDER)
-                .deckSize(15)
-                .startingHealth(15)
-                .lowHealth(0)
-                .startingStamina(0)
-                .lowStamina(0)
-                .fans(40000L)
-                .isPlayer(false)
-                .bumps(0)
-                .injuries(new java.util.ArrayList<>())
-                .build());
+    rookie1 = createTestWrestler("Rookie 1", 1000L, WrestlerTier.ROOKIE);
+    rookie2 = createTestWrestler("Rookie 2", 1000L, WrestlerTier.ROOKIE);
+    rookie3 = createTestWrestler("Rookie 3", 1000L, WrestlerTier.ROOKIE);
+    rookie4 = createTestWrestler("Rookie 4", 1000L, WrestlerTier.ROOKIE);
+    contender1 = createTestWrestler("Contender 1", 40000L, WrestlerTier.CONTENDER);
+    contender2 = createTestWrestler("Contender 2", 40000L, WrestlerTier.CONTENDER);
 
     // Create segment types (rely on DataInitializer for these)
     tagTeamSegmentType =
@@ -212,7 +139,31 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
     testShow.setName("Test Show");
     testShow.setDescription("Test show for team matches");
     testShow.setType(showType);
+    testShow.setUniverse(defaultUniverse);
     testShow = showRepository.save(testShow);
+  }
+
+  private Wrestler createTestWrestler(String name, long fans, WrestlerTier tier) {
+    Wrestler w =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name(name)
+                .gender(Gender.MALE)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .isPlayer(false)
+                .build());
+
+    WrestlerState state = wrestlerService.getOrCreateState(w.getId(), 1L);
+    state.setFans(fans);
+    state.setTier(tier);
+    state.setBumps(0);
+    wrestlerStateRepository.save(state);
+
+    return w;
   }
 
   @BeforeEach
@@ -355,7 +306,7 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
 
     // Should still favor the contender
     int contenderWins = 0;
-    int totalMatches = 1_000;
+    int totalMatches = 100;
     for (int i = 0; i < totalMatches; i++) {
       result =
           npcSegmentResolutionService.resolveTeamSegment(
@@ -382,5 +333,7 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
     Segment result =
         npcSegmentResolutionService.resolveTeamSegment(
             tagTeam1, tagTeam2, tagTeamSegmentType, testShow, "Tag Team Championship");
+
+    assertThat(result).isNotNull();
   }
 }

@@ -67,7 +67,17 @@ class SeasonStatsServiceTest {
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
-    wrestler.setFans(1000L);
+
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        new com.github.javydreamercsw.management.domain.universe.Universe();
+    universe.setId(1L);
+
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    state.setWrestler(wrestler);
+    state.setUniverse(universe);
+    state.setFans(1000L);
+    wrestler.setWrestlerStates(new java.util.ArrayList<>(List.of(state)));
 
     season = new Season();
     season.setId(1L);

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.event.dto;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.context.ApplicationEvent;
@@ -24,10 +24,10 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class WrestlerBumpHealedEvent extends ApplicationEvent {
 
-  private final Wrestler wrestler;
+  private final WrestlerState wrestlerState;
 
-  public WrestlerBumpHealedEvent(@NonNull Object source, @NonNull Wrestler wrestler) {
+  public WrestlerBumpHealedEvent(@NonNull Object source, @NonNull WrestlerState wrestlerState) {
     super(source);
-    this.wrestler = wrestler;
+    this.wrestlerState = wrestlerState;
   }
 }

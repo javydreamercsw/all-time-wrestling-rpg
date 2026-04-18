@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.WrestlerRetiredEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,31 +38,41 @@ class RetirementServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private CampaignRepository campaignRepository;
+  @Mock private WrestlerService wrestlerService;
   @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private RetirementService retirementService;
 
   private Wrestler wrestler;
+  private WrestlerState state;
 
   @BeforeEach
   void setUp() {
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Old Timer");
-    wrestler.setPhysicalCondition(100);
     wrestler.setActive(true);
+
+    state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .physicalCondition(100)
+            .tier(WrestlerTier.MIDCARDER)
+            .build();
+
+    lenient().when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(state);
   }
 
   @Test
   void testNoRetirementAtFullHealth() {
-    retirementService.checkRetirement(wrestler);
+    retirementService.checkRetirement(wrestler, 1L);
     assertTrue(wrestler.getActive());
     verify(wrestlerRepository, never()).save(any());
   }
 
   @Test
   void testForcedRetirement() {
-    wrestler.setPhysicalCondition(5);
+    state.setPhysicalCondition(5);
     // We can't easily mock the internal Random without injecting it,
     // but we can test the retireWrestler method directly
     retirementService.retireWrestler(wrestler, "Injured");
@@ -73,8 +85,8 @@ class RetirementServiceTest {
   @Test
   void testRetirementCheckSkipsInactive() {
     wrestler.setActive(false);
-    wrestler.setPhysicalCondition(0);
-    retirementService.checkRetirement(wrestler);
+    state.setPhysicalCondition(0);
+    retirementService.checkRetirement(wrestler, 1L);
     verify(wrestlerRepository, never()).save(any());
   }
 }

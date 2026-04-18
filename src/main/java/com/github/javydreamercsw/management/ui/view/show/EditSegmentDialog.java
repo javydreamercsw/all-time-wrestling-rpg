@@ -298,8 +298,7 @@ public class EditSegmentDialog extends Dialog {
 
     Gender gender = genderFilter.getValue();
 
-    List<Wrestler> filteredWrestlers =
-        wrestlerService.findAllFiltered(alignment, gender, selectedWrestlers);
+    List<Wrestler> filteredWrestlers = wrestlerService.findAllFiltered(alignment, gender, null);
 
     participantsCombo.setItems(filteredWrestlers);
   }

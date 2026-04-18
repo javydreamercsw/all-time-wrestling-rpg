@@ -28,6 +28,7 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
+import com.github.javydreamercsw.management.config.TestUniverseConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -69,7 +70,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
 @ActiveProfiles("test")
-@Import({TestAIConfiguration.class, TestNotionConfiguration.class})
+@Import({TestAIConfiguration.class, TestNotionConfiguration.class, TestUniverseConfiguration.class})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;

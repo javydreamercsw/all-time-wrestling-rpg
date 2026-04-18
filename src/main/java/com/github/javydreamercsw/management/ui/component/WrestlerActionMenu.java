@@ -123,7 +123,7 @@ public class WrestlerActionMenu extends MenuBar {
         subMenu.addItem(
             "Delete",
             e -> {
-              wrestlerService.delete(wrestler);
+              wrestlerService.delete(wrestler.getId());
               Notification.show("Wrestler deleted", 2000, Notification.Position.BOTTOM_END)
                   .addThemeVariants(NotificationVariant.LUMO_ERROR);
               if (isProfileView) {

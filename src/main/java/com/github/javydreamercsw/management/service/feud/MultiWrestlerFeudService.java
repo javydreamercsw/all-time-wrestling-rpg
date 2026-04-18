@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ public class MultiWrestlerFeudService {
 
   @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private UniverseContextService universeContextService;
   @Autowired private Clock clock;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
@@ -334,14 +336,16 @@ public class MultiWrestlerFeudService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getInterFactionFeuds() {
-    return multiWrestlerFeudRepository.findInterFactionFeuds();
+    return multiWrestlerFeudRepository.findInterFactionFeuds(
+        universeContextService.getCurrentUniverseId());
   }
 
   /** Get independent wrestler feuds (no faction members). */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getIndependentWrestlerFeuds() {
-    return multiWrestlerFeudRepository.findIndependentWrestlerFeuds();
+    return multiWrestlerFeudRepository.findIndependentWrestlerFeuds(
+        universeContextService.getCurrentUniverseId());
   }
 
   /** Get feuds by participant count range. */

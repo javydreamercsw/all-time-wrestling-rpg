@@ -59,7 +59,6 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     wrestler.setExternalId("notion-page-id-123");
     wrestler.setDeckSize(15);
     wrestler.setStartingHealth(0);
-    wrestler.setFans(0L);
     wrestler.setIsPlayer(false);
 
     // This simulates the logic in saveWrestlersToDatabase method
@@ -85,7 +84,6 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     existingWrestler.setId(2L);
     existingWrestler.setName("Existing Wrestler");
     existingWrestler.setDeckSize(20); // Different from default
-    existingWrestler.setFans(5000L);
     existingWrestler.setCreationDate(Instant.now().minusSeconds(3600)); // Created 1 hour ago
 
     // Mock repository save for existing wrestler
@@ -94,7 +92,6 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     updatedWrestler.setName("Existing Wrestler");
     updatedWrestler.setExternalId("notion-page-id-456");
     updatedWrestler.setDeckSize(20); // Preserved
-    updatedWrestler.setFans(5000L); // Preserved
     when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(updatedWrestler);
 
     // When - Simulate the database persistence logic for an existing wrestler

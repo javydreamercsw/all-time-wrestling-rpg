@@ -37,7 +37,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
@@ -49,6 +52,9 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "team", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Team extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -99,6 +105,7 @@ public class Team extends AbstractEntity<Long> {
 
   @Column(name = "status", nullable = false)
   @Enumerated(EnumType.STRING)
+  @Builder.Default
   private TeamStatus status = TeamStatus.ACTIVE;
 
   @Column(name = "formed_date", nullable = false)
@@ -106,6 +113,9 @@ public class Team extends AbstractEntity<Long> {
 
   @Column(name = "disbanded_date")
   private Instant disbandedDate;
+
+  @Column(name = "external_id")
+  private String externalId;
 
   @Override
   public @Nullable Long getId() {

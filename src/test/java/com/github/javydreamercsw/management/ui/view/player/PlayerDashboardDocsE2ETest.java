@@ -68,6 +68,13 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+
   @BeforeEach
   public void setupData() {
     // Clear data to ensure a clean state for documentation
@@ -86,11 +93,15 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
             .name("Documentation Legend")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MAIN_EVENTER)
             .account(playerAccount)
-            .fans(5000L)
             .build();
     wrestlerRepository.save(wrestler);
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), 1L);
+    state.setTier(WrestlerTier.MAIN_EVENTER);
+    state.setFans(5000L);
+    wrestlerStateRepository.saveAndFlush(state);
+
     playerAccount.setActiveWrestlerId(wrestler.getId());
     accountRepository.save(playerAccount);
 

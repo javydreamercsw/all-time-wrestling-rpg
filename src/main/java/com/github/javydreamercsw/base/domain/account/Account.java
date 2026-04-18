@@ -180,10 +180,9 @@ public class Account {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof Account)) {
+    if (!(o instanceof Account account)) {
       return false;
     }
-    Account account = (Account) o;
     return Objects.equals(username, account.username);
   }
 

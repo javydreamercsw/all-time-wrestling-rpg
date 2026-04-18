@@ -60,6 +60,7 @@ public class League {
   private Account commissioner;
 
   @Enumerated(EnumType.STRING)
+  @Builder.Default
   private LeagueStatus status = LeagueStatus.PRE_DRAFT;
 
   private int maxPicksPerPlayer = 1;
@@ -69,6 +70,7 @@ public class League {
       name = "league_excluded_wrestler",
       joinColumns = @JoinColumn(name = "league_id"),
       inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
+  @Builder.Default
   private Set<Wrestler> excludedWrestlers = new HashSet<>();
 
   @Column(name = "budget")

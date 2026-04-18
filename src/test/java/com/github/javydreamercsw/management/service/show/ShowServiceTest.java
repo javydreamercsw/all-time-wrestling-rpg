@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.show;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,16 +27,22 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
@@ -43,6 +50,7 @@ import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -53,7 +61,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -62,11 +69,17 @@ import org.springframework.context.ApplicationEventPublisher;
 class ShowServiceTest {
 
   @Mock private ShowRepository showRepository;
+  @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private SeasonRepository seasonRepository;
+  @Mock private ShowTemplateRepository showTemplateRepository;
+  @Mock private UniverseRepository universeRepository;
+  @Mock private LeagueRepository leagueRepository;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
-  @Mock private ApplicationEventPublisher eventPublisher; // Needed to avoid NPE
+  @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private GameSettingService gameSettingService;
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private LegacyService legacyService;
@@ -75,10 +88,11 @@ class ShowServiceTest {
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private WrestlerContractRepository contractRepository;
   @Mock private SalaryCalculator salaryCalculator;
+  @Mock private RetirementService retirementService;
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
 
-  @InjectMocks private ShowService showService;
+  private ShowService showService;
 
   private Show show;
   private Segment segment;
@@ -93,10 +107,12 @@ class ShowServiceTest {
     showService =
         new ShowService(
             showRepository,
-            null,
-            null,
-            null,
-            null,
+            showTypeRepository,
+            seasonRepository,
+            showTemplateRepository,
+            universeRepository,
+            leagueRepository,
+            wrestlerStateRepository,
             java.time.Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
@@ -111,7 +127,8 @@ class ShowServiceTest {
             arenaRepository,
             leagueRosterRepository,
             contractRepository,
-            salaryCalculator);
+            salaryCalculator,
+            retirementService);
     show = new Show();
     show.setId(1L);
 
@@ -178,11 +195,11 @@ class ShowServiceTest {
 
     // Then
     Assertions.assertNotNull(wrestler3.getId());
-    verify(wrestlerService, times(1)).healChance(wrestler3.getId());
+    verify(wrestlerService, times(1)).healChance(eq(wrestler3.getId()), anyLong());
     Assertions.assertNotNull(wrestler1.getId());
-    verify(wrestlerService, never()).healChance(wrestler1.getId());
+    verify(wrestlerService, never()).healChance(eq(wrestler1.getId()), anyLong());
     Assertions.assertNotNull(wrestler2.getId());
-    verify(wrestlerService, never()).healChance(wrestler2.getId());
+    verify(wrestlerService, never()).healChance(eq(wrestler2.getId()), anyLong());
   }
 
   @Test
@@ -221,11 +238,11 @@ class ShowServiceTest {
     // Then
     // All wrestlers should get a heal chance because promo wrestlers are not "participants"
     Assertions.assertNotNull(wrestler1.getId());
-    verify(wrestlerService, times(1)).healChance(wrestler1.getId());
+    verify(wrestlerService, times(1)).healChance(eq(wrestler1.getId()), anyLong());
     Assertions.assertNotNull(wrestler2.getId());
-    verify(wrestlerService, times(1)).healChance(wrestler2.getId());
+    verify(wrestlerService, times(1)).healChance(eq(wrestler2.getId()), anyLong());
     Assertions.assertNotNull(wrestler3.getId());
-    verify(wrestlerService, times(1)).healChance(wrestler3.getId());
+    verify(wrestlerService, times(1)).healChance(eq(wrestler3.getId()), anyLong());
   }
 
   @Test

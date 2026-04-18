@@ -49,13 +49,13 @@ public class WrestlerInjuryInboxListener implements ApplicationListener<Wrestler
 
   @Override
   public void onApplicationEvent(@NonNull WrestlerInjuryEvent event) {
-    log.info("Received WrestlerInjuryEvent for wrestler: {}", event.getWrestler().getName());
+    log.info("Received WrestlerInjuryEvent for wrestler: {}", event.getWrestlerState().getName());
     inboxService.createInboxItem(
         wrestlerInjury,
         String.format(
             "Wrestler %s sustained a %s injury.",
-            event.getWrestler().getName(), event.getInjury().getDescription()),
-        event.getWrestler().getId().toString(),
+            event.getWrestlerState().getName(), event.getInjury().getDescription()),
+        event.getWrestlerState().getWrestler().getId().toString(),
         InboxItemTarget.TargetType.WRESTLER);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));

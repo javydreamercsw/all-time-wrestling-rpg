@@ -115,7 +115,8 @@ public class DramaEventScheduler {
 
         // Safety check: skip if this wrestler already has too many active injuries (max 3)
         // This helps prevent injury accumulation if the scheduler runs too frequently.
-        if (dramaEventService.getActiveInjuryCount(randomWrestlerId) < 3) {
+        // Default to universe 1 for now.
+        if (dramaEventService.getActiveInjuryCount(randomWrestlerId, 1L) < 3) {
           generateSingleRandomEvent(randomWrestlerId);
         } else {
           log.debug(
@@ -142,13 +143,7 @@ public class DramaEventScheduler {
       setSystemAuthentication();
       log.debug("Starting scheduled drama event processing...");
 
-      int processedCount = dramaEventService.processUnprocessedEvents();
-
-      if (processedCount > 0) {
-        log.info("Processed {} drama events during scheduled run", processedCount);
-      } else {
-        log.debug("No unprocessed drama events found");
-      }
+      dramaEventService.processUnprocessedEvents();
 
     } catch (Exception e) {
       log.error("Error during scheduled drama event processing", e);
@@ -248,8 +243,8 @@ public class DramaEventScheduler {
   /** Generate a single random drama event. */
   private void generateSingleRandomEvent(@NonNull Long wrestlerId) {
     try {
-      // Generate the event
-      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId);
+      // Generate the event - default to universe 1 for now.
+      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, 1L);
 
       if (eventOpt.isPresent()) {
         var event = eventOpt.get();

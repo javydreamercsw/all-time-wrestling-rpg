@@ -33,7 +33,9 @@ import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -43,6 +45,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,9 +62,12 @@ import org.springframework.context.ApplicationEventPublisher;
 @ExtendWith(MockitoExtension.class)
 class AchievementSystemTest {
 
-  @Mock private AccountRepository accountRepository;
+  @Mock
+  private com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository;
+
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
+  @Mock private AccountRepository accountRepository;
   @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
   @Mock private FeudResolutionService feudResolutionService;
@@ -77,16 +83,16 @@ class AchievementSystemTest {
 
   private Account account;
   private Wrestler wrestler;
+  private WrestlerState wrestlerState;
 
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
   @Mock private WrestlerRelationshipService relationshipService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
+  @Mock private RetirementService retirementService;
 
-  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private GameSettingService gameSettingService;
 
   @BeforeEach
   void setUp() {
@@ -106,6 +112,7 @@ class AchievementSystemTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -126,7 +133,16 @@ class AchievementSystemTest {
     wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
     wrestler.setAccount(account);
-    wrestler.setFans(0L);
+
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        new com.github.javydreamercsw.management.domain.universe.Universe();
+    universe.setId(1L);
+
+    wrestlerState = new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    wrestlerState.setWrestler(wrestler);
+    wrestlerState.setUniverse(universe);
+    wrestlerState.setFans(0L);
+    wrestler.setWrestlerStates(new java.util.ArrayList<>(List.of(wrestlerState)));
 
     // Mock achievement repository to return an achievement if found
     lenient()
@@ -172,17 +188,17 @@ class AchievementSystemTest {
     when(wrestlerRepository.findByAccount(account)).thenReturn(wrestlers);
 
     // 10k fans
-    wrestler.setFans(10_000L);
+    wrestlerState.setFans(10_000L);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("CROWD_PLEASER");
 
     // 100k fans
-    wrestler.setFans(100_000L);
+    wrestlerState.setFans(100_000L);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("MAIN_EVENT_DRAW");
 
     // 1M fans
-    wrestler.setFans(1_000_000L);
+    wrestlerState.setFans(1_000_000L);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("GLOBAL_ICON");
   }

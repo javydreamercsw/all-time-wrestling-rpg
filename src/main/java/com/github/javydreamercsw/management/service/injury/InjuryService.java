@@ -75,6 +75,7 @@ public class InjuryService {
         .map(
             wrestler -> {
               Universe universe = universeRepository.findById(universeId).orElseThrow();
+              WrestlerState state = getWrestlerState(wrestlerId, universeId);
               Injury injury = new Injury();
               injury.setWrestler(wrestler);
               injury.setUniverse(universe);
@@ -91,7 +92,7 @@ public class InjuryService {
               injury.setCreationDate(Instant.now(clock));
 
               Injury savedInjury = injuryRepository.saveAndFlush(injury);
-              eventPublisher.publishEvent(new WrestlerInjuryEvent(this, wrestler, savedInjury));
+              eventPublisher.publishEvent(new WrestlerInjuryEvent(this, state, savedInjury));
               return savedInjury;
             });
   }
@@ -108,14 +109,13 @@ public class InjuryService {
       @NonNull Long wrestlerId, @NonNull Long universeId) {
     WrestlerState state =
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
-    Wrestler wrestler = state.getWrestler();
 
     InjurySeverity severity = getRandomInjurySeverityForWrestler(state);
     String injuryName = generateInjuryName(severity);
     String description = generateInjuryDescription(severity);
 
     Injury injury = new Injury();
-    injury.setWrestler(wrestler);
+    injury.setWrestler(state.getWrestler());
     injury.setUniverse(state.getUniverse());
     injury.setName(injuryName);
     injury.setDescription(description);
@@ -131,14 +131,26 @@ public class InjuryService {
     injury.setCreationDate(Instant.now(clock));
 
     Injury savedInjury = injuryRepository.saveAndFlush(injury);
-    eventPublisher.publishEvent(new WrestlerInjuryEvent(this, wrestler, savedInjury));
+    eventPublisher.publishEvent(new WrestlerInjuryEvent(this, state, savedInjury));
     return Optional.of(savedInjury);
   }
 
   public WrestlerState getWrestlerState(Long wrestlerId, Long universeId) {
     return wrestlerStateRepository
         .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
-        .orElseThrow();
+        .orElseGet(
+            () -> {
+              Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
+              Universe universe = universeRepository.findById(universeId).orElseThrow();
+              return wrestlerStateRepository.save(
+                  WrestlerState.builder()
+                      .wrestler(wrestler)
+                      .universe(universe)
+                      .physicalCondition(100)
+                      .fans(0L)
+                      .bumps(0)
+                      .build());
+            });
   }
 
   /** Attempt to heal an injury. */
@@ -203,8 +215,7 @@ public class InjuryService {
     if (success) {
       injury.heal();
       injuryRepository.saveAndFlush(injury);
-      eventPublisher.publishEvent(
-          new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
+      eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, state, injury));
     }
 
     String message =
@@ -348,12 +359,18 @@ public class InjuryService {
           false, "Injury cannot be healed (already healed or inactive)", injury, 0, false);
     }
 
+    // Use current universe state
+    WrestlerState state =
+        wrestlerStateRepository
+            .findByWrestlerAndUniverse(injury.getWrestler(), injury.getUniverse())
+            .orElseThrow(() -> new IllegalStateException("Wrestler has no state in universe"));
+
     // Heal without cost
     injury.heal();
     injuryRepository.save(injury);
 
     // Publish event
-    eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
+    eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, state, injury));
 
     return new HealingResult(true, "Injury healed successfully (Free)", injury, 6, true);
   }

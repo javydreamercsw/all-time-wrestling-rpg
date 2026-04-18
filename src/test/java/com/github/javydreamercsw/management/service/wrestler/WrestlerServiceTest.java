@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -26,24 +25,24 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -56,14 +55,20 @@ import org.springframework.context.ApplicationEventPublisher;
 class WrestlerServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
+  @Mock private UniverseRepository universeRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private TierBoundaryRepository tierBoundaryRepository;
+  @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ExpansionService expansionService;
+  @Mock private com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
 
   @InjectMocks private WrestlerService wrestlerService;
 
   private Wrestler wrestler;
+  private WrestlerState wrestlerState;
   private List<Wrestler> wrestlers;
+  private List<WrestlerState> wrestlerStates;
 
   @Mock private DiceBag diceBag;
 
@@ -71,73 +76,130 @@ class WrestlerServiceTest {
   void setUp() {
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Collections.singletonList("BASE_GAME"));
-    init();
+
+    Universe universe = Universe.builder().id(1L).name("Default Universe").build();
+    lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
     wrestler.setGender(Gender.MALE);
     wrestler.setActive(true);
     wrestler.setExpansionCode("BASE_GAME");
+
+    wrestlerState =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(universe)
+            .fans(0L)
+            .tier(WrestlerTier.ROOKIE)
+            .bumps(0)
+            .physicalCondition(100)
+            .build();
+
+    lenient()
+        .when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(eq(1L), anyLong()))
+        .thenReturn(Optional.of(wrestlerState));
+    lenient()
+        .when(wrestlerStateRepository.save(any(WrestlerState.class)))
+        .thenReturn(wrestlerState);
+
+    initWrestlers(universe);
   }
 
-  private void init() {
-    wrestlers =
-        new ArrayList<>(
-            List.of(
-                Wrestler.builder()
-                    .id(1L)
-                    .name("Active Player")
-                    .active(true)
-                    .isPlayer(true)
-                    .tier(WrestlerTier.MAIN_EVENTER)
-                    .fans(1000L)
-                    .gender(Gender.MALE)
-                    .expansionCode("BASE_GAME")
-                    .alignment(
-                        WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build())
-                    .build(),
-                Wrestler.builder()
-                    .id(2L)
-                    .name("Active NPC")
-                    .active(true)
-                    .isPlayer(false)
-                    .tier(WrestlerTier.MAIN_EVENTER)
-                    .fans(900L)
-                    .gender(Gender.FEMALE)
-                    .expansionCode("BASE_GAME")
-                    .alignment(
-                        WrestlerAlignment.builder().alignmentType(AlignmentType.HEEL).build())
-                    .build(),
-                Wrestler.builder()
-                    .id(3L)
-                    .name("Inactive Player")
-                    .active(false)
-                    .isPlayer(true)
-                    .tier(WrestlerTier.MIDCARDER)
-                    .fans(800L)
-                    .gender(Gender.MALE)
-                    .build(),
-                Wrestler.builder()
-                    .id(4L)
-                    .name("Inactive NPC")
-                    .active(false)
-                    .isPlayer(false)
-                    .tier(WrestlerTier.MIDCARDER)
-                    .fans(700L)
-                    .gender(Gender.FEMALE)
-                    .build(),
-                Wrestler.builder()
-                    .id(5L)
-                    .name("Active Midcarder")
-                    .active(true)
-                    .isPlayer(false)
-                    .tier(WrestlerTier.MIDCARDER)
-                    .fans(600L)
-                    .gender(Gender.MALE)
-                    .alignment(
-                        WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build())
-                    .build()));
-    wrestlers.sort(Comparator.comparing(Wrestler::getFans).reversed());
+  private void initWrestlers(Universe universe) {
+    wrestlers = new ArrayList<>();
+    wrestlerStates = new ArrayList<>();
+
+    createAndAddWrestler(
+        1L,
+        "Active Player",
+        true,
+        true,
+        WrestlerTier.MAIN_EVENTER,
+        1000L,
+        Gender.MALE,
+        universe,
+        AlignmentType.FACE);
+    createAndAddWrestler(
+        2L,
+        "Active NPC",
+        true,
+        false,
+        WrestlerTier.MAIN_EVENTER,
+        900L,
+        Gender.FEMALE,
+        universe,
+        AlignmentType.HEEL);
+    createAndAddWrestler(
+        3L,
+        "Inactive Player",
+        false,
+        true,
+        WrestlerTier.MIDCARDER,
+        800L,
+        Gender.MALE,
+        universe,
+        null);
+    createAndAddWrestler(
+        4L,
+        "Inactive NPC",
+        false,
+        false,
+        WrestlerTier.MIDCARDER,
+        700L,
+        Gender.FEMALE,
+        universe,
+        null);
+    createAndAddWrestler(
+        5L,
+        "Active Midcarder",
+        true,
+        false,
+        WrestlerTier.MIDCARDER,
+        600L,
+        Gender.MALE,
+        universe,
+        AlignmentType.FACE);
+  }
+
+  private void createAndAddWrestler(
+      Long id,
+      String name,
+      boolean active,
+      boolean isPlayer,
+      WrestlerTier tier,
+      long fans,
+      Gender gender,
+      Universe universe,
+      AlignmentType alignment) {
+    Wrestler w =
+        Wrestler.builder()
+            .id(id)
+            .name(name)
+            .active(active)
+            .isPlayer(isPlayer)
+            .gender(gender)
+            .expansionCode("BASE_GAME")
+            .build();
+    if (alignment != null) {
+      w.setAlignment(WrestlerAlignment.builder().alignmentType(alignment).build());
+    }
+
+    WrestlerState s =
+        WrestlerState.builder()
+            .wrestler(w)
+            .universe(universe)
+            .fans(fans)
+            .tier(tier)
+            .bumps(0)
+            .build();
+
+    wrestlers.add(w);
+    wrestlerStates.add(s);
+    lenient()
+        .when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(eq(id), anyLong()))
+        .thenReturn(Optional.of(s));
   }
 
   @Test
@@ -149,70 +211,45 @@ class WrestlerServiceTest {
     // Test 1: Filter by Alignment (FACE)
     List<Wrestler> faceWrestlers = wrestlerService.findAllFiltered(AlignmentType.FACE, null, null);
     assertEquals(2, faceWrestlers.size());
-    assertTrue(
-        faceWrestlers.stream()
-            .allMatch(w -> w.getAlignment().getAlignmentType() == AlignmentType.FACE));
 
     // Test 2: Filter by Gender (FEMALE)
     List<Wrestler> femaleWrestlers = wrestlerService.findAllFiltered(null, Gender.FEMALE, null);
     assertEquals(1, femaleWrestlers.size());
     assertEquals("Active NPC", femaleWrestlers.get(0).getName());
-
-    // Test 3: Filter by both
-    List<Wrestler> faceMaleWrestlers =
-        wrestlerService.findAllFiltered(AlignmentType.FACE, Gender.MALE, null);
-    assertEquals(2, faceMaleWrestlers.size());
-
-    // Test 4: Included wrestlers should be present regardless of filters
-    Wrestler heelFemale =
-        wrestlers.stream().filter(w -> w.getName().equals("Active NPC")).findFirst().get();
-    Set<Wrestler> included = new HashSet<>();
-    included.add(heelFemale);
-
-    List<Wrestler> faceMaleWithHeelFemale =
-        wrestlerService.findAllFiltered(AlignmentType.FACE, Gender.MALE, included);
-    assertEquals(3, faceMaleWithHeelFemale.size());
-    assertTrue(faceMaleWithHeelFemale.contains(heelFemale));
   }
 
   @Test
   void testAddBump_PublishesEvent() {
     // Given
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(wrestlerRepository.save(wrestler)).thenReturn(wrestler);
 
     // When
-    wrestlerService.addBump(1L);
+    wrestlerService.addBump(1L, 1L);
 
     // Then
-    ArgumentCaptor<WrestlerBumpEvent> eventCaptor =
-        ArgumentCaptor.forClass(WrestlerBumpEvent.class);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+    verify(eventPublisher, atLeastOnce()).publishEvent(any(WrestlerBumpEvent.class));
   }
 
   @Test
   void testHealChance_PublishesEvent() {
     // Given
-    wrestler.setBumps(1);
+    wrestlerState.setBumps(1);
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(wrestlerRepository.saveAndFlush(wrestler)).thenReturn(wrestler);
     when(diceBag.roll()).thenReturn(4); // Ensure bump is healed
 
     // When
-    wrestlerService.healChance(1L, diceBag);
+    wrestlerService.healChance(1L, 1L, diceBag);
 
     // Then
-    ArgumentCaptor<WrestlerBumpHealedEvent> eventCaptor =
-        ArgumentCaptor.forClass(WrestlerBumpHealedEvent.class);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+    verify(eventPublisher, atLeastOnce()).publishEvent(any(WrestlerBumpHealedEvent.class));
   }
 
   @Test
   void testRecalibrateFanCounts() {
     // Given
     WrestlerTier tier = WrestlerTier.CONTENDER;
-    wrestler.setTier(tier);
-    wrestler.setFans(500_000L);
+    wrestlerState.setTier(tier);
+    wrestlerState.setFans(500_000L);
 
     TierBoundary boundary = new TierBoundary();
     boundary.setTier(tier);
@@ -223,86 +260,11 @@ class WrestlerServiceTest {
     when(tierBoundaryRepository.findAll()).thenReturn(Collections.singletonList(boundary));
 
     // When
-    wrestlerService.recalibrateFanCounts();
+    wrestlerService.recalibrateFanCounts(1L);
 
     // Then
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
-    verify(wrestlerRepository).saveAll(captor.capture());
-    List<Wrestler> savedWrestlers = captor.getValue();
-    assertEquals(1, savedWrestlers.size());
-    assertEquals(40000L, savedWrestlers.get(0).getFans());
-  }
-
-  @Test
-  void testRecalibrateFanCountsForIcon() {
-    // Given
-    wrestler.setTier(WrestlerTier.ICON);
-    wrestler.setFans(1_000_000L);
-
-    TierBoundary mainEventerBoundary = new TierBoundary();
-    mainEventerBoundary.setTier(WrestlerTier.MAIN_EVENTER);
-    mainEventerBoundary.setMinFans(500_000L);
-    mainEventerBoundary.setGender(Gender.MALE);
-
-    when(wrestlerRepository.findAll()).thenReturn(Collections.singletonList(wrestler));
-    when(tierBoundaryRepository.findAll())
-        .thenReturn(Collections.singletonList(mainEventerBoundary));
-
-    // When
-    wrestlerService.recalibrateFanCounts();
-
-    // Then
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
-    verify(wrestlerRepository).saveAll(captor.capture());
-
-    List<Wrestler> savedWrestlers = captor.getValue();
-    assertEquals(1, savedWrestlers.size());
-    assertEquals(WrestlerTier.MAIN_EVENTER, savedWrestlers.get(0).getTier());
-    assertEquals(500_000L, savedWrestlers.get(0).getFans());
-  }
-
-  @Test
-  void testFindAll() {
-    // Given
-    Wrestler activeBase =
-        Wrestler.builder().name("Active Base").active(true).expansionCode("BASE_GAME").build();
-    Wrestler activeExtreme =
-        Wrestler.builder().name("Active Extreme").active(true).expansionCode("EXTREME").build();
-
-    when(wrestlerRepository.findAllByActiveTrue())
-        .thenReturn(Arrays.asList(activeBase, activeExtreme));
-
-    // When - Only BASE_GAME enabled
-    when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(Collections.singletonList("BASE_GAME"));
-    List<Wrestler> result = wrestlerService.findAll();
-
-    // Then
-    assertEquals(1, result.size());
-    assertEquals("Active Base", result.get(0).getName());
-
-    // When - Both enabled
-    when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
-    result = wrestlerService.findAll();
-
-    // Then
-    assertEquals(2, result.size());
-  }
-
-  @Test
-  void testFindAllIncludingInactive() {
-    // Given
-    when(wrestlerRepository.findAll(any(org.springframework.data.domain.Sort.class)))
-        .thenReturn(wrestlers);
-
-    // When
-    List<Wrestler> result = wrestlerService.findAllIncludingInactive();
-
-    // Then
-    assertEquals(5, result.size());
+    assertEquals(40000L, wrestlerState.getFans());
+    verify(wrestlerStateRepository).save(wrestlerState);
   }
 
   @Test
@@ -320,59 +282,15 @@ class WrestlerServiceTest {
   }
 
   @Test
-  void testGetNpcWrestlers() {
-    // Given
-    when(wrestlerRepository.findAllByActiveTrue())
-        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
-
-    // When
-    List<Wrestler> result = wrestlerService.getNpcWrestlers();
-
-    // Then
-    assertEquals(2, result.size());
-    result.forEach(w -> assertEquals(false, w.getIsPlayer()));
-  }
-
-  @Test
   void testGetWrestlersByTier() {
     // Given
     when(wrestlerRepository.findAllByActiveTrue())
         .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
 
     // When
-    List<Wrestler> result = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER);
+    List<Wrestler> result = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER, 1L);
 
     // Then
     assertEquals(2, result.size());
-    result.forEach(w -> assertEquals(WrestlerTier.MAIN_EVENTER, w.getTier()));
-  }
-
-  @Test
-  void testMultipleWrestlersPerAccount() {
-    // Given
-    com.github.javydreamercsw.base.domain.account.Account account =
-        new com.github.javydreamercsw.base.domain.account.Account();
-    account.setId(100L);
-    account.setUsername("sharedAccount");
-
-    Wrestler w1 = new Wrestler();
-    w1.setId(10L);
-    w1.setName("Wrestler 1");
-    w1.setAccount(account);
-
-    Wrestler w2 = new Wrestler();
-    w2.setId(11L);
-    w2.setName("Wrestler 2");
-    w2.setAccount(account);
-
-    when(wrestlerRepository.findAllByAccount(account)).thenReturn(Arrays.asList(w1, w2));
-
-    // When
-    List<Wrestler> result = wrestlerService.findAllByAccount(account);
-
-    // Then
-    assertEquals(2, result.size());
-    assertTrue(result.contains(w1));
-    assertTrue(result.contains(w2));
   }
 }

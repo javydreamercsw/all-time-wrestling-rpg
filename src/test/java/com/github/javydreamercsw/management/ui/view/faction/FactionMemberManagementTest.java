@@ -21,6 +21,7 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -52,7 +53,7 @@ class FactionMemberManagementTest {
 
   private Faction testFaction;
   private Set<Wrestler> availableWrestlers;
-  private Set<Wrestler> factionMembers;
+  private Set<WrestlerState> factionMembers;
 
   @BeforeEach
   void setUp() {
@@ -62,7 +63,7 @@ class FactionMemberManagementTest {
     testFaction = createTestFactionWithMembers();
 
     // Note: Service methods are only mocked when needed in specific tests
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
   }
 
@@ -94,7 +95,7 @@ class FactionMemberManagementTest {
   @DisplayName("Should remove member from faction")
   void shouldRemoveMemberFromFaction() {
     // Given
-    Wrestler memberToRemove = new ArrayList<>(factionMembers).get(0);
+    Wrestler memberToRemove = new ArrayList<>(factionMembers).get(0).getWrestler();
     Faction updatedFaction = createUpdatedFactionWithRemovedMember(memberToRemove);
 
     assertNotNull(testFaction.getId());
@@ -119,7 +120,8 @@ class FactionMemberManagementTest {
   void shouldFilterAvailableWrestlersForMemberSelection() {
     // Given - All wrestlers and current faction members
     List<Wrestler> allWrestlers = new ArrayList<>(availableWrestlers);
-    allWrestlers.addAll(factionMembers);
+    allWrestlers.addAll(
+        factionMembers.stream().map(WrestlerState::getWrestler).collect(Collectors.toList()));
 
     // When - Filter wrestlers not in faction
     List<Wrestler> availableForSelection =
@@ -133,8 +135,8 @@ class FactionMemberManagementTest {
     assertFalse(availableForSelection.isEmpty());
 
     // Verify no current faction members are in the available list
-    for (Wrestler member : factionMembers) {
-      assertFalse(availableForSelection.contains(member));
+    for (WrestlerState memberState : factionMembers) {
+      assertFalse(availableForSelection.contains(memberState.getWrestler()));
     }
   }
 
@@ -195,7 +197,7 @@ class FactionMemberManagementTest {
   @DisplayName("Should handle member removal errors")
   void shouldHandleMemberRemovalErrors() {
     // Given
-    Wrestler memberToRemove = new ArrayList<>(factionMembers).get(0);
+    Wrestler memberToRemove = new ArrayList<>(factionMembers).get(0).getWrestler();
 
     assertNotNull(testFaction.getId());
     assertNotNull(memberToRemove.getId());
@@ -225,11 +227,12 @@ class FactionMemberManagementTest {
     assertTrue(testFaction.getMemberCount() > 0);
 
     // When/Then - Each member should have proper relationship
-    for (Wrestler member : testFaction.getMembers()) {
-      assertNotNull(member);
-      assertNotNull(member.getId());
-      assertNotNull(member.getName());
-      assertTrue(testFaction.hasMember(member));
+    for (WrestlerState memberState : testFaction.getMembers()) {
+      assertNotNull(memberState);
+      assertNotNull(memberState.getWrestler());
+      assertNotNull(memberState.getWrestler().getId());
+      assertNotNull(memberState.getName());
+      assertTrue(testFaction.hasMember(memberState.getWrestler()));
     }
   }
 
@@ -237,7 +240,7 @@ class FactionMemberManagementTest {
   @DisplayName("Should handle leader as member relationship")
   void shouldHandleLeaderAsMemberRelationship() {
     // Given - Faction with leader who is also a member
-    Wrestler leader = new ArrayList<>(factionMembers).get(0);
+    Wrestler leader = new ArrayList<>(factionMembers).get(0).getWrestler();
     testFaction.setLeader(leader);
 
     // When/Then
@@ -275,27 +278,34 @@ class FactionMemberManagementTest {
     faction.setActive(true);
     faction.setCreationDate(Instant.now());
     faction.setMembers(new HashSet<>(factionMembers));
-    faction.setLeader(new ArrayList<>(factionMembers).get(0)); // First member is leader
+    faction.setLeader(
+        new ArrayList<>(factionMembers).get(0).getWrestler()); // First member is leader
 
     return faction;
   }
 
   /** Helper method to create faction members. */
-  private Set<Wrestler> createFactionMembers() {
-    Set<Wrestler> members = new HashSet<>();
+  private Set<WrestlerState> createFactionMembers() {
+    Set<WrestlerState> members = new HashSet<>();
 
     Wrestler member1 = Wrestler.builder().build();
     member1.setId(10L);
     member1.setName("Faction Leader");
-    member1.setFans(95L);
+
+    WrestlerState state1 = new WrestlerState();
+    state1.setWrestler(member1);
+    state1.setFans(95L);
 
     Wrestler member2 = Wrestler.builder().build();
     member2.setId(11L);
     member2.setName("Faction Member");
-    member2.setFans(85L);
 
-    members.add(member1);
-    members.add(member2);
+    WrestlerState state2 = new WrestlerState();
+    state2.setWrestler(member2);
+    state2.setFans(85L);
+
+    members.add(state1);
+    members.add(state2);
 
     return members;
   }
@@ -307,12 +317,10 @@ class FactionMemberManagementTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(20L);
     wrestler1.setName("Available Wrestler 1");
-    wrestler1.setFans(80L);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(21L);
     wrestler2.setName("Available Wrestler 2");
-    wrestler2.setFans(75L);
 
     wrestlers.add(wrestler1);
     wrestlers.add(wrestler2);
@@ -323,8 +331,10 @@ class FactionMemberManagementTest {
   /** Helper method to create updated faction with new member. */
   private Faction createUpdatedFactionWithNewMember(Wrestler newMember) {
     Faction updated = createTestFactionWithMembers();
-    Set<Wrestler> updatedMembers = new HashSet<>(updated.getMembers());
-    updatedMembers.add(newMember);
+    Set<WrestlerState> updatedMembers = new HashSet<>(updated.getMembers());
+    WrestlerState newState = new WrestlerState();
+    newState.setWrestler(newMember);
+    updatedMembers.add(newState);
     updated.setMembers(updatedMembers);
 
     return updated;
@@ -333,8 +343,8 @@ class FactionMemberManagementTest {
   /** Helper method to create updated faction with removed member. */
   private Faction createUpdatedFactionWithRemovedMember(Wrestler removedMember) {
     Faction updated = createTestFactionWithMembers();
-    Set<Wrestler> updatedMembers = new HashSet<>(updated.getMembers());
-    updatedMembers.remove(removedMember);
+    Set<WrestlerState> updatedMembers = new HashSet<>(updated.getMembers());
+    updatedMembers.removeIf(ms -> ms.getWrestler().equals(removedMember));
     updated.setMembers(updatedMembers);
 
     return updated;

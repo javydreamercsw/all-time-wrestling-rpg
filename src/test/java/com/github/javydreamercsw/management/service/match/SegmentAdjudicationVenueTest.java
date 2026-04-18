@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,11 +25,13 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -73,6 +76,7 @@ class SegmentAdjudicationVenueTest {
   @Mock private WrestlerAlignment alignment;
   @Mock private TitleService titleService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
@@ -81,6 +85,7 @@ class SegmentAdjudicationVenueTest {
   @Mock private RetirementService retirementService;
   @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerRelationshipService relationshipService;
+  @Mock private Universe universe;
 
   private SegmentAdjudicationService adjudicationService;
 
@@ -94,6 +99,7 @@ class SegmentAdjudicationVenueTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -104,6 +110,8 @@ class SegmentAdjudicationVenueTest {
             relationshipService,
             random);
 
+    when(universe.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     when(segment.getShow()).thenReturn(show);
     when(show.getArena()).thenReturn(arena);
     when(arena.getLocation()).thenReturn(location);
@@ -135,7 +143,7 @@ class SegmentAdjudicationVenueTest {
     adjudicationService.adjudicateMatch(segment);
 
     // Base 9,000 (3+3+3) * 1.25 = 11,250
-    verify(wrestlerService).awardFans(eq(1L), eq(11250L));
+    verify(wrestlerService).awardFans(eq(1L), anyLong(), eq(11250L));
   }
 
   @Test
@@ -148,7 +156,7 @@ class SegmentAdjudicationVenueTest {
     adjudicationService.adjudicateMatch(segment);
 
     // Base 9,000 * 1.10 = 9,900
-    verify(wrestlerService).awardFans(eq(1L), eq(9900L));
+    verify(wrestlerService).awardFans(eq(1L), anyLong(), eq(9900L));
   }
 
   @Test
@@ -161,7 +169,7 @@ class SegmentAdjudicationVenueTest {
     adjudicationService.adjudicateMatch(segment);
 
     // Base 9,000 * (1.0 + 0.25 + 0.10) = 9,000 * 1.35 = 12,150
-    verify(wrestlerService).awardFans(eq(1L), eq(12150L));
+    verify(wrestlerService).awardFans(eq(1L), anyLong(), eq(12150L));
   }
 
   @Test
@@ -176,7 +184,7 @@ class SegmentAdjudicationVenueTest {
 
     adjudicationService.adjudicateMatch(segment);
     // Base 9,000 * 1.10 = 9,900
-    verify(wrestlerService).awardFans(eq(1L), eq(9900L));
+    verify(wrestlerService).awardFans(eq(1L), anyLong(), eq(9900L));
 
     // Case 2: Match by first tag (Texas)
     when(location.getName()).thenReturn("Texas Stadium");
@@ -184,6 +192,6 @@ class SegmentAdjudicationVenueTest {
 
     adjudicationService.adjudicateMatch(segment);
     // Base 9,000 * 1.10 = 9,900
-    verify(wrestlerService, times(2)).awardFans(eq(1L), eq(9900L));
+    verify(wrestlerService, times(2)).awardFans(eq(1L), anyLong(), eq(9900L));
   }
 }
