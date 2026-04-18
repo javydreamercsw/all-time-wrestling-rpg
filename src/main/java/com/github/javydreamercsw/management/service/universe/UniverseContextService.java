@@ -18,51 +18,101 @@ package com.github.javydreamercsw.management.service.universe;
 
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
-import com.vaadin.flow.spring.annotation.VaadinSessionScope;
+import com.vaadin.flow.server.VaadinSession;
 import java.io.Serializable;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service to manage the current universe context for the user session. This is a singleton service
+ * that uses VaadinSession attributes for session-specific storage and a ThreadLocal fallback for
+ * non-web environments (like some integration tests).
+ */
 @Service
-@VaadinSessionScope
 @Slf4j
 @RequiredArgsConstructor
 public class UniverseContextService implements Serializable {
 
   private final UniverseRepository universeRepository;
-  private Long currentUniverseId;
+  private static final String UNIVERSE_ID_SESSION_KEY = "currentUniverseId";
+  private static final ThreadLocal<Long> threadLocalUniverseId = new ThreadLocal<>();
 
+  /**
+   * Get the current universe.
+   *
+   * @return Optional of current universe
+   */
   public Optional<Universe> getCurrentUniverse() {
-    if (currentUniverseId == null) {
+    Long id = getInternalUniverseId();
+    if (id == null) {
       // Default to the first universe found if none selected
       return universeRepository.findAll().stream()
           .findFirst()
           .map(
               u -> {
-                this.currentUniverseId = u.getId();
+                setInternalUniverseId(u.getId());
                 return u;
               });
     }
-    return universeRepository.findById(currentUniverseId);
+    return universeRepository.findById(id);
   }
 
+  private Long getInternalUniverseId() {
+    try {
+      VaadinSession session = VaadinSession.getCurrent();
+      if (session != null) {
+        return (Long) session.getAttribute(UNIVERSE_ID_SESSION_KEY);
+      }
+    } catch (Exception e) {
+      // Ignore session access errors in non-web contexts
+    }
+    return threadLocalUniverseId.get();
+  }
+
+  private void setInternalUniverseId(Long id) {
+    try {
+      VaadinSession session = VaadinSession.getCurrent();
+      if (session != null) {
+        session.setAttribute(UNIVERSE_ID_SESSION_KEY, id);
+        return;
+      }
+    } catch (Exception e) {
+      // Ignore session access errors in non-web contexts
+    }
+    threadLocalUniverseId.set(id);
+  }
+
+  /**
+   * Get the current universe ID, falling back to 1L (Default Universe) if none.
+   *
+   * @return Current universe ID
+   */
   public Long getCurrentUniverseId() {
-    return getCurrentUniverse()
-        .map(Universe::getId)
-        .orElse(1L); // Fallback to ID 1 (Default Universe)
+    return getCurrentUniverse().map(Universe::getId).orElse(1L);
   }
 
+  /**
+   * Set the current universe context.
+   *
+   * @param universe The universe to set
+   */
   public void setCurrentUniverse(Universe universe) {
     if (universe != null) {
-      this.currentUniverseId = universe.getId();
+      setInternalUniverseId(universe.getId());
       log.info(
           "Current universe context set to: {} (ID: {})", universe.getName(), universe.getId());
     }
   }
 
-  public void setCurrentUniverseId(Long universeId) {
-    this.currentUniverseId = universeId;
+  /**
+   * Set the current universe ID.
+   *
+   * @param universeId The universe ID to set
+   */
+  public void setCurrentUniverseId(@NonNull Long universeId) {
+    setInternalUniverseId(universeId);
   }
 }

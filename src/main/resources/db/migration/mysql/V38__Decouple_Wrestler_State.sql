@@ -28,7 +28,7 @@ CREATE TABLE wrestler_state (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_ws_wrestler FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id),
     CONSTRAINT fk_ws_universe FOREIGN KEY (universe_id) REFERENCES universe(id),
-    CONSTRAINT fk_ws_faction FOREIGN KEY (faction_id) REFERENCES faction(id),
+    CONSTRAINT fk_ws_faction FOREIGN KEY (faction_id) REFERENCES faction(faction_id),
     CONSTRAINT fk_ws_manager FOREIGN KEY (manager_id) REFERENCES npc(id),
     UNIQUE KEY uk_wrestler_universe (wrestler_id, universe_id)
 );

@@ -201,6 +201,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @JsonIgnore
   public Long getFans(Long universeId) {
+    if (universeId == null) return 0L;
     return wrestlerStates.stream()
         .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
         .map(WrestlerState::getFans)

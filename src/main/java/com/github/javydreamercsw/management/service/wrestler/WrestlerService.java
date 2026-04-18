@@ -65,6 +65,8 @@ public class WrestlerService {
   private final com.github.javydreamercsw.management.service.title.TitleService titleService;
   private final com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
   private final SecurityUtils securityUtils;
+  private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
 
   @Autowired
   public WrestlerService(
@@ -78,7 +80,8 @@ public class WrestlerService {
       @Lazy com.github.javydreamercsw.management.service.segment.SegmentService segmentService,
       @Lazy com.github.javydreamercsw.management.service.title.TitleService titleService,
       @Lazy com.github.javydreamercsw.management.service.injury.InjuryService injuryService,
-      SecurityUtils securityUtils) {
+      SecurityUtils securityUtils,
+      com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository) {
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
@@ -90,6 +93,7 @@ public class WrestlerService {
     this.titleService = titleService;
     this.injuryService = injuryService;
     this.securityUtils = securityUtils;
+    this.universeRepository = universeRepository;
   }
 
   @Transactional
@@ -248,8 +252,15 @@ public class WrestlerService {
                       .orElseThrow(
                           () -> new IllegalArgumentException("Wrestler not found: " + wrestlerId));
               com.github.javydreamercsw.management.domain.universe.Universe universe =
-                  new com.github.javydreamercsw.management.domain.universe.Universe();
-              universe.setId(universeId);
+                  universeRepository
+                      .findById(universeId)
+                      .orElseGet(
+                          () -> {
+                            com.github.javydreamercsw.management.domain.universe.Universe u =
+                                new com.github.javydreamercsw.management.domain.universe.Universe();
+                            u.setId(universeId);
+                            return u;
+                          });
               WrestlerState newState =
                   WrestlerState.builder()
                       .wrestler(wrestler)

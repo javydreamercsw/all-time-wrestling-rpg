@@ -78,6 +78,7 @@ class TitleServiceTest {
   @BeforeEach
   void setUp() {
     defaultUniverse = Universe.builder().name("Default Universe").build();
+    defaultUniverse.setId(1L);
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(defaultUniverse));
 
     titleService =
@@ -156,10 +157,12 @@ class TitleServiceTest {
     WrestlerState state =
         WrestlerState.builder()
             .wrestler(challenger)
+            .universe(defaultUniverse)
             .fans(120000L)
             .tier(WrestlerTier.MAIN_EVENTER)
             .build();
-    when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(state);
+    challenger.getWrestlerStates().add(state);
+    lenient().when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(state);
     when(wrestlerService.spendFans(eq(2L), anyLong(), anyLong())).thenReturn(true);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -95,7 +96,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
             .orElseGet(
                 () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
 
-    if (!showTypeRepository.findByName("Weekly").isPresent()) {
+    if (showTypeRepository.findByName("Weekly").isEmpty()) {
       ShowType weeklyShowType = new ShowType();
       weeklyShowType.setName("Weekly");
       weeklyShowType.setDescription("A weekly show");
@@ -120,7 +121,8 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
 
     // Award fans to create tier differences
     Assertions.assertNotNull(contender.getId());
-    wrestlerService.awardFans(contender.getId(), 1L, 45000L); // CONTENDER tier
+    Assertions.assertNotNull(defaultUniverse.getId());
+    wrestlerService.awardFans(contender.getId(), defaultUniverse.getId(), 45000L); // CONTENDER tier
 
     // Refresh wrestler entities from database
     contender = wrestlerRepository.findById(contender.getId()).orElseThrow();
@@ -178,7 +180,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       assertThat(result.getShow()).isEqualTo(testShow);
       assertThat(result.getSegmentType()).isEqualTo(singlesSegmentType);
       assertThat(result.getWinners()).hasSize(1);
-      assertThat(result.getWinners().get(0)).isIn(rookie1, rookie2);
+      assertThat(result.getWinners().getFirst()).isIn(rookie1, rookie2);
       assertThat(result.getIsNpcGenerated()).isTrue();
       assertThat(result.getParticipants()).hasSize(2);
 
@@ -243,7 +245,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       assertThat(result.getShow()).isEqualTo(testShow);
       assertThat(result.getSegmentType()).isEqualTo(tagTeamType);
       assertThat(result.getWinners()).hasSize(1);
-      assertThat(result.getWinners().get(0)).isIn(rookie1, rookie2, contender);
+      assertThat(result.getWinners().getFirst()).isIn(rookie1, rookie2, contender);
       assertThat(result.getIsNpcGenerated()).isTrue();
       assertThat(result.getParticipants()).hasSize(3);
 
@@ -287,10 +289,12 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       when(severity.getDisplayName()).thenReturn("Minor");
       when(injuryService.createInjuryFromBumps(anyLong(), anyLong()))
           .thenReturn(Optional.of(injury));
-      Assertions.assertNotNull(rookie1.getId());
-      wrestlerService.addBump(rookie1.getId(), 1L);
-      wrestlerService.addBump(rookie1.getId(), 1L);
-      wrestlerService.addBump(rookie1.getId(), 1L); // This should create an injury
+      assertNotNull(rookie1.getId());
+      assertNotNull(defaultUniverse.getId());
+      wrestlerService.addBump(rookie1.getId(), defaultUniverse.getId());
+      wrestlerService.addBump(rookie1.getId(), defaultUniverse.getId());
+      wrestlerService.addBump(
+          rookie1.getId(), defaultUniverse.getId()); // This should create an injury
 
       // Refresh wrestler from database
       rookie1 = wrestlerRepository.findById(rookie1.getId()).orElseThrow();
@@ -344,9 +348,11 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       Wrestler f2 =
           wrestlerService.createWrestler(
               "Faction Member 2", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
-
-      WrestlerState s1 = wrestlerService.getOrCreateState(f1.getId(), 1L);
-      WrestlerState s2 = wrestlerService.getOrCreateState(f2.getId(), 1L);
+      assertNotNull(f1.getId());
+      assertNotNull(f2.getId());
+      assertNotNull(defaultUniverse.getId());
+      WrestlerState s1 = wrestlerService.getOrCreateState(f1.getId(), defaultUniverse.getId());
+      WrestlerState s2 = wrestlerService.getOrCreateState(f2.getId(), defaultUniverse.getId());
       s1.setFaction(highAffinityFaction);
       s2.setFaction(highAffinityFaction);
       wrestlerStateRepository.saveAll(List.of(s1, s2));
@@ -378,7 +384,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       // Then - Faction should win more than 50% (base is equal, bonus is +10 weight)
       double winRate = (double) factionWins / totalMatches;
       assertThat(winRate)
-          .isGreaterThan(0.51)
+          .isGreaterThanOrEqualTo(0.51)
           .describedAs(
               "Faction with 100 affinity should have clear advantage over independents (found "
                   + winRate

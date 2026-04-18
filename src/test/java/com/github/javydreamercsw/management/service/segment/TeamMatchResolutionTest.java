@@ -155,7 +155,7 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
                 .isPlayer(false)
                 .build());
 
-    WrestlerState state = wrestlerService.getOrCreateState(w.getId(), 1L);
+    WrestlerState state = wrestlerService.getOrCreateState(w.getId(), defaultUniverse.getId());
     state.setFans(fans);
     state.setTier(tier);
     state.setBumps(0);

@@ -92,7 +92,8 @@ class RingsideActionServiceTest {
 
   @BeforeEach
   void setUp() {
-    universe = Universe.builder().build();
+    universe = Universe.builder().name("Default").build();
+    universe.setId(1L);
     show = mock(Show.class);
     when(show.getUniverse()).thenReturn(universe);
 
@@ -105,17 +106,17 @@ class RingsideActionServiceTest {
     lenient().when(segment.getReferee()).thenReturn(referee);
     lenient().when(segment.getRefereeAwarenessLevel()).thenReturn(0);
 
-    wrestler = new Wrestler();
-    wrestler.setId(10L);
-    wrestler.setName("Sgt. Slaughter");
+    wrestler = mock(Wrestler.class);
+    when(wrestler.getId()).thenReturn(10L);
+    when(wrestler.getName()).thenReturn("Sgt. Slaughter");
 
     wrestlerState = WrestlerState.builder().wrestler(wrestler).universe(universe).build();
     when(wrestlerService.getOrCreateState(eq(10L), anyLong())).thenReturn(wrestlerState);
     when(wrestler.getState(anyLong())).thenReturn(Optional.of(wrestlerState));
 
-    otherWrestler = new Wrestler();
-    otherWrestler.setId(11L);
-    otherWrestler.setName("Other Wrestler");
+    otherWrestler = mock(Wrestler.class);
+    when(otherWrestler.getId()).thenReturn(11L);
+    when(otherWrestler.getName()).thenReturn("Other Wrestler");
 
     otherWrestlerState = WrestlerState.builder().wrestler(otherWrestler).universe(universe).build();
     when(wrestlerService.getOrCreateState(eq(11L), anyLong())).thenReturn(otherWrestlerState);
@@ -161,14 +162,14 @@ class RingsideActionServiceTest {
     com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment alignment =
         new com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment();
     alignment.setCampaign(campaign);
-    wrestler.setAlignment(alignment);
+    when(wrestler.getAlignment()).thenReturn(alignment);
 
     // Test Face shift
     ringsideActionService.performAction(segment, otherWrestler, wrestler, coachAction);
     verify(alignmentService).shiftAlignment(campaign, 1);
 
     // Reset verify
-    reset(campaignService);
+    reset(alignmentService);
 
     // Run performAction until it succeeds (usually 100% since currentMeter is 0)
     ringsideActionService.performAction(segment, otherWrestler, wrestler, weaponAction);
@@ -199,9 +200,9 @@ class RingsideActionServiceTest {
 
   @Test
   void hasSupportAtRingside_WithFactionMember() {
-    Wrestler partner = new Wrestler();
-    partner.setId(12L);
-    partner.setName("Kurt Angle");
+    Wrestler partner = mock(Wrestler.class);
+    when(partner.getId()).thenReturn(12L);
+    when(partner.getName()).thenReturn("Kurt Angle");
 
     WrestlerState partnerState =
         WrestlerState.builder().wrestler(partner).universe(universe).build();
@@ -222,9 +223,9 @@ class RingsideActionServiceTest {
 
   @Test
   void hasSupportAtRingside_NoSupportIfAllMembersInMatch() {
-    Wrestler partner = new Wrestler();
-    partner.setId(12L);
-    partner.setName("Kurt Angle");
+    Wrestler partner = mock(Wrestler.class);
+    when(partner.getId()).thenReturn(12L);
+    when(partner.getName()).thenReturn("Kurt Angle");
 
     WrestlerState partnerState =
         WrestlerState.builder().wrestler(partner).universe(universe).build();
@@ -245,8 +246,13 @@ class RingsideActionServiceTest {
 
   @Test
   void hasSupportAtRingside_WithTeamPartner() {
-    Wrestler partner = new Wrestler();
+    Wrestler partner = mock(Wrestler.class);
+    when(partner.getId()).thenReturn(13L);
     partner.setName("Team Partner");
+    WrestlerState partnerState =
+        WrestlerState.builder().wrestler(partner).universe(universe).build();
+    when(wrestlerService.getOrCreateState(eq(13L), anyLong())).thenReturn(partnerState);
+    when(partner.getState(anyLong())).thenReturn(Optional.of(partnerState));
     Team team = mock(Team.class);
     when(team.getUniverse()).thenReturn(universe);
     when(team.getPartner(wrestler)).thenReturn(partner);
@@ -267,8 +273,10 @@ class RingsideActionServiceTest {
     Npc factionManager = new Npc();
     Faction faction = new Faction();
     faction.setManager(factionManager);
-    faction.setMembers(
-        Set.of(wrestlerState, WrestlerState.builder().wrestler(new Wrestler()).build()));
+    Wrestler otherWrestlerInFaction = mock(Wrestler.class);
+    WrestlerState otherState =
+        WrestlerState.builder().wrestler(otherWrestlerInFaction).universe(universe).build();
+    faction.setMembers(Set.of(wrestlerState, otherState));
     wrestlerState.setFaction(faction);
 
     assertEquals(directManager, ringsideActionService.getBestSupporter(segment, wrestler));
