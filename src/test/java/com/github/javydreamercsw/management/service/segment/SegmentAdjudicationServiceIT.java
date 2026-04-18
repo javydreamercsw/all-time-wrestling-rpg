@@ -33,15 +33,20 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +55,8 @@ import org.springframework.transaction.annotation.Transactional;
 class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
   @Autowired private SegmentAdjudicationService segmentAdjudicationService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
@@ -57,25 +64,45 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleService titleService;
+  @Autowired private WrestlerService wrestlerService;
+
+  private Universe defaultUniverse;
+
+  @BeforeEach
+  void setUpUniverse() {
+    defaultUniverse =
+        universeRepository
+            .findById(1L)
+            .orElseGet(
+                () ->
+                    universeRepository.save(
+                        Universe.builder().id(1L).name("Default Universe").build()));
+  }
 
   @Test
   void testAdjudicateMatchWithTitleChangeLinksToSegment() {
     // Given
     Wrestler winner = Wrestler.builder().build();
     winner.setName("New Champion");
-    winner.setFans(100_000L);
-    winner.setTier(WrestlerTier.MAIN_EVENTER);
-    wrestlerRepository.save(winner);
+    winner = wrestlerRepository.save(winner);
+
+    WrestlerState winnerState = wrestlerService.getOrCreateState(winner.getId(), 1L);
+    winnerState.setFans(100_000L);
+    winnerState.setTier(WrestlerTier.MAIN_EVENTER);
+    wrestlerStateRepository.save(winnerState);
 
     Wrestler loser = Wrestler.builder().build();
     loser.setName("Former Champion");
-    loser.setFans(100_000L);
-    loser.setTier(WrestlerTier.MAIN_EVENTER);
-    wrestlerRepository.save(loser);
+    loser = wrestlerRepository.save(loser);
+
+    WrestlerState loserState = wrestlerService.getOrCreateState(loser.getId(), 1L);
+    loserState.setFans(100_000L);
+    loserState.setTier(WrestlerTier.MAIN_EVENTER);
+    wrestlerStateRepository.save(loserState);
 
     Title title =
         titleService.createTitle(
-            "World Title", "The top title", WrestlerTier.MAIN_EVENTER, ChampionshipType.SINGLE);
+            "World Title", "The top title", WrestlerTier.MAIN_EVENTER, ChampionshipType.SINGLE, 1L);
     title.awardTitleTo(List.of(loser), java.time.Instant.now());
     titleRepository.save(title);
 
@@ -89,6 +116,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     show.setDescription("Title Test Show Description");
     show.setShowDate(LocalDate.now());
     show.setType(showType);
+    show.setUniverse(defaultUniverse);
     showRepository.save(show);
 
     SegmentType segmentType = new SegmentType();
@@ -122,29 +150,35 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     long initialFans = 10_000L;
     Wrestler winner = Wrestler.builder().build();
     winner.setName("Winner");
-    winner.setFans(initialFans);
-    winner.setBumps(0);
     winner.setStartingHealth(13);
     winner.setStartingStamina(14);
     winner.setLowHealth(2);
     winner.setLowStamina(2);
     winner.setDeckSize(16);
-    winner.setTier(WrestlerTier.MIDCARDER);
     winner.setIsPlayer(false);
-    wrestlerRepository.save(winner);
+    winner = wrestlerRepository.save(winner);
+
+    WrestlerState winnerState = wrestlerService.getOrCreateState(winner.getId(), 1L);
+    winnerState.setFans(initialFans);
+    winnerState.setBumps(0);
+    winnerState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(winnerState);
 
     Wrestler loser = Wrestler.builder().build();
     loser.setName("Loser");
-    loser.setFans(initialFans);
-    loser.setBumps(0);
     loser.setStartingHealth(14);
     loser.setStartingStamina(16);
     loser.setLowHealth(4);
     loser.setLowStamina(2);
     loser.setDeckSize(15);
-    loser.setTier(WrestlerTier.MIDCARDER);
     loser.setIsPlayer(false);
-    wrestlerRepository.save(loser);
+    loser = wrestlerRepository.save(loser);
+
+    WrestlerState loserState = wrestlerService.getOrCreateState(loser.getId(), 1L);
+    loserState.setFans(initialFans);
+    loserState.setBumps(0);
+    loserState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(loserState);
 
     ShowType showType = new ShowType();
     showType.setName("Test Show Type");
@@ -156,6 +190,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     show.setDescription("Test Description");
     show.setShowDate(LocalDate.now());
     show.setType(showType);
+    show.setUniverse(defaultUniverse);
     showRepository.save(show);
 
     SegmentType segmentType = new SegmentType();
@@ -184,26 +219,23 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
 
     // Then
     Assertions.assertNotNull(winner.getId());
-    Optional<Wrestler> updatedWinner =
-        wrestlerRepository.findById(winner.getId()).stream().findFirst();
-    Assertions.assertTrue(updatedWinner.isPresent());
+    winnerState = wrestlerStateRepository.findByWrestlerIdAndUniverseId(winner.getId(), 1L).get();
+
     Assertions.assertNotNull(loser.getId());
-    Optional<Wrestler> updatedLoser =
-        wrestlerRepository.findById(loser.getId()).stream().findFirst();
-    Assertions.assertTrue(updatedLoser.isPresent());
+    loserState = wrestlerStateRepository.findByWrestlerIdAndUniverseId(loser.getId(), 1L).get();
 
     // Winner fan gain: (2d6 + 3) * 1000 + matchQualityBonus
     // Min: (2+3)*1000 + 0 = 5000. Max: (12+3)*1000 + 10000 = 25000
-    org.assertj.core.api.Assertions.assertThat(updatedWinner.get().getFans())
+    org.assertj.core.api.Assertions.assertThat(winnerState.getFans())
         .isBetween(initialFans + 5_000, initialFans + 25_000);
 
     // Loser fan gain: (1d6 - 4) * 1000 + matchQualityBonus
     // Min: (1-4)*1000 + 0 = -3000. Max: (6-4)*1000 + 10000 = 12000
-    org.assertj.core.api.Assertions.assertThat(updatedLoser.get().getFans())
+    org.assertj.core.api.Assertions.assertThat(loserState.getFans())
         .isBetween(initialFans - 3_000, initialFans + 12_000);
 
-    assertEquals(0, updatedWinner.get().getBumps());
-    assertEquals(1, updatedLoser.get().getBumps());
+    assertEquals(0, winnerState.getBumps());
+    assertEquals(1, loserState.getBumps());
   }
 
   @Test
@@ -212,29 +244,35 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     long initialFans = 10_000L;
     Wrestler participant1 = Wrestler.builder().build();
     participant1.setName("Participant 1");
-    participant1.setFans(initialFans);
-    participant1.setBumps(0);
     participant1.setStartingHealth(13);
     participant1.setStartingStamina(14);
     participant1.setLowHealth(2);
     participant1.setLowStamina(2);
     participant1.setDeckSize(16);
-    participant1.setTier(WrestlerTier.MIDCARDER);
     participant1.setIsPlayer(false);
-    wrestlerRepository.save(participant1);
+    participant1 = wrestlerRepository.save(participant1);
+
+    WrestlerState state1 = wrestlerService.getOrCreateState(participant1.getId(), 1L);
+    state1.setFans(initialFans);
+    state1.setBumps(0);
+    state1.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(state1);
 
     Wrestler participant2 = Wrestler.builder().build();
     participant2.setName("Participant 2");
-    participant2.setFans(initialFans);
-    participant2.setBumps(0);
     participant2.setStartingHealth(14);
     participant2.setStartingStamina(16);
     participant2.setLowHealth(4);
     participant2.setLowStamina(2);
     participant2.setDeckSize(15);
-    participant2.setTier(WrestlerTier.MIDCARDER);
     participant2.setIsPlayer(false);
-    wrestlerRepository.save(participant2);
+    participant2 = wrestlerRepository.save(participant2);
+
+    WrestlerState state2 = wrestlerService.getOrCreateState(participant2.getId(), 1L);
+    state2.setFans(initialFans);
+    state2.setBumps(0);
+    state2.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(state2);
 
     ShowType showType =
         showTypeRepository
@@ -252,6 +290,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     show.setDescription("Test Description");
     show.setShowDate(LocalDate.now());
     show.setType(showType);
+    show.setUniverse(defaultUniverse);
     showRepository.save(show);
 
     SegmentType segmentType =
@@ -276,28 +315,24 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
 
     // Then
     Assertions.assertNotNull(participant1.getId());
-    Optional<Wrestler> updatedParticipant1 =
-        wrestlerRepository.findById(participant1.getId()).stream().findFirst();
-    Assertions.assertTrue(updatedParticipant1.isPresent());
+    state1 = wrestlerStateRepository.findByWrestlerIdAndUniverseId(participant1.getId(), 1L).get();
 
     Assertions.assertNotNull(participant2.getId());
-    Optional<Wrestler> updatedParticipant2 =
-        wrestlerRepository.findById(participant2.getId()).stream().findFirst();
-    Assertions.assertTrue(updatedParticipant2.isPresent());
+    state2 = wrestlerStateRepository.findByWrestlerIdAndUniverseId(participant2.getId(), 1L).get();
 
     // Min bonus: 0. Max bonus: 18 (3d6).
     long minFanGain = 0L;
     long maxFanGain = 18 * 1_000L;
 
-    org.assertj.core.api.Assertions.assertThat(updatedParticipant1.get().getFans())
+    org.assertj.core.api.Assertions.assertThat(state1.getFans())
         .isBetween(initialFans + minFanGain, initialFans + maxFanGain);
 
-    org.assertj.core.api.Assertions.assertThat(updatedParticipant2.get().getFans())
+    org.assertj.core.api.Assertions.assertThat(state2.getFans())
         .isBetween(initialFans + minFanGain, initialFans + maxFanGain);
 
     // Bumps should not be assigned for promos
-    assertEquals(0, updatedParticipant1.get().getBumps());
-    assertEquals(0, updatedParticipant2.get().getBumps());
+    assertEquals(0, state1.getBumps());
+    assertEquals(0, state2.getBumps());
   }
 
   @Test
@@ -306,29 +341,35 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     long initialFans = 10_000L;
     Wrestler winner = Wrestler.builder().build();
     winner.setName("Winner All Bumps");
-    winner.setFans(initialFans);
-    winner.setBumps(0);
     winner.setStartingHealth(13);
     winner.setStartingStamina(14);
     winner.setLowHealth(2);
     winner.setLowStamina(2);
     winner.setDeckSize(16);
-    winner.setTier(WrestlerTier.MIDCARDER);
     winner.setIsPlayer(false);
-    wrestlerRepository.save(winner);
+    winner = wrestlerRepository.save(winner);
+
+    WrestlerState winnerState = wrestlerService.getOrCreateState(winner.getId(), 1L);
+    winnerState.setFans(initialFans);
+    winnerState.setBumps(0);
+    winnerState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(winnerState);
 
     Wrestler loser = Wrestler.builder().build();
     loser.setName("Loser All Bumps");
-    loser.setFans(initialFans);
-    loser.setBumps(0);
     loser.setStartingHealth(14);
     loser.setStartingStamina(16);
     loser.setLowHealth(4);
     loser.setLowStamina(2);
     loser.setDeckSize(15);
-    loser.setTier(WrestlerTier.MIDCARDER);
     loser.setIsPlayer(false);
-    wrestlerRepository.save(loser);
+    loser = wrestlerRepository.save(loser);
+
+    WrestlerState loserState = wrestlerService.getOrCreateState(loser.getId(), 1L);
+    loserState.setFans(initialFans);
+    loserState.setBumps(0);
+    loserState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(loserState);
 
     ShowType showType = new ShowType();
     showType.setName("Test Show Type All Bumps");
@@ -340,6 +381,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
     show.setDescription("Test Description");
     show.setShowDate(LocalDate.now());
     show.setType(showType);
+    show.setUniverse(defaultUniverse);
     showRepository.save(show);
 
     SegmentType segmentType = new SegmentType();
@@ -369,15 +411,12 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
 
     // Then
     Assertions.assertNotNull(winner.getId());
-    Optional<Wrestler> updatedWinner =
-        wrestlerRepository.findById(winner.getId()).stream().findFirst();
-    Assertions.assertTrue(updatedWinner.isPresent());
-    Assertions.assertNotNull(loser.getId());
-    Optional<Wrestler> updatedLoser =
-        wrestlerRepository.findById(loser.getId()).stream().findFirst();
-    Assertions.assertTrue(updatedLoser.isPresent());
+    winnerState = wrestlerStateRepository.findByWrestlerIdAndUniverseId(winner.getId(), 1L).get();
 
-    assertEquals(1, updatedWinner.get().getBumps());
-    assertEquals(1, updatedLoser.get().getBumps());
+    Assertions.assertNotNull(loser.getId());
+    loserState = wrestlerStateRepository.findByWrestlerIdAndUniverseId(loser.getId(), 1L).get();
+
+    assertEquals(1, winnerState.getBumps());
+    assertEquals(1, loserState.getBumps());
   }
 }

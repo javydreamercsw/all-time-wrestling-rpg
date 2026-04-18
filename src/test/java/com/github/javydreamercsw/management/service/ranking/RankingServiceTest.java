@@ -18,12 +18,13 @@ package com.github.javydreamercsw.management.service.ranking;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -33,16 +34,17 @@ import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +59,7 @@ class RankingServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionRepository factionRepository;
   @Mock private TeamRepository teamRepository;
+  @Mock private WrestlerService wrestlerService;
   @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
   @InjectMocks private RankingService rankingService;
 
@@ -77,9 +80,11 @@ class RankingServiceTest {
     champion = new Wrestler();
     champion.setId(1L);
     champion.setName("Champion");
-    champion.setFans(1000L);
     champion.setGender(Gender.MALE);
-    champion.setTier(WrestlerTier.fromFanCount(champion.getFans()));
+
+    WrestlerState championState =
+        WrestlerState.builder().wrestler(champion).fans(1000L).tier(WrestlerTier.CONTENDER).build();
+    lenient().when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(championState);
 
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
@@ -93,16 +98,20 @@ class RankingServiceTest {
     contender1 = new Wrestler();
     contender1.setId(2L);
     contender1.setName("Contender 1");
-    contender1.setFans(500L);
     contender1.setGender(Gender.MALE);
-    contender1.setTier(WrestlerTier.fromFanCount(contender1.getFans()));
+
+    WrestlerState state1 =
+        WrestlerState.builder().wrestler(contender1).fans(500L).tier(WrestlerTier.RISER).build();
+    lenient().when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(state1);
 
     contender2 = new Wrestler();
     contender2.setId(3L);
     contender2.setName("Contender 2");
-    contender2.setFans(700L);
     contender2.setGender(Gender.MALE);
-    contender2.setTier(WrestlerTier.fromFanCount(contender2.getFans()));
+
+    WrestlerState state2 =
+        WrestlerState.builder().wrestler(contender2).fans(700L).tier(WrestlerTier.RISER).build();
+    lenient().when(wrestlerService.getOrCreateState(eq(3L), anyLong())).thenReturn(state2);
   }
 
   @Test
@@ -122,67 +131,37 @@ class RankingServiceTest {
   void testGetRankedContendersWithTierPrioritization() {
     // Setup for a Midcard Championship
     title.setName("Midcard Championship");
-    title.setTier(WrestlerTier.MIDCARDER); // Ordinal 2
+    title.setTier(WrestlerTier.MIDCARDER); // Ordinal 3
     title.setGender(Gender.MALE);
     title.setChampionshipType(ChampionshipType.SINGLE);
     title.setIncludeInRankings(true); // Explicitly include in rankings
 
-    // Create diverse wrestlers with fan counts aligned with their tiers
-    Wrestler wrestlerA = new Wrestler();
-    wrestlerA.setId(10L);
-    wrestlerA.setName("Wrestler A");
-    wrestlerA.setFans(WrestlerTier.MAIN_EVENTER.getMinFans() + 5000L); // Fans for MAIN_EVENTER
-    wrestlerA.setGender(Gender.MALE);
-    wrestlerA.setTier(WrestlerTier.MAIN_EVENTER); // Ordinal 4
-    wrestlerA.setActive(true);
-
-    Wrestler wrestlerB = new Wrestler();
-    wrestlerB.setId(11L);
-    wrestlerB.setName("Wrestler B");
-    wrestlerB.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000L); // Fans for MIDCARDER
-    wrestlerB.setGender(Gender.MALE);
-    wrestlerB.setTier(WrestlerTier.MIDCARDER); // Ordinal 3 - Title tier, higher fans
-    wrestlerB.setActive(true);
-
-    Wrestler wrestlerC = new Wrestler();
-    wrestlerC.setId(12L);
-    wrestlerC.setName("Wrestler C");
-    wrestlerC.setFans(WrestlerTier.ICON.getMinFans() + 5000L); // Fans for ICON
-    wrestlerC.setGender(Gender.MALE);
-    wrestlerC.setTier(WrestlerTier.ICON); // Ordinal 5 - Highest tier
-    wrestlerC.setActive(true);
-
-    Wrestler wrestlerD = new Wrestler();
-    wrestlerD.setId(13L);
-    wrestlerD.setName("Wrestler D");
-    wrestlerD.setFans(WrestlerTier.MIDCARDER.getMinFans() + 2000L); // Fans for MIDCARDER
-    wrestlerD.setGender(Gender.MALE);
-    wrestlerD.setTier(WrestlerTier.MIDCARDER); // Ordinal 3 - Title tier, lower fans
-    wrestlerD.setActive(true);
-
-    Wrestler wrestlerE = new Wrestler();
-    wrestlerE.setId(14L);
-    wrestlerE.setName("Wrestler E");
-    wrestlerE.setFans(WrestlerTier.ROOKIE.getMinFans() + 500L); // Fans for ROOKIE
-    wrestlerE.setGender(Gender.MALE);
-    wrestlerE.setTier(WrestlerTier.ROOKIE); // Ordinal 0 - Too low tier
-    wrestlerE.setActive(true);
-
-    Wrestler wrestlerF = new Wrestler();
-    wrestlerF.setId(15L);
-    wrestlerF.setName("Wrestler F");
-    wrestlerF.setFans(WrestlerTier.MIDCARDER.getMinFans() + 3000L); // Fans for MIDCARDER
-    wrestlerF.setGender(Gender.MALE);
-    wrestlerF.setTier(WrestlerTier.MIDCARDER);
-    wrestlerF.setActive(false); // Inactive
-
-    Wrestler wrestlerG = new Wrestler();
-    wrestlerG.setId(16L);
-    wrestlerG.setName("Wrestler G");
-    wrestlerG.setFans(WrestlerTier.MIDCARDER.getMinFans() + 4000L); // Fans for MIDCARDER
-    wrestlerG.setGender(Gender.MALE);
-    wrestlerG.setTier(WrestlerTier.MIDCARDER);
-    wrestlerG.setActive(true); // Champion
+    // Create diverse wrestlers
+    Wrestler wrestlerA =
+        createMockWrestler(
+            10L,
+            "Wrestler A",
+            WrestlerTier.MAIN_EVENTER.getMinFans() + 5000L,
+            WrestlerTier.MAIN_EVENTER);
+    Wrestler wrestlerB =
+        createMockWrestler(
+            11L, "Wrestler B", WrestlerTier.MIDCARDER.getMinFans() + 5000L, WrestlerTier.MIDCARDER);
+    Wrestler wrestlerC =
+        createMockWrestler(
+            12L, "Wrestler C", WrestlerTier.ICON.getMinFans() + 5000L, WrestlerTier.ICON);
+    Wrestler wrestlerD =
+        createMockWrestler(
+            13L, "Wrestler D", WrestlerTier.MIDCARDER.getMinFans() + 2000L, WrestlerTier.MIDCARDER);
+    Wrestler wrestlerE =
+        createMockWrestler(
+            14L, "Wrestler E", WrestlerTier.ROOKIE.getMinFans() + 500L, WrestlerTier.ROOKIE);
+    Wrestler wrestlerF =
+        createMockWrestler(
+            15L, "Wrestler F", WrestlerTier.MIDCARDER.getMinFans() + 3000L, WrestlerTier.MIDCARDER);
+    wrestlerF.setActive(false);
+    Wrestler wrestlerG =
+        createMockWrestler(
+            16L, "Wrestler G", WrestlerTier.MIDCARDER.getMinFans() + 4000L, WrestlerTier.MIDCARDER);
 
     // Set Wrestler G as the champion
     TitleReign reign = new TitleReign();
@@ -201,12 +180,6 @@ class RankingServiceTest {
 
     List<RankedWrestlerDTO> contenders =
         (List<RankedWrestlerDTO>) rankingService.getRankedContenders(title.getId());
-
-    // Assertions
-    // WrestlerE (ROOKIE) should be filtered out because tier is too low (5 > 2)
-    // WrestlerF (Inactive) should be filtered out
-    // WrestlerG (Champion) should be filtered out
-    // Expected remaining: WrestlerB, WrestlerD, WrestlerC, WrestlerA
 
     assertEquals(4, contenders.size());
     List<String> contenderList = contenders.stream().map(RankedWrestlerDTO::getName).toList();
@@ -237,39 +210,14 @@ class RankingServiceTest {
     title.setChampionshipType(ChampionshipType.TEAM);
     title.setTier(WrestlerTier.MIDCARDER);
 
-    Wrestler team1member1 = new Wrestler();
-    team1member1.setId(4L);
-    team1member1.setName("Team 1 Member 1");
-    team1member1.setFans(500L);
-    team1member1.setGender(Gender.MALE);
-
-    Wrestler team1member2 = new Wrestler();
-    team1member2.setId(5L);
-    team1member2.setName("Team 1 Member 2");
-    team1member2.setFans(600L);
-    team1member2.setGender(Gender.MALE);
-
-    Faction championTeam = new Faction();
-    championTeam.setId(1L);
-    championTeam.setName("The Champions");
-    championTeam.setMembers(Set.of(team1member1, team1member2));
+    Wrestler team1member1 = createMockWrestler(4L, "Team 1 Member 1", 500L, WrestlerTier.ROOKIE);
+    Wrestler team1member2 = createMockWrestler(5L, "Team 1 Member 2", 600L, WrestlerTier.ROOKIE);
 
     title.setChampion(List.of(team1member1, team1member2));
     title.getCurrentReign().get().setChampions(List.of(team1member1, team1member2));
 
-    Wrestler team2member1 = new Wrestler();
-    team2member1.setId(6L);
-    team2member1.setName("Team 2 Member 1");
-    team2member1.setFans(700L);
-    team2member1.setGender(Gender.MALE);
-    team2member1.setTier(WrestlerTier.fromFanCount(team2member1.getFans()));
-
-    Wrestler team2member2 = new Wrestler();
-    team2member2.setId(7L);
-    team2member2.setName("Team 2 Member 2");
-    team2member2.setFans(800L);
-    team2member2.setGender(Gender.MALE);
-    team2member2.setTier(WrestlerTier.fromFanCount(team2member2.getFans()));
+    Wrestler team2member1 = createMockWrestler(6L, "Team 2 Member 1", 700L, WrestlerTier.RISER);
+    Wrestler team2member2 = createMockWrestler(7L, "Team 2 Member 2", 800L, WrestlerTier.RISER);
 
     Team contenderTeam = new Team();
     contenderTeam.setId(2L);
@@ -291,24 +239,15 @@ class RankingServiceTest {
 
   @Test
   void testGetRankedContendersExcludesInactive() {
-    contender1.setFans(70000L);
-    contender1.setTier(WrestlerTier.MIDCARDER);
-    contender1.setActive(true);
+    createMockWrestler(2L, "Contender 1", 70000L, WrestlerTier.MIDCARDER);
 
-    Wrestler inactiveWrestler = new Wrestler();
-    inactiveWrestler.setId(4L);
-    inactiveWrestler.setName("Inactive Wrestler");
-    inactiveWrestler.setFans(80000L);
-    inactiveWrestler.setGender(Gender.MALE);
-    inactiveWrestler.setTier(WrestlerTier.MIDCARDER);
+    Wrestler inactiveWrestler =
+        createMockWrestler(4L, "Inactive Wrestler", 80000L, WrestlerTier.MIDCARDER);
     inactiveWrestler.setActive(false);
 
     title.setTier(WrestlerTier.MIDCARDER);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
 
-    // Mock repository to return both, and let the service filter out the inactive one.
-    // Even though the service calls it with active=true, we return both to test the service's
-    // filter.
     when(wrestlerRepository.findAllByGenderAndActive(any(Gender.class), eq(true)))
         .thenReturn(new ArrayList<>(List.of(contender1, inactiveWrestler)));
 
@@ -348,5 +287,17 @@ class RankingServiceTest {
     assertFalse(result.isEmpty());
     assertEquals(1, result.size());
     assertEquals("Champion", result.get(0).getName());
+  }
+
+  private Wrestler createMockWrestler(Long id, String name, long fans, WrestlerTier tier) {
+    Wrestler w = new Wrestler();
+    w.setId(id);
+    w.setName(name);
+    w.setGender(Gender.MALE);
+    w.setActive(true);
+
+    WrestlerState state = WrestlerState.builder().wrestler(w).fans(fans).tier(tier).build();
+    lenient().when(wrestlerService.getOrCreateState(eq(id), anyLong())).thenReturn(state);
+    return w;
   }
 }

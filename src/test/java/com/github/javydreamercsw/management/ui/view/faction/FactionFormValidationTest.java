@@ -23,8 +23,10 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -52,6 +54,7 @@ class FactionFormValidationTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
 
   private FactionListView factionListView;
@@ -61,16 +64,33 @@ class FactionFormValidationTest {
   void setUp() {
     testWrestlers = createTestWrestlers();
 
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(testWrestlers);
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(testWrestlers);
+    when(npcService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     when(securityUtils.canCreate()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
 
+    // Mock WrestlerState for fans
+    WrestlerState state1 = new WrestlerState();
+    state1.setFans(90L);
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(state1);
+
+    WrestlerState state2 = new WrestlerState();
+    state2.setFans(80L);
+    when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(state2);
+
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
   }
 
   @Test
@@ -206,12 +226,10 @@ class FactionFormValidationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Test Leader");
-    wrestler1.setFans(90L);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Test Member");
-    wrestler2.setFans(80L);
 
     wrestlers.add(wrestler1);
     wrestlers.add(wrestler2);

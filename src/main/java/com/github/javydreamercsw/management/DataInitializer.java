@@ -44,6 +44,8 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
@@ -77,6 +79,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -108,6 +111,10 @@ public class DataInitializer implements Initializable {
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final ShowTypeService showTypeService;
   private final SegmentRuleService segmentRuleService;
   private final SegmentTypeService segmentTypeService;
@@ -141,6 +148,9 @@ public class DataInitializer implements Initializable {
       @Value("${data.initializer.enabled:true}") boolean enabled,
       ShowTemplateService showTemplateService,
       WrestlerRepository wrestlerRepository,
+      WrestlerService wrestlerService,
+      com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository,
+      WrestlerStateRepository wrestlerStateRepository,
       ShowTypeService showTypeService,
       SegmentRuleService segmentRuleService,
       SegmentTypeService segmentTypeService,
@@ -169,6 +179,9 @@ public class DataInitializer implements Initializable {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerService = wrestlerService;
+    this.universeRepository = universeRepository;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     this.showTypeService = showTypeService;
     this.segmentRuleService = segmentRuleService;
     this.segmentTypeService = segmentTypeService;
@@ -785,18 +798,23 @@ public class DataInitializer implements Initializable {
                 existingWrestler.setDescription(w.getDescription());
                 existingWrestler.setGender(w.getGender());
 
+                // Default to Global Universe (League ID 1)
+                Long leagueId = 1L;
+                WrestlerState state =
+                    wrestlerService.getOrCreateState(existingWrestler.getId(), leagueId);
+
                 if (w.getFans() != null) {
-                  if (w.getFans() > existingWrestler.getFans()) {
-                    existingWrestler.setFans(w.getFans());
+                  if (w.getFans() > state.getFans()) {
+                    state.setFans(w.getFans());
                   }
                 }
 
-                existingWrestler.setTier(WrestlerTier.fromFanCount(existingWrestler.getFans()));
-                tierRecalculationService.recalculateTier(existingWrestler);
+                state.setTier(WrestlerTier.fromFanCount(state.getFans()));
+                tierRecalculationService.recalculateTier(state);
 
                 if (w.getBumps() != null) {
-                  if (w.getBumps() > existingWrestler.getBumps()) {
-                    existingWrestler.setBumps(w.getBumps());
+                  if (w.getBumps() > state.getBumps()) {
+                    state.setBumps(w.getBumps());
                   }
                 }
 
@@ -843,7 +861,7 @@ public class DataInitializer implements Initializable {
                 if (w.getManager() != null) {
                   Npc manager = npcService.findByName(w.getManager());
                   if (manager != null) {
-                    existingWrestler.setManager(manager);
+                    state.setManager(manager);
                   }
                 }
 
@@ -856,6 +874,7 @@ public class DataInitializer implements Initializable {
                 if (existingWrestler.getIsPlayer() == null) existingWrestler.setIsPlayer(false);
 
                 wrestlerRepository.save(existingWrestler);
+                wrestlerStateRepository.save(state);
                 log.debug("Updated existing wrestler: {}", existingWrestler.getName());
               } else {
                 Wrestler newWrestler = new Wrestler();
@@ -867,8 +886,6 @@ public class DataInitializer implements Initializable {
                 newWrestler.setLowStamina(w.getLowStamina());
                 newWrestler.setDescription(w.getDescription());
                 newWrestler.setGender(w.getGender());
-                newWrestler.setFans(w.getFans());
-                newWrestler.setBumps(w.getBumps());
                 newWrestler.setActive(true);
                 newWrestler.setIsPlayer(false);
                 newWrestler.setImageUrl(w.getImageUrl());
@@ -876,24 +893,34 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                newWrestler.setTier(WrestlerTier.fromFanCount(newWrestler.getFans()));
-                tierRecalculationService.recalculateTier(newWrestler);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
-                }
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    newWrestler.setManager(manager);
-                  }
                 }
                 if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
                 if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
                 if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
                 if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
 
-                wrestlerRepository.save(newWrestler);
-                log.debug("Saved new wrestler: {}", newWrestler.getName());
+                Wrestler savedWrestler = wrestlerRepository.save(newWrestler);
+
+                // Default to Global Universe (League ID 1)
+                Long leagueId = 1L;
+                WrestlerState state =
+                    wrestlerService.getOrCreateState(savedWrestler.getId(), leagueId);
+                state.setFans(w.getFans() != null ? w.getFans() : 0L);
+                state.setBumps(w.getBumps() != null ? w.getBumps() : 0);
+                state.setTier(WrestlerTier.fromFanCount(state.getFans()));
+                tierRecalculationService.recalculateTier(state);
+
+                if (w.getManager() != null) {
+                  Npc manager = npcService.findByName(w.getManager());
+                  if (manager != null) {
+                    state.setManager(manager);
+                  }
+                }
+                wrestlerStateRepository.save(state);
+
+                log.debug("Saved new wrestler: {}", savedWrestler.getName());
               }
             }
           } catch (IOException e) {
@@ -923,7 +950,8 @@ public class DataInitializer implements Initializable {
                     dto.getDescription(),
                     dto.getTier(),
                     dto.getChampionshipType(),
-                    dto.getGender());
+                    dto.getGender(),
+                    1L); // Default league ID 1
             log.debug(
                 "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {
@@ -1159,7 +1187,7 @@ public class DataInitializer implements Initializable {
             if (factionOpt.isEmpty()) {
               factionOpt =
                   factionService.createFaction(
-                      dto.getName(), dto.getDescription(), leaderOpt.get().getId());
+                      dto.getName(), dto.getDescription(), leaderOpt.get().getId(), 1L);
             }
             if (factionOpt.isPresent()) {
               Faction faction = factionOpt.get();

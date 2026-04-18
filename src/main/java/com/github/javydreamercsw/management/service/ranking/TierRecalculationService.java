@@ -21,7 +21,6 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.EnumMap;
 import java.util.List;
@@ -160,8 +159,6 @@ public class TierRecalculationService implements RankingService {
                 wrestlerData.getTier(),
                 newTier);
             wrestlerData.setTier(newTier);
-            wrestlerRepository.save(
-                (Wrestler) wrestlerData); // Cast back to Wrestler for repository
           }
         } else { // This 'else' belongs to 'if (newTier != null)'
           log.warn(
@@ -176,12 +173,16 @@ public class TierRecalculationService implements RankingService {
 
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void recalculateTier(Wrestler wrestler) {
-    Long fans = wrestler.getFans() != null ? wrestler.getFans() : 0L;
-    WrestlerTier newTier = calculateTier(fans, wrestler.getGender());
-    if (wrestler.getTier() != newTier) {
-      log.info("Updating {}'s tier from {} to {}", wrestler.getName(), wrestler.getTier(), newTier);
-      wrestler.setTier(newTier);
+  public void recalculateTier(WrestlerData wrestlerData) {
+    Long fans = wrestlerData.getFans() != null ? wrestlerData.getFans() : 0L;
+    WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
+    if (wrestlerData.getTier() != newTier) {
+      log.info(
+          "Updating {}'s tier from {} to {}",
+          wrestlerData.getName(),
+          wrestlerData.getTier(),
+          newTier);
+      wrestlerData.setTier(newTier);
     }
   }
 

@@ -390,9 +390,20 @@ class RivalryServiceTest {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(id);
     wrestler.setName(name);
-    wrestler.setFans(50000L);
     wrestler.setStartingHealth(15);
     wrestler.setIsPlayer(true);
+
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        new com.github.javydreamercsw.management.domain.universe.Universe();
+    universe.setId(1L);
+
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    state.setWrestler(wrestler);
+    state.setUniverse(universe);
+    state.setFans(50000L);
+    wrestler.setWrestlerStates(new java.util.ArrayList<>(List.of(state)));
+
     return wrestler;
   }
 

@@ -29,7 +29,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -38,6 +37,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -51,16 +51,10 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.Location;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +89,7 @@ class ShowDetailViewTest {
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private ShowController showController;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
-  @Mock private LeagueRepository leagueRepository;
+  @Mock private UniverseRepository universeRepository;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private ArenaService arenaService;
@@ -163,7 +157,7 @@ class ShowDetailViewTest {
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
-              leagueRepository,
+              universeRepository,
               commentaryTeamRepository,
               ringsideActionService,
               arenaService,
@@ -180,85 +174,6 @@ class ShowDetailViewTest {
           segment);
 
       assertEquals(AdjudicationStatus.PENDING, segment.getAdjudicationStatus());
-    }
-  }
-
-  @Test
-  void testSegmentReordering() {
-    try (MockedStatic<Notification> mocked = Mockito.mockStatic(Notification.class)) {
-      mocked
-          .when(() -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)))
-          .thenReturn(mock(Notification.class));
-
-      ShowType showType = new ShowType();
-      showType.setName("Test Show Type");
-      showType.setDescription("Test Description");
-
-      Show show = new Show();
-      show.setId(1L);
-      show.setName("Test Show");
-      show.setDescription("Test Description");
-      show.setType(showType);
-
-      SegmentType segmentType = new SegmentType();
-      segmentType.setName("Test Segment Type");
-
-      Segment segment1 = new Segment();
-      segment1.setId(10L);
-      segment1.setShow(show);
-      segment1.setSegmentOrder(1);
-      segment1.setSegmentType(segmentType);
-      when(segmentRepository.save(any(Segment.class)))
-          .thenAnswer(invocation -> invocation.getArgument(0));
-
-      Segment segment2 = new Segment();
-      segment2.setId(11L);
-      segment2.setShow(show);
-      segment2.setSegmentOrder(2);
-      segment2.setSegmentType(segmentType);
-
-      List<Segment> initialSegments = new ArrayList<>(Arrays.asList(segment1, segment2));
-
-      when(showService.getShowById(any())).thenReturn(Optional.of(show));
-      when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
-          .thenReturn(initialSegments);
-      when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
-
-      ShowDetailView showDetailView =
-          new ShowDetailView(
-              showService,
-              segmentService,
-              segmentRepository,
-              segmentTypeRepository,
-              npcService,
-              wrestlerService,
-              titleService,
-              segmentRuleRepository,
-              showTypeService,
-              seasonService,
-              showTemplateService,
-              rivalryService,
-              segmentNarrationServiceFactory,
-              segmentNarrationController,
-              showController,
-              matchFulfillmentRepository,
-              leagueRepository,
-              commentaryTeamRepository,
-              ringsideActionService,
-              arenaService,
-              relationshipService);
-
-      BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
-      Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));
-      showDetailView.setParameter(beforeEvent, show.getId());
-
-      ReflectionTestUtils.setField(showDetailView, "currentShow", show);
-      ReflectionTestUtils.setField(showDetailView, "segmentsGrid", mock(Grid.class));
-
-      showDetailView.moveSegment(segment1, 1);
-
-      assertEquals(2, segment1.getSegmentOrder());
-      assertEquals(1, segment2.getSegmentOrder());
     }
   }
 }

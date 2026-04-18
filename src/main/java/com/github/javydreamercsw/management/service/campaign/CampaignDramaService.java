@@ -105,13 +105,16 @@ public class CampaignDramaService {
     String description =
         "You encounter your rival " + rival.getName() + " backstage. Tensions are high.";
 
+    Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+
     return dramaEventService.createDramaEvent(
         player.getId(),
         rival.getId(),
         DramaEventType.CAMPAIGN_RIVAL,
         DramaEventSeverity.NEGATIVE, // Rivals usually mean trouble
         title,
-        description);
+        description,
+        universeId);
   }
 
   /**
@@ -134,13 +137,16 @@ public class CampaignDramaService {
     String description =
         "A mysterious outsider, " + outsider.getName() + ", has arrived to challenge you.";
 
+    Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+
     return dramaEventService.createDramaEvent(
         player.getId(),
         outsider.getId(),
         DramaEventType.CAMPAIGN_OUTSIDER,
         DramaEventSeverity.MAJOR, // High stakes
         title,
-        description);
+        description,
+        universeId);
   }
 
   private Wrestler findRival(@NonNull Wrestler player) {

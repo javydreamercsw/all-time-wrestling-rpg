@@ -19,13 +19,13 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -47,6 +47,7 @@ public class WrestlerDialog extends Dialog {
   private final AccountService accountService;
   private final NpcService npcService;
   private final ImageStorageService imageStorageService;
+  private final UniverseContextService universeContextService;
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
   private final SecurityUtils securityUtils;
@@ -57,7 +58,8 @@ public class WrestlerDialog extends Dialog {
       @NonNull NpcService npcService,
       @NonNull ImageStorageService imageStorageService,
       @NonNull Runnable onSave,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull UniverseContextService universeContextService) {
     this(
         wrestlerService,
         accountService,
@@ -65,7 +67,8 @@ public class WrestlerDialog extends Dialog {
         imageStorageService,
         createDefaultWrestler(),
         onSave,
-        securityUtils);
+        securityUtils,
+        universeContextService);
     setHeaderTitle("Create Wrestler");
   }
 
@@ -78,11 +81,8 @@ public class WrestlerDialog extends Dialog {
         .lowHealth(0)
         .startingStamina(0)
         .lowStamina(0)
-        .fans(0L)
         .isPlayer(false)
-        .bumps(0)
         .gender(Gender.MALE)
-        .tier(WrestlerTier.ROOKIE)
         .active(true)
         .build();
   }
@@ -94,11 +94,13 @@ public class WrestlerDialog extends Dialog {
       @NonNull ImageStorageService imageStorageService,
       @NonNull Wrestler wrestler,
       @NonNull Runnable onSave,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.accountService = accountService;
     this.npcService = npcService;
     this.imageStorageService = imageStorageService;
+    this.universeContextService = universeContextService;
     this.wrestler = wrestler;
     this.securityUtils = securityUtils;
 

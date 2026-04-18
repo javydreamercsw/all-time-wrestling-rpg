@@ -23,7 +23,11 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -37,6 +41,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class BookerViewE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private ShowService showService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
@@ -44,28 +50,33 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @org.junit.jupiter.api.BeforeEach
   void setUp() {
     cleanupLeagues();
+    universeRepository.deleteAll();
+    wrestlerStateRepository.deleteAll();
   }
 
   @Test
   public void testBookerViewLoads() {
+    Universe defaultUniverse =
+        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+
     // Create a wrestler
     Wrestler wrestler =
-        Wrestler.builder()
-            .name("Test Wrestler")
-            .isPlayer(true)
-            .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
-            .build();
-    wrestlerService.save(wrestler);
+        Wrestler.builder().name("Test Wrestler").isPlayer(true).gender(Gender.MALE).build();
+    wrestler = wrestlerService.save(wrestler);
+
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(state);
 
     Wrestler opponent =
-        Wrestler.builder()
-            .name("Opponent")
-            .isPlayer(false)
-            .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
-            .build();
-    wrestlerService.save(opponent);
+        Wrestler.builder().name("Opponent").isPlayer(false).gender(Gender.MALE).build();
+    opponent = wrestlerService.save(opponent);
+
+    WrestlerState opponentState =
+        wrestlerService.getOrCreateState(opponent.getId(), defaultUniverse.getId());
+    opponentState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(opponentState);
 
     Assertions.assertNotNull(wrestler.getId());
     Assertions.assertNotNull(opponent.getId());
@@ -80,6 +91,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     show.setDescription("Test Show Description");
     show.setShowDate(LocalDate.now().plusDays(1));
     show.setType(showTypeService.findByName("Weekly").get());
+    show.setUniverse(defaultUniverse);
     showService.save(show);
 
     // Navigate to the BookerView

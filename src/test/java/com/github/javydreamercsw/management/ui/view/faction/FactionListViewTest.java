@@ -23,8 +23,10 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import java.time.Instant;
@@ -52,6 +54,7 @@ class FactionListViewTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
 
   private FactionListView factionListView;
@@ -67,17 +70,34 @@ class FactionListViewTest {
     testFactions = createTestFactionsWithMembers();
 
     // Mock service responses
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(testFactions);
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(testFactions);
     when(wrestlerService.findAll()).thenReturn(testWrestlers);
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(testWrestlers);
+    when(npcService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
     when(securityUtils.canCreate()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
 
+    // Mock WrestlerState for fans
+    for (int i = 0; i < testWrestlers.size(); i++) {
+      WrestlerState state = new WrestlerState();
+      state.setWrestler(testWrestlers.get(i));
+      state.setFans(95L - (i * 5L));
+      when(wrestlerService.getOrCreateState(eq(testWrestlers.get(i).getId()), anyLong()))
+          .thenReturn(state);
+    }
+
     // Create the view
     factionListView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
   }
 
   @Test
@@ -85,10 +105,8 @@ class FactionListViewTest {
   void shouldInitializeViewWithCorrectComponents() {
     // Then
     assertNotNull(factionListView.name);
-    assertNotNull(factionListView.createBtn);
     assertNotNull(factionListView.factionGrid);
 
-    assertEquals("Create Faction", factionListView.createBtn.getText());
     assertTrue(factionListView.name.getPlaceholder().contains("Enter faction name"));
   }
 
@@ -96,12 +114,10 @@ class FactionListViewTest {
   @DisplayName("Should load factions into grid on initialization")
   void shouldLoadFactionsIntoGridOnInitialization() {
     // Then
-    verify(factionService).findAllWithMembersAndTeams();
+    verify(factionService).findAllByUniverse(anyLong());
 
     // Grid should be configured with test data
     assertNotNull(factionListView.factionGrid);
-    // Note: In a real test environment, you might need to use TestBench or similar
-    // to verify grid contents, as Vaadin components are complex to test in unit tests
   }
 
   @Test
@@ -124,19 +140,24 @@ class FactionListViewTest {
 
     // Then
     // The service should be available for use
-    verify(factionService).findAllWithMembersAndTeams(); // Called during initialization
+    verify(factionService).findAllByUniverse(anyLong()); // Called during initialization
   }
 
   @Test
   @DisplayName("Should handle empty faction list")
   void shouldHandleEmptyFactionList() {
     // Given
-    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
 
     // When
     FactionListView emptyView =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     // Then
     assertNotNull(emptyView);
@@ -149,7 +170,6 @@ class FactionListViewTest {
     // Given - wrestlers are already mocked in setUp
 
     // Then
-    verify(wrestlerRepository, atLeastOnce()).findAll(); // May be called during initialization
     assertNotNull(factionListView);
   }
 
@@ -166,8 +186,8 @@ class FactionListViewTest {
     for (Faction faction : testFactions) {
       if (faction.getMembers() != null && !faction.getMembers().isEmpty()) {
         // This is exactly what the grid column does:
-        // faction.getMembers().stream().map(Wrestler::getName)
-        for (Wrestler member : faction.getMembers()) {
+        // faction.getMembers().stream().map(WrestlerState::getName)
+        for (WrestlerState member : faction.getMembers()) {
           // This call would throw LazyInitializationException if members aren't properly loaded
           String memberName = member.getName();
           assertNotNull(memberName, "Member name should not be null");
@@ -189,12 +209,16 @@ class FactionListViewTest {
     // When
     FactionListView view =
         new FactionListView(
-            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
+            factionService,
+            wrestlerService,
+            npcService,
+            wrestlerRepository,
+            securityUtils,
+            universeContextService);
 
     // Then
     assertNotNull(view);
     assertNotNull(view.name);
-    assertNotNull(view.createBtn);
     assertNotNull(view.factionGrid);
   }
 
@@ -212,10 +236,18 @@ class FactionListViewTest {
     evolution.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
     evolution.setDisbandedDate(Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
 
-    // Add members to Evolution (this is what was missing!)
-    Set<Wrestler> evolutionMembers = new HashSet<>();
-    evolutionMembers.add(testWrestlers.get(0)); // Triple H
-    evolutionMembers.add(testWrestlers.get(2)); // Randy Orton
+    // Add members to Evolution
+    Set<WrestlerState> evolutionMembers = new HashSet<>();
+    WrestlerState hhhState = new WrestlerState();
+    hhhState.setWrestler(testWrestlers.get(0));
+    hhhState.setFans(95L);
+    evolutionMembers.add(hhhState);
+
+    WrestlerState ortonState = new WrestlerState();
+    ortonState.setWrestler(testWrestlers.get(2));
+    ortonState.setFans(85L);
+    evolutionMembers.add(ortonState);
+
     evolution.setMembers(evolutionMembers);
 
     // Create DX faction with members
@@ -228,8 +260,12 @@ class FactionListViewTest {
     dx.setFormedDate(Instant.now().minusSeconds(200 * 24 * 60 * 60)); // ~7 months ago
 
     // Add members to DX
-    Set<Wrestler> dxMembers = new HashSet<>();
-    dxMembers.add(testWrestlers.get(1)); // Shawn Michaels
+    Set<WrestlerState> dxMembers = new HashSet<>();
+    WrestlerState shawnState = new WrestlerState();
+    shawnState.setWrestler(testWrestlers.get(1));
+    shawnState.setFans(90L);
+    dxMembers.add(shawnState);
+
     dx.setMembers(dxMembers);
 
     factions.add(evolution);
@@ -245,17 +281,14 @@ class FactionListViewTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Triple H");
-    wrestler1.setFans(95L);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Shawn Michaels");
-    wrestler2.setFans(90L);
 
     Wrestler wrestler3 = Wrestler.builder().build();
     wrestler3.setId(3L);
     wrestler3.setName("Randy Orton");
-    wrestler3.setFans(85L);
 
     wrestlers.add(wrestler1);
     wrestlers.add(wrestler2);

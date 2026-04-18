@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,7 @@ public class SyncServiceDependencies {
   private final SyncLockService syncLockService;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
   private final InjuryRepository injuryRepository;
   private final InjuryTypeRepository injuryTypeRepository;
   private final SeasonRepository seasonRepository;
@@ -99,6 +101,7 @@ public class SyncServiceDependencies {
       @NonNull SyncLockService syncLockService,
       @NonNull FactionRepository factionRepository,
       @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull WrestlerService wrestlerService,
       @NonNull InjuryRepository injuryRepository,
       @NonNull InjuryTypeRepository injuryTypeRepository,
       @NonNull SeasonRepository seasonRepository,
@@ -130,6 +133,7 @@ public class SyncServiceDependencies {
     this.syncLockService = syncLockService;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerService = wrestlerService;
     this.injuryRepository = injuryRepository;
     this.injuryTypeRepository = injuryTypeRepository;
     this.seasonRepository = seasonRepository;

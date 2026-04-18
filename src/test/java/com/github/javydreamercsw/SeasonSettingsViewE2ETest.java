@@ -23,7 +23,11 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,11 +41,23 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private TierBoundaryService tierBoundaryService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
+
+  private Universe defaultUniverse;
 
   @BeforeEach
   public void setupBoundaries() {
     // Reset boundaries to a known state first
     tierBoundaryService.resetTierBoundaries();
+
+    defaultUniverse =
+        universeRepository
+            .findById(1L)
+            .orElseGet(
+                () ->
+                    universeRepository.save(
+                        Universe.builder().id(1L).name("Default Universe").build()));
   }
 
   @Test
@@ -55,6 +71,8 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
     long originalMinFans = boundary.getMinFans();
     boundary.setMinFans(originalMinFans + 100);
+    tierBoundaryRepository.saveAndFlush(boundary);
+
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     // Click the tab
@@ -90,11 +108,17 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testRecalibrateFans() {
-    // Make sure there is at least one wrestler with fans > minFans
-    Wrestler wrestler = wrestlerService.findAll().get(0);
-    WrestlerTier tier = wrestler.getTier();
-    wrestler.setFans(tier.getMinFans() + 100);
-    wrestlerService.save(wrestler);
+    // Make sure there is at least one wrestler
+    Wrestler wrestler =
+        wrestlerService.findAll().stream()
+            .findFirst()
+            .orElseGet(() -> wrestlerService.createWrestler("Recalibrate Test", false, null));
+
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    WrestlerTier tier = state.getTier();
+    state.setFans(tier.getMinFans() + 100);
+    wrestlerStateRepository.saveAndFlush(state);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
@@ -119,19 +143,20 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     assertEquals("Fan counts recalibrated successfully.", notification.getText());
 
     // Verify fan counts were reset
-    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).get();
-    assertEquals(tier.getMinFans(), updatedWrestler.getFans());
+    WrestlerState updatedState =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    assertEquals(tier.getMinFans(), updatedState.getFans());
   }
 
   @Test
   void testRecalibrateIconFans() {
     // Create an Icon wrestler
-    Wrestler icon = new Wrestler();
-    icon.setName("Test Icon");
-    icon.setFans(WrestlerTier.ICON.getMinFans());
-    icon.setTier(WrestlerTier.ICON);
-    icon.setGender(Gender.MALE);
-    wrestlerService.save(icon);
+    Wrestler icon =
+        wrestlerService.createWrestler(
+            "Test Icon", false, "Test Icon", WrestlerTier.ICON, defaultUniverse);
+    WrestlerState state = wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
+    state.setFans(WrestlerTier.ICON.getMinFans());
+    wrestlerStateRepository.saveAndFlush(state);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
@@ -156,19 +181,21 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     assertEquals("Fan counts recalibrated successfully.", notification.getText());
 
     // Verify fan counts were reset and tier was demoted
-    Wrestler updatedWrestler = wrestlerService.findById(icon.getId()).get();
-    assertEquals(WrestlerTier.MAIN_EVENTER, updatedWrestler.getTier());
-    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedWrestler.getFans());
+    WrestlerState updatedState =
+        wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
+    assertEquals(WrestlerTier.MAIN_EVENTER, updatedState.getTier());
+    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedState.getFans());
   }
 
   @Test
   void testResetFans() {
     // Create an Icon wrestler
-    Wrestler icon = new Wrestler();
-    icon.setName("Test Icon");
-    icon.setFans(WrestlerTier.ICON.getMinFans());
-    icon.setGender(Gender.MALE);
-    wrestlerService.save(icon);
+    Wrestler icon =
+        wrestlerService.createWrestler(
+            "Test Icon", false, "Test Icon", WrestlerTier.ICON, defaultUniverse);
+    WrestlerState state = wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
+    state.setFans(WrestlerTier.ICON.getMinFans());
+    wrestlerStateRepository.saveAndFlush(state);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
@@ -191,8 +218,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     assertEquals("All wrestler fan counts have been reset to 0.", notification.getText());
 
     // Verify fan counts were reset and tier was demoted
-    Wrestler updatedWrestler = wrestlerService.findById(icon.getId()).get();
-    assertEquals(WrestlerTier.ROOKIE, updatedWrestler.getTier());
-    assertEquals(0L, updatedWrestler.getFans());
+    WrestlerState updatedState =
+        wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
+    assertEquals(WrestlerTier.ROOKIE, updatedState.getTier());
+    assertEquals(0L, updatedState.getFans());
   }
 }

@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Arrays;
@@ -51,6 +52,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   private WrestlerSyncService wrestlerSyncService;
 
   @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
 
   @BeforeEach
   protected void setUp() {
@@ -92,6 +94,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             notionApiExecutor,
             wrestlerService,
             wrestlerRepository,
+            wrestlerStateRepository,
             wrestlerNotionSyncService,
             tierRecalculationService,
             wrestlerAlignmentRepository,

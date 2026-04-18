@@ -20,9 +20,11 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.injury.InjuryDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerDialog;
@@ -62,8 +64,12 @@ public class WrestlerActionMenu extends MenuBar {
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull ImageStorageService imageStorageService) {
+      @NonNull ImageStorageService imageStorageService,
+      @NonNull UniverseContextService universeContextService) {
     this.accountService = accountService;
+
+    Long universeId = universeContextService.getCurrentUniverseId();
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
@@ -105,7 +111,8 @@ public class WrestlerActionMenu extends MenuBar {
                       imageStorageService,
                       wrestler,
                       refreshProvider,
-                      securityUtils);
+                      securityUtils,
+                      universeContextService);
               dialog.open();
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
@@ -116,7 +123,7 @@ public class WrestlerActionMenu extends MenuBar {
         subMenu.addItem(
             "Delete",
             e -> {
-              wrestlerService.delete(wrestler);
+              wrestlerService.delete(wrestler.getId());
               Notification.show("Wrestler deleted", 2000, Notification.Position.BOTTOM_END)
                   .addThemeVariants(NotificationVariant.LUMO_ERROR);
               if (isProfileView) {
@@ -143,7 +150,7 @@ public class WrestlerActionMenu extends MenuBar {
                   event -> {
                     if (fanAmount.getValue() != null) {
                       wrestlerService
-                          .awardFans(wrestler.getId(), fanAmount.getValue().longValue())
+                          .awardFans(wrestler.getId(), universeId, fanAmount.getValue().longValue())
                           .ifPresent(
                               w -> {
                                 refreshProvider.run();
@@ -181,7 +188,8 @@ public class WrestlerActionMenu extends MenuBar {
                   event -> {
                     if (fanAmount.getValue() != null) {
                       wrestlerService
-                          .awardFans(wrestler.getId(), -fanAmount.getValue().longValue())
+                          .awardFans(
+                              wrestler.getId(), universeId, -fanAmount.getValue().longValue())
                           .ifPresent(
                               w -> {
                                 refreshProvider.run();
@@ -203,7 +211,7 @@ public class WrestlerActionMenu extends MenuBar {
               dialog.open();
             });
     removeFansItem.addComponentAsFirst(new Icon(VaadinIcon.MINUS));
-    removeFansItem.setEnabled(wrestler.getFans() > 0);
+    removeFansItem.setEnabled(state.getFans() > 0);
     removeFansItem.setVisible(securityUtils.canEdit());
 
     MenuItem addBumpItem =
@@ -211,7 +219,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Add Bump",
             e -> {
               wrestlerService
-                  .addBump(wrestler.getId())
+                  .addBump(wrestler.getId(), universeId)
                   .ifPresent(
                       w -> {
                         refreshProvider.run();
@@ -231,7 +239,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Heal Bump",
             e -> {
               wrestlerService
-                  .healBump(wrestler.getId())
+                  .healBump(wrestler.getId(), universeId)
                   .ifPresent(
                       w -> {
                         refreshProvider.run();
@@ -244,7 +252,7 @@ public class WrestlerActionMenu extends MenuBar {
             });
     healBump.addComponentAsFirst(new Icon(VaadinIcon.HEART));
     healBump.setId("heal-bump-" + wrestler.getId());
-    healBump.setEnabled(wrestler.getBumps() > 0);
+    healBump.setEnabled(state.getBumps() > 0);
     healBump.setVisible(securityUtils.canEdit());
 
     MenuItem manageInjuriesItem =
@@ -252,7 +260,8 @@ public class WrestlerActionMenu extends MenuBar {
             "Manage Injuries",
             e -> {
               InjuryDialog dialog =
-                  new InjuryDialog(wrestler, injuryService, refreshProvider, securityUtils);
+                  new InjuryDialog(
+                      wrestler, universeId, injuryService, refreshProvider, securityUtils);
               dialog.setId("injury-dialog");
               dialog.open();
             });

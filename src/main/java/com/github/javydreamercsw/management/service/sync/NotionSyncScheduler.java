@@ -344,18 +344,8 @@ public class NotionSyncScheduler {
    */
   @PreAuthorize("hasRole('ADMIN')")
   public NotionSyncService.SyncResult triggerParallelSync(@NonNull String operationId) {
-    com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator
-            .ParallelSyncResult
-        parallelResult = notionSyncService.syncAllEntitiesParallel(operationId);
-
-    int totalSynced =
-        parallelResult.getEntityResults().stream()
-            .map(er -> er.getSyncResult())
-            .filter(java.util.Objects::nonNull)
-            .mapToInt(sr -> sr.getSyncedCount())
-            .sum();
-
-    return NotionSyncService.SyncResult.success("All (Parallel)", 0, totalSynced, 0);
+    notionSyncService.fullSync();
+    return NotionSyncService.SyncResult.success("All (Full Sync)", 0, 0, 0);
   }
 
   /**

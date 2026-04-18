@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -29,18 +31,22 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionType;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -50,8 +56,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RingsideActionServiceTest {
 
   @Mock private SegmentRepository segmentRepository;
@@ -59,6 +68,7 @@ class RingsideActionServiceTest {
   @Mock private NpcService npcService;
   @Mock private FactionService factionService;
   @Mock private TeamService teamService;
+  @Mock private WrestlerService wrestlerService;
 
   @Mock private CampaignService campaignService;
   @Mock private AlignmentService alignmentService;
@@ -66,9 +76,13 @@ class RingsideActionServiceTest {
   @InjectMocks private RingsideActionService ringsideActionService;
 
   private Segment segment;
+  private Show show;
+  private Universe universe;
   private Npc referee;
   private Wrestler wrestler;
+  private WrestlerState wrestlerState;
   private Wrestler otherWrestler;
+  private WrestlerState otherWrestlerState;
 
   private RingsideActionType legalType;
   private RingsideActionType illegalType;
@@ -78,11 +92,16 @@ class RingsideActionServiceTest {
 
   @BeforeEach
   void setUp() {
+    universe = Universe.builder().id(1L).build();
+    show = mock(Show.class);
+    when(show.getUniverse()).thenReturn(universe);
+
     referee = new Npc();
     referee.setName("Earl Hebner");
 
     segment = mock(Segment.class);
     lenient().when(segment.getId()).thenReturn(1L);
+    lenient().when(segment.getShow()).thenReturn(show);
     lenient().when(segment.getReferee()).thenReturn(referee);
     lenient().when(segment.getRefereeAwarenessLevel()).thenReturn(0);
 
@@ -90,9 +109,17 @@ class RingsideActionServiceTest {
     wrestler.setId(10L);
     wrestler.setName("Sgt. Slaughter");
 
+    wrestlerState = WrestlerState.builder().wrestler(wrestler).universe(universe).build();
+    when(wrestlerService.getOrCreateState(eq(10L), anyLong())).thenReturn(wrestlerState);
+    when(wrestler.getState(anyLong())).thenReturn(Optional.of(wrestlerState));
+
     otherWrestler = new Wrestler();
     otherWrestler.setId(11L);
     otherWrestler.setName("Other Wrestler");
+
+    otherWrestlerState = WrestlerState.builder().wrestler(otherWrestler).universe(universe).build();
+    when(wrestlerService.getOrCreateState(eq(11L), anyLong())).thenReturn(otherWrestlerState);
+    when(otherWrestler.getState(anyLong())).thenReturn(Optional.of(otherWrestlerState));
 
     legalType = new RingsideActionType();
     legalType.setName("Legal Support");
@@ -140,15 +167,6 @@ class RingsideActionServiceTest {
     ringsideActionService.performAction(segment, otherWrestler, wrestler, coachAction);
     verify(alignmentService).shiftAlignment(campaign, 1);
 
-    // Test Heel shift
-    // We need to ensure success for the heel action (probabilistic)
-    // For testing, we'll just mock the random if needed, but here we can just
-    // observe that shiftAlignment(-1) is called if it succeeds.
-    // Since success is random, we'll loop or just accept current behavior.
-    // Actually, I'll just use a loop to guarantee at least one success or
-    // I can modify performAction to be more testable.
-    // But for now, let's just verify the logic integration.
-
     // Reset verify
     reset(campaignService);
 
@@ -161,7 +179,7 @@ class RingsideActionServiceTest {
   void hasSupportAtRingside_WithDirectManager() {
     Npc manager = new Npc();
     manager.setName("Colonel Mustafa");
-    wrestler.setManager(manager);
+    wrestlerState.setManager(manager);
 
     assertTrue(ringsideActionService.hasSupportAtRingside(segment, wrestler));
     assertEquals(manager, ringsideActionService.getBestSupporter(segment, wrestler));
@@ -173,7 +191,7 @@ class RingsideActionServiceTest {
     factionManager.setName("Faction Manager");
     Faction faction = new Faction();
     faction.setManager(factionManager);
-    wrestler.setFaction(faction);
+    wrestlerState.setFaction(faction);
 
     assertTrue(ringsideActionService.hasSupportAtRingside(segment, wrestler));
     assertEquals(factionManager, ringsideActionService.getBestSupporter(segment, wrestler));
@@ -182,10 +200,18 @@ class RingsideActionServiceTest {
   @Test
   void hasSupportAtRingside_WithFactionMember() {
     Wrestler partner = new Wrestler();
+    partner.setId(12L);
     partner.setName("Kurt Angle");
+
+    WrestlerState partnerState =
+        WrestlerState.builder().wrestler(partner).universe(universe).build();
+    when(wrestlerService.getOrCreateState(eq(12L), anyLong())).thenReturn(partnerState);
+    when(partner.getState(anyLong())).thenReturn(Optional.of(partnerState));
+
     Faction faction = new Faction();
-    faction.setMembers(Set.of(wrestler, partner));
-    wrestler.setFaction(faction);
+    faction.setMembers(Set.of(wrestlerState, partnerState));
+    wrestlerState.setFaction(faction);
+    partnerState.setFaction(faction);
 
     // Partner is NOT in the match
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
@@ -197,10 +223,18 @@ class RingsideActionServiceTest {
   @Test
   void hasSupportAtRingside_NoSupportIfAllMembersInMatch() {
     Wrestler partner = new Wrestler();
+    partner.setId(12L);
     partner.setName("Kurt Angle");
+
+    WrestlerState partnerState =
+        WrestlerState.builder().wrestler(partner).universe(universe).build();
+    when(wrestlerService.getOrCreateState(eq(12L), anyLong())).thenReturn(partnerState);
+    when(partner.getState(anyLong())).thenReturn(Optional.of(partnerState));
+
     Faction faction = new Faction();
-    faction.setMembers(Set.of(wrestler, partner));
-    wrestler.setFaction(faction);
+    faction.setMembers(Set.of(wrestlerState, partnerState));
+    wrestlerState.setFaction(faction);
+    partnerState.setFaction(faction);
 
     // Both are in the match
     when(segment.getWrestlers()).thenReturn(List.of(wrestler, partner));
@@ -214,6 +248,7 @@ class RingsideActionServiceTest {
     Wrestler partner = new Wrestler();
     partner.setName("Team Partner");
     Team team = mock(Team.class);
+    when(team.getUniverse()).thenReturn(universe);
     when(team.getPartner(wrestler)).thenReturn(partner);
     when(teamService.getActiveTeamsByWrestler(wrestler)).thenReturn(List.of(team));
 
@@ -227,13 +262,14 @@ class RingsideActionServiceTest {
   @Test
   void priorityOrdering_ManagerOverAll() {
     Npc directManager = new Npc();
-    wrestler.setManager(directManager);
+    wrestlerState.setManager(directManager);
 
     Npc factionManager = new Npc();
     Faction faction = new Faction();
     faction.setManager(factionManager);
-    faction.setMembers(Set.of(wrestler, new Wrestler()));
-    wrestler.setFaction(faction);
+    faction.setMembers(
+        Set.of(wrestlerState, WrestlerState.builder().wrestler(new Wrestler()).build()));
+    wrestlerState.setFaction(faction);
 
     assertEquals(directManager, ringsideActionService.getBestSupporter(segment, wrestler));
   }

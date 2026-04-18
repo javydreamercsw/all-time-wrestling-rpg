@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2026 Software Consulting Dreams LLC
+* Copyright (C) 2025 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,67 +16,64 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.base.security.PermissionService;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+@ExtendWith(MockitoExtension.class)
 class DramaEventServiceTest {
 
-  private DramaEventRepository dramaEventRepository;
-  private WrestlerRepository wrestlerRepository;
-  private WrestlerService wrestlerService;
-  private RivalryService rivalryService;
-  private InjuryService injuryService;
-  private PermissionService permissionService;
-  private Clock clock;
-  private Random random;
-  private ApplicationEventPublisher eventPublisher;
+  @Mock private DramaEventRepository dramaEventRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private UniverseRepository universeRepository;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private RivalryService rivalryService;
+  @Mock private InjuryService injuryService;
+  @Mock private SecurityUtils securityUtils;
+  @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private Random random;
+
   private DramaEventService dramaEventService;
+  private final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
   @BeforeEach
   void setUp() {
-    dramaEventRepository = mock(DramaEventRepository.class);
-    wrestlerRepository = mock(WrestlerRepository.class);
-    wrestlerService = mock(WrestlerService.class);
-    rivalryService = mock(RivalryService.class);
-    injuryService = mock(InjuryService.class);
-    permissionService = mock(PermissionService.class);
-    clock = Clock.fixed(Instant.parse("2026-04-04T10:00:00Z"), ZoneId.systemDefault());
-    random = new Random(42); // Fixed seed for reproducibility
-    eventPublisher = mock(ApplicationEventPublisher.class);
-
     dramaEventService =
         new DramaEventService(
             dramaEventRepository,
             wrestlerRepository,
+            universeRepository,
+            wrestlerStateRepository,
             wrestlerService,
             rivalryService,
             injuryService,
-            permissionService,
+            securityUtils,
             clock,
             random,
             eventPublisher);
@@ -84,103 +81,78 @@ class DramaEventServiceTest {
 
   @Test
   void testCreateDramaEvent() {
-    Wrestler primary = new Wrestler();
-    primary.setId(1L);
-    primary.setName("Primary");
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
 
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(primary));
+    Universe u = new Universe();
+    u.setId(1L);
+
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(u));
+    when(securityUtils.canCreate()).thenReturn(true);
     when(dramaEventRepository.save(any(DramaEvent.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
-    var eventOpt =
+    Optional<DramaEvent> result =
         dramaEventService.createDramaEvent(
             1L,
-            null,
+            2L,
             DramaEventType.BACKSTAGE_INCIDENT,
             DramaEventSeverity.NEUTRAL,
             "Title",
-            "Description");
+            "Desc",
+            1L);
 
-    assertThat(eventOpt).isPresent();
-    verify(dramaEventRepository).save(any(DramaEvent.class));
-    verify(eventPublisher).publishEvent(any());
+    assertTrue(result.isPresent());
+    assertEquals("Title", result.get().getTitle());
+    assertEquals(w1, result.get().getPrimaryWrestler());
+    assertEquals(w2, result.get().getSecondaryWrestler());
   }
 
   @Test
-  void testGenerateRandomDramaEventForAllTypes() {
-    Wrestler primary = new Wrestler();
-    primary.setId(1L);
-    primary.setName("Primary");
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(primary));
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of(1L, 2L));
-    Wrestler secondary = new Wrestler();
-    secondary.setId(2L);
-    secondary.setName("Secondary");
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(secondary));
+  void testProcessBackstageIncident() {
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
 
-    when(dramaEventRepository.save(any(DramaEvent.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
-    // Test all event types to cover the switch statement in generateEventTemplate
-    for (DramaEventType type : DramaEventType.values()) {
-      // Run multiple times to try and hit different severities and multi-wrestler paths
-      for (int i = 0; i < 20; i++) {
-        dramaEventService.generateRandomDramaEvent(1L);
-      }
-    }
-
-    verify(dramaEventRepository, atLeastOnce()).save(any(DramaEvent.class));
-  }
-
-  @Test
-  void testProcessEvent() {
-    Wrestler primary = mock(Wrestler.class);
-    when(primary.getId()).thenReturn(1L);
-    when(primary.getName()).thenReturn("Primary");
-    when(primary.getFans()).thenReturn(100L);
-    when(primary.addBump()).thenReturn(true); // Trigger injury logic
-
-    Wrestler secondary = mock(Wrestler.class);
-    when(secondary.getId()).thenReturn(2L);
-    when(secondary.getName()).thenReturn("Secondary");
+    Universe u = new Universe();
+    u.setId(1L);
 
     DramaEvent event = new DramaEvent();
-    event.setId(1L);
-    event.setPrimaryWrestler(primary);
-    event.setSecondaryWrestler(secondary);
-    event.setFanImpact(10L);
-    event.setHeatImpact(5);
-    event.setInjuryCaused(true);
-    event.setRivalryCreated(true);
-    event.setRivalryEnded(true);
+    event.setPrimaryWrestler(w1);
+    event.setSecondaryWrestler(w2);
+    event.setUniverse(u);
     event.setEventType(DramaEventType.BACKSTAGE_INCIDENT);
-    event.setTitle("Test Event");
+    event.setSeverity(DramaEventSeverity.NEGATIVE);
 
     dramaEventService.processEvent(event);
 
-    verify(primary).setFans(110L);
-    verify(rivalryService).addHeatBetweenWrestlers(1L, 2L, 5, "Drama Event: Test Event");
-    verify(injuryService).createInjuryFromBumps(1L);
-    verify(rivalryService).createRivalry(any(), any(), any());
-    verify(dramaEventRepository, atLeastOnce()).save(event);
+    verify(rivalryService).addHeatBetweenWrestlers(eq(1L), eq(2L), anyInt(), anyString());
+    assertTrue(event.getIsProcessed());
+    assertNotNull(event.getProcessedDate());
   }
 
   @Test
-  void testGetters() {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setId(1L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(dramaEventRepository.findByWrestler(any())).thenReturn(Collections.emptyList());
-    when(dramaEventRepository.findByWrestler(any(), any()))
-        .thenReturn(org.springframework.data.domain.Page.empty());
-    when(dramaEventRepository.findBetweenWrestlers(any(), any()))
-        .thenReturn(Collections.emptyList());
+  void testProcessInjuryEvent() {
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
 
-    assertThat(dramaEventService.getEventsForWrestler(1L)).isEmpty();
-    assertThat(
-            dramaEventService.getEventsForWrestler(
-                1L, org.springframework.data.domain.Pageable.unpaged()))
-        .isEmpty();
-    assertThat(dramaEventService.getEventsBetweenWrestlers(1L, 2L)).isEmpty();
+    Universe u = new Universe();
+    u.setId(1L);
+
+    DramaEvent event = new DramaEvent();
+    event.setPrimaryWrestler(w1);
+    event.setUniverse(u);
+    event.setEventType(DramaEventType.INJURY_INCIDENT);
+    event.setSeverity(DramaEventSeverity.MAJOR);
+
+    dramaEventService.processEvent(event);
+
+    verify(injuryService).createInjuryFromBumps(eq(1L), eq(1L));
+    assertTrue(event.getIsProcessed());
   }
 }

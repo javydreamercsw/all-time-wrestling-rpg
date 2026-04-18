@@ -247,7 +247,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     List<Show> matchingShows = showService.findByName(showName);
     Assertions.assertEquals(1, matchingShows.size());
     Show show = matchingShows.getFirst();
-    Assertions.assertNotNull(show.getLeague(), "Show league should be set");
+    Assertions.assertNotNull(show.getUniverse(), "Show universe should be set");
 
     // Click on the newly created show in the grid to navigate to its detail page
     log.info("Navigating to show detail page");

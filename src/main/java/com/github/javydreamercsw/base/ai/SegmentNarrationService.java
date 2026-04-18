@@ -74,6 +74,7 @@ public interface SegmentNarrationService {
   @ToString // Add this annotation
   class SegmentNarrationContext {
     // Getters and setters
+    private Long universeId;
     @NotNull private List<WrestlerContext> wrestlers;
     @NotNull private SegmentTypeContext segmentType;
     private RefereeContext referee;

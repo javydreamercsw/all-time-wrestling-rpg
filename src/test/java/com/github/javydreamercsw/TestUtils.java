@@ -19,7 +19,9 @@ package com.github.javydreamercsw;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.util.UUID;
 import lombok.NonNull;
 
@@ -32,7 +34,7 @@ public class TestUtils {
    */
   public static Wrestler createWrestler(@NonNull String name, long fans) {
     Wrestler wrestler = createWrestler(name);
-    wrestler.setFans(fans);
+    setFans(wrestler, fans);
     return wrestler;
   }
 
@@ -46,7 +48,7 @@ public class TestUtils {
     Wrestler wrestler =
         createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
     wrestler.setDescription("Test Wrestler");
-    wrestler.setFans(1_000L); // Default fan count
+    setFans(wrestler, 1_000L); // Default fan count
     return wrestler;
   }
 
@@ -70,10 +72,28 @@ public class TestUtils {
     w.setLowHealth(4);
     w.setStartingStamina(15);
     w.setLowStamina(2);
-    w.setFans(0L);
+    setFans(w, 0L);
     w.setGender(Gender.MALE);
     w.setBumps(0);
     w.setActive(true);
     return w;
+  }
+
+  private static void setFans(Wrestler wrestler, long fans) {
+    WrestlerState state =
+        wrestler
+            .getDefaultState()
+            .orElseGet(
+                () -> {
+                  WrestlerState s =
+                      WrestlerState.builder()
+                          .wrestler(wrestler)
+                          .universe(Universe.builder().id(1L).name("Global").build())
+                          .build();
+                  wrestler.getWrestlerStates().add(s);
+                  return s;
+                });
+    state.setFans(fans);
+    state.setTier(WrestlerTier.fromFanCount(fans));
   }
 }

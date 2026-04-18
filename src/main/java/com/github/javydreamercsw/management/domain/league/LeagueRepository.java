@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.league;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,8 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource
 public interface LeagueRepository extends JpaRepository<League, Long> {
   Optional<League> findByName(String name);
+
+  Optional<League> findByUniverse(Universe universe);
 
   @Query("SELECT l FROM League l LEFT JOIN FETCH l.excludedWrestlers WHERE l.id = :id")
   Optional<League> findByIdWithExcludedWrestlers(Long id);

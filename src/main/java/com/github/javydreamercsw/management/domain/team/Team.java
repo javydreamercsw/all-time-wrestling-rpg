@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.team;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,7 +37,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
@@ -48,6 +52,9 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "team", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Team extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,6 +67,10 @@ public class Team extends AbstractEntity<Long> {
   @Lob
   @Column(name = "description")
   private String description;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   // First wrestler (required)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -94,6 +105,7 @@ public class Team extends AbstractEntity<Long> {
 
   @Column(name = "status", nullable = false)
   @Enumerated(EnumType.STRING)
+  @Builder.Default
   private TeamStatus status = TeamStatus.ACTIVE;
 
   @Column(name = "formed_date", nullable = false)
@@ -101,6 +113,9 @@ public class Team extends AbstractEntity<Long> {
 
   @Column(name = "disbanded_date")
   private Instant disbandedDate;
+
+  @Column(name = "external_id")
+  private String externalId;
 
   @Override
   public @Nullable Long getId() {
@@ -173,17 +188,43 @@ public class Team extends AbstractEntity<Long> {
     return baseName;
   }
 
-  /** Check if both wrestlers belong to the same faction. */
+  /** Check if both wrestlers belong to the same faction in this team's universe. */
   public boolean areFromSameFaction() {
-    return wrestler1.getFaction() != null
-        && wrestler2.getFaction() != null
-        && wrestler1.getFaction().equals(wrestler2.getFaction());
+    if (universe == null) return false;
+    Long universeId = universe.getId();
+
+    Faction f1 =
+        wrestler1
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+    Faction f2 =
+        wrestler2
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+
+    return f1 != null && f2 != null && f1.equals(f2);
   }
 
-  /** Get the common faction if both wrestlers belong to the same one. */
+  /** Get the common faction if both wrestlers belong to the same one in this team's universe. */
   public Faction getCommonFaction() {
-    if (areFromSameFaction()) {
-      return wrestler1.getFaction();
+    if (universe == null) return null;
+    Long universeId = universe.getId();
+
+    Faction f1 =
+        wrestler1
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+    Faction f2 =
+        wrestler2
+            .getState(universeId)
+            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+            .orElse(null);
+
+    if (f1 != null && f1.equals(f2)) {
+      return f1;
     }
     return null;
   }

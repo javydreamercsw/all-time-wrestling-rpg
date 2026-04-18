@@ -85,6 +85,13 @@ public class NpcService {
         .collect(Collectors.toList());
   }
 
+  public List<Npc> findAllIncludingInactive() {
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return npcRepository.findAll().stream()
+        .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
+        .collect(Collectors.toList());
+  }
+
   @Cacheable(value = NPCS_CACHE)
   public List<Npc> findAll() {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();

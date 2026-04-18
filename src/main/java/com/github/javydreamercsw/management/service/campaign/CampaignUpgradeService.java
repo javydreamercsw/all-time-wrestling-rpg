@@ -42,6 +42,10 @@ public class CampaignUpgradeService {
   private final CampaignStateRepository stateRepository;
   private final com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
       wrestlerRepository;
+  private final com.github.javydreamercsw.management.service.wrestler.WrestlerService
+      wrestlerService;
+  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
 
   @PostConstruct
   public void init() {
@@ -102,9 +106,25 @@ public class CampaignUpgradeService {
     if ("HEALTH".equals(upgrade.getType())) {
       com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
           campaign.getWrestler();
-      wrestler.refreshCurrentHealth();
-      wrestlerRepository.save(wrestler);
-      log.info("Refreshed health for wrestler {}", wrestler.getName());
+      Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerState wrestlerState =
+          wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+
+      // Manual health refresh logic
+      int bonus = 0;
+      int penalty = 0;
+      if (wrestler.getAlignment() != null
+          && wrestler.getAlignment().getCampaign() != null
+          && wrestler.getAlignment().getCampaign().getState() != null) {
+        bonus = wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
+        penalty = wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
+      }
+
+      int effective = wrestler.getStartingHealth() + bonus - penalty;
+      wrestlerState.setCurrentHealth(Math.max(1, effective));
+      wrestlerStateRepository.save(wrestlerState);
+
+      log.info("Refreshed health for wrestler {} in universe {}", wrestler.getName(), universeId);
     }
   }
 }

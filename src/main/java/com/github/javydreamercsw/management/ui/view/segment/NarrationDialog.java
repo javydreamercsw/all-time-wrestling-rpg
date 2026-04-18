@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -75,6 +76,7 @@ public class NarrationDialog extends Dialog {
   private final com.github.javydreamercsw.management.service.relationship
           .WrestlerRelationshipService
       relationshipService;
+  private final UniverseContextService universeContextService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -104,7 +106,8 @@ public class NarrationDialog extends Dialog {
       SegmentNarrationServiceFactory aiFactory,
       RingsideActionService ringsideActionService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService) {
+          relationshipService,
+      UniverseContextService universeContextService) {
     this.segmentService = segmentService;
     this.segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
     this.objectMapper = new ObjectMapper();
@@ -116,6 +119,7 @@ public class NarrationDialog extends Dialog {
     this.aiFactory = aiFactory;
     this.ringsideActionService = ringsideActionService;
     this.relationshipService = relationshipService;
+    this.universeContextService = universeContextService;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -236,7 +240,9 @@ public class NarrationDialog extends Dialog {
     if (segment.getReferee() != null) {
       refereeField.setValue(segment.getReferee());
     }
-    wrestlerService.findAllBySegment(segment).forEach(this::addTeamSelector);
+    wrestlerService
+        .findAllBySegment(segment, universeContextService.getCurrentUniverseId())
+        .forEach(this::addTeamSelector);
 
     VerticalLayout layout =
         new VerticalLayout(
@@ -261,7 +267,7 @@ public class NarrationDialog extends Dialog {
     wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setItems(
-        wrestlerService.findAllAsDTO().stream()
+        wrestlerService.findAllAsDTO(universeContextService.getCurrentUniverseId()).stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
@@ -576,7 +582,9 @@ public class NarrationDialog extends Dialog {
 
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
     // Use transactional DTO fetching for wrestlers
-    List<WrestlerDTO> wrestlers = wrestlerService.findAllBySegment(loadedSegment);
+    List<WrestlerDTO> wrestlers =
+        wrestlerService.findAllBySegment(
+            loadedSegment, universeContextService.getCurrentUniverseId());
     for (WrestlerDTO wrestler : wrestlers) {
       SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
       wc.setName(wrestler.getName());

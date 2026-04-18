@@ -78,7 +78,12 @@ public class TitleController {
 
     Title title =
         titleService.createTitle(
-            request.name(), request.description(), request.tier(), request.type, request.gender());
+            request.name(),
+            request.description(),
+            request.tier(),
+            request.type(),
+            request.gender(),
+            request.leagueId());
     return ResponseEntity.status(HttpStatus.CREATED).body(title);
   }
 
@@ -266,7 +271,8 @@ public class TitleController {
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       @NotNull(message = "Title tier is required") WrestlerTier tier,
       @NotNull(message = "Title type is required") ChampionshipType type,
-      com.github.javydreamercsw.base.domain.wrestler.Gender gender) {}
+      com.github.javydreamercsw.base.domain.wrestler.Gender gender,
+      @NotNull(message = "League ID is required") Long leagueId) {}
 
   public record UpdateTitleRequest(
       @Size(max = 255, message = "Title name must not exceed 255 characters") String name,

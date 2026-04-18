@@ -23,9 +23,11 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -58,17 +60,20 @@ public class BookerView extends VerticalLayout {
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
   private final NewsService newsService;
+  private final UniverseContextService universeContextService;
 
   @Autowired
   public BookerView(
       ShowService showService,
       RivalryService rivalryService,
       WrestlerService wrestlerService,
-      NewsService newsService) {
+      NewsService newsService,
+      UniverseContextService universeContextService) {
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.newsService = newsService;
+    this.universeContextService = universeContextService;
 
     setHeightFull();
     setPadding(false);
@@ -169,7 +174,17 @@ public class BookerView extends VerticalLayout {
     grid.setId("roster-overview-grid");
     Grid.Column<Wrestler> nameColumn =
         grid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
-    grid.addColumn(Wrestler::getTier).setHeader("Tier").setSortable(true);
+
+    grid.addColumn(
+            wrestler -> {
+              WrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
+              return state.getTier().getDisplayWithEmoji();
+            })
+        .setHeader("Tier")
+        .setSortable(true);
+
     grid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?").setSortable(true);
 

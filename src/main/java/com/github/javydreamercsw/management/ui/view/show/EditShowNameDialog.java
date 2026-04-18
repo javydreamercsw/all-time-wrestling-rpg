@@ -90,7 +90,7 @@ public class EditShowNameDialog extends Dialog {
             show.getShowDate(),
             show.getSeason() != null ? show.getSeason().getId() : null,
             show.getTemplate() != null ? show.getTemplate().getId() : null,
-            show.getLeague() != null ? show.getLeague().getId() : null,
+            show.getUniverse() != null ? show.getUniverse().getId() : null,
             show.getCommentaryTeam() != null ? show.getCommentaryTeam().getId() : null,
             show.getArena() != null ? show.getArena().getId() : null);
         Notification.show("Show name updated successfully!", 3000, Notification.Position.BOTTOM_END)

@@ -109,7 +109,8 @@ class RankingViewE2ETest extends AbstractE2ETest {
             "Legacy Title",
             "The historic title",
             WrestlerTier.MAIN_EVENTER,
-            ChampionshipType.SINGLE);
+            ChampionshipType.SINGLE,
+            1L);
 
     Season season = seasonService.createSeason("Legacy Season", "Season for legacy", 10);
     Show show =

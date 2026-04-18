@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.faction;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,9 @@ public interface FactionRepository
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Faction> findAllBy(Pageable pageable);
+
+  /** Find all factions for a specific universe. */
+  List<Faction> findByUniverse(Universe universe);
 
   /** Find faction by name. */
   Optional<Faction> findByName(String name);
@@ -71,7 +75,7 @@ public interface FactionRepository
       """
       SELECT f FROM Faction f
       JOIN f.members m
-      WHERE m = :wrestler AND f.isActive = true
+      WHERE m.wrestler = :wrestler AND f.isActive = true
       """)
   Optional<Faction> findActiveFactionByMember(@Param("wrestler") Wrestler wrestler);
 
@@ -80,7 +84,7 @@ public interface FactionRepository
       """
       SELECT f FROM Faction f
       JOIN f.members m
-      WHERE m = :wrestler
+      WHERE m.wrestler = :wrestler
       """)
   List<Faction> findFactionsByMember(@Param("wrestler") Wrestler wrestler);
 

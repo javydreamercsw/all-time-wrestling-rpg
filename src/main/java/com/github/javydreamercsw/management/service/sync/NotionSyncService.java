@@ -18,316 +18,175 @@ package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionRivalrySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.RivalrySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
-import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Main service responsible for orchestrating synchronization operations between Notion databases
- * and the local application. This service now supports both individual entity sync and
- * high-performance parallel sync operations with fine-grained configuration control.
+ * Main service for orchestrating Notion synchronization. Coordinates individual entity sync
+ * services.
  */
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true", matchIfMissing = false)
 public class NotionSyncService extends BaseSyncService {
 
-  private final NotionSyncServicesManager notionSyncServicesManager;
+  private final NotionSyncServicesManager servicesManager;
   private final ParallelSyncOrchestrator parallelSyncOrchestrator;
-  private final NotionApiExecutor notionApiExecutor;
 
-  /** Constructor for NotionSyncService. */
-  @Autowired // Add @Autowired for constructor injection
+  @Autowired
   public NotionSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      NotionSyncServicesManager notionSyncServicesManager,
+      NotionSyncServicesManager servicesManager,
       NotionApiExecutor notionApiExecutor,
-      ParallelSyncOrchestrator parallelSyncOrchestrator) { // Add SyncServiceDependencies here
-    super(
-        objectMapper,
-        syncServiceDependencies,
-        notionApiExecutor); // Pass it to super, remove syncProperties
-    this.notionSyncServicesManager = notionSyncServicesManager;
-    this.notionApiExecutor = notionApiExecutor;
+      ParallelSyncOrchestrator parallelSyncOrchestrator) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
+    this.servicesManager = servicesManager;
     this.parallelSyncOrchestrator = parallelSyncOrchestrator;
   }
 
-  // ==================== PARALLEL SYNC OPERATIONS ====================
+  /** Orchestrates a full synchronization of all enabled entities from Notion. */
+  @Async
+  public void fullSync() {
+    String operationId = UUID.randomUUID().toString();
+    log.info("🚀 Starting full Notion synchronization. Operation ID: {}", operationId);
 
-  /**
-   * Executes high-performance parallel synchronization of all enabled entities. This is the
-   * recommended method for full system synchronization as it provides better performance through
-   * concurrent processing.
-   *
-   * @return ParallelSyncResult containing results for all entity syncs
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public ParallelSyncResult syncAllEntitiesParallel() {
-    log.info("🚀 Starting parallel synchronization of all enabled entities");
-    return parallelSyncOrchestrator.executeParallelSync();
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      log.warn("Full sync aborted: Notion token not available.");
+      return;
+    }
+
+    try {
+      // Phase 1: Reference Data (Sequential due to dependencies)
+      syncShowTypes(operationId, SyncDirection.INBOUND);
+      syncInjuryTypes(operationId, SyncDirection.INBOUND);
+
+      // Phase 2: Core Entities (Can be parallelized)
+      syncWrestlers(operationId, SyncDirection.INBOUND);
+      syncNpcs(operationId, SyncDirection.INBOUND);
+      syncSeasons(operationId, SyncDirection.INBOUND);
+
+      // Phase 3: Dependent Entities
+      syncFactions(operationId, SyncDirection.INBOUND);
+      syncTeams(operationId, SyncDirection.INBOUND);
+      syncTitles(operationId, SyncDirection.INBOUND);
+      syncInjuries(operationId, SyncDirection.INBOUND);
+
+      // Phase 4: Dynamic/Historical Data
+      syncShows(operationId, SyncDirection.INBOUND);
+      syncSegments(operationId, SyncDirection.INBOUND);
+      syncRivalries(operationId, SyncDirection.INBOUND);
+      syncTitleReigns(operationId);
+
+      log.info("✅ Full Notion synchronization completed successfully.");
+    } catch (Exception e) {
+      log.error("❌ Full Notion synchronization failed: {}", e.getMessage(), e);
+    }
   }
 
-  /**
-   * Executes parallel synchronization with operation tracking for monitoring.
-   *
-   * @param operationId Operation ID for tracking and logging
-   * @return ParallelSyncResult containing results for all entity syncs
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public ParallelSyncResult syncAllEntitiesParallel(@NonNull String operationId) {
-    log.info("🚀 Starting parallel synchronization with operation ID: {}", operationId);
-    return parallelSyncOrchestrator.executeParallelSync(operationId);
-  }
-
-  // ==================== INDIVIDUAL ENTITY SYNC OPERATIONS ====================
-
-  /**
-   * Synchronizes a single show from Notion by its ID.
-   *
-   * @param showId The Notion ID of the show to sync.
-   * @return SyncResult containing the outcome of the sync operation.
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncShow(@NonNull String showId) {
-    return notionSyncServicesManager.getShowSyncService().syncShow(showId);
-  }
-
-  /**
-   * Gets all show IDs from the Notion database.
-   *
-   * @return List of all show IDs.
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public java.util.List<String> getAllShowIds() {
-    return notionSyncServicesManager.getShowSyncService().getShowIds();
-  }
-
-  /**
-   * Synchronizes a single segment from Notion by its ID.
-   *
-   * @param segmentId The Notion ID of the segment to sync.
-   * @return SyncResult containing the outcome of the sync operation.
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncSegment(@NonNull String segmentId) {
-    return notionSyncServicesManager.getSegmentSyncService().syncSegment(segmentId);
-  }
-
-  /**
-   * Gets all segment IDs from the Notion database.
-   *
-   * @return List of all segment IDs.
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public java.util.List<String> getAllSegmentIds() {
-    return notionSyncServicesManager.getSegmentSyncService().getSegmentIds();
-  }
-
-  /**
-   * Synchronizes shows from Notion Shows database directly to the database.
-   *
-   * @return SyncResult containing the outcome of the sync operation
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncShows(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getShowSyncService().syncShows(operationId)
-        : notionSyncServicesManager.getShowNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes wrestlers from Notion to the local JSON file and database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncWrestlers(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getWrestlerSyncService().syncWrestlers(operationId)
-        : notionSyncServicesManager.getWrestlerNotionSyncService().syncToNotion(operationId);
+    WrestlerSyncService service = servicesManager.getWrestlerSyncService();
+    return service.syncWrestlers(operationId);
   }
 
-  /**
-   * Synchronizes factions from Notion to the database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncFactions(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getFactionSyncService().syncFactions(operationId)
-        : notionSyncServicesManager.getFactionNotionSyncService().syncToNotion(operationId);
+    FactionSyncService service = servicesManager.getFactionSyncService();
+    return service.syncFactions(operationId);
   }
 
-  /**
-   * Synchronizes teams from Notion to the local database.
-   *
-   * @return SyncResult containing the operation status and details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncTeams(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getTeamSyncService().syncTeams(operationId)
-        : notionSyncServicesManager.getTeamNotionSyncService().syncToNotion(operationId);
+    TeamSyncService service = servicesManager.getTeamSyncService();
+    return service.syncTeams(operationId);
   }
 
-  /**
-   * Synchronizes show template data between the application and Notion based on the specified
-   * direction.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @param direction The direction of the synchronization (inbound or outbound)
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncShowTemplates(
-      @NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getShowTemplateSyncService().syncShowTemplates(operationId)
-        : notionSyncServicesManager.getShowTemplateNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes seasons from Notion to the database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncSeasons(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getSeasonSyncService().syncSeasons(operationId)
-        : notionSyncServicesManager.getSeasonNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes show types from Notion or creates default show types.
-   *
-   * @param operationId Operation ID for progress tracking
-   * @param direction The direction of the synchronization (inbound or outbound)
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncShowTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getShowTypeSyncService().syncShowTypes(operationId)
-        : notionSyncServicesManager.getShowTypeNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes injury types from Notion Injury Types database to the local database.
-   *
-   * @param operationId Operation ID for progress tracking
-   * @param direction The direction of the synchronization (inbound or outbound)
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncInjuryTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getInjuryTypeSyncService().syncInjuryTypes(operationId)
-        : notionSyncServicesManager.getInjuryTypeNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes individual injuries from Notion Injuries database to the local database.
-   *
-   * @param operationId Operation ID for progress tracking
-   * @param direction The direction of the synchronization (inbound or outbound)
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncInjuries(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getInjurySyncService().syncInjuries(operationId)
-        : notionSyncServicesManager.getInjuryNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes NPCs from Notion to the local database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getNpcSyncService().syncNpcs(operationId, direction)
-        : notionSyncServicesManager.getNpcNotionSyncService().syncToNotion(operationId);
-  }
-
-  /**
-   * Synchronizes titles from Notion to the local database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncTitles(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getTitleSyncService().syncTitles(operationId)
-        : notionSyncServicesManager.getTitleNotionSyncService().syncToNotion(operationId);
+    TitleSyncService service = servicesManager.getTitleSyncService();
+    return service.syncTitles(operationId);
   }
 
-  /**
-   * Synchronizes title reigns from Notion to the local database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncTitleReigns(@NonNull String operationId) {
-    return notionSyncServicesManager.getTitleReignSyncService().syncTitleReigns(operationId);
+    TitleReignSyncService service = servicesManager.getTitleReignSyncService();
+    return service.syncTitleReigns(operationId);
   }
 
-  /**
-   * Synchronizes rivalries from Notion to the database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
+  public SyncResult syncShowTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
+    ShowTypeSyncService service = servicesManager.getShowTypeSyncService();
+    return service.syncShowTypes(operationId);
+  }
+
+  public SyncResult syncSeasons(@NonNull String operationId, @NonNull SyncDirection direction) {
+    SeasonSyncService service = servicesManager.getSeasonSyncService();
+    return service.syncSeasons(operationId);
+  }
+
+  public SyncResult syncShows(@NonNull String operationId, @NonNull SyncDirection direction) {
+    ShowSyncService service = servicesManager.getShowSyncService();
+    return service.syncShows(operationId);
+  }
+
+  public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
+    SegmentSyncService service = servicesManager.getSegmentSyncService();
+    return service.syncSegments(operationId);
+  }
+
+  public SyncResult syncInjuryTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
+    InjuryTypeSyncService service = servicesManager.getInjuryTypeSyncService();
+    return service.syncInjuryTypes(operationId);
+  }
+
+  public SyncResult syncInjuries(@NonNull String operationId, @NonNull SyncDirection direction) {
+    InjurySyncService service = servicesManager.getInjurySyncService();
+    return service.syncInjuries(operationId);
+  }
+
+  public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
+    NpcSyncService service = servicesManager.getNpcSyncService();
+    return service.syncNpcs(operationId, direction);
+  }
+
   public SyncResult syncRivalries(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getRivalrySyncService().syncRivalries(operationId)
-        : notionSyncServicesManager.getRivalryNotionSyncService().syncToNotion(operationId);
+    RivalrySyncService service = servicesManager.getRivalrySyncService();
+    return service.syncRivalries(operationId);
   }
 
-  /**
-   * Synchronizes faction rivalries from Notion to the database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
   public SyncResult syncFactionRivalries(
       @NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getFactionRivalrySyncService().syncFactionRivalries(operationId)
-        : notionSyncServicesManager.getFactionRivalryNotionSyncService().syncToNotion(operationId);
+    FactionRivalrySyncService service = servicesManager.getFactionRivalrySyncService();
+    if (direction == SyncDirection.INBOUND) {
+      return service.syncFactionRivalries(operationId);
+    } else {
+      return servicesManager.getFactionRivalryNotionSyncService().syncToNotion(operationId);
+    }
   }
 
-  /**
-   * Synchronizes segment data between the application and Notion based on the specified direction.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @param direction The direction of the synchronization (inbound or outbound)
-   * @return SyncResult indicating success or failure with details
-   */
-  @PreAuthorize("hasRole('ADMIN')")
-  public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
-    return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getSegmentSyncService().syncSegments(operationId)
-        : notionSyncServicesManager.getSegmentNotionSyncService().syncToNotion(operationId);
+  public SyncResult syncShowTemplates(
+      @NonNull String operationId, @NonNull SyncDirection direction) {
+    if (direction == SyncDirection.INBOUND) {
+      return servicesManager.getShowTemplateSyncService().syncShowTemplates(operationId);
+    } else {
+      return servicesManager.getShowTemplateNotionSyncService().syncToNotion(operationId);
+    }
   }
 }

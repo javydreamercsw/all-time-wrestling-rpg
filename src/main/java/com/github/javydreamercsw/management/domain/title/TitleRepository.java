@@ -41,6 +41,13 @@ public interface TitleRepository
 
   List<Title> findByIsActiveTrueAndTier(WrestlerTier tier);
 
+  /** Find titles currently held by a specific wrestler in a universe. */
+  @Query(
+      "SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF"
+          + " tr.champions AND tr.title.universe.id = :universeId")
+  List<Title> findTitlesHeldByWrestler(
+      @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
+
   /** Find titles currently held by a specific wrestler. */
   @Query(
       "SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF"

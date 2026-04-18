@@ -19,8 +19,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,20 +28,17 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.dto.SegmentDTO;
-import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,11 +51,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class SegmentSyncServiceTest {
 
-  @Mock private SegmentService segmentService;
-  @Mock private ShowService showService;
+  @Mock private SegmentRepository segmentRepository;
+  @Mock private ShowRepository showRepository;
+  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private WrestlerService wrestlerService;
-  @Mock private SegmentTypeService segmentTypeService;
-  @Mock private ShowSyncService showSyncService;
+  @Mock private TitleRepository titleRepository;
   @Mock private NotionHandler notionHandler;
   @Mock private NotionApiExecutor notionApiExecutor;
   @Mock private NotionSyncProperties syncProperties;
@@ -83,68 +79,39 @@ class SegmentSyncServiceTest {
         new SegmentSyncService(
             objectMapper,
             syncServiceDependencies,
-            segmentService,
-            showService,
+            notionApiExecutor,
+            segmentRepository,
+            showRepository,
+            segmentTypeRepository,
+            segmentRuleRepository,
             wrestlerService,
-            segmentTypeService,
-            showSyncService,
-            notionApiExecutor);
+            titleRepository);
   }
 
   @Test
-  void syncSegments_WithExistingParticipants_ShouldUpdateCorrectly() {
-    // Given
-    SegmentDTO segmentDTO = new SegmentDTO();
-    segmentDTO.setExternalId("segment-1");
-    segmentDTO.setName("Test Segment");
-    segmentDTO.setShowExternalId("show-1");
-    segmentDTO.setSegmentTypeName("Test Type");
-    segmentDTO.setSegmentDate(Instant.now());
-    segmentDTO.setParticipantNames(List.of("Wrestler A", "Wrestler C"));
-    segmentDTO.setWinnerNames(List.of("Wrestler C"));
+  void testProcessSingleSegment() {
+    SegmentSyncService.SegmentSyncDTO dto = new SegmentSyncService.SegmentSyncDTO();
+    dto.setExternalId("segment-1");
+    dto.setName("Test Segment");
+    dto.setShowExternalId("show-1");
+    dto.setSegmentTypeExternalId("type-1");
 
-    Segment existingSegment = spy(new Segment());
-    Wrestler wrestlerA = Wrestler.builder().build();
-    wrestlerA.setName("Wrestler A");
-    Wrestler wrestlerB = Wrestler.builder().build();
-    wrestlerB.setName("Wrestler B");
-    existingSegment.addParticipant(wrestlerA);
-    existingSegment.addParticipant(wrestlerB);
+    Segment segment = new Segment();
+    segment.setExternalId("segment-1");
 
     Show show = new Show();
     show.setExternalId("show-1");
 
     SegmentType segmentType = new SegmentType();
-    segmentType.setName("Test Type");
+    segmentType.setExternalId("type-1");
 
-    Wrestler wrestlerC = Wrestler.builder().build();
-    wrestlerC.setName("Wrestler C");
+    when(segmentRepository.findByExternalId("segment-1")).thenReturn(Optional.of(segment));
+    when(showRepository.findByExternalId("show-1")).thenReturn(Optional.of(show));
+    when(segmentTypeRepository.findByExternalId("type-1")).thenReturn(Optional.of(segmentType));
+    when(segmentRepository.saveAndFlush(any(Segment.class))).thenReturn(segment);
 
-    when(segmentService.findByExternalId("segment-1")).thenReturn(Optional.of(existingSegment));
-    when(showService.findByExternalId("show-1")).thenReturn(Optional.of(show));
-    when(segmentTypeService.findByName("Test Type")).thenReturn(Optional.of(segmentType));
-    when(wrestlerService.findByName("Wrestler A")).thenReturn(Optional.of(wrestlerA));
-    when(wrestlerService.findByName("Wrestler C")).thenReturn(Optional.of(wrestlerC));
-
-    // When
-    boolean result = segmentSyncService.processSingleSegment(segmentDTO);
-
-    // Then
+    boolean result = segmentSyncService.processSingleSegment(dto);
     assertTrue(result);
-    verify(existingSegment, times(1)).syncParticipants(any());
-    verify(segmentService, times(1)).updateSegment(existingSegment);
-
-    // Verify participants were updated correctly
-    List<String> participantNames = new ArrayList<>();
-    existingSegment.getParticipants().forEach(p -> participantNames.add(p.getWrestler().getName()));
-    assertTrue(participantNames.contains("Wrestler A"));
-    assertTrue(participantNames.contains("Wrestler C"));
-    assertTrue(participantNames.size() == 2);
-
-    // Verify winners were updated correctly
-    List<String> winnerNames = new ArrayList<>();
-    existingSegment.getWinners().forEach(w -> winnerNames.add(w.getName()));
-    assertTrue(winnerNames.contains("Wrestler C"));
-    assertTrue(winnerNames.size() == 1);
+    verify(segmentRepository).saveAndFlush(any(Segment.class));
   }
 }

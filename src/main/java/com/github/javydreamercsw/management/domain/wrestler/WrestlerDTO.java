@@ -59,38 +59,28 @@ public class WrestlerDTO implements Serializable {
   private Integer startingStamina;
   private Integer lowStamina;
 
+  public WrestlerDTO(@NonNull WrestlerState state) {
+    this(state.getWrestler());
+    this.fans = state.getFans();
+    this.tier = state.getTier();
+    if (state.getManager() != null) {
+      this.managerName = state.getManager().getName();
+      this.managerExternalId = state.getManager().getExternalId();
+    }
+    // Note: Faction and Alignment might need more careful mapping if they become league-specific
+  }
+
   public WrestlerDTO(@NonNull Wrestler wrestler) {
     this.id = wrestler.getId(); // Initialize id
     this.name = wrestler.getName();
     this.description = wrestler.getDescription();
     this.gender = wrestler.getGender() != null ? wrestler.getGender().name() : Gender.MALE.name();
-    this.tier = wrestler.getTier();
+    this.tier = WrestlerTier.ROOKIE; // Default for template
     this.moveSet = convertToMoveSet(wrestler); // Populate MoveSet
-    this.fans = wrestler.getFans();
+    this.fans = 0L; // Default for template
     this.externalId = wrestler.getExternalId();
     this.imageUrl = wrestler.getImageUrl();
-    this.injured = !wrestler.getActiveInjuries().isEmpty();
-    if (wrestler.getManager() != null) {
-      this.managerName = wrestler.getManager().getName();
-      this.managerExternalId = wrestler.getManager().getExternalId();
-    }
-    if (wrestler.getInjuries() != null) {
-      this.injuryExternalIds =
-          wrestler.getInjuries().stream()
-              .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
-              .filter(Objects::nonNull)
-              .toList();
-    }
-    if (wrestler.getReigns() != null) {
-      this.titleReignExternalIds =
-          wrestler.getReigns().stream()
-              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
-              .filter(Objects::nonNull)
-              .toList();
-    }
-    if (wrestler.getAlignment() != null && wrestler.getAlignment().getAlignmentType() != null) {
-      this.alignment = wrestler.getAlignment().getAlignmentType().name();
-    }
+    this.injured = false; // Default for template
     this.drive = wrestler.getDrive();
     this.resilience = wrestler.getResilience();
     this.charisma = wrestler.getCharisma();
@@ -101,6 +91,17 @@ public class WrestlerDTO implements Serializable {
     this.lowHealth = wrestler.getLowHealth();
     this.startingStamina = wrestler.getStartingStamina();
     this.lowStamina = wrestler.getLowStamina();
+
+    if (wrestler.getReigns() != null) {
+      this.titleReignExternalIds =
+          wrestler.getReigns().stream()
+              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
+              .filter(Objects::nonNull)
+              .toList();
+    }
+    if (wrestler.getAlignment() != null && wrestler.getAlignment().getAlignmentType() != null) {
+      this.alignment = wrestler.getAlignment().getAlignmentType().name();
+    }
   }
 
   private MoveSet convertToMoveSet(Wrestler wrestler) {

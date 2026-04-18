@@ -24,9 +24,11 @@ import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +48,8 @@ public class TitleService {
   private final TierBoundaryService tierBoundaryService;
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final UniverseRepository universeRepository;
   private final Clock clock;
   private final DefaultImageService imageService;
 
@@ -53,8 +57,16 @@ public class TitleService {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
       return false;
     }
+
+    if (title.getUniverse() == null) {
+      return false;
+    }
+
     // A wrestler is eligible if their tier is the same or higher than the title's tier.
-    return wrestler.getTier().ordinal() >= title.getTier().ordinal();
+    WrestlerTier wrestlerTier =
+        wrestlerService.getOrCreateState(wrestler.getId(), title.getUniverse().getId()).getTier();
+
+    return wrestlerTier.ordinal() >= title.getTier().ordinal();
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -70,8 +82,9 @@ public class TitleService {
       @NonNull String name,
       @NonNull String description,
       @NonNull WrestlerTier tier,
-      @NonNull ChampionshipType type) {
-    return createTitle(name, description, tier, type, null);
+      @NonNull ChampionshipType type,
+      @NonNull Long universeId) {
+    return createTitle(name, description, tier, type, null, universeId);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -83,7 +96,8 @@ public class TitleService {
       @NonNull String description,
       @NonNull WrestlerTier tier,
       @NonNull ChampionshipType type,
-      Gender gender) {
+      Gender gender,
+      @NonNull Long universeId) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
@@ -91,6 +105,7 @@ public class TitleService {
     title.setGender(gender);
     title.setCreationDate(Instant.now(clock));
     title.setChampionshipType(type);
+    title.setUniverse(universeRepository.findById(universeId).orElseThrow());
     return titleRepository.save(title);
   }
 
@@ -268,7 +283,7 @@ public class TitleService {
     return tierBoundaryService
         .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getChallengeCost)
-        .orElse(title.getTier().getChallengeCost()); // Fallback to static
+        .orElse(title.getTier().getChallengeCost());
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -277,7 +292,12 @@ public class TitleService {
     return tierBoundaryService
         .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getContenderEntryFee)
-        .orElse(title.getTier().getContenderEntryFee()); // Fallback to static
+        .orElse(title.getTier().getContenderEntryFee());
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler, @NonNull Long universeId) {
+    return titleRepository.findTitlesHeldByWrestler(wrestler, universeId);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -289,7 +309,8 @@ public class TitleService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public ChallengeResult challengeForTitle(@NonNull Long wrestlerId, @NonNull Long titleId) {
+  public ChallengeResult challengeForTitle(
+      @NonNull Long wrestlerId, @NonNull Long titleId, @NonNull Long universeId) {
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     if (challengerOpt.isEmpty()) {
@@ -315,13 +336,12 @@ public class TitleService {
     }
 
     Long entryFee = getContenderEntryFee(title);
-    if (!challenger.canAfford(entryFee)) {
+    if (!wrestlerService.getOrCreateState(challenger.getId(), universeId).canAfford(entryFee)) {
       return new ChallengeResult(false, "Wrestler cannot afford the contender entry fee.");
     }
 
     // All checks pass, add as a challenger and deduct fee
-    challenger.spendFans(entryFee);
-    wrestlerRepository.save(challenger);
+    wrestlerService.spendFans(challenger.getId(), universeId, entryFee);
     title.addChallenger(challenger);
     titleRepository.save(title);
     return new ChallengeResult(
@@ -348,7 +368,6 @@ public class TitleService {
 
   @PreAuthorize("isAuthenticated()")
   public TitleStats getTitleStats(@NonNull Long id) {
-    // Basic implementation for now, can be expanded later
     return titleRepository
         .findById(id)
         .map(
@@ -424,12 +443,6 @@ public class TitleService {
     return wrestlerOpt.map(titleRepository::findTitlesHeldByWrestler).orElse(List.of());
   }
 
-  /**
-   * Resolves the image URL for a title, using the default image system if no specific URL is set.
-   *
-   * @param title The title entity.
-   * @return The resolved image URL.
-   */
   public String resolveTitleImage(Title title) {
     if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
       return title.getImageUrl();
@@ -437,7 +450,6 @@ public class TitleService {
     return imageService.resolveImage(title.getName(), ImageCategory.TITLE).url();
   }
 
-  // Nested records for API responses/requests
   public record ChallengeResult(boolean success, @NonNull String message) {}
 
   public record TitleStats(

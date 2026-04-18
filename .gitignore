@@ -61,3 +61,6 @@ src/main/resources/META-INF/resources/images/generated/
 
 # Vaadin bundles
 src/main/bundles/
+
+# Beads / Dolt files (added by bd init)
+.beads-credential-key

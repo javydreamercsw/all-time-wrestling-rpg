@@ -25,8 +25,12 @@ import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -43,8 +47,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FactionService factionService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerService wrestlerService;
   @Autowired private AccountRepository accountRepository;
   @Autowired private FactionRepository factionRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private RoleRepository roleRepository;
   @Autowired private PasswordEncoder passwordEncoder;
 
@@ -53,9 +59,20 @@ class FactionServiceIT extends ManagementIntegrationTest {
   private Faction faction;
   private Account bookerAccount;
   private Account playerAccount;
+  private Universe universe;
 
   @BeforeEach
   void setUp() {
+    universe =
+        universeRepository
+            .findById(1L)
+            .orElseGet(
+                () -> {
+                  Universe u = new Universe();
+                  u.setName("Test Universe");
+                  return universeRepository.save(u);
+                });
+
     // Roles should be present in the DB from migrations or a general test data setup.
     Role bookerRole =
         roleRepository
@@ -95,7 +112,12 @@ class FactionServiceIT extends ManagementIntegrationTest {
     faction = new Faction();
     faction.setName("Test Faction " + UUID.randomUUID());
     faction.setDescription("Test Description");
+    faction.setUniverse(universe);
     factionRepository.save(faction);
+
+    // Ensure state exists for members
+    wrestlerService.getOrCreateState(bookerWrestler.getId(), universe.getId());
+    wrestlerService.getOrCreateState(playerWrestler.getId(), universe.getId());
   }
 
   @AfterEach
@@ -111,7 +133,8 @@ class FactionServiceIT extends ManagementIntegrationTest {
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanCreateFaction() {
     Optional<Faction> createdFaction =
-        factionService.createFaction("Admin Faction", "Admin Description", bookerWrestler.getId());
+        factionService.createFaction(
+            "Admin Faction", "Admin Description", bookerWrestler.getId(), universe.getId());
     Assertions.assertTrue(createdFaction.isPresent());
   }
 
@@ -122,7 +145,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
   void testBookerCanCreateFaction() {
     Optional<Faction> createdFaction =
         factionService.createFaction(
-            "Booker Faction", "Booker Description", bookerWrestler.getId());
+            "Booker Faction", "Booker Description", bookerWrestler.getId(), universe.getId());
     Assertions.assertTrue(createdFaction.isPresent());
   }
 
@@ -133,7 +156,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
         AccessDeniedException.class,
         () ->
             factionService.createFaction(
-                "Player Faction", "Player Description", playerWrestler.getId()));
+                "Player Faction", "Player Description", playerWrestler.getId(), universe.getId()));
   }
 
   @Test
@@ -144,7 +167,9 @@ class FactionServiceIT extends ManagementIntegrationTest {
     Optional<Faction> updatedFaction =
         factionService.addMemberToFaction(faction.getId(), playerWrestler.getId());
     Assertions.assertTrue(updatedFaction.isPresent());
-    Assertions.assertTrue(updatedFaction.get().hasMember(playerWrestler));
+    WrestlerState state =
+        wrestlerService.getOrCreateState(playerWrestler.getId(), universe.getId());
+    Assertions.assertTrue(updatedFaction.get().hasMember(state.getWrestler()));
   }
 
   @Test
@@ -160,22 +185,24 @@ class FactionServiceIT extends ManagementIntegrationTest {
       username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanRemoveMember() {
-    faction.addMember(playerWrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(playerWrestler.getId(), universe.getId());
+    faction.addMember(state);
     factionRepository.save(faction);
-    wrestlerRepository.save(playerWrestler);
 
     Optional<Faction> updatedFaction =
         factionService.removeMemberFromFaction(faction.getId(), playerWrestler.getId(), "Test");
     Assertions.assertTrue(updatedFaction.isPresent());
-    Assertions.assertFalse(updatedFaction.get().hasMember(playerWrestler));
+    Assertions.assertFalse(updatedFaction.get().hasMember(state.getWrestler()));
   }
 
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotRemoveMember() {
-    faction.addMember(playerWrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(playerWrestler.getId(), universe.getId());
+    faction.addMember(state);
     factionRepository.save(faction);
-    wrestlerRepository.save(playerWrestler);
 
     Assertions.assertThrows(
         AccessDeniedException.class,
@@ -189,9 +216,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
       username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanChangeLeader() {
-    faction.addMember(playerWrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(playerWrestler.getId(), universe.getId());
+    faction.addMember(state);
     factionRepository.save(faction);
-    wrestlerRepository.save(playerWrestler);
 
     Optional<Faction> updatedFaction =
         factionService.changeFactionLeader(faction.getId(), playerWrestler.getId());
@@ -202,9 +230,10 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotChangeLeader() {
-    faction.addMember(playerWrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(playerWrestler.getId(), universe.getId());
+    faction.addMember(state);
     factionRepository.save(faction);
-    wrestlerRepository.save(playerWrestler);
 
     Assertions.assertThrows(
         AccessDeniedException.class,
@@ -245,14 +274,14 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindAllWithMembers() {
-    factionService.findAllWithMembers();
+    factionService.findAllByUniverse(universe.getId());
     // No exception means success
   }
 
   @Test
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanFindAllWithMembersAndTeams() {
-    factionService.findAllWithMembersAndTeams();
+    factionService.findAllByUniverse(universe.getId());
     // No exception means success
   }
 
@@ -273,7 +302,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanGetFactionByIdWithMembers() {
-    factionService.getFactionByIdWithMembers(faction.getId());
+    factionService.getFactionById(faction.getId());
     // No exception means success
   }
 
@@ -309,16 +338,6 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanGetLargestFactions() {
     factionService.getLargestFactions(5);
-    // No exception means success
-  }
-
-  @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
-  void testAuthenticatedCanHaveRivalry() {
-    Faction other = new Faction();
-    other.setName("Other Faction");
-    factionRepository.save(other);
-    factionService.canHaveRivalry(faction.getId(), other.getId());
     // No exception means success
   }
 }

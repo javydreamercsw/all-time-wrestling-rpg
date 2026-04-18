@@ -22,12 +22,12 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.league.League;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -41,7 +41,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
@@ -54,12 +53,12 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -72,7 +71,7 @@ import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-@Route("show-list")
+@Route(value = "show-list", layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
 @PageTitle("Show List")
 @Menu(order = 3, icon = "vaadin:calendar-o", title = "Show List")
 @PermitAll
@@ -82,7 +81,7 @@ public class ShowListView extends Main {
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
-  private final LeagueRepository leagueRepository;
+  private final UniverseRepository universeRepository;
   private final SecurityUtils securityUtils;
   private final ArenaService arenaService;
   private final Clock clock;
@@ -91,8 +90,8 @@ public class ShowListView extends Main {
   private final AiSettingsService aiSettingsService;
 
   private final ComboBox<Season> newSeason;
-  private final ComboBox<ShowTemplate> newTemplate; // New field
-  private final ComboBox<League> newLeague; // New field
+  private final ComboBox<ShowTemplate> newTemplate;
+  private final ComboBox<Universe> newUniverse;
   private final ComboBox<Arena> newArena;
 
   private Dialog editDialog;
@@ -101,7 +100,7 @@ public class ShowListView extends Main {
   private ComboBox<ShowType> editType;
   private ComboBox<Season> editSeason;
   private ComboBox<ShowTemplate> editTemplate;
-  private ComboBox<League> editLeague;
+  private ComboBox<Universe> editUniverse;
   private ComboBox<Arena> editArena;
   private DatePicker editShowDate;
   private Show editingShow;
@@ -117,7 +116,7 @@ public class ShowListView extends Main {
       @NonNull ShowTypeService showTypeService,
       @NonNull SeasonService seasonService,
       @NonNull ShowTemplateService showTemplateService,
-      @NonNull LeagueRepository leagueRepository,
+      @NonNull UniverseRepository universeRepository,
       @NonNull SecurityUtils securityUtils,
       @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
       @NonNull ImageStorageService imageStorageService,
@@ -128,14 +127,13 @@ public class ShowListView extends Main {
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
-    this.leagueRepository = leagueRepository;
+    this.universeRepository = universeRepository;
     this.securityUtils = securityUtils;
     this.arenaService = arenaService;
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
-    this.clock =
-        (clock != null) ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
+    this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
 
     name = new TextField();
     name.setPlaceholder("What do you want the show name to be?");
@@ -174,15 +172,15 @@ public class ShowListView extends Main {
     newTemplate.setId("show-template");
     newTemplate.setEnabled(false);
 
-    newLeague = new ComboBox<>("League");
-    newLeague.setItems(
-        leagueRepository.findAll().stream()
-            .sorted(Comparator.comparing(League::getName))
+    newUniverse = new ComboBox<>("Universe");
+    newUniverse.setItems(
+        universeRepository.findAll().stream()
+            .sorted(Comparator.comparing(Universe::getName))
             .collect(Collectors.toList()));
-    newLeague.setItemLabelGenerator(League::getName);
-    newLeague.setClearButtonVisible(true);
-    newLeague.setPlaceholder("Select a league (optional)");
-    newLeague.setId("league");
+    newUniverse.setItemLabelGenerator(Universe::getName);
+    newUniverse.setClearButtonVisible(true);
+    newUniverse.setPlaceholder("Select a universe (optional)");
+    newUniverse.setId("universe");
 
     newArena = new ComboBox<>("Arena");
     newArena.setItems(
@@ -221,7 +219,14 @@ public class ShowListView extends Main {
 
     HorizontalLayout formLayout =
         new HorizontalLayout(
-            name, newShowType, newSeason, newTemplate, newLeague, newArena, newShowDate, createBtn);
+            name,
+            newShowType,
+            newSeason,
+            newTemplate,
+            newUniverse,
+            newArena,
+            newShowDate,
+            createBtn);
     formLayout.setSpacing(true);
     formLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
 
@@ -231,14 +236,13 @@ public class ShowListView extends Main {
 
     showGrid.setPartNameGenerator(
         show -> {
-          if (!show.isPremiumLiveEvent() && !show.isWeeklyShow()) {
+          if (show.isPremiumLiveEvent()) {
             return "ple-show";
           } else {
             return null;
           }
         });
 
-    // Art column
     showGrid
         .addComponentColumn(
             show -> {
@@ -257,7 +261,6 @@ public class ShowListView extends Main {
         .setFlexGrow(0)
         .setWidth("70px");
 
-    // Name column with link to detail view
     showGrid
         .addComponentColumn(
             show -> {
@@ -278,7 +281,6 @@ public class ShowListView extends Main {
         .setSortable(true)
         .setFlexGrow(2);
 
-    // Show date column
     showGrid
         .addColumn(
             show ->
@@ -289,7 +291,6 @@ public class ShowListView extends Main {
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Type column with color coding
     showGrid
         .addComponentColumn(
             show -> {
@@ -320,14 +321,12 @@ public class ShowListView extends Main {
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Season column
     showGrid
         .addColumn(show -> show.getSeason() != null ? show.getSeason().getName() : "No Season")
         .setHeader("Season")
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Template column
     showGrid
         .addColumn(
             show -> show.getTemplate() != null ? show.getTemplate().getName() : "No Template")
@@ -335,10 +334,10 @@ public class ShowListView extends Main {
         .setSortable(true)
         .setFlexGrow(1);
 
-    // League column
     showGrid
-        .addColumn(show -> show.getLeague() != null ? show.getLeague().getName() : "No League")
-        .setHeader("League")
+        .addColumn(
+            show -> show.getUniverse() != null ? show.getUniverse().getName() : "No Universe")
+        .setHeader("Universe")
         .setSortable(true)
         .setFlexGrow(1);
 
@@ -350,7 +349,6 @@ public class ShowListView extends Main {
               HorizontalLayout actions = new HorizontalLayout();
               actions.setSpacing(true);
 
-              // View details button
               Button viewBtn = new Button(new Icon(VaadinIcon.EYE));
               viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               viewBtn.setTooltipText("View Details");
@@ -364,7 +362,6 @@ public class ShowListView extends Main {
                                       "show-detail/" + show.getId(),
                                       new QueryParameters(Map.of("ref", List.of("shows"))))));
 
-              // Edit button
               Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               editBtn.setTooltipText("Edit Show");
@@ -372,7 +369,6 @@ public class ShowListView extends Main {
               editBtn.addClickListener(e -> openEditDialog(show));
               editBtn.setVisible(securityUtils.canEdit());
 
-              // Branding button
               Button generateArtBtn = new Button(new Icon(VaadinIcon.PICTURE));
               generateArtBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               generateArtBtn.setTooltipText("Generate Template Art");
@@ -380,7 +376,6 @@ public class ShowListView extends Main {
               generateArtBtn.addClickListener(e -> openGenerateArtDialog(show.getTemplate()));
               generateArtBtn.setVisible(securityUtils.canEdit() && show.getTemplate() != null);
 
-              // Delete button
               Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -389,7 +384,6 @@ public class ShowListView extends Main {
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
               deleteBtn.setVisible(securityUtils.canDelete());
 
-              // Calendar button (if show has date)
               if (show.getShowDate() != null) {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
                 calendarBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -397,7 +391,6 @@ public class ShowListView extends Main {
                 calendarBtn.setId("view-in-calendar-button-" + show.getId());
                 calendarBtn.addClickListener(
                     e -> {
-                      // Navigate to calendar with date parameter
                       String dateParam =
                           show.getShowDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                       getUI()
@@ -416,13 +409,6 @@ public class ShowListView extends Main {
         .setHeader("Actions")
         .setFlexGrow(1);
 
-    // Editor setup (optional, as in your previous code)
-    Editor<Show> editor = showGrid.getEditor();
-    Binder<Show> binder = new Binder<>(Show.class);
-    if (securityUtils.canEdit()) {
-      editor.setBinder(binder);
-    }
-
     setSizeFull();
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -431,13 +417,11 @@ public class ShowListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    // Toolbar and form in a header row
     if (securityUtils.canCreate()) {
       add(new ViewToolbar("Show List", ViewToolbar.group(formLayout)));
     } else {
       add(new ViewToolbar("Show List"));
     }
-    // Grid fills the rest
     add(showGrid);
 
     refreshGrid();
@@ -465,21 +449,21 @@ public class ShowListView extends Main {
 
     showService.createShow(
         showName,
-        "", // No description input in this form
+        "",
         newShowType.getValue().getId(),
         selectedDate,
         newSeason.getValue() != null ? newSeason.getValue().getId() : null,
         newTemplate.getValue() != null ? newTemplate.getValue().getId() : null,
-        newLeague.getValue() != null ? newLeague.getValue().getId() : null,
-        null, // commentaryTeamId - not available in this form
+        newUniverse.getValue() != null ? newUniverse.getValue().getId() : null,
+        null,
         newArena.getValue() != null ? newArena.getValue().getId() : null);
     name.clear();
     newShowType.clear();
     newSeason.clear();
     newTemplate.clear();
-    newLeague.clear();
+    newUniverse.clear();
     newArena.clear();
-    newShowDate.setValue(LocalDate.now(this.clock)); // Reset to today
+    newShowDate.setValue(LocalDate.now(this.clock));
     refreshGrid();
     Notification.show("Show created.", 3_000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -569,15 +553,15 @@ public class ShowListView extends Main {
     editTemplate.setClearButtonVisible(true);
     editTemplate.setId("edit-show-template");
 
-    editLeague = new ComboBox<>("League");
-    editLeague.setItems(
-        leagueRepository.findAll().stream()
-            .sorted(Comparator.comparing(League::getName))
+    editUniverse = new ComboBox<>("Universe");
+    editUniverse.setItems(
+        universeRepository.findAll().stream()
+            .sorted(Comparator.comparing(Universe::getName))
             .collect(Collectors.toList()));
-    editLeague.setItemLabelGenerator(League::getName);
-    editLeague.setWidthFull();
-    editLeague.setClearButtonVisible(true);
-    editLeague.setId("edit-league");
+    editUniverse.setItemLabelGenerator(Universe::getName);
+    editUniverse.setWidthFull();
+    editUniverse.setClearButtonVisible(true);
+    editUniverse.setId("edit-universe");
 
     editArena = new ComboBox<>("Arena");
     editArena.setItems(
@@ -592,7 +576,6 @@ public class ShowListView extends Main {
     editType.addValueChangeListener(
         event -> {
           ShowType selectedShowType = event.getValue();
-          // Keep the old value to check if we need to clear.
           ShowTemplate oldValue = editTemplate.getValue();
           if (selectedShowType != null) {
             editTemplate.setItems(
@@ -600,7 +583,6 @@ public class ShowListView extends Main {
                     .sorted(Comparator.comparing(ShowTemplate::getName))
                     .collect(Collectors.toList()));
             editTemplate.setEnabled(true);
-            // If the old value is not valid for the new type, clear it.
             if (oldValue != null && !selectedShowType.equals(oldValue.getShowType())) {
               editTemplate.clear();
             }
@@ -629,7 +611,7 @@ public class ShowListView extends Main {
             editType,
             editSeason,
             editTemplate,
-            editLeague,
+            editUniverse,
             editArena,
             editShowDate);
     formLayout.setWidthFull();
@@ -650,7 +632,7 @@ public class ShowListView extends Main {
     editType.setValue(show.getType());
     editSeason.setValue(show.getSeason());
     editTemplate.setValue(show.getTemplate());
-    editLeague.setValue(show.getLeague());
+    editUniverse.setValue(show.getUniverse());
     editArena.setValue(show.getArena());
     editShowDate.setValue(show.getShowDate());
     editDialog.open();
@@ -662,7 +644,7 @@ public class ShowListView extends Main {
     editingShow.setType(editType.getValue());
     editingShow.setSeason(editSeason.getValue());
     editingShow.setTemplate(editTemplate.getValue());
-    editingShow.setLeague(editLeague.getValue());
+    editingShow.setUniverse(editUniverse.getValue());
     editingShow.setArena(editArena.getValue());
     editingShow.setShowDate(editShowDate.getValue());
     showService.save(editingShow);
@@ -672,7 +654,6 @@ public class ShowListView extends Main {
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  // Add this method for delete confirmation and logic
   private void openDeleteDialog(Show show) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Delete Show");

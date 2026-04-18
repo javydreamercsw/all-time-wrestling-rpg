@@ -33,7 +33,11 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -55,6 +59,7 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -105,6 +110,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private EntitySyncConfiguration entitySyncConfig;
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerService wrestlerService;
   @Mock private InjuryRepository injuryRepository;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private ShowTypeRepository showTypeRepository;
@@ -117,6 +123,10 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private NotionApiExecutor notionApiExecutor;
   @Mock private NotionPageDataExtractor notionPageDataExtractor;
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
+  @Mock private SeasonRepository seasonRepository;
+  @Mock private RivalryRepository rivalryRepository;
+  @Mock private ShowRepository showRepository;
+  @Mock private ShowTemplateRepository showTemplateRepository;
 
   private NotionSyncService notionSyncService; // No longer a mock
 
@@ -145,6 +155,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
             syncLockService,
             factionRepository,
             wrestlerRepository,
+            wrestlerService,
             injuryRepository,
             injuryTypeRepository,
             seasonRepository,

@@ -208,14 +208,14 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("members-grid"), wrestler.getName()));
 
-    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
+    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()
             .anyMatch(
                 m -> {
-                  Assertions.assertNotNull(m.getId());
-                  return m.getId().equals(wrestler.getId());
+                  Assertions.assertNotNull(m.getWrestler());
+                  return m.getWrestler().getId().equals(wrestler.getId());
                 }));
   }
 
@@ -257,14 +257,14 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.invisibilityOfElementWithText(
             By.id("members-grid"), wrestler.getName()));
 
-    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
+    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()
             .noneMatch(
                 m -> {
-                  Assertions.assertNotNull(m.getId());
-                  return m.getId().equals(wrestler.getId());
+                  Assertions.assertNotNull(m.getWrestler());
+                  return m.getWrestler().getId().equals(wrestler.getId());
                 }));
   }
 }

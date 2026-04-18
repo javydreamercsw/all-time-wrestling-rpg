@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -24,11 +25,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -63,10 +70,13 @@ class SegmentAdjudicationServiceTest {
   @Mock private Segment segment;
   @Mock private Wrestler winner;
   @Mock private Wrestler loser;
+  @Mock private WrestlerState winnerState;
+  @Mock private WrestlerState loserState;
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
 
   @Mock
   private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
@@ -87,6 +97,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
   private SegmentAdjudicationService segmentAdjudicationService;
+  @Mock private Universe universe;
 
   @BeforeEach
   void setUp() {
@@ -99,6 +110,7 @@ class SegmentAdjudicationServiceTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -110,11 +122,21 @@ class SegmentAdjudicationServiceTest {
             random);
     org.springframework.test.util.ReflectionTestUtils.setField(
         segmentAdjudicationService, "eventPublisher", eventPublisher);
+
+    when(universe.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
+
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
     when(segment.getWrestlers()).thenReturn(List.of(winner, loser));
     when(winner.getId()).thenReturn(1L);
     when(loser.getId()).thenReturn(2L);
+
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(winnerState);
+    when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(loserState);
+    when(winner.getState(anyLong())).thenReturn(Optional.of(winnerState));
+    when(loser.getState(anyLong())).thenReturn(Optional.of(loserState));
+
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Test Match");
     when(segment.getShow()).thenReturn(show);
@@ -124,16 +146,23 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void testAffinityGainOnVictory() {
-    com.github.javydreamercsw.management.domain.faction.Faction faction =
-        mock(com.github.javydreamercsw.management.domain.faction.Faction.class);
+    Faction faction = mock(Faction.class);
     when(faction.getId()).thenReturn(100L);
 
     Wrestler w1 = mock(Wrestler.class);
     Wrestler w2 = mock(Wrestler.class);
-    when(w1.getFaction()).thenReturn(faction);
-    when(w2.getFaction()).thenReturn(faction);
+    WrestlerState s1 = mock(WrestlerState.class);
+    WrestlerState s2 = mock(WrestlerState.class);
+
     when(w1.getId()).thenReturn(10L);
     when(w2.getId()).thenReturn(11L);
+    when(wrestlerService.getOrCreateState(eq(10L), anyLong())).thenReturn(s1);
+    when(wrestlerService.getOrCreateState(eq(11L), anyLong())).thenReturn(s2);
+    when(w1.getState(anyLong())).thenReturn(Optional.of(s1));
+    when(w2.getState(anyLong())).thenReturn(Optional.of(s2));
+
+    when(s1.getFaction()).thenReturn(faction);
+    when(s2.getFaction()).thenReturn(faction);
 
     when(segment.getWrestlers()).thenReturn(List.of(w1, w2, loser));
     when(segment.getWinners()).thenReturn(List.of(w1, w2));
@@ -147,14 +176,11 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void testAdjudicateLeagueMatch() {
-    com.github.javydreamercsw.management.domain.league.League league =
-        mock(com.github.javydreamercsw.management.domain.league.League.class);
-    when(show.getLeague()).thenReturn(league);
+    League league = mock(League.class);
+    when(leagueRepository.findByUniverse(universe)).thenReturn(Optional.of(league));
 
-    com.github.javydreamercsw.management.domain.league.LeagueRoster winnerRoster =
-        mock(com.github.javydreamercsw.management.domain.league.LeagueRoster.class);
-    com.github.javydreamercsw.management.domain.league.LeagueRoster loserRoster =
-        mock(com.github.javydreamercsw.management.domain.league.LeagueRoster.class);
+    LeagueRoster winnerRoster = mock(LeagueRoster.class);
+    LeagueRoster loserRoster = mock(LeagueRoster.class);
 
     when(leagueRosterRepository.findByLeagueAndWrestler(league, winner))
         .thenReturn(Optional.of(winnerRoster));
@@ -188,18 +214,16 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void testWearAndTear() {
-    when(winner.getPhysicalCondition()).thenReturn(100);
-    when(loser.getPhysicalCondition()).thenReturn(100);
+    when(winnerState.getPhysicalCondition()).thenReturn(100);
+    when(loserState.getPhysicalCondition()).thenReturn(100);
     when(random.nextInt(3)).thenReturn(1); // base loss 1 + 1 = 2%
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(winner).setPhysicalCondition(any(Integer.class));
-    verify(loser).setPhysicalCondition(any(Integer.class));
-    verify(wrestlerService).save(winner);
-    verify(wrestlerService).save(loser);
-    verify(retirementService).checkRetirement(winner);
-    verify(retirementService).checkRetirement(loser);
+    verify(winnerState).setPhysicalCondition(any(Integer.class));
+    verify(loserState).setPhysicalCondition(any(Integer.class));
+    verify(retirementService).checkRetirement(eq(winner), anyLong());
+    verify(retirementService).checkRetirement(eq(loser), anyLong());
   }
 
   @Test
@@ -216,7 +240,7 @@ class SegmentAdjudicationServiceTest {
     segmentAdjudicationService.processRewards(segment, 1.0);
 
     // Should call awardFans for participants
-    verify(wrestlerService).awardFans(eq(1L), any(Long.class));
-    verify(wrestlerService).awardFans(eq(2L), any(Long.class));
+    verify(wrestlerService).awardFans(eq(1L), anyLong(), anyLong());
+    verify(wrestlerService).awardFans(eq(2L), anyLong(), anyLong());
   }
 }

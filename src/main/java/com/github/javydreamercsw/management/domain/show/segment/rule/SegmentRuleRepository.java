@@ -25,6 +25,8 @@ public interface SegmentRuleRepository extends JpaRepository<SegmentRule, Long> 
 
   Optional<SegmentRule> findByName(String name);
 
+  Optional<SegmentRule> findByExternalId(String externalId);
+
   @Query("SELECT r FROM SegmentRule r WHERE r.requiresHighHeat = true")
   List<SegmentRule> findSuitableForHighHeat();
 

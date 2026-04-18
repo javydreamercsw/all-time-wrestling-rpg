@@ -20,10 +20,10 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
-import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -68,8 +68,8 @@ public class Show extends AbstractEntity<Long> {
   private Season season;
 
   @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "league_id")
-  private League league;
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "template_id")

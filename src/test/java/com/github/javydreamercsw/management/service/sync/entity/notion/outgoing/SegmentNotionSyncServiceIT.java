@@ -39,9 +39,14 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentNotionSyncService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -66,8 +71,11 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private SegmentNotionSyncService segmentNotionSyncService;
+  @Autowired private WrestlerService wrestlerService;
 
   @MockitoBean private NotionHandler notionHandler;
 
@@ -100,6 +108,9 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
+    Universe defaultUniverse =
+        universeRepository.save(Universe.builder().name("Default Universe").build());
+
     // Create a Show Type
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
@@ -113,6 +124,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     show.setDescription("A test show."); // Added description
     show.setShowDate(LocalDate.now()); // Corrected to LocalDate
     show.setType(showType); // Set the show type
+    show.setUniverse(defaultUniverse);
     show.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     showRepository.save(show);
 
@@ -131,24 +143,29 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     // Create a Faction (for Wrestler)
     Faction faction = new Faction();
     faction.setName("Test Faction " + UUID.randomUUID());
+    faction.setUniverse(defaultUniverse);
     factionRepository.save(faction);
 
     // Create a Wrestler
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler " + UUID.randomUUID());
     wrestler.setStartingStamina(16);
-    wrestler.setFans(1000L);
-    wrestler.setBumps(1);
     wrestler.setGender(Gender.MALE);
     wrestler.setLowStamina(2);
     wrestler.setStartingHealth(15);
     wrestler.setLowHealth(4);
     wrestler.setDeckSize(15);
-    wrestler.setTier(WrestlerTier.MIDCARDER);
     wrestler.setCreationDate(Instant.now());
-    wrestler.setFaction(faction);
     wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
-    wrestlerRepository.save(wrestler);
+    wrestler = wrestlerRepository.save(wrestler);
+
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setFans(1000L);
+    state.setBumps(1);
+    state.setTier(WrestlerTier.MIDCARDER);
+    state.setFaction(faction);
+    wrestlerStateRepository.save(state);
 
     // Create a new Segment
     Segment segment = new Segment();

@@ -55,10 +55,25 @@ class LegacyServiceTest {
     account.setId(1L);
     account.setUsername("testuser");
 
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        new com.github.javydreamercsw.management.domain.universe.Universe();
+    universe.setId(1L);
+
     Wrestler w1 = new Wrestler();
-    w1.setFans(5000L);
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState s1 =
+        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    s1.setWrestler(w1);
+    s1.setUniverse(universe);
+    s1.setFans(5000L);
+    w1.setWrestlerStates(new java.util.ArrayList<>(List.of(s1)));
+
     Wrestler w2 = new Wrestler();
-    w2.setFans(2500L);
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState s2 =
+        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    s2.setWrestler(w2);
+    s2.setUniverse(universe);
+    s2.setFans(2500L);
+    w2.setWrestlerStates(new java.util.ArrayList<>(List.of(s2)));
 
     when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1, w2));
@@ -75,8 +90,17 @@ class LegacyServiceTest {
     account.setId(1L);
     account.setUsername("testuser");
 
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        new com.github.javydreamercsw.management.domain.universe.Universe();
+    universe.setId(1L);
+
     Wrestler w1 = new Wrestler();
-    w1.setFans(10000L);
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState s1 =
+        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    s1.setWrestler(w1);
+    s1.setUniverse(universe);
+    s1.setFans(10000L);
+    w1.setWrestlerStates(new java.util.ArrayList<>(List.of(s1)));
 
     when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1));

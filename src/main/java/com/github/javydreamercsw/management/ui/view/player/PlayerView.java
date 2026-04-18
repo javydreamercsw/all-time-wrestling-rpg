@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.news.NewsService;
@@ -41,6 +42,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonStatsService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.SeasonSummaryComponent;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
@@ -98,8 +100,10 @@ public class PlayerView extends VerticalLayout {
   private final AchievementRepository achievementRepository;
   private final SeasonStatsService seasonStatsService;
   private final SeasonRepository seasonRepository;
+  private final UniverseContextService universeContextService;
 
   private Wrestler playerWrestler;
+  private WrestlerState playerState;
   private SeasonSummaryComponent seasonSummary;
 
   @Autowired
@@ -115,7 +119,8 @@ public class PlayerView extends VerticalLayout {
       TransactionTemplate transactionTemplate,
       AchievementRepository achievementRepository,
       SeasonStatsService seasonStatsService,
-      SeasonRepository seasonRepository) {
+      SeasonRepository seasonRepository,
+      UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;
@@ -128,6 +133,7 @@ public class PlayerView extends VerticalLayout {
     this.achievementRepository = achievementRepository;
     this.seasonStatsService = seasonStatsService;
     this.seasonRepository = seasonRepository;
+    this.universeContextService = universeContextService;
 
     setHeightFull();
     setPadding(false);
@@ -163,7 +169,10 @@ public class PlayerView extends VerticalLayout {
             add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account)));
 
             if (active != null) {
-              playerWrestler = wrestlerService.findByIdWithInjuries(active.getId()).get();
+              playerWrestler = active;
+              playerState =
+                  wrestlerService.getOrCreateState(
+                      playerWrestler.getId(), universeContextService.getCurrentUniverseId());
               buildDashboard();
             } else {
               add(new H2("No wrestler assigned to your account."));
@@ -247,22 +256,23 @@ public class PlayerView extends VerticalLayout {
     name.setId("wrestler-name");
     name.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.Margin.Top.NONE);
 
-    Span tierBadge = createBadge(playerWrestler.getTier().getDisplayName(), "pill");
+    Span tierBadge = createBadge(playerState.getTier().getDisplayName(), "pill");
     tierBadge.setId("wrestler-tier");
 
     HorizontalLayout nameAndTier = new HorizontalLayout(name, tierBadge);
     nameAndTier.setAlignItems(FlexComponent.Alignment.BASELINE);
     nameAndTier.setSpacing(true);
 
-    Optional<WrestlerStats> statsOpt = wrestlerService.getWrestlerStats(playerWrestler.getId());
+    Optional<WrestlerStats> statsOpt =
+        wrestlerService.getWrestlerStats(
+            playerWrestler.getId(), universeContextService.getCurrentUniverseId());
     HorizontalLayout statsLayout = new HorizontalLayout();
     if (statsOpt.isPresent()) {
       WrestlerStats stats = statsOpt.get();
       statsLayout.add(createStat("Wins", String.valueOf(stats.getWins()), "wrestler-wins"));
       statsLayout.add(createStat("Losses", String.valueOf(stats.getLosses()), "wrestler-losses"));
     }
-    statsLayout.add(
-        createStat("Bumps", String.valueOf(playerWrestler.getBumps()), "wrestler-bumps"));
+    statsLayout.add(createStat("Bumps", String.valueOf(playerState.getBumps()), "wrestler-bumps"));
     statsLayout.setSpacing(true);
 
     Button profileButton =
@@ -506,14 +516,14 @@ public class PlayerView extends VerticalLayout {
 
   private Div createInjuriesSummary() {
     Div layout = new Div();
-    if (playerWrestler != null && !playerWrestler.getActiveInjuries().isEmpty()) {
+    if (playerState != null && !playerState.getActiveInjuries().isEmpty()) {
       Span injuriesBadge = createBadge("Injured", "error", "pill");
 
       VerticalLayout injuriesList = new VerticalLayout();
       injuriesList.setSpacing(false);
       injuriesList.setPadding(false);
 
-      for (Injury injury : playerWrestler.getActiveInjuries()) {
+      for (Injury injury : playerState.getActiveInjuries()) {
         Span injurySpan = new Span(injury.getDisplayString());
         injurySpan.getStyle().set("font-size", "var(--lumo-font-size-s)");
         injuriesList.add(injurySpan);

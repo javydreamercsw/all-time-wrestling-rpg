@@ -21,7 +21,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
@@ -29,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +47,8 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   @Autowired private FactionService factionService;
 
   @Autowired private WrestlerService wrestlerService;
+
+  @Autowired private UniverseRepository universeRepository;
 
   @MockitoSpyBean private ExpansionService expansionService;
   private Faction testFaction;
@@ -65,12 +71,14 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     testWrestler2 = wrestlerService.save(testWrestler2);
 
     // Create test faction
+    Universe universe = universeRepository.findById(1L).orElseThrow();
     testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");
     testFaction.setDescription("Test faction description");
     testFaction.setLeader(testWrestler1);
-    testFaction.addMember(testWrestler1);
-    testFaction.addMember(testWrestler2);
+    testFaction.setUniverse(universe);
+    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler1.getId(), 1L));
+    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler2.getId(), 1L));
     testFaction = factionService.save(testFaction);
   }
 
@@ -83,7 +91,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     extremeWrestler = wrestlerService.save(extremeWrestler);
 
     Optional<Faction> extremeFactionOpt =
-        factionService.createFaction("Extreme Faction", "Desc", extremeWrestler.getId());
+        factionService.createFaction("Extreme Faction", "Desc", extremeWrestler.getId(), 1L);
     assertTrue(extremeFactionOpt.isPresent());
 
     // Case 1: Both expansions enabled
@@ -110,7 +118,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // When
     Optional<Faction> result =
         factionService.createFaction(
-            "The New Faction", "A newly created faction", wrestler3.getId());
+            "The New Faction", "A newly created faction", wrestler3.getId(), 1L);
 
     // Then
     assertThat(result).isPresent();
@@ -118,7 +126,11 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     assertThat(savedFaction.getName()).isEqualTo("The New Faction");
     assertThat(savedFaction.getDescription()).isEqualTo("A newly created faction");
     assertThat(savedFaction.getLeader()).isEqualTo(wrestler3);
-    assertThat(savedFaction.getMembers()).containsExactlyInAnyOrder(wrestler3);
+    assertThat(
+            savedFaction.getMembers().stream()
+                .map(WrestlerState::getWrestler)
+                .collect(Collectors.toSet()))
+        .containsExactlyInAnyOrder(wrestler3);
   }
 
   @Test
@@ -131,7 +143,8 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
         factionService.createFaction(
             "Test Faction", // Duplicate name
             "Another description",
-            testWrestler1.getId());
+            testWrestler1.getId(),
+            1L);
 
     // Then
     assertThat(result).isEmpty();
@@ -172,7 +185,11 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     assertThat(updatedFaction.getName()).isEqualTo("Updated Faction Name");
     assertThat(updatedFaction.getDescription()).isEqualTo("Updated description");
     assertThat(updatedFaction.getLeader()).isEqualTo(testWrestler2);
-    assertThat(updatedFaction.getMembers()).containsExactlyInAnyOrder(testWrestler2);
+    assertThat(
+            updatedFaction.getMembers().stream()
+                .map(WrestlerState::getWrestler)
+                .collect(Collectors.toSet()))
+        .containsExactlyInAnyOrder(testWrestler2);
   }
 
   @Test
@@ -182,7 +199,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     Long factionId = testFaction.getId();
 
     // When
-    factionService.delete(testFaction);
+    factionService.deleteById(factionId);
 
     // Then
     Optional<Faction> deletedFaction = factionService.getFactionById(factionId);
@@ -204,7 +221,11 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // Then
     assertThat(result).isPresent();
     Faction updatedFaction = result.get();
-    assertThat(updatedFaction.getMembers()).contains(newMember);
+    assertThat(
+            updatedFaction.getMembers().stream()
+                .map(WrestlerState::getWrestler)
+                .collect(Collectors.toSet()))
+        .contains(newMember);
   }
 
   @Test
@@ -212,7 +233,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   void shouldRemoveMemberFromFaction() {
     // Given - testFaction already exists from setUp() with testWrestler2 as member
     // Ensure testWrestler2 is a member
-    testFaction.addMember(testWrestler2);
+    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler2.getId(), 1L));
     factionService.save(testFaction);
 
     // When
@@ -225,7 +246,11 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // Then
     assertThat(result).isPresent();
     Faction updatedFaction = result.get();
-    assertThat(updatedFaction.getMembers()).doesNotContain(testWrestler2);
+    assertThat(
+            updatedFaction.getMembers().stream()
+                .map(WrestlerState::getWrestler)
+                .collect(Collectors.toSet()))
+        .doesNotContain(testWrestler2);
   }
 
   @Test
@@ -234,7 +259,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // Given - testFaction already exists from setUp()
 
     // When
-    List<Faction> factions = factionService.findAllWithMembers();
+    List<Faction> factions = factionService.findAllByUniverse(1L);
 
     // Then
     assertThat(factions).isNotEmpty();

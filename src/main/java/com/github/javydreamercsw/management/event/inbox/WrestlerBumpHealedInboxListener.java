@@ -50,13 +50,14 @@ public class WrestlerBumpHealedInboxListener
 
   @Override
   public void onApplicationEvent(@NonNull WrestlerBumpHealedEvent event) {
-    log.info("Received WrestlerBumpHealedEvent for wrestler: {}", event.getWrestler().getName());
+    log.info(
+        "Received WrestlerBumpHealedEvent for wrestler: {}", event.getWrestlerState().getName());
     inboxService.createInboxItem(
         wrestlerBumpHealed,
         String.format(
             "Wrestler %s's bumps have healed. New total: %d",
-            event.getWrestler().getName(), event.getWrestler().getBumps()),
-        event.getWrestler().getId().toString(),
+            event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
+        event.getWrestlerState().getWrestler().getId().toString(),
         InboxItemTarget.TargetType.WRESTLER);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));

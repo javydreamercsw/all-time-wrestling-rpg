@@ -29,8 +29,11 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
@@ -40,6 +43,7 @@ import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
@@ -74,6 +78,8 @@ public class MainLayout extends AppLayout {
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
   private ThemeService themeService;
+  private UniverseContextService universeContextService;
+  private UniverseRepository universeRepository;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -86,7 +92,9 @@ public class MainLayout extends AppLayout {
       SecurityUtils securityUtils,
       AccountService accountService,
       PasswordEncoder passwordEncoder,
-      ThemeService themeService) {
+      ThemeService themeService,
+      UniverseContextService universeContextService,
+      UniverseRepository universeRepository) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -94,6 +102,8 @@ public class MainLayout extends AppLayout {
     this.accountService = accountService;
     this.passwordEncoder = passwordEncoder;
     this.themeService = themeService;
+    this.universeContextService = universeContextService;
+    this.universeRepository = universeRepository;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -101,12 +111,35 @@ public class MainLayout extends AppLayout {
     navScroller.addClassNames(Margin.Bottom.AUTO);
 
     com.vaadin.flow.component.html.Section drawerContainer =
-        new com.vaadin.flow.component.html.Section(createHeader(), navScroller, createFooter());
+        new com.vaadin.flow.component.html.Section(
+            createHeader(), createUniverseSelector(), navScroller, createFooter());
     drawerContainer.setSizeFull();
     drawerContainer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.STRETCH);
 
     addToDrawer(drawerContainer);
     addToNavbar(new DrawerToggle(), createNavbar());
+  }
+
+  private Div createUniverseSelector() {
+    ComboBox<Universe> universeSelector = new ComboBox<>("Active Universe");
+    universeSelector.setItems(universeRepository.findAll());
+    universeSelector.setItemLabelGenerator(Universe::getName);
+    universeSelector.setWidthFull();
+    universeSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
+
+    universeContextService.getCurrentUniverse().ifPresent(universeSelector::setValue);
+
+    universeSelector.addValueChangeListener(
+        event -> {
+          if (event.getValue() != null) {
+            universeContextService.setCurrentUniverse(event.getValue());
+            UI.getCurrent().getPage().reload(); // Reload to refresh data context
+          }
+        });
+
+    Div container = new Div(universeSelector);
+    container.addClassName("universe-selector-container");
+    return container;
   }
 
   private Div createHeader() {

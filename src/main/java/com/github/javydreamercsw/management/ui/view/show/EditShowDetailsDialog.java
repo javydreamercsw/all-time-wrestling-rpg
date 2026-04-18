@@ -18,12 +18,12 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
-import com.github.javydreamercsw.management.domain.league.League;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -54,7 +54,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
-  private final LeagueRepository leagueRepository;
+  private final UniverseRepository universeRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
   private final Show show;
@@ -64,7 +64,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final ComboBox<ShowType> typeField = new ComboBox<>("Show Type");
   private final ComboBox<Season> seasonField = new ComboBox<>("Season");
   private final ComboBox<ShowTemplate> templateField = new ComboBox<>("Template");
-  private final ComboBox<League> leagueField = new ComboBox<>("League");
+  private final ComboBox<Universe> universeField = new ComboBox<>("Universe");
   private final ComboBox<CommentaryTeam> commentaryTeamField = new ComboBox<>("Commentary Team");
   private final ComboBox<Arena> arenaField = new ComboBox<>("Arena");
   private final DatePicker showDateField = new DatePicker("Show Date");
@@ -74,7 +74,7 @@ public class EditShowDetailsDialog extends Dialog {
       @NonNull ShowTypeService showTypeService,
       @NonNull SeasonService seasonService,
       @NonNull ShowTemplateService showTemplateService,
-      @NonNull LeagueRepository leagueRepository,
+      @NonNull UniverseRepository universeRepository,
       @NonNull CommentaryTeamRepository commentaryTeamRepository,
       @NonNull com.github.javydreamercsw.management.service.world.ArenaService arenaService,
       @NonNull Show show) {
@@ -82,7 +82,7 @@ public class EditShowDetailsDialog extends Dialog {
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
-    this.leagueRepository = leagueRepository;
+    this.universeRepository = universeRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.arenaService = arenaService;
     this.show = show;
@@ -124,14 +124,14 @@ public class EditShowDetailsDialog extends Dialog {
     templateField.setClearButtonVisible(true);
     templateField.setWidthFull();
 
-    leagueField.setItems(
-        leagueRepository.findAll().stream()
-            .sorted(Comparator.comparing(League::getName))
+    universeField.setItems(
+        universeRepository.findAll().stream()
+            .sorted(Comparator.comparing(Universe::getName))
             .collect(Collectors.toList()));
-    leagueField.setItemLabelGenerator(League::getName);
-    leagueField.setValue(show.getLeague());
-    leagueField.setClearButtonVisible(true);
-    leagueField.setWidthFull();
+    universeField.setItemLabelGenerator(Universe::getName);
+    universeField.setValue(show.getUniverse());
+    universeField.setClearButtonVisible(true);
+    universeField.setWidthFull();
 
     commentaryTeamField.setItems(
         commentaryTeamRepository.findAll().stream()
@@ -160,7 +160,7 @@ public class EditShowDetailsDialog extends Dialog {
     binder.bind(typeField, Show::getType, Show::setType);
     binder.bind(seasonField, Show::getSeason, Show::setSeason);
     binder.bind(templateField, Show::getTemplate, Show::setTemplate);
-    binder.bind(leagueField, Show::getLeague, Show::setLeague);
+    binder.bind(universeField, Show::getUniverse, Show::setUniverse);
     binder.bind(commentaryTeamField, Show::getCommentaryTeam, Show::setCommentaryTeam);
     binder.bind(arenaField, Show::getArena, Show::setArena);
     binder.bind(showDateField, Show::getShowDate, Show::setShowDate);
@@ -181,7 +181,7 @@ public class EditShowDetailsDialog extends Dialog {
             typeField,
             seasonField,
             templateField,
-            leagueField,
+            universeField,
             commentaryTeamField,
             arenaField,
             showDateField);
@@ -206,7 +206,7 @@ public class EditShowDetailsDialog extends Dialog {
             showDateField.getValue(),
             seasonField.getValue() != null ? seasonField.getValue().getId() : null,
             templateField.getValue() != null ? templateField.getValue().getId() : null,
-            leagueField.getValue() != null ? leagueField.getValue().getId() : null,
+            universeField.getValue() != null ? universeField.getValue().getId() : null,
             commentaryTeamField.getValue() != null ? commentaryTeamField.getValue().getId() : null,
             arenaField.getValue() != null ? arenaField.getValue().getId() : null);
         Notification.show(

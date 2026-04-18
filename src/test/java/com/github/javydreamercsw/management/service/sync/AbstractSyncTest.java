@@ -183,6 +183,7 @@ public abstract class AbstractSyncTest {
             syncLockService,
             factionRepository,
             wrestlerRepository,
+            wrestlerService,
             injuryRepository,
             injuryTypeRepository,
             seasonRepository,

@@ -50,15 +50,15 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
     String message =
         String.format(
             "Wrestler %s %s %d fans. New total: %d",
-            event.getWrestler().getName(),
+            event.getWrestlerState().getName(),
             event.getFanChange() > 0 ? "gained" : "lost",
             Math.abs(event.getFanChange()),
-            event.getWrestler().getFans());
+            event.getWrestlerState().getFans());
 
     inboxService.createInboxItem(
         fanAdjudication,
         message,
-        event.getWrestler().getId().toString(),
+        event.getWrestlerState().getWrestler().getId().toString(),
         InboxItemTarget.TargetType.WRESTLER);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));

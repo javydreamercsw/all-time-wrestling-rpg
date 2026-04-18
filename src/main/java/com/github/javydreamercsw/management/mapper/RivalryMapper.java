@@ -37,8 +37,11 @@ public class RivalryMapper {
     dto.setStorylineNotes(rivalry.getStorylineNotes());
     dto.setStartedDate(rivalry.getStartedDate());
     dto.setEndedDate(rivalry.getEndedDate());
-    dto.setWrestler1(wrestlerService.findByIdAsDTO(rivalry.getWrestler1().getId()).orElse(null));
-    dto.setWrestler2(wrestlerService.findByIdAsDTO(rivalry.getWrestler2().getId()).orElse(null));
+    Long leagueId = rivalry.getLeague() != null ? rivalry.getLeague().getId() : 1L;
+    dto.setWrestler1(
+        wrestlerService.findByIdAsDTO(rivalry.getWrestler1().getId(), leagueId).orElse(null));
+    dto.setWrestler2(
+        wrestlerService.findByIdAsDTO(rivalry.getWrestler2().getId(), leagueId).orElse(null));
     // Map other fields as needed
     return dto;
   }
