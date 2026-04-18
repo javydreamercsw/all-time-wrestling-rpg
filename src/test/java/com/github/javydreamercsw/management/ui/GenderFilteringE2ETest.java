@@ -86,8 +86,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     wrestlerRepository.deleteAll();
     universeRepository.deleteAll();
 
-    defaultUniverse =
-        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");

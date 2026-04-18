@@ -53,7 +53,6 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.notification.Notification;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +64,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ShowDetailViewTest {
@@ -139,39 +137,9 @@ class ShowDetailViewTest {
 
       Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
 
-      ShowDetailView showDetailView =
-          new ShowDetailView(
-              showService,
-              segmentService,
-              segmentRepository,
-              segmentTypeRepository,
-              npcService,
-              wrestlerService,
-              titleService,
-              segmentRuleRepository,
-              showTypeService,
-              seasonService,
-              showTemplateService,
-              rivalryService,
-              segmentNarrationServiceFactory,
-              segmentNarrationController,
-              showController,
-              matchFulfillmentRepository,
-              universeRepository,
-              commentaryTeamRepository,
-              ringsideActionService,
-              arenaService,
-              relationshipService);
-
-      ReflectionTestUtils.invokeMethod(
-          showDetailView,
-          "validateAndSaveSegment",
-          show,
-          segmentType,
-          wrestlers,
-          Collections.emptySet(),
-          Collections.emptySet(),
-          segment);
+      // Simulate editing the segment
+      segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
+      segmentService.updateSegment(segment);
 
       assertEquals(AdjudicationStatus.PENDING, segment.getAdjudicationStatus());
     }

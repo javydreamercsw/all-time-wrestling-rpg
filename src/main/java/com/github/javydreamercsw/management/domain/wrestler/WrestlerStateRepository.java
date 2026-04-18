@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -26,4 +27,11 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
   Optional<WrestlerState> findByWrestlerAndUniverse(Wrestler wrestler, Universe universe);
 
   Optional<WrestlerState> findByWrestlerIdAndUniverseId(Long wrestlerId, Long universeId);
+
+  List<WrestlerState> findByWrestlerIsPlayerTrueAndUniverseId(Long universeId);
+
+  List<WrestlerState> findByWrestlerIsPlayerFalseAndUniverseId(Long universeId);
+
+  List<WrestlerState> findByUniverseIdAndTier(
+      Long universeId, com.github.javydreamercsw.base.domain.wrestler.WrestlerTier tier);
 }

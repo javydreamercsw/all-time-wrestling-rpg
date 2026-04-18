@@ -65,8 +65,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     wrestlerRepository.deleteAll();
     universeRepository.deleteAll();
 
-    defaultUniverse =
-        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {

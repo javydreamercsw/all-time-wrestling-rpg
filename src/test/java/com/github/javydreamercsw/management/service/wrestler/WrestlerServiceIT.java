@@ -89,9 +89,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
         universeRepository
             .findById(1L)
             .orElseGet(
-                () ->
-                    universeRepository.save(
-                        Universe.builder().id(1L).name("Default Universe").build()));
+                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
   }
 
   private static final Long DEFAULT_UNIVERSE_ID = 1L;
@@ -298,7 +296,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @DisplayName("Should filter wrestlers by player status")
   @Transactional
   void shouldFilterWrestlersByPlayerStatus() {
-    int initialSize = wrestlerService.getPlayerWrestlers().size();
+    int initialSize = wrestlerService.getPlayerWrestlers(DEFAULT_UNIVERSE_ID).size();
     // Given
     wrestlerService.createWrestler("Player 1", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     wrestlerService.createWrestler("Player 2", true, null, WrestlerTier.ROOKIE, defaultUniverse);
@@ -306,8 +304,8 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     wrestlerService.createWrestler("NPC 2", false, null, WrestlerTier.ROOKIE, defaultUniverse);
 
     // When
-    List<Wrestler> players = wrestlerService.getPlayerWrestlers();
-    List<Wrestler> npcs = wrestlerService.getNpcWrestlers();
+    List<Wrestler> players = wrestlerService.getPlayerWrestlers(DEFAULT_UNIVERSE_ID);
+    List<Wrestler> npcs = wrestlerService.getNpcWrestlers(DEFAULT_UNIVERSE_ID);
 
     // Then
     assertThat(players).hasSize(initialSize + 2);
@@ -478,10 +476,13 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
         wrestlerService.createWrestler(
             "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var state =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     state.setFans(100L);
     state.setTier(WrestlerTier.ROOKIE);
-    wrestlerService.save(wrestler); // Save initial state
+    wrestlerStateRepository.saveAndFlush(state);
 
     long fansToAdd = 1234;
     long expectedFans = 100L + 1000L; // It rounds to nearest 1000. 1234 -> 1000
@@ -490,7 +491,10 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     wrestlerService.awardFans(wrestler.getId(), DEFAULT_UNIVERSE_ID, fansToAdd);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var updatedState =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     assertEquals(expectedFans, updatedState.getFans());
   }
 
@@ -502,15 +506,21 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
         wrestlerService.createWrestler(
             "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var state =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     state.setBumps(1);
-    wrestlerService.save(wrestler); // Save initial state
+    wrestlerStateRepository.saveAndFlush(state);
 
     // When
     wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var updatedState =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     assertEquals(2, updatedState.getBumps());
   }
 
@@ -522,9 +532,12 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
         wrestlerService.createWrestler(
             "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var state =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     state.setBumps(2);
-    wrestlerService.save(wrestler); // Save initial state
+    wrestlerStateRepository.saveAndFlush(state);
     long initialInjuryCount =
         injuryService.getAllInjuriesForWrestler(wrestler.getId(), DEFAULT_UNIVERSE_ID).size();
 
@@ -532,7 +545,10 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     wrestlerService.addBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var updatedState =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     assertEquals(0, updatedState.getBumps());
 
     // Verify an injury was created
@@ -549,15 +565,21 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
         wrestlerService.createWrestler(
             "Test Wrestler", true, null, WrestlerTier.ROOKIE, defaultUniverse);
     Assertions.assertNotNull(wrestler.getId());
-    var state = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var state =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     state.setBumps(2);
-    wrestlerService.save(wrestler); // Save initial state
+    wrestlerStateRepository.saveAndFlush(state);
 
     // When
     wrestlerService.healBump(wrestler.getId(), DEFAULT_UNIVERSE_ID);
 
     // Then
-    var updatedState = wrestlerService.getOrCreateState(wrestler.getId(), DEFAULT_UNIVERSE_ID);
+    var updatedState =
+        wrestlerStateRepository
+            .findByWrestlerIdAndUniverseId(wrestler.getId(), DEFAULT_UNIVERSE_ID)
+            .orElseThrow();
     assertEquals(1, updatedState.getBumps());
   }
 }

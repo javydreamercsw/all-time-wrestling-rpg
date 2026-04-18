@@ -78,7 +78,7 @@ class InjuryServiceTest {
   void shouldCreateNewInjuryForWrestler() {
     // Given
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
-    Universe universe = Universe.builder().id(1L).build();
+    Universe universe = Universe.builder().build();
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
     when(injuryRepository.saveAndFlush(any(Injury.class)))

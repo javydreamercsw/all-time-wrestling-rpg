@@ -107,8 +107,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
 
-    defaultUniverse =
-        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     testWrestler = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Test Wrestler"));
     wrestlerService.getOrCreateState(testWrestler.getId(), defaultUniverse.getId());

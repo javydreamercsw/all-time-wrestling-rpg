@@ -57,7 +57,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Test
   public void testBookerViewLoads() {
     Universe defaultUniverse =
-        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+        universeRepository.save(Universe.builder().name("Default Universe").build());
 
     // Create a wrestler
     Wrestler wrestler =

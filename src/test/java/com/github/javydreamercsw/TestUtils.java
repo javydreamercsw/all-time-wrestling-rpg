@@ -30,25 +30,49 @@ public class TestUtils {
    * Create a wrestler with default values. Stil needs to be persisted in the database.
    *
    * @param name Desired wrestler's name.
+   * @param universe Universe to associate with.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name, long fans) {
-    Wrestler wrestler = createWrestler(name);
-    setFans(wrestler, fans);
+  public static Wrestler createWrestler(@NonNull String name, long fans, Universe universe) {
+    Wrestler wrestler = createWrestler(name, universe);
+    setFans(wrestler, fans, universe);
     return wrestler;
   }
 
   /**
-   * Create a wrestler with default values. Stil needs to be persisted in the database.
+   * Create a wrestler with default values. Still needs to be persisted in the database.
+   *
+   * @param name Desired wrestler's name.
+   * @return Created wrestler.
+   */
+  public static Wrestler createWrestler(@NonNull String name, long fans) {
+    Wrestler wrestler = createWrestler(name);
+    setFans(wrestler, fans, null);
+    return wrestler;
+  }
+
+  /**
+   * Create a wrestler with default values. Still needs to be persisted in the database.
    *
    * @param name Desired wrestler's name.
    * @return Created wrestler.
    */
   public static Wrestler createWrestler(@NonNull String name) {
+    return createWrestler(name, (Universe) null);
+  }
+
+  /**
+   * Create a wrestler with default values. Still needs to be persisted in the database.
+   *
+   * @param name Desired wrestler's name.
+   * @param universe Universe to associate with.
+   * @return Created wrestler.
+   */
+  public static Wrestler createWrestler(@NonNull String name, Universe universe) {
     Wrestler wrestler =
         createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
     wrestler.setDescription("Test Wrestler");
-    setFans(wrestler, 1_000L); // Default fan count
+    setFans(wrestler, 1_000L, universe); // Default fan count
     return wrestler;
   }
 
@@ -72,28 +96,36 @@ public class TestUtils {
     w.setLowHealth(4);
     w.setStartingStamina(15);
     w.setLowStamina(2);
-    setFans(w, 0L);
     w.setGender(Gender.MALE);
-    w.setBumps(0);
     w.setActive(true);
+    // Note: fans/state not set here, must be done via setFans if needed
     return w;
   }
 
-  private static void setFans(Wrestler wrestler, long fans) {
+  public static void setFans(Wrestler wrestler, long fans, Universe universe) {
     WrestlerState state =
         wrestler
             .getDefaultState()
             .orElseGet(
                 () -> {
+                  if (universe == null) {
+                    // Don't create a state if we don't have a universe
+                    return null;
+                  }
                   WrestlerState s =
-                      WrestlerState.builder()
-                          .wrestler(wrestler)
-                          .universe(Universe.builder().id(1L).name("Global").build())
-                          .build();
+                      WrestlerState.builder().wrestler(wrestler).universe(universe).build();
                   wrestler.getWrestlerStates().add(s);
                   return s;
                 });
-    state.setFans(fans);
-    state.setTier(WrestlerTier.fromFanCount(fans));
+
+    if (state != null) {
+      state.setFans(fans);
+      state.setTier(WrestlerTier.fromFanCount(fans));
+    }
+  }
+
+  @Deprecated
+  private static void setFans(Wrestler wrestler, long fans) {
+    setFans(wrestler, fans, null);
   }
 }

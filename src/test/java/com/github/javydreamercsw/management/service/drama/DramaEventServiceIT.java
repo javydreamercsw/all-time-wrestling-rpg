@@ -62,8 +62,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     clearAllRepositories();
-    defaultUniverse =
-        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     // Roles should be present in the DB from migrations or a general test data setup.
     Role playerRole =

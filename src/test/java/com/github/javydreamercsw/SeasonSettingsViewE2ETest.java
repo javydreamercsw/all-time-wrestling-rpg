@@ -55,9 +55,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
         universeRepository
             .findById(1L)
             .orElseGet(
-                () ->
-                    universeRepository.save(
-                        Universe.builder().id(1L).name("Default Universe").build()));
+                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
   }
 
   @Test

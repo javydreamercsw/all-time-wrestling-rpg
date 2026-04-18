@@ -459,7 +459,8 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @Deprecated
   public void refreshCurrentHealth() {
-    setCurrentHealth(getEffectiveStartingHealth(1L));
+    Long universeId = wrestlerStates.isEmpty() ? 1L : wrestlerStates.get(0).getUniverse().getId();
+    setCurrentHealth(getEffectiveStartingHealth(universeId));
   }
 
   @JsonIgnore

@@ -41,7 +41,7 @@ class WrestlerHealthCalculationTest {
 
   @BeforeEach
   void setUp() {
-    universe = Universe.builder().id(1L).name("Default Universe").build();
+    universe = Universe.builder().name("Default Universe").build();
 
     wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");

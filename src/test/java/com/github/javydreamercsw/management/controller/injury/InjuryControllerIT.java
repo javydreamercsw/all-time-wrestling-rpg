@@ -74,8 +74,7 @@ class InjuryControllerIT extends AbstractIntegrationTest {
     wrestlerRepository.deleteAll();
     universeRepository.deleteAll();
 
-    defaultUniverse =
-        universeRepository.save(Universe.builder().id(1L).name("Default Universe").build());
+    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
   }
 
   @org.junit.jupiter.api.Test

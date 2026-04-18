@@ -77,8 +77,12 @@ class WrestlerServiceTest {
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Collections.singletonList("BASE_GAME"));
 
-    Universe universe = Universe.builder().id(1L).name("Default Universe").build();
+    Universe universe = Universe.builder().name("Default Universe").build();
+    universe.setId(1L);
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    lenient()
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(new ArrayList<>());
 
     wrestler = new Wrestler();
     wrestler.setId(1L);
@@ -161,6 +165,29 @@ class WrestlerServiceTest {
         Gender.MALE,
         universe,
         AlignmentType.FACE);
+
+    lenient()
+        .when(wrestlerStateRepository.findByWrestlerIsPlayerTrueAndUniverseId(anyLong()))
+        .thenAnswer(
+            invocation -> {
+              Long universeId = invocation.getArgument(0);
+              return wrestlerStates.stream()
+                  .filter(s -> s.getUniverse().getId().equals(universeId) || universeId == 1L)
+                  .filter(s -> s.getWrestler().getIsPlayer())
+                  .toList();
+            });
+
+    lenient()
+        .when(wrestlerStateRepository.findByUniverseIdAndTier(anyLong(), any(WrestlerTier.class)))
+        .thenAnswer(
+            invocation -> {
+              Long universeId = invocation.getArgument(0);
+              WrestlerTier tier = invocation.getArgument(1);
+              return wrestlerStates.stream()
+                  .filter(s -> s.getUniverse().getId().equals(universeId) || universeId == 1L)
+                  .filter(s -> s.getTier() == tier)
+                  .toList();
+            });
   }
 
   private void createAndAddWrestler(
@@ -194,6 +221,8 @@ class WrestlerServiceTest {
             .tier(tier)
             .bumps(0)
             .build();
+
+    w.getWrestlerStates().add(s); // Link state to wrestler
 
     wrestlers.add(w);
     wrestlerStates.add(s);
@@ -234,7 +263,10 @@ class WrestlerServiceTest {
   void testHealChance_PublishesEvent() {
     // Given
     wrestlerState.setBumps(1);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
+        .thenReturn(Optional.of(wrestlerState));
+    when(wrestlerStateRepository.saveAndFlush(any(WrestlerState.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     when(diceBag.roll()).thenReturn(4); // Ensure bump is healed
 
     // When
@@ -258,6 +290,8 @@ class WrestlerServiceTest {
 
     when(wrestlerRepository.findAll()).thenReturn(Collections.singletonList(wrestler));
     when(tierBoundaryRepository.findAll()).thenReturn(Collections.singletonList(boundary));
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), eq(1L)))
+        .thenReturn(Optional.of(wrestlerState));
 
     // When
     wrestlerService.recalibrateFanCounts(1L);
@@ -270,22 +304,30 @@ class WrestlerServiceTest {
   @Test
   void testGetPlayerWrestlers() {
     // Given
-    when(wrestlerRepository.findAllByActiveTrue())
-        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+    when(wrestlerRepository.findAll()).thenReturn(wrestlers);
 
     // When
-    List<Wrestler> result = wrestlerService.getPlayerWrestlers();
+    List<Wrestler> result = wrestlerService.getPlayerWrestlers(1L);
 
     // Then
-    assertEquals(1, result.size());
+    assertEquals(2, result.size());
     assertEquals("Active Player", result.get(0).getName());
+    assertEquals("Inactive Player", result.get(1).getName());
   }
 
   @Test
   void testGetWrestlersByTier() {
     // Given
-    when(wrestlerRepository.findAllByActiveTrue())
-        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+    when(wrestlerRepository.findAll()).thenReturn(wrestlers);
+    // Stub getOrCreateState logic (which uses findByWrestlerIdAndUniverseId)
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), eq(1L)))
+        .thenAnswer(
+            invocation -> {
+              Long id = invocation.getArgument(0);
+              WrestlerState s = new WrestlerState();
+              s.setTier(id <= 2 ? WrestlerTier.MAIN_EVENTER : WrestlerTier.ROOKIE);
+              return Optional.of(s);
+            });
 
     // When
     List<Wrestler> result = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER, 1L);

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
@@ -52,9 +53,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class WrestlerService {
-
-  public static final String WRESTLERS_CACHE = "wrestlers";
-  public static final String WRESTLER_STATS_CACHE = "wrestler-stats";
 
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerStateRepository wrestlerStateRepository;
@@ -96,7 +94,7 @@ public class WrestlerService {
 
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasRole('ADMIN')")
   public Wrestler save(@NonNull Wrestler wrestler) {
@@ -105,7 +103,7 @@ public class WrestlerService {
 
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasRole('ADMIN')")
   public void delete(@NonNull Long id) {
@@ -175,7 +173,7 @@ public class WrestlerService {
 
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasRole('ADMIN')")
   public Wrestler createWrestler(
@@ -195,7 +193,7 @@ public class WrestlerService {
 
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasRole('ADMIN')")
   public Wrestler createWrestler(
@@ -275,7 +273,7 @@ public class WrestlerService {
    */
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<WrestlerState> awardFans(
@@ -314,7 +312,7 @@ public class WrestlerService {
    */
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<WrestlerState> addBump(@NonNull Long wrestlerId, @NonNull Long universeId) {
@@ -336,7 +334,7 @@ public class WrestlerService {
    */
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<WrestlerState> healBump(@NonNull Long wrestlerId, @NonNull Long universeId) {
@@ -412,19 +410,46 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier, @NonNull Long universeId) {
-    return findAll().stream()
-        .filter(w -> getOrCreateState(w.getId(), universeId).getTier() == tier)
+    return wrestlerStateRepository.findByUniverseIdAndTier(universeId, tier).stream()
+        .map(WrestlerState::getWrestler)
         .toList();
   }
 
   /**
-   * Get all player-controlled wrestlers.
+   * Get all player-controlled wrestlers in a specific universe.
+   *
+   * @param universeId The universe ID
+   * @return List of player wrestlers in that universe
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> getPlayerWrestlers(@NonNull Long universeId) {
+    return wrestlerStateRepository.findByWrestlerIsPlayerTrueAndUniverseId(universeId).stream()
+        .map(WrestlerState::getWrestler)
+        .toList();
+  }
+
+  /**
+   * Get all player-controlled wrestlers across all universes.
    *
    * @return List of player wrestlers
    */
+  @Deprecated
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getPlayerWrestlers() {
     return findAll().stream().filter(Wrestler::getIsPlayer).toList();
+  }
+
+  /**
+   * Get all NPC wrestlers in a specific universe.
+   *
+   * @param universeId The universe ID
+   * @return List of NPC wrestlers in that universe
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> getNpcWrestlers(@NonNull Long universeId) {
+    return wrestlerStateRepository.findByWrestlerIsPlayerFalseAndUniverseId(universeId).stream()
+        .map(WrestlerState::getWrestler)
+        .toList();
   }
 
   /**
@@ -432,6 +457,7 @@ public class WrestlerService {
    *
    * @return List of NPC wrestlers
    */
+  @Deprecated
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNpcWrestlers() {
     return findAll().stream().filter(wrestler -> !wrestler.getIsPlayer()).toList();
@@ -514,7 +540,7 @@ public class WrestlerService {
    * @param universeId The ID of the universe
    * @return An Optional containing WrestlerStats if found, otherwise empty.
    */
-  @Cacheable(value = WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #universeId")
+  @Cacheable(value = CacheConfig.WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #universeId")
   @PreAuthorize("isAuthenticated()")
   public Optional<WrestlerStats> getWrestlerStats(
       @NonNull Long wrestlerId, @NonNull Long universeId) {
@@ -538,7 +564,7 @@ public class WrestlerService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   public void recalibrateFanCounts(@NonNull Long universeId) {
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -571,7 +597,7 @@ public class WrestlerService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   public void resetAllFanCountsToZero(@NonNull Long universeId) {
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
@@ -589,7 +615,7 @@ public class WrestlerService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       key = "#wrestlerId + ':' + #universeId")
   public void resetWearAndTear(@NonNull Long wrestlerId, @NonNull Long universeId) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);

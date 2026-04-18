@@ -98,6 +98,11 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected PasswordEncoder passwordEncoder;
   @Autowired protected LeagueRepository leagueRepository;
   @Autowired protected LeagueRosterRepository leagueRosterRepository;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+
   @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
   @Autowired protected DraftRepository draftRepository;
   @Autowired protected DraftPickRepository draftPickRepository;
@@ -145,7 +150,19 @@ public abstract class AbstractIntegrationTest {
   protected org.springframework.cache.CacheManager cacheManager;
 
   protected Wrestler createTestWrestler(@NonNull String name) {
-    return TestUtils.createWrestler(name);
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    universeRepository.saveAndFlush(
+                        com.github.javydreamercsw.management.domain.universe.Universe.builder()
+                            .name("Default Universe")
+                            .type(
+                                com.github.javydreamercsw.management.domain.universe.Universe
+                                    .UniverseType.GLOBAL)
+                            .build()));
+    return TestUtils.createWrestler(name, 0L, universe);
   }
 
   protected Account createTestAccount(@NonNull String username, @NonNull RoleName roleName) {
@@ -234,6 +251,18 @@ public abstract class AbstractIntegrationTest {
           }
 
           log.info("Re-initializing data using DataInitializer...");
+
+          // Ensure default universe exists
+          if (universeRepository.count() == 0) {
+            universeRepository.saveAndFlush(
+                com.github.javydreamercsw.management.domain.universe.Universe.builder()
+                    .name("Default Universe")
+                    .type(
+                        com.github.javydreamercsw.management.domain.universe.Universe.UniverseType
+                            .GLOBAL)
+                    .build());
+          }
+
           dataInitializer.init();
           log.info("Database reset complete.");
         });

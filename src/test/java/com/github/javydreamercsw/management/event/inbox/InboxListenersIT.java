@@ -130,9 +130,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
         universeRepository
             .findById(1L)
             .orElseGet(
-                () ->
-                    universeRepository.save(
-                        Universe.builder().id(1L).name("Default Universe").build()));
+                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
 
     wrestler1 = Wrestler.builder().name("Wrestler A").build();
     wrestler1 = wrestlerRepository.save(wrestler1);

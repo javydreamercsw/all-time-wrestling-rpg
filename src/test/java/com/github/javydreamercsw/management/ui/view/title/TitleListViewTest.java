@@ -26,11 +26,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -70,16 +73,35 @@ class TitleListViewTest extends AbstractViewTest {
 
   @BeforeEach
   void setUp() {
+    Universe universe = Universe.builder().name("Default Universe").build();
+    universe.setId(1L);
+
     // Mock Wrestlers
     testWrestler = new Wrestler();
     testWrestler.setId(1L);
     testWrestler.setName("Test Wrestler");
-    testWrestler.setTier(WrestlerTier.MAIN_EVENTER);
+    testWrestler.setGender(Gender.MALE);
+    testWrestler
+        .getWrestlerStates()
+        .add(
+            WrestlerState.builder()
+                .wrestler(testWrestler)
+                .universe(universe)
+                .tier(WrestlerTier.MAIN_EVENTER)
+                .build());
 
     otherWrestler = new Wrestler();
     otherWrestler.setId(2L);
     otherWrestler.setName("Other Wrestler");
-    otherWrestler.setTier(WrestlerTier.MIDCARDER);
+    otherWrestler.setGender(Gender.MALE);
+    otherWrestler
+        .getWrestlerStates()
+        .add(
+            WrestlerState.builder()
+                .wrestler(otherWrestler)
+                .universe(universe)
+                .tier(WrestlerTier.MIDCARDER)
+                .build());
 
     List<Wrestler> allWrestlers = Arrays.asList(testWrestler, otherWrestler);
     when(wrestlerRepository.findAll()).thenReturn(allWrestlers);

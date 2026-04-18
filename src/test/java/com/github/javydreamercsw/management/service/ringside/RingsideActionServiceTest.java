@@ -92,7 +92,7 @@ class RingsideActionServiceTest {
 
   @BeforeEach
   void setUp() {
-    universe = Universe.builder().id(1L).build();
+    universe = Universe.builder().build();
     show = mock(Show.class);
     when(show.getUniverse()).thenReturn(universe);
 

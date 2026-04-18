@@ -212,6 +212,7 @@ public class DataInitializer implements Initializable {
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
+      createDefaultUniverse();
       syncAiSettingsFromEnvironment();
       initializeGameDate();
       loadSegmentRulesFromFile();
@@ -235,6 +236,20 @@ public class DataInitializer implements Initializable {
       syncCommentaryTeamsFromFile();
       loadAchievements();
       syncRingsideActions();
+    }
+  }
+
+  private void createDefaultUniverse() {
+    if (universeRepository.count() == 0) {
+      log.info("Creating default universe...");
+      com.github.javydreamercsw.management.domain.universe.Universe defaultUniverse =
+          com.github.javydreamercsw.management.domain.universe.Universe.builder()
+              .name("Default Universe")
+              .type(
+                  com.github.javydreamercsw.management.domain.universe.Universe.UniverseType.GLOBAL)
+              .build();
+      universeRepository.saveAndFlush(defaultUniverse);
+      log.info("Default universe created.");
     }
   }
 

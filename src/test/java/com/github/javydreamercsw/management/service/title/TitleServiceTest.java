@@ -77,7 +77,7 @@ class TitleServiceTest {
 
   @BeforeEach
   void setUp() {
-    defaultUniverse = Universe.builder().id(1L).name("Default Universe").build();
+    defaultUniverse = Universe.builder().name("Default Universe").build();
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(defaultUniverse));
 
     titleService =

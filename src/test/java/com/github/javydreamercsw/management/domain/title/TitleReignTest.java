@@ -39,7 +39,7 @@ class TitleReignTest {
 
   @BeforeEach
   void setUp() {
-    universe = Universe.builder().id(1L).name("Default").build();
+    universe = Universe.builder().name("Default").build();
 
     title = new Title();
     title.setName("Test Championship");

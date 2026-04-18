@@ -68,7 +68,7 @@ class TierRecalculationServiceTest {
 
   @BeforeEach
   void setUp() {
-    universe = Universe.builder().id(1L).name("Test Universe").build();
+    universe = Universe.builder().name("Test Universe").build();
     wrestlerStates = new ArrayList<>();
     // Create 20 wrestlers with varying fan counts (20000, 19000, ..., 1000)
     for (int i = 0; i < 20; i++) {
