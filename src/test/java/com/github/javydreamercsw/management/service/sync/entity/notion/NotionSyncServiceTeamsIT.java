@@ -98,6 +98,9 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
     when(notionHandler.loadAllTeams()).thenReturn(List.of(teamPage));
     when(notionPageDataExtractor.extractNameFromNotionPage(any())).thenReturn("Test Team");
     when(notionPageDataExtractor.extractIdFromNotionPage(any())).thenReturn(teamId);
+    // Mock relation extraction to return the two created wrestlers
+    when(notionPageDataExtractor.extractRelationIds(teamPage, "Members"))
+        .thenReturn(List.of(w1.getExternalId(), w2.getExternalId()));
 
     when(wrestlerService.findByExternalId(w1.getExternalId())).thenReturn(Optional.of(w1));
     when(wrestlerService.findByExternalId(w2.getExternalId())).thenReturn(Optional.of(w2));

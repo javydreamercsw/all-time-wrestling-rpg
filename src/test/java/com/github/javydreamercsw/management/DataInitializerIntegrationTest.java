@@ -59,6 +59,9 @@ class DataInitializerIntegrationTest extends AbstractIntegrationTest {
     existingWrestler.setGender(Gender.MALE);
     wrestlerRepository.save(existingWrestler);
 
+    // Ensure data initializer runs and creates the default universe in its own transaction
+    GeneralSecurityUtils.runAsAdmin(() -> dataInitializer.init());
+
     WrestlerState state = wrestlerService.getOrCreateState(existingWrestler.getId(), 1L);
     state.setFans(100L);
     state.setBumps(5);
