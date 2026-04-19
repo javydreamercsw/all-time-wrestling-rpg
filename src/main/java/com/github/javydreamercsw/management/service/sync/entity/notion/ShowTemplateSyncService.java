@@ -33,6 +33,7 @@ import java.time.Month;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -158,16 +159,22 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
           templateDTOs.size(),
           System.currentTimeMillis() - convertStart);
 
+      List<ShowTemplateDTO> filteredDTOs =
+          templateDTOs.stream()
+              .filter(dto -> dto.getShowType() != null && !dto.getShowType().isBlank())
+              .collect(Collectors.toList());
+      log.info("Found {} templates with show types.", filteredDTOs.size());
+
       // Save show templates to database
       syncServiceDependencies
           .getProgressTracker()
           .updateProgress(
               operationId,
               3,
-              String.format("Saving %d show templates to database...", templateDTOs.size()));
+              String.format("Saving %d show templates to database...", filteredDTOs.size()));
       log.info("💾 Saving show templates to database...");
       long dbStart = System.currentTimeMillis();
-      int successCount = saveShowTemplatesToDatabase(templateDTOs);
+      int successCount = saveShowTemplatesToDatabase(filteredDTOs);
       long dbTime = System.currentTimeMillis() - dbStart;
       log.info("✅ Saved {} show templates to database in {}ms", successCount, dbTime);
 
@@ -272,12 +279,6 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
 
     for (ShowTemplateDTO dto : templateDTOs) {
       try {
-        if (dto.getShowType() == null) {
-          log.warn("Skipping template '{}' - no show type could be determined.", dto.getName());
-          skippedCount++;
-          continue;
-        }
-
         ShowTemplate template = null;
         if (dto.getExternalId() != null && !dto.getExternalId().isBlank()) {
           template = showTemplateService.findByExternalId(dto.getExternalId()).orElse(null);

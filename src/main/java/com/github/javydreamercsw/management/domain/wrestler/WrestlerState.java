@@ -67,7 +67,7 @@ public class WrestlerState extends AbstractEntity<Long>
   @JsonIgnore
   private Wrestler wrestler;
 
-  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.PERSIST)
+  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.MERGE)
   @JoinColumn(name = "universe_id", nullable = false)
   @JsonIgnore
   private Universe universe;
