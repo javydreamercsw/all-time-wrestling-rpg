@@ -40,7 +40,9 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SegmentRepository segmentRepository;
+  @Autowired private com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private NotionHandler notionHandler;
+  @MockitoBean private com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor notionPageDataExtractor;
 
   @BeforeEach
   void setUp() {
@@ -61,6 +63,15 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
                 "Status", "BOOKED",
                 "Adjudication Status", "PENDING"));
     when(notionHandler.loadAllSegments()).thenReturn(List.of(segmentPage));
+
+    // Create and save required segment type and mock extractor
+    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType segmentType =
+        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+    segmentType.setName("Default Segment Type");
+    segmentType.setExternalId("test-segtype-id");
+    segmentTypeRepository.save(segmentType);
+    when(notionPageDataExtractor.extractRelationId(segmentPage, "Segment Type"))
+        .thenReturn(segmentType.getExternalId());
 
     // When
     BaseSyncService.SyncResult result = segmentSyncService.syncSegments("test-op-1");
