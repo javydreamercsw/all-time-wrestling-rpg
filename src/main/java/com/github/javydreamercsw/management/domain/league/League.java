@@ -63,7 +63,7 @@ public class League {
   @Builder.Default
   private LeagueStatus status = LeagueStatus.PRE_DRAFT;
 
-  private int maxPicksPerPlayer = 1;
+  @Builder.Default private int maxPicksPerPlayer = 1;
 
   @ManyToMany
   @JoinTable(
@@ -74,12 +74,14 @@ public class League {
   private Set<Wrestler> excludedWrestlers = new HashSet<>();
 
   @Column(name = "budget")
+  @Builder.Default
   private java.math.BigDecimal budget = java.math.BigDecimal.ZERO;
 
   @Column(name = "duration_weeks")
   private Integer durationWeeks;
 
   @Column(name = "locker_room_morale", nullable = false)
+  @Builder.Default
   @Min(0) @jakarta.validation.constraints.Max(100) private Integer lockerRoomMorale = 100;
 
   @ManyToOne(fetch = FetchType.LAZY)
