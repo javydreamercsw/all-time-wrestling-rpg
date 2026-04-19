@@ -337,6 +337,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Override
   @Deprecated
+  @jakarta.persistence.Transient
   public void setTier(WrestlerTier tier) {
     getDefaultState().ifPresent(s -> s.setTier(tier));
   }
@@ -349,6 +350,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setBumps(Integer bumps) {
     getDefaultState().ifPresent(s -> s.setBumps(bumps));
   }
@@ -361,6 +363,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setFaction(Faction faction) {
     getDefaultState().ifPresent(s -> s.setFaction(faction));
   }
@@ -373,6 +376,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setManager(Npc manager) {
     getDefaultState().ifPresent(s -> s.setManager(manager));
   }
@@ -385,6 +389,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setPhysicalCondition(Integer physicalCondition) {
     getDefaultState().ifPresent(s -> s.setPhysicalCondition(physicalCondition));
   }
@@ -397,6 +402,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setCurrentHealth(Integer currentHealth) {
     getDefaultState().ifPresent(s -> s.setCurrentHealth(currentHealth));
   }
@@ -409,6 +415,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setMorale(Integer morale) {
     getDefaultState().ifPresent(s -> s.setMorale(morale));
   }
@@ -421,6 +428,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setManagementStamina(Integer managementStamina) {
     getDefaultState().ifPresent(s -> s.setManagementStamina(managementStamina));
   }
