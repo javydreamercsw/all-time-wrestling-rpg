@@ -163,7 +163,13 @@ public abstract class AbstractIntegrationTest {
                             .build()));
 
     // Make sure we have a managed instance
-    universe = universeRepository.findById(universe.getId()).get();
+    final Long universeId = universe.getId();
+    universe =
+        universeRepository
+            .findById(universeId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException("Universe not found after save. ID: " + universeId));
 
     return wrestlerRepository.saveAndFlush(TestUtils.createWrestler(name, 0L, universe));
   }

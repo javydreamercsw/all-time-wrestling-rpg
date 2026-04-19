@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
@@ -30,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.data.provider.Query;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,15 +40,16 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WithMockUser(roles = "BOOKER")
-class EditSegmentDialogTest extends ManagementIntegrationTest {
+@TestPropertySource(properties = "data.initializer.enabled=false")
+class EditSegmentDialogTest extends AbstractViewTest {
 
   @MockitoBean private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private TitleService titleService;
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private com.github.javydreamercsw.management.service.npc.NpcService npcService;
@@ -110,7 +111,11 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     // Simulate user input
     dialog.getNarrationArea().setValue("New Description");
     segment.setNarration("New Description");
-    Set<Wrestler> selectedParticipants = Set.of(wrestlerService.findByName("Wrestler 2").get());
+    Set<Wrestler> selectedParticipants =
+        Set.of(
+            wrestlerService
+                .findByName("Wrestler 2")
+                .orElseThrow(() -> new IllegalStateException("Wrestler 2 not found")));
     dialog.getParticipantsCombo().setValue(selectedParticipants);
     SegmentType segmentType = new SegmentType();
     segmentType.setName(segment.getType());

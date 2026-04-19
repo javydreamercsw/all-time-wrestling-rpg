@@ -89,6 +89,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -208,7 +209,7 @@ public class DataInitializer implements Initializable {
     this.objectMapper = objectMapper;
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
@@ -389,6 +390,13 @@ public class DataInitializer implements Initializable {
     } else {
       log.warn("Commentary teams file not found: {}", resource.getPath());
     }
+  }
+
+  private Long getGlobalUniverseId() {
+    return universeRepository.findAll().stream()
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("No universe found"))
+        .getId();
   }
 
   private void syncAiSettingsFromEnvironment() {
@@ -963,6 +971,7 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var championshipsFromFile = mapper.readValue(is, new TypeReference<List<TitleDTO>>() {});
+        Long universeId = getGlobalUniverseId();
         for (TitleDTO dto : championshipsFromFile) {
           Optional<Title> existingTitle = titleService.findByName(dto.getName());
           Title title;
@@ -974,7 +983,7 @@ public class DataInitializer implements Initializable {
                     dto.getTier(),
                     dto.getChampionshipType(),
                     dto.getGender(),
-                    1L); // Default league ID 1
+                    universeId);
             log.debug(
                 "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {
@@ -1101,6 +1110,7 @@ public class DataInitializer implements Initializable {
             cardKeyToCard.putIfAbsent(key, card);
           }
 
+          boolean changed = false;
           for (var entry : cardKeyToAmount.entrySet()) {
             Card card = cardKeyToCard.get(entry.getKey());
             int amount = entry.getValue();
@@ -1112,35 +1122,32 @@ public class DataInitializer implements Initializable {
 
             if (existingDeckCardOpt.isPresent()) {
               DeckCard existingDeckCard = existingDeckCardOpt.get();
-              existingDeckCard.setAmount(amount);
+              if (existingDeckCard.getAmount() != amount) {
+                existingDeckCard.setAmount(amount);
+                changed = true;
+              }
               cardsToRemove.remove(existingDeckCard); // Don't remove this card
-              log.debug(
-                  "Updated existing deck card: {} {}-{} set (Amount: {})",
-                  card.getName(),
-                  card.getSet().getName(),
-                  card.getId(),
-                  amount);
             } else {
-              log.debug(
-                  "Adding new deck card: {} {}-{} set (Amount: {})",
-                  card.getName(),
-                  card.getSet().getName(),
-                  card.getId(),
-                  amount);
               DeckCard newDeckCard = new DeckCard();
               newDeckCard.setCard(card);
               newDeckCard.setSet(card.getSet());
               newDeckCard.setAmount(amount);
               newDeckCard.setDeck(deck); // Set the back-reference
               deck.getCards().add(newDeckCard); // Add to the collection
+              changed = true;
             }
           }
 
           // Remove cards that are no longer in the DTO
-          deck.getCards().removeAll(cardsToRemove);
+          if (!cardsToRemove.isEmpty()) {
+            deck.getCards().removeAll(cardsToRemove);
+            changed = true;
+          }
 
-          deckService.save(deck); // Save the deck, which will cascade to the new cards.
-          log.debug("Saved deck for wrestler: {}", wrestler.getName());
+          if (changed) {
+            deckService.save(deck); // Save the deck, which will cascade to the new cards.
+            log.debug("Saved deck for wrestler: {}", wrestler.getName());
+          }
         }
       } catch (IOException e) {
         log.error("Error loading decks from file", e);
@@ -1203,6 +1210,7 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var dtos = mapper.readValue(is, new TypeReference<List<FactionImportDTO>>() {});
+        Long universeId = getGlobalUniverseId();
         for (FactionImportDTO dto : dtos) {
           Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
           if (leaderOpt.isPresent()) {
@@ -1210,7 +1218,7 @@ public class DataInitializer implements Initializable {
             if (factionOpt.isEmpty()) {
               factionOpt =
                   factionService.createFaction(
-                      dto.getName(), dto.getDescription(), leaderOpt.get().getId(), 1L);
+                      dto.getName(), dto.getDescription(), leaderOpt.get().getId(), universeId);
             }
             if (factionOpt.isPresent()) {
               Faction faction = factionOpt.get();
@@ -1310,11 +1318,25 @@ public class DataInitializer implements Initializable {
             log.info("Saved new location: {}", location.getName());
           } else {
             Location existing = existingLocation.get();
-            existing.setDescription(dto.getDescription());
-            existing.setImageUrl(dto.getImageUrl());
-            existing.setCulturalTags(dto.getCulturalTags());
-            locationRepository.save(existing);
-            log.info("Updated existing location: {}", existing.getName());
+            boolean changed = false;
+            if (!dto.getDescription().equals(existing.getDescription())) {
+              existing.setDescription(dto.getDescription());
+              changed = true;
+            }
+            if (dto.getImageUrl() != null && !dto.getImageUrl().equals(existing.getImageUrl())) {
+              existing.setImageUrl(dto.getImageUrl());
+              changed = true;
+            }
+            if (dto.getCulturalTags() != null
+                && !dto.getCulturalTags().equals(existing.getCulturalTags())) {
+              existing.setCulturalTags(dto.getCulturalTags());
+              changed = true;
+            }
+
+            if (changed) {
+              locationRepository.save(existing);
+              log.info("Updated existing location: {}", existing.getName());
+            }
           }
         }
         locationRepository.flush();
@@ -1365,21 +1387,37 @@ public class DataInitializer implements Initializable {
             }
           } else {
             Arena existing = existingArena.get();
-            existing.setDescription(dto.getDescription());
-            existing.setCapacity(dto.getCapacity());
-            existing.setAlignmentBias(dto.getAlignmentBias());
-            existing.setImageUrl(dto.getImageUrl());
-            existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
-            Optional<Location> location = locationRepository.findByName(dto.getLocation());
-            location.ifPresentOrElse(
-                existing::setLocation,
-                () ->
-                    log.warn(
-                        "Location '{}' not found for existing arena '{}'. Location not updated.",
-                        dto.getLocation(),
-                        dto.getName()));
-            arenaRepository.save(existing);
-            log.info("Updated existing arena: {}", existing.getName());
+            boolean changed = false;
+            if (!Objects.equals(dto.getDescription(), existing.getDescription())) {
+              existing.setDescription(dto.getDescription());
+              changed = true;
+            }
+            if (dto.getCapacity() != existing.getCapacity()) {
+              existing.setCapacity(dto.getCapacity());
+              changed = true;
+            }
+            if (dto.getAlignmentBias() != existing.getAlignmentBias()) {
+              existing.setAlignmentBias(dto.getAlignmentBias());
+              changed = true;
+            }
+            if (!Objects.equals(dto.getImageUrl(), existing.getImageUrl())) {
+              existing.setImageUrl(dto.getImageUrl());
+              changed = true;
+            }
+            if (!Objects.equals(dto.getEnvironmentalTraits(), existing.getEnvironmentalTraits())) {
+              existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
+              changed = true;
+            }
+            Optional<Location> locationOpt = locationRepository.findByName(dto.getLocation());
+            if (locationOpt.isPresent() && !locationOpt.get().equals(existing.getLocation())) {
+              existing.setLocation(locationOpt.get());
+              changed = true;
+            }
+
+            if (changed) {
+              arenaRepository.save(existing);
+              log.info("Updated existing arena: {}", existing.getName());
+            }
           }
         }
         log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());

@@ -773,8 +773,8 @@
         <version>3.5.5</version>
         <configuration>
           <skipTests>${surefire.skip}</skipTests>
-          <!-- Enable parallel execution for unit tests -->
-          <parallel>classes</parallel>
+          <!-- Parallel execution disabled to prevent database interference -->
+          <parallel>none</parallel>
 
           <threadCount>4</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>

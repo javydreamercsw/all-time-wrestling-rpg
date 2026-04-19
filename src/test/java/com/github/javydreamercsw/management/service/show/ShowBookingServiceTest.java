@@ -60,6 +60,11 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
   @Autowired UniverseRepository universeRepository;
+  @Autowired com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+
+  @Autowired
+  com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+
   @MockitoBean private OpenAISegmentNarrationService openAIService;
 
   private Season testSeason;
@@ -69,10 +74,12 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @BeforeEach
   public void setUp() throws Exception {
     defaultUniverse =
-        universeRepository
-            .findById(1L)
+        universeRepository.findAll().stream()
+            .findFirst()
             .orElseGet(
-                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder().name("Default Universe").build()));
 
     testSeason =
         seasonService.createOrUpdateSeason(
@@ -217,6 +224,19 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
           deckCardRepository.deleteAll(deck.getCards());
         }
         deckRepository.deleteAll(decksToDelete);
+
+        // Delete team associations
+        teamRepository.deleteAll(teamRepository.findByWrestler(wrestlerToDelete));
+
+        // Handle faction leadership
+        factionRepository
+            .findByLeader(wrestlerToDelete)
+            .forEach(
+                f -> {
+                  f.setLeader(null);
+                  factionRepository.save(f);
+                });
+
         wrestlerRepository.delete(wrestlerToDelete);
       }
 

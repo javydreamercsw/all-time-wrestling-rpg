@@ -68,10 +68,12 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     defaultUniverse =
-        universeRepository
-            .findById(1L)
+        universeRepository.findAll().stream()
+            .findFirst()
             .orElseGet(
-                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder().name("Default Universe").build()));
 
     // Create and save test wrestlers
     rookie1 = createTestWrestler("Rookie 1", 1000L, WrestlerTier.ROOKIE);
