@@ -22,6 +22,8 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -40,6 +42,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SegmentRepository segmentRepository;
+  @Autowired private ShowRepository showRepository;
 
   @Autowired
   private com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository
@@ -50,9 +53,26 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
   @MockitoBean
   private com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor notionPageDataExtractor;
 
+  private Show testShow;
+
   @BeforeEach
   void setUp() {
     segmentRepository.deleteAll();
+
+    // Create a ShowType required by Show (show_type_id is NOT NULL)
+    com.github.javydreamercsw.management.domain.show.type.ShowType showType =
+        new com.github.javydreamercsw.management.domain.show.type.ShowType();
+    showType.setName("Test Show Type");
+    showType.setDescription("Test Show Type Description");
+    showType = showTypeRepository.save(showType);
+
+    // Create a Show that segments can be linked to (show_id is NOT NULL in the schema)
+    testShow = new Show();
+    testShow.setName("Test Show");
+    testShow.setDescription("Test Show Description");
+    testShow.setExternalId("test-show-ext-id");
+    testShow.setType(showType);
+    testShow = showRepository.save(testShow);
   }
 
   @Test
@@ -78,6 +98,10 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     segmentTypeRepository.save(segmentType);
     when(notionPageDataExtractor.extractRelationId(segmentPage, "Segment Type"))
         .thenReturn(segmentType.getExternalId());
+
+    // Link the segment to the test show
+    when(notionPageDataExtractor.extractRelationId(segmentPage, "Shows"))
+        .thenReturn(testShow.getExternalId());
 
     // When
     BaseSyncService.SyncResult result = segmentSyncService.syncSegments("test-op-1");
