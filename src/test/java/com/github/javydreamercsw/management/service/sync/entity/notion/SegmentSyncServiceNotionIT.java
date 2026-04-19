@@ -40,9 +40,15 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SegmentRepository segmentRepository;
-  @Autowired private com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository segmentTypeRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository
+      segmentTypeRepository;
+
   @MockitoBean private NotionHandler notionHandler;
-  @MockitoBean private com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor notionPageDataExtractor;
+
+  @MockitoBean
+  private com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor notionPageDataExtractor;
 
   @BeforeEach
   void setUp() {
