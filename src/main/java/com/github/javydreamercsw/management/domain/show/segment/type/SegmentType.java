@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.segment.type;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "segment_type", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class SegmentType extends AbstractEntity<Long> {
+public class SegmentType extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "segment_type_id")

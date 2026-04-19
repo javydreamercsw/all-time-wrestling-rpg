@@ -254,13 +254,8 @@ public class WrestlerService {
               com.github.javydreamercsw.management.domain.universe.Universe universe =
                   universeRepository
                       .findById(universeId)
-                      .orElseGet(
-                          () -> {
-                            com.github.javydreamercsw.management.domain.universe.Universe u =
-                                new com.github.javydreamercsw.management.domain.universe.Universe();
-                            u.setId(universeId);
-                            return u;
-                          });
+                      .orElseThrow(
+                          () -> new IllegalArgumentException("Universe not found: " + universeId));
               WrestlerState newState =
                   WrestlerState.builder()
                       .wrestler(wrestler)

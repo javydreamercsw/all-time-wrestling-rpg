@@ -106,16 +106,20 @@ class FactionSyncServiceTest extends AbstractSyncTest {
 
     // Mock dependencies
     Wrestler leader = Wrestler.builder().build();
+    leader.setId(100L);
     leader.setExternalId("leader-id");
     when(wrestlerRepository.findByExternalId("leader-id")).thenReturn(Optional.of(leader));
 
     Npc manager = new Npc();
+    manager.setId(200L);
     manager.setExternalId("manager-id");
     when(npcRepository.findByExternalId("manager-id")).thenReturn(Optional.of(manager));
 
     Wrestler member1 = Wrestler.builder().build();
+    member1.setId(301L);
     member1.setExternalId("member-1");
     Wrestler member2 = Wrestler.builder().build();
+    member2.setId(302L);
     member2.setExternalId("member-2");
     when(wrestlerRepository.findByExternalId("member-1")).thenReturn(Optional.of(member1));
     when(wrestlerRepository.findByExternalId("member-2")).thenReturn(Optional.of(member2));
@@ -142,8 +146,8 @@ class FactionSyncServiceTest extends AbstractSyncTest {
     assertEquals("HEEL", savedFaction.getAlignment());
     assertEquals(leader, savedFaction.getLeader());
     assertEquals(manager, savedFaction.getManager());
-    assertTrue(savedFaction.getMembers().contains(member1));
-    assertTrue(savedFaction.getMembers().contains(member2));
+    assertTrue(savedFaction.getMembers().stream().anyMatch(s -> s.getWrestler().equals(member1)));
+    assertTrue(savedFaction.getMembers().stream().anyMatch(s -> s.getWrestler().equals(member2)));
     assertTrue(savedFaction.getTeams().contains(team1));
   }
 

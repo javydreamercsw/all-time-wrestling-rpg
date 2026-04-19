@@ -495,6 +495,12 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>5.2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
@@ -795,7 +801,7 @@
             <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <argLine>@{surefireArgLine} -Xmx4g -XX:+UseG1GC -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -821,7 +827,7 @@
           </excludes>
 
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <argLine>@{failsafeArgLine} -Xmx4g -XX:+UseG1GC -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
           <systemPropertyVariables>
             <webdriver.chrome.whitelistedIps/>
             <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>

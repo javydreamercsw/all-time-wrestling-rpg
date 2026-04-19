@@ -161,6 +161,10 @@ public abstract class AbstractIntegrationTest {
                                 com.github.javydreamercsw.management.domain.universe.Universe
                                     .UniverseType.GLOBAL)
                             .build()));
+
+    // Make sure we have a managed instance
+    universe = universeRepository.findById(universe.getId()).get();
+
     return TestUtils.createWrestler(name, 0L, universe);
   }
 

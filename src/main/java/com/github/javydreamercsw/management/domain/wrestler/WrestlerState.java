@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -54,18 +55,19 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WrestlerState implements com.github.javydreamercsw.base.domain.WrestlerData {
+public class WrestlerState extends AbstractEntity<Long>
+    implements com.github.javydreamercsw.base.domain.WrestlerData {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @NotNull @ManyToOne(fetch = FetchType.LAZY)
+  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.PERSIST)
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnore
   private Wrestler wrestler;
 
-  @NotNull @ManyToOne(fetch = FetchType.LAZY)
+  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.PERSIST)
   @JoinColumn(name = "universe_id", nullable = false)
   @JsonIgnore
   private Universe universe;

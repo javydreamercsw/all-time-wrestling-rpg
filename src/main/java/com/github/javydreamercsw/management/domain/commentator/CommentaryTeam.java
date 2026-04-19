@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.commentator;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "commentary_team")
 @Getter
 @Setter
-public class CommentaryTeam extends AbstractEntity<Long> {
+public class CommentaryTeam extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -101,6 +102,10 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             factionRepository,
             npcRepository,
             injuryRepository);
+
+    lenient()
+        .when(wrestlerService.getOrCreateState(any(), anyLong()))
+        .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
   }
 
   @Test
@@ -194,8 +199,8 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
 
   private WrestlerPage createMockWrestlerPage(
       String id, String name, int health, int stamina, int charisma) {
-    WrestlerPage page = mock(WrestlerPage.class);
-    lenient().when(page.getId()).thenReturn(id);
+    WrestlerPage page = new WrestlerPage();
+    page.setId(id);
 
     Map<String, Object> properties = new HashMap<>();
     properties.put("Name", Map.of("title", List.of(Map.of("text", Map.of("content", name)))));
@@ -204,7 +209,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     properties.put("Charisma", (double) charisma);
     properties.put("Tier", "Main Event");
     properties.put("Fans", 1000.0);
-    lenient().when(page.getRawProperties()).thenReturn(properties);
+    page.setRawProperties(properties);
 
     return page;
   }

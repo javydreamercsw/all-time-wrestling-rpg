@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -64,7 +65,13 @@ class CampaignFactionServiceTest {
 
     Faction faction = new Faction();
     faction.setId(10L);
-    player.setFaction(faction);
+    faction.setName("Test Faction");
+
+    // Decoupled state logic: Wrestler gets faction from WrestlerState
+    WrestlerState state = new WrestlerState();
+    state.setWrestler(player);
+    state.setFaction(faction);
+    player.getWrestlerStates().add(state);
 
     when(factionService.removeMemberFromFaction(any(), any(), any()))
         .thenReturn(Optional.of(faction));

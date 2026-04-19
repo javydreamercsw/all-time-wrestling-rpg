@@ -22,6 +22,8 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TierRecalculationService implements RankingService {
 
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final TierBoundaryService tierBoundaryService;
 
   @Override
@@ -159,6 +162,9 @@ public class TierRecalculationService implements RankingService {
                 wrestlerData.getTier(),
                 newTier);
             wrestlerData.setTier(newTier);
+            if (wrestlerData instanceof WrestlerState state) {
+              wrestlerStateRepository.save(state);
+            }
           }
         } else { // This 'else' belongs to 'if (newTier != null)'
           log.warn(
@@ -183,6 +189,9 @@ public class TierRecalculationService implements RankingService {
           wrestlerData.getTier(),
           newTier);
       wrestlerData.setTier(newTier);
+      if (wrestlerData instanceof WrestlerState state) {
+        wrestlerStateRepository.save(state);
+      }
     }
   }
 

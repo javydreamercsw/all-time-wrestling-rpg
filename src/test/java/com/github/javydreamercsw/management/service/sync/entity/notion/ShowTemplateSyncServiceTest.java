@@ -51,6 +51,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
@@ -58,6 +60,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * dependencies.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Show Template Sync Service Unit Tests")
 @Slf4j
 class ShowTemplateSyncServiceTest {
@@ -110,9 +113,9 @@ class ShowTemplateSyncServiceTest {
         new ShowTemplateSyncService(
             objectMapper,
             syncServiceDependencies,
-            notionApiExecutor,
             showTemplateService,
-            showTypeRepository);
+            showTypeRepository,
+            notionApiExecutor);
 
     // Mock repository calls to simulate existing show types
 
@@ -531,14 +534,23 @@ class ShowTemplateSyncServiceTest {
   }
 
   private ShowTemplatePage createSimpleMockPage(String id, String name) {
-    ShowTemplatePage page = mock(ShowTemplatePage.class);
-    when(page.getId()).thenReturn(id);
+    ShowTemplatePage page = new ShowTemplatePage();
+    page.setId(id);
+    java.util.Map<String, Object> props = new java.util.HashMap<>();
+    props.put("Name", name);
+    page.setRawProperties(props);
     return page;
   }
 
   private ShowTemplatePage createMockPageWithShowType(String id, String name, String showType) {
-    ShowTemplatePage page = mock(ShowTemplatePage.class);
-    when(page.getId()).thenReturn(id);
+    ShowTemplatePage page = new ShowTemplatePage();
+    page.setId(id);
+    java.util.Map<String, Object> props = new java.util.HashMap<>();
+    props.put("Name", name);
+    if (showType != null) {
+      props.put("Show Type", showType);
+    }
+    page.setRawProperties(props);
     return page;
   }
 }

@@ -25,10 +25,11 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,8 +46,9 @@ class ChapterTriggerLogicTest {
 
   @Test
   void testFactionTrigger() {
-    // 1. Setup Mock State
-    Wrestler wrestler = mock(Wrestler.class);
+    // 1. Setup State
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
     Campaign campaign = mock(Campaign.class);
     when(campaign.getWrestler()).thenReturn(wrestler);
 
@@ -60,9 +62,18 @@ class ChapterTriggerLogicTest {
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
     assertThat(available).extracting(CampaignChapterDTO::getId).doesNotContain("gang_warfare");
 
-    // 3. Mock Faction Membership
+    // 3. Setup Faction Membership via state
     Faction faction = new Faction();
-    when(wrestler.getFaction()).thenReturn(faction);
+    faction.setId(10L);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+
+    WrestlerState wrestlerStateObj = new WrestlerState();
+    wrestlerStateObj.setWrestler(wrestler);
+    wrestlerStateObj.setUniverse(universe);
+    wrestlerStateObj.setFaction(faction);
+    wrestler.getWrestlerStates().add(wrestlerStateObj);
 
     // 4. Check again - should FIND Gang Warfare
     available = chapterService.findAvailableChapters(state);
@@ -71,8 +82,9 @@ class ChapterTriggerLogicTest {
 
   @Test
   void testChampionTrigger() {
-    // 1. Setup Mock State
-    Wrestler wrestler = mock(Wrestler.class);
+    // 1. Setup State
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
     Campaign campaign = mock(Campaign.class);
     when(campaign.getWrestler()).thenReturn(wrestler);
 
@@ -84,10 +96,10 @@ class ChapterTriggerLogicTest {
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
     assertThat(available).extracting(CampaignChapterDTO::getId).doesNotContain("fighting_champion");
 
-    // 3. Mock Champion Status
-    TitleReign reign = mock(TitleReign.class);
-    when(reign.isCurrentReign()).thenReturn(true);
-    when(wrestler.getReigns()).thenReturn(Collections.singletonList(reign));
+    // 3. Setup Champion Status
+    TitleReign reign = new TitleReign();
+    reign.setEndDate(null); // Mark as active
+    wrestler.getReigns().add(reign);
 
     // 4. Check again - should FIND Fighting Champion
     available = chapterService.findAvailableChapters(state);
@@ -96,8 +108,9 @@ class ChapterTriggerLogicTest {
 
   @Test
   void testAuthorityTrigger() {
-    // 1. Setup Mock State
-    Wrestler wrestler = mock(Wrestler.class);
+    // 1. Setup State
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
     Campaign campaign = mock(Campaign.class);
     when(campaign.getWrestler()).thenReturn(wrestler);
 

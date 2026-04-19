@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -40,7 +40,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-public abstract class BaseNotionSyncService<T extends AbstractEntity>
+public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
     implements NotionEntitySyncService {
 
   protected final JpaRepository<T, Long> repository;

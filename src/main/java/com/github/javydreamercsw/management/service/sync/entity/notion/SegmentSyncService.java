@@ -289,15 +289,18 @@ public class SegmentSyncService extends BaseSyncService {
         segment.setSummary(dto.getSummary());
         changed = true;
       }
-      if (!Objects.equals(segment.getSegmentOrder(), dto.getSegmentOrder())) {
+      if (dto.getSegmentOrder() != null
+          && !Objects.equals(segment.getSegmentOrder(), dto.getSegmentOrder())) {
         segment.setSegmentOrder(dto.getSegmentOrder());
         changed = true;
       }
-      if (!Objects.equals(segment.isMainEvent(), dto.getMainEvent())) {
+      if (dto.getMainEvent() != null
+          && !Objects.equals(segment.isMainEvent(), dto.getMainEvent())) {
         segment.setMainEvent(dto.getMainEvent());
         changed = true;
       }
-      if (!Objects.equals(segment.getIsTitleSegment(), dto.getIsTitleSegment())) {
+      if (dto.getIsTitleSegment() != null
+          && !Objects.equals(segment.getIsTitleSegment(), dto.getIsTitleSegment())) {
         segment.setIsTitleSegment(dto.getIsTitleSegment());
         changed = true;
       }
