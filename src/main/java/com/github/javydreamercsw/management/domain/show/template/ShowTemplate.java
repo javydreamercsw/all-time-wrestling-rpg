@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.template;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -49,7 +49,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "show_template", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class ShowTemplate extends AbstractEntity<Long> {
+public class ShowTemplate extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

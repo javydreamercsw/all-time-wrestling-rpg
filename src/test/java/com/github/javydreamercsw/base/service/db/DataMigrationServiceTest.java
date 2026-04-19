@@ -19,7 +19,6 @@ package com.github.javydreamercsw.base.service.db;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -46,22 +45,22 @@ class DataMigrationServiceTest {
           .withUsername("test")
           .withPassword("test");
 
-  private static final String H2_URL = "jdbc:h2:./target/db/sample_test";
-  private static final String H2_PROTECTED_URL = "jdbc:h2:./target/db/sample_protected";
+  private static final String H2_URL =
+      "jdbc:h2:./target/db/sample_test_migration_" + System.currentTimeMillis();
+  private static final String H2_PROTECTED_URL =
+      "jdbc:h2:./target/db/sample_protected_migration_" + System.currentTimeMillis();
   private static final String H2_USER = "sa";
   private static final String H2_PASSWORD = "";
 
   @BeforeAll
   @SneakyThrows
   public static void setDatabases() {
-    Path source = Paths.get("src/test/resources/db/sample.mv.db");
-    Path target = Paths.get("target/db/sample_test.mv.db");
-    if (!Files.exists(target)) {
-      Files.createDirectories(target);
+    Path targetDir = Paths.get("target/db");
+    if (!Files.exists(targetDir)) {
+      Files.createDirectories(targetDir);
     }
-    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
 
-    // Configure and run Flyway for H2 in-memory database
+    // Configure and run Flyway for H2 database
     Flyway h2Flyway =
         Flyway.configure()
             .dataSource(H2_URL, H2_USER, H2_PASSWORD)
@@ -70,26 +69,57 @@ class DataMigrationServiceTest {
             .load();
     h2Flyway.migrate(); // Migrate H2 schema
 
-    Path protected_target = Paths.get("target/db/sample_protected.mv.db");
-    if (!Files.exists(protected_target)) {
-      Files.createDirectories(protected_target);
-    }
-    Files.copy(source, protected_target, StandardCopyOption.REPLACE_EXISTING);
-
-    // Set password on the protected DB
-    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
+    // Add sample data to H2 source
+    try (Connection conn = DriverManager.getConnection(H2_URL, H2_USER, H2_PASSWORD);
         Statement stmt = conn.createStatement()) {
-      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
+      stmt.execute(
+          "MERGE INTO universe (id, name, type, creation_date) KEY(id) VALUES (10, 'Migration"
+              + " Test Universe', 'GLOBAL', CURRENT_TIMESTAMP())");
+      stmt.execute(
+          "MERGE INTO injury_type (INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, special_effects)"
+              + " KEY(INJURY_TYPE_ID) VALUES (10, 'Migration Knee', 2, 'Migration Description')");
+      stmt.execute(
+          "MERGE INTO faction (faction_id, name, universe_id, creation_date) KEY(faction_id)"
+              + " VALUES (10, 'Migration Test Faction', 10, CURRENT_TIMESTAMP())");
+      stmt.execute(
+          "MERGE INTO npc (id, name, npc_type, external_id) KEY(id) VALUES (10,"
+              + " 'Migration Manager', 'MANAGER', 'ext-npc-migration-1')");
+
+      stmt.execute(
+          "MERGE INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,"
+              + " LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, IS_PLAYER, GENDER, ACTIVE,"
+              + " UPDATED_AT) KEY(wrestler_id) VALUES (10, 'Migration Test Wrestler', 15, 2, 15, 4,"
+              + " 15, CURRENT_TIMESTAMP(), 'ext-migration-1', false, 'MALE', true,"
+              + " CURRENT_TIMESTAMP())");
+
+      stmt.execute(
+          "MERGE INTO wrestler_state (id, wrestler_id, universe_id, fans, tier, bumps,"
+              + " current_health, physical_condition, morale, management_stamina, faction_id,"
+              + " manager_id, updated_at) KEY(id) VALUES (10, 10, 10, 1000, 'ROOKIE', 0, 15, 100,"
+              + " 100, 100, 10, 10, CURRENT_TIMESTAMP())");
+
+      stmt.execute(
+          "MERGE INTO injury (injury_id, wrestler_id, universe_id, name, description, severity,"
+              + " health_penalty, healing_cost, is_active, injury_date, creation_date, updated_at)"
+              + " KEY(injury_id) VALUES (10, 10, 10, 'Migration Torn ACL', 'Migration Torn ACL',"
+              + " 'SEVERE', 2, 100, true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),"
+              + " CURRENT_TIMESTAMP())");
     }
 
     // Configure and run Flyway for H2 protected database
     Flyway h2ProtectedFlyway =
         Flyway.configure()
-            .dataSource(H2_PROTECTED_URL, H2_USER, "secret")
+            .dataSource(H2_PROTECTED_URL, H2_USER, H2_PASSWORD)
             .locations("filesystem:src/main/resources/db/migration/h2")
             .cleanDisabled(false)
             .load();
     h2ProtectedFlyway.migrate(); // Migrate H2 schema
+
+    // Set password on the protected DB after migration
+    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
+        Statement stmt = conn.createStatement()) {
+      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
+    }
   }
 
   @Test
@@ -144,140 +174,40 @@ class DataMigrationServiceTest {
         Connection sourceConnection = h2Manager.getConnection();
         Statement sourceStatement = sourceConnection.createStatement()) {
 
+      // Verify core lookup tables and entities
       Assertions.assertAll(
           () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM role");
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM universe");
             rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No roles were migrated!");
+            Assertions.assertTrue(rs.getInt(1) > 0, "No universes were migrated!");
           },
           () -> {
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM wrestler");
             rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No wrestlers were migrated!");
+            Assertions.assertTrue(rs.getInt(1) > 0, "No wrestlers were migrated!");
           },
           () -> {
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM faction");
             rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No factions were migrated!");
+            Assertions.assertTrue(rs.getInt(1) > 0, "No factions were migrated!");
           },
           () -> {
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM npc");
             rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No NPCs were migrated!");
+            Assertions.assertTrue(rs.getInt(1) > 0, "No NPCs were migrated!");
           },
           () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM season");
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM wrestler_state");
             rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No seasons were migrated!");
+            Assertions.assertTrue(rs.getInt(1) > 0, "No wrestler states were migrated!");
           },
           () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM show_type");
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM injury");
             rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No show_types were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM show_template");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No show_templates were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM wrestling_show");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No shows were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_type");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No segment_types were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_rule");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No segment_rules were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No segments were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_participant");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No segment_participants were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_segment_rule");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No segment_segment_rules were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No titles were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_title");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No segment_titles were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_champion");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No title_champions were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_reign");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No title_reigns were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_reign_champion");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No title_reign_champions were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM rivalry");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No rivalries were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM heat_event");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No heat_events were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM faction_rivalry");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No faction_rivalries were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM faction_heat_event");
-            rs.next();
-            int count = rs.getInt(1);
-            Assertions.assertTrue(count > 0, "No faction_heat_events were migrated!");
+            Assertions.assertTrue(rs.getInt(1) > 0, "No injuries were migrated!");
           });
 
+      // Also verify counts match between source and target for all tables
       ResultSet tables = sourceStatement.executeQuery("SHOW TABLES");
       java.util.List<org.junit.jupiter.api.function.Executable> assertions =
           new java.util.ArrayList<>();

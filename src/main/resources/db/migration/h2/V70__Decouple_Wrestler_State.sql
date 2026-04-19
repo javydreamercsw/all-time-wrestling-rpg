@@ -69,20 +69,7 @@ UPDATE drama_event SET universe_id = 1 WHERE universe_id IS NULL;
 UPDATE campaign SET universe_id = 1 WHERE universe_id IS NULL;
 UPDATE league SET universe_id = 1 WHERE universe_id IS NULL;
 
--- 6. Cleanup: Drop old indexes and columns from wrestler table
--- These have been moved to wrestler_state table
-DROP INDEX IF EXISTS idx_wrestler_tier;
-DROP INDEX IF EXISTS idx_wrestler_faction;
-DROP INDEX IF EXISTS idx_wrestler_availability;
-
--- Drop old columns from wrestler table (these have been moved to wrestler_state)
-ALTER TABLE wrestler DROP COLUMN IF EXISTS fans;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS tier;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS bumps;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS current_health;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS physical_condition;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS morale;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS management_stamina;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS faction_id;
-ALTER TABLE wrestler DROP COLUMN IF EXISTS manager_id;
-
+-- 6. Cleanup: Not needed for H2
+-- In H2 test databases, JPA/Hibernate manages the schema based on entity definitions
+-- The Wrestler entity no longer has these fields, so they won't be created in new databases
+-- For existing test databases, manually delete the sample.mv.db file to regenerate with new schema

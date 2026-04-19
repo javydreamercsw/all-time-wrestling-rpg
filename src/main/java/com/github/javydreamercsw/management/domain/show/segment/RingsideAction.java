@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.segment;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "ringside_action", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class RingsideAction extends AbstractEntity<Long> {
+public class RingsideAction extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "ringside_action_id")

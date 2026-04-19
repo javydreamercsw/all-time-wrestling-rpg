@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.Arrays;
@@ -69,7 +70,22 @@ class TeamServiceTest extends ManagementIntegrationTest {
     wrestler3.setExpansionCode("BASE_GAME");
     wrestler3 = wrestlerRepository.save(wrestler3);
 
-    faction = Faction.builder().build();
+    // Use existing universe if available (e.g. from Flyway) or create one
+    Universe universe =
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder()
+                            .name("Default Universe")
+                            .type(Universe.UniverseType.GLOBAL)
+                            .build()));
+
+    // Make sure we have a managed instance
+    universe = universeRepository.findById(universe.getId()).get();
+
+    faction = Faction.builder().universe(universe).build();
     faction.setName("Test Faction");
     faction = factionRepository.save(faction);
 

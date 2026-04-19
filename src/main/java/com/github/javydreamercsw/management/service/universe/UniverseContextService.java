@@ -38,7 +38,7 @@ public class UniverseContextService implements Serializable {
 
   private final UniverseRepository universeRepository;
   private static final String UNIVERSE_ID_SESSION_KEY = "currentUniverseId";
-  private static final ThreadLocal<Long> threadLocalUniverseId = new ThreadLocal<>();
+  private static final ThreadLocal<Long> threadLocalUniverseId = ThreadLocal.withInitial(() -> 1L);
 
   /**
    * Get the current universe.
@@ -46,25 +46,17 @@ public class UniverseContextService implements Serializable {
    * @return Optional of current universe
    */
   public Optional<Universe> getCurrentUniverse() {
-    Long id = getInternalUniverseId();
-    if (id == null) {
-      // Default to the first universe found if none selected
-      return universeRepository.findAll().stream()
-          .findFirst()
-          .map(
-              u -> {
-                setInternalUniverseId(u.getId());
-                return u;
-              });
-    }
-    return universeRepository.findById(id);
+    return universeRepository.findById(getCurrentUniverseId());
   }
 
   private Long getInternalUniverseId() {
     try {
       VaadinSession session = VaadinSession.getCurrent();
       if (session != null) {
-        return (Long) session.getAttribute(UNIVERSE_ID_SESSION_KEY);
+        Long id = (Long) session.getAttribute(UNIVERSE_ID_SESSION_KEY);
+        if (id != null) {
+          return id;
+        }
       }
     } catch (Exception e) {
       // Ignore session access errors in non-web contexts
@@ -91,7 +83,7 @@ public class UniverseContextService implements Serializable {
    * @return Current universe ID
    */
   public Long getCurrentUniverseId() {
-    return getCurrentUniverse().map(Universe::getId).orElse(1L);
+    return getInternalUniverseId();
   }
 
   /**
@@ -101,7 +93,7 @@ public class UniverseContextService implements Serializable {
    */
   public void setCurrentUniverse(Universe universe) {
     if (universe != null) {
-      setInternalUniverseId(universe.getId());
+      setCurrentUniverseId(universe.getId());
       log.info(
           "Current universe context set to: {} (ID: {})", universe.getName(), universe.getId());
     }

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.segment.rule;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -46,7 +46,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "segment_rule", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class SegmentRule extends AbstractEntity<Long> {
+public class SegmentRule extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "segment_rule_id")

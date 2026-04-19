@@ -197,11 +197,13 @@ public class DataMigrationService {
         migrateFactions(sourceConnection, targetConnection);
         migrateInjuryTypes(sourceConnection, targetConnection);
         migrateCardSets(sourceConnection, targetConnection);
+        migrateUniverse(sourceConnection, targetConnection);
 
         // Dependent tables
         migrateAccounts(sourceConnection, targetConnection);
         migrateAccountRoles(sourceConnection, targetConnection);
         migrateWrestlers(sourceConnection, targetConnection);
+        migrateWrestlerStates(sourceConnection, targetConnection);
         migrateInjuries(sourceConnection, targetConnection);
         migrateTeams(sourceConnection, targetConnection);
         migrateCards(sourceConnection, targetConnection);
@@ -1454,14 +1456,15 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         "INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, "
-            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, "
+            + "AFFINITY, UNIVERSE_ID) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, FORMED_DATE,"
-                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY FROM"
-                    + " faction");
+                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY, "
+                    + " UNIVERSE_ID FROM faction");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1485,6 +1488,11 @@ public class DataMigrationService {
           targetStatement.setObject(10, null);
         }
         targetStatement.setInt(11, resultSet.getInt("AFFINITY"));
+        if (resultSet.getObject("UNIVERSE_ID") != null) {
+          targetStatement.setLong(12, resultSet.getLong("UNIVERSE_ID"));
+        } else {
+          targetStatement.setObject(12, null);
+        }
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1504,16 +1512,16 @@ public class DataMigrationService {
     String sql =
         "INSERT INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, "
             + "STARTING_HEALTH, LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, "
-            + "FANS, TIER, BUMPS, CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID, "
-            + "IMAGE_URL, ACTIVE, ACCOUNT_ID, MANAGER_ID, LAST_SYNC) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "IS_PLAYER, GENDER, DESCRIPTION, "
+            + "IMAGE_URL, ACTIVE, ACCOUNT_ID, LAST_SYNC, UPDATED_AT) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,"
-                    + " LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, FANS, TIER, BUMPS,"
-                    + " CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID, IMAGE_URL,"
-                    + " ACTIVE, ACCOUNT_ID, MANAGER_ID, LAST_SYNC FROM wrestler");
+                    + " LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, "
+                    + " IS_PLAYER, GENDER, DESCRIPTION, IMAGE_URL,"
+                    + " ACTIVE, ACCOUNT_ID, LAST_SYNC, UPDATED_AT FROM wrestler");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1527,39 +1535,18 @@ public class DataMigrationService {
         targetStatement.setInt(7, resultSet.getInt("DECK_SIZE"));
         targetStatement.setTimestamp(8, resultSet.getTimestamp("CREATION_DATE"));
         targetStatement.setString(9, resultSet.getString("EXTERNAL_ID"));
-        targetStatement.setLong(10, resultSet.getLong("FANS"));
-        targetStatement.setString(11, resultSet.getString("TIER"));
-        if (resultSet.getObject("BUMPS") != null) {
-          targetStatement.setInt(12, resultSet.getInt("BUMPS"));
-        } else {
-          targetStatement.setObject(12, null);
-        }
-        if (resultSet.getObject("CURRENT_HEALTH") != null) {
-          targetStatement.setInt(13, resultSet.getInt("CURRENT_HEALTH"));
-        } else {
-          targetStatement.setObject(13, null);
-        }
-        targetStatement.setBoolean(14, resultSet.getBoolean("IS_PLAYER"));
-        targetStatement.setString(15, resultSet.getString("GENDER"));
-        targetStatement.setString(16, resultSet.getString("DESCRIPTION"));
-        if (resultSet.getObject("FACTION_ID") != null) {
-          targetStatement.setLong(17, resultSet.getLong("FACTION_ID"));
-        } else {
-          targetStatement.setObject(17, null);
-        }
-        targetStatement.setString(18, resultSet.getString("IMAGE_URL"));
-        targetStatement.setBoolean(19, resultSet.getBoolean("ACTIVE"));
+        targetStatement.setBoolean(10, resultSet.getBoolean("IS_PLAYER"));
+        targetStatement.setString(11, resultSet.getString("GENDER"));
+        targetStatement.setString(12, resultSet.getString("DESCRIPTION"));
+        targetStatement.setString(13, resultSet.getString("IMAGE_URL"));
+        targetStatement.setBoolean(14, resultSet.getBoolean("ACTIVE"));
         if (resultSet.getObject("ACCOUNT_ID") != null) {
-          targetStatement.setLong(20, resultSet.getLong("ACCOUNT_ID"));
+          targetStatement.setLong(15, resultSet.getLong("ACCOUNT_ID"));
         } else {
-          targetStatement.setObject(20, null);
+          targetStatement.setObject(15, null);
         }
-        if (resultSet.getObject("MANAGER_ID") != null) {
-          targetStatement.setLong(21, resultSet.getLong("MANAGER_ID"));
-        } else {
-          targetStatement.setObject(21, null);
-        }
-        targetStatement.setTimestamp(22, resultSet.getTimestamp("LAST_SYNC"));
+        targetStatement.setTimestamp(16, resultSet.getTimestamp("LAST_SYNC"));
+        targetStatement.setTimestamp(17, resultSet.getTimestamp("UPDATED_AT"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1569,6 +1556,73 @@ public class DataMigrationService {
       if (count > 0) {
         targetStatement.executeBatch();
         log.debug("Migrated {} Wrestlers", count);
+      }
+    }
+  }
+
+  private void migrateUniverse(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql = "INSERT INTO universe (id, name, type, creation_date) VALUES (?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet = sourceStatement.executeQuery("SELECT * FROM universe");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("id"));
+        targetStatement.setString(2, resultSet.getString("name"));
+        targetStatement.setString(3, resultSet.getString("type"));
+        targetStatement.setTimestamp(4, resultSet.getTimestamp("creation_date"));
+        targetStatement.addBatch();
+        count++;
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Universes", count);
+      }
+    }
+  }
+
+  private void migrateWrestlerStates(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql =
+        "INSERT INTO wrestler_state (id, wrestler_id, universe_id, fans, tier, bumps,"
+            + " current_health, physical_condition, morale, management_stamina, faction_id,"
+            + " manager_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet = sourceStatement.executeQuery("SELECT * FROM wrestler_state");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("id"));
+        targetStatement.setLong(2, resultSet.getLong("wrestler_id"));
+        targetStatement.setLong(3, resultSet.getLong("universe_id"));
+        targetStatement.setLong(4, resultSet.getLong("fans"));
+        targetStatement.setString(5, resultSet.getString("tier"));
+        targetStatement.setInt(6, resultSet.getInt("bumps"));
+        targetStatement.setInt(7, resultSet.getInt("current_health"));
+        targetStatement.setInt(8, resultSet.getInt("physical_condition"));
+        targetStatement.setInt(9, resultSet.getInt("morale"));
+        targetStatement.setInt(10, resultSet.getInt("management_stamina"));
+        if (resultSet.getObject("faction_id") != null) {
+          targetStatement.setLong(11, resultSet.getLong("faction_id"));
+        } else {
+          targetStatement.setObject(11, null);
+        }
+        if (resultSet.getObject("manager_id") != null) {
+          targetStatement.setLong(12, resultSet.getLong("manager_id"));
+        } else {
+          targetStatement.setObject(12, null);
+        }
+        targetStatement.addBatch();
+        count++;
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Wrestler States", count);
       }
     }
   }
@@ -1627,14 +1681,14 @@ public class DataMigrationService {
     String sql =
         "INSERT INTO injury (INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, "
             + "HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, "
-            + "INJURY_NOTES, CREATION_DATE, EXTERNAL_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "INJURY_NOTES, CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, HEALTH_PENALTY,"
                     + " IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,"
-                    + " CREATION_DATE, EXTERNAL_ID FROM injury");
+                    + " CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID FROM injury");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1652,6 +1706,11 @@ public class DataMigrationService {
         targetStatement.setString(11, resultSet.getString("INJURY_NOTES"));
         targetStatement.setTimestamp(12, resultSet.getTimestamp("CREATION_DATE"));
         targetStatement.setString(13, resultSet.getString("EXTERNAL_ID"));
+        if (resultSet.getObject("UNIVERSE_ID") != null) {
+          targetStatement.setLong(14, resultSet.getLong("UNIVERSE_ID"));
+        } else {
+          targetStatement.setObject(14, null);
+        }
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "title_reign")
 @Getter
 @Setter
-public class TitleReign extends AbstractEntity<Long> {
+public class TitleReign extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "title_reign_id")

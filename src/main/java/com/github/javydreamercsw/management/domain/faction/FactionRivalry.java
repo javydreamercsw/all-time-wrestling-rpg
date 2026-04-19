@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.faction;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
     uniqueConstraints = @UniqueConstraint(columnNames = {"faction1_id", "faction2_id"}))
 @Getter
 @Setter
-public class FactionRivalry extends AbstractEntity<Long> {
+public class FactionRivalry extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "faction_rivalry_id")

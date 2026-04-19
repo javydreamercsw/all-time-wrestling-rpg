@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -101,6 +102,10 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             factionRepository,
             npcRepository,
             injuryRepository);
+
+    lenient()
+        .when(wrestlerService.getOrCreateState(any(), anyLong()))
+        .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
   }
 
   @Test

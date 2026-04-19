@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.injury;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -34,7 +34,7 @@ import lombok.Setter;
 @Table(name = "injury_type")
 @Getter
 @Setter
-public class InjuryType extends AbstractEntity<Long> {
+public class InjuryType extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

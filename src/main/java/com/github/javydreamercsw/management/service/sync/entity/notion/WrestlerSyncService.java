@@ -439,12 +439,7 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       if (changed) {
-        Wrestler savedWrestler;
-        if (isNewWrestler) {
-          savedWrestler = wrestlerRepository.save(wrestler);
-        } else {
-          savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-        }
+        Wrestler savedWrestler = wrestlerService.save(wrestler);
 
         // Update Universe State (Default to Universe ID 1)
         Long universeId = 1L;

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,7 +63,13 @@ class ChapterTriggerLogicTest {
 
     // 3. Mock Faction Membership
     Faction faction = new Faction();
-    when(wrestler.getFaction()).thenReturn(faction);
+    // Decoupled state logic: Wrestler gets faction from WrestlerState
+    WrestlerState wrestlerStateObj = new WrestlerState();
+    wrestlerStateObj.setWrestler(wrestler);
+    wrestlerStateObj.setFaction(faction);
+    when(wrestler.getWrestlerStates())
+        .thenReturn(java.util.Collections.singletonList(wrestlerStateObj));
+    when(wrestler.getFaction()).thenCallRealMethod();
 
     // 4. Check again - should FIND Gang Warfare
     available = chapterService.findAvailableChapters(state);
@@ -87,6 +94,7 @@ class ChapterTriggerLogicTest {
     // 3. Mock Champion Status
     TitleReign reign = mock(TitleReign.class);
     when(reign.isCurrentReign()).thenReturn(true);
+    // Decoupled state logic: Wrestler gets reigns directly
     when(wrestler.getReigns()).thenReturn(Collections.singletonList(reign));
 
     // 4. Check again - should FIND Fighting Champion

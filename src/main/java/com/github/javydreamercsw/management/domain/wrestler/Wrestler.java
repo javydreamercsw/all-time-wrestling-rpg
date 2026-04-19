@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -52,7 +52,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
+public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerData {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "wrestler_id")
@@ -322,6 +322,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Override
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Long getFans() {
     return getDefaultState().map(WrestlerState::getFans).orElse(0L);
   }
@@ -329,89 +330,105 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Override
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public WrestlerTier getTier() {
     return getDefaultState().map(WrestlerState::getTier).orElse(WrestlerTier.ROOKIE);
   }
 
   @Override
   @Deprecated
+  @jakarta.persistence.Transient
   public void setTier(WrestlerTier tier) {
     getDefaultState().ifPresent(s -> s.setTier(tier));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Integer getBumps() {
     return getDefaultState().map(WrestlerState::getBumps).orElse(0);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setBumps(Integer bumps) {
     getDefaultState().ifPresent(s -> s.setBumps(bumps));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Faction getFaction() {
     return getDefaultState().map(WrestlerState::getFaction).orElse(null);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setFaction(Faction faction) {
     getDefaultState().ifPresent(s -> s.setFaction(faction));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Npc getManager() {
     return getDefaultState().map(WrestlerState::getManager).orElse(null);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setManager(Npc manager) {
     getDefaultState().ifPresent(s -> s.setManager(manager));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Integer getPhysicalCondition() {
     return getDefaultState().map(WrestlerState::getPhysicalCondition).orElse(100);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setPhysicalCondition(Integer physicalCondition) {
     getDefaultState().ifPresent(s -> s.setPhysicalCondition(physicalCondition));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Integer getCurrentHealth() {
     return getDefaultState().map(WrestlerState::getCurrentHealth).orElse(startingHealth);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setCurrentHealth(Integer currentHealth) {
     getDefaultState().ifPresent(s -> s.setCurrentHealth(currentHealth));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Integer getMorale() {
     return getDefaultState().map(WrestlerState::getMorale).orElse(100);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setMorale(Integer morale) {
     getDefaultState().ifPresent(s -> s.setMorale(morale));
   }
 
   @JsonIgnore
   @Deprecated
+  @jakarta.persistence.Transient
   public Integer getManagementStamina() {
     return getDefaultState().map(WrestlerState::getManagementStamina).orElse(100);
   }
 
   @Deprecated
+  @jakarta.persistence.Transient
   public void setManagementStamina(Integer managementStamina) {
     getDefaultState().ifPresent(s -> s.setManagementStamina(managementStamina));
   }

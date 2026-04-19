@@ -162,6 +162,17 @@ public abstract class AbstractSyncTest {
 
     lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
 
+    lenient()
+        .when(
+            wrestlerRepository.save(
+                any(com.github.javydreamercsw.management.domain.wrestler.Wrestler.class)))
+        .thenAnswer(i -> i.getArgument(0));
+    lenient()
+        .when(
+            wrestlerRepository.saveAndFlush(
+                any(com.github.javydreamercsw.management.domain.wrestler.Wrestler.class)))
+        .thenAnswer(i -> i.getArgument(0));
+
     syncServiceDependencies =
         new SyncServiceDependencies(
             progressTracker,
