@@ -81,6 +81,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
+  @org.springframework.transaction.annotation.Transactional
   void setUp() {
     clearAllRepositories();
     wrestlerPage = Mockito.mock(WrestlerPage.class);

@@ -54,6 +54,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   private Faction testFaction;
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
+  private Long universeId;
 
   @BeforeEach
   public void setUp() throws Exception {
@@ -71,14 +72,17 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     testWrestler2 = wrestlerService.save(testWrestler2);
 
     // Create test faction
-    Universe universe = universeRepository.findById(1L).orElseThrow();
+    Universe universe = universeRepository.findAll().stream().findFirst().orElseThrow();
+    universeId = universe.getId();
     testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");
     testFaction.setDescription("Test faction description");
     testFaction.setLeader(testWrestler1);
     testFaction.setUniverse(universe);
-    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler1.getId(), 1L));
-    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler2.getId(), 1L));
+    // Save first so the faction has an ID before being referenced by WrestlerState
+    testFaction = factionService.save(testFaction);
+    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler1.getId(), universeId));
+    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler2.getId(), universeId));
     testFaction = factionService.save(testFaction);
   }
 
@@ -91,7 +95,8 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     extremeWrestler = wrestlerService.save(extremeWrestler);
 
     Optional<Faction> extremeFactionOpt =
-        factionService.createFaction("Extreme Faction", "Desc", extremeWrestler.getId(), 1L);
+        factionService.createFaction(
+            "Extreme Faction", "Desc", extremeWrestler.getId(), universeId);
     assertTrue(extremeFactionOpt.isPresent());
 
     // Case 1: Both expansions enabled
@@ -118,7 +123,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // When
     Optional<Faction> result =
         factionService.createFaction(
-            "The New Faction", "A newly created faction", wrestler3.getId(), 1L);
+            "The New Faction", "A newly created faction", wrestler3.getId(), universeId);
 
     // Then
     assertThat(result).isPresent();
@@ -144,7 +149,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
             "Test Faction", // Duplicate name
             "Another description",
             testWrestler1.getId(),
-            1L);
+            universeId);
 
     // Then
     assertThat(result).isEmpty();
@@ -211,6 +216,8 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   void shouldAddMemberToFaction() {
     // Given - testFaction already exists from setUp()
     Wrestler newMember = wrestlerService.createWrestler("New Member", true, null);
+    // Ensure WrestlerState exists in the universe so addMemberToFaction can find it
+    wrestlerService.getOrCreateState(newMember.getId(), universeId);
 
     // When
     assertNotNull(testFaction.getId());
@@ -233,7 +240,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   void shouldRemoveMemberFromFaction() {
     // Given - testFaction already exists from setUp() with testWrestler2 as member
     // Ensure testWrestler2 is a member
-    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler2.getId(), 1L));
+    testFaction.addMember(wrestlerService.getOrCreateState(testWrestler2.getId(), universeId));
     factionService.save(testFaction);
 
     // When
@@ -259,7 +266,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // Given - testFaction already exists from setUp()
 
     // When
-    List<Faction> factions = factionService.findAllByUniverse(1L);
+    List<Faction> factions = factionService.findAllByUniverse(universeId);
 
     // Then
     assertThat(factions).isNotEmpty();

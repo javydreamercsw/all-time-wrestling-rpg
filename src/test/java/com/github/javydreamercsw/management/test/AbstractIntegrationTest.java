@@ -165,7 +165,7 @@ public abstract class AbstractIntegrationTest {
     // Make sure we have a managed instance
     universe = universeRepository.findById(universe.getId()).get();
 
-    return TestUtils.createWrestler(name, 0L, universe);
+    return wrestlerRepository.saveAndFlush(TestUtils.createWrestler(name, 0L, universe));
   }
 
   protected Account createTestAccount(@NonNull String username, @NonNull RoleName roleName) {

@@ -152,8 +152,8 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     Grid<Show> grid = showListView.showGrid;
 
     // Test the part name generator
-    assertEquals("ple-show", grid.getPartNameGenerator().apply(otherShow));
-    assertNull(grid.getPartNameGenerator().apply(pleShow));
+    assertEquals("ple-show", grid.getPartNameGenerator().apply(pleShow));
+    assertNull(grid.getPartNameGenerator().apply(otherShow));
     assertNull(grid.getPartNameGenerator().apply(weeklyShow));
 
     // Test the type column renderer

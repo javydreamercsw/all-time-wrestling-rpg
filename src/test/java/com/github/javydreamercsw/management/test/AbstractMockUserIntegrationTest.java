@@ -41,6 +41,9 @@ public abstract class AbstractMockUserIntegrationTest extends AbstractIntegratio
 
   @BeforeEach
   public void defaultLogin() {
+    // Ensure base data (universe, segment types, etc.) exists before each test
+    dataInitializer.init();
+
     // Provide a default admin context if none was provided by annotations
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       accountRepository.findByUsername("admin").ifPresent(this::login);

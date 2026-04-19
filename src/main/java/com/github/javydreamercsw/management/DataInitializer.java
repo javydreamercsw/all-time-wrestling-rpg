@@ -813,8 +813,12 @@ public class DataInitializer implements Initializable {
                 existingWrestler.setDescription(w.getDescription());
                 existingWrestler.setGender(w.getGender());
 
-                // Default to Global Universe (League ID 1)
-                Long leagueId = 1L;
+                // Default to Global Universe (first available)
+                Long leagueId =
+                    universeRepository.findAll().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("No universe found"))
+                        .getId();
                 WrestlerState state =
                     wrestlerService.getOrCreateState(existingWrestler.getId(), leagueId);
 
@@ -918,8 +922,12 @@ public class DataInitializer implements Initializable {
 
                 Wrestler savedWrestler = wrestlerRepository.save(newWrestler);
 
-                // Default to Global Universe (League ID 1)
-                Long leagueId = 1L;
+                // Default to Global Universe (first available)
+                Long leagueId =
+                    universeRepository.findAll().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("No universe found"))
+                        .getId();
                 WrestlerState state =
                     wrestlerService.getOrCreateState(savedWrestler.getId(), leagueId);
                 state.setFans(w.getFans() != null ? w.getFans() : 0L);

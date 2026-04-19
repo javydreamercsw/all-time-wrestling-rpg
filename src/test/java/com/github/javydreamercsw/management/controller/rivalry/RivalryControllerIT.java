@@ -73,10 +73,9 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     wrestlerRepository.deleteAll();
 
     // Ensure default universe exists
-    if (universeRepository.findById(1L).isEmpty()) {
+    if (universeRepository.findAll().isEmpty()) {
       com.github.javydreamercsw.management.domain.universe.Universe universe =
           com.github.javydreamercsw.management.domain.universe.Universe.builder()
-              .id(1L)
               .name("Default Universe")
               .type(
                   com.github.javydreamercsw.management.domain.universe.Universe.UniverseType.GLOBAL)
@@ -290,7 +289,7 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     Wrestler savedWrestler = wrestlerRepository.save(wrestler);
 
     com.github.javydreamercsw.management.domain.universe.Universe universe =
-        universeRepository.findById(1L).get();
+        universeRepository.findAll().stream().findFirst().get();
     com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
         com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
             .wrestler(savedWrestler)

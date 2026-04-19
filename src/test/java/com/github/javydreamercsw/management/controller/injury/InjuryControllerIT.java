@@ -36,7 +36,6 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,7 +46,6 @@ import org.springframework.web.context.WebApplicationContext;
  * Integration tests for InjuryController. Tests the complete REST API functionality for injury
  * management.
  */
-@SpringBootTest
 @WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 @DisplayName("InjuryController Integration Tests")
 class InjuryControllerIT extends AbstractIntegrationTest {
@@ -65,7 +63,6 @@ class InjuryControllerIT extends AbstractIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
 
     // Delete in correct order to avoid foreign key constraint violations
     injuryRepository.deleteAll();
@@ -75,6 +72,8 @@ class InjuryControllerIT extends AbstractIntegrationTest {
     universeRepository.deleteAll();
 
     defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
+
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 
   @org.junit.jupiter.api.Test

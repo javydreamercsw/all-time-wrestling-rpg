@@ -99,6 +99,9 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     // Clean up database and re-initialize default accounts
     databaseCleaner.clearRepositories();
 
+    // Re-initialize base data (universe, segment types, etc.) so IDs are always valid
+    dataInitializer.init();
+
     // Refresh security context to ensure the principal has persistent entities
     refreshSecurityContext();
 
