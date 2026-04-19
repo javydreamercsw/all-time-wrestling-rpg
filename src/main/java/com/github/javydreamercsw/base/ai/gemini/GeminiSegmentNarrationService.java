@@ -236,7 +236,10 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
         List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
 
         if (parts != null && !parts.isEmpty()) {
-          return (String) parts.get(0).get("text");
+          return parts.stream()
+              .map(part -> (String) part.get("text"))
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.joining(""));
         }
       }
 

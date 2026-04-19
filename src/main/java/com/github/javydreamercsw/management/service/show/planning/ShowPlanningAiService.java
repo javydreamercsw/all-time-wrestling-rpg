@@ -68,10 +68,12 @@ public class ShowPlanningAiService {
       // Attempt to extract JSON array from the response, as AI might include conversational text
       String jsonString = extractJsonArray(aiResponse);
       if (jsonString == null) {
-        log.error("Could not extract JSON array from AI response: {}", aiResponse);
-        throw new ShowPlanningException(
-            "Could not extract JSON array from AI response: " + aiResponse);
+        log.error("Could not extract JSON array from AI response. Length: {}", aiResponse.length());
+        log.debug("Raw response: {}", aiResponse);
+        throw new ShowPlanningException("Could not extract JSON array from AI response");
       }
+
+      log.debug("Extracted JSON (length {}): {}", jsonString.length(), jsonString);
 
       List<AiGeneratedSegmentDTO> aiSegments =
           objectMapper.readValue(
@@ -79,6 +81,7 @@ public class ShowPlanningAiService {
               objectMapper
                   .getTypeFactory()
                   .constructCollectionType(List.class, AiGeneratedSegmentDTO.class));
+      log.info("Successfully parsed {} segments from AI response", aiSegments.size());
 
       List<ProposedSegment> proposedSegments =
           aiSegments.stream()
@@ -97,7 +100,10 @@ public class ShowPlanningAiService {
       proposedShow.setSegments(proposedSegments);
       return proposedShow;
     } catch (JsonProcessingException e) {
-      log.error("Failed to parse AI response into ProposedShow object: {}", aiResponse, e);
+      log.error(
+          "Failed to parse AI response into ProposedShow object. AI Response length: {}",
+          aiResponse.length(),
+          e);
       throw new ShowPlanningException("Failed to parse AI response", e);
     } catch (Exception e) {
       log.error("An unexpected error occurred during show planning: {}", e.getMessage(), e);
@@ -374,7 +380,10 @@ public class ShowPlanningAiService {
         .append(" promos for the show. Each segment")
         .append(
             " should adhere to the provided schema. Ensure the segments flow logically and build")
-        .append(" towards a compelling narrative. IMPORTANT: The 'participants' field MUST be")
+        .append(
+            " towards a compelling narrative. **Be concise with descriptions and outcomes to"
+                + " ensure the entire JSON array fits in the response.**\n\n")
+        .append("IMPORTANT: The 'participants' field MUST be")
         .append(
             " populated with relevant wrestler names from the provided context. The response MUST")
         .append(
@@ -396,12 +405,29 @@ public class ShowPlanningAiService {
       return null;
     }
 
-    // Search for the array start and end
-    int startIndex = input.indexOf('[');
-    int endIndex = input.lastIndexOf(']');
+    String cleaned = input.trim();
+
+    // Remove markdown code blocks if present
+    if (cleaned.startsWith("```")) {
+      // Find the first newline or the end of the first line
+      int firstNewline = cleaned.indexOf('\n');
+      if (firstNewline != -1) {
+        cleaned = cleaned.substring(firstNewline).trim();
+      } else {
+        cleaned = cleaned.substring(3).trim();
+      }
+
+      if (cleaned.endsWith("```")) {
+        cleaned = cleaned.substring(0, cleaned.length() - 3).trim();
+      }
+    }
+
+    // Search for the array start and end in the cleaned string
+    int startIndex = cleaned.indexOf('[');
+    int endIndex = cleaned.lastIndexOf(']');
 
     if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-      return input.substring(startIndex, endIndex + 1);
+      return cleaned.substring(startIndex, endIndex + 1);
     }
 
     return null;
