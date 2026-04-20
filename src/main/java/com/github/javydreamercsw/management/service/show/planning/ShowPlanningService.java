@@ -157,8 +157,20 @@ public class ShowPlanningService {
     // Get championships
     List<ShowPlanningChampionship> championships = new ArrayList<>();
     List<Title> activeTitles = titleService.getActiveTitles();
-    log.info("Found {} active titles", activeTitles.size());
+
+    Gender genderConstraint =
+        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+
+    log.info(
+        "Found {} active titles, filtering by gender: {}", activeTitles.size(), genderConstraint);
     for (Title title : activeTitles) {
+      // Skip titles that don't match the gender constraint
+      if (genderConstraint != null
+          && title.getGender() != null
+          && title.getGender() != genderConstraint) {
+        continue;
+      }
+
       ShowPlanningChampionship championship = new ShowPlanningChampionship();
       championship.setTitle(title);
       if (!title.getCurrentChampions().isEmpty()) {
@@ -197,21 +209,26 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    Gender genderConstraint =
-        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
-
     List<Wrestler> allWrestlers = wrestlerService.findAllFiltered(null, genderConstraint, null);
 
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
-    // Build wrestler heat map based on rivalries
-    List<ShowPlanningWrestlerHeat> wrestlerHeats = buildWrestlerHeats(allWrestlers);
+    // Build wrestler heat map based on rivalries, also applying gender constraint to opponents
+    List<ShowPlanningWrestlerHeat> wrestlerHeats =
+        buildWrestlerHeats(allWrestlers, genderConstraint);
     context.setWrestlerHeats(wrestlerHeats);
 
-    // Get all factions
-    List<Faction> allFactions = factionService.findAll();
-    log.debug("Found {} factions", allFactions.size());
+    // Get all factions, filtered by gender constraint
+    List<Faction> allFactions =
+        factionService.findAll().stream()
+            .filter(
+                faction ->
+                    genderConstraint == null
+                        || faction.getMembers().stream()
+                            .anyMatch(m -> m.getGender() == genderConstraint))
+            .collect(Collectors.toList());
+    log.debug("Found {} factions after filtering", allFactions.size());
     context.setFactions(allFactions);
 
     // Get next PLE
@@ -311,13 +328,21 @@ public class ShowPlanningService {
    * Builds wrestler heat information based on their active rivalries. For each wrestler, this
    * creates entries for each opponent they're feuding with and the heat level of that feud.
    */
-  private List<ShowPlanningWrestlerHeat> buildWrestlerHeats(@NonNull List<Wrestler> wrestlers) {
+  private List<ShowPlanningWrestlerHeat> buildWrestlerHeats(
+      @NonNull List<Wrestler> wrestlers, Gender genderConstraint) {
     List<ShowPlanningWrestlerHeat> wrestlerHeats = new ArrayList<>();
 
     for (Wrestler wrestler : wrestlers) {
       List<Rivalry> rivalries = rivalryService.getRivalriesForWrestler(wrestler.getId());
       for (Rivalry rivalry : rivalries) {
         Wrestler opponent = rivalry.getOpponent(wrestler);
+
+        // Skip opponents that don't match the gender constraint (avoiding cross-gender heat context
+        // for gender-locked shows)
+        if (genderConstraint != null && opponent.getGender() != genderConstraint) {
+          continue;
+        }
+
         ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
         heat.setWrestlerName(wrestler.getName());
         heat.setOpponentName(opponent.getName());

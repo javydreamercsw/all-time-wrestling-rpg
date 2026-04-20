@@ -2,6 +2,14 @@
 
 Welcome to the Admin guide. This documentation is automatically generated from the latest game features.
 
+## Wrestler Relationships Management
+
+Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.
+
+![Wrestler Relationships Management](/screenshots/admin-wrestler-relationships.png)
+
+---
+
 ## Generate Template Art
 
 Create unique branding for your show templates using AI. This art will be used in the booking interface and calendar.
@@ -95,6 +103,14 @@ Define different types of injuries, their severity, and recovery times. These ar
 Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images, and manage contract details from this centralized view.
 
 ![Wrestler Management](/screenshots/admin-wrestler-list.png)
+
+---
+
+## Expansion Management
+
+Group and toggle themed content sets. Enable or disable entire collections of wrestlers, teams, and factions to customize the available roster for matches and leagues.
+
+![Expansion Management](/screenshots/admin-expansion-management.png)
 
 ---
 
