@@ -1,6 +1,19 @@
 # Changelog
 
-## [v1.7.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.0) (2026-04-17)
+## [v1.7.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.1) (2026-04-20)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.0...v1.7.1)
+
+**Fixed bugs:**
+
+- Release 1.7.1 [\#253](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/253) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- ci: Fix documentation site styling and automate release merge [\#251](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/251) ([javydreamercsw](https://github.com/javydreamercsw))
+- Release 1.7.0 [\#250](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/250) ([javydreamercsw](https://github.com/javydreamercsw))
+
+## [v1.7.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.0) (2026-04-16)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.6.0...v1.7.0)
 
