@@ -16,183 +16,99 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.security.CustomUserDetails;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
-import com.github.mvysny.kaributesting.v10.MockVaadin;
-import com.github.mvysny.kaributesting.v10.Routes;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 
+/**
+ * Enhanced integration test base class for management-related tests. Provides automatic database
+ * reset and base data initialization before each test.
+ */
 @Slf4j
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
-
-  static {
-    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
-  }
-
-  @Autowired protected FactionRivalryRepository factionRivalryRepository;
-  @Autowired protected RivalryRepository rivalryRepository;
-  @Autowired protected SegmentRepository segmentRepository;
-  @Autowired protected SeasonRepository seasonRepository;
-  @Autowired protected SegmentRuleService segmentRuleService;
-  @Autowired protected ShowTypeService showTypeService;
-  @Autowired protected ShowTypeRepository showTypeRepository;
-  @Autowired protected ShowTemplateRepository showTemplateRepository;
-  @Autowired protected ShowRepository showRepository;
-  @Autowired protected SegmentTypeService segmentTypeService;
-  @Autowired protected ShowTemplateService showTemplateService;
-  @Autowired protected WrestlerService wrestlerService;
-  @Autowired protected NotionSyncService notionSyncService;
-  @Autowired protected FactionRepository factionRepository;
-  @Autowired protected TitleReignRepository titleReignRepository;
-  @Autowired protected TitleRepository titleRepository;
-  @Autowired protected TeamService teamService;
-  @Autowired protected TeamRepository teamRepository;
-  @Autowired protected ShowService showService;
-  @Autowired protected DeckRepository deckRepository;
-  @Autowired protected SegmentTypeRepository segmentTypeRepository;
-  @Autowired protected DatabaseCleanup databaseCleaner;
-
-  @Autowired
-  @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
-
-  protected static Routes routes;
-  private AutoCloseable mocks;
-
-  @BeforeAll
-  public static void setupRoutes() {
-    routes = new Routes().autoDiscoverViews("com.github.javydreamercsw");
-  }
+  @Autowired protected CacheManager cacheManager;
 
   @BeforeEach
   public void prepareTestEnvironment() {
-    // Clean up database and re-initialize default accounts
-    databaseCleaner.clearRepositories();
+    log.info("Resetting database for test: {}", this.getClass().getSimpleName());
 
     // Re-initialize base data (universe, segment types, etc.) so IDs are always valid
-    dataInitializer.init();
+    // Run as admin to avoid AccessDeniedException in security tests
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    try {
+      SecurityContextHolder.getContext()
+          .setAuthentication(
+              new UsernamePasswordAuthenticationToken(
+                  "system",
+                  "system",
+                  java.util.List.of(
+                      new SimpleGrantedAuthority("ROLE_ADMIN"),
+                      new SimpleGrantedAuthority("ADMIN"),
+                      new SimpleGrantedAuthority("BOOKER"))));
+      dataInitializer.init();
+    } finally {
+      SecurityContextHolder.getContext().setAuthentication(originalAuth);
+    }
 
     // Refresh security context to ensure the principal has persistent entities
     refreshSecurityContext();
 
     // If no authentication was established (e.g. first run with empty DB or not using
-    // @WithCustomMockUser), default to admin
+    // @WithMockUser), log in as the default admin
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      log.info("No authentication found after cleanup. logging in as 'admin'.");
-      loginAs("admin");
-    }
-
-    if (SecurityContextHolder.getContext().getAuthentication() != null) {
-      log.info(
-          "Security context established for: {}",
-          SecurityContextHolder.getContext().getAuthentication().getName());
-    } else {
-      log.warn(
-          "Failed to establish security context for test: {}", this.getClass().getSimpleName());
+      log.info("No security context found, logging in as default admin...");
+      accountRepository.findByUsername("admin").ifPresent(this::login);
     }
   }
 
-  @BeforeEach
-  public void setupKaribu() {
-    mocks = MockitoAnnotations.openMocks(this);
-
-    // Only setup MockVaadin for UI view tests to avoid interfering with service-layer security
-    String packageName = this.getClass().getPackageName();
-    if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
-      MockVaadin.setup(routes);
-    }
-  }
-
-  @AfterEach
-  public void tearDown() throws Exception {
-    String packageName = this.getClass().getPackageName();
-    if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
-      MockVaadin.tearDown();
-    }
-    if (mocks != null) {
-      mocks.close();
-    }
-    clearSecurityContext();
-  }
-
-  protected void clearAllRepositories() {
-    databaseCleaner.clearRepositories();
-  }
-
+  /** Refreshes the current security context by re-loading the authenticated user from the DB. */
   protected void refreshSecurityContext() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null) {
-      auth = TestSecurityContextHolder.getContext().getAuthentication();
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null && currentAuth.getPrincipal() instanceof Account accountPrincipal) {
+      accountRepository
+          .findByUsername(accountPrincipal.getUsername())
+          .ifPresent(
+              refreshedAccount -> {
+                log.debug(
+                    "Refreshing security context for user: {}", refreshedAccount.getUsername());
+                login(refreshedAccount);
+              });
     }
+  }
 
-    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
-      log.debug("Refreshing security context for user: {}", details.getUsername());
-      accountRepository
-          .findByUsername(details.getUsername())
-          .ifPresentOrElse(
-              account -> {
-                log.debug("Found persistent account for {}, logging in...", details.getUsername());
-                this.login(account);
-              },
-              () -> {
-                log.warn(
-                    "Persistent account for {} not found after cleanup. Clearing context.",
-                    details.getUsername());
-                clearSecurityContext();
-              });
-    } else if (auth != null
-        && auth.getPrincipal()
-            instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-      log.debug(
-          "Refreshing security context for standard UserDetails: {}", userDetails.getUsername());
-      accountRepository
-          .findByUsername(userDetails.getUsername())
-          .ifPresentOrElse(
-              this::login,
-              () -> {
-                log.warn(
-                    "Persistent account for {} not found after cleanup. Clearing context.",
-                    userDetails.getUsername());
-                clearSecurityContext();
-              });
-    }
+  protected void login(Account account) {
+    var principal = account;
+    var authorities =
+        account.getRoles().stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+            .toList();
+
+    var authentication =
+        new UsernamePasswordAuthenticationToken(principal, account.getPassword(), authorities);
+
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    TestSecurityContextHolder.setAuthentication(authentication);
+  }
+
+  protected void clearCache() {
+    cacheManager
+        .getCacheNames()
+        .forEach(name -> Objects.requireNonNull(cacheManager.getCache(name)).clear());
   }
 
   protected void loginAs(String username) {
-    clearSecurityContext();
     var accountOpt = accountRepository.findByUsername(username);
     if (accountOpt.isPresent()) {
-      this.login(accountOpt.get());
+      login(accountOpt.get());
     } else {
       throw new RuntimeException("loginAs: Account not found: " + username);
     }
@@ -201,5 +117,11 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   protected void clearSecurityContext() {
     SecurityContextHolder.clearContext();
     TestSecurityContextHolder.clearContext();
+  }
+
+  @org.junit.jupiter.api.AfterEach
+  public void tearDown() throws Exception {
+    clearSecurityContext();
+    clearCache();
   }
 }

@@ -16,20 +16,17 @@
 */
 package com.github.javydreamercsw.management.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationScheduler;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
-import com.vaadin.flow.spring.security.RequestUtil;
-import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -43,8 +40,7 @@ import org.springframework.web.context.WebApplicationContext;
 public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   protected MockMvc mockMvc;
-  @Autowired protected ObjectMapper objectMapper;
-  @Autowired private WebApplicationContext context;
+  @org.springframework.beans.factory.annotation.Autowired private WebApplicationContext context;
 
   @BeforeEach
   public void configureMockMvc() {
@@ -53,8 +49,6 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   // Infrastructure mocks likely needed by multiple controllers or security
   @MockitoBean protected CustomUserDetailsService customUserDetailsService;
-  @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
-  @MockitoBean protected RequestUtil requestUtil;
   @MockitoBean protected RankingService rankingService;
   @MockitoBean protected WrestlerRepository wrestlerRepository;
   @MockitoBean protected AccountRepository accountRepository;
@@ -62,6 +56,7 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
   @MockitoBean protected NotionApiExecutor notionApiExecutor;
   @MockitoBean protected TierRecalculationService tierRecalculationService;
   @MockitoBean protected TierRecalculationScheduler tierRecalculationScheduler;
+  @MockitoBean protected RivalryRepository rivalryRepository;
 
   @MockitoBean(name = "testUserInitializer")
   protected CommandLineRunner testUserInitializer;

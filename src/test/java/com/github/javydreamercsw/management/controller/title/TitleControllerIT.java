@@ -166,7 +166,7 @@ class TitleControllerIT extends AbstractControllerTest {
     return title;
   }
 
-  private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
+  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L); // Assign a dummy ID for the mock
     wrestler.setName(name);

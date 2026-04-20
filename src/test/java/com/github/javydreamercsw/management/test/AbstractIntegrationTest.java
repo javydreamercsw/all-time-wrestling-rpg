@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
@@ -28,6 +29,9 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -37,14 +41,21 @@ import com.github.javydreamercsw.management.domain.league.LeagueMembershipReposi
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -53,17 +64,25 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.spring.security.RequestUtil;
+import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import java.util.Collections;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(classes = Application.class)
 @Slf4j
@@ -71,6 +90,9 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @Import({TestAIConfiguration.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
+
+  @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
+  @MockitoBean protected RequestUtil requestUtil;
 
   @Autowired protected InboxRepository inboxRepository;
   @Autowired protected InboxItemTargetRepository inboxItemTargetRepository;
@@ -92,11 +114,25 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected FactionService factionService;
   @Autowired protected WrestlerService wrestlerService;
   @Autowired protected ShowTemplateRepository showTemplateRepository;
+  @Autowired protected ShowTemplateService showTemplateService;
   @Autowired protected AccountRepository accountRepository;
   @Autowired protected RoleRepository roleRepository;
   @Autowired protected PasswordEncoder passwordEncoder;
   @Autowired protected LeagueRepository leagueRepository;
   @Autowired protected LeagueRosterRepository leagueRosterRepository;
+  @Autowired protected DeckRepository deckRepository;
+  @Autowired protected RivalryRepository rivalryRepository;
+  @Autowired protected WrestlerStateRepository wrestlerStateRepository;
+  @Autowired protected ShowTypeService showTypeService;
+  @Autowired protected TeamService teamService;
+  @Autowired protected ObjectMapper objectMapper;
+  @Autowired protected TransactionTemplate transactionTemplate;
+  @Autowired protected FactionRivalryRepository factionRivalryRepository;
+  @Autowired protected FactionRepository factionRepository;
+  @Autowired protected TeamRepository teamRepository;
+  @Autowired protected NpcRepository npcRepository;
+  @Autowired protected TitleRepository titleRepository;
+  @Autowired protected TitleReignRepository titleReignRepository;
 
   @Autowired
   protected com.github.javydreamercsw.management.domain.universe.UniverseRepository
@@ -127,28 +163,31 @@ public abstract class AbstractIntegrationTest {
   protected com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
       wrestlerAlignmentRepository;
 
-  @Autowired protected com.github.javydreamercsw.management.domain.npc.NpcRepository npcRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
-
   @Autowired protected com.github.javydreamercsw.management.DatabaseCleanup databaseCleanup;
   @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.title.TitleReignRepository
-      titleReignRepository;
 
   @Autowired(required = false)
   protected org.springframework.cache.CacheManager cacheManager;
 
-  protected Wrestler createTestWrestler(@NonNull String name) {
+  @BeforeEach
+  public void ensureDefaultUniverse() {
+    Universe universe =
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder()
+                            .name("Default Universe")
+                            .type(Universe.UniverseType.GLOBAL)
+                            .build()));
+  }
+
+  public Wrestler createTestWrestler(@NonNull String name) {
+    return createTestWrestler(name, 0L);
+  }
+
+  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     com.github.javydreamercsw.management.domain.universe.Universe universe =
         universeRepository.findAll().stream()
             .findFirst()
@@ -171,7 +210,7 @@ public abstract class AbstractIntegrationTest {
                 () ->
                     new IllegalStateException("Universe not found after save. ID: " + universeId));
 
-    return wrestlerRepository.saveAndFlush(TestUtils.createWrestler(name, 0L, universe));
+    return wrestlerRepository.saveAndFlush(TestUtils.createWrestler(name, fans, universe));
   }
 
   protected Account createTestAccount(@NonNull String username, @NonNull RoleName roleName) {
@@ -240,7 +279,7 @@ public abstract class AbstractIntegrationTest {
     return context;
   }
 
-  protected void cleanupLeagues() {
+  protected void clearAllRepositories() {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           log.info("Cleaning up database using DatabaseCleanup...");
@@ -275,5 +314,9 @@ public abstract class AbstractIntegrationTest {
           dataInitializer.init();
           log.info("Database reset complete.");
         });
+  }
+
+  protected void cleanupLeagues() {
+    clearAllRepositories();
   }
 }

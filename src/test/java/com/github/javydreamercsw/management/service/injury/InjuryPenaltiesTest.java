@@ -40,9 +40,17 @@ class InjuryPenaltiesTest extends AbstractIntegrationTest {
     Wrestler wrestler = createTestWrestler("Penalty Tester");
     wrestler = wrestlerRepository.save(wrestler);
 
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        universeRepository.findAll().stream().findFirst().orElseThrow();
+
     Optional<Injury> injury =
         injuryService.createInjury(
-            wrestler.getId(), 1L, "Test Injury", "Description", InjurySeverity.CRITICAL, "Notes");
+            wrestler.getId(),
+            universe.getId(),
+            "Test Injury",
+            "Description",
+            InjurySeverity.CRITICAL,
+            "Notes");
 
     assertThat(injury).isPresent();
     assertThat(injury.get().getHealthPenalty()).isPositive();

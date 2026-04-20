@@ -81,3 +81,6 @@ UPDATE wrestling_show SET universe_id = 1 WHERE universe_id IS NULL;
 -- Add missing league_id to rivalry
 ALTER TABLE rivalry ADD COLUMN IF NOT EXISTS league_id BIGINT;
 ALTER TABLE rivalry ADD CONSTRAINT IF NOT EXISTS fk_rivalry_league FOREIGN KEY (league_id) REFERENCES league(id);
+
+-- Add missing sequence for password_reset_token
+CREATE SEQUENCE IF NOT EXISTS password_reset_token_seq START WITH 1 INCREMENT BY 50;
