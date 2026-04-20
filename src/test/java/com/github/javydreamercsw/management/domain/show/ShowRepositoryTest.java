@@ -23,17 +23,15 @@ import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
-@DataJpaTest
 class ShowRepositoryTest extends AbstractJpaTest {
 
-  @Autowired private TestEntityManager entityManager;
+  @Autowired private EntityManager entityManager;
   @Autowired private ShowRepository showRepository;
 
   @Test
@@ -69,7 +67,8 @@ class ShowRepositoryTest extends AbstractJpaTest {
     show.setType(weeklyType);
     show.setSeason(season);
     show.setTemplate(showTemplate);
-    Long showId = entityManager.persistAndGetId(show, Long.class);
+    entityManager.persist(show);
+    Long showId = show.getId();
 
     entityManager.flush();
     // Detach all entities from the persistence context to simulate a closed session

@@ -16,12 +16,16 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Base class for tests. Provides mock beans for common services. */
-@DataJpaTest
+@SpringBootTest
+@Transactional
+@ActiveProfiles("test")
 public abstract class AbstractJpaTest {
-  @MockitoBean private RankingService rankingService;
+  @MockitoBean private TierRecalculationService tierRecalculationService;
 }

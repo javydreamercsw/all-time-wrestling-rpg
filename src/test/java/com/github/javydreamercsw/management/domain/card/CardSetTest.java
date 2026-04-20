@@ -23,18 +23,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 
-@DataJpaTest
 class CardSetTest extends AbstractJpaTest {
 
-  @Autowired private TestEntityManager entityManager;
+  @Autowired private EntityManager entityManager;
   @Autowired private CardSetRepository repository;
 
   @AfterEach

@@ -48,6 +48,9 @@ ALTER TABLE campaign ADD COLUMN IF NOT EXISTS universe_id BIGINT;
 
 ALTER TABLE league ADD COLUMN IF NOT EXISTS universe_id BIGINT;
 
+ALTER TABLE wrestling_show ADD COLUMN IF NOT EXISTS universe_id BIGINT;
+ALTER TABLE wrestling_show ADD CONSTRAINT IF NOT EXISTS fk_wrestling_show_universe FOREIGN KEY (universe_id) REFERENCES universe(id);
+
 -- 5. Data Migration: Copy global state to the Default Universe (ID 1)
 -- Only insert if the state doesn't already exist for that wrestler/universe combo
 INSERT INTO wrestler_state 
@@ -68,8 +71,13 @@ UPDATE team SET universe_id = 1 WHERE universe_id IS NULL;
 UPDATE drama_event SET universe_id = 1 WHERE universe_id IS NULL;
 UPDATE campaign SET universe_id = 1 WHERE universe_id IS NULL;
 UPDATE league SET universe_id = 1 WHERE universe_id IS NULL;
+UPDATE wrestling_show SET universe_id = 1 WHERE universe_id IS NULL;
 
 -- 6. Cleanup: Not needed for H2
 -- In H2 test databases, JPA/Hibernate manages the schema based on entity definitions
 -- The Wrestler entity no longer has these fields, so they won't be created in new databases
 -- For existing test databases, manually delete the sample.mv.db file to regenerate with new schema
+
+-- Add missing league_id to rivalry
+ALTER TABLE rivalry ADD COLUMN IF NOT EXISTS league_id BIGINT;
+ALTER TABLE rivalry ADD CONSTRAINT IF NOT EXISTS fk_rivalry_league FOREIGN KEY (league_id) REFERENCES league(id);

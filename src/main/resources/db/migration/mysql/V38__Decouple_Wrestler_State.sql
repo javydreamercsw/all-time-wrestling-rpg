@@ -55,6 +55,9 @@ ALTER TABLE campaign ADD CONSTRAINT fk_campaign_universe FOREIGN KEY (universe_i
 ALTER TABLE league ADD COLUMN universe_id BIGINT;
 ALTER TABLE league ADD CONSTRAINT fk_league_universe FOREIGN KEY (universe_id) REFERENCES universe(id);
 
+ALTER TABLE wrestling_show ADD COLUMN universe_id BIGINT;
+ALTER TABLE wrestling_show ADD CONSTRAINT fk_wrestling_show_universe FOREIGN KEY (universe_id) REFERENCES universe(id);
+
 -- 5. Data Migration: Copy global state to the Default Universe (ID 1)
 INSERT INTO wrestler_state 
 (wrestler_id, universe_id, fans, tier, bumps, current_health, physical_condition, morale, management_stamina, faction_id, manager_id)
@@ -69,7 +72,12 @@ UPDATE team SET universe_id = 1;
 UPDATE drama_event SET universe_id = 1;
 UPDATE campaign SET universe_id = 1;
 UPDATE league SET universe_id = 1;
+UPDATE wrestling_show SET universe_id = 1;
 
 -- Update existing wrestlers to default universe
 -- (No column drops here, they happen in V39)
 
+
+-- Add missing league_id to rivalry
+ALTER TABLE rivalry ADD COLUMN league_id BIGINT;
+ALTER TABLE rivalry ADD CONSTRAINT fk_rivalry_league FOREIGN KEY (league_id) REFERENCES league(id);
