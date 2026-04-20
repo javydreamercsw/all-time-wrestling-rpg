@@ -102,8 +102,8 @@ public class ShowPlanningAiService {
     } catch (JsonProcessingException e) {
       log.error(
           "Failed to parse AI response into ProposedShow object. AI Response length: {}",
-          aiResponse.length(),
-          e);
+          aiResponse.length());
+      log.error("Full AI response that failed to parse:\n{}", aiResponse);
       throw new ShowPlanningException("Failed to parse AI response", e);
     } catch (Exception e) {
       log.error("An unexpected error occurred during show planning: {}", e.getMessage(), e);
