@@ -377,7 +377,7 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo");
     syncSetting("AI_OPENAI_PREMIUM_MODEL", "gpt-4");
     syncSetting("AI_OPENAI_IMAGE_MODEL", "dall-e-3");
-    syncSetting("AI_OPENAI_MAX_TOKENS", "1000");
+    syncSetting("AI_OPENAI_MAX_TOKENS", "4000");
     syncSetting("AI_OPENAI_TEMPERATURE", "0.7");
 
     // Claude

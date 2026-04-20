@@ -173,6 +173,9 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
           getHttpClient(geminiConfigProperties.getTimeout())
               .send(request, HttpResponse.BodyHandlers.ofString());
 
+      log.debug("Gemini API Response Status: {}", response.statusCode());
+      log.trace("Gemini API Response Headers: {}", response.headers().map());
+
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
       } else {
@@ -195,6 +198,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   /** Extracts the content from Gemini API response. */
   private String extractContentFromResponse(@NonNull String responseBody) {
     try {
+      log.debug("Full Gemini Response Body: {}", responseBody);
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
 
@@ -213,8 +217,14 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
       List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
 
       if (candidates != null && !candidates.isEmpty()) {
+        Map<String, Object> candidate = candidates.get(0);
+        String finishReason = (String) candidate.get("finishReason");
+        if (finishReason != null && !"STOP".equals(finishReason)) {
+          log.warn("Gemini response finishReason: {}", finishReason);
+        }
+
         @SuppressWarnings("unchecked")
-        Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+        Map<String, Object> content = (Map<String, Object>) candidate.get("content");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
 
@@ -228,7 +238,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
       return "No content in AI response";
     } catch (Exception e) {
-      log.error("Failed to parse Gemini response", e);
+      log.error("Failed to parse Gemini response: {}", responseBody, e);
       return "Error parsing AI response: " + e.getMessage();
     }
   }
