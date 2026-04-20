@@ -273,10 +273,9 @@ jobs:
     needs: [build_and_release, build_desktop_installers, build_and_publish_docker, deploy_pages]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Configure Git
@@ -286,6 +285,15 @@ jobs:
 
       - name: Merge release branch
         run: |
+          git checkout main
           git fetch origin release/${{ github.event.inputs.version }}
           git merge origin/release/${{ github.event.inputs.version }} --no-ff -m "chore: Merge release ${{ github.event.inputs.version }} back to main"
           git push origin main
+
+      - name: Sync back to source branch
+        if: github.ref_name != 'main'
+        run: |
+          echo "Syncing changes back to source branch: ${{ github.ref_name }}"
+          git checkout ${{ github.ref_name }}
+          git merge origin/main --ff-only
+          git push origin ${{ github.ref_name }}
