@@ -61,8 +61,15 @@ class TeamServiceTest extends ManagementIntegrationTest {
 
     // 1. Create a single managed universe first
     Universe universe =
-        Universe.builder().name("Default Universe").type(Universe.UniverseType.GLOBAL).build();
-    universe = universeRepository.saveAndFlush(universe);
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder()
+                            .name("Default Universe")
+                            .type(Universe.UniverseType.GLOBAL)
+                            .build()));
 
     // 2. Use it for all creations
     wrestler1 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 1", 0L, universe);

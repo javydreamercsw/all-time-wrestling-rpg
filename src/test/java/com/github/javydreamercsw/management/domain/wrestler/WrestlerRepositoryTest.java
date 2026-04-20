@@ -40,7 +40,13 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
 
   @BeforeEach
   void setUp() {
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
+    defaultUniverse =
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder().name("Default Universe").build()));
   }
 
   @Test
