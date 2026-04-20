@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management.controller;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
@@ -50,7 +48,7 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   @BeforeEach
   public void configureMockMvc() {
-    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
   }
 
   // Infrastructure mocks likely needed by multiple controllers or security
