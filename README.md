@@ -325,6 +325,9 @@ export SPRING_DATASOURCE_PASSWORD="your_password"
 export SPRING_FLYWAY_LOCATIONS="classpath:db/migration/mysql"
 export NOTION_TOKEN="your_notion_token"
 export SPRING_PROFILES_ACTIVE="mysql,prod"
+export TOMCAT_USERNAME="your_manager_user"
+export TOMCAT_PASSWORD="your_manager_password"
+export CATALINA_OPTS="\$CATALINA_OPTS -Xms512m -Xmx2g"
 EOF
 	chmod +x /opt/homebrew/etc/tomcat/setenv.sh
 
@@ -376,23 +379,31 @@ EOF
 	launchctl load ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
 	```
 
-4.  **Increase Upload Limits (Optional)**:
+4.  **Increase Upload Limits and Timeouts (Optional)**:
 
-	By default, Tomcat's Manager application limits uploads to 50 MiB. If your `.war` file exceeds this size (e.g., the 148 MiB full build), you must increase the limit:
+	By default, Tomcat's Manager application limits uploads to 50 MiB and has a short connection timeout. If your `.war` file exceeds this size (e.g., the 180+ MiB full build), you must increase these limits:
 
 	1. Open the Manager app's `web.xml` file:
 	- **Homebrew**: `/opt/homebrew/opt/tomcat/libexec/webapps/manager/WEB-INF/web.xml`
 	- **Standard**: `webapps/manager/WEB-INF/web.xml`
-	2. Locate the `<multipart-config>` section and update the following values (e.g., to 250 MiB):
+	2. Locate the `<multipart-config>` section and update the following values (e.g., to 500 MiB):
 	```xml
 	<multipart-config>
-	<!-- 250 MiB max -->
-	<max-file-size>262144000</max-file-size>
-	<max-request-size>262144000</max-request-size>
+	<!-- 500 MiB max -->
+	<max-file-size>524288000</max-file-size>
+	<max-request-size>524288000</max-request-size>
 	<file-size-threshold>0</file-size-threshold>
 	</multipart-config>
 	```
-	3. Restart Tomcat to apply the changes.
+	3. Open the `server.xml` file in your Tomcat `conf` directory and increase the `connectionTimeout` and `maxPostSize` for the HTTP Connector:
+	```xml
+	<Connector port="8080" protocol="HTTP/1.1"
+			connectionTimeout="300000"
+			maxPostSize="524288000"
+			maxSwallowSize="524288000"
+			redirectPort="8443" />
+	```
+	4. Restart Tomcat to apply the changes.
 
 5.  **Start Tomcat**:
 
