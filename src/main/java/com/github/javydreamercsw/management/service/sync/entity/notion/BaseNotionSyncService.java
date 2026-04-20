@@ -149,14 +149,33 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
             // If externalId is missing locally, try to match by name from Notion lookup
             if ((externalId == null || externalId.isBlank())
                 && notionLookup.containsKey(entityDisplayName)) {
-              externalId = notionLookup.get(entityDisplayName);
-              entity.setExternalId(externalId);
-              syncServiceDependencies
-                  .getProgressTracker()
-                  .addLogMessage(
-                      operationId,
-                      "🔗 Matched existing Notion page for: " + entityDisplayName,
-                      "INFO");
+              String potentialId = notionLookup.get(entityDisplayName);
+              // Check if this ID is already used by another entity of the same type
+              if (repository.findAll().stream()
+                  .noneMatch(e -> potentialId.equals(e.getExternalId()))) {
+                externalId = potentialId;
+                entity.setExternalId(externalId);
+                syncServiceDependencies
+                    .getProgressTracker()
+                    .addLogMessage(
+                        operationId,
+                        "🔗 Matched existing Notion page for: " + entityDisplayName,
+                        "INFO");
+              } else {
+                log.warn(
+                    "Found matching Notion page for '{}' but its ID ({}) is already assigned to"
+                        + " another local entity. Skipping auto-match.",
+                    entityDisplayName,
+                    potentialId);
+                syncServiceDependencies
+                    .getProgressTracker()
+                    .addLogMessage(
+                        operationId,
+                        "⚠️ Match found for '"
+                            + entityDisplayName
+                            + "' but ID already in use. Creating new page instead.",
+                        "WARN");
+              }
             }
 
             // treating the data in this application as source of truth and only update things
@@ -314,7 +333,7 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
 
   protected abstract String getEntityName();
 
-  private String getEntityDisplayName(T entity) {
+  protected String getEntityDisplayName(T entity) {
     String name = entity.getName();
     return name != null ? name : entity.toString();
   }

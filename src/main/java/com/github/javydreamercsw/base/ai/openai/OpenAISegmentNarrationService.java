@@ -182,6 +182,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   /** Extracts the content from OpenAI API response. */
   private String extractContentFromResponse(@NonNull String responseBody) {
     try {
+      log.debug("Full OpenAI Response Body: {}", responseBody);
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
 
@@ -200,8 +201,14 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
       List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
 
       if (choices != null && !choices.isEmpty()) {
+        Map<String, Object> choice = choices.get(0);
+        String finishReason = (String) choice.get("finish_reason");
+        if (finishReason != null && !"stop".equals(finishReason)) {
+          log.warn("OpenAI response finish_reason: {}", finishReason);
+        }
+
         @SuppressWarnings("unchecked")
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        Map<String, Object> message = (Map<String, Object>) choice.get("message");
 
         if (message != null) {
           String content = (String) message.get("content");
@@ -213,7 +220,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
       return "No content in AI response";
     } catch (Exception e) {
-      log.error("Failed to parse OpenAI response", e);
+      log.error("Failed to parse OpenAI response: {}", responseBody, e);
       return "Error parsing AI response: " + e.getMessage();
     }
   }

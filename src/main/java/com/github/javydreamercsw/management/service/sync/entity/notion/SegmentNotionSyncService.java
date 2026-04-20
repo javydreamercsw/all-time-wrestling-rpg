@@ -147,4 +147,12 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
   protected String getEntityName() {
     return "Segment";
   }
+
+  @Override
+  protected String getEntityDisplayName(@NonNull Segment entity) {
+    if (entity.getShow() != null) {
+      return String.format("%s - %s", entity.getShow().getName(), entity.getName());
+    }
+    return super.getEntityDisplayName(entity);
+  }
 }

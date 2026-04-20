@@ -20,18 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -136,7 +131,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
                   "topP",
                   0.95,
                   "maxOutputTokens",
-                  8000, // Much longer output for detailed segment narration (up to ~6000 words)
+                  16000, // Increased to accommodate both thoughts and long JSON responses
                   "stopSequences",
                   List.of()),
               "safetySettings",
@@ -174,28 +169,19 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
       // Send request and get response
-      HttpResponse<InputStream> response =
+      HttpResponse<String> response =
           getHttpClient(geminiConfigProperties.getTimeout())
-              .send(request, HttpResponse.BodyHandlers.ofInputStream());
+              .send(request, HttpResponse.BodyHandlers.ofString());
+
+      log.debug("Gemini API Response Status: {}", response.statusCode());
+      log.trace("Gemini API Response Headers: {}", response.headers().map());
 
       if (response.statusCode() == 200) {
-        try (InputStream responseBody = response.body()) {
-          String text =
-              new BufferedReader(new InputStreamReader(responseBody, StandardCharsets.UTF_8))
-                  .lines()
-                  .collect(Collectors.joining("\n"));
-          return extractContentFromResponse(text);
-        }
+        return extractContentFromResponse(response.body());
       } else {
         // Throw custom exception for AI service errors
-        try (InputStream responseBody = response.body()) {
-          String errorText =
-              new BufferedReader(new InputStreamReader(responseBody, StandardCharsets.UTF_8))
-                  .lines()
-                  .collect(Collectors.joining("\n"));
-          throw new AIServiceException(
-              response.statusCode(), "Gemini API Error", getProviderName(), errorText);
-        }
+        throw new AIServiceException(
+            response.statusCode(), "Gemini API Error", getProviderName(), response.body());
       }
 
     } catch (Exception e) {
@@ -212,6 +198,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   /** Extracts the content from Gemini API response. */
   private String extractContentFromResponse(@NonNull String responseBody) {
     try {
+      log.debug("Full Gemini Response Body: {}", responseBody);
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);
 
@@ -230,19 +217,28 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
       List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
 
       if (candidates != null && !candidates.isEmpty()) {
+        Map<String, Object> candidate = candidates.get(0);
+        String finishReason = (String) candidate.get("finishReason");
+        if (finishReason != null && !"STOP".equals(finishReason)) {
+          log.warn("Gemini response finishReason: {}", finishReason);
+        }
+
         @SuppressWarnings("unchecked")
-        Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+        Map<String, Object> content = (Map<String, Object>) candidate.get("content");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
 
         if (parts != null && !parts.isEmpty()) {
-          return (String) parts.get(0).get("text");
+          return parts.stream()
+              .map(part -> (String) part.get("text"))
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.joining(""));
         }
       }
 
       return "No content in AI response";
     } catch (Exception e) {
-      log.error("Failed to parse Gemini response", e);
+      log.error("Failed to parse Gemini response: {}", responseBody, e);
       return "Error parsing AI response: " + e.getMessage();
     }
   }
