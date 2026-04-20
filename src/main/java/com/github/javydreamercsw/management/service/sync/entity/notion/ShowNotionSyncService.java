@@ -84,4 +84,12 @@ public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
   protected String getEntityName() {
     return "Show";
   }
+
+  @Override
+  protected String getEntityDisplayName(@NonNull Show entity) {
+    if (entity.getShowDate() != null) {
+      return String.format("%s (%s)", entity.getName(), entity.getShowDate());
+    }
+    return super.getEntityDisplayName(entity);
+  }
 }
