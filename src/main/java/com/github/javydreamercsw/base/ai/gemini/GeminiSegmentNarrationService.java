@@ -131,7 +131,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
                   "topP",
                   0.95,
                   "maxOutputTokens",
-                  8000, // Much longer output for detailed segment narration (up to ~6000 words)
+                  16000, // Increased to accommodate both thoughts and long JSON responses
                   "stopSequences",
                   List.of()),
               "safetySettings",

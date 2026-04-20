@@ -152,9 +152,9 @@ public class ShowPlanningAiService {
     }
 
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
-      prompt.append("Recent Segments:\n");
-      context
-          .getRecentSegments()
+      prompt.append("Recent Segments (up to 10):\n");
+      context.getRecentSegments().stream()
+          .limit(10)
           .forEach(
               segment ->
                   prompt
@@ -172,9 +172,9 @@ public class ShowPlanningAiService {
     }
 
     if (context.getRecentPromos() != null && !context.getRecentPromos().isEmpty()) {
-      prompt.append("Recent Promos:\n");
-      context
-          .getRecentPromos()
+      prompt.append("Recent Promos (up to 10):\n");
+      context.getRecentPromos().stream()
+          .limit(10)
           .forEach(
               promo ->
                   prompt
@@ -190,7 +190,6 @@ public class ShowPlanningAiService {
                       .append(promo.getShowDate())
                       .append("\n"));
     }
-
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
       prompt.append("Current Rivalries:\n");
       context
@@ -270,8 +269,6 @@ public class ShowPlanningAiService {
                       .append(wrestler.getTier())
                       .append(", Injured: ")
                       .append(wrestler.isInjured())
-                      .append(", Description: ")
-                      .append(wrestler.getDescription())
                       .append("\n"));
     }
 
@@ -281,11 +278,7 @@ public class ShowPlanningAiService {
           .getFactions()
           .forEach(
               faction -> {
-                prompt
-                    .append("- Name: ")
-                    .append(faction.getName())
-                    .append(", Description: ")
-                    .append(faction.getDescription());
+                prompt.append("- Name: ").append(faction.getName());
                 if (faction.getLeader() != null) {
                   prompt.append(", Leader: ").append(faction.getLeader());
                 }
@@ -383,7 +376,9 @@ public class ShowPlanningAiService {
         .append(
             " towards a compelling narrative. **Be concise with descriptions and outcomes to"
                 + " ensure the entire JSON array fits in the response.**\n\n")
-        .append("IMPORTANT: The 'participants' field MUST be")
+        .append(
+            "IMPORTANT: **Be extremely concise with your internal thoughts/reasoning to save"
+                + " output tokens for the JSON.** The 'participants' field MUST be")
         .append(
             " populated with relevant wrestler names from the provided context. The response MUST")
         .append(
