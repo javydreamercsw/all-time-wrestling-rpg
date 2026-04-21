@@ -370,7 +370,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
 
       // When - Simulate matches (increased sample size for more reliable statistics)
       int factionWins = 0;
-      int totalMatches = 100;
+      int totalMatches = 500;
 
       for (int i = 0; i < totalMatches; i++) {
         Segment result =
