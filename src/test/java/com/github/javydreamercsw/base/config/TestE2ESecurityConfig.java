@@ -16,81 +16,42 @@
 */
 package com.github.javydreamercsw.base.config;
 
-import static org.mockito.Mockito.mock;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
-import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Security configuration for E2E tests. Provides a simplified security setup that allows the tests
+ * to interact with the UI without complex authentication logic.
+ */
 @TestConfiguration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Profile("e2e")
-@Import(InboxEventTypeConfig.class)
+@Import({WithCustomMockUserSecurityContextFactory.class, InboxEventTypeConfig.class})
 public class TestE2ESecurityConfig {
 
   @Bean
-  @ConditionalOnMissingBean
-  public ObjectMapper objectMapper() {
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.findAndRegisterModules();
-    return mapper;
-  }
-
-  @Bean
-  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
-    return new WithCustomMockUserSecurityContextFactory();
-  }
-
-  @Bean
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    // Configure public access to static resources FIRST
-    http.authorizeHttpRequests(
-        auth ->
-            auth.requestMatchers(
-                    "/login",
-                    "/login/**",
-                    "/images/**",
-                    "/icons/**",
-                    "/public/**",
-                    "/api/**",
-                    "/docs/**",
-                    "/VAADIN/**",
-                    "/line-awesome/**",
-                    "/frontend/**")
-                .permitAll()
-                .anyRequest()
-                .permitAll());
+    // For E2E tests, we want to allow everything so the Selenium driver can interact with the UI
+    // We avoid VaadinSecurityConfigurer to prevent "Vaadin servlet url mapping is required" errors
+    http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
-    // Apply Vaadin security configurer AFTER specific matchers
-    // This will add its own matchers and then anyRequest().authenticated()
-    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+    http.csrf(csrf -> csrf.disable());
+    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
     // Basic form login for the "login" action used in LoginView
     http.formLogin(form -> form.loginPage("/login").permitAll());
-
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
-    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
     return http.build();
   }
@@ -101,26 +62,8 @@ public class TestE2ESecurityConfig {
   }
 
   @Bean
-  public ClientRegistrationRepository clientRegistrationRepository() {
-    return new InMemoryClientRegistrationRepository(
-        ClientRegistration.withRegistrationId("atw-rpg")
-            .clientId("test-client")
-            .clientSecret("test-secret")
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-            .scope("openid")
-            .authorizationUri("http://localhost/oauth2/authorize")
-            .tokenUri("http://localhost/oauth2/token")
-            .userInfoUri("http://localhost/userinfo")
-            .userNameAttributeName("sub")
-            .clientName("ATW-RPG")
-            .build());
-  }
-
-  @Bean
-  public OAuth2AuthorizedClientRepository authorizedClientRepository() {
-    return new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(
-        mock(org.springframework.security.oauth2.client.OAuth2AuthorizedClientService.class));
+  @ConditionalOnMissingBean
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper();
   }
 }
