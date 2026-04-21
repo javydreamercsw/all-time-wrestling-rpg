@@ -137,10 +137,11 @@ public class DatabaseCleaner implements DatabaseCleanup {
     log.info("💔 Breaking circular dependencies...");
     try {
       entityManager.createNativeQuery("DELETE FROM heat_event").executeUpdate();
+      entityManager.createNativeQuery("DELETE FROM team").executeUpdate();
       entityManager
           .createNativeQuery("UPDATE wrestler_state SET faction_id = NULL")
           .executeUpdate();
-      log.debug("✅ Nullified wrestler_state.faction_id");
+      log.debug("✅ Nullified wrestler_state.faction_id and cleared teams");
     } catch (Exception e) {
       // This might fail if the table doesn't exist yet on first run, which is fine.
       log.warn("Could not nullify wrestler_state.faction_id: {}", e.getMessage());

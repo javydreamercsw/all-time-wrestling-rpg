@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.security.Principal;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -27,7 +28,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 /** Custom UserDetails implementation that wraps our Account entity. */
 @Getter
-public class CustomUserDetails implements UserDetails {
+public class CustomUserDetails implements UserDetails, Principal {
 
   private final Account account;
   private final Wrestler wrestler; // Added field
@@ -40,6 +41,16 @@ public class CustomUserDetails implements UserDetails {
   public CustomUserDetails(Account account) {
     this.account = account;
     this.wrestler = null;
+  }
+
+  @Override
+  public String getName() {
+    return getUsername();
+  }
+
+  @Override
+  public String toString() {
+    return getUsername();
   }
 
   @Override
