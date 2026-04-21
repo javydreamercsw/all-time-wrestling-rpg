@@ -133,6 +133,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @BeforeEach
   public void setUp() {
     log.info("🧪 Setting up NotionSyncServiceTest");
+    org.mockito.MockitoAnnotations.openMocks(this);
     // Initialize SyncServiceDependencies with all its mocked dependencies
     syncServiceDependencies =
         new SyncServiceDependencies(
