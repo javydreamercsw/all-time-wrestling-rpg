@@ -1488,7 +1488,7 @@
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
               </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
+              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
                 <webdriver.chrome.whitelistedIps/>
                 <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
@@ -1589,7 +1589,7 @@
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
               </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
+              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
                 <webdriver.chrome.whitelistedIps/>
                 <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>

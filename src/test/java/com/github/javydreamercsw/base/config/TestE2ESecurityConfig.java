@@ -78,6 +78,8 @@ public class TestE2ESecurityConfig {
                     "/VAADIN/**",
                     "/line-awesome/**",
                     "/frontend/**")
+                .permitAll()
+                .anyRequest()
                 .permitAll());
 
     // Apply Vaadin security configurer AFTER specific matchers

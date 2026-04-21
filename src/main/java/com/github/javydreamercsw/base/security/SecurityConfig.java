@@ -94,7 +94,7 @@ public class SecurityConfig {
   }
 
   @Bean
-  @Profile("test")
+  @Profile("test & !e2e")
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
