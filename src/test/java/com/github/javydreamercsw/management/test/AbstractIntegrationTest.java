@@ -279,6 +279,27 @@ public abstract class AbstractIntegrationTest {
     return context;
   }
 
+  protected void clearRepositoriesOnly() {
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          log.info("Cleaning up database using DatabaseCleanup (No init)...");
+          databaseCleanup.clearRepositories();
+
+          if (cacheManager != null) {
+            log.info("Clearing all caches...");
+            cacheManager
+                .getCacheNames()
+                .forEach(
+                    cacheName -> {
+                      var cache = cacheManager.getCache(cacheName);
+                      if (cache != null) {
+                        cache.clear();
+                      }
+                    });
+          }
+        });
+  }
+
   protected void clearAllRepositories() {
     GeneralSecurityUtils.runAsAdmin(
         () -> {

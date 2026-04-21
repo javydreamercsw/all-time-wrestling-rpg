@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ import org.springframework.security.test.context.TestSecurityContextHolder;
  */
 @Slf4j
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
+
   @Autowired protected CacheManager cacheManager;
 
   @BeforeEach
@@ -73,20 +75,40 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   /** Refreshes the current security context by re-loading the authenticated user from the DB. */
   protected void refreshSecurityContext() {
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth != null && currentAuth.getPrincipal() instanceof Account accountPrincipal) {
-      accountRepository
-          .findByUsername(accountPrincipal.getUsername())
-          .ifPresent(
-              refreshedAccount -> {
-                log.debug(
-                    "Refreshing security context for user: {}", refreshedAccount.getUsername());
-                login(refreshedAccount);
-              });
+    if (currentAuth != null) {
+      final String username;
+      if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
+        username = accountPrincipal.getUsername();
+      } else if (currentAuth.getPrincipal() instanceof CustomUserDetails userDetails) {
+        username = userDetails.getUsername();
+      } else if (currentAuth.getPrincipal()
+          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+        username = userDetails.getUsername();
+      } else {
+        username = null;
+      }
+
+      if (username != null) {
+        accountRepository
+            .findByUsername(username)
+            .ifPresentOrElse(
+                refreshedAccount -> {
+                  log.debug(
+                      "Refreshing security context for user: {}", refreshedAccount.getUsername());
+                  login(refreshedAccount);
+                },
+                () -> {
+                  log.warn("Account not found during refresh: {}, clearing context", username);
+                  clearSecurityContext();
+                });
+      }
     }
   }
 
   protected void login(Account account) {
-    var principal = account;
+    // Wrap the account in CustomUserDetails to match production behavior and provide username to
+    // getName()
+    var principal = new CustomUserDetails(account);
     var authorities =
         account.getRoles().stream()
             .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))

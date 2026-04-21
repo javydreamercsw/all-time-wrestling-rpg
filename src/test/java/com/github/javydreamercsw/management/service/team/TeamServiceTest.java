@@ -57,7 +57,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    clearAllRepositories();
+    clearRepositoriesOnly();
 
     // 1. Create a single managed universe first
     Universe universe =
