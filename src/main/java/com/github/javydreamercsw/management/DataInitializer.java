@@ -209,7 +209,10 @@ public class DataInitializer implements Initializable {
     this.objectMapper = objectMapper;
   }
 
-  @Transactional(propagation = Propagation.REQUIRED)
+  @Transactional(
+      propagation = Propagation.REQUIRED,
+      timeout = 1200,
+      isolation = org.springframework.transaction.annotation.Isolation.SERIALIZABLE)
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {

@@ -59,7 +59,7 @@ public class Card extends AbstractSyncableEntity<Long> {
   @Column(name = "momentum", nullable = false)
   private Integer momentum;
 
-  @Column(name = "number")
+  @Column(name = "number", nullable = false)
   private Integer number;
 
   @Column(name = "signature", nullable = false)

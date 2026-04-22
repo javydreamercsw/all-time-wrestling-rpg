@@ -63,14 +63,18 @@ public class SegmentTypeService {
       allEntries = true)
   public SegmentType createOrUpdateSegmentType(@NonNull String name, @NonNull String description) {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
-    SegmentType segmentType;
     if (existingOpt.isPresent()) {
-      segmentType = existingOpt.get();
+      SegmentType st = existingOpt.get();
+      if (st.getDescription() != null && st.getDescription().equals(description)) {
+        return st;
+      }
+      st.setDescription(description);
       log.debug("Updating existing segment type: {}", name);
-    } else {
-      segmentType = new SegmentType();
-      log.debug("Creating new segment type: {}", name);
+      return segmentTypeRepository.save(st);
     }
+
+    SegmentType segmentType = new SegmentType();
+    log.debug("Creating new segment type: {}", name);
     segmentType.setName(name);
     segmentType.setDescription(description);
     return segmentTypeRepository.save(segmentType);

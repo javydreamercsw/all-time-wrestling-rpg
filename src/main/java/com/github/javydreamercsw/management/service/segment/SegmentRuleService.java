@@ -223,14 +223,24 @@ public class SegmentRuleService {
       BumpAddition bumpAddition) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
 
-    SegmentRule segmentRule;
     if (existingOpt.isPresent()) {
-      segmentRule = existingOpt.get();
+      SegmentRule sr = existingOpt.get();
+      if (java.util.Objects.equals(sr.getDescription(), description)
+          && sr.getRequiresHighHeat() == requiresHighHeat
+          && sr.getNoDq() == noDq
+          && sr.getBumpAddition() == bumpAddition) {
+        return sr;
+      }
+      sr.setDescription(description);
+      sr.setRequiresHighHeat(requiresHighHeat);
+      sr.setNoDq(noDq);
+      sr.setBumpAddition(bumpAddition);
       log.debug("Updating existing segment rule: {}", name);
-    } else {
-      segmentRule = new SegmentRule();
-      log.debug("Creating new segment rule: {}", name);
+      return segmentRuleRepository.save(sr);
     }
+
+    SegmentRule segmentRule = new SegmentRule();
+    log.debug("Creating new segment rule: {}", name);
 
     segmentRule.setName(name);
     segmentRule.setDescription(description);

@@ -66,6 +66,8 @@ class CardServiceIT extends ManagementIntegrationTest {
     card.setTaunt(false);
     card.setRecover(false);
     card.setPin(false);
+    Integer max = cardRepository.findMaxCardNumberBySet(defaultCardSet.getId());
+    card.setNumber(max == null ? 1 : max + 1);
     card.setCreationDate(java.time.Instant.now());
     return cardRepository.save(card);
   }

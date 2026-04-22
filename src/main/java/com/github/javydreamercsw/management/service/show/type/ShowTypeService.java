@@ -77,6 +77,15 @@ public class ShowTypeService {
   public ShowType createOrUpdateShowType(
       @NonNull String name, @NonNull String description, int expectedMatches, int expectedPromos) {
     Optional<ShowType> existingShowType = findByName(name);
+    if (existingShowType.isPresent()) {
+      ShowType st = existingShowType.get();
+      if (st.getName().equals(name)
+          && st.getDescription().equals(description)
+          && st.getExpectedMatches() == expectedMatches
+          && st.getExpectedPromos() == expectedPromos) {
+        return st;
+      }
+    }
     ShowType showType = existingShowType.orElseGet(ShowType::new);
     showType.setName(name);
     showType.setDescription(description);

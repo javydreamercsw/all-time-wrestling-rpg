@@ -53,6 +53,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -78,6 +79,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -133,11 +135,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected NpcRepository npcRepository;
   @Autowired protected TitleRepository titleRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.universe.UniverseRepository
-      universeRepository;
-
+  @Autowired protected UniverseRepository universeRepository;
   @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
   @Autowired protected DraftRepository draftRepository;
   @Autowired protected DraftPickRepository draftPickRepository;
@@ -167,20 +165,11 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
   @Autowired(required = false)
-  protected org.springframework.cache.CacheManager cacheManager;
+  protected CacheManager cacheManager;
 
   @BeforeEach
-  public void ensureDefaultUniverse() {
-    Universe universe =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        Universe.builder()
-                            .name("Default Universe")
-                            .type(Universe.UniverseType.GLOBAL)
-                            .build()));
+  void setUp() {
+    clearAllRepositories();
   }
 
   public Wrestler createTestWrestler(@NonNull String name) {
@@ -188,29 +177,13 @@ public abstract class AbstractIntegrationTest {
   }
 
   public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
+    Universe universe =
         universeRepository.findAll().stream()
             .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        com.github.javydreamercsw.management.domain.universe.Universe.builder()
-                            .name("Default Universe")
-                            .type(
-                                com.github.javydreamercsw.management.domain.universe.Universe
-                                    .UniverseType.GLOBAL)
-                            .build()));
+            .orElseThrow(() -> new IllegalStateException("No universe found after reset"));
 
-    // Make sure we have a managed instance
-    final Long universeId = universe.getId();
-    universe =
-        universeRepository
-            .findById(universeId)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException("Universe not found after save. ID: " + universeId));
-
-    return wrestlerRepository.saveAndFlush(TestUtils.createWrestler(name, fans, universe));
+    Wrestler wrestler = TestUtils.createWrestler(name, fans, universe);
+    return wrestlerRepository.saveAndFlush(wrestler);
   }
 
   protected Account createTestAccount(@NonNull String username, @NonNull RoleName roleName) {
@@ -239,7 +212,6 @@ public abstract class AbstractIntegrationTest {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
-    // Match Type
     SegmentNarrationService.SegmentTypeContext matchType =
         new SegmentNarrationService.SegmentTypeContext();
     matchType.setSegmentType("Hell in a Cell");
@@ -247,7 +219,6 @@ public abstract class AbstractIntegrationTest {
     matchType.setRules(java.util.Arrays.asList("No Disqualification", "Falls Count Anywhere"));
     context.setSegmentType(matchType);
 
-    // Venue
     SegmentNarrationService.VenueContext venue = new SegmentNarrationService.VenueContext();
     venue.setName("Civic Arena");
     venue.setLocation("Pittsburgh, Pennsylvania");
@@ -258,7 +229,6 @@ public abstract class AbstractIntegrationTest {
     venue.setSignificance("Site of the most famous Hell in a Cell segment");
     context.setVenue(venue);
 
-    // Wrestlers
     SegmentNarrationService.WrestlerContext undertaker =
         new SegmentNarrationService.WrestlerContext();
     undertaker.setName("The Undertaker");
@@ -271,7 +241,6 @@ public abstract class AbstractIntegrationTest {
 
     context.setWrestlers(java.util.Arrays.asList(undertaker, mankind));
 
-    // Context
     context.setAudience("Shocked and horrified crowd of 17,000");
     context.setDeterminedOutcome(
         "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
@@ -282,58 +251,64 @@ public abstract class AbstractIntegrationTest {
   protected void clearRepositoriesOnly() {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
-          log.info("Cleaning up database using DatabaseCleanup (No init)...");
-          databaseCleanup.clearRepositories();
+          transactionTemplate.execute(
+              status -> {
+                log.info("Cleaning up database using DatabaseCleanup (No init)...");
+                databaseCleanup.clearRepositories();
 
-          if (cacheManager != null) {
-            log.info("Clearing all caches...");
-            cacheManager
-                .getCacheNames()
-                .forEach(
-                    cacheName -> {
-                      var cache = cacheManager.getCache(cacheName);
-                      if (cache != null) {
-                        cache.clear();
-                      }
-                    });
-          }
+                if (cacheManager != null) {
+                  log.info("Clearing all caches...");
+                  cacheManager
+                      .getCacheNames()
+                      .forEach(
+                          cacheName -> {
+                            var cache = cacheManager.getCache(cacheName);
+                            if (cache != null) {
+                              cache.clear();
+                            }
+                          });
+                }
+                return null;
+              });
         });
   }
 
   protected void clearAllRepositories() {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
-          log.info("Cleaning up database using DatabaseCleanup...");
-          databaseCleanup.clearRepositories();
+          transactionTemplate.execute(
+              status -> {
+                log.info("Cleaning up database using DatabaseCleanup...");
+                databaseCleanup.clearRepositories();
 
-          if (cacheManager != null) {
-            log.info("Clearing all caches...");
-            cacheManager
-                .getCacheNames()
-                .forEach(
-                    cacheName -> {
-                      var cache = cacheManager.getCache(cacheName);
-                      if (cache != null) {
-                        cache.clear();
-                      }
-                    });
-          }
+                // Explicitly clear universe table to prevent ID 1 conflicts
+                universeRepository.deleteAll();
+                universeRepository.flush();
 
-          log.info("Re-initializing data using DataInitializer...");
+                if (cacheManager != null) {
+                  log.info("Clearing all caches...");
+                  cacheManager
+                      .getCacheNames()
+                      .forEach(
+                          cacheName -> {
+                            var cache = cacheManager.getCache(cacheName);
+                            if (cache != null) {
+                              cache.clear();
+                            }
+                          });
+                }
 
-          // Ensure default universe exists
-          if (universeRepository.count() == 0) {
-            universeRepository.saveAndFlush(
-                com.github.javydreamercsw.management.domain.universe.Universe.builder()
-                    .name("Default Universe")
-                    .type(
-                        com.github.javydreamercsw.management.domain.universe.Universe.UniverseType
-                            .GLOBAL)
-                    .build());
-          }
+                log.info("Re-initializing data using DataInitializer...");
+                dataInitializer.init();
 
-          dataInitializer.init();
-          log.info("Database reset complete.");
+                // Set default universe for tests
+                universeRepository.findAll().stream()
+                    .findFirst()
+                    .ifPresent(u -> com.github.javydreamercsw.TestUtils.setDefaultUniverse(u));
+
+                log.info("Database reset complete.");
+                return null;
+              });
         });
   }
 

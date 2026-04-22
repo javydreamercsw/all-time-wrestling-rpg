@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.Comparator;
 import java.util.List;
@@ -72,6 +73,7 @@ public class WrestlerService {
   private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
       universeRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  private final UniverseContextService universeContextService;
 
   @Autowired
   public WrestlerService(
@@ -87,7 +89,8 @@ public class WrestlerService {
       @Lazy com.github.javydreamercsw.management.service.injury.InjuryService injuryService,
       SecurityUtils securityUtils,
       com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository,
-      WrestlerAlignmentRepository wrestlerAlignmentRepository) {
+      WrestlerAlignmentRepository wrestlerAlignmentRepository,
+      UniverseContextService universeContextService) {
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
@@ -101,6 +104,7 @@ public class WrestlerService {
     this.securityUtils = securityUtils;
     this.universeRepository = universeRepository;
     this.wrestlerAlignmentRepository = wrestlerAlignmentRepository;
+    this.universeContextService = universeContextService;
   }
 
   @Transactional
@@ -170,7 +174,7 @@ public class WrestlerService {
   public List<Wrestler> findAllFiltered(
       @Nullable AlignmentType alignmentType,
       com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @NonNull Long universeId) {
+      @Nullable Long universeId) {
     return findAllFiltered(alignmentType, gender, universeId, (String) null, null);
   }
 
@@ -179,7 +183,16 @@ public class WrestlerService {
   public List<Wrestler> findAllFiltered(
       @Nullable AlignmentType alignmentType,
       com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @NonNull Long universeId,
+      @Nullable String expansionCode) {
+    return findAllFiltered(alignmentType, gender, null, expansionCode, null);
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findAllFiltered(
+      @Nullable AlignmentType alignmentType,
+      com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      @Nullable Long universeId,
       @Nullable String expansionCode) {
     return findAllFiltered(alignmentType, gender, universeId, expansionCode, null);
   }
@@ -199,9 +212,12 @@ public class WrestlerService {
   public List<Wrestler> findAllFiltered(
       @Nullable AlignmentType alignmentType,
       com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @NonNull Long universeId,
+      @Nullable Long universeId,
       @Nullable String expansionCode,
       @Nullable Set<Wrestler> includedWrestlers) {
+    final Long finalUniverseId =
+        universeId != null ? universeId : universeContextService.getCurrentUniverseId();
+
     return wrestlerRepository.findAllByActiveTrue().stream()
         .filter(
             w -> {
@@ -213,7 +229,7 @@ public class WrestlerService {
               if (alignmentType != null) {
                 // Fetch alignment for specific universe
                 Optional<WrestlerAlignment> alignment =
-                    wrestlerAlignmentRepository.findByWrestlerAndUniverseId(w, universeId);
+                    wrestlerAlignmentRepository.findByWrestlerAndUniverseId(w, finalUniverseId);
                 if (alignment.isPresent()) {
                   matchesAlignment = alignment.get().getAlignmentType() == alignmentType;
                 } else {
