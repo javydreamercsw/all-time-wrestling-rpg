@@ -79,6 +79,13 @@ class ShowPlanningViewTest {
   void setUp() {
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     MockitoAnnotations.openMocks(this);
+    com.github.javydreamercsw.base.ui.service.NotificationService notificationService =
+        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class);
+    com.github.javydreamercsw.management.service.universe.UniverseContextService
+        universeContextService =
+            mock(
+                com.github.javydreamercsw.management.service.universe.UniverseContextService.class);
+
     showPlanningView =
         new ShowPlanningView(
             showService,
@@ -93,7 +100,9 @@ class ShowPlanningViewTest {
             npcService,
             objectMapper,
             aiFactory,
-            arenaService);
+            arenaService,
+            notificationService,
+            universeContextService);
     // Mock the UI since we are not in a Vaadin environment
     UI ui = mock(UI.class);
     UI.setCurrent(ui);

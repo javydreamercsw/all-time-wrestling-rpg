@@ -105,6 +105,9 @@ class MatchViewTest extends AbstractViewTest {
   @BeforeEach
   public void setup() {
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    com.github.javydreamercsw.base.ui.service.NotificationService notificationService =
+        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class);
+
     matchView =
         new MatchView(
             segmentService,
@@ -126,7 +129,8 @@ class MatchViewTest extends AbstractViewTest {
             ringsideAiService,
             ringsideActionDataService,
             teamService,
-            titleScriptService);
+            titleScriptService,
+            notificationService);
   }
 
   @Test

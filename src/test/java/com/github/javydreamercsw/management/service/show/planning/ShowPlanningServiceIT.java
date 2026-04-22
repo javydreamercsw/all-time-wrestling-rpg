@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -81,6 +82,14 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   @MockitoBean private PromoBookingService promoBookingService;
   @Autowired private ShowPlanningService showPlanningService;
 
+  private com.github.javydreamercsw.management.domain.universe.Universe universe;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setupUniverse() {
+    universe = mock(com.github.javydreamercsw.management.domain.universe.Universe.class);
+    when(universe.getId()).thenReturn(1L);
+  }
+
   @Test
   @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext() {
@@ -89,6 +98,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
 
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setName("Wrestler 1");
@@ -106,6 +116,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Show segmentShow = new Show();
     segmentShow.setId(1L);
     segmentShow.setName("Segment Show");
+    segmentShow.setUniverse(universe);
     match.setShow(segmentShow);
     match.setSegmentType(matchSegmentType);
     SegmentParticipant p1 = new SegmentParticipant();
@@ -172,6 +183,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     ple.setTemplate(pleTemplate);
     ple.setShowDate(LocalDate.now().plusMonths(1));
     ple.setDescription("Test PLE Description");
+    ple.setUniverse(universe);
     when(showService.getUpcomingShows(anyInt())).thenReturn(Collections.singletonList(ple));
 
     when(segmentService.findById(anyLong()))
@@ -204,6 +216,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType currentShowType = new ShowType(); // Create a ShowType for the 'show' object
     currentShowType.setName("Regular Show Type");
     currentShowType.setExpectedMatches(5); // Set some default values
@@ -225,6 +238,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     upcomingPle.setType(pleShowType);
     upcomingPle.setShowDate(futureShowDate.plusWeeks(2));
     upcomingPle.setDescription("Test PLE Description");
+    upcomingPle.setUniverse(universe);
 
     when(showService.getUpcomingShows(anyInt())).thenReturn(Collections.singletonList(upcomingPle));
 
@@ -261,6 +275,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType(); // Create a ShowType for the 'show' object
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5); // Set some default values
@@ -300,6 +315,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     segmentShow.setId(3L);
     segmentShow.setName("Segment Show");
     segmentShow.setShowDate(futureShowDate.minusDays(10));
+    segmentShow.setUniverse(universe);
     segment1.setShow(segmentShow);
     segment2.setShow(segmentShow);
 
@@ -347,6 +363,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType(); // Create a ShowType for the 'show' object
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5); // Set some default values
@@ -392,6 +409,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType();
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5);
@@ -503,6 +521,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType();
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5);

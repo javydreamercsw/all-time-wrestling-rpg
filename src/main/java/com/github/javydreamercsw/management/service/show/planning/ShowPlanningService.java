@@ -86,6 +86,10 @@ public class ShowPlanningService {
               + ") has no showDate set. "
               + "Set a scheduled date before opening Show Planning.");
     }
+    if (show.getUniverse() == null) {
+      throw new IllegalStateException(
+          "Show '" + show.getName() + "' (id=" + show.getId() + ") has no universe assigned.");
+    }
 
     ShowPlanningContext context = new ShowPlanningContext();
 
@@ -211,7 +215,7 @@ public class ShowPlanningService {
     // Get all wrestlers
     List<Wrestler> allWrestlers =
         wrestlerService.findAllFiltered(
-            null, genderConstraint, show.getUniverse().getId(), (String) null, null);
+            null, genderConstraint, show.getUniverse().getId(), null, null);
 
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);

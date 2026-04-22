@@ -63,6 +63,16 @@ class WrestlerServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
 
+  @Mock
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
+      wrestlerAlignmentRepository;
+
+  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
+  @Mock private com.github.javydreamercsw.management.service.legacy.LegacyService legacyService;
+  @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
+  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
+  @Mock private com.github.javydreamercsw.base.security.SecurityUtils securityUtils;
+
   @InjectMocks private WrestlerService wrestlerService;
 
   private Wrestler wrestler;

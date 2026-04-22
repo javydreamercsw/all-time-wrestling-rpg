@@ -608,7 +608,8 @@ public class WrestlerService {
     List<Wrestler> wrestlers = findAll();
     for (Wrestler w : wrestlers) {
       WrestlerState state = getOrCreateState(w.getId(), universeId);
-      // Implementation logic for recalibration...
+      // Reset fans to the minimum of their current tier
+      state.setFans(state.getTier().getMinFans());
       tierRecalculationService.recalculateTier(state);
       wrestlerStateRepository.save(state);
     }

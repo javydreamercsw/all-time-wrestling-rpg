@@ -17,12 +17,13 @@
 package com.github.javydreamercsw.management.ui.view.segment;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -30,15 +31,16 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import java.util.ArrayList;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-class NarrationDialogTest extends AbstractViewTest {
+class NarrationDialogTest {
 
+  private Segment segment;
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
   @Mock private ShowService showService;
@@ -47,31 +49,37 @@ class NarrationDialogTest extends AbstractViewTest {
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private SegmentNarrationServiceFactory aiFactory;
   @Mock private RingsideActionService ringsideActionService;
-  @Mock private UniverseContextService universeContextService;
 
   @Mock
   private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
       relationshipService;
 
-  private Segment segment;
+  @Mock private UniverseContextService universeContextService;
 
   @BeforeEach
   void setUp() {
+    MockitoAnnotations.openMocks(this);
     segment = new Segment();
     segment.setId(1L);
-    SegmentType segmentType = new SegmentType();
-    segmentType.setName("Match");
-    segment.setSegmentType(segmentType);
+    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType type =
+        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+    type.setName("Match");
+    segment.setSegmentType(type);
 
     when(segmentService.findByIdWithDetails(anyLong())).thenReturn(Optional.of(segment));
-    when(npcService.findAllByType(anyString())).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Commissioner")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Commentator")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Announcer")).thenReturn(new ArrayList<>());
     when(npcService.findAll()).thenReturn(new ArrayList<>());
-    when(wrestlerService.findAllBySegment(any(), anyLong())).thenReturn(new ArrayList<>());
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
   }
 
   @Test
   void testDialogInitialization() {
+    com.github.javydreamercsw.base.ui.service.NotificationService notificationService =
+        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class);
+
     NarrationDialog dialog =
         new NarrationDialog(
             segment,
@@ -85,8 +93,8 @@ class NarrationDialogTest extends AbstractViewTest {
             aiFactory,
             ringsideActionService,
             relationshipService,
-            universeContextService);
-
+            universeContextService,
+            notificationService);
     assertNotNull(dialog);
   }
 }
