@@ -66,7 +66,9 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
-@ActiveProfiles(value = "e2e", inheritProfiles = false)
+@ActiveProfiles(
+    value = {"e2e", "test"},
+    inheritProfiles = false)
 @Import({
   TestE2ESecurityConfig.class,
   com.github.javydreamercsw.management.config.TestNotionConfiguration.class

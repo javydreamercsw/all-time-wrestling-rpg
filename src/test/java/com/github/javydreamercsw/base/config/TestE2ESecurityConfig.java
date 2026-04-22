@@ -19,6 +19,9 @@ package com.github.javydreamercsw.base.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
+import com.vaadin.flow.spring.security.AuthenticationContext;
+import java.util.Optional;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +30,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -51,7 +56,22 @@ public class TestE2ESecurityConfig {
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
     // Basic form login for the "login" action used in LoginView
-    http.formLogin(form -> form.loginPage("/login").permitAll());
+    http.formLogin(
+        form ->
+            form.loginPage("/login")
+                .loginProcessingUrl("/login")
+                .defaultSuccessUrl("/?continue", true)
+                .permitAll());
+
+    // Ensure logout redirects to login page
+    http.logout(
+        logout ->
+            logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll());
 
     return http.build();
   }
@@ -65,5 +85,38 @@ public class TestE2ESecurityConfig {
   @ConditionalOnMissingBean
   public ObjectMapper objectMapper() {
     return new ObjectMapper();
+  }
+
+  @Bean
+  public AuthenticationContext authenticationContext() {
+    // Return a mocked AuthenticationContext for E2E tests to avoid dependency issues
+    // and NullPointerExceptions during logout
+    AuthenticationContext mock = Mockito.mock(AuthenticationContext.class);
+
+    // Mock common behavior used in SecurityUtils
+    Mockito.when(mock.isAuthenticated())
+        .thenAnswer(inv -> SecurityContextHolder.getContext().getAuthentication() != null);
+
+    Mockito.when(mock.getAuthenticatedUser(Mockito.any()))
+        .thenAnswer(
+            inv -> {
+              Class<?> type = inv.getArgument(0);
+              Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+              if (auth != null && type.isInstance(auth.getPrincipal())) {
+                return Optional.of(type.cast(auth.getPrincipal()));
+              }
+              return Optional.empty();
+            });
+
+    // Handle logout safely
+    Mockito.doAnswer(
+            inv -> {
+              SecurityContextHolder.clearContext();
+              return null;
+            })
+        .when(mock)
+        .logout();
+
+    return mock;
   }
 }
