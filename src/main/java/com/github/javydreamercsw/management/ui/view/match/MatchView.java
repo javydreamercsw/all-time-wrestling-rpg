@@ -108,6 +108,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       ringsideAiService;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
   private final com.github.javydreamercsw.management.service.team.TeamService teamService;
   private final com.github.javydreamercsw.management.service.title.TitleScriptService
       titleScriptService;
@@ -140,7 +141,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
           ringsideActionDataService,
       com.github.javydreamercsw.management.service.team.TeamService teamService,
-      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService) {
+      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -159,6 +161,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.ringsideActionDataService = ringsideActionDataService;
     this.teamService = teamService;
     this.titleScriptService = titleScriptService;
+    this.notificationService = notificationService;
   }
 
   @Override
@@ -871,15 +874,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                           segment.setNarration(generated);
                           segmentService.updateSegment(segment);
                           updateCommentaryDisplay();
-                          Notification.show("Narration generated!")
-                              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                          notificationService.showSuccess("Narration generated!");
                           ui.push();
                         }));
       }
     } catch (Exception e) {
       log.error("Failed to generate AI narration", e);
-      Notification.show("Failed to generate narration. Please check AI settings.")
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showAIServiceError(e);
     }
   }
 

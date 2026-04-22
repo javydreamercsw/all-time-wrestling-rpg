@@ -17,13 +17,12 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -44,6 +43,7 @@ public class AiSettingsView extends VerticalLayout {
 
   private final AiSettingsService aiSettingsService;
   private final GameSettingService gameSettingService;
+  private final NotificationService notificationService;
 
   private Checkbox aiProviderAuto;
   private NumberField aiTimeout;
@@ -72,9 +72,12 @@ public class AiSettingsView extends VerticalLayout {
 
   @Autowired
   public AiSettingsView(
-      AiSettingsService aiSettingsService, GameSettingService gameSettingService) {
+      AiSettingsService aiSettingsService,
+      GameSettingService gameSettingService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
+    this.notificationService = notificationService;
     init();
   }
 
@@ -278,7 +281,6 @@ public class AiSettingsView extends VerticalLayout {
     setting.setId(key);
     setting.setValue(value);
     gameSettingService.save(setting);
-    Notification.show("Setting '" + key + "' updated!")
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    notificationService.showSuccess("Setting '" + key + "' updated!");
   }
 }

@@ -137,6 +137,8 @@ public class ShowDetailView extends Main
   private Show currentShow;
   private Grid<Segment> segmentsGrid;
 
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+
   public ShowDetailView(
       ShowService showService,
       SegmentService segmentService,
@@ -159,7 +161,8 @@ public class ShowDetailView extends Main
       RingsideActionService ringsideActionService,
       ArenaService arenaService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService) {
+          relationshipService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -181,6 +184,7 @@ public class ShowDetailView extends Main
     this.ringsideActionService = ringsideActionService;
     this.arenaService = arenaService;
     this.relationshipService = relationshipService;
+    this.notificationService = notificationService;
     initializeComponents();
   }
 
@@ -834,7 +838,8 @@ public class ShowDetailView extends Main
                   segmentNarrationController,
                   segmentNarrationServiceFactory,
                   ringsideActionService,
-                  relationshipService);
+                  relationshipService,
+                  notificationService);
           dialog.open();
         });
 
@@ -856,8 +861,7 @@ public class ShowDetailView extends Main
   private void generateSummary(@NonNull Segment segment) {
     if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      Notification.show(reason, 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showError(reason);
       return;
     }
 
@@ -865,14 +869,11 @@ public class ShowDetailView extends Main
       String summary = segmentNarrationServiceFactory.summarizeNarration(segment.getNarration());
       segment.setSummary(summary);
       segmentService.updateSegment(segment);
-      Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      notificationService.showSuccess("Summary generated successfully!");
       refreshSegmentsGrid();
     } catch (Exception e) {
       log.error("Error generating summary", e);
-      Notification.show(
-              "Error generating summary: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showAIServiceError(e);
     }
   }
 
@@ -1306,17 +1307,11 @@ public class ShowDetailView extends Main
               try {
                 assert segment.getId() != null;
                 segmentService.deleteSegment(segment.getId());
-                Notification.show(
-                        "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
-                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                notificationService.showSuccess("Segment deleted successfully!");
                 confirmDialog.close();
                 refreshSegmentsGrid();
               } catch (Exception e) {
-                Notification.show(
-                        "Error deleting segment: " + e.getMessage(),
-                        5000,
-                        Notification.Position.MIDDLE)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                notificationService.showError("Error deleting segment: " + e.getMessage());
               }
             });
     deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -1338,26 +1333,20 @@ public class ShowDetailView extends Main
     // Validation
     if (segmentType == null) {
       log.warn("Validation failed: Segment type is null.");
-      Notification.show("Please select a segment type", 3000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showError("Please select a segment type");
       return false;
     }
 
     if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers == null || wrestlers.isEmpty()) {
         log.warn("Validation failed: Wrestlers are null or empty for non-promo segment.");
-        Notification.show("Please select at least one wrestler", 3000, Notification.Position.MIDDLE)
-            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        notificationService.showError("Please select at least one wrestler");
         return false;
       }
 
       if (wrestlers.size() < 2) {
         log.warn("Validation failed: Less than two wrestlers for a non-promo match.");
-        Notification.show(
-                "Please select at least two wrestlers for a match",
-                3000,
-                Notification.Position.MIDDLE)
-            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        notificationService.showError("Please select at least two wrestlers for a match");
         return false;
       }
     }
@@ -1366,11 +1355,7 @@ public class ShowDetailView extends Main
       for (Wrestler winner : winners) {
         if (!wrestlers.contains(winner)) {
           log.warn("Validation failed: Winner is not among selected wrestlers.");
-          Notification.show(
-                  "Winner must be one of the selected wrestlers",
-                  3000,
-                  Notification.Position.MIDDLE)
-              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          notificationService.showError("Winner must be one of the selected wrestlers");
           return false;
         }
       }
@@ -1415,20 +1400,16 @@ public class ShowDetailView extends Main
       // Save or update the segment
       if (segment.getId() != null) {
         segmentService.updateSegment(segment);
-        Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        notificationService.showSuccess("Segment updated successfully!");
       } else {
         segmentService.saveSegment(segment);
-        Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        notificationService.showSuccess("Segment added successfully!");
       }
       log.info("Segment saved successfully: {}", segment.getId());
       return true;
     } catch (Exception e) {
       log.error("Error saving segment: {}", e.getMessage(), e);
-      Notification.show(
-              "Error saving segment: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showError("Error saving segment: " + e.getMessage());
       return false;
     }
   }

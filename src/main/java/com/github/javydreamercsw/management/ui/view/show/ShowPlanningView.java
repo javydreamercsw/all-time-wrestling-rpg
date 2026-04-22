@@ -45,8 +45,6 @@ import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -82,6 +80,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
   private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -107,7 +106,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       NpcService npcService,
       ObjectMapper objectMapper,
       SegmentNarrationServiceFactory aiFactory,
-      ArenaService arenaService) {
+      ArenaService arenaService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
@@ -118,6 +118,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.objectMapper = objectMapper;
     this.aiFactory = aiFactory;
     this.arenaService = arenaService;
+    this.notificationService = notificationService;
 
     templateImage = new Image();
 
@@ -302,8 +303,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private void proposeSegments() {
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      Notification.show(reason, 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showError(reason);
       return;
     }
 
@@ -334,34 +334,28 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         proposedSegmentsGrid.setItems(segments);
         approveButton.setEnabled(true); // Enable approve button
       } else {
-        Notification.show("AI did not propose any segments.", 5_000, Notification.Position.MIDDLE)
-            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        notificationService.showWarning("AI did not propose any segments.");
       }
     } catch (Exception ex) {
       log.error("Error proposing segments", ex);
-      Notification.show(
-              "Error proposing segments: " + ex.getMessage(), 5_000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showAIServiceError(ex);
     }
   }
 
   private void approveSegments() {
     Show selectedShow = showComboBox.getValue();
     if (selectedShow == null) {
-      Notification.show("Please select a show first.", 5000, Notification.Position.MIDDLE);
+      notificationService.showWarning("Please select a show first.");
       return;
     }
 
     try {
       showPlanningService.approveSegments(selectedShow, segments);
-      Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      notificationService.showSuccess("Segments approved successfully!");
       proposedSegmentsGrid.setItems(new ArrayList<>());
     } catch (Exception ex) {
       log.error("Error approving segments", ex);
-      Notification.show(
-              "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showError("Error approving segments: " + ex.getMessage());
     }
   }
 
