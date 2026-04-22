@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,8 +45,8 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.vaadin.flow.router.QueryParameters;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,6 +116,7 @@ class ShowPlanningViewTest {
     Show show = new Show();
     show.setId(1L);
     show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
 
     // Mock the ComboBox to return the mock Show
     @SuppressWarnings("unchecked")
@@ -141,39 +143,35 @@ class ShowPlanningViewTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void loadContextTest() throws Exception {
     // Create a mock Show
+    long showId = 1L;
     Show show = new Show();
-    show.setId(1L);
+    show.setId(showId);
     show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
 
     // Mock the ComboBox to return the mock Show
-    @SuppressWarnings("unchecked")
-    ComboBox<Show> showComboBox = mock(ComboBox.class);
-    when(showComboBox.getValue()).thenReturn(show);
-    ReflectionTestUtils.setField(showPlanningView, "showComboBox", showComboBox);
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
 
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    context.setCurrentRivalries(new ArrayList<>());
-    context.setRecentPromos(new ArrayList<>());
-    context.setRecentSegments(new ArrayList<>());
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
 
-    // Create a mock ProposedShow
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
     segment1.setNarration("A vs B");
-    segment1.setParticipants(Arrays.asList("A", "B"));
+    segment1.setParticipants(List.of("A", "B"));
     ProposedSegment segment2 = new ProposedSegment();
     segment2.setType("Promo");
-    segment2.setNarration("C talks");
+    segment2.setNarration("C speaks");
     segment2.setParticipants(List.of("C"));
-    proposedShow.setSegments(Arrays.asList(segment1, segment2));
-
-    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
-    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
-        .thenReturn(proposedShow);
+    proposedShow.setSegments(List.of(segment1, segment2));
+    when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
@@ -200,7 +198,6 @@ class ShowPlanningViewTest {
         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
         contextArea.getValue());
 
-    @SuppressWarnings("unchecked")
     Grid<ProposedSegment> proposedSegmentsGrid =
         (Grid<ProposedSegment>)
             ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
@@ -211,33 +208,28 @@ class ShowPlanningViewTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void setParameterTest() throws Exception {
     // Create a mock Show
     long showId = 1L;
     Show show = new Show();
     show.setId(showId);
     show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
 
-    // Mock the ShowService to return the mock Show
     when(showService.getShowById(showId)).thenReturn(Optional.of(show));
 
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    context.setCurrentRivalries(new ArrayList<>());
-    context.setRecentPromos(new ArrayList<>());
-    context.setRecentSegments(new ArrayList<>());
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
 
-    // Create a mock ProposedShow
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
     segment1.setNarration("A vs B");
-    segment1.setParticipants(Arrays.asList("A", "B"));
+    segment1.setParticipants(List.of("A", "B"));
     proposedShow.setSegments(List.of(segment1));
-
-    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
-    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
-        .thenReturn(proposedShow);
+    when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
@@ -256,18 +248,10 @@ class ShowPlanningViewTest {
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
     showPlanningView.setParameter(mock(BeforeEvent.class), showId);
+    ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
     ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
 
-    // Debug: Print grid contents
-    @SuppressWarnings("unchecked")
-    Grid<ProposedSegment> debugGrid =
-        (Grid<ProposedSegment>)
-            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
-    List<ProposedSegment> debugItems = debugGrid.getGenericDataView().getItems().toList();
-    System.out.println("DEBUG: ProposedSegment grid items after proposeSegments(): " + debugItems);
-
     // Verify the results
-    @SuppressWarnings("unchecked")
     ComboBox<Show> showComboBox =
         (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
     assertEquals(show, showComboBox.getValue());
@@ -277,7 +261,6 @@ class ShowPlanningViewTest {
         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
         contextArea.getValue());
 
-    @SuppressWarnings("unchecked")
     Grid<ProposedSegment> proposedSegmentsGrid =
         (Grid<ProposedSegment>)
             ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
@@ -293,6 +276,7 @@ class ShowPlanningViewTest {
     Show show = new Show();
     show.setId(showId);
     show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
 
     // Mock the ComboBox to return the mock Show
     @SuppressWarnings("unchecked")
@@ -310,6 +294,6 @@ class ShowPlanningViewTest {
     viewDetailsButton.click();
 
     // Verify that navigate was called with the correct parameters
-    verify(ui).navigate(ShowDetailView.class, showId);
+    verify(ui).navigate(eq(ShowDetailView.class), eq(showId), any(QueryParameters.class));
   }
 }

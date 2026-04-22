@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -139,10 +140,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setItems(showService.getUpcomingShows(10));
     showComboBox.setItemLabelGenerator(
-        s -> s.getName() + " (" + s.getShowDate().format(DateTimeFormatter.ISO_LOCAL_DATE) + ")");
+        s ->
+            s.getName()
+                + " ("
+                + (s.getShowDate() != null
+                    ? s.getShowDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    : "Unscheduled")
+                + ")");
     showComboBox.setWidth("300px");
 
-    loadContextButton = new Button("Load Context", e -> loadPlanningContext());
+    loadContextButton = new Button("Load Context", e -> loadContext());
     loadContextButton.setEnabled(false);
 
     viewDetailsButton = new Button("View Show Details", e -> navigateToShowDetail());
@@ -276,13 +283,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private void navigateToShowDetail() {
     Show show = showComboBox.getValue();
     if (show != null) {
-      getUI()
-          .ifPresent(
-              ui ->
-                  ui.navigate(
-                      ShowDetailView.class,
-                      show.getId(),
-                      com.vaadin.flow.router.QueryParameters.of("ref", "booker")));
+      UI.getCurrent()
+          .navigate(
+              ShowDetailView.class,
+              show.getId(),
+              com.vaadin.flow.router.QueryParameters.of("ref", "booker"));
     }
   }
 
@@ -295,7 +300,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
   }
 
-  private void loadPlanningContext() {
+  private void loadContext() {
     Show show = showComboBox.getValue();
     if (show == null) return;
 
@@ -340,7 +345,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     try {
       showPlanningService.approveSegments(show, segments);
       notificationService.showSuccess("Segments created for " + show.getName());
-      getUI().ifPresent(ui -> ui.navigate(ShowDetailView.class, show.getId()));
+      UI.getCurrent().navigate(ShowDetailView.class, show.getId());
     } catch (Exception e) {
       log.error("Error approving planning", e);
       notificationService.showError("Failed to approve planning: " + e.getMessage());
