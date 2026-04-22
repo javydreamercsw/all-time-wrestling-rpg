@@ -80,14 +80,20 @@ public class NotificationService {
   }
 
   private AIServiceException findAIServiceException(Throwable t) {
-    if (t == null) return null;
-    if (t instanceof AIServiceException) return (AIServiceException) t;
+    if (t == null) {
+      return null;
+    }
+    if (t instanceof AIServiceException) {
+      return (AIServiceException) t;
+    }
     return findAIServiceException(t.getCause());
   }
 
   private void showRichAIError(@NonNull AIServiceException ex) {
     UI ui = UI.getCurrent();
-    if (ui == null) return;
+    if (ui == null) {
+      return;
+    }
 
     ui.access(
         () -> {
@@ -125,7 +131,9 @@ public class NotificationService {
 
   private String getUserFriendlyMessage(@NonNull AIServiceException ex) {
     String msg = ex.getMessage();
-    if (msg == null) return "An unknown error occurred with the AI service.";
+    if (msg == null) {
+      return "An unknown error occurred with the AI service.";
+    }
 
     // Simple heuristic: if it looks like Gemini's high demand error
     if (msg.contains("experiencing high demand") || msg.contains("UNAVAILABLE")) {
