@@ -36,7 +36,6 @@ import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -48,7 +47,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class TitleControllerIT extends AbstractControllerTest {
 
   @MockitoBean private TitleService titleService;
-  @Autowired private WrestlerService wrestlerService;
+  @MockitoBean private WrestlerService wrestlerService;
 
   @Test
   @DisplayName("Should create new title successfully")

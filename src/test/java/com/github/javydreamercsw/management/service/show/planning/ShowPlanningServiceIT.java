@@ -54,11 +54,13 @@ import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @SpringBootTest
 @MockitoSettings(strictness = Strictness.LENIENT)
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
   @MockitoBean private SegmentRepository segmentRepository;
@@ -69,7 +71,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private FactionService factionService;
-  @Autowired private WrestlerService wrestlerService;
+  @MockitoBean private WrestlerService wrestlerService;
 
   @MockitoSpyBean
   private ShowPlanningDtoMapper showPlanningDtoMapper; // IDE shows no usages, but it is needed.

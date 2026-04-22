@@ -40,20 +40,19 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.Mock;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WithMockUser(roles = "BOOKER")
 @TestPropertySource(properties = "data.initializer.enabled=false")
 class EditSegmentDialogTest extends AbstractViewTest {
 
-  @Autowired private WrestlerService wrestlerService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
-  @MockitoBean private TitleService titleService;
-  @MockitoBean private SegmentTypeRepository segmentTypeRepository;
-  @MockitoBean private com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TitleService titleService;
+  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private ProposedSegment segment;
   private Runnable onSave;
 
