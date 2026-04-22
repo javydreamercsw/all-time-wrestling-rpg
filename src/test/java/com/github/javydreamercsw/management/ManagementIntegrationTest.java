@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -38,28 +40,14 @@ import org.springframework.security.test.context.TestSecurityContextHolder;
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired protected CacheManager cacheManager;
+  @Autowired protected WrestlerRepository wrestlerRepository;
 
   @BeforeEach
   public void prepareTestEnvironment() {
+    org.mockito.MockitoAnnotations.openMocks(this);
     log.info("Resetting database for test: {}", this.getClass().getSimpleName());
 
-    // Re-initialize base data (universe, segment types, etc.) so IDs are always valid
-    // Run as admin to avoid AccessDeniedException in security tests
-    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
-    try {
-      SecurityContextHolder.getContext()
-          .setAuthentication(
-              new UsernamePasswordAuthenticationToken(
-                  "system",
-                  "system",
-                  java.util.List.of(
-                      new SimpleGrantedAuthority("ROLE_ADMIN"),
-                      new SimpleGrantedAuthority("ADMIN"),
-                      new SimpleGrantedAuthority("BOOKER"))));
-      dataInitializer.init();
-    } finally {
-      SecurityContextHolder.getContext().setAuthentication(originalAuth);
-    }
+    clearAllRepositories();
 
     // Refresh security context to ensure the principal has persistent entities
     refreshSecurityContext();
@@ -95,7 +83,29 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
                 refreshedAccount -> {
                   log.debug(
                       "Refreshing security context for user: {}", refreshedAccount.getUsername());
-                  login(refreshedAccount);
+
+                  // Force reload of wrestler if available
+                  Wrestler wrestler = null;
+                  if (refreshedAccount.getActiveWrestlerId() != null) {
+                    wrestler =
+                        wrestlerRepository
+                            .findById(refreshedAccount.getActiveWrestlerId())
+                            .orElse(null);
+                  }
+
+                  // Re-login to refresh the principal and authorities with persistent entities
+                  var principal = new CustomUserDetails(refreshedAccount, wrestler);
+                  var authorities =
+                      refreshedAccount.getRoles().stream()
+                          .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+                          .toList();
+
+                  var authentication =
+                      new UsernamePasswordAuthenticationToken(
+                          principal, refreshedAccount.getPassword(), authorities);
+
+                  SecurityContextHolder.getContext().setAuthentication(authentication);
+                  TestSecurityContextHolder.setAuthentication(authentication);
                 },
                 () -> {
                   log.warn("Account not found during refresh: {}, clearing context", username);

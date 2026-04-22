@@ -34,7 +34,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -58,11 +57,6 @@ class ShowTemplateNotionSyncServiceIT extends ManagementIntegrationTest {
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
 
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
-
   @Test
   void testSyncToNotion() {
     when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
@@ -83,7 +77,7 @@ class ShowTemplateNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Create a Show Type
     ShowType showType = new ShowType();
-    showType.setName("Weekly");
+    showType.setName("Weekly " + UUID.randomUUID());
     showType.setDescription("A weekly show type.");
     showType.setExpectedMatches(5);
     showType.setExpectedPromos(2);
@@ -99,7 +93,8 @@ class ShowTemplateNotionSyncServiceIT extends ManagementIntegrationTest {
     showTemplateRepository.save(showTemplate);
 
     // Sync to Notion for the first time
-    showTemplateNotionSyncService.syncToNotion("test-op-1");
+    showTemplateNotionSyncService.syncToNotion(
+        "test-op-1", java.util.List.of(showTemplate.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(showTemplate.getId());
@@ -131,7 +126,8 @@ class ShowTemplateNotionSyncServiceIT extends ManagementIntegrationTest {
     updatedShowTemplate.setDescription("Updated description " + UUID.randomUUID());
     updatedShowTemplate.setNotionUrl("https://www.notion.so/updated-url");
     showTemplateRepository.save(updatedShowTemplate);
-    showTemplateNotionSyncService.syncToNotion("test-op-2");
+    showTemplateNotionSyncService.syncToNotion(
+        "test-op-2", java.util.List.of(showTemplate.getId()));
     ShowTemplate updatedShowTemplate2 = showTemplateRepository.findById(showTemplate.getId()).get();
     assertTrue(updatedShowTemplate2.getLastSync().isAfter(updatedShowTemplate.getLastSync()));
 

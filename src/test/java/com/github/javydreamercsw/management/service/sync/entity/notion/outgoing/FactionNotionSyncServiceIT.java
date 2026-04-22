@@ -32,7 +32,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -54,11 +53,6 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -89,7 +83,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion for the first time
 
-    factionNotionSyncService.syncToNotion("test-op-1");
+    factionNotionSyncService.syncToNotion("test-op-1", java.util.List.of(faction.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(faction.getId());
@@ -111,7 +105,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
     updatedFaction.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
     factionRepository.saveAndFlush(updatedFaction);
 
-    factionNotionSyncService.syncToNotion("test-op-2");
+    factionNotionSyncService.syncToNotion("test-op-2", java.util.List.of(faction.getId()));
     Faction updatedFaction2 = factionRepository.findById(faction.getId()).get();
     assertTrue(updatedFaction2.getLastSync().isAfter(updatedFaction.getLastSync()));
 

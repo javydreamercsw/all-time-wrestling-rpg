@@ -69,7 +69,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private FactionService factionService;
-  @MockitoBean private WrestlerService wrestlerService;
+  @Autowired private WrestlerService wrestlerService;
 
   @MockitoSpyBean
   private ShowPlanningDtoMapper showPlanningDtoMapper; // IDE shows no usages, but it is needed.

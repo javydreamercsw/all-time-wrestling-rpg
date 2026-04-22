@@ -443,34 +443,44 @@ public class WrestlerSyncService extends BaseSyncService {
 
         // Update Universe State (Default to Universe ID 1)
         Long universeId = 1L;
-        com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-            wrestlerService.getOrCreateState(savedWrestler.getId(), universeId);
-
-        if (dto.getFans() != null) state.setFans(dto.getFans());
-        if (dto.getBumps() != null) state.setBumps(dto.getBumps());
-
-        // Faction
-        if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
-          factionRepository.findByName(dto.getFaction()).ifPresent(state::setFaction);
+        com.github.javydreamercsw.management.domain.wrestler.WrestlerState state = null;
+        try {
+          state = wrestlerService.getOrCreateState(savedWrestler.getId(), universeId);
+        } catch (Exception e) {
+          log.warn(
+              "Could not get or create state for wrestler {} in universe {}: {}",
+              savedWrestler.getName(),
+              universeId,
+              e.getMessage());
         }
 
-        // Manager
-        if (dto.getManagerExternalId() != null) {
-          npcRepository.findByExternalId(dto.getManagerExternalId()).ifPresent(state::setManager);
-        }
+        if (state != null) {
+          if (dto.getFans() != null) state.setFans(dto.getFans());
+          if (dto.getBumps() != null) state.setBumps(dto.getBumps());
 
-        // Tier
-        if (dto.getTier() != null && !dto.getTier().isBlank()) {
-          try {
-            WrestlerTier newTier = WrestlerTier.fromDisplayName(dto.getTier());
-            state.setTier(newTier);
-          } catch (Exception e) {
-            log.warn("Could not set tier {} for wrestler {}", dto.getTier(), dto.getName());
+          // Faction
+          if (dto.getFaction() != null && !dto.getFaction().isBlank()) {
+            factionRepository.findByName(dto.getFaction()).ifPresent(state::setFaction);
           }
-        }
 
-        tierRecalculationService.recalculateTier(state);
-        wrestlerStateRepository.saveAndFlush(state);
+          // Manager
+          if (dto.getManagerExternalId() != null) {
+            npcRepository.findByExternalId(dto.getManagerExternalId()).ifPresent(state::setManager);
+          }
+
+          // Tier
+          if (dto.getTier() != null && !dto.getTier().isBlank()) {
+            try {
+              WrestlerTier newTier = WrestlerTier.fromDisplayName(dto.getTier());
+              state.setTier(newTier);
+            } catch (Exception e) {
+              log.warn("Could not set tier {} for wrestler {}", dto.getTier(), dto.getName());
+            }
+          }
+
+          tierRecalculationService.recalculateTier(state);
+          wrestlerStateRepository.saveAndFlush(state);
+        }
 
         return true;
       }

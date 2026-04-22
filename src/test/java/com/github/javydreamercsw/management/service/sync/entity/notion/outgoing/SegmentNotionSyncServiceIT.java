@@ -54,7 +54,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -85,11 +84,6 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
 
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
-
   @Test
   void testSyncToNotion() {
     when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
@@ -108,8 +102,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
-    Universe defaultUniverse =
-        universeRepository.save(Universe.builder().name("Default Universe").build());
+    Universe defaultUniverse = universeRepository.findAll().get(0);
 
     // Create a Show Type
     ShowType showType = new ShowType();
@@ -130,13 +123,13 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Create a Segment Type
     SegmentType segmentType = new SegmentType();
-    segmentType.setName("Match");
+    segmentType.setName("Match " + UUID.randomUUID());
     segmentType.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     segmentTypeRepository.save(segmentType);
 
     // Create a Segment Rule
     SegmentRule segmentRule = new SegmentRule();
-    segmentRule.setName("No DQ");
+    segmentRule.setName("No DQ " + UUID.randomUUID());
     segmentRule.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     segmentRuleRepository.save(segmentRule);
 
@@ -192,7 +185,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion for the first time
 
-    segmentNotionSyncService.syncToNotion("test-op-1");
+    segmentNotionSyncService.syncToNotion("test-op-1", java.util.List.of(segment.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(segment.getId());
@@ -245,7 +238,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     // Ensure it's treated as changed
     updatedSegment.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
     segmentRepository.saveAndFlush(updatedSegment);
-    segmentNotionSyncService.syncToNotion("test-op-2");
+    segmentNotionSyncService.syncToNotion("test-op-2", java.util.List.of(segment.getId()));
     Segment updatedSegment2 = segmentRepository.findById(segment.getId()).get();
     assertTrue(updatedSegment2.getLastSync().isAfter(updatedSegment.getLastSync()));
 

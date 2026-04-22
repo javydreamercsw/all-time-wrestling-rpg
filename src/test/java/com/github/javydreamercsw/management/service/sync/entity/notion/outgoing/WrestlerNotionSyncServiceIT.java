@@ -36,7 +36,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -62,11 +61,6 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
 
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
-
   @Test
   void testSyncToNotion() {
     when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
@@ -85,8 +79,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
-    Universe defaultUniverse =
-        universeRepository.save(Universe.builder().name("Default Universe").build());
+    Universe defaultUniverse = universeRepository.findAll().get(0);
 
     // Create a new Wrestler
     Wrestler wrestler = new Wrestler();
@@ -104,7 +97,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion for the first time
 
-    wrestlerNotionSyncService.syncToNotion("test-op-1");
+    wrestlerNotionSyncService.syncToNotion("test-op-1", java.util.List.of(wrestler.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(wrestler.getId());
@@ -130,7 +123,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     updatedWrestler.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
     wrestlerRepository.saveAndFlush(updatedWrestler);
 
-    wrestlerNotionSyncService.syncToNotion("test-op-2");
+    wrestlerNotionSyncService.syncToNotion("test-op-2", java.util.List.of(wrestler.getId()));
 
     WrestlerState updatedState2 =
         wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());

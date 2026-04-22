@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -48,7 +49,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @TestPropertySource(properties = "data.initializer.enabled=false")
 class EditSegmentDialogTest extends AbstractViewTest {
 
-  @MockitoBean private WrestlerService wrestlerService;
+  @Autowired private WrestlerService wrestlerService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private TitleService titleService;
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;

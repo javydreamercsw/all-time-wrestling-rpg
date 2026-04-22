@@ -33,7 +33,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -55,11 +54,6 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -87,7 +81,7 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
     npcRepository.save(npc);
 
     // Sync to Notion for the first time
-    npcNotionSyncService.syncToNotion("test-op-1");
+    npcNotionSyncService.syncToNotion("test-op-1", java.util.List.of(npc.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(npc.getId());
@@ -106,7 +100,7 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
     // Sync to Notion again with updates
     updatedNpc.setDescription("Updated NPC description");
     npcRepository.save(updatedNpc);
-    npcNotionSyncService.syncToNotion("test-op-2");
+    npcNotionSyncService.syncToNotion("test-op-2", java.util.List.of(npc.getId()));
     Npc updatedNpc2 = npcRepository.findById(npc.getId()).get();
     assertTrue(updatedNpc2.getLastSync().isAfter(updatedNpc.getLastSync()));
 

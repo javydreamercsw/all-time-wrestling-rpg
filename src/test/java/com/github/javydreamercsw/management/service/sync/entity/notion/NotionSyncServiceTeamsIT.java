@@ -31,9 +31,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +49,6 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
 
   @MockitoBean private NotionHandler notionHandler;
   @MockitoBean private NotionPageDataExtractor notionPageDataExtractor;
-  @MockitoBean private WrestlerService wrestlerService;
 
   private MockedStatic<EnvironmentVariableUtil> mockedEnv;
 
@@ -101,9 +98,6 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
     // Mock relation extraction to return the two created wrestlers
     when(notionPageDataExtractor.extractRelationIds(teamPage, "Members"))
         .thenReturn(List.of(w1.getExternalId(), w2.getExternalId()));
-
-    when(wrestlerService.findByExternalId(w1.getExternalId())).thenReturn(Optional.of(w1));
-    when(wrestlerService.findByExternalId(w2.getExternalId())).thenReturn(Optional.of(w2));
 
     // When
     BaseSyncService.SyncResult result =
