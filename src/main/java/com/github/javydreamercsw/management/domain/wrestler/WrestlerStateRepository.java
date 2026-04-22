@@ -32,6 +32,8 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
 
   List<WrestlerState> findByWrestlerIsPlayerFalseAndUniverseId(Long universeId);
 
+  List<WrestlerState> findByUniverseId(Long universeId);
+
   List<WrestlerState> findByUniverseIdAndTier(
       Long universeId, com.github.javydreamercsw.base.domain.wrestler.WrestlerTier tier);
 }

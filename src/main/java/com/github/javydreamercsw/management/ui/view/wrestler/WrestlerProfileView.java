@@ -319,7 +319,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       }
       wrestlerDetails.setText(details);
 
-      wrestlerImage.setSrc(wrestlerService.resolveWrestlerImage(wrestler));
+      wrestlerImage.setSrc(wrestlerService.resolveWrestlerImage(wrestler).url());
 
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats =

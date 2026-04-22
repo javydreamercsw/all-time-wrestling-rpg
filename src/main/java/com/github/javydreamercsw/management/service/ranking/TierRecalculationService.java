@@ -24,6 +24,8 @@ import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ public class TierRecalculationService implements RankingService {
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final TierBoundaryService tierBoundaryService;
+  private final UniverseContextService universeContextService;
 
   @Override
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
@@ -175,6 +178,13 @@ public class TierRecalculationService implements RankingService {
       }
     }
     log.info("Tier recalculation finished.");
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void recalculateAllTiers() {
+    Long universeId = universeContextService.getCurrentUniverseId();
+    List<WrestlerState> states = wrestlerStateRepository.findByUniverseId(universeId);
+    recalculateRanking(new ArrayList<>(states));
   }
 
   @Transactional

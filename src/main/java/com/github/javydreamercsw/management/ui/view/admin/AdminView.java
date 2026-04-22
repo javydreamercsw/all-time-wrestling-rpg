@@ -21,10 +21,14 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import com.github.javydreamercsw.base.ai.image.ImageCleanupService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
+import com.github.javydreamercsw.management.ui.view.account.AccountListView;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
 import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
 import com.github.javydreamercsw.management.ui.view.season.SeasonSettingsView;
@@ -33,8 +37,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -42,11 +44,11 @@ import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Route("admin")
 @PageTitle("Admin")
@@ -59,16 +61,23 @@ public class AdminView extends VerticalLayout {
   private final WrestlerRepository wrestlerRepository;
   private final ImageCleanupService imageCleanupService;
   private final WrestlerService wrestlerService;
+  private final UniverseContextService universeContextService;
+  private final NotificationService notificationService;
 
+  @Autowired
   public AdminView(
       RankingService rankingService,
       WrestlerRepository wrestlerRepository,
       ImageCleanupService imageCleanupService,
-      WrestlerService wrestlerService) {
+      WrestlerService wrestlerService,
+      UniverseContextService universeContextService,
+      NotificationService notificationService) {
     this.rankingService = rankingService;
     this.wrestlerRepository = wrestlerRepository;
     this.imageCleanupService = imageCleanupService;
     this.wrestlerService = wrestlerService;
+    this.universeContextService = universeContextService;
+    this.notificationService = notificationService;
     initializeUI();
   }
 
@@ -98,129 +107,73 @@ public class AdminView extends VerticalLayout {
         new Tab("Holidays"),
         new Tab("Season Settings"),
         new Tab("Campaign Cards"),
-        new Tab("Expansion Management"),
-        new Tab("Wrestler Relationships"));
+        new Tab("Manage Accounts"));
   }
 
   private Div createPages(Tabs tabs) {
-    Instantiator instantiator = VaadinService.getCurrent().getInstantiator();
-    VerticalLayout adminToolsPage = createAdminToolsPage();
-    adminToolsPage.setSizeFull();
-
-    AiSettingsView aiSettingsView = instantiator.getOrCreate(AiSettingsView.class);
-    GameSettingsView gameSettingsView = instantiator.getOrCreate(GameSettingsView.class);
-    HolidayListView holidayListView = instantiator.getOrCreate(HolidayListView.class);
-    SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
-    CampaignAbilityCardListView campaignAbilityCardListView =
-        instantiator.getOrCreate(CampaignAbilityCardListView.class);
-    ExpansionManagementView expansionManagementView =
-        instantiator.getOrCreate(ExpansionManagementView.class);
-    WrestlerRelationshipManagementView relationshipManagementView =
-        instantiator.getOrCreate(WrestlerRelationshipManagementView.class);
-
-    Div pages =
-        new Div(
-            adminToolsPage,
-            aiSettingsView,
-            gameSettingsView,
-            holidayListView,
-            seasonSettingsView,
-            campaignAbilityCardListView,
-            expansionManagementView,
-            relationshipManagementView);
+    Div pages = new Div();
     pages.setSizeFull();
 
-    Map<Tab, Component> tabsToPages =
+    Map<Integer, Component> tabToPage =
         Map.of(
-            tabs.getTabAt(0), adminToolsPage,
-            tabs.getTabAt(1), aiSettingsView,
-            tabs.getTabAt(2), gameSettingsView,
-            tabs.getTabAt(3), holidayListView,
-            tabs.getTabAt(4), seasonSettingsView,
-            tabs.getTabAt(5), campaignAbilityCardListView,
-            tabs.getTabAt(6), expansionManagementView,
-            tabs.getTabAt(7), relationshipManagementView);
+            0, createAdminToolsPage(),
+            1, Instantiator.get(UI.getCurrent()).getOrCreate(AiSettingsView.class),
+            2, Instantiator.get(UI.getCurrent()).getOrCreate(GameSettingsView.class),
+            3, Instantiator.get(UI.getCurrent()).getOrCreate(HolidayListView.class),
+            4, Instantiator.get(UI.getCurrent()).getOrCreate(SeasonSettingsView.class),
+            5, Instantiator.get(UI.getCurrent()).getOrCreate(CampaignAbilityCardListView.class),
+            6, createManageAccountsPage());
+
+    tabToPage.values().forEach(p -> p.setVisible(false));
+    tabToPage.get(0).setVisible(true);
 
     tabs.addSelectedChangeListener(
         event -> {
-          tabsToPages.values().forEach(page -> page.setVisible(false));
-          Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
-          selectedPage.setVisible(true);
-          if (selectedPage instanceof ExpansionManagementView emv) {
-            emv.refresh();
-          }
-          if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
-            rmv.refresh();
-          }
+          tabToPage.values().forEach(p -> p.setVisible(false));
+          tabToPage.get(tabs.getSelectedIndex()).setVisible(true);
         });
 
-    // Hide all pages except the first one
-    tabsToPages.values().stream().skip(1).forEach(page -> page.setVisible(false));
-
-    // Show the first page initially.
-    tabsToPages.get(tabs.getTabAt(0)).setVisible(true);
-
+    tabToPage.values().forEach(pages::add);
     return pages;
   }
 
-  private VerticalLayout createAdminToolsPage() {
+  private Component createAdminToolsPage() {
     VerticalLayout content = new VerticalLayout();
-    content.addClassNames(
-        LumoUtility.Padding.MEDIUM,
-        LumoUtility.Border.ALL,
-        LumoUtility.BorderRadius.MEDIUM,
-        LumoUtility.Background.CONTRAST_5);
+    content.setPadding(true);
+    content.setSpacing(true);
 
     Button recalculateTiersButton = new Button("Recalculate Wrestler Tiers");
     recalculateTiersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     recalculateTiersButton.addClickListener(
         event -> {
           try {
-            rankingService.recalculateRanking(
-                new java.util.ArrayList<>(wrestlerRepository.findAll()));
-            Notification.show(
-                    "Wrestler tiers recalculated successfully!",
-                    3000,
-                    Notification.Position.TOP_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            log.info("Manual tier recalculation triggered and completed successfully.");
+            if (rankingService instanceof TierRecalculationService trs) {
+              trs.recalculateAllTiers();
+            } else {
+              // Fallback if not TierRecalculationService
+              rankingService.recalculateRanking(
+                  new java.util.ArrayList<>(wrestlerRepository.findAll()));
+            }
+            notificationService.showSuccess("All wrestler tiers recalculated successfully!");
           } catch (Exception e) {
-            Notification.show(
-                    "Error during tier recalculation: " + e.getMessage(),
-                    5000,
-                    Notification.Position.TOP_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            log.error("Error during manual tier recalculation", e);
+            notificationService.showError("Error recalculating tiers: " + e.getMessage());
+            log.error("Error during tier recalculation", e);
           }
         });
 
-    Button manageAccountsButton = new Button("Manage Accounts");
-    manageAccountsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate("/account-list"));
+    Button manageAccountsButton = new Button("Manage Accounts and Roles");
+    manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate(AccountListView.class));
 
-    Button observabilityButton = new Button("System Observability");
-    observabilityButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    observabilityButton.addClickListener(
-        event -> UI.getCurrent().navigate(SystemObservabilityView.class));
-    observabilityButton.setId("observability-dashboard");
-
-    Button cleanupImagesButton = new Button("Cleanup Unused Images");
+    Button cleanupImagesButton = new Button("Cleanup AI Generated Images");
     cleanupImagesButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     cleanupImagesButton.addClickListener(
         event -> {
           try {
-            int deletedCount = imageCleanupService.cleanupUnusedImages();
-            Notification.show(
-                    String.format("Cleanup complete. Deleted %d unused images.", deletedCount),
-                    3000,
-                    Notification.Position.TOP_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            int count = imageCleanupService.cleanupUnusedImages();
+            notificationService.showSuccess(
+                "AI image cleanup completed successfully! Deleted " + count + " images.");
           } catch (Exception e) {
-            Notification.show(
-                    "Error during image cleanup: " + e.getMessage(),
-                    5000,
-                    Notification.Position.TOP_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showError("Error during image cleanup: " + e.getMessage());
             log.error("Error during image cleanup", e);
           }
         });
@@ -230,27 +183,20 @@ public class AdminView extends VerticalLayout {
     resetConditionButton.addClickListener(
         event -> {
           try {
-            wrestlerService.resetAllWearAndTear();
-            Notification.show(
-                    "All wrestlers reset to 100% physical condition!",
-                    3000, Notification.Position.TOP_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            wrestlerService.resetAllWearAndTear(universeContextService.getCurrentUniverseId());
+            notificationService.showSuccess("All wrestlers reset to 100% physical condition!");
           } catch (Exception e) {
-            Notification.show(
-                    "Error resetting physical condition: " + e.getMessage(),
-                    5000,
-                    Notification.Position.TOP_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showError("Error resetting physical condition: " + e.getMessage());
             log.error("Error during physical condition reset", e);
           }
         });
 
     content.add(
-        recalculateTiersButton,
-        manageAccountsButton,
-        observabilityButton,
-        cleanupImagesButton,
-        resetConditionButton);
+        recalculateTiersButton, manageAccountsButton, cleanupImagesButton, resetConditionButton);
     return content;
+  }
+
+  private Component createManageAccountsPage() {
+    return new Div(); // Placeholder
   }
 }

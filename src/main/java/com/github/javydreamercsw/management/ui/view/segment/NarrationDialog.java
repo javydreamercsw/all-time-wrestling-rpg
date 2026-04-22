@@ -44,8 +44,6 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Pre;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -77,6 +75,7 @@ public class NarrationDialog extends Dialog {
           .WrestlerRelationshipService
       relationshipService;
   private final UniverseContextService universeContextService;
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -91,8 +90,8 @@ public class NarrationDialog extends Dialog {
   private final ComboBox<Npc> ringAnnouncerField;
   private final MultiSelectComboBox<Npc> otherNpcsField;
   private final VerticalLayout teamsLayout;
-  private final Consumer<Segment> onSaveCallback;
   private final SegmentNarrationController segmentNarrationController;
+  private final Consumer<Segment> onSaveCallback;
 
   public NarrationDialog(
       Segment segment,
@@ -107,7 +106,8 @@ public class NarrationDialog extends Dialog {
       RingsideActionService ringsideActionService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      UniverseContextService universeContextService) {
+      UniverseContextService universeContextService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.segmentService = segmentService;
     this.segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
     this.objectMapper = new ObjectMapper();
@@ -116,6 +116,7 @@ public class NarrationDialog extends Dialog {
     this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
     this.segmentNarrationController = segmentNarrationController;
+    this.notificationService = notificationService;
     this.aiFactory = aiFactory;
     this.ringsideActionService = ringsideActionService;
     this.relationshipService = relationshipService;
@@ -177,10 +178,7 @@ public class NarrationDialog extends Dialog {
             int randomIndex = (int) (Math.random() * referees.size());
             refereeField.setValue(referees.get(randomIndex));
           } else {
-            Notification.show(
-                "No referees available to select randomly.",
-                3000,
-                Notification.Position.BOTTOM_START);
+            notificationService.showError("No referees available to select randomly.");
           }
         });
     HorizontalLayout refereeLayout = new HorizontalLayout(refereeField, randomRefereeButton);
@@ -297,8 +295,7 @@ public class NarrationDialog extends Dialog {
   private void generateNarration() {
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       String reason = "No AI providers are currently enabled or reachable.";
-      Notification.show(reason, 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showError(reason);
       return;
     }
 
@@ -329,7 +326,7 @@ public class NarrationDialog extends Dialog {
       }
     } catch (Exception e) {
       log.error("Error generating segment narration", e);
-      showError("Failed to generate narration: " + e.getMessage());
+      notificationService.showAIServiceError(e);
     } finally {
       showProgress(false);
     }
@@ -624,8 +621,7 @@ public class NarrationDialog extends Dialog {
   }
 
   private void showError(@NonNull String message) {
-    Notification.show(message, 5000, Notification.Position.BOTTOM_END)
-        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    notificationService.showError(message);
   }
 
   private void showRetryDialog(@NonNull JsonNode errorResponse) {
@@ -697,7 +693,7 @@ public class NarrationDialog extends Dialog {
       }
     } catch (Exception e) {
       log.error("Error retrying with provider: {}", provider, e);
-      showError("Failed to generate narration: " + e.getMessage());
+      notificationService.showAIServiceError(e);
     } finally {
       showProgress(false);
     }
@@ -716,11 +712,7 @@ public class NarrationDialog extends Dialog {
               ui ->
                   ui.access(
                       () -> {
-                        Notification.show(
-                                "Narration saved successfully!",
-                                3000,
-                                Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        notificationService.showSuccess("Narration saved successfully!");
                         onSaveCallback.accept(segment);
                         close();
                       }));
@@ -728,7 +720,11 @@ public class NarrationDialog extends Dialog {
       log.error("Error saving narration", e);
       getUI()
           .ifPresent(
-              ui -> ui.access(() -> showError("Failed to save narration: " + e.getMessage())));
+              ui ->
+                  ui.access(
+                      () ->
+                          notificationService.showError(
+                              "Failed to save narration: " + e.getMessage())));
     }
   }
 

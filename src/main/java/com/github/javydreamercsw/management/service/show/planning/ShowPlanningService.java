@@ -209,7 +209,9 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerService.findAllFiltered(null, genderConstraint, null);
+    List<Wrestler> allWrestlers =
+        wrestlerService.findAllFiltered(
+            null, genderConstraint, show.getUniverse().getId(), (String) null, null);
 
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);

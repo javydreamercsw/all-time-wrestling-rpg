@@ -172,7 +172,8 @@ class ShowPlanningServiceTest {
     activeWrestler.setName("Active Wrestler");
     activeWrestler.setActive(true);
 
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(List.of(activeWrestler));
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());

@@ -157,7 +157,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(contender));
 
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     ShowType pleShowType = new ShowType();
@@ -235,7 +236,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -310,7 +312,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -365,7 +368,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(numberOneContender));
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -429,7 +433,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     rivalry2.setHeat(50);
 
     // Mock the wrestler service to return our wrestlers
-    when(wrestlerService.findAllFiltered(any(), any(), any()))
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3, wrestler4));
 
     // Mock the rivalry service to return appropriate rivalries for each wrestler
@@ -512,7 +516,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
 
     // Mock the wrestler service to return our wrestler
-    when(wrestlerService.findAllFiltered(any(), any(), any()))
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(Collections.singletonList(wrestler1));
 
     // Mock the rivalry service to return empty list (no rivalries)

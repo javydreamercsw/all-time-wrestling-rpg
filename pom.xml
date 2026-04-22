@@ -1129,7 +1129,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-war-plugin</artifactId>
-            <version>3.4.0</version>
+            <version>3.5.1</version>
             <executions>
               <execution>
                 <id>default-war</id>
@@ -1299,7 +1299,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>0.11.3</version>
+            <version>1.0.0</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>

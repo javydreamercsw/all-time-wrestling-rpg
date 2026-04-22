@@ -38,6 +38,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -50,6 +51,7 @@ public class EditSegmentDialog extends Dialog {
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  private final Long universeId;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
@@ -80,6 +82,7 @@ public class EditSegmentDialog extends Dialog {
       SegmentRuleRepository segmentRuleRepository,
       com.github.javydreamercsw.management.service.npc.NpcService npcService,
       Gender defaultGenderConstraint,
+      Long universeId,
       Runnable onSave) {
     this.segment = segment;
     this.wrestlerRepository = wrestlerRepository;
@@ -88,6 +91,7 @@ public class EditSegmentDialog extends Dialog {
     this.segmentTypeRepository = segmentTypeRepository;
     this.segmentRuleRepository = segmentRuleRepository;
     this.npcService = npcService;
+    this.universeId = universeId;
     this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
@@ -260,6 +264,7 @@ public class EditSegmentDialog extends Dialog {
         summaryArea,
         narrationArea);
 
+    // Buttons
     saveButton = new Button("Save", e -> save());
     cancelButton = new Button("Cancel", e -> close());
 
@@ -292,14 +297,14 @@ public class EditSegmentDialog extends Dialog {
     synergyBonusLabel.setVisible(totalBonus > 0);
   }
 
-  private void refreshParticipantsList(java.util.Set<Wrestler> selectedWrestlers) {
+  private void refreshParticipantsList(Set<Wrestler> selectedWrestlers) {
 
     AlignmentType alignment = alignmentFilter.getValue();
 
     Gender gender = genderFilter.getValue();
 
-    List<Wrestler> filteredWrestlers = wrestlerService.findAllFiltered(alignment, gender, null);
-
+    List<Wrestler> filteredWrestlers =
+        wrestlerService.findAllFiltered(alignment, gender, universeId, selectedWrestlers);
     participantsCombo.setItems(filteredWrestlers);
   }
 

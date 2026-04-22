@@ -238,11 +238,13 @@ class WrestlerServiceTest {
         .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
 
     // Test 1: Filter by Alignment (FACE)
-    List<Wrestler> faceWrestlers = wrestlerService.findAllFiltered(AlignmentType.FACE, null, null);
+    List<Wrestler> faceWrestlers =
+        wrestlerService.findAllFiltered(AlignmentType.FACE, null, 1L, (String) null, null);
     assertEquals(2, faceWrestlers.size());
 
     // Test 2: Filter by Gender (FEMALE)
-    List<Wrestler> femaleWrestlers = wrestlerService.findAllFiltered(null, Gender.FEMALE, null);
+    List<Wrestler> femaleWrestlers =
+        wrestlerService.findAllFiltered(null, Gender.FEMALE, 1L, (String) null, null);
     assertEquals(1, femaleWrestlers.size());
     assertEquals("Active NPC", femaleWrestlers.get(0).getName());
   }
