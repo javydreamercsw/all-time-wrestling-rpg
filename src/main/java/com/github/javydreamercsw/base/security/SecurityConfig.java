@@ -43,7 +43,7 @@ public class SecurityConfig {
   private boolean httpsEnforcementDisabled;
 
   @Bean
-  @Profile("production | dev")
+  @Profile("!test & !e2e")
   public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
     http.authorizeHttpRequests(
