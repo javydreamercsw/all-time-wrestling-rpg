@@ -30,6 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 
 /** A utility class for general security-related operations. */
 @Slf4j
@@ -37,6 +38,15 @@ public final class GeneralSecurityUtils {
 
   private GeneralSecurityUtils() {
     // private constructor to prevent instantiation
+  }
+
+  /**
+   * Get the current security context strategy.
+   *
+   * @return the current strategy
+   */
+  private static SecurityContextHolderStrategy getStrategy() {
+    return SecurityContextHolder.getContextHolderStrategy();
   }
 
   /**
@@ -69,15 +79,20 @@ public final class GeneralSecurityUtils {
    */
   public static <T> T runWithContext(
       @NonNull SecurityContext context, @NonNull Supplier<T> supplier) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+    SecurityContextHolderStrategy strategy = getStrategy();
+    SecurityContext originalContext = strategy.getContext();
     try {
-      SecurityContextHolder.setContext(context);
+      log.info("Setting provided SecurityContext in thread '{}'", Thread.currentThread().getName());
+      strategy.setContext(context);
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        SecurityContextHolder.setContext(originalContext);
+      if (originalContext != null) {
+        log.info(
+            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
+        strategy.setContext(originalContext);
       } else {
-        SecurityContextHolder.clearContext();
+        log.info("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+        strategy.clearContext();
       }
     }
   }
@@ -87,6 +102,9 @@ public final class GeneralSecurityUtils {
    *
    * @param <T> The type of the result.
    * @param supplier The supplier to run.
+   * @param username The username to use.
+   * @param password The password to use.
+   * @param role The role to use.
    * @return The result of the supplier.
    */
   public static <T> T runAs(
@@ -94,9 +112,10 @@ public final class GeneralSecurityUtils {
       @NonNull String username,
       @NonNull String password,
       @NonNull String role) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+    SecurityContextHolderStrategy strategy = getStrategy();
+    SecurityContext originalContext = strategy.getContext();
     try {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      SecurityContext context = strategy.createEmptyContext();
 
       // Create a mock account and role for the principal
       Account account = new Account(username, password, username + "@example.com");
@@ -128,10 +147,10 @@ public final class GeneralSecurityUtils {
           username,
           role,
           Thread.currentThread().getName());
-      SecurityContextHolder.setContext(context);
+      strategy.setContext(context);
 
       // Verification log to catch immediate failure
-      Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+      Authentication currentAuth = strategy.getContext().getAuthentication();
       if (currentAuth == null) {
         log.error(
             "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
@@ -146,13 +165,13 @@ public final class GeneralSecurityUtils {
 
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
+      if (originalContext != null) {
         log.info(
             "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.setContext(originalContext);
+        strategy.setContext(originalContext);
       } else {
         log.info("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.clearContext();
+        strategy.clearContext();
       }
     }
   }

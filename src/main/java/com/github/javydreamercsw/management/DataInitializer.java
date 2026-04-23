@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
@@ -246,12 +247,8 @@ public class DataInitializer implements Initializable {
   private void createDefaultUniverse() {
     if (universeRepository.count() == 0) {
       log.info("Creating default universe...");
-      com.github.javydreamercsw.management.domain.universe.Universe defaultUniverse =
-          com.github.javydreamercsw.management.domain.universe.Universe.builder()
-              .name("Default Universe")
-              .type(
-                  com.github.javydreamercsw.management.domain.universe.Universe.UniverseType.GLOBAL)
-              .build();
+      Universe defaultUniverse =
+          Universe.builder().name("Default Universe").type(Universe.UniverseType.GLOBAL).build();
       universeRepository.saveAndFlush(defaultUniverse);
       log.info("Default universe created.");
     }

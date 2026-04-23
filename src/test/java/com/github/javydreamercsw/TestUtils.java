@@ -24,14 +24,11 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.util.UUID;
 import lombok.NonNull;
+import lombok.Setter;
 
 public class TestUtils {
 
-  private static Universe defaultUniverse;
-
-  public static void setDefaultUniverse(Universe universe) {
-    defaultUniverse = universe;
-  }
+  @Setter private static Universe defaultUniverse;
 
   /**
    * Create a wrestler with default values. Still needs to be persisted in the database.

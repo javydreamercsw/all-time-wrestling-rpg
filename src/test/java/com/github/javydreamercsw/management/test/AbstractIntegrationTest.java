@@ -27,8 +27,15 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
@@ -69,6 +76,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
@@ -80,6 +88,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -96,6 +105,7 @@ public abstract class AbstractIntegrationTest {
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
 
+  @Autowired protected ApplicationContext applicationContext;
   @Autowired protected InboxRepository inboxRepository;
   @Autowired protected InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired protected WrestlerRepository wrestlerRepository;
@@ -136,33 +146,18 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected TitleRepository titleRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
   @Autowired protected UniverseRepository universeRepository;
+  @Autowired protected UniverseContextService universeContextService;
   @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
   @Autowired protected DraftRepository draftRepository;
   @Autowired protected DraftPickRepository draftPickRepository;
   @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.campaign.CampaignRepository
-      campaignRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
-
-  @Autowired protected com.github.javydreamercsw.management.DatabaseCleanup databaseCleanup;
-  @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired protected CampaignRepository campaignRepository;
+  @Autowired protected CampaignStateRepository campaignStateRepository;
+  @Autowired protected BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Autowired protected CampaignEncounterRepository campaignEncounterRepository;
+  @Autowired protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired protected DatabaseCleanup databaseCleanup;
+  @Autowired protected DataInitializer dataInitializer;
 
   protected boolean skipDataInit = false;
 
@@ -286,7 +281,6 @@ public abstract class AbstractIntegrationTest {
                 // Explicitly clear universe table to prevent ID 1 conflicts
                 universeRepository.deleteAll();
                 universeRepository.flush();
-
                 if (cacheManager != null) {
                   log.info("Clearing all caches...");
                   cacheManager
@@ -310,6 +304,7 @@ public abstract class AbstractIntegrationTest {
                       .ifPresent(
                           u -> {
                             com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                            universeContextService.setCurrentUniverse(u);
                           });
                 }
 

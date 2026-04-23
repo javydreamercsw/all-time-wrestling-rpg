@@ -229,7 +229,7 @@ public class InjuryService {
   }
 
   /** Force heal an injury (Admin only). Bypasses dice roll check by ensuring a successful roll. */
-  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)

@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -43,6 +44,7 @@ public class CampaignDramaService {
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
   private final CampaignService campaignService;
+  private final UniverseContextService universeContextService;
   private final Random random;
 
   /**
@@ -105,7 +107,10 @@ public class CampaignDramaService {
     String description =
         "You encounter your rival " + rival.getName() + " backstage. Tensions are high.";
 
-    Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+    Long universeId =
+        campaign.getUniverse() != null
+            ? campaign.getUniverse().getId()
+            : universeContextService.getCurrentUniverseId();
 
     return dramaEventService.createDramaEvent(
         player.getId(),
@@ -137,7 +142,10 @@ public class CampaignDramaService {
     String description =
         "A mysterious outsider, " + outsider.getName() + ", has arrived to challenge you.";
 
-    Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+    Long universeId =
+        campaign.getUniverse() != null
+            ? campaign.getUniverse().getId()
+            : universeContextService.getCurrentUniverseId();
 
     return dramaEventService.createDramaEvent(
         player.getId(),

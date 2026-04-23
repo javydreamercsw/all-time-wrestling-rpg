@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -25,10 +26,9 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
-@WithMockUser(roles = "BOOKER")
+@WithCustomMockUser(roles = {"BOOKER"})
 class InjuryPenaltiesTest extends AbstractIntegrationTest {
 
   @Autowired private InjuryService injuryService;
