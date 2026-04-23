@@ -43,6 +43,11 @@ public class TestUtils {
    */
   public static Wrestler createWrestler(@NonNull String name, long fans, Universe universe) {
     Universe finalUniverse = universe != null ? universe : defaultUniverse;
+    if (finalUniverse == null) {
+      throw new IllegalStateException(
+          "No default universe set in TestUtils. Call setDefaultUniverse first or pass a"
+              + " universe.");
+    }
     Wrestler wrestler = createWrestler(name, finalUniverse);
     setFans(wrestler, fans, finalUniverse);
     return wrestler;
@@ -79,6 +84,11 @@ public class TestUtils {
    */
   public static Wrestler createWrestler(@NonNull String name, Universe universe) {
     Universe finalUniverse = universe != null ? universe : defaultUniverse;
+    if (finalUniverse == null) {
+      throw new IllegalStateException(
+          "No default universe set in TestUtils. Call setDefaultUniverse first or pass a"
+              + " universe.");
+    }
     Wrestler wrestler =
         createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
     wrestler.setDescription("Test Wrestler");

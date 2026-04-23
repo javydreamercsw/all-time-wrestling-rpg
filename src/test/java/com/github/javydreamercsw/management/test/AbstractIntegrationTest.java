@@ -307,7 +307,10 @@ public abstract class AbstractIntegrationTest {
                   // Set default universe for tests
                   universeRepository.findAll().stream()
                       .findFirst()
-                      .ifPresent(u -> com.github.javydreamercsw.TestUtils.setDefaultUniverse(u));
+                      .ifPresent(
+                          u -> {
+                            com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                          });
                 }
 
                 log.info("Database reset complete.");

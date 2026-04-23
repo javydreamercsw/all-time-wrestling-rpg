@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -29,4 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 public abstract class AbstractJpaTest extends AbstractIntegrationTest {
   @MockitoBean private TierRecalculationService tierRecalculationService;
+
+  @Override
+  @BeforeEach
+  public void setUp() throws Exception {
+    super.setUp();
+  }
 }

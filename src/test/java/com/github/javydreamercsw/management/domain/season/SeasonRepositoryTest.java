@@ -61,16 +61,29 @@ class SeasonRepositoryTest extends AbstractJpaTest {
     season2.setStartDate(Instant.now());
     seasonRepository.save(season2);
 
-    SegmentType type = new SegmentType();
-    type.setName("Match");
-    segmentTypeRepository.save(type);
+    SegmentType type =
+        segmentTypeRepository
+            .findByName("Match")
+            .orElseGet(
+                () -> {
+                  SegmentType st = new SegmentType();
+                  st.setName("Match");
+                  st.setDescription("Match Segment Type");
+                  return segmentTypeRepository.save(st);
+                });
 
-    ShowType showType = new ShowType();
-    showType.setName("Weekly");
-    showType.setDescription("Weekly Show Type");
-    showType.setExpectedMatches(3);
-    showType.setExpectedPromos(2);
-    showTypeRepository.save(showType);
+    ShowType showType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setDescription("Weekly Show Type");
+                  st.setExpectedMatches(3);
+                  st.setExpectedPromos(2);
+                  return showTypeRepository.save(st);
+                });
 
     Show show1 = new Show();
     show1.setName("Show 1");

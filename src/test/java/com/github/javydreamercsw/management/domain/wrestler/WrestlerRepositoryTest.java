@@ -36,15 +36,14 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
 
   private Universe defaultUniverse;
 
+  @Override
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     defaultUniverse =
         universeRepository.findAll().stream()
             .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        Universe.builder().name("Default Universe").build()));
+            .orElseThrow(() -> new IllegalStateException("No universe found after init"));
   }
 
   @Test

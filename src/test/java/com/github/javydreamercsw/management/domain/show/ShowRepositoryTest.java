@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
@@ -33,21 +34,34 @@ class ShowRepositoryTest extends AbstractJpaTest {
 
   @Autowired private EntityManager entityManager;
   @Autowired private ShowRepository showRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
 
   @Test
   @DisplayName(
       "Should fetch Show with its relationships without causing LazyInitializationException")
   void shouldFetchShowWithRelationships() {
     // Given: Create and persist prerequisite entities
-    ShowType weeklyType = new ShowType();
-    weeklyType.setName("Weekly");
-    weeklyType.setDescription("A weekly wrestling show.");
-    entityManager.persist(weeklyType);
+    ShowType weeklyType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setDescription("A weekly wrestling show.");
+                  return showTypeRepository.save(st);
+                });
 
-    ShowType pleType = new ShowType();
-    pleType.setName("Premium Live Event (PLE)");
-    pleType.setDescription("A major event.");
-    entityManager.persist(pleType);
+    ShowType pleType =
+        showTypeRepository
+            .findByName("Premium Live Event (PLE)")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Premium Live Event (PLE)");
+                  st.setDescription("A major event.");
+                  return showTypeRepository.save(st);
+                });
 
     Season season = new Season();
     season.setName("Season 1");

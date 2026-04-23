@@ -39,8 +39,10 @@ class RivalryTest extends AbstractJpaTest {
   private Wrestler wrestler2;
   private Wrestler wrestler3;
 
+  @Override
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
     wrestler2 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 2"));
     wrestler3 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 3"));
