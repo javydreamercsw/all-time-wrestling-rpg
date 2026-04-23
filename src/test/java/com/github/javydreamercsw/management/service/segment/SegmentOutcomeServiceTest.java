@@ -58,7 +58,7 @@ class SegmentOutcomeServiceTest {
   @InjectMocks private SegmentOutcomeService segmentOutcomeService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     when(random.nextInt(anyInt())).thenReturn(0); // Make random predictable
 
     CardSet testCardSet = new CardSet();

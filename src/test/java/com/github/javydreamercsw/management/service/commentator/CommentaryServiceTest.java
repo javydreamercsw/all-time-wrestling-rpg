@@ -45,7 +45,7 @@ class CommentaryServiceTest {
   private CommentaryService commentaryService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     commentatorRepository = mock(CommentatorRepository.class);
     commentaryTeamRepository = mock(CommentaryTeamRepository.class);
     npcRepository = mock(NpcRepository.class);

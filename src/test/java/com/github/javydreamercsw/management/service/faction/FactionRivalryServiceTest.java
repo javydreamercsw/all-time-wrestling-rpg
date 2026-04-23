@@ -61,7 +61,7 @@ class FactionRivalryServiceTest {
   @InjectMocks private FactionRivalryService factionRivalryService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
   }
 

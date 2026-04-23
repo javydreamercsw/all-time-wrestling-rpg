@@ -66,7 +66,7 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     defaultUniverse =
         universeRepository.findAll().stream()
             .findFirst()

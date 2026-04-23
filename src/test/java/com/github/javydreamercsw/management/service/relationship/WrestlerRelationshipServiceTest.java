@@ -49,7 +49,7 @@ class WrestlerRelationshipServiceTest {
   private Wrestler w2;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     w1 = new Wrestler();
     w1.setId(1L);
     w1.setName("Johnny All Time");

@@ -35,7 +35,7 @@ class RetryServiceTest {
   private RetryConfig retryConfig;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     retryConfig = new RetryConfig();
     retryConfig.setMaxAttempts(3);
     retryConfig.setInitialDelayMs(100);

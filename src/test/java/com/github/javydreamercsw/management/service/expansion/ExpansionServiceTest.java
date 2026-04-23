@@ -47,7 +47,7 @@ public class ExpansionServiceTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     expansionService = new ExpansionService(gameSettingService, objectMapper, eventPublisher);
   }
 

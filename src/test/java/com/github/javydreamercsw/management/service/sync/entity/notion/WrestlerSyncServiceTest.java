@@ -56,7 +56,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
 
     // Mock Name extraction

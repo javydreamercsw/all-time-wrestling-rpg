@@ -60,7 +60,7 @@ class FactionErrorHandlingTest {
   private FactionListView factionListView;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Setup will be done per test as needed to avoid unnecessary stubbing
     // Allow all actions for tests by default
     when(securityUtils.canCreate()).thenReturn(true);

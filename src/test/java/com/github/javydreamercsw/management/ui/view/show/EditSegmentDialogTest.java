@@ -59,7 +59,7 @@ class EditSegmentDialogTest {
   private UI ui;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Mock the UI context
     ui = mock(UI.class);
     lenient().when(ui.getUI()).thenReturn(Optional.of(ui));

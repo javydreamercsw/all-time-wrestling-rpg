@@ -57,7 +57,7 @@ class NarrationDialogTest {
   @Mock private UniverseContextService universeContextService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     MockitoAnnotations.openMocks(this);
     segment = new Segment();
     segment.setId(1L);

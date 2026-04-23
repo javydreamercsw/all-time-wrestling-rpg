@@ -48,7 +48,7 @@ class NpcServiceTest {
   private Npc npc;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     npc = new Npc();
     npc.setId(1L);
     npc.setName("Test NPC");

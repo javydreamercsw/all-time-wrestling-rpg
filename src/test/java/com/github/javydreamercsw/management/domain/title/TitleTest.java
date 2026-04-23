@@ -42,7 +42,7 @@ class TitleTest extends AbstractJpaTest {
   private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     title = new Title();
     title.setName("Test Championship");
     title.setTier(WrestlerTier.MAIN_EVENTER);

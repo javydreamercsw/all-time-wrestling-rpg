@@ -37,7 +37,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     defaultUniverse =
         universeRepository.findAll().stream()
             .findFirst()

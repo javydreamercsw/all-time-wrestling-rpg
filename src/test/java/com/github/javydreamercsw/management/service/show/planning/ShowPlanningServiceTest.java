@@ -82,7 +82,7 @@ class ShowPlanningServiceTest {
   private Wrestler activeWrestler;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     MockitoAnnotations.openMocks(this);
 
     // Setup basic date handling

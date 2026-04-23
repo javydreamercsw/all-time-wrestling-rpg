@@ -30,7 +30,7 @@ class StorylineExportServiceTest {
   private ObjectMapper objectMapper;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     objectMapper = new ObjectMapper();
     exportService = new StorylineExportService(objectMapper);
   }

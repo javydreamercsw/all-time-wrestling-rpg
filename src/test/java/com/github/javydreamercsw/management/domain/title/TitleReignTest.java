@@ -38,7 +38,7 @@ class TitleReignTest {
   private Universe universe;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     universe = Universe.builder().name("Default").build();
 
     title = new Title();

@@ -97,7 +97,7 @@ class ShowDetailViewTest {
       relationshipService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     MockitoAnnotations.openMocks(this);
   }
 

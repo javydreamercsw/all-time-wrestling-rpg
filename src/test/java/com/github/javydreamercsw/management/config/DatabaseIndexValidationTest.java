@@ -56,7 +56,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
   private List<IndexDefinition> indexDefinitions;
 
   @BeforeEach
-  void setUp() throws SQLException, IOException {
+  public void setUp() throws SQLException, IOException {
     // Load actual database schema
     loadDatabaseSchema();
 

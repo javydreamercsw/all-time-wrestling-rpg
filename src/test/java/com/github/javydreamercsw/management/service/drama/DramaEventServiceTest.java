@@ -66,7 +66,7 @@ class DramaEventServiceTest {
   private final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     dramaEventService =
         new DramaEventService(
             dramaEventRepository,

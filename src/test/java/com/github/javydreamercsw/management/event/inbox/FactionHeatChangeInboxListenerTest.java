@@ -40,7 +40,7 @@ class FactionHeatChangeInboxListenerTest {
   private FactionHeatChangeInboxListener listener;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     inboxService = mock(InboxService.class);
     factionHeatChange = mock(InboxEventType.class);
     eventPublisher = mock(ApplicationEventPublisher.class);

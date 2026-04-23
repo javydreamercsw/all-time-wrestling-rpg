@@ -48,7 +48,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private RivalryService rivalryService;
 
   @org.junit.jupiter.api.BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
     universeRepository.deleteAll();
     wrestlerStateRepository.deleteAll();

@@ -59,7 +59,7 @@ class NewsGenerationServiceTest {
   private NpcRepository npcRepository;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     newsService = mock(NewsService.class);
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     aiService = mock(SegmentNarrationService.class);

@@ -43,7 +43,7 @@ class NotionPropertyResolutionTest {
   private List<SegmentPage> sampleSegments;
 
   @BeforeEach
-  void setUp() throws Exception {
+  public void setUp() throws Exception {
     MockitoAnnotations.openMocks(this);
     objectMapper = new ObjectMapper();
 

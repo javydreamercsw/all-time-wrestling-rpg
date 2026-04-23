@@ -46,7 +46,7 @@ class SyncValidationServiceTest {
   private MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     mockedEnvironmentVariableUtil = mockStatic(EnvironmentVariableUtil.class);
     when(EnvironmentVariableUtil.isNotionTokenAvailable()).thenReturn(true);
     validationService = new SyncValidationService(syncProperties);

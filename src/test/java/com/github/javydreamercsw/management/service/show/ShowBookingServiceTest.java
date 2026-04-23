@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -93,9 +94,19 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
     // Create segment types
     segmentTypeService.createOrUpdateSegmentType("One on One", "1 vs 1 match");
+    segmentTypeService.createOrUpdateSegmentType("Free-for-All", "Multi-person match");
     segmentTypeService.createOrUpdateSegmentType("Promo", "A promotional segment");
 
-    for (int i = 0; i < 10; i++) {
+    // Create rules used by the booking service
+    segmentRuleService.createOrUpdateRule(
+        "Standard Match", "Standard rules", false, false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule(
+        "Rivalry Segment", "Rivalry rules", false, false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule("PPV Segment", "PPV rules", true, true, BumpAddition.ALL);
+    segmentRuleService.createOrUpdateRule(
+        "Steel Cage Segment", "Cage rules", true, true, BumpAddition.ALL);
+
+    for (int i = 0; i < 15; i++) {
       wrestlerService.createWrestler(
           "Wrestler " + i, true, null, WrestlerTier.ROOKIE, defaultUniverse);
     }

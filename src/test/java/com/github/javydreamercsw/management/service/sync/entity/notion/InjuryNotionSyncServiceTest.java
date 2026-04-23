@@ -44,7 +44,7 @@ class InjuryNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<Injury> injuryCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     injuryNotionSyncService =
         new InjuryNotionSyncService(injuryRepository, syncServiceDependencies, notionApiExecutor);

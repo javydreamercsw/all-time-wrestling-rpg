@@ -72,7 +72,7 @@ class TitleListViewTest extends AbstractViewTest {
   private Wrestler otherWrestler;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     Universe universe = Universe.builder().name("Default Universe").build();
     universe.setId(1L);
 

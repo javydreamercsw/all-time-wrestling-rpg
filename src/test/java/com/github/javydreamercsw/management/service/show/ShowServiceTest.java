@@ -103,7 +103,7 @@ class ShowServiceTest {
   private Wrestler wrestler3;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     showService =
         new ShowService(
             showRepository,

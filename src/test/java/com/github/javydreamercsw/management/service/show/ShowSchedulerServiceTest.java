@@ -55,7 +55,7 @@ class ShowSchedulerServiceTest {
   private ShowTemplate pleTemplate;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     season = new Season();
     season.setId(1L);
     season.setName("Test Season");

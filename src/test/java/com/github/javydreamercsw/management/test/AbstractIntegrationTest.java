@@ -164,11 +164,13 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected com.github.javydreamercsw.management.DatabaseCleanup databaseCleanup;
   @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
 
+  protected boolean skipDataInit = false;
+
   @Autowired(required = false)
   protected CacheManager cacheManager;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() throws Exception {
     clearAllRepositories();
   }
 
@@ -298,13 +300,15 @@ public abstract class AbstractIntegrationTest {
                           });
                 }
 
-                log.info("Re-initializing data using DataInitializer...");
-                dataInitializer.init();
+                if (!skipDataInit) {
+                  log.info("Re-initializing data using DataInitializer...");
+                  dataInitializer.init();
 
-                // Set default universe for tests
-                universeRepository.findAll().stream()
-                    .findFirst()
-                    .ifPresent(u -> com.github.javydreamercsw.TestUtils.setDefaultUniverse(u));
+                  // Set default universe for tests
+                  universeRepository.findAll().stream()
+                      .findFirst()
+                      .ifPresent(u -> com.github.javydreamercsw.TestUtils.setDefaultUniverse(u));
+                }
 
                 log.info("Database reset complete.");
                 return null;

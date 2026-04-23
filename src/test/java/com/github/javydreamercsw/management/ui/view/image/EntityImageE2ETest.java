@@ -36,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 class EntityImageE2ETest extends AbstractE2ETest {
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
   }
 

@@ -33,11 +33,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -58,6 +61,10 @@ public class Show extends AbstractSyncableEntity<Long> {
   @Lob
   @Column(name = "description", nullable = false)
   private String description;
+
+  @OneToMany(mappedBy = "show", fetch = FetchType.LAZY)
+  private List<com.github.javydreamercsw.management.domain.show.segment.Segment> segments =
+      new ArrayList<>();
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "show_type_id", nullable = false)

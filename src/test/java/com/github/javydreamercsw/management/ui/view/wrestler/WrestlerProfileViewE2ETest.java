@@ -79,7 +79,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Clear all relevant repositories to ensure a clean state for each test
     cleanupLeagues();
     titleReignRepository

@@ -68,7 +68,7 @@ class CampaignEncounterServiceTest {
   private CampaignChapterDTO chapter;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     encounterService =
         new CampaignEncounterService(
             aiFactory,

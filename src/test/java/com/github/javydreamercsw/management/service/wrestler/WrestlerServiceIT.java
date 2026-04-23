@@ -84,7 +84,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     defaultUniverse =
         universeRepository.findAll().stream()

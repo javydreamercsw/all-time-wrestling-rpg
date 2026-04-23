@@ -33,7 +33,7 @@ class CampaignChapterServiceTest {
   private CampaignChapterService chapterService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     chapterService = new CampaignChapterService(new ObjectMapper());
     chapterService.init();
   }

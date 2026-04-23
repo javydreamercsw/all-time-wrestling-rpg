@@ -903,7 +903,15 @@ public class DataInitializer implements Initializable {
                 if (existingWrestler.getActive() == null) existingWrestler.setActive(true);
                 if (existingWrestler.getIsPlayer() == null) existingWrestler.setIsPlayer(false);
 
-                wrestlerRepository.save(existingWrestler);
+                existingWrestler = wrestlerRepository.save(existingWrestler);
+
+                if (existingWrestler == null) {
+                  log.warn(
+                      "Wrestler repository returned null for save. Skipping state creation for: {}",
+                      w.getName());
+                  continue;
+                }
+
                 wrestlerStateRepository.save(state);
                 log.debug("Updated existing wrestler: {}", existingWrestler.getName());
               } else {
@@ -933,6 +941,13 @@ public class DataInitializer implements Initializable {
 
                 Wrestler savedWrestler = wrestlerRepository.save(newWrestler);
 
+                if (savedWrestler == null) {
+                  log.warn(
+                      "Wrestler repository returned null for save. Skipping state creation for: {}",
+                      newWrestler.getName());
+                  continue;
+                }
+
                 // Default to Global Universe (first available)
                 Long leagueId =
                     universeRepository.findAll().stream()
@@ -954,7 +969,7 @@ public class DataInitializer implements Initializable {
                 }
                 wrestlerStateRepository.save(state);
 
-                log.debug("Saved new wrestler: {}", savedWrestler.getName());
+                log.debug("Saved new wrestler: {}", newWrestler.getName());
               }
             }
           } catch (IOException e) {

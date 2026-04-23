@@ -95,7 +95,7 @@ class AchievementSystemTest {
   @Mock private GameSettingService gameSettingService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     legacyService =
         new LegacyService(

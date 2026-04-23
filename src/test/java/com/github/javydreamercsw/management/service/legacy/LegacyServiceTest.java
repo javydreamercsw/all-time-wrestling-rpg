@@ -45,7 +45,7 @@ class LegacyServiceTest {
   @InjectMocks private LegacyService legacyService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     MockitoAnnotations.openMocks(this);
   }
 

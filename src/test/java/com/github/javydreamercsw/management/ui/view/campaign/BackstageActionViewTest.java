@@ -50,7 +50,7 @@ class BackstageActionViewTest {
   private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     backstageActionService = mock(BackstageActionService.class);
     campaignRepository = mock(CampaignRepository.class);
     wrestlerRepository = mock(WrestlerRepository.class);

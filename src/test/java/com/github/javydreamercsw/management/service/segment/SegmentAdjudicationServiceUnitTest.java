@@ -89,7 +89,7 @@ class SegmentAdjudicationServiceUnitTest {
   private Wrestler wrestler2;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     adjudicationService =
         new SegmentAdjudicationService(

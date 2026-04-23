@@ -36,7 +36,7 @@ class InjuryTest {
   private Universe universe;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     universe = Universe.builder().name("Default").build();
 
     wrestler = Wrestler.builder().build();

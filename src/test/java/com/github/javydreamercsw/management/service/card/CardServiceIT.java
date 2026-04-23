@@ -39,7 +39,7 @@ class CardServiceIT extends ManagementIntegrationTest {
   private CardSet defaultCardSet;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Ensure there is at least one CardSet for Card creation
     Optional<CardSet> existingSet = cardSetRepository.findByName("Default Test Set");
     if (existingSet.isEmpty()) {

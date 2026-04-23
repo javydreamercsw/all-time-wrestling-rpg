@@ -86,7 +86,7 @@ class WearAndTearAdjudicationTest {
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,

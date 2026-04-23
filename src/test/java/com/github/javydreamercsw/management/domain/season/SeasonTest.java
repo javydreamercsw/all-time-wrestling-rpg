@@ -32,7 +32,7 @@ class SeasonTest {
   private Season season;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     season = new Season();
     season.setName("Test Season");
     season.setShowsPerPpv(5);

@@ -60,7 +60,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 

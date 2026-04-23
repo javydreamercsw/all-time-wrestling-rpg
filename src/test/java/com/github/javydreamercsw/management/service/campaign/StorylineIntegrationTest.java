@@ -92,7 +92,7 @@ class StorylineIntegrationTest {
   private CampaignService campaignService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     campaignService =
         new CampaignService(
             campaignRepository,

@@ -51,7 +51,7 @@ class FactionSyncServiceTest extends AbstractSyncTest {
 
   @BeforeEach
   @Override
-  protected void setUp() {
+  public void setUp() {
     super.setUp(); // Calls AbstractSyncTest's setUp which initializes syncServiceDependencies
 
     factionSyncService =

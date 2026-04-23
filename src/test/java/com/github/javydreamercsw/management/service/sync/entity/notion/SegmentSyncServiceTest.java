@@ -69,7 +69,7 @@ class SegmentSyncServiceTest {
   private SegmentSyncService segmentSyncService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
     lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
     lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);

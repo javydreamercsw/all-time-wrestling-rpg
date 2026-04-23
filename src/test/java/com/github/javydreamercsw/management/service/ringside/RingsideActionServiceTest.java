@@ -91,7 +91,7 @@ class RingsideActionServiceTest {
   private RingsideAction weaponAction;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     universe = Universe.builder().name("Default").build();
     universe.setId(1L);
     show = mock(Show.class);

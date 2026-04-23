@@ -77,7 +77,7 @@ class ShowPlanningViewTest {
   @Mock private ArenaService arenaService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     MockitoAnnotations.openMocks(this);
     com.github.javydreamercsw.base.ui.service.NotificationService notificationService =

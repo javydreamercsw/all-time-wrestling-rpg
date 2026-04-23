@@ -105,7 +105,7 @@ class DataInitializerTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  void setUp() throws IOException {
+  public void setUp() throws IOException {
     // Manually instantiate DataInitializer with mocked dependencies
     dataInitializer =
         new DataInitializer(

@@ -34,7 +34,7 @@ class FeudResolutionServiceIT extends ManagementIntegrationTest {
   private MultiWrestlerFeud feud;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     feudRepository.deleteAll();
     feud = new MultiWrestlerFeud();
     feud.setName("Test Feud");

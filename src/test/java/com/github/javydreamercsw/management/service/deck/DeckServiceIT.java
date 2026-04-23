@@ -49,7 +49,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   private Wrestler playerWrestler;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     bookerUsername = "deck_booker_" + suffix;
     playerUsername = "deck_player_" + suffix;

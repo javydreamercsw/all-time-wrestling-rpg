@@ -43,7 +43,7 @@ class HeatChangeInboxListenerTest {
   private HeatChangeInboxListener listener;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     inboxService = mock(InboxService.class);
     rivalryHeatChange = mock(InboxEventType.class);
     eventPublisher = mock(ApplicationEventPublisher.class);

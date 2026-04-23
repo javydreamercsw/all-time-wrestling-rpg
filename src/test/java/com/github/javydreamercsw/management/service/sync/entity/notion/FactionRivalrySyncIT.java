@@ -85,7 +85,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     factionRivalryPage = Mockito.mock(FactionRivalryPage.class);
     defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());

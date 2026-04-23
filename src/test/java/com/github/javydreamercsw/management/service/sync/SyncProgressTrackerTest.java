@@ -34,7 +34,7 @@ class SyncProgressTrackerTest {
   private SyncProgressTracker progressTracker;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     progressTracker = new SyncProgressTracker();
   }
 

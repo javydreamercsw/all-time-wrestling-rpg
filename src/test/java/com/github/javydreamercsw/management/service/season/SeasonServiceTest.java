@@ -60,7 +60,7 @@ class SeasonServiceTest {
   private ShowType pleShowType;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(clock.instant()).thenReturn(fixedInstant);
     lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(fixedLocalDate);

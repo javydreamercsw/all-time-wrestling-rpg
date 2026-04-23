@@ -46,7 +46,7 @@ class RivalryNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<Rivalry> rivalryCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     rivalryNotionSyncService =
         new RivalryNotionSyncService(rivalryRepository, syncServiceDependencies, notionApiExecutor);

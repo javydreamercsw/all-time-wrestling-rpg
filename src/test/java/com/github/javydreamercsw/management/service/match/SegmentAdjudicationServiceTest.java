@@ -100,7 +100,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private Universe universe;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     segmentAdjudicationService =
         new SegmentAdjudicationService(

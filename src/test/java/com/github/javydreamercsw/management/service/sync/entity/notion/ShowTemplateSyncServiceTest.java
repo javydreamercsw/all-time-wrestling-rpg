@@ -84,7 +84,7 @@ class ShowTemplateSyncServiceTest {
   private ExecutorService executorService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     executorService = Executors.newSingleThreadExecutor();
     mockedEnvironmentVariableUtil = mockStatic(EnvironmentVariableUtil.class);
 

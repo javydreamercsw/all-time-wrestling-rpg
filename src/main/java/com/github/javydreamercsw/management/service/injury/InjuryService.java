@@ -380,10 +380,13 @@ public class InjuryService {
   @PreAuthorize("isAuthenticated()")
   public Integer getTotalHealthPenaltyForWrestler(
       @NonNull Long wrestlerId, @NonNull Long universeId) {
-    Universe universe = universeRepository.findById(universeId).orElseThrow();
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(w -> injuryRepository.getTotalHealthPenaltyForWrestler(w, universe))
+    return universeRepository
+        .findById(universeId)
+        .flatMap(
+            universe ->
+                wrestlerRepository
+                    .findById(wrestlerId)
+                    .map(w -> injuryRepository.getTotalHealthPenaltyForWrestler(w, universe)))
         .orElse(0);
   }
 

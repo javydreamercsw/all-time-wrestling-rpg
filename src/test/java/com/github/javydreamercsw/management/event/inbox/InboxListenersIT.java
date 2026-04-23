@@ -121,7 +121,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
   private Universe universe;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     // Reset mock before each test
     Mockito.reset(inboxService);

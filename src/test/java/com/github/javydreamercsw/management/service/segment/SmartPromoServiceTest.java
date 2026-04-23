@@ -60,7 +60,7 @@ class SmartPromoServiceTest {
   private com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService feudService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     SegmentNarrationServiceFactory aiFactory = mock(SegmentNarrationServiceFactory.class);
     aiService = mock(SegmentNarrationService.class);
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);

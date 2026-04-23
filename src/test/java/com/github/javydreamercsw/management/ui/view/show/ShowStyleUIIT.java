@@ -59,7 +59,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
   @Autowired GameSettingService gameSettingService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     showRepository.deleteAllInBatch();
     showTemplateRepository.deleteAllInBatch();
     showTypeRepository.deleteAllInBatch();

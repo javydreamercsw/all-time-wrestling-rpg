@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.domain.rivalry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -44,10 +43,10 @@ class RivalryRepositoryTest extends AbstractJpaTest {
   @Test
   void findActiveRivalriesBetween() {
     // Given
-    Wrestler wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
-    Wrestler wrestler2 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 2"));
-    Wrestler wrestler3 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 3"));
-    Wrestler wrestler4 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 4"));
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1");
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2");
+    Wrestler wrestler3 = createTestWrestler("Wrestler 3");
+    Wrestler wrestler4 = createTestWrestler("Wrestler 4");
 
     Instant now = Instant.now();
     Instant lastMonth = now.minus(30, ChronoUnit.DAYS);

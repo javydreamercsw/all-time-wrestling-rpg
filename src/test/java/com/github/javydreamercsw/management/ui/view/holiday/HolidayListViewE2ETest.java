@@ -45,7 +45,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
   private WebDriverWait wait;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     holidayService.findAll().forEach(holidayService::delete);
     wait = new WebDriverWait(driver, Duration.ofSeconds(30));
   }

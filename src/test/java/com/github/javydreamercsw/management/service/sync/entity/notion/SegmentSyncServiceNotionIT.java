@@ -56,7 +56,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
   private Show testShow;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     segmentRepository.deleteAll();
 
     // Create a ShowType required by Show (show_type_id is NOT NULL)

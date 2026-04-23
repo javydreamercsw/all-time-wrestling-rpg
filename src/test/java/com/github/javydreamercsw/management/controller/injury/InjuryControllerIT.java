@@ -58,7 +58,7 @@ class InjuryControllerIT extends AbstractRestControllerIT {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Manually build MockMvc for this controller to bypass Vaadin servlet issues
     mockMvc =
         MockMvcBuilders.standaloneSetup(new InjuryController(injuryService, wrestlerRepository))

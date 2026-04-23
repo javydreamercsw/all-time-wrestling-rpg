@@ -36,7 +36,7 @@ class NewsServiceTest {
   private NewsService newsService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     newsRepository = mock(NewsRepository.class);
     newsService = new NewsService(newsRepository);
   }

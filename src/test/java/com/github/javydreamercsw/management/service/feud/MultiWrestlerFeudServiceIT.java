@@ -49,7 +49,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   private Wrestler wrestler2;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     // Do NOT delete accounts to avoid breaking other tests running in parallel
 

@@ -62,7 +62,7 @@ class FactionListViewTest {
   private List<Wrestler> testWrestlers;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Create test wrestlers first
     testWrestlers = createTestWrestlers();
 

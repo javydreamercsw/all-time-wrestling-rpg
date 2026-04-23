@@ -52,7 +52,7 @@ class ShowPlanningAiServiceTest {
   private HolidayService holidayService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
     segmentRuleService = mock(SegmentRuleService.class);

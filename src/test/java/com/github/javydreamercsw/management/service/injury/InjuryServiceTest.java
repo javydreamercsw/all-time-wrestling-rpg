@@ -77,7 +77,7 @@ class InjuryServiceTest {
   private Clock fixedClock;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
     lenient().when(clock.instant()).thenReturn(fixedClock.instant());
     lenient()

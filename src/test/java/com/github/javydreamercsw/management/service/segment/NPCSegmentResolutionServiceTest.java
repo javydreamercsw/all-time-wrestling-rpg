@@ -89,7 +89,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
 
   @BeforeEach
   @SneakyThrows
-  void setUp() {
+  public void setUp() {
     defaultUniverse =
         universeRepository
             .findById(1L)

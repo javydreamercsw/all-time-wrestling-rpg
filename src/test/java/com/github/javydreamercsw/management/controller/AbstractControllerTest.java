@@ -63,4 +63,11 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   @MockitoBean(name = "recalculateRanking")
   protected CommandLineRunner recalculateRanking;
+
+  @Override
+  @BeforeEach
+  public void setUp() throws Exception {
+    this.skipDataInit = true;
+    super.setUp();
+  }
 }

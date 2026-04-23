@@ -88,7 +88,7 @@ class SegmentSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     segmentPage = Mockito.mock(SegmentPage.class);
   }

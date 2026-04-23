@@ -126,7 +126,7 @@ public abstract class AbstractSyncTest {
   }
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     lenient().when(syncProperties.isEnabled()).thenReturn(true);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);

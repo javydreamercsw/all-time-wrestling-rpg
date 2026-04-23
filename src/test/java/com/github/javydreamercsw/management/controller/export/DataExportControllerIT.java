@@ -70,8 +70,10 @@ class DataExportControllerIT extends AbstractControllerTest {
   private ShowType testShowType;
   private Season testSeason;
 
+  @Override
   @BeforeEach
-  void setUp() throws IOException {
+  public void setUp() throws Exception {
+    super.setUp();
     // Clear the exports directory
     Path exportsDir = Paths.get("target/exports");
     if (Files.exists(exportsDir)) {

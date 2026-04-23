@@ -38,7 +38,7 @@ class SeasonServiceIntegrationTest extends AbstractIntegrationTest {
   @Autowired private GameSettingService gameSettingService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Clear all seasons for a clean test state
     seasonRepository.deleteAllInBatch();
     gameSettingService.saveCurrentGameDate(

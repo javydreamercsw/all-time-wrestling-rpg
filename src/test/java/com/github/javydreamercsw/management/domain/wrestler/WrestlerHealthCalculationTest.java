@@ -38,7 +38,7 @@ class WrestlerHealthCalculationTest {
   private Universe universe;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     universe = Universe.builder().name("Default Universe").build();
     universe.setId(1L); // Set ID for universe
 

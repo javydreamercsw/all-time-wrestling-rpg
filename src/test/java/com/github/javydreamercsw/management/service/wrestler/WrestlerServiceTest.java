@@ -83,7 +83,7 @@ class WrestlerServiceTest {
   @Mock private DiceBag diceBag;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Collections.singletonList("BASE_GAME"));
 

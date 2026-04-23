@@ -57,7 +57,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   private Universe defaultUniverse;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
     injuryRepository.deleteAll();
     segmentRepository.deleteAll();

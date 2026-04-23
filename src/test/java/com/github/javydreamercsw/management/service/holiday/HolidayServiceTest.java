@@ -52,7 +52,7 @@ public class HolidayServiceTest {
   private Holiday floatingHoliday;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     fixedHoliday = new Holiday();
     fixedHoliday.setDescription("New Year's Day");
     fixedHoliday.setTheme("New Year's Day");

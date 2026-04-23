@@ -44,7 +44,7 @@ class ShowTypeNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<ShowType> showTypeCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     showTypeNotionSyncService =
         new ShowTypeNotionSyncService(

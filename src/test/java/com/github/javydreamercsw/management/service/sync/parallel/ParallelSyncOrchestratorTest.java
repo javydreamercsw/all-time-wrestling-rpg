@@ -72,7 +72,7 @@ class ParallelSyncOrchestratorTest {
   private ParallelSyncOrchestrator orchestrator;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Setup default configuration behavior
     EntitySyncConfiguration.EntitySyncSettings defaults =
         new EntitySyncConfiguration.EntitySyncSettings();

@@ -90,7 +90,7 @@ class SegmentAdjudicationVenueTest {
   private SegmentAdjudicationService adjudicationService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     adjudicationService =
         new SegmentAdjudicationService(
             rivalryService,

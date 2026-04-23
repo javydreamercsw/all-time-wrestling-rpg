@@ -62,7 +62,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
   private Universe universe;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     universe =
         universeRepository
             .findById(1L)

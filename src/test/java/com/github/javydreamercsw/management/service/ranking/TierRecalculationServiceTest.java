@@ -67,7 +67,7 @@ class TierRecalculationServiceTest {
   private Map<Gender, Map<WrestlerTier, TierBoundary>> inMemoryTierBoundaries;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     universe = Universe.builder().name("Test Universe").build();
     wrestlerStates = new ArrayList<>();
     // Create 20 wrestlers with varying fan counts (20000, 19000, ..., 1000)

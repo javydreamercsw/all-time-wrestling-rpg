@@ -75,7 +75,7 @@ class InjuryTypeSyncServiceTest extends AbstractSyncTest {
   private InjuryPage notionPage3;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     injuryTypeSyncService =
         new InjuryTypeSyncService(

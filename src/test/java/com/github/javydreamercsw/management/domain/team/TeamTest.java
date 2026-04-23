@@ -42,7 +42,7 @@ class TeamTest {
   private WrestlerState state2;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Create universe
     universe = Universe.builder().name("Test Universe").build();
     universe.setId(1L);

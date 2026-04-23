@@ -66,7 +66,7 @@ class SeasonStatsServiceTest {
   private SegmentType promoType;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");

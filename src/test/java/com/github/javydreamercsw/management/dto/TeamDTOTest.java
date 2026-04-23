@@ -36,7 +36,7 @@ class TeamDTOTest {
   private Instant formedDate;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     formedDate = Instant.now();
 
     // Create test wrestlers

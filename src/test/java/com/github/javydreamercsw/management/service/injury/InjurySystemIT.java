@@ -51,7 +51,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
   private Long universeId;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     wrestler1 = createTestWrestler("Test Wrestler 1");
     universeId = universeRepository.findAll().stream().findFirst().orElseThrow().getId();
     wrestlerService.getOrCreateState(wrestler1.getId(), universeId).setFans(10_000L);

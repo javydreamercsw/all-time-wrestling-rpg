@@ -46,7 +46,7 @@ class FactionSyncTest {
   private FactionDTO testFactionDTO;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Create test wrestlers
     Wrestler testLeader = Wrestler.builder().build();
     testLeader.setId(1L);

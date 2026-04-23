@@ -67,7 +67,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
   private com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
     if (cacheManager != null) {
 

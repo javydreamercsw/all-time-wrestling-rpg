@@ -59,7 +59,7 @@ class BackstageEncounterServiceTest {
   private CampaignState state;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     backstageEncounterService =
         new BackstageEncounterService(
             aiFactory,

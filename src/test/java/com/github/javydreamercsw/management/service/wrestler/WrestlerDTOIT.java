@@ -35,7 +35,7 @@ public class WrestlerDTOIT extends ManagementIntegrationTest {
   @Autowired private DataInitializer dataInitializer;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     dataInitializer.init();
   }
 

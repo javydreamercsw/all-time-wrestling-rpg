@@ -61,7 +61,7 @@ class FactionFormValidationTest {
   private List<Wrestler> testWrestlers;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     testWrestlers = createTestWrestlers();
 
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);

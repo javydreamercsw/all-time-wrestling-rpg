@@ -53,7 +53,7 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   private MockedStatic<EnvironmentVariableUtil> mockedEnv;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     mockedEnv = Mockito.mockStatic(EnvironmentVariableUtil.class);
     mockedEnv.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);

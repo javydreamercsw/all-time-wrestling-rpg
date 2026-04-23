@@ -74,7 +74,7 @@ class ShowTemplateSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
   }
 

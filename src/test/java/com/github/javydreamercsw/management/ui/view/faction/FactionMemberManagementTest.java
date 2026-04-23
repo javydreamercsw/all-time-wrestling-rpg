@@ -56,7 +56,7 @@ class FactionMemberManagementTest {
   private Set<WrestlerState> factionMembers;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Create test data
     availableWrestlers = createAvailableWrestlers();
     factionMembers = createFactionMembers();

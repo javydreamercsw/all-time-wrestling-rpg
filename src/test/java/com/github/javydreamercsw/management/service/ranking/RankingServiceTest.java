@@ -69,7 +69,7 @@ class RankingServiceTest {
   private Wrestler contender2;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     title = new Title();
     title.setId(1L);
     title.setName("World Heavyweight Championship");

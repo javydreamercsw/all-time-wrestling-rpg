@@ -46,7 +46,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
   @Autowired private ArenaRepository arenaRepository;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
     arenaRepository.deleteAll();
     locationRepository.deleteAll();
