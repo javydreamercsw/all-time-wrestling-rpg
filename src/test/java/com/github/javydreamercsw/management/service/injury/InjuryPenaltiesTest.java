@@ -28,13 +28,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-@WithCustomMockUser(roles = {"BOOKER"})
 class InjuryPenaltiesTest extends AbstractIntegrationTest {
 
   @Autowired private InjuryService injuryService;
 
   @Test
   @Transactional
+  @WithCustomMockUser(roles = {"BOOKER"})
   void testInjuryCreationIncludesPenalties() {
 
     Wrestler wrestler = createTestWrestler("Penalty Tester");
