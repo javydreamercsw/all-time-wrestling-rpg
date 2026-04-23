@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -99,6 +100,7 @@ class ShowDetailViewTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private ArenaService arenaService;
+  @Mock private NotificationService notificationService;
 
   @Mock
   private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
@@ -167,7 +169,8 @@ class ShowDetailViewTest {
               commentaryTeamRepository,
               ringsideActionService,
               arenaService,
-              relationshipService);
+              relationshipService,
+              notificationService);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -246,7 +249,8 @@ class ShowDetailViewTest {
               commentaryTeamRepository,
               ringsideActionService,
               arenaService,
-              relationshipService);
+              relationshipService,
+              notificationService);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));

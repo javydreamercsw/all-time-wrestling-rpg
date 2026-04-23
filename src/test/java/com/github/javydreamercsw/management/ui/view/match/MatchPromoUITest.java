@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -80,6 +81,7 @@ class MatchPromoUITest extends AbstractViewTest {
 
   @Mock private RingsideActionDataService ringsideActionDataService;
   @Mock private TeamService teamService;
+  @Mock private NotificationService notificationService;
 
   @Mock
   private com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService;
@@ -107,7 +109,8 @@ class MatchPromoUITest extends AbstractViewTest {
             ringsideAiService,
             ringsideActionDataService,
             teamService,
-            titleScriptService);
+            titleScriptService,
+            notificationService);
   }
 
   @Test
