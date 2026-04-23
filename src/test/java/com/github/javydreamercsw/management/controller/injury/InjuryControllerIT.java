@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -146,11 +147,11 @@ class InjuryControllerIT extends AbstractRestControllerIT {
         .andExpect(status().isNotFound());
   }
 
-  public Wrestler createTestWrestler(String name) {
+  public Wrestler createTestWrestler(@NonNull String name) {
     return createTestWrestler(name, 0L);
   }
 
-  public Wrestler createTestWrestler(String name, Long fans) {
+  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
     wrestler.setStartingHealth(15);
