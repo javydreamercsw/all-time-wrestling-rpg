@@ -80,6 +80,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
@@ -284,10 +285,11 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void login(Account account) {
-    Set<SimpleGrantedAuthority> authorities =
-        account.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
-            .collect(java.util.stream.Collectors.toSet());
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+    for (Role role : account.getRoles()) {
+      authorities.add(new SimpleGrantedAuthority(role.getName().name()));
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
+    }
 
     com.github.javydreamercsw.base.security.CustomUserDetails principal =
         new com.github.javydreamercsw.base.security.CustomUserDetails(account, null);

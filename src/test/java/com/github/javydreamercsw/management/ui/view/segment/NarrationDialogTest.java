@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -89,7 +90,7 @@ class NarrationDialogTest {
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Roman Reigns");
-    wrestler.setGender("M");
+    wrestler.setGender(Gender.MALE);
 
     when(segmentService.findByIdWithDetails(anyLong())).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
