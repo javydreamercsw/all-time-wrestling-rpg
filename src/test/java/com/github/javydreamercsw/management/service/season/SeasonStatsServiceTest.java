@@ -80,7 +80,7 @@ class SeasonStatsServiceTest {
     state.setWrestler(wrestler);
     state.setUniverse(universe);
     state.setFans(1000L);
-    wrestler.setWrestlerStates(new java.util.ArrayList<>(List.of(state)));
+    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(state)));
 
     lenient()
         .when(wrestlerRepository.findByIdWithStates(1L))

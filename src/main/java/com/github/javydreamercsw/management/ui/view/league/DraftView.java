@@ -260,7 +260,8 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
       // List cards
       wrestler
           .getDecks()
-          .get(0)
+          .iterator()
+          .next()
           .getCards()
           .forEach(
               dc -> {

@@ -34,8 +34,6 @@ import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
@@ -456,7 +454,8 @@ class InjuryServiceTest {
             .fans(fans)
             .tier(WrestlerTier.fromFanCount(fans))
             .build();
-    wrestler.setWrestlerStates(new ArrayList<>(List.of(state))); // Link state to wrestler
+    wrestler.setWrestlerStates(
+        new java.util.LinkedHashSet<>(java.util.List.of(state))); // Link state to wrestler
 
     lenient().when(wrestlerRepository.findById(anyLong())).thenReturn(Optional.of(wrestler));
     lenient().when(universeRepository.findById(anyLong())).thenReturn(Optional.of(universe));

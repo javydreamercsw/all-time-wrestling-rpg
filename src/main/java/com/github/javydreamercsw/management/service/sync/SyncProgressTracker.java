@@ -210,19 +210,28 @@ public class SyncProgressTracker {
         });
   }
 
+  private final java.util.concurrent.ScheduledExecutorService scheduler =
+      java.util.concurrent.Executors.newSingleThreadScheduledExecutor(
+          r -> {
+            Thread t = new Thread(r, "sync-progress-cleaner");
+            t.setDaemon(true);
+            return t;
+          });
+
   private void removeOperationAfterDelay(String operationId) {
     // Remove completed operation after 30 seconds to allow UI to show completion
-    new Thread(
-            () -> {
-              try {
-                Thread.sleep(30000); // 30 seconds
-                activeOperations.removeIf(op -> op.getOperationId().equals(operationId));
-                log.debug("Removed completed operation from tracking: {}", operationId);
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            })
-        .start();
+    scheduler.schedule(
+        () -> {
+          activeOperations.removeIf(op -> op.getOperationId().equals(operationId));
+          log.debug("Removed completed operation from tracking: {}", operationId);
+        },
+        30,
+        java.util.concurrent.TimeUnit.SECONDS);
+  }
+
+  @jakarta.annotation.PreDestroy
+  public void shutdown() {
+    scheduler.shutdown();
   }
 
   /** Data class representing the progress of a sync operation. */

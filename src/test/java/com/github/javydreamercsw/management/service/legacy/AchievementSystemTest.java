@@ -142,7 +142,7 @@ class AchievementSystemTest {
     wrestlerState.setWrestler(wrestler);
     wrestlerState.setUniverse(universe);
     wrestlerState.setFans(0L);
-    wrestler.setWrestlerStates(new java.util.ArrayList<>(List.of(wrestlerState)));
+    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(wrestlerState)));
 
     // Mock achievement repository to return an achievement if found
     lenient()

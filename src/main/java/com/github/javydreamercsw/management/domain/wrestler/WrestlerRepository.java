@@ -42,8 +42,8 @@ public interface WrestlerRepository
   Page<Wrestler> findAllBy(Pageable pageable);
 
   @Query(
-      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws LEFT JOIN FETCH ws.faction"
-          + " WHERE w.name = :name")
+      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.wrestlerStates ws LEFT"
+          + " JOIN FETCH ws.faction WHERE w.name = :name")
   Optional<Wrestler> findByName(@Param("name") String name);
 
   Optional<Wrestler> findByExternalId(String externalId);

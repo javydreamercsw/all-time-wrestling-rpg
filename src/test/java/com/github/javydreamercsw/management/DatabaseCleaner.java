@@ -93,7 +93,11 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "campaignabilitycard",
                 "campaignupgrade",
                 "holiday",
-                "injurytype"));
+                "injurytype",
+                "wrestler",
+                "arena",
+                "location",
+                "universe"));
 
     // Delete data in the correct order
     int deletedCount = 0;

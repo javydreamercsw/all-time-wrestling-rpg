@@ -402,7 +402,7 @@ class RivalryServiceTest {
     state.setWrestler(wrestler);
     state.setUniverse(universe);
     state.setFans(50000L);
-    wrestler.setWrestlerStates(new java.util.ArrayList<>(List.of(state)));
+    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(state)));
 
     return wrestler;
   }

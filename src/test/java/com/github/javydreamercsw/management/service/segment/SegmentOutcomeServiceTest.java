@@ -101,7 +101,7 @@ class SegmentOutcomeServiceTest {
     rvdDeckCard.setDeck(rvdDeck);
     rvdDeckCards.add(rvdDeckCard);
     rvdDeck.setCards(rvdDeckCards);
-    robVanDam.setDecks(List.of(rvdDeck));
+    robVanDam.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(rvdDeck)));
 
     // Kurt Angle setup
     Wrestler kurtAngle = Wrestler.builder().build();
@@ -144,7 +144,7 @@ class SegmentOutcomeServiceTest {
     angleDeckCard.setDeck(angleDeck);
     angleDeckCards.add(angleDeckCard);
     angleDeck.setCards(angleDeckCards);
-    kurtAngle.setDecks(List.of(angleDeck));
+    kurtAngle.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(angleDeck)));
 
     // Generic Wrestler setup
     Wrestler genericWrestler = Wrestler.builder().build();
@@ -187,7 +187,7 @@ class SegmentOutcomeServiceTest {
     genericDeckCard.setDeck(genericDeck);
     genericDeckCards.add(genericDeckCard);
     genericDeck.setCards(genericDeckCards);
-    genericWrestler.setDecks(List.of(genericDeck));
+    genericWrestler.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(genericDeck)));
 
     when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(robVanDam));
     when(wrestlerRepository.findByName("Kurt Angle")).thenReturn(Optional.of(kurtAngle));

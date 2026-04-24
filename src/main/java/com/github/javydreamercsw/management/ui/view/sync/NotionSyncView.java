@@ -58,7 +58,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -672,7 +671,13 @@ public class NotionSyncView extends Main {
   protected void onAttach(@NonNull AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     // Initialize UI update executor for periodic status updates
-    uiUpdateExecutor = new ScheduledThreadPoolExecutor(1);
+    uiUpdateExecutor =
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(
+            r -> {
+              Thread t = new Thread(r, "notion-sync-view-update-" + hashCode());
+              t.setDaemon(true);
+              return t;
+            });
 
     // Update status every 30 seconds
     uiUpdateExecutor.scheduleAtFixedRate(

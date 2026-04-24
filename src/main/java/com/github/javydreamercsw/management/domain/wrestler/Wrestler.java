@@ -36,14 +36,14 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -171,17 +171,15 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
       mappedBy = "wrestler",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.LAZY)
-  @Fetch(FetchMode.SUBSELECT)
+      fetch = FetchType.EAGER)
   @JsonIgnore
   @Builder.Default
-  private List<Deck> decks = new ArrayList<>();
+  private Set<Deck> decks = new LinkedHashSet<>();
 
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-  @Fetch(FetchMode.SUBSELECT)
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   @JsonIgnore
   @Builder.Default
-  private List<WrestlerState> wrestlerStates = new ArrayList<>();
+  private Set<WrestlerState> wrestlerStates = new LinkedHashSet<>();
 
   @JsonIgnore
   public java.util.Optional<WrestlerState> getState(Long universeId) {
@@ -320,7 +318,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   public java.util.Optional<WrestlerState> getDefaultState() {
     return wrestlerStates.isEmpty()
         ? java.util.Optional.empty()
-        : java.util.Optional.of(wrestlerStates.get(0));
+        : java.util.Optional.of(wrestlerStates.iterator().next());
   }
 
   @Override
@@ -481,7 +479,8 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   public void refreshCurrentHealth() {
-    Long universeId = wrestlerStates.isEmpty() ? 1L : wrestlerStates.get(0).getUniverse().getId();
+    Long universeId =
+        wrestlerStates.isEmpty() ? 1L : wrestlerStates.iterator().next().getUniverse().getId();
     setCurrentHealth(getEffectiveStartingHealth(universeId));
   }
 
