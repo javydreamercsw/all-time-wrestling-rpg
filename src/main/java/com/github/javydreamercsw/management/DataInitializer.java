@@ -210,10 +210,7 @@ public class DataInitializer implements Initializable {
     this.objectMapper = objectMapper;
   }
 
-  @Transactional(
-      propagation = Propagation.REQUIRED,
-      timeout = 1200,
-      isolation = org.springframework.transaction.annotation.Isolation.SERIALIZABLE)
+  @Transactional(propagation = Propagation.REQUIRED, timeout = 1200)
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
@@ -901,13 +898,6 @@ public class DataInitializer implements Initializable {
                 if (existingWrestler.getIsPlayer() == null) existingWrestler.setIsPlayer(false);
 
                 existingWrestler = wrestlerRepository.save(existingWrestler);
-
-                if (existingWrestler == null) {
-                  log.warn(
-                      "Wrestler repository returned null for save. Skipping state creation for: {}",
-                      w.getName());
-                  continue;
-                }
 
                 wrestlerStateRepository.save(state);
                 log.debug("Updated existing wrestler: {}", existingWrestler.getName());

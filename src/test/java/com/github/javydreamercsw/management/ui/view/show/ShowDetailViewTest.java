@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -41,6 +42,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -49,12 +51,16 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.router.BeforeEvent;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,6 +70,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ShowDetailViewTest {
@@ -88,13 +95,12 @@ class ShowDetailViewTest {
   @Mock private ShowController showController;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private UniverseRepository universeRepository;
+  @Mock private UniverseContextService universeContextService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private ArenaService arenaService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-      relationshipService;
+  @Mock private NotificationService notificationService;
+  @Mock private WrestlerRelationshipService relationshipService;
 
   @BeforeEach
   public void setUp() {
@@ -135,13 +141,92 @@ class ShowDetailViewTest {
       wrestler2.setId(2L);
       wrestler2.setName("Wrestler 2");
 
-      Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
-
       // Simulate editing the segment
       segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
       segmentService.updateSegment(segment);
 
       assertEquals(AdjudicationStatus.PENDING, segment.getAdjudicationStatus());
+    }
+  }
+
+  @Test
+  void testSegmentReordering() {
+    try (MockedStatic<Notification> mocked = Mockito.mockStatic(Notification.class)) {
+      mocked
+          .when(() -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)))
+          .thenReturn(mock(Notification.class));
+
+      ShowType showType = new ShowType();
+      showType.setName("Test Show Type");
+      showType.setDescription("Test Description");
+
+      Show show = new Show();
+      show.setId(1L);
+      show.setName("Test Show");
+      show.setDescription("Test Description");
+      show.setType(showType);
+
+      SegmentType segmentType = new SegmentType();
+      segmentType.setName("Test Segment Type");
+
+      Segment segment1 = new Segment();
+      segment1.setId(10L);
+      segment1.setShow(show);
+      segment1.setSegmentOrder(1);
+      segment1.setSegmentType(segmentType);
+      when(segmentRepository.save(any(Segment.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Segment segment2 = new Segment();
+      segment2.setId(11L);
+      segment2.setShow(show);
+      segment2.setSegmentOrder(2);
+      segment2.setSegmentType(segmentType);
+
+      List<Segment> initialSegments = new ArrayList<>(Arrays.asList(segment1, segment2));
+
+      when(showService.getShowById(any())).thenReturn(Optional.of(show));
+      when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+          .thenReturn(initialSegments);
+      when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
+
+      ShowDetailView showDetailView =
+          new ShowDetailView(
+              showService,
+              segmentService,
+              segmentRepository,
+              segmentTypeRepository,
+              segmentRuleRepository,
+              npcService,
+              wrestlerService,
+              titleService,
+              showTypeService,
+              seasonService,
+              showTemplateService,
+              rivalryService,
+              segmentNarrationServiceFactory,
+              segmentNarrationController,
+              showController,
+              matchFulfillmentRepository,
+              universeRepository,
+              universeContextService,
+              commentaryTeamRepository,
+              ringsideActionService,
+              arenaService,
+              relationshipService,
+              notificationService);
+
+      BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
+      Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
+      showDetailView.setParameter(beforeEvent, show.getId());
+
+      ReflectionTestUtils.setField(showDetailView, "currentShow", show);
+      ReflectionTestUtils.setField(showDetailView, "segmentsGrid", mock(Grid.class));
+
+      showDetailView.moveSegment(segment1, 1);
+
+      assertEquals(2, segment1.getSegmentOrder());
+      assertEquals(1, segment2.getSegmentOrder());
     }
   }
 }

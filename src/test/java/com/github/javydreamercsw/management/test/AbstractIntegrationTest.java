@@ -25,7 +25,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.DatabaseCleanup;
@@ -82,6 +81,7 @@ import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +90,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -101,6 +107,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ActiveProfiles("test")
 @Import({TestAIConfiguration.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
+
+  static {
+    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+  }
 
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
@@ -158,6 +168,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Autowired protected DatabaseCleanup databaseCleanup;
   @Autowired protected DataInitializer dataInitializer;
+  @Autowired protected com.github.javydreamercsw.base.AccountInitializer accountInitializer;
 
   protected boolean skipDataInit = false;
 
@@ -245,11 +256,74 @@ public abstract class AbstractIntegrationTest {
     return context;
   }
 
+  /**
+   * Helper to run a task with ADMIN privileges in tests, synchronizing both standard and test
+   * security contexts.
+   *
+   * @param task The task to run
+   */
+  protected void runAsAdmin(@NonNull Runnable task) {
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
+
+    // Create a system-like authentication context for tests
+    Account adminAccount = new Account("admin", "password", "admin@example.com");
+    adminAccount.setId(1L);
+    Role adminRole = new Role(RoleName.ADMIN, "ADMIN role");
+    adminRole.setId(101L);
+    adminAccount.setRoles(Collections.singleton(adminRole));
+
+    login(adminAccount);
+
+    try {
+      task.run();
+    } finally {
+      // Restore original contexts
+      restoreSecurityContext(originalAuth, originalTestAuth);
+    }
+  }
+
+  protected void login(Account account) {
+    Set<SimpleGrantedAuthority> authorities =
+        account.getRoles().stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+            .collect(java.util.stream.Collectors.toSet());
+
+    com.github.javydreamercsw.base.security.CustomUserDetails principal =
+        new com.github.javydreamercsw.base.security.CustomUserDetails(account, null);
+
+    // Use a non-null credential to ensure fully authenticated status in some Spring versions
+    UsernamePasswordAuthenticationToken authentication =
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
+
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(authentication);
+    SecurityContextHolder.setContext(context);
+    TestSecurityContextHolder.setAuthentication(authentication);
+  }
+
+  protected void restoreSecurityContext(
+      Authentication originalAuth, Authentication originalTestAuth) {
+    if (originalAuth != null) {
+      SecurityContext originalContext = SecurityContextHolder.createEmptyContext();
+      originalContext.setAuthentication(originalAuth);
+      SecurityContextHolder.setContext(originalContext);
+    } else {
+      SecurityContextHolder.clearContext();
+    }
+
+    if (originalTestAuth != null) {
+      TestSecurityContextHolder.setAuthentication(originalTestAuth);
+    } else {
+      TestSecurityContextHolder.clearContext();
+    }
+  }
+
   protected void clearRepositoriesOnly() {
-    GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          transactionTemplate.execute(
-              status -> {
+    transactionTemplate.execute(
+        status -> {
+          runAsAdmin(
+              () -> {
                 log.info("Cleaning up database using DatabaseCleanup (No init)...");
                 databaseCleanup.clearRepositories();
 
@@ -265,16 +339,16 @@ public abstract class AbstractIntegrationTest {
                             }
                           });
                 }
-                return null;
               });
+          return null;
         });
   }
 
   protected void clearAllRepositories() {
-    GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          transactionTemplate.execute(
-              status -> {
+    transactionTemplate.execute(
+        status -> {
+          runAsAdmin(
+              () -> {
                 log.info("Cleaning up database using DatabaseCleanup...");
                 databaseCleanup.clearRepositories();
 
@@ -295,6 +369,9 @@ public abstract class AbstractIntegrationTest {
                 }
 
                 if (!skipDataInit) {
+                  log.info("Initializing accounts using AccountInitializer...");
+                  accountInitializer.init();
+
                   log.info("Re-initializing data using DataInitializer...");
                   dataInitializer.init();
 
@@ -309,8 +386,8 @@ public abstract class AbstractIntegrationTest {
                 }
 
                 log.info("Database reset complete.");
-                return null;
               });
+          return null;
         });
   }
 

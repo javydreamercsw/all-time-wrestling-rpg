@@ -26,17 +26,21 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
@@ -62,30 +66,22 @@ class ShowPlanningViewTest {
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.show.template.ShowTemplateService
-      showTemplateService;
-
+  @Mock private ShowTemplateService showTemplateService;
   private ShowPlanningView showPlanningView;
   @Mock private TitleService titleService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
-  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  @Mock private NpcService npcService;
   @Mock private ObjectMapper objectMapper;
   @Mock private SegmentNarrationServiceFactory aiFactory;
   @Mock private ArenaService arenaService;
+  @Mock private NotificationService notificationService;
 
   @BeforeEach
   public void setUp() {
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     MockitoAnnotations.openMocks(this);
-    com.github.javydreamercsw.base.ui.service.NotificationService notificationService =
-        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class);
-    com.github.javydreamercsw.management.service.universe.UniverseContextService
-        universeContextService =
-            mock(
-                com.github.javydreamercsw.management.service.universe.UniverseContextService.class);
+    UniverseContextService universeContextService = mock(UniverseContextService.class);
 
     showPlanningView =
         new ShowPlanningView(

@@ -92,6 +92,7 @@ class MatchPromoUITest extends AbstractViewTest {
 
   @Mock private RingsideActionDataService ringsideActionDataService;
   @Mock private TeamService teamService;
+  @Mock private NotificationService notificationService;
 
   @Mock private TitleScriptService titleScriptService;
 
@@ -100,7 +101,6 @@ class MatchPromoUITest extends AbstractViewTest {
   @BeforeEach
   public void setup() {
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    NotificationService notificationService = mock(NotificationService.class);
 
     matchView =
         new MatchView(

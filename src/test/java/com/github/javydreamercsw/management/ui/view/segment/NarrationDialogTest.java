@@ -18,13 +18,15 @@ package com.github.javydreamercsw.management.ui.view.segment;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -49,11 +51,8 @@ class NarrationDialogTest {
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private SegmentNarrationServiceFactory aiFactory;
   @Mock private RingsideActionService ringsideActionService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-      relationshipService;
-
+  @Mock private NotificationService notificationService;
+  @Mock private WrestlerRelationshipService relationshipService;
   @Mock private UniverseContextService universeContextService;
 
   @BeforeEach
@@ -61,8 +60,7 @@ class NarrationDialogTest {
     MockitoAnnotations.openMocks(this);
     segment = new Segment();
     segment.setId(1L);
-    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType type =
-        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+    SegmentType type = new SegmentType();
     type.setName("Match");
     segment.setSegmentType(type);
 
@@ -77,9 +75,6 @@ class NarrationDialogTest {
 
   @Test
   void testDialogInitialization() {
-    com.github.javydreamercsw.base.ui.service.NotificationService notificationService =
-        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class);
-
     NarrationDialog dialog =
         new NarrationDialog(
             segment,

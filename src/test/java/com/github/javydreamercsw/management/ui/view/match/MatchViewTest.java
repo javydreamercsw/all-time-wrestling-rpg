@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -44,6 +45,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -55,6 +57,7 @@ import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -93,20 +96,17 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private RingsideAiService ringsideAiService;
   @Mock private RingsideActionDataService ringsideActionDataService;
   @Mock private TeamService teamService;
+  @Mock private NotificationService notificationService;
   @Mock private TitleScriptService titleScriptService;
-  @Mock private com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
+  @Mock private InjuryService injuryService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.universe.UniverseContextService
-      universeContextService;
+  @Mock private UniverseContextService universeContextService;
 
   private MatchView matchView;
 
   @BeforeEach
   public void setup() {
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    com.github.javydreamercsw.base.ui.service.NotificationService notificationService =
-        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class);
 
     matchView =
         new MatchView(

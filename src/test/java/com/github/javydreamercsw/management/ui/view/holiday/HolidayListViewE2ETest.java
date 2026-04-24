@@ -62,7 +62,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-holiday-button")));
     Assertions.assertNotNull(createButton);
-    createButton.click();
+    clickElement(createButton);
 
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
@@ -84,7 +84,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     dayOfMonthField.sendKeys("15");
 
     WebElement saveButton = driver.findElement(By.id("holiday-save"));
-    saveButton.click();
+    clickElement(saveButton);
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
@@ -116,7 +116,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-holiday-button")));
     Assertions.assertNotNull(createButton);
-    createButton.click();
+    clickElement(createButton);
 
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
@@ -140,7 +140,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     weekOfMonthField.sendKeys("3");
 
     WebElement saveButton = driver.findElement(By.id("holiday-save"));
-    saveButton.click();
+    clickElement(saveButton);
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
@@ -193,7 +193,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     themeField.sendKeys("Updated Theme");
 
     WebElement saveButton = driver.findElement(By.id("holiday-save"));
-    saveButton.click();
+    clickElement(saveButton);
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
