@@ -21,15 +21,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.data.domain.PageRequest;
 
-@DataJpaTest
 class WrestlerRepositoryTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private TestEntityManager entityManager;
 
   @Test
   void testFindAllByPagination() {
@@ -114,5 +115,98 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     Optional<Wrestler> found = wrestlerRepository.findByExternalId("ext-123");
     assertThat(found).isPresent();
     assertThat(found.get().getName()).isEqualTo("External Wrestler");
+  }
+
+  @Test
+  void testFindByNameWithFaction() {
+    Faction faction = Faction.builder().name("Test Faction").affinity(50).isActive(true).build();
+    entityManager.persist(faction);
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Faction Wrestler")
+            .faction(faction)
+            .deckSize(15)
+            .startingHealth(15)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.ROOKIE)
+            .active(true)
+            .creationDate(java.time.Instant.now())
+            .build();
+    wrestlerRepository.save(wrestler);
+
+    entityManager.flush();
+    entityManager.clear(); // Clear context to ensure lazy loading would fail if not fetched
+
+    Optional<Wrestler> found = wrestlerRepository.findByName("Faction Wrestler");
+    assertThat(found).isPresent();
+    assertThat(found.get().getFaction()).isNotNull();
+    assertThat(found.get().getFaction().getName()).isEqualTo("Test Faction");
+    assertThat(found.get().getFaction().getAffinity()).isEqualTo(50);
+  }
+
+  @Test
+  void testFindAllByActiveTrueWithFaction() {
+    Faction faction = Faction.builder().name("Active Faction").affinity(30).isActive(true).build();
+    entityManager.persist(faction);
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Active Faction Wrestler")
+            .faction(faction)
+            .deckSize(15)
+            .startingHealth(15)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.ROOKIE)
+            .active(true)
+            .creationDate(java.time.Instant.now())
+            .build();
+    wrestlerRepository.save(wrestler);
+
+    entityManager.flush();
+    entityManager.clear();
+
+    var activeWrestlers = wrestlerRepository.findAllByActiveTrue();
+    assertThat(activeWrestlers).anyMatch(w -> w.getName().equals("Active Faction Wrestler"));
+    Wrestler found =
+        activeWrestlers.stream()
+            .filter(w -> w.getName().equals("Active Faction Wrestler"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(found.getFaction()).isNotNull();
+    assertThat(found.getFaction().getAffinity()).isEqualTo(30);
+  }
+
+  @Test
+  void testFindAllByPaginationWithFaction() {
+    Faction faction = Faction.builder().name("Paged Faction").affinity(20).isActive(true).build();
+    entityManager.persist(faction);
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Paged Wrestler")
+            .faction(faction)
+            .deckSize(15)
+            .startingHealth(15)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.ROOKIE)
+            .active(true)
+            .creationDate(java.time.Instant.now())
+            .build();
+    wrestlerRepository.save(wrestler);
+
+    entityManager.flush();
+    entityManager.clear();
+
+    var page = wrestlerRepository.findAllBy(PageRequest.of(0, 10));
+    Wrestler pagedWrestler =
+        page.getContent().stream()
+            .filter(w -> w.getName().equals("Paged Wrestler"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(pagedWrestler.getFaction()).isNotNull();
+    assertThat(pagedWrestler.getFaction().getAffinity()).isEqualTo(20);
   }
 }

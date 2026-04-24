@@ -35,9 +35,14 @@ public interface WrestlerRepository
   List<Wrestler> findAllByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
   // If you don't need a total row count, Slice is better than Page.
+  @Query(
+      value = "SELECT w FROM Wrestler w LEFT JOIN FETCH w.faction",
+      countQuery = "SELECT count(w) FROM Wrestler w")
   Page<Wrestler> findAllBy(Pageable pageable);
 
-  @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.decks WHERE w.name = :name")
+  @Query(
+      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.faction WHERE w.name ="
+          + " :name")
   Optional<Wrestler> findByName(@Param("name") String name);
 
   @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.injuries WHERE w.id = :id")
@@ -49,6 +54,7 @@ public interface WrestlerRepository
 
   List<Wrestler> findByFansGreaterThanEqual(long minFans);
 
+  @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.faction WHERE w.active = true")
   List<Wrestler> findAllByActiveTrue();
 
   List<Wrestler> findAllByGenderAndActive(
