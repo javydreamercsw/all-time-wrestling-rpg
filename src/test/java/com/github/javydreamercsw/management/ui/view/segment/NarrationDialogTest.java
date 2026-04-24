@@ -161,6 +161,7 @@ class NarrationDialogTest {
 
     Show show = new Show();
     segment.setShow(show);
+    segment.setSegmentOrder(1);
     prevSegment.setShow(show);
 
     when(showService.getSegments(show)).thenReturn(List.of(prevSegment, segment));

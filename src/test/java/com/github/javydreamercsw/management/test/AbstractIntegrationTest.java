@@ -110,6 +110,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 public abstract class AbstractIntegrationTest {
 
   static {
+    // Enable InheritableThreadLocal to ensure background threads
+    // inherit the security context from the parent UI thread.
     SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
   }
 
@@ -267,14 +269,24 @@ public abstract class AbstractIntegrationTest {
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
     Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
 
-    // Create a system-like authentication context for tests
-    Account adminAccount = new Account("admin", "password", "admin@example.com");
-    adminAccount.setId(1L);
-    Role adminRole = new Role(RoleName.ADMIN, "ADMIN role");
-    adminRole.setId(101L);
-    adminAccount.setRoles(Collections.singleton(adminRole));
+    // Create a temporary system-like authentication with ADMIN role
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    authorities.add(new SimpleGrantedAuthority("ADMIN"));
 
-    login(adminAccount);
+    org.springframework.security.core.userdetails.UserDetails systemUser =
+        org.springframework.security.core.userdetails.User.withUsername("system")
+            .password("password")
+            .authorities(authorities)
+            .build();
+
+    UsernamePasswordAuthenticationToken adminAuth =
+        new UsernamePasswordAuthenticationToken(systemUser, "password", authorities);
+
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(adminAuth);
+    SecurityContextHolder.setContext(context);
+    TestSecurityContextHolder.setContext(context);
 
     try {
       task.run();
@@ -285,14 +297,16 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void login(Account account) {
+    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
+    com.github.javydreamercsw.base.security.CustomUserDetails principal =
+        new com.github.javydreamercsw.base.security.CustomUserDetails(account, wrestler);
+
     Set<SimpleGrantedAuthority> authorities = new HashSet<>();
     for (Role role : account.getRoles()) {
       authorities.add(new SimpleGrantedAuthority(role.getName().name()));
       authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
     }
-
-    com.github.javydreamercsw.base.security.CustomUserDetails principal =
-        new com.github.javydreamercsw.base.security.CustomUserDetails(account, null);
 
     // Use a non-null credential to ensure fully authenticated status in some Spring versions
     UsernamePasswordAuthenticationToken authentication =
@@ -301,7 +315,71 @@ public abstract class AbstractIntegrationTest {
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);
     SecurityContextHolder.setContext(context);
-    TestSecurityContextHolder.setAuthentication(authentication);
+    TestSecurityContextHolder.setContext(context);
+  }
+
+  protected void loginAs(String username) {
+    accountRepository
+        .findByUsername(username)
+        .ifPresentOrElse(
+            this::login,
+            () -> {
+              throw new RuntimeException("loginAs: Account not found: " + username);
+            });
+  }
+
+  /** Refreshes the current security context by re-loading the authenticated user from the DB. */
+  protected void refreshSecurityContext() {
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null) {
+      final String username;
+      if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
+        username = accountPrincipal.getUsername();
+      } else if (currentAuth.getPrincipal()
+          instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
+        username = userDetails.getUsername();
+      } else if (currentAuth.getPrincipal()
+          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+        username = userDetails.getUsername();
+      } else {
+        username = null;
+      }
+
+      if (username != null) {
+        accountRepository
+            .findByUsername(username)
+            .ifPresentOrElse(
+                refreshedAccount -> {
+                  log.debug(
+                      "Refreshing security context for user: {}", refreshedAccount.getUsername());
+                  login(refreshedAccount);
+                },
+                () -> {
+                  log.warn("Account not found during refresh: {}, clearing context", username);
+                  clearSecurityContext();
+                });
+      }
+    }
+  }
+
+  protected void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+    TestSecurityContextHolder.clearContext();
+  }
+
+  protected void clearCache() {
+    if (cacheManager != null) {
+      log.info("Clearing all caches...");
+      cacheManager
+          .getCacheNames()
+          .forEach(
+              cacheName -> {
+                var cache = cacheManager.getCache(cacheName);
+                if (cache != null) {
+                  cache.clear();
+                }
+              });
+    }
   }
 
   protected void restoreSecurityContext(
@@ -328,56 +406,38 @@ public abstract class AbstractIntegrationTest {
               () -> {
                 log.info("Cleaning up database using DatabaseCleanup (No init)...");
                 databaseCleanup.clearRepositories();
-
-                if (cacheManager != null) {
-                  log.info("Clearing all caches...");
-                  cacheManager
-                      .getCacheNames()
-                      .forEach(
-                          cacheName -> {
-                            var cache = cacheManager.getCache(cacheName);
-                            if (cache != null) {
-                              cache.clear();
-                            }
-                          });
-                }
+                clearCache();
               });
           return null;
         });
   }
 
   protected void clearAllRepositories() {
-    transactionTemplate.execute(
-        status -> {
-          runAsAdmin(
-              () -> {
+    runAsAdmin(
+        () -> {
+          transactionTemplate.execute(
+              status -> {
                 log.info("Cleaning up database using DatabaseCleanup...");
                 databaseCleanup.clearRepositories();
 
                 // Explicitly clear universe table to prevent ID 1 conflicts
                 universeRepository.deleteAll();
                 universeRepository.flush();
-                if (cacheManager != null) {
-                  log.info("Clearing all caches...");
-                  cacheManager
-                      .getCacheNames()
-                      .forEach(
-                          cacheName -> {
-                            var cache = cacheManager.getCache(cacheName);
-                            if (cache != null) {
-                              cache.clear();
-                            }
-                          });
-                }
 
-                if (!skipDataInit) {
-                  log.info("Initializing accounts using AccountInitializer...");
-                  accountInitializer.init();
+                clearCache();
+                return null;
+              });
 
-                  log.info("Re-initializing data using DataInitializer...");
-                  dataInitializer.init();
+          if (!skipDataInit) {
+            log.info("Initializing accounts using AccountInitializer...");
+            accountInitializer.init();
 
-                  // Set default universe for tests
+            log.info("Re-initializing data using DataInitializer...");
+            dataInitializer.init();
+
+            // Set default universe for tests
+            transactionTemplate.execute(
+                status -> {
                   universeRepository.findAll().stream()
                       .findFirst()
                       .ifPresent(
@@ -385,11 +445,11 @@ public abstract class AbstractIntegrationTest {
                             com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
                             universeContextService.setCurrentUniverse(u);
                           });
-                }
+                  return null;
+                });
+          }
 
-                log.info("Database reset complete.");
-              });
-          return null;
+          log.info("Database reset complete.");
         });
   }
 
