@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import java.util.Optional;
@@ -33,6 +35,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
   @Autowired private UniverseRepository universeRepository;
+  @Autowired private FactionRepository factionRepository;
 
   private Universe defaultUniverse;
 
@@ -57,7 +60,6 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler1.setStartingStamina(0);
     wrestler1.setCreationDate(java.time.Instant.now());
     wrestler1.setIsPlayer(true);
-    wrestler1.setCurrentHealth(15);
     wrestler1.setGender(Gender.MALE);
     wrestler1 = wrestlerRepository.save(wrestler1);
 
@@ -68,8 +70,10 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .fans(100L)
             .tier(WrestlerTier.ROOKIE)
             .bumps(0)
+            .currentHealth(15)
             .build();
-    wrestlerStateRepository.save(state1);
+    state1 = wrestlerStateRepository.save(state1);
+    wrestler1.getWrestlerStates().add(state1);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setName("Wrestler Two");
@@ -80,7 +84,6 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler2.setStartingStamina(0);
     wrestler2.setCreationDate(java.time.Instant.now());
     wrestler2.setIsPlayer(true);
-    wrestler2.setCurrentHealth(15);
     wrestler2.setGender(Gender.MALE);
     wrestler2 = wrestlerRepository.save(wrestler2);
 
@@ -91,12 +94,15 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .fans(100L)
             .tier(WrestlerTier.ROOKIE)
             .bumps(0)
+            .currentHealth(15)
             .build();
-    wrestlerStateRepository.save(state2);
+    state2 = wrestlerStateRepository.save(state2);
+    wrestler2.getWrestlerStates().add(state2);
 
-    var page = wrestlerRepository.findAllBy(PageRequest.of(0, 1));
-    assertThat(page.getContent()).hasSize(1);
-    assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(2);
+    var page = wrestlerRepository.findAllBy(PageRequest.of(0, 100));
+    assertThat(page.getContent())
+        .extracting(Wrestler::getName)
+        .contains("Wrestler One", "Wrestler Two");
   }
 
   @Test
@@ -110,7 +116,6 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler.setStartingStamina(0);
     wrestler.setCreationDate(java.time.Instant.now());
     wrestler.setIsPlayer(true);
-    wrestler.setCurrentHealth(15);
     wrestler.setGender(Gender.MALE);
     wrestler = wrestlerRepository.save(wrestler);
 
@@ -121,8 +126,10 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .fans(100L)
             .tier(WrestlerTier.ROOKIE)
             .bumps(0)
+            .currentHealth(15)
             .build();
-    wrestlerStateRepository.save(state);
+    state = wrestlerStateRepository.save(state);
+    wrestler.getWrestlerStates().add(state);
 
     Optional<Wrestler> found = wrestlerRepository.findByName("Decked Wrestler");
     assertThat(found).isPresent();
@@ -141,7 +148,6 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler.setStartingStamina(0);
     wrestler.setCreationDate(java.time.Instant.now());
     wrestler.setIsPlayer(true);
-    wrestler.setCurrentHealth(15);
     wrestler.setGender(Gender.MALE);
     wrestler = wrestlerRepository.save(wrestler);
 
@@ -152,11 +158,171 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .fans(100L)
             .tier(WrestlerTier.ROOKIE)
             .bumps(0)
+            .currentHealth(15)
             .build();
-    wrestlerStateRepository.save(state);
+    state = wrestlerStateRepository.save(state);
+    wrestler.getWrestlerStates().add(state);
 
     Optional<Wrestler> found = wrestlerRepository.findByExternalId("ext-123");
     assertThat(found).isPresent();
     assertThat(found.get().getName()).isEqualTo("External Wrestler");
+  }
+
+  @Test
+  void testFindByNameWithFaction() {
+    Faction faction = Faction.builder().name("Test Faction").affinity(50).isActive(true).build();
+    faction = factionRepository.save(faction);
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Faction Wrestler")
+            .deckSize(15)
+            .startingHealth(15)
+            .gender(Gender.MALE)
+            .active(true)
+            .creationDate(java.time.Instant.now())
+            .build();
+    wrestler = wrestlerRepository.save(wrestler);
+
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(defaultUniverse)
+            .fans(100L)
+            .tier(WrestlerTier.ROOKIE)
+            .faction(faction)
+            .bumps(0)
+            .currentHealth(15)
+            .build();
+    state = wrestlerStateRepository.save(state);
+    wrestler.getWrestlerStates().add(state);
+
+    Optional<Wrestler> found = wrestlerRepository.findByName("Faction Wrestler");
+    assertThat(found).isPresent();
+    Wrestler w = found.get();
+    assertThat(w.getState(defaultUniverse.getId())).isPresent();
+    assertThat(w.getState(defaultUniverse.getId()).get().getFaction()).isNotNull();
+    assertThat(w.getState(defaultUniverse.getId()).get().getFaction().getName())
+        .isEqualTo("Test Faction");
+    assertThat(w.getState(defaultUniverse.getId()).get().getFaction().getAffinity()).isEqualTo(50);
+  }
+
+  @Test
+  void testFindAllByActiveTrueWithFaction() {
+    Faction faction = Faction.builder().name("Active Faction").affinity(30).isActive(true).build();
+    faction = factionRepository.save(faction);
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Active Faction Wrestler")
+            .deckSize(15)
+            .startingHealth(15)
+            .gender(Gender.MALE)
+            .active(true)
+            .creationDate(java.time.Instant.now())
+            .build();
+    wrestler = wrestlerRepository.save(wrestler);
+
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(defaultUniverse)
+            .fans(100L)
+            .tier(WrestlerTier.ROOKIE)
+            .faction(faction)
+            .bumps(0)
+            .currentHealth(15)
+            .build();
+    state = wrestlerStateRepository.save(state);
+    wrestler.getWrestlerStates().add(state);
+
+    var activeWrestlers = wrestlerRepository.findAllByActiveTrue();
+    assertThat(activeWrestlers).anyMatch(w -> w.getName().equals("Active Faction Wrestler"));
+    Wrestler found =
+        activeWrestlers.stream()
+            .filter(w -> w.getName().equals("Active Faction Wrestler"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(found.getState(defaultUniverse.getId())).isPresent();
+    assertThat(found.getState(defaultUniverse.getId()).get().getFaction()).isNotNull();
+    assertThat(found.getState(defaultUniverse.getId()).get().getFaction().getAffinity())
+        .isEqualTo(30);
+  }
+
+  @Test
+  void testFindAllByPaginationWithFaction() {
+    Faction faction = Faction.builder().name("Paged Faction").affinity(20).isActive(true).build();
+    faction = factionRepository.save(faction);
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Paged Wrestler")
+            .deckSize(15)
+            .startingHealth(15)
+            .gender(Gender.MALE)
+            .active(true)
+            .creationDate(java.time.Instant.now())
+            .build();
+    wrestler = wrestlerRepository.save(wrestler);
+
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(defaultUniverse)
+            .fans(100L)
+            .tier(WrestlerTier.ROOKIE)
+            .faction(faction)
+            .bumps(0)
+            .currentHealth(15)
+            .build();
+    state = wrestlerStateRepository.save(state);
+    wrestler.getWrestlerStates().add(state);
+
+    var page = wrestlerRepository.findAllBy(PageRequest.of(0, 100));
+    Wrestler pagedWrestler =
+        page.getContent().stream()
+            .filter(w -> w.getName().equals("Paged Wrestler"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(pagedWrestler.getState(defaultUniverse.getId())).isPresent();
+    assertThat(pagedWrestler.getState(defaultUniverse.getId()).get().getFaction()).isNotNull();
+    assertThat(pagedWrestler.getState(defaultUniverse.getId()).get().getFaction().getAffinity())
+        .isEqualTo(20);
+  }
+
+  @Test
+  void testFindByFansQueries() {
+    Wrestler lowFans =
+        Wrestler.builder().name("Low Fans").creationDate(java.time.Instant.now()).build();
+    lowFans = wrestlerRepository.save(lowFans);
+    WrestlerState s1 =
+        WrestlerState.builder().wrestler(lowFans).universe(defaultUniverse).fans(10L).build();
+    s1 = wrestlerStateRepository.save(s1);
+    lowFans.getWrestlerStates().add(s1);
+
+    Wrestler midFans =
+        Wrestler.builder().name("Mid Fans").creationDate(java.time.Instant.now()).build();
+    midFans = wrestlerRepository.save(midFans);
+    WrestlerState s2 =
+        WrestlerState.builder().wrestler(midFans).universe(defaultUniverse).fans(50L).build();
+    s2 = wrestlerStateRepository.save(s2);
+    midFans.getWrestlerStates().add(s2);
+
+    Wrestler highFans =
+        Wrestler.builder().name("High Fans").creationDate(java.time.Instant.now()).build();
+    highFans = wrestlerRepository.save(highFans);
+    WrestlerState s3 =
+        WrestlerState.builder().wrestler(highFans).universe(defaultUniverse).fans(100L).build();
+    s3 = wrestlerStateRepository.save(s3);
+    highFans.getWrestlerStates().add(s3);
+
+    assertThat(wrestlerRepository.findByFansBetween(40, 60))
+        .extracting(Wrestler::getName)
+        .containsExactly("Mid Fans");
+    assertThat(wrestlerRepository.findByFansGreaterThanEqual(80))
+        .extracting(Wrestler::getName)
+        .containsExactly("High Fans");
   }
 }

@@ -42,6 +42,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -169,12 +171,14 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
       mappedBy = "wrestler",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
+      fetch = FetchType.LAZY)
+  @Fetch(FetchMode.SUBSELECT)
   @JsonIgnore
   @Builder.Default
   private List<Deck> decks = new ArrayList<>();
 
   @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @Fetch(FetchMode.SUBSELECT)
   @JsonIgnore
   @Builder.Default
   private List<WrestlerState> wrestlerStates = new ArrayList<>();
