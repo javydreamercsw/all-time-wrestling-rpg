@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -34,8 +33,11 @@ class InjuryPenaltiesTest extends AbstractIntegrationTest {
 
   @Test
   @Transactional
-  @WithCustomMockUser(roles = {"BOOKER"})
   void testInjuryCreationIncludesPenalties() {
+    // Switch to BOOKER context after setUp() (which requires ADMIN) has completed.
+    // Using @WithCustomMockUser(roles={"BOOKER"}) at method level would set the BOOKER context
+    // before @BeforeEach runs, interfering with the ADMIN-privileged data initialization.
+    loginAs("booker");
 
     Wrestler wrestler = createTestWrestler("Penalty Tester");
     wrestler = wrestlerRepository.save(wrestler);
