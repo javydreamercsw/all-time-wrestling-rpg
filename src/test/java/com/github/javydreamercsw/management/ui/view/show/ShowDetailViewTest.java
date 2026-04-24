@@ -59,8 +59,11 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -141,9 +144,43 @@ class ShowDetailViewTest {
       wrestler2.setId(2L);
       wrestler2.setName("Wrestler 2");
 
-      // Simulate editing the segment
-      segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
-      segmentService.updateSegment(segment);
+      Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
+
+      ShowDetailView showDetailView =
+          new ShowDetailView(
+              showService,
+              segmentService,
+              segmentRepository,
+              segmentTypeRepository,
+              segmentRuleRepository,
+              npcService,
+              wrestlerService,
+              titleService,
+              showTypeService,
+              seasonService,
+              showTemplateService,
+              rivalryService,
+              segmentNarrationServiceFactory,
+              segmentNarrationController,
+              showController,
+              matchFulfillmentRepository,
+              universeRepository,
+              universeContextService,
+              commentaryTeamRepository,
+              ringsideActionService,
+              arenaService,
+              relationshipService,
+              notificationService);
+
+      ReflectionTestUtils.invokeMethod(
+          showDetailView,
+          "validateAndSaveSegment",
+          show,
+          segmentType,
+          wrestlers,
+          Collections.emptySet(),
+          Collections.emptySet(),
+          segment);
 
       assertEquals(AdjudicationStatus.PENDING, segment.getAdjudicationStatus());
     }
