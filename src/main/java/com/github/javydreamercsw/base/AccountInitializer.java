@@ -42,7 +42,7 @@ public class AccountInitializer implements Initializable {
   private final RoleRepository roleRepository;
   @Lazy private final PasswordEncoder passwordEncoder;
 
-  @Value("${data.initializer.enabled:true}")
+  @Value("${account.initializer.enabled:true}")
   private boolean enabled;
 
   @Transactional

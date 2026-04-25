@@ -104,7 +104,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(classes = Application.class)
 @Slf4j
-@WithCustomMockUser(roles = {"ADMIN"})
+@WithCustomMockUser(
+    username = "admin",
+    roles = {"ADMIN"})
 @ActiveProfiles("test")
 @Import({TestAIConfiguration.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
@@ -413,7 +415,7 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearAllRepositories() {
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+    runAsAdmin(
         () -> {
           transactionTemplate.execute(
               status -> {
