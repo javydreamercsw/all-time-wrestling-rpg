@@ -134,7 +134,7 @@ public class InjuryTypeService {
       log.info("Deleted injury type with ID: {}", id);
       return true;
     } catch (Exception e) {
-      log.error("Failed to delete injury type with ID: {}", id, e);
+      log.debug("Failed to delete injury type with ID: {}", id, e);
       throw new IllegalStateException(
           "Cannot delete injury type - it may be referenced by other records");
     }
