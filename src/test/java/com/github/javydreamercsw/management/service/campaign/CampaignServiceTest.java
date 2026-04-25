@@ -62,6 +62,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ class CampaignServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     // Initialize lazy collections to avoid NPE if service checks them
-    wrestler.setReigns(new ArrayList<>());
+    wrestler.setReigns(new LinkedHashSet<>());
 
     when(campaignRepository.save(any(Campaign.class)))
         .thenAnswer(
@@ -194,7 +195,7 @@ class CampaignServiceTest {
   void testCreateMatchForEncounter() {
     Wrestler player = new Wrestler();
     player.setName("Player");
-    player.setReigns(new ArrayList<>());
+    player.setReigns(new LinkedHashSet<>());
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(player);
@@ -314,7 +315,7 @@ class CampaignServiceTest {
   @Test
   void testAdvanceChapter() {
     Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new ArrayList<>());
+    wrestler.setReigns(new LinkedHashSet<>());
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);

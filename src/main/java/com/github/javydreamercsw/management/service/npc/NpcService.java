@@ -70,6 +70,11 @@ public class NpcService {
     return npcRepository.save(npc);
   }
 
+  @Transactional
+  public List<Npc> saveAll(List<Npc> npcs) {
+    return npcRepository.saveAll(npcs);
+  }
+
   public java.util.Optional<Npc> findByExternalId(String externalId) {
     return npcRepository.findByExternalId(externalId);
   }

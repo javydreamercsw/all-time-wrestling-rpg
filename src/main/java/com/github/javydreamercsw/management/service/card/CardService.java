@@ -90,6 +90,19 @@ public class CardService {
     return cardRepository.saveAndFlush(card);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public List<Card> saveAll(@NonNull List<Card> cards) {
+    cards.forEach(
+        card -> {
+          card.setCreationDate(clock.instant());
+          var violations = validator.validate(card);
+          if (!violations.isEmpty()) {
+            throw new ValidationException(violations.toString());
+          }
+        });
+    return cardRepository.saveAll(cards);
+  }
+
   @PreAuthorize("isAuthenticated()")
   public List<Card> findAll() {
     return cardRepository.findAll();

@@ -18,14 +18,14 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.Data;
 
 @Data
 public class ShowPlanningChampionship {
   private Title title;
-  private List<Wrestler> champions = new ArrayList<>();
-  private List<Wrestler> contenders = new ArrayList<>();
+  private Set<Wrestler> champions = new LinkedHashSet<>();
+  private Set<Wrestler> contenders = new LinkedHashSet<>();
   private Long daysSinceLastDefense;
 }

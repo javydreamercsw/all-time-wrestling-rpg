@@ -44,7 +44,6 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -206,7 +205,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     // Add a Title Reign in Season 2
     TitleReign reign = new TitleReign();
     reign.setTitle(worldTitle);
-    reign.setChampions(Arrays.asList(wrestler));
+    reign.setChampions(new java.util.LinkedHashSet<>(java.util.Arrays.asList(wrestler)));
     reign.setStartDate(Instant.parse("2026-01-15T00:00:00Z"));
     titleReignRepository.save(reign);
   }

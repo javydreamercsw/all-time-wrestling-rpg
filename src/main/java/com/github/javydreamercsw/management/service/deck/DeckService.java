@@ -73,6 +73,12 @@ public class DeckService {
     return deckRepository.saveAndFlush(deck);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public List<Deck> saveAll(@NonNull List<Deck> decks) {
+    decks.forEach(deck -> deck.setCreationDate(clock.instant()));
+    return deckRepository.saveAll(decks);
+  }
+
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
   public Deck createDeck(@NonNull Wrestler wrestler) {
     Deck deck = new Deck();

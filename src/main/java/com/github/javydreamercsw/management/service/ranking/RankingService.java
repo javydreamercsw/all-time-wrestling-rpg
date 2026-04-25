@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -148,7 +149,7 @@ public class RankingService {
           .getCurrentReign()
           .ifPresent(
               reign -> {
-                List<Wrestler> champions = reign.getChampions();
+                List<Wrestler> champions = new ArrayList<>(reign.getChampions());
                 if (champions.size() == 2) {
                   contenders.removeIf(
                       contender ->

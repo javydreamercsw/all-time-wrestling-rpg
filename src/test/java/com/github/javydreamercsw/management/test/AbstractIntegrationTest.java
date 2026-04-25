@@ -420,52 +420,64 @@ public abstract class AbstractIntegrationTest {
 
   protected void ensureAuthenticatedUserExists() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null
-        && auth.getPrincipal()
-            instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
-      String username = userDetails.getUsername();
-      log.info("ensureAuthenticatedUserExists found current user: {}", username);
-      Account account = accountRepository.findByUsername(username).orElse(null);
-      if (account == null) {
-        log.info("Re-creating missing authenticated user in DB: {}", username);
-        account =
-            new Account(username, passwordEncoder.encode("password"), username + "@example.com");
+    if (auth != null) {
+      String username = null;
+      com.github.javydreamercsw.base.security.CustomUserDetails customUserDetails = null;
 
-        Set<Role> roles = new HashSet<>();
-        for (org.springframework.security.core.GrantedAuthority authority : auth.getAuthorities()) {
-          String roleNameStr = authority.getAuthority();
-          if (roleNameStr.startsWith("ROLE_")) {
-            roleNameStr = roleNameStr.substring(5);
-          }
-          try {
-            RoleName roleName = RoleName.valueOf(roleNameStr);
-            roles.add(
-                roleRepository
-                    .findByName(roleName)
-                    .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name()))));
-          } catch (IllegalArgumentException e) {
-            // Not a standard role, skip
-          }
-        }
-        account.setRoles(roles);
-        account = accountRepository.saveAndFlush(account);
+      if (auth.getPrincipal()
+          instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
+        username = userDetails.getUsername();
+        customUserDetails = userDetails;
+      } else if (auth.getPrincipal()
+          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+        username = userDetails.getUsername();
       }
 
-      // Re-create wrestler if it was in the original context but is now missing from DB
-      if (userDetails.getWrestler() != null) {
-        String wrestlerName = userDetails.getWrestler().getName();
-        if (wrestlerRepository.findByName(wrestlerName).isEmpty()) {
-          log.info("Re-creating missing authenticated wrestler in DB: {}", wrestlerName);
-          createTestWrestler(wrestlerName);
-          // Link wrestler to account if needed (Account normally has a list or ref)
-          final Account finalAccount = account;
-          wrestlerRepository
-              .findByName(wrestlerName)
-              .ifPresent(
-                  w -> {
-                    w.setAccount(finalAccount);
-                    wrestlerRepository.saveAndFlush(w);
-                  });
+      if (username != null) {
+        log.info("ensureAuthenticatedUserExists found current user: {}", username);
+        Account account = accountRepository.findByUsername(username).orElse(null);
+        if (account == null) {
+          log.info("Re-creating missing authenticated user in DB: {}", username);
+          account =
+              new Account(username, passwordEncoder.encode("password"), username + "@example.com");
+
+          Set<Role> roles = new HashSet<>();
+          for (org.springframework.security.core.GrantedAuthority authority :
+              auth.getAuthorities()) {
+            String roleNameStr = authority.getAuthority();
+            if (roleNameStr.startsWith("ROLE_")) {
+              roleNameStr = roleNameStr.substring(5);
+            }
+            try {
+              RoleName roleName = RoleName.valueOf(roleNameStr);
+              roles.add(
+                  roleRepository
+                      .findByName(roleName)
+                      .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name()))));
+            } catch (IllegalArgumentException e) {
+              // Not a standard role, skip
+            }
+          }
+          account.setRoles(roles);
+          account = accountRepository.saveAndFlush(account);
+        }
+
+        // Re-create wrestler if it was in the original context but is now missing from DB
+        if (customUserDetails != null && customUserDetails.getWrestler() != null) {
+          String wrestlerName = customUserDetails.getWrestler().getName();
+          if (wrestlerRepository.findByName(wrestlerName).isEmpty()) {
+            log.info("Re-creating missing authenticated wrestler in DB: {}", wrestlerName);
+            createTestWrestler(wrestlerName);
+            // Link wrestler to account if needed (Account normally has a list or ref)
+            final Account finalAccount = account;
+            wrestlerRepository
+                .findByName(wrestlerName)
+                .ifPresent(
+                    w -> {
+                      w.setAccount(finalAccount);
+                      wrestlerRepository.saveAndFlush(w);
+                    });
+          }
         }
       }
     }
@@ -474,14 +486,12 @@ public abstract class AbstractIntegrationTest {
   protected void clearAllRepositories() {
     runAsAdmin(
         () -> {
+          transactionTemplate.setPropagationBehavior(
+              org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
           transactionTemplate.execute(
               status -> {
                 log.info("Cleaning up database using DatabaseCleanup...");
                 databaseCleanup.clearRepositories();
-
-                // Explicitly clear universe table to prevent ID 1 conflicts on first init
-                universeRepository.deleteAll();
-                universeRepository.flush();
 
                 clearCache();
                 return null;

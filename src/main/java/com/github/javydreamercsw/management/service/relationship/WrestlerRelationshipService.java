@@ -183,6 +183,10 @@ public class WrestlerRelationshipService {
     return totalBonus;
   }
 
+  public long count() {
+    return relationshipRepository.count();
+  }
+
   private double calculatePairBonus(WrestlerRelationship rel) {
     // Basic formula: Level (0-100) / 100 * multiplier based on type
     // Max bonus for a single pair is 0.15 (15% boost) for Spouse at Level 100.

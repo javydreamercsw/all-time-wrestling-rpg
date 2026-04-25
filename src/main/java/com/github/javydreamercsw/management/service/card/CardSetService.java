@@ -60,6 +60,12 @@ public class CardSetService {
     return cardSetRepository.saveAndFlush(card);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public List<CardSet> saveAll(@NonNull List<CardSet> cardSets) {
+    cardSets.forEach(cardSet -> cardSet.setCreationDate(clock.instant()));
+    return cardSetRepository.saveAll(cardSets);
+  }
+
   @PreAuthorize("isAuthenticated()")
   public List<CardSet> findAll() {
     return cardSetRepository.findAll();

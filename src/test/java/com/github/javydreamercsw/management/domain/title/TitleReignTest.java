@@ -84,6 +84,6 @@ class TitleReignTest {
     assertThat(titleReign.getTitle()).isEqualTo(title);
     assertThat(titleReign.getChampions()).containsExactly(wrestler);
     assertThat(titleReign.getTitle().getName()).isEqualTo("Test Championship");
-    assertThat(titleReign.getChampions().get(0).getName()).isEqualTo("Test Champion");
+    assertThat(titleReign.getChampions().iterator().next().getName()).isEqualTo("Test Champion");
   }
 }

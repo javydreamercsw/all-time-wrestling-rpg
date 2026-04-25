@@ -42,6 +42,10 @@ public class CampaignAbilityCardService {
     return campaignAbilityCardRepository.save(card);
   }
 
+  public List<CampaignAbilityCard> saveAll(List<CampaignAbilityCard> cards) {
+    return campaignAbilityCardRepository.saveAll(cards);
+  }
+
   public void delete(Long id) {
     campaignAbilityCardRepository.deleteById(id);
   }

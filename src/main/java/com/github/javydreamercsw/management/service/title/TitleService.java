@@ -138,6 +138,14 @@ public class TitleService {
     return titleRepository.save(title);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public List<Title> saveAll(@NonNull List<Title> titles) {
+    return (List<Title>) titleRepository.saveAll(titles);
+  }
+
   @PreAuthorize("isAuthenticated()")
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,

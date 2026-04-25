@@ -323,6 +323,7 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var achievementsFromFile = mapper.readValue(is, new TypeReference<List<Achievement>>() {});
+        List<Achievement> toSave = new ArrayList<>();
         for (Achievement a : achievementsFromFile) {
           Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
           if (existingOpt.isPresent()) {
@@ -331,15 +332,15 @@ public class DataInitializer implements Initializable {
             existing.setDescription(a.getDescription());
             existing.setXpValue(a.getXpValue());
             existing.setCategory(a.getCategory());
-            achievementRepository.save(existing);
-            log.debug("Updated existing achievement: {}", existing.getName());
+            toSave.add(existing);
           } else {
-            achievementRepository.save(a);
-            log.debug("Saved new achievement: {}", a.getName());
+            toSave.add(a);
           }
         }
+        achievementRepository.saveAll(toSave);
         log.info(
-            "Achievement loading completed - {} achievements loaded", achievementsFromFile.size());
+            "Achievement loading completed - {} achievements processed",
+            achievementsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading achievements from file", e);
       }
@@ -704,19 +705,20 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var setsFromFile = mapper.readValue(is, new TypeReference<List<CardSet>>() {});
+        List<CardSet> toSave = new ArrayList<>();
         for (CardSet c : setsFromFile) {
           Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getCode());
           if (existingSetOpt.isPresent()) {
             CardSet existingSet = existingSetOpt.get();
             // Update fields
             existingSet.setName(c.getName());
-            cardSetService.save(existingSet);
-            log.debug("Updated existing card set: {}", existingSet.getName());
+            toSave.add(existingSet);
           } else {
-            cardSetService.save(c);
-            log.debug("Saved new card set: {}", c.getName());
+            toSave.add(c);
           }
         }
+        cardSetService.saveAll(toSave);
+        log.info("Card sets loading completed - {} sets processed", setsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading card sets from file", e);
       }
@@ -746,7 +748,7 @@ public class DataInitializer implements Initializable {
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
             var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
-
+            List<Card> toSave = new ArrayList<>();
             for (CardDTO dto : cardsFromFile) {
               CardSet set = setCache.get(dto.getSet());
               if (set == null) {
@@ -777,13 +779,10 @@ public class DataInitializer implements Initializable {
               card.setTaunt(dto.isTaunt());
               card.setPin(dto.isPin());
               card.setRecover(dto.isRecover());
-              cardService.save(card);
-              if (existing.containsKey(key)) {
-                log.debug("Updated existing card: {}", card.getName());
-              } else {
-                log.debug("Saved new card: {}", card.getName());
-              }
+              toSave.add(card);
             }
+            cardService.saveAll(toSave);
+            log.debug("Saved/Updated {} cards from {}", toSave.size(), resource.getFilename());
           } catch (IOException e) {
             log.error("Error loading cards from file: {}", resource.getFilename(), e);
           }
@@ -798,6 +797,13 @@ public class DataInitializer implements Initializable {
     if (skipIfNotEmpty && wrestlerRepository.count() > 0) return;
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
+      // Load universe once
+      Universe universe =
+          universeRepository.findAll().stream()
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("No universe found"));
+      Long leagueId = universe.getId();
+
       for (Resource resource : resources) {
         if (resource.exists()) {
           log.info("Loading wrestlers from file: {}", resource.getFilename());
@@ -806,21 +812,18 @@ public class DataInitializer implements Initializable {
           try (var is = resource.getInputStream()) {
             var wrestlersFromFile =
                 mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
-            // Map existing wrestlers by name (handle duplicates by keeping the first one)
-            Map<String, Wrestler> existing =
-                wrestlerRepository.findAll().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
+
+            // Collect all wrestlers that need state refresh/creation
+            List<Wrestler> wrestlersToProcess = new ArrayList<>();
+            Map<String, WrestlerImportDTO> dtoMap = new HashMap<>();
+
             for (WrestlerImportDTO w : wrestlersFromFile) {
-              // Smart duplicate handling - prefer external ID, fallback to name
-              Wrestler existingWrestler = null;
-              if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
+              Wrestler existingWrestler = wrestlerRepository.findByName(w.getName()).orElse(null);
+              if (existingWrestler == null
+                  && w.getExternalId() != null
+                  && !w.getExternalId().trim().isEmpty()) {
                 existingWrestler =
                     wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
-              }
-              if (existingWrestler == null) {
-                existingWrestler = existing.get(w.getName());
               }
 
               if (existingWrestler != null) {
@@ -832,90 +835,35 @@ public class DataInitializer implements Initializable {
                 existingWrestler.setLowStamina(w.getLowStamina());
                 existingWrestler.setDescription(w.getDescription());
                 existingWrestler.setGender(w.getGender());
-
-                // Default to Global Universe (first available)
-                Long leagueId =
-                    universeRepository.findAll().stream()
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No universe found"))
-                        .getId();
-                WrestlerState state =
-                    wrestlerService.getOrCreateState(existingWrestler.getId(), leagueId);
-
-                if (w.getFans() != null) {
-                  if (w.getFans() > state.getFans()) {
-                    state.setFans(w.getFans());
-                  }
-                }
-
-                state.setTier(WrestlerTier.fromFanCount(state.getFans()));
-                tierRecalculationService.recalculateTier(state);
-
-                if (w.getBumps() != null) {
-                  if (w.getBumps() > state.getBumps()) {
-                    state.setBumps(w.getBumps());
-                  }
-                }
-
-                if (w.getImageUrl() != null) {
-                  existingWrestler.setImageUrl(w.getImageUrl());
-                }
-
-                if (w.getHeritageTag() != null) {
-                  existingWrestler.setHeritageTag(w.getHeritageTag());
-                }
-
-                if (w.getSet() != null) {
-                  existingWrestler.setExpansionCode(w.getSet());
-                }
+                if (w.getImageUrl() != null) existingWrestler.setImageUrl(w.getImageUrl());
+                if (w.getHeritageTag() != null) existingWrestler.setHeritageTag(w.getHeritageTag());
+                if (w.getSet() != null) existingWrestler.setExpansionCode(w.getSet());
+                if (w.getExternalId() != null) existingWrestler.setExternalId(w.getExternalId());
+                if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
+                if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
+                if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
+                if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
 
                 if (w.getAlignment() != null) {
-                  if (existingWrestler.getAlignment() == null
-                      || existingWrestler.getAlignment().getAlignmentType() == null) {
-                    try {
-                      AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+                  try {
+                    AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+                    if (existingWrestler.getAlignment() == null) {
                       existingWrestler.setAlignment(
                           WrestlerAlignment.builder()
                               .wrestler(existingWrestler)
                               .alignmentType(at)
                               .level(0)
                               .build());
-                      log.debug(
-                          "Initialized alignment for existing wrestler {}: {}",
-                          existingWrestler.getName(),
-                          at);
-                    } catch (IllegalArgumentException e) {
-                      log.warn(
-                          "Invalid alignment '{}' for wrestler '{}'",
-                          w.getAlignment(),
-                          w.getName());
                     }
+                  } catch (IllegalArgumentException e) {
+                    log.warn(
+                        "Invalid alignment '{}' for wrestler '{}'", w.getAlignment(), w.getName());
                   }
                 }
 
-                if (w.getExternalId() != null) {
-                  existingWrestler.setExternalId(w.getExternalId());
-                }
-
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    state.setManager(manager);
-                  }
-                }
-
-                if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
-
-                if (existingWrestler.getActive() == null) existingWrestler.setActive(true);
-                if (existingWrestler.getIsPlayer() == null) existingWrestler.setIsPlayer(false);
-
-                existingWrestler = wrestlerRepository.save(existingWrestler);
-
-                wrestlerStateRepository.save(state);
-                log.debug("Updated existing wrestler: {}", existingWrestler.getName());
+                Wrestler saved = wrestlerRepository.save(existingWrestler);
+                wrestlersToProcess.add(saved);
+                dtoMap.put(saved.getName(), w);
               } else {
                 Wrestler newWrestler = new Wrestler();
                 newWrestler.setName(w.getName());
@@ -930,49 +878,53 @@ public class DataInitializer implements Initializable {
                 newWrestler.setIsPlayer(false);
                 newWrestler.setImageUrl(w.getImageUrl());
                 newWrestler.setHeritageTag(w.getHeritageTag());
-                if (w.getSet() != null) {
-                  newWrestler.setExpansionCode(w.getSet());
-                }
-                if (w.getExternalId() != null) {
-                  newWrestler.setExternalId(w.getExternalId());
-                }
+                if (w.getSet() != null) newWrestler.setExpansionCode(w.getSet());
+                if (w.getExternalId() != null) newWrestler.setExternalId(w.getExternalId());
                 if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
                 if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
                 if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
                 if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
 
-                Wrestler savedWrestler = wrestlerRepository.save(newWrestler);
-
-                if (savedWrestler == null) {
-                  log.warn(
-                      "Wrestler repository returned null for save. Skipping state creation for: {}",
-                      newWrestler.getName());
-                  continue;
-                }
-
-                // Default to Global Universe (first available)
-                Long leagueId =
-                    universeRepository.findAll().stream()
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No universe found"))
-                        .getId();
-                WrestlerState state =
-                    wrestlerService.getOrCreateState(savedWrestler.getId(), leagueId);
-                state.setFans(w.getFans() != null ? w.getFans() : 0L);
-                state.setBumps(w.getBumps() != null ? w.getBumps() : 0);
-                state.setTier(WrestlerTier.fromFanCount(state.getFans()));
-                tierRecalculationService.recalculateTier(state);
-
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    state.setManager(manager);
+                Wrestler saved = wrestlerRepository.save(newWrestler);
+                if (w.getAlignment() != null) {
+                  try {
+                    AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+                    saved.setAlignment(
+                        WrestlerAlignment.builder()
+                            .wrestler(saved)
+                            .alignmentType(at)
+                            .level(0)
+                            .build());
+                    saved = wrestlerRepository.save(saved);
+                  } catch (IllegalArgumentException e) {
+                    log.warn(
+                        "Invalid alignment '{}' for wrestler '{}'", w.getAlignment(), w.getName());
                   }
                 }
-                wrestlerStateRepository.save(state);
-
-                log.debug("Saved new wrestler: {}", newWrestler.getName());
+                wrestlersToProcess.add(saved);
+                dtoMap.put(saved.getName(), w);
               }
+            }
+
+            // Process states in bulk-like manner (though getOrCreateState and tierRecalculation are
+            // still single)
+            for (Wrestler wrestler : wrestlersToProcess) {
+              WrestlerImportDTO w = dtoMap.get(wrestler.getName());
+              WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+              if (w.getFans() != null && w.getFans() > state.getFans()) {
+                state.setFans(w.getFans());
+              }
+              if (w.getBumps() != null && w.getBumps() > state.getBumps()) {
+                state.setBumps(w.getBumps());
+              }
+              state.setTier(WrestlerTier.fromFanCount(state.getFans()));
+              tierRecalculationService.recalculateTier(state);
+
+              if (w.getManager() != null) {
+                Npc manager = npcService.findByName(w.getManager());
+                if (manager != null) state.setManager(manager);
+              }
+              wrestlerStateRepository.save(state);
             }
           } catch (IOException e) {
             log.error("Error loading wrestlers from file", e);
@@ -993,6 +945,7 @@ public class DataInitializer implements Initializable {
       try (var is = resource.getInputStream()) {
         var championshipsFromFile = mapper.readValue(is, new TypeReference<List<TitleDTO>>() {});
         Long universeId = getGlobalUniverseId();
+        List<Title> toSave = new ArrayList<>();
         for (TitleDTO dto : championshipsFromFile) {
           Optional<Title> existingTitle = titleService.findByName(dto.getName());
           Title title;
@@ -1009,7 +962,7 @@ public class DataInitializer implements Initializable {
                 "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {
             title = existingTitle.get();
-            log.debug("Title {} already exists, skipping creation.", dto.getName());
+            log.debug("Title {} already exists, updating.", dto.getName());
           }
           title.setChampionshipType(dto.getChampionshipType());
           title.setEffectScript(dto.getEffectScript());
@@ -1018,11 +971,17 @@ public class DataInitializer implements Initializable {
           if (dto.getIncludeInRankings() != null) {
             title.setIncludeInRankings(dto.getIncludeInRankings());
           }
-          titleService.save(title);
+          toSave.add(title);
+        }
+        titleService.saveAll(toSave);
 
-          // Award title if currentChampionName is provided
+        // Process awards separately as they involve complex logic
+        for (TitleDTO dto : championshipsFromFile) {
           if (dto.getCurrentChampionName() != null
               && !dto.getCurrentChampionName().trim().isEmpty()) {
+            Title title = titleService.findByName(dto.getName()).orElse(null);
+            if (title == null) continue;
+
             String[] championNames = dto.getCurrentChampionName().split(",");
             List<Wrestler> champions = new ArrayList<>();
             for (String name : championNames) {
@@ -1031,7 +990,6 @@ public class DataInitializer implements Initializable {
             }
 
             if (!champions.isEmpty()) {
-              // Check if the title is already held by these champions
               boolean matchesCurrent =
                   title.getCurrentChampions().size() == champions.size()
                       && new HashSet<>(title.getCurrentChampions()).containsAll(champions);
@@ -1042,21 +1000,8 @@ public class DataInitializer implements Initializable {
                     "Awarded title {} to champions {}",
                     title.getName(),
                     dto.getCurrentChampionName());
-              } else {
-                log.debug(
-                    "Title {} already held by champions {}",
-                    title.getName(),
-                    dto.getCurrentChampionName());
               }
-            } else {
-              log.warn(
-                  "No champions found for names '{}' for title '{}'. Title will remain vacant.",
-                  dto.getCurrentChampionName(),
-                  dto.getName());
             }
-          } else {
-            // If no champion is specified in DTO leave it as it is currently.
-            log.info("Leaving title {} as is in the database.", title.getName());
           }
         }
       } catch (IOException e) {
@@ -1077,34 +1022,22 @@ public class DataInitializer implements Initializable {
                 .collect(
                     Collectors.toMap(
                         Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
+
+        List<Deck> decksToSave = new ArrayList<>();
         for (DeckDTO deckDTO : decksFromFile) {
           Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
-          if (wrestler == null) {
-            continue;
-          }
-          // Try to find an existing deck for this wrestler
+          if (wrestler == null) continue;
+
           List<Deck> byWrestler = deckService.findByWrestler(wrestler);
-          Deck deck;
-          if (!byWrestler.isEmpty()) {
-            deck = byWrestler.getFirst(); // Get the existing deck
-          } else {
-            deck = deckService.createDeck(wrestler);
-          }
+          Deck deck =
+              !byWrestler.isEmpty() ? byWrestler.getFirst() : deckService.createDeck(wrestler);
 
-          // Keep track of cards to be removed
           Set<DeckCard> cardsToRemove = new HashSet<>(deck.getCards());
-
-          // Aggregate cards from DTO
           Map<String, Integer> cardKeyToAmount = new HashMap<>();
           Map<String, Card> cardKeyToCard = new HashMap<>();
-          Map<Long, CardSet> setCache = new HashMap<>(); // Cache for CardSet instances
+          Map<Long, CardSet> setCache = new HashMap<>();
 
           for (DeckCardDTO cardDTO : deckDTO.getCards()) {
-            log.debug(
-                "Looking for: {} in set {} from deck {}",
-                cardDTO.getNumber(),
-                cardDTO.getSet(),
-                wrestler.getName());
             Card card =
                 cardService.findByNumberAndSet(cardDTO.getNumber(), cardDTO.getSet()).orElse(null);
             if (card == null) {
@@ -1116,15 +1049,9 @@ public class DataInitializer implements Initializable {
               continue;
             }
 
-            // Ensure we use a single instance of CardSet from our cache
             CardSet canonicalSet =
-                setCache.computeIfAbsent(
-                    card.getSet().getId(),
-                    id -> {
-                      log.debug("Caching CardSet: {}", card.getSet().getName());
-                      return card.getSet();
-                    });
-            card.setSet(canonicalSet); // Replace with the cached instance
+                setCache.computeIfAbsent(card.getSet().getId(), id -> card.getSet());
+            card.setSet(canonicalSet);
 
             String key = card.getSet().getName() + "-" + card.getId();
             cardKeyToAmount.merge(key, cardDTO.getAmount(), Integer::sum);
@@ -1147,29 +1074,32 @@ public class DataInitializer implements Initializable {
                 existingDeckCard.setAmount(amount);
                 changed = true;
               }
-              cardsToRemove.remove(existingDeckCard); // Don't remove this card
+              cardsToRemove.remove(existingDeckCard);
             } else {
               DeckCard newDeckCard = new DeckCard();
               newDeckCard.setCard(card);
               newDeckCard.setSet(card.getSet());
               newDeckCard.setAmount(amount);
-              newDeckCard.setDeck(deck); // Set the back-reference
-              deck.getCards().add(newDeckCard); // Add to the collection
+              newDeckCard.setDeck(deck);
+              deck.getCards().add(newDeckCard);
               changed = true;
             }
           }
 
-          // Remove cards that are no longer in the DTO
           if (!cardsToRemove.isEmpty()) {
             deck.getCards().removeAll(cardsToRemove);
             changed = true;
           }
 
           if (changed) {
-            deckService.save(deck); // Save the deck, which will cascade to the new cards.
-            log.debug("Saved deck for wrestler: {}", wrestler.getName());
+            decksToSave.add(deck);
           }
         }
+        deckService.saveAll(decksToSave);
+        log.info(
+            "Deck loading completed - {} decks processed, {} updated",
+            decksFromFile.size(),
+            decksToSave.size());
       } catch (IOException e) {
         log.error("Error loading decks from file", e);
       }
@@ -1191,6 +1121,7 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var dtos = mapper.readValue(is, new TypeReference<List<NpcDTO>>() {});
+        List<Npc> toSave = new ArrayList<>();
         for (NpcDTO dto : dtos) {
           Npc npc = npcService.findByName(dto.getName());
           if (npc == null) {
@@ -1199,12 +1130,8 @@ public class DataInitializer implements Initializable {
           }
           npc.setDescription(dto.getDescription());
           npc.setNpcType(dto.getType());
-          if (dto.getSet() != null) {
-            npc.setExpansionCode(dto.getSet());
-          }
-          if (dto.getAwareness() != null) {
-            npcService.setAwareness(npc, dto.getAwareness());
-          }
+          if (dto.getSet() != null) npc.setExpansionCode(dto.getSet());
+          if (dto.getAwareness() != null) npcService.setAwareness(npc, dto.getAwareness());
           if (dto.getAlignment() != null) {
             try {
               AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
@@ -1213,10 +1140,10 @@ public class DataInitializer implements Initializable {
               log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
             }
           }
-          npcService.save(npc);
-          log.debug("Loaded npc: {}", dto.getName());
+          toSave.add(npc);
         }
-        log.info("Npc loading completed - {} npcs loaded", dtos.size());
+        npcService.saveAll(toSave);
+        log.info("Npc loading completed - {} npcs processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading npcs from file", e);
       }
@@ -1262,7 +1189,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded faction: {}", dto.getName());
         }
-        log.info("Faction loading completed - {} factions loaded", dtos.size());
+        log.info("Faction loading completed - {} factions processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading factions from file", e);
       }
@@ -1307,7 +1234,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded team: {}", dto.getName());
         }
-        log.info("Team loading completed - {} teams loaded", dtos.size());
+        log.info("Team loading completed - {} teams processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading teams from file", e);
       }
@@ -1324,23 +1251,19 @@ public class DataInitializer implements Initializable {
       try (var is = resource.getInputStream()) {
         var locationsFromFile =
             objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
-        if (locationsFromFile == null) {
-          log.warn("No locations found in {}", resource.getPath());
-          return;
-        }
-        log.info("Found {} locations in JSON file", locationsFromFile.size());
+        if (locationsFromFile == null) return;
+
+        List<Location> toSave = new ArrayList<>();
         for (LocationImportDTO dto : locationsFromFile) {
           Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
           if (existingLocation.isEmpty()) {
-            Location location =
+            toSave.add(
                 Location.builder()
                     .name(dto.getName())
                     .description(dto.getDescription())
                     .imageUrl(dto.getImageUrl())
                     .culturalTags(dto.getCulturalTags())
-                    .build();
-            locationRepository.save(location);
-            log.info("Saved new location: {}", location.getName());
+                    .build());
           } else {
             Location existing = existingLocation.get();
             boolean changed = false;
@@ -1357,13 +1280,10 @@ public class DataInitializer implements Initializable {
               existing.setCulturalTags(dto.getCulturalTags());
               changed = true;
             }
-
-            if (changed) {
-              locationRepository.save(existing);
-              log.info("Updated existing location: {}", existing.getName());
-            }
+            if (changed) toSave.add(existing);
           }
         }
+        locationRepository.saveAll(toSave);
         locationRepository.flush();
         log.info("Location loading completed - {} locations processed", locationsFromFile.size());
 
@@ -1383,17 +1303,15 @@ public class DataInitializer implements Initializable {
       try (var is = resource.getInputStream()) {
         var arenasFromFile =
             objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
-        if (arenasFromFile == null) {
-          log.warn("No arenas found in {}", resource.getPath());
-          return;
-        }
-        log.info("Found {} arenas in JSON file", arenasFromFile.size());
+        if (arenasFromFile == null) return;
+
+        List<Arena> toSave = new ArrayList<>();
         for (ArenaImportDTO dto : arenasFromFile) {
           Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
           if (existingArena.isEmpty()) {
             Optional<Location> location = locationRepository.findByName(dto.getLocation());
             if (location.isPresent()) {
-              Arena arena =
+              toSave.add(
                   Arena.builder()
                       .name(dto.getName())
                       .description(dto.getDescription())
@@ -1402,14 +1320,7 @@ public class DataInitializer implements Initializable {
                       .alignmentBias(dto.getAlignmentBias())
                       .imageUrl(dto.getImageUrl())
                       .environmentalTraits(dto.getEnvironmentalTraits())
-                      .build();
-              arenaRepository.save(arena);
-              log.info("Saved new arena: {}", arena.getName());
-            } else {
-              log.warn(
-                  "Location '{}' not found for arena '{}'. Skipping arena.",
-                  dto.getLocation(),
-                  dto.getName());
+                      .build());
             }
           } else {
             Arena existing = existingArena.get();
@@ -1439,13 +1350,10 @@ public class DataInitializer implements Initializable {
               existing.setLocation(locationOpt.get());
               changed = true;
             }
-
-            if (changed) {
-              arenaRepository.save(existing);
-              log.info("Updated existing arena: {}", existing.getName());
-            }
+            if (changed) toSave.add(existing);
           }
         }
+        arenaRepository.saveAll(toSave);
         log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());
       } catch (IOException e) {
         log.error("Error loading arenas from file", e);
@@ -1456,6 +1364,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRelationshipsFromFile() {
+    if (skipIfNotEmpty && relationshipService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("relationships.json");
     if (resource.exists()) {
       log.info("Loading relationships from file: {}", resource.getPath());
@@ -1478,19 +1387,6 @@ public class DataInitializer implements Initializable {
                 dto.getLevel(),
                 dto.getIsStoryline(),
                 dto.getNotes());
-            log.debug(
-                "Loaded relationship: {} {} {} (Level: {})",
-                dto.getWrestler1(),
-                dto.getType(),
-                dto.getWrestler2(),
-                dto.getLevel());
-          } else {
-            if (w1.isEmpty()) {
-              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler1());
-            }
-            if (w2.isEmpty()) {
-              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler2());
-            }
           }
         }
         log.info("Relationship loading completed - {} relationships processed", dtos.size());

@@ -143,29 +143,29 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private List<TitleReign> reigns = new ArrayList<>();
+  private Set<TitleReign> reigns = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private List<Rivalry> rivalriesAsWrestler1 = new ArrayList<>();
+  private Set<Rivalry> rivalriesAsWrestler1 = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private List<Rivalry> rivalriesAsWrestler2 = new ArrayList<>();
+  private Set<Rivalry> rivalriesAsWrestler2 = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
-      relationshipsAsWrestler1 = new ArrayList<>();
+  private Set<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      relationshipsAsWrestler1 = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
-      relationshipsAsWrestler2 = new ArrayList<>();
+  private Set<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+      relationshipsAsWrestler2 = new LinkedHashSet<>();
 
   @OneToMany(
       mappedBy = "wrestler",

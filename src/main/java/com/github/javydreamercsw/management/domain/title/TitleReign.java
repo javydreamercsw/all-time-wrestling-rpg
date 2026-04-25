@@ -21,8 +21,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -55,7 +55,7 @@ public class TitleReign extends AbstractSyncableEntity<Long> {
       name = "title_reign_champion",
       joinColumns = @JoinColumn(name = "title_reign_id"),
       inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
-  private List<Wrestler> champions = new ArrayList<>();
+  private Set<Wrestler> champions = new LinkedHashSet<>();
 
   @Column(name = "start_date", nullable = false)
   private Instant startDate;

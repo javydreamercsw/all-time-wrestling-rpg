@@ -33,7 +33,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignNotionSyncService;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
@@ -99,7 +98,7 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     // Create a Title Reign
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
-    reign.setChampions(List.of(wrestler));
+    reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(wrestler)));
     reign.setReignNumber(1);
     reign.setStartDate(Instant.now());
     reign.setNotes("Historical first reign");

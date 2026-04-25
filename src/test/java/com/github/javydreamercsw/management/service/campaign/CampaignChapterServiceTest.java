@@ -70,7 +70,7 @@ class CampaignChapterServiceTest {
     Campaign campaign = new Campaign();
     Wrestler wrestler = new Wrestler();
     // Initialize required collections
-    wrestler.setReigns(new java.util.ArrayList<>());
+    wrestler.setReigns(new java.util.LinkedHashSet<>());
     campaign.setWrestler(wrestler);
     state.setCampaign(campaign);
 

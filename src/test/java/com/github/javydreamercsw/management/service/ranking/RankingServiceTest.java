@@ -90,7 +90,7 @@ class RankingServiceTest {
     reign.setTitle(title);
     List<Wrestler> champions = new ArrayList<>();
     champions.add(champion);
-    reign.setChampions(champions);
+    reign.setChampions(new java.util.LinkedHashSet<>(champions));
     reign.setStartDate(Instant.now());
     title.getTitleReigns().add(reign);
     champion.getReigns().add(reign);
@@ -165,7 +165,7 @@ class RankingServiceTest {
 
     // Set Wrestler G as the champion
     TitleReign reign = new TitleReign();
-    reign.setChampions(List.of(wrestlerG));
+    reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(wrestlerG)));
     reign.setStartDate(Instant.now());
     title.getTitleReigns().clear(); // Clear existing champion from setup
     title.getTitleReigns().add(reign);
@@ -213,8 +213,11 @@ class RankingServiceTest {
     Wrestler team1member1 = createMockWrestler(4L, "Team 1 Member 1", 500L, WrestlerTier.ROOKIE);
     Wrestler team1member2 = createMockWrestler(5L, "Team 1 Member 2", 600L, WrestlerTier.ROOKIE);
 
-    title.setChampion(List.of(team1member1, team1member2));
-    title.getCurrentReign().get().setChampions(List.of(team1member1, team1member2));
+    title.setChampion(new java.util.ArrayList<>(java.util.List.of(team1member1, team1member2)));
+    title
+        .getCurrentReign()
+        .get()
+        .setChampions(new java.util.LinkedHashSet<>(java.util.List.of(team1member1, team1member2)));
 
     Wrestler team2member1 = createMockWrestler(6L, "Team 2 Member 1", 700L, WrestlerTier.RISER);
     Wrestler team2member2 = createMockWrestler(7L, "Team 2 Member 2", 800L, WrestlerTier.RISER);

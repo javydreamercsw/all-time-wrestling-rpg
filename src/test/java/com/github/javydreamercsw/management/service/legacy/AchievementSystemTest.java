@@ -48,7 +48,6 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -210,7 +209,7 @@ class AchievementSystemTest {
 
     TitleReign reign = new TitleReign();
     reign.setEndDate(null);
-    wrestler.setReigns(Collections.singletonList(reign));
+    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign)));
 
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("FIRST_CHAMPION");
@@ -234,7 +233,7 @@ class AchievementSystemTest {
     reign1.setEndDate(null);
 
     // Only holding one title - no grand slam
-    wrestler.setReigns(List.of(reign1));
+    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign1)));
     legacyService.updateLegacyScore(account);
     verify(achievementRepository, never()).findByKey("GRAND_SLAM");
 
@@ -242,7 +241,7 @@ class AchievementSystemTest {
     TitleReign reign2 = new TitleReign();
     reign2.setTitle(t2);
     reign2.setEndDate(null);
-    wrestler.setReigns(List.of(reign1, reign2));
+    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign1, reign2)));
 
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("GRAND_SLAM");

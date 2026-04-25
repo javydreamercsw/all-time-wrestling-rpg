@@ -37,13 +37,15 @@ public interface WrestlerRepository
   // If you don't need a total row count, Slice is better than Page.
   @Query(
       value =
-          "SELECT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws LEFT JOIN FETCH ws.faction",
+          "SELECT w FROM Wrestler w LEFT JOIN FETCH w.alignment LEFT JOIN FETCH w.wrestlerStates ws"
+              + " LEFT JOIN FETCH ws.faction",
       countQuery = "SELECT count(w) FROM Wrestler w")
   Page<Wrestler> findAllBy(Pageable pageable);
 
   @Query(
-      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.wrestlerStates ws LEFT"
-          + " JOIN FETCH ws.faction WHERE w.name = :name")
+      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.alignment LEFT JOIN"
+          + " FETCH w.reigns LEFT JOIN FETCH w.wrestlerStates ws LEFT JOIN FETCH ws.faction WHERE"
+          + " w.name = :name")
   Optional<Wrestler> findByName(@Param("name") String name);
 
   Optional<Wrestler> findByExternalId(String externalId);
@@ -57,8 +59,8 @@ public interface WrestlerRepository
   List<Wrestler> findByFansGreaterThanEqual(@Param("minFans") long minFans);
 
   @Query(
-      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws LEFT JOIN FETCH ws.faction"
-          + " WHERE w.active = true")
+      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.alignment LEFT JOIN FETCH w.wrestlerStates ws"
+          + " LEFT JOIN FETCH ws.faction WHERE w.active = true")
   List<Wrestler> findAllByActiveTrue();
 
   List<Wrestler> findAllByGenderAndActive(
