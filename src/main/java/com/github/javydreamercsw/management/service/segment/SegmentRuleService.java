@@ -258,4 +258,9 @@ public class SegmentRuleService {
   public List<SegmentRule> findAll() {
     return segmentRuleRepository.findAll();
   }
+
+  @PreAuthorize("isAuthenticated()")
+  public long count() {
+    return segmentRuleRepository.count();
+  }
 }

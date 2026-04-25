@@ -100,4 +100,8 @@ public class CampaignAbilityCardService {
   public List<CampaignAbilityCard> findAll() {
     return campaignAbilityCardRepository.findAll();
   }
+
+  public long count() {
+    return campaignAbilityCardRepository.count();
+  }
 }

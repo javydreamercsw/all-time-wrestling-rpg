@@ -110,6 +110,7 @@ class DataInitializerTest {
     dataInitializer =
         new DataInitializer(
             true, // Enabled parameter
+            false, // skipIfNotEmpty
             showTemplateService,
             wrestlerRepository,
             wrestlerService,
@@ -152,6 +153,7 @@ class DataInitializerTest {
   void testInitialize_Disabled() {
     DataInitializer disabledInitializer =
         new DataInitializer(
+            false,
             false,
             showTemplateService,
             wrestlerRepository,

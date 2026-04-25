@@ -412,8 +412,6 @@ public abstract class AbstractIntegrationTest {
         });
   }
 
-  private static boolean dataInitialized = false;
-
   protected void clearAllRepositories() {
     com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
         () -> {
@@ -422,29 +420,20 @@ public abstract class AbstractIntegrationTest {
                 log.info("Cleaning up database using DatabaseCleanup...");
                 databaseCleanup.clearRepositories();
 
-                if (!dataInitialized) {
-                  // Explicitly clear universe table to prevent ID 1 conflicts on first init
-                  universeRepository.deleteAll();
-                  universeRepository.flush();
-                }
+                // Explicitly clear universe table to prevent ID 1 conflicts on first init
+                universeRepository.deleteAll();
+                universeRepository.flush();
 
                 clearCache();
                 return null;
               });
 
           if (!skipDataInit) {
-            if (!dataInitialized) {
-              log.info("Initializing accounts using AccountInitializer...");
-              accountInitializer.init();
+            log.info("Initializing accounts using AccountInitializer...");
+            accountInitializer.init();
 
-              log.info("Re-initializing data using DataInitializer...");
-              dataInitializer.init();
-              dataInitialized = true;
-            } else {
-              log.info("Data already initialized in this session, skipping DataInitializer.init()");
-              // Still need to re-init accounts as they might have been cleared if not protected
-              accountInitializer.init();
-            }
+            log.info("Re-initializing data using DataInitializer...");
+            dataInitializer.init();
 
             // Set default universe for tests
             transactionTemplate.execute(

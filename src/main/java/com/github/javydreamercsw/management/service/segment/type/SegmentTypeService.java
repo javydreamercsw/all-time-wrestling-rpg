@@ -46,6 +46,11 @@ public class SegmentTypeService {
     return segmentTypeRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public long count() {
+    return segmentTypeRepository.count();
+  }
+
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(

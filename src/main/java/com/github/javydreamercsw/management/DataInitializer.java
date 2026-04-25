@@ -111,6 +111,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataInitializer implements Initializable {
 
   private final boolean enabled;
+  private final boolean skipIfNotEmpty;
   private final ShowTemplateService showTemplateService;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
@@ -148,6 +149,7 @@ public class DataInitializer implements Initializable {
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") boolean enabled,
+      @Value("${data.initializer.skip-if-not-empty:false}") boolean skipIfNotEmpty,
       ShowTemplateService showTemplateService,
       WrestlerRepository wrestlerRepository,
       WrestlerService wrestlerService,
@@ -179,6 +181,7 @@ public class DataInitializer implements Initializable {
           relationshipService,
       ObjectMapper objectMapper) {
     this.enabled = enabled;
+    this.skipIfNotEmpty = skipIfNotEmpty;
     this.showTemplateService = showTemplateService;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
@@ -257,6 +260,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRingsideActionTypesFromFile() {
+    if (skipIfNotEmpty && ringsideActionDataService.countTypes() > 0) return;
     ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
     if (resource.exists()) {
       log.info("Loading ringside action types from file: {}", resource.getPath());
@@ -283,6 +287,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRingsideActionsFromFile() {
+    if (skipIfNotEmpty && ringsideActionDataService.countActions() > 0) return;
     ClassPathResource resource = new ClassPathResource("ringside_actions.json");
     if (resource.exists()) {
       log.info("Loading ringside actions from file: {}", resource.getPath());
@@ -311,6 +316,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadAchievements() {
+    if (skipIfNotEmpty && achievementRepository.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("achievements.json");
     if (resource.exists()) {
       log.info("Loading achievements from file: {}", resource.getPath());
@@ -343,6 +349,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCommentatorsFromFile() {
+    if (skipIfNotEmpty && commentaryService.countCommentators() > 0) return;
     ClassPathResource resource = new ClassPathResource("commentators.json");
     if (resource.exists()) {
       log.info("Loading commentators from file: {}", resource.getPath());
@@ -370,6 +377,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCommentaryTeamsFromFile() {
+    if (skipIfNotEmpty && commentaryService.countTeams() > 0) return;
     ClassPathResource resource = new ClassPathResource("commentary_teams.json");
     if (resource.exists()) {
       log.info("Loading commentary teams from file: {}", resource.getPath());
@@ -505,6 +513,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCampaignAbilityCardsFromFile() {
+    if (skipIfNotEmpty && campaignAbilityCardService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
     if (resource.exists()) {
       log.info("Loading campaign ability cards from file: {}", resource.getPath());
@@ -536,6 +545,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentRulesFromFile() {
+    if (skipIfNotEmpty && segmentRuleService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
       log.debug("Loading segment rules from file: {}", resource.getPath());
@@ -568,6 +578,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncShowTypesFromFile() {
+    if (skipIfNotEmpty && showTypeService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("show_types.json");
     if (resource.exists()) {
       log.info("Loading show types from file: {}", resource.getPath());
@@ -593,6 +604,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentTypesFromFile() {
+    if (skipIfNotEmpty && segmentTypeService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("segment_types.json");
     if (resource.exists()) {
       log.info("Loading segment types from file: {}", resource.getPath());
@@ -684,6 +696,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncSetsFromFile() {
+    if (skipIfNotEmpty && cardSetService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("sets.json");
     if (resource.exists()) {
       log.info("Loading card sets from file: {}", resource.getPath());
@@ -711,6 +724,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCardsFromFile() {
+    if (skipIfNotEmpty && cardService.count() > 0) return;
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
       Map<String, CardSet> setCache = new HashMap<>();
@@ -781,6 +795,7 @@ public class DataInitializer implements Initializable {
   }
 
   protected void syncWrestlersFromFile() {
+    if (skipIfNotEmpty && wrestlerRepository.count() > 0) return;
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
       for (Resource resource : resources) {
@@ -970,6 +985,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncChampionshipsFromFile() {
+    if (skipIfNotEmpty && titleService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("championships.json");
     if (resource.exists()) {
       log.info("Loading championships from file: {}", resource.getPath());
@@ -1168,6 +1184,7 @@ public class DataInitializer implements Initializable {
   }
 
   void syncNpcsFromFile() {
+    if (skipIfNotEmpty && npcService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
       log.info("Loading npcs from file: {}", resource.getPath());
@@ -1209,6 +1226,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncFactionsFromFile() {
+    if (skipIfNotEmpty && factionService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("factions.json");
     if (resource.exists()) {
       log.info("Loading factions from file: {}", resource.getPath());
@@ -1254,6 +1272,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncTeamsFromFile() {
+    if (skipIfNotEmpty && teamService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("teams.json");
     if (resource.exists()) {
       log.info("Loading teams from file: {}", resource.getPath());
@@ -1298,6 +1317,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncLocationsFromFile() {
+    if (skipIfNotEmpty && locationRepository.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("locations.json");
     if (resource.exists()) {
       log.info("Loading locations from file: {}", resource.getPath());
@@ -1356,6 +1376,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncArenasFromFile() {
+    if (skipIfNotEmpty && arenaRepository.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("arenas.json");
     if (resource.exists()) {
       log.info("Loading arenas from file: {}", resource.getPath());

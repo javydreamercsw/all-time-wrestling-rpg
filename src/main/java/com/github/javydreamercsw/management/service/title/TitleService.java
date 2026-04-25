@@ -443,6 +443,11 @@ public class TitleService {
     return wrestlerOpt.map(titleRepository::findTitlesHeldByWrestler).orElse(List.of());
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public long count() {
+    return titleRepository.count();
+  }
+
   public String resolveTitleImage(Title title) {
     if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
       return title.getImageUrl();

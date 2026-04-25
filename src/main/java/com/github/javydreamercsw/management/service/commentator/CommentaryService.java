@@ -113,6 +113,14 @@ public class CommentaryService {
     return commentaryTeamRepository.findAll();
   }
 
+  public long countCommentators() {
+    return commentatorRepository.count();
+  }
+
+  public long countTeams() {
+    return commentaryTeamRepository.count();
+  }
+
   public Optional<Commentator> findCommentatorByNpcName(@NonNull String npcName) {
     return commentatorRepository.findAll().stream()
         .filter(c -> c.getNpc().getName().equals(npcName))

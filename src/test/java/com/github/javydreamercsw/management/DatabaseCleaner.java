@@ -79,9 +79,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
     log.info("🔄 Deletion order: {}", syncOrder);
 
     // Entities that should NOT be cleared as they contain static configuration data
-
     // loaded by DataInitializer and needed by many views.
-
     Set<String> protectedEntities =
         new HashSet<>(
             Arrays.asList(
@@ -93,11 +91,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "campaignabilitycard",
                 "campaignupgrade",
                 "holiday",
-                "injurytype",
-                "wrestler",
-                "arena",
-                "location",
-                "universe"));
+                "injurytype"));
 
     // Delete data in the correct order
     int deletedCount = 0;
@@ -126,7 +120,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
       }
     }
 
+    // Re-initialize accounts to ensure admin, booker, etc. are available
     accountInitializer.init();
+
     entityManager.flush();
     entityManager.clear();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
@@ -252,10 +248,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
-      // Skip account and role repositories to avoid deleting test users
-      if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
-        continue;
-      }
+      // Explicitly clear account and role related tables if needed, or skip if handled by
+      // AccountInitializer
       try {
         JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
 

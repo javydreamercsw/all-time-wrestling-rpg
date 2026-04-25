@@ -174,4 +174,8 @@ public class NpcService {
     npc.setAttributes(attrs);
     npcRepository.save(npc);
   }
+
+  public long count() {
+    return npcRepository.count();
+  }
 }

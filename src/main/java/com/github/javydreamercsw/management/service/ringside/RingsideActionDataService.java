@@ -42,8 +42,16 @@ public class RingsideActionDataService {
     return ringsideActionTypeRepository.findAll();
   }
 
+  public long countTypes() {
+    return ringsideActionTypeRepository.count();
+  }
+
   public List<RingsideAction> findAllActions() {
     return ringsideActionRepository.findAll();
+  }
+
+  public long countActions() {
+    return ringsideActionRepository.count();
   }
 
   @Transactional
