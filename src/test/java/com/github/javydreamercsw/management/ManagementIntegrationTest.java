@@ -45,11 +45,10 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @BeforeEach
   public void prepareTestEnvironment() {
     org.mockito.MockitoAnnotations.openMocks(this);
-    log.info("Resetting database for test: {}", this.getClass().getSimpleName());
-
-    clearAllRepositories();
+    log.info("Preparing test environment for: {}", this.getClass().getSimpleName());
 
     // Refresh security context to ensure the principal has persistent entities
+    // The DB was already cleared and mock user re-created by AbstractIntegrationTest.setUp()
     refreshSecurityContext();
 
     // If no authentication was established (e.g. first run with empty DB or not using
@@ -81,7 +80,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
             .findByUsername(username)
             .ifPresentOrElse(
                 refreshedAccount -> {
-                  log.debug(
+                  log.info(
                       "Refreshing security context for user: {}", refreshedAccount.getUsername());
 
                   // Force reload of wrestler if available
@@ -116,6 +115,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   }
 
   protected void login(Account account) {
+    log.info("Logging in as user: {}", account.getUsername());
     // Wrap the account in CustomUserDetails to match production behavior and provide username to
     // getName()
     var principal = new CustomUserDetails(account);

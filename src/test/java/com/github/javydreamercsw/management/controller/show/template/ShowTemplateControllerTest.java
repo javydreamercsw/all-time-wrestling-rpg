@@ -48,8 +48,8 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
 
   @Override
   @BeforeEach
-  public void setUp() throws Exception {
-    super.setUp();
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     ShowType testShowType = new ShowType();
     testShowType.setName("PLE");
 

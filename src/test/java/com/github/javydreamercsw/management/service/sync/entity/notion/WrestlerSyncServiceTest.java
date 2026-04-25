@@ -95,6 +95,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             notionApiExecutor,
             wrestlerService,
             wrestlerRepository,
+            universeRepository,
             wrestlerStateRepository,
             wrestlerNotionSyncService,
             tierRecalculationService,

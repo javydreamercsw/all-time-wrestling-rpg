@@ -54,6 +54,8 @@ public class WrestlerSyncService extends BaseSyncService {
 
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
+  private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
   private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
       wrestlerStateRepository;
   private final WrestlerNotionSyncService wrestlerNotionSyncService;
@@ -79,6 +81,7 @@ public class WrestlerSyncService extends BaseSyncService {
       NotionApiExecutor notionApiExecutor,
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
+      com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository,
       com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
           wrestlerStateRepository,
       WrestlerNotionSyncService wrestlerNotionSyncService,
@@ -90,6 +93,7 @@ public class WrestlerSyncService extends BaseSyncService {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
+    this.universeRepository = universeRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.wrestlerNotionSyncService = wrestlerNotionSyncService;
     this.tierRecalculationService = tierRecalculationService;
@@ -441,17 +445,22 @@ public class WrestlerSyncService extends BaseSyncService {
       if (changed) {
         Wrestler savedWrestler = wrestlerService.save(wrestler);
 
-        // Update Universe State (Default to Universe ID 1)
-        Long universeId = 1L;
+        // Update Universe State (Default to first available)
+        com.github.javydreamercsw.management.domain.universe.Universe universe =
+            universeRepository.findAll().stream().findFirst().orElse(null);
+        Long universeId = universe != null ? universe.getId() : null;
+
         com.github.javydreamercsw.management.domain.wrestler.WrestlerState state = null;
-        try {
-          state = wrestlerService.getOrCreateState(savedWrestler.getId(), universeId);
-        } catch (Exception e) {
-          log.warn(
-              "Could not get or create state for wrestler {} in universe {}: {}",
-              savedWrestler.getName(),
-              universeId,
-              e.getMessage());
+        if (universeId != null) {
+          try {
+            state = wrestlerService.getOrCreateState(savedWrestler.getId(), universeId);
+          } catch (Exception e) {
+            log.warn(
+                "Could not get or create state for wrestler {} in universe {}: {}",
+                savedWrestler.getName(),
+                universeId,
+                e.getMessage());
+          }
         }
 
         if (state != null) {

@@ -103,6 +103,11 @@ public abstract class AbstractSyncTest {
   @Mock protected NpcRepository npcRepository;
   @Mock protected SeasonRepository seasonRepository;
   @Mock protected SegmentRepository segmentRepository;
+
+  @Mock
+  protected com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+
   @Mock protected WrestlerService wrestlerService;
   @Mock protected TierRecalculationService tierRecalculationService;
   @Mock protected WrestlerAlignmentRepository wrestlerAlignmentRepository;

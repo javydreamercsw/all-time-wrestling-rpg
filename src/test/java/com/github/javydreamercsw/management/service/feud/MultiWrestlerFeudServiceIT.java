@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -48,9 +49,10 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   private Wrestler wrestler1;
   private Wrestler wrestler2;
 
+  @Override
   @BeforeEach
-  public void setUp() {
-    clearAllRepositories();
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     // Do NOT delete accounts to avoid breaking other tests running in parallel
 
     // Create test-specific accounts
@@ -74,7 +76,13 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
       @NonNull String description,
       @NonNull WrestlerTier tier,
       Account account) {
-    return wrestlerRepository.save(TestUtils.createWrestler(name, description, tier, account));
+    Universe defaultUniverse =
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No universe found after reset"));
+    Wrestler w = TestUtils.createWrestler(name, description, tier, account);
+    TestUtils.setFans(w, 0L, defaultUniverse);
+    return wrestlerRepository.save(w);
   }
 
   @Test

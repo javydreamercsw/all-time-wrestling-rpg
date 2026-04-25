@@ -72,8 +72,8 @@ class DataExportControllerIT extends AbstractControllerTest {
 
   @Override
   @BeforeEach
-  public void setUp() throws Exception {
-    super.setUp();
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     // Clear the exports directory
     Path exportsDir = Paths.get("target/exports");
     if (Files.exists(exportsDir)) {

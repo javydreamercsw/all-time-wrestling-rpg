@@ -66,8 +66,8 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   @Override
   @BeforeEach
-  public void setUp() throws Exception {
+  public void baseSetUp() throws Exception {
     this.skipDataInit = true;
-    super.setUp();
+    super.baseSetUp();
   }
 }

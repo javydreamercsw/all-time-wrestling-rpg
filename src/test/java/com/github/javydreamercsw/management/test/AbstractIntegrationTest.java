@@ -109,6 +109,9 @@ import org.springframework.transaction.support.TransactionTemplate;
     roles = {"ADMIN"})
 @ActiveProfiles("test")
 @Import({TestAIConfiguration.class, TestNotionConfiguration.class})
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity(
+    securedEnabled = true,
+    jsr250Enabled = true)
 public abstract class AbstractIntegrationTest {
 
   static {
@@ -181,7 +184,8 @@ public abstract class AbstractIntegrationTest {
   protected CacheManager cacheManager;
 
   @BeforeEach
-  public void setUp() throws Exception {
+  public void baseSetUp() throws Exception {
+    log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
     clearAllRepositories();
   }
 
@@ -414,6 +418,59 @@ public abstract class AbstractIntegrationTest {
         });
   }
 
+  protected void ensureAuthenticatedUserExists() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null
+        && auth.getPrincipal()
+            instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
+      String username = userDetails.getUsername();
+      log.info("ensureAuthenticatedUserExists found current user: {}", username);
+      Account account = accountRepository.findByUsername(username).orElse(null);
+      if (account == null) {
+        log.info("Re-creating missing authenticated user in DB: {}", username);
+        account =
+            new Account(username, passwordEncoder.encode("password"), username + "@example.com");
+
+        Set<Role> roles = new HashSet<>();
+        for (org.springframework.security.core.GrantedAuthority authority : auth.getAuthorities()) {
+          String roleNameStr = authority.getAuthority();
+          if (roleNameStr.startsWith("ROLE_")) {
+            roleNameStr = roleNameStr.substring(5);
+          }
+          try {
+            RoleName roleName = RoleName.valueOf(roleNameStr);
+            roles.add(
+                roleRepository
+                    .findByName(roleName)
+                    .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name()))));
+          } catch (IllegalArgumentException e) {
+            // Not a standard role, skip
+          }
+        }
+        account.setRoles(roles);
+        account = accountRepository.saveAndFlush(account);
+      }
+
+      // Re-create wrestler if it was in the original context but is now missing from DB
+      if (userDetails.getWrestler() != null) {
+        String wrestlerName = userDetails.getWrestler().getName();
+        if (wrestlerRepository.findByName(wrestlerName).isEmpty()) {
+          log.info("Re-creating missing authenticated wrestler in DB: {}", wrestlerName);
+          createTestWrestler(wrestlerName);
+          // Link wrestler to account if needed (Account normally has a list or ref)
+          final Account finalAccount = account;
+          wrestlerRepository
+              .findByName(wrestlerName)
+              .ifPresent(
+                  w -> {
+                    w.setAccount(finalAccount);
+                    wrestlerRepository.saveAndFlush(w);
+                  });
+        }
+      }
+    }
+  }
+
   protected void clearAllRepositories() {
     runAsAdmin(
         () -> {
@@ -436,22 +493,32 @@ public abstract class AbstractIntegrationTest {
 
             log.info("Re-initializing data using DataInitializer...");
             dataInitializer.init();
-
-            // Set default universe for tests
-            transactionTemplate.execute(
-                status -> {
-                  universeRepository.findAll().stream()
-                      .findFirst()
-                      .ifPresent(
-                          u -> {
-                            com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                            universeContextService.setCurrentUniverse(u);
-                          });
-                  return null;
-                });
           }
+
+          // Always ensure at least one universe exists for tests
+          transactionTemplate.execute(
+              status -> {
+                if (universeRepository.count() == 0) {
+                  log.info("Creating default universe for test...");
+                  universeRepository.saveAndFlush(
+                      Universe.builder()
+                          .name("Default Universe")
+                          .type(Universe.UniverseType.GLOBAL)
+                          .build());
+                }
+                universeRepository.findAll().stream()
+                    .findFirst()
+                    .ifPresent(
+                        u -> {
+                          com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                          universeContextService.setCurrentUniverse(u);
+                        });
+                return null;
+              });
+
           log.info("Database reset complete.");
         });
+    ensureAuthenticatedUserExists();
   }
 
   protected void cleanupLeagues() {

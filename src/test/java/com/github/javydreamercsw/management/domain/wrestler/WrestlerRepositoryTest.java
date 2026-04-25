@@ -41,8 +41,8 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
 
   @Override
   @BeforeEach
-  public void setUp() throws Exception {
-    super.setUp();
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     defaultUniverse =
         universeRepository.findAll().stream()
             .findFirst()

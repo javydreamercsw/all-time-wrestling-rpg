@@ -47,6 +47,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
+@org.springframework.test.context.TestPropertySource(properties = "data.initializer.enabled=false")
 class TitleSyncIT extends ManagementIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;

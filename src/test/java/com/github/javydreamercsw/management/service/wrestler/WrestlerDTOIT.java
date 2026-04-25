@@ -36,7 +36,7 @@ public class WrestlerDTOIT extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    dataInitializer.init();
+    // Redundant init() removed, handled by prepareTestEnvironment()
   }
 
   @Test

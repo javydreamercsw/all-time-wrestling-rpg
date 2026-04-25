@@ -328,19 +328,12 @@ public class WrestlerService {
         universeRepository.findById(universeId).orElse(null);
 
     if (wrestler == null || universe == null) {
-      log.warn(
-          "Cannot create persistent WrestlerState: Wrestler {} or Universe {} not found. Returning"
-              + " transient state.",
-          wrestlerId,
-          universeId);
-      return WrestlerState.builder()
-          .wrestler(wrestler)
-          .universe(universe)
-          .fans(0L)
-          .tier(WrestlerTier.ROOKIE)
-          .bumps(0)
-          .physicalCondition(100)
-          .build();
+      String msg =
+          String.format(
+              "Cannot create persistent WrestlerState: Wrestler %d or Universe %d not found.",
+              wrestlerId, universeId);
+      log.error(msg);
+      throw new IllegalStateException(msg);
     }
 
     WrestlerState newState =

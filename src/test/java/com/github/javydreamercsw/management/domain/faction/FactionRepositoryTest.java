@@ -46,8 +46,8 @@ class FactionRepositoryTest extends AbstractJpaTest {
 
   @Override
   @BeforeEach
-  public void setUp() throws Exception {
-    super.setUp();
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");
     testFaction.setDescription("A test faction for unit tests");
