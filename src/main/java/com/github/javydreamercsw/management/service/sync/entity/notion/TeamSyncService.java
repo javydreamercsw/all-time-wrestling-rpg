@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -293,13 +294,15 @@ public class TeamSyncService extends BaseSyncService {
         team = new Team();
         isNewTeam = true;
         log.info(
-            "🆕 Creating new team: {} with external ID: {}", dto.getName(), dto.getExternalId());
+            "🆕 Creating new team: {} with external ID: {}",
+            LogSanitizer.sanitize(dto.getName()),
+            LogSanitizer.sanitize(dto.getExternalId()));
       } else {
         log.info(
             "🔄 Updating existing team: {} (ID: {}) with external ID: {}",
-            dto.getName(),
+            LogSanitizer.sanitize(dto.getName()),
             team.getId(),
-            dto.getExternalId());
+            LogSanitizer.sanitize(dto.getExternalId()));
       }
 
       // Set properties
@@ -426,7 +429,10 @@ public class TeamSyncService extends BaseSyncService {
 
       return false;
     } catch (Exception e) {
-      log.error("❌ Failed to save team: {} - {}", dto.getName(), e.getMessage());
+      log.error(
+          "❌ Failed to save team: {} - {}",
+          LogSanitizer.sanitize(dto.getName()),
+          LogSanitizer.sanitize(e.getMessage()));
       return false;
     }
   }

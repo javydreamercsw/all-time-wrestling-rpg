@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -76,7 +77,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
     getContent().add(name);
 
     if (wrestler.getId() == null) {
-      log.warn("Wrestler {} has NO ID!", wrestler.getName());
+      log.warn("Wrestler {} has NO ID!", LogSanitizer.sanitize(wrestler.getName()));
       return;
     }
 
@@ -95,7 +96,10 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
         statsRow.add(new Span("Losses: " + wrestlerStats.getLosses()));
       }
     } catch (Exception e) {
-      log.error("Error getting stats for wrestler: " + wrestler.getId(), e);
+      log.error(
+          "Error getting stats for wrestler: {} - {}",
+          wrestler.getId(),
+          LogSanitizer.sanitize(e.getMessage()));
     }
     getContent().add(statsRow);
 

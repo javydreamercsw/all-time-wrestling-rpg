@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.drama;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
@@ -197,7 +198,10 @@ public class DramaEventService {
       return 0;
     }
 
-    log.info("Processing drama event: {} - {}", event.getTitle(), event.getEventType());
+    log.info(
+        "Processing drama event: {} - {}",
+        LogSanitizer.sanitize(event.getTitle()),
+        event.getEventType());
 
     switch (event.getEventType()) {
       case BACKSTAGE_INCIDENT, PERSONAL_ISSUE, MEDIA_CONTROVERSY -> {

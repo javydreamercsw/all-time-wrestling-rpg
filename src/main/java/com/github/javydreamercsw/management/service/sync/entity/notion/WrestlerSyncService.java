@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
@@ -314,13 +315,16 @@ public class WrestlerSyncService extends BaseSyncService {
 
       // 1. Try to find by external ID first (most reliable)
       if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-        log.debug("Searching for existing wrestler with external ID: {}", dto.getExternalId());
+        log.debug(
+            "Searching for existing wrestler with external ID: {}",
+            LogSanitizer.sanitize(dto.getExternalId()));
         wrestler = wrestlerService.findByExternalId(dto.getExternalId()).orElse(null);
       }
 
       // 2. Fallback to name matching if external ID didn't work
       if (wrestler == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
-        log.debug("Searching for existing wrestler with name: {}", dto.getName());
+        log.debug(
+            "Searching for existing wrestler with name: {}", LogSanitizer.sanitize(dto.getName()));
         wrestler = wrestlerService.findByName(dto.getName()).orElse(null);
       }
 
@@ -330,14 +334,14 @@ public class WrestlerSyncService extends BaseSyncService {
         isNewWrestler = true;
         log.info(
             "🆕 Creating new wrestler: {} with external ID: {}",
-            dto.getName(),
-            dto.getExternalId());
+            LogSanitizer.sanitize(dto.getName()),
+            LogSanitizer.sanitize(dto.getExternalId()));
       } else {
         log.info(
             "🔄 Updating existing wrestler: {} (ID: {}) with external ID: {}",
-            dto.getName(),
+            LogSanitizer.sanitize(dto.getName()),
             wrestler.getId(),
-            dto.getExternalId());
+            LogSanitizer.sanitize(dto.getExternalId()));
       }
 
       // Set basic properties (only update if changed)
@@ -359,7 +363,10 @@ public class WrestlerSyncService extends BaseSyncService {
             changed = true;
           }
         } catch (IllegalArgumentException e) {
-          log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getGender(), dto.getName());
+          log.warn(
+              "Invalid sex value '{}' for wrestler '{}'",
+              LogSanitizer.sanitize(dto.getGender()),
+              LogSanitizer.sanitize(dto.getName()));
         }
       }
 
@@ -458,7 +465,9 @@ public class WrestlerSyncService extends BaseSyncService {
           }
         } catch (IllegalArgumentException e) {
           log.warn(
-              "Invalid alignment value '{}' for wrestler '{}'", dto.getAlignment(), dto.getName());
+              "Invalid alignment value '{}' for wrestler '{}'",
+              LogSanitizer.sanitize(dto.getAlignment()),
+              LogSanitizer.sanitize(dto.getName()));
         }
       }
 
@@ -477,9 +486,9 @@ public class WrestlerSyncService extends BaseSyncService {
           } catch (Exception e) {
             log.warn(
                 "Could not get or create state for wrestler {} in universe {}: {}",
-                savedWrestler.getName(),
+                LogSanitizer.sanitize(savedWrestler.getName()),
                 universeId,
-                e.getMessage());
+                LogSanitizer.sanitize(e.getMessage()));
           }
         }
 
@@ -507,7 +516,10 @@ public class WrestlerSyncService extends BaseSyncService {
               WrestlerTier newTier = WrestlerTier.fromDisplayName(dto.getTier());
               state.setTier(newTier);
             } catch (Exception e) {
-              log.warn("Could not set tier {} for wrestler {}", dto.getTier(), dto.getName());
+              log.warn(
+                  "Could not set tier {} for wrestler {}",
+                  LogSanitizer.sanitize(dto.getTier()),
+                  LogSanitizer.sanitize(dto.getName()));
             }
           }
 
@@ -520,7 +532,10 @@ public class WrestlerSyncService extends BaseSyncService {
 
       return false;
     } catch (Exception e) {
-      log.error("❌ Failed to save wrestler: {} - {}", dto.getName(), e.getMessage());
+      log.error(
+          "❌ Failed to save wrestler: {} - {}",
+          LogSanitizer.sanitize(dto.getName()),
+          LogSanitizer.sanitize(e.getMessage()));
       return false;
     }
   }

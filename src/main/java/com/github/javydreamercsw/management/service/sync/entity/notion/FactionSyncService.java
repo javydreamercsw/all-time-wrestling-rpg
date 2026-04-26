@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -335,7 +336,10 @@ public class FactionSyncService extends BaseSyncService {
       factionService.save(faction);
       return faction;
     } catch (Exception e) {
-      log.error("Failed to save faction '{}': {}", dto.getName(), e.getMessage());
+      log.error(
+          "Failed to save faction '{}': {}",
+          LogSanitizer.sanitize(dto.getName()),
+          LogSanitizer.sanitize(e.getMessage()));
       return null;
     }
   }

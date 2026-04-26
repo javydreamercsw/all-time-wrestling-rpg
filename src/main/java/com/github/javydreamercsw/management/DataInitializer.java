@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
@@ -893,8 +894,8 @@ public class DataInitializer implements Initializable {
                     } catch (IllegalArgumentException e) {
                       log.warn(
                           "Invalid alignment '{}' for wrestler '{}'",
-                          w.getAlignment(),
-                          w.getName());
+                          LogSanitizer.sanitize(w.getAlignment()),
+                          LogSanitizer.sanitize(w.getName()));
                     }
                   }
                 }
@@ -907,7 +908,9 @@ public class DataInitializer implements Initializable {
                 }
 
                 wrestlerToSave = existingWrestler;
-                log.debug("Updated existing wrestler: {}", existingWrestler.getName());
+                log.debug(
+                    "Updated existing wrestler: {}",
+                    LogSanitizer.sanitize(existingWrestler.getName()));
               } else {
                 Wrestler newWrestler = new Wrestler();
                 newWrestler.setName(w.getName());
@@ -960,7 +963,9 @@ public class DataInitializer implements Initializable {
                             .build());
                   } catch (IllegalArgumentException e) {
                     log.warn(
-                        "Invalid alignment '{}' for wrestler '{}'", w.getAlignment(), w.getName());
+                        "Invalid alignment '{}' for wrestler '{}'",
+                        LogSanitizer.sanitize(w.getAlignment()),
+                        LogSanitizer.sanitize(w.getName()));
                   }
                 }
                 wrestlerToSave = newWrestler;
