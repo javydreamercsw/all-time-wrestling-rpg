@@ -49,7 +49,6 @@ public class CardSetService {
     return cardSetRepository.findAll(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return cardSetRepository.count();
   }

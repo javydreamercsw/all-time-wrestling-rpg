@@ -57,34 +57,12 @@ class RivalryControllerIT extends AbstractRestControllerIT {
   private com.github.javydreamercsw.management.domain.universe.UniverseRepository
       universeRepository;
 
-  private com.github.javydreamercsw.management.domain.universe.Universe defaultUniverse;
-
   @BeforeEach
   public void setUp() throws Exception {
     // Manually build MockMvc to bypass Vaadin servlet issues
     mockMvc =
         MockMvcBuilders.standaloneSetup(new RivalryController(rivalryService, rivalryMapper))
             .build();
-
-    // Delete in correct order to avoid foreign key constraint violations
-    rivalryRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-
-    // Ensure default universe exists
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        com.github.javydreamercsw.management.domain.universe.Universe.builder()
-                            .name("Default Universe")
-                            .type(
-                                com.github.javydreamercsw.management.domain.universe.Universe
-                                    .UniverseType.GLOBAL)
-                            .build()));
   }
 
   @Test

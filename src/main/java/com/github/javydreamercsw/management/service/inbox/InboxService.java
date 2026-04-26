@@ -195,7 +195,6 @@ public class InboxService {
     return inboxRepository.findAll(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return inboxRepository.count();
   }

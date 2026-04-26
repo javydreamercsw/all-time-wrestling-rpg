@@ -40,7 +40,6 @@ import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -76,38 +75,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Autowired private UniverseRepository universeRepository;
 
   private Wrestler testWrestler;
-  private Universe defaultUniverse;
 
   @BeforeEach
   public void setUp() {
     // Clear all relevant repositories to ensure a clean state for each test
     cleanupLeagues();
-    titleReignRepository
-        .findAll()
-        .forEach(
-            reign -> {
-              reign.setWonAtSegment(null);
-              titleReignRepository.save(reign);
-            });
-    titleReignRepository.deleteAll();
-    titleRepository
-        .findAll()
-        .forEach(
-            title -> {
-              title.setChampion(null);
-              titleRepository.save(title);
-            });
-    multiWrestlerFeudRepository.deleteAll();
-    segmentRepository.deleteAll();
-    showRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    universeRepository.deleteAll();
-    seasonRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     testWrestler = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Test Wrestler"));
     wrestlerService.getOrCreateState(testWrestler.getId(), defaultUniverse.getId());

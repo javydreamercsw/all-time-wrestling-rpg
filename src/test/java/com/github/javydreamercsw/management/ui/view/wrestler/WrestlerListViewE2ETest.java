@@ -24,7 +24,6 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
-import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -54,18 +53,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
   @Autowired private WrestlerService wrestlerService;
 
-  private Universe defaultUniverse;
-
   @BeforeEach
   public void setUp() {
     cleanupLeagues();
-    injuryRepository.deleteAll();
-    segmentRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    universeRepository.deleteAll();
-
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {

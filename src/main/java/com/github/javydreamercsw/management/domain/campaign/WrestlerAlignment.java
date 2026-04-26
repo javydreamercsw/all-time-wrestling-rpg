@@ -25,7 +25,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,11 +44,11 @@ public class WrestlerAlignment {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @OneToOne
+  @ManyToOne
   @JoinColumn(name = "wrestler_id", nullable = false)
   private Wrestler wrestler;
 
-  @OneToOne
+  @ManyToOne
   @JoinColumn(name = "campaign_id")
   @com.fasterxml.jackson.annotation.JsonIgnore
   private Campaign campaign;

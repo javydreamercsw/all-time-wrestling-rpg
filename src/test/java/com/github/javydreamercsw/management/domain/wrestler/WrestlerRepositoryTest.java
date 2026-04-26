@@ -23,8 +23,6 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,19 +32,12 @@ import org.springframework.data.domain.PageRequest;
 class WrestlerRepositoryTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private UniverseRepository universeRepository;
   @Autowired private FactionRepository factionRepository;
-
-  private Universe defaultUniverse;
 
   @Override
   @BeforeEach
   public void baseSetUp() throws Exception {
     super.baseSetUp();
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("No universe found after init"));
   }
 
   @Test

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.league;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,9 +27,13 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,8 +45,16 @@ class LeagueServiceTest {
 
   @Mock private LeagueRepository leagueRepository;
   @Mock private LeagueMembershipRepository leagueMembershipRepository;
+  @Mock private ShowRepository showRepository;
+  @Mock private LeagueRosterRepository leagueRosterRepository;
+  @Mock private UniverseContextService universeContextService;
 
   @InjectMocks private LeagueService leagueService;
+
+  @BeforeEach
+  void setUp() {
+    lenient().when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+  }
 
   @Test
   void testCreateLeague() {
@@ -65,6 +78,7 @@ class LeagueServiceTest {
     assertThat(league.getCommissioner()).isEqualTo(commissioner);
     assertThat(league.getStatus()).isEqualTo(League.LeagueStatus.PRE_DRAFT);
 
+    verify(leagueRepository).save(any(League.class));
     verify(leagueMembershipRepository).save(any(LeagueMembership.class));
   }
 

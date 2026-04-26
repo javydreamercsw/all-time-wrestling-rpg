@@ -40,7 +40,6 @@ public class ShowTypeService {
     return showTypeRepository.findAllBy(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showTypeRepository.count();
   }

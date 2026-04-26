@@ -32,8 +32,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -60,7 +58,6 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckRepository deckRepository;
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
-  @Autowired UniverseRepository universeRepository;
   @Autowired com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
 
   @Autowired
@@ -70,18 +67,9 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
   private Season testSeason;
   private ShowType weeklyShowType;
-  private Universe defaultUniverse;
 
   @BeforeEach
   public void setUp() throws Exception {
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        Universe.builder().name("Default Universe").build()));
-
     testSeason =
         seasonService.createOrUpdateSeason(
             "Test Season",
@@ -228,15 +216,8 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       List<Wrestler> allWrestlers = wrestlerRepository.findAll();
       for (int i = 2; i < allWrestlers.size(); i++) {
         Wrestler wrestlerToDelete = allWrestlers.get(i);
-        // Delete associated decks first
-        List<com.github.javydreamercsw.management.domain.deck.Deck> decksToDelete =
-            deckRepository.findByWrestler(wrestlerToDelete);
-        for (com.github.javydreamercsw.management.domain.deck.Deck deck : decksToDelete) {
-          deckCardRepository.deleteAll(deck.getCards());
-        }
-        deckRepository.deleteAll(decksToDelete);
 
-        // Delete team associations
+        // Delete team associations manually as they might not be cascaded
         teamRepository.deleteAll(teamRepository.findByWrestler(wrestlerToDelete));
 
         // Handle faction leadership
@@ -248,6 +229,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
                   factionRepository.save(f);
                 });
 
+        // Cascading will handle decks and deck_cards
         wrestlerRepository.delete(wrestlerToDelete);
       }
 

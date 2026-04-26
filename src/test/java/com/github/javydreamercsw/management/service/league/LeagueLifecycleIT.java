@@ -180,7 +180,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
             LocalDate.now(),
             null,
             null,
-            league.getId(),
+            defaultUniverse.getId(),
             null,
             null);
     show = showRepository.saveAndFlush(show);

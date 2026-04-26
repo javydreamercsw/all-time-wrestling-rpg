@@ -75,11 +75,17 @@ class ShowSyncServiceIT extends ManagementIntegrationTest {
     ShowPage showPage = new ShowPage();
     showPage.setId(showId);
 
-    // Create a required ShowType
-    ShowType testShowType = new ShowType();
-    testShowType.setName("Weekly");
-    testShowType.setDescription("Weekly show type");
-    showTypeService.save(testShowType);
+    // Get or create required ShowType
+    ShowType testShowType =
+        showTypeService
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setDescription("Weekly show type");
+                  return showTypeService.save(st);
+                });
 
     when(notionHandler.getDatabasePageIds("Shows")).thenReturn(List.of(showId));
     when(notionHandler.loadShowById(showId)).thenReturn(Optional.of(showPage));

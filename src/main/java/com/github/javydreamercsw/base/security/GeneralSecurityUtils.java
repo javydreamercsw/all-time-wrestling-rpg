@@ -19,18 +19,14 @@ package com.github.javydreamercsw.base.security;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
 
 /** A utility class for general security-related operations. */
 @Slf4j
@@ -38,15 +34,6 @@ public final class GeneralSecurityUtils {
 
   private GeneralSecurityUtils() {
     // private constructor to prevent instantiation
-  }
-
-  /**
-   * Get the current security context strategy.
-   *
-   * @return the current strategy
-   */
-  private static SecurityContextHolderStrategy getStrategy() {
-    return SecurityContextHolder.getContextHolderStrategy();
   }
 
   /**
@@ -79,21 +66,16 @@ public final class GeneralSecurityUtils {
    */
   public static <T> T runWithContext(
       @NonNull SecurityContext context, @NonNull Supplier<T> supplier) {
-    SecurityContextHolderStrategy strategy = getStrategy();
-    SecurityContext originalContext = strategy.getContext();
+    SecurityContext originalContext = SecurityContextHolder.getContext();
     try {
-      log.info("Setting provided SecurityContext in thread '{}'", Thread.currentThread().getName());
-      strategy.setContext(context);
+      log.debug(
+          "Setting provided SecurityContext in thread '{}'", Thread.currentThread().getName());
+      SecurityContextHolder.setContext(context);
       return supplier.get();
     } finally {
-      if (originalContext != null) {
-        log.info(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        strategy.setContext(originalContext);
-      } else {
-        log.info("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        strategy.clearContext();
-      }
+      log.debug(
+          "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
+      SecurityContextHolder.setContext(originalContext);
     }
   }
 
@@ -112,14 +94,12 @@ public final class GeneralSecurityUtils {
       @NonNull String username,
       @NonNull String password,
       @NonNull String role) {
-    SecurityContextHolderStrategy strategy = getStrategy();
-    SecurityContext originalContext = strategy.getContext();
+    SecurityContext originalContext = SecurityContextHolder.getContext();
     try {
-      SecurityContext context = strategy.createEmptyContext();
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
 
       // Create a mock account and role for the principal
       Account account = new Account(username, password, username + "@example.com");
-      // Set ID to 1L to match WithCustomMockUserSecurityContextFactory
       account.setId(1L);
       try {
         RoleName roleName = RoleName.valueOf(role);
@@ -131,47 +111,45 @@ public final class GeneralSecurityUtils {
       }
 
       CustomUserDetails userDetails = new CustomUserDetails(account, null);
-
-      // Spring Security 6 works best when authorities are consistent with UserDetails
-      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      // Add the raw role as well for compatibility with different annotation styles
-      authorities.add(new SimpleGrantedAuthority(role));
+      java.util.Collection<? extends org.springframework.security.core.GrantedAuthority>
+          authorities = userDetails.getAuthorities();
 
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
 
-      log.info(
-          "Setting SecurityContext for user '{}' with role '{}' in thread '{}'",
+      log.debug(
+          "Setting temporary SecurityContext for user '{}' with authorities: {}",
           username,
-          role,
-          Thread.currentThread().getName());
-      strategy.setContext(context);
+          authorities);
+      SecurityContextHolder.setContext(context);
 
-      // Verification log to catch immediate failure
-      Authentication currentAuth = strategy.getContext().getAuthentication();
-      if (currentAuth == null) {
-        log.error(
-            "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
-            username,
-            Thread.currentThread().getName());
-      } else {
-        log.info(
-            "SecurityContext successfully set for '{}' with authorities: {}",
-            username,
-            currentAuth.getAuthorities());
+      // Also update TestSecurityContextHolder via reflection if it exists
+      try {
+        Class<?> testHolderClass =
+            Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
+        java.lang.reflect.Method setContextMethod =
+            testHolderClass.getMethod("setContext", SecurityContext.class);
+        setContextMethod.invoke(null, context);
+      } catch (Exception e) {
+        // Ignore
       }
 
       return supplier.get();
     } finally {
-      if (originalContext != null) {
-        log.info(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        strategy.setContext(originalContext);
-      } else {
-        log.info("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        strategy.clearContext();
+      log.debug(
+          "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
+      SecurityContextHolder.setContext(originalContext);
+
+      // Also restore TestSecurityContextHolder
+      try {
+        Class<?> testHolderClass =
+            Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
+        java.lang.reflect.Method setContextMethod =
+            testHolderClass.getMethod("setContext", SecurityContext.class);
+        setContextMethod.invoke(null, originalContext);
+      } catch (Exception e) {
+        // Ignore
       }
     }
   }

@@ -29,8 +29,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -51,7 +49,6 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private UniverseRepository universeRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
 
   private Wrestler rookie1;
@@ -63,18 +60,9 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
   private SegmentType tagTeamSegmentType;
   private SegmentType handicapSegmentType;
   private Show testShow;
-  private Universe defaultUniverse;
 
   @BeforeEach
   public void setUp() {
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        Universe.builder().name("Default Universe").build()));
-
     // Create and save test wrestlers
     rookie1 = createTestWrestler("Rookie 1", 1000L, WrestlerTier.ROOKIE);
     rookie2 = createTestWrestler("Rookie 2", 1000L, WrestlerTier.ROOKIE);

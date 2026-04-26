@@ -84,10 +84,16 @@ class ShowTemplateSyncIT extends ManagementIntegrationTest {
     log.info("🎭 Testing show template sync with mock Notion data");
 
     // Given
-    ShowType showType = new ShowType();
-    showType.setName("Weekly");
-    showType.setDescription("A weekly show");
-    showTypeRepository.save(showType);
+    ShowType showType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setDescription("A weekly show");
+                  return showTypeRepository.save(st);
+                });
 
     String templateId = UUID.randomUUID().toString();
     when(showTemplatePage.getId()).thenReturn(templateId);

@@ -117,7 +117,6 @@ public class ArenaService {
     return repository.findAll(pageable);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public long count() {
     return repository.count();
   }

@@ -23,8 +23,6 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -42,20 +40,11 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
   @Autowired private TierBoundaryService tierBoundaryService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private UniverseRepository universeRepository;
-
-  private Universe defaultUniverse;
 
   @BeforeEach
   public void setupBoundaries() {
     // Reset boundaries to a known state first
     tierBoundaryService.resetTierBoundaries();
-
-    defaultUniverse =
-        universeRepository
-            .findById(1L)
-            .orElseGet(
-                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
   }
 
   @Test

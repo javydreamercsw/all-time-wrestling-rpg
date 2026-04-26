@@ -385,7 +385,6 @@ public class FactionService {
 
   /** Count all factions. */
   @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return factionRepository.count();
   }

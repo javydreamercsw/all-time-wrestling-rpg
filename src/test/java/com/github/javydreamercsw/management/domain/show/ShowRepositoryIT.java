@@ -38,34 +38,30 @@ class ShowRepositoryIT extends ManagementIntegrationTest {
   @Test
   @Transactional
   void testFindByUniverse() {
-    Universe universe1 = new Universe();
-    universe1.setName("Universe 1");
-    universeRepository.save(universe1);
-
     Universe universe2 = new Universe();
     universe2.setName("Universe 2");
-    universeRepository.save(universe2);
+    universeRepository.saveAndFlush(universe2);
 
     ShowType type = new ShowType();
     type.setName("Test Type");
     type.setDescription("Test Description");
-    showTypeRepository.save(type);
+    showTypeRepository.saveAndFlush(type);
 
     Show show1 = new Show();
     show1.setName("Show 1");
     show1.setDescription("Description 1");
     show1.setType(type);
-    show1.setUniverse(universe1);
+    show1.setUniverse(defaultUniverse);
     show1.setShowDate(LocalDate.now());
-    showRepository.save(show1);
+    showRepository.saveAndFlush(show1);
 
     Show show2 = new Show();
     show2.setName("Show 2");
     show2.setDescription("Description 2");
     show2.setType(type);
-    show2.setUniverse(universe1);
+    show2.setUniverse(defaultUniverse);
     show2.setShowDate(LocalDate.now().plusDays(1));
-    showRepository.save(show2);
+    showRepository.saveAndFlush(show2);
 
     Show show3 = new Show();
     show3.setName("Show 3");
@@ -73,9 +69,9 @@ class ShowRepositoryIT extends ManagementIntegrationTest {
     show3.setType(type);
     show3.setUniverse(universe2);
     show3.setShowDate(LocalDate.now());
-    showRepository.save(show3);
+    showRepository.saveAndFlush(show3);
 
-    List<Show> universe1Shows = showRepository.findByUniverse(universe1);
+    List<Show> universe1Shows = showRepository.findByUniverse(defaultUniverse);
     assertThat(universe1Shows).hasSize(2);
     assertThat(universe1Shows)
         .extracting(Show::getName)

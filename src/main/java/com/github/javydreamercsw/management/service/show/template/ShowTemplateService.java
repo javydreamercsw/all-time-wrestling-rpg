@@ -67,7 +67,6 @@ public class ShowTemplateService {
    *
    * @return Total count
    */
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showTemplateRepository.count();
   }

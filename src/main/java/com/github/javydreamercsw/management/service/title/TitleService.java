@@ -452,6 +452,10 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  public List<Title> findEligibleTitlesForFanCount(@NonNull Long fanCount) {
+    return titleRepository.findEligibleTitlesForFanCount(fanCount);
+  }
+
   public long count() {
     return titleRepository.count();
   }

@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
-import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -57,13 +56,9 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
   private Wrestler playerWrestler;
-  private Universe defaultUniverse;
 
   @BeforeEach
   public void setUp() {
-    clearAllRepositories();
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
-
     // Roles should be present in the DB from migrations or a general test data setup.
     Role playerRole =
         roleRepository

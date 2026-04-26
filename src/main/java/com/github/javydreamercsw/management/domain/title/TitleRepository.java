@@ -74,10 +74,12 @@ public interface TitleRepository
       SELECT t FROM Title t
       WHERE t.isActive = true
       AND (
-          (t.tier = 'ROOKIE' AND :fanCount >= 0) OR
-          (t.tier = 'TAG_TEAM' AND :fanCount >= 40000) OR
-          (t.tier = 'EXTREME' AND :fanCount >= 25000) OR
-          (t.tier = 'WORLD' AND :fanCount >= 100000)
+          (t.tier = 'ROOKIE' AND :fanCount >= 0 AND :fanCount < 25000) OR
+          (t.tier = 'RISER' AND :fanCount >= 25000 AND :fanCount < 40000) OR
+          (t.tier = 'CONTENDER' AND :fanCount >= 40000 AND :fanCount < 60000) OR
+          (t.tier = 'MIDCARDER' AND :fanCount >= 60000 AND :fanCount < 100000) OR
+          (t.tier = 'MAIN_EVENTER' AND :fanCount >= 100000 AND :fanCount < 150000) OR
+          (t.tier = 'ICON' AND :fanCount >= 150000)
       )
       """)
   List<Title> findEligibleTitlesForFanCount(@Param("fanCount") Long fanCount);

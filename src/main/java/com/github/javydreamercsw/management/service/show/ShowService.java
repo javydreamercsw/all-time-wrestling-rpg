@@ -148,7 +148,6 @@ public class ShowService {
     return showRepository.findAllBy(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showRepository.count();
   }

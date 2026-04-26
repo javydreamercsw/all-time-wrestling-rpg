@@ -25,8 +25,6 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -56,13 +54,11 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private UniverseRepository universeRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
   @MockitoBean private NotionHandler notionHandler;
 
   private FactionRivalryPage factionRivalryPage;
-  private Universe defaultUniverse;
 
   private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -86,9 +82,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    clearAllRepositories();
     factionRivalryPage = Mockito.mock(FactionRivalryPage.class);
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
   }
 
   @Test

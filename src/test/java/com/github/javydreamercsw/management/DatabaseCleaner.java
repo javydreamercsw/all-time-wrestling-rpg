@@ -19,38 +19,37 @@ package com.github.javydreamercsw.management;
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.EntityType;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.util.*;
+import jakarta.persistence.PersistenceContext;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Automatically discovers and clears all JPA repositories in the correct dependency order. Uses
- * EntityDependencyAnalyzer to determine the safe deletion order based on entity relationships.
+ * Implementation of DatabaseCleanup using Spring's ApplicationContext to find all repositories and
+ * clear them in the correct order.
  */
-@Service
+@Component
 @Slf4j
+@RequiredArgsConstructor
 public class DatabaseCleaner implements DatabaseCleanup {
 
-  @Autowired private ApplicationContext applicationContext;
-  @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
-  @Autowired private EntityManager entityManager;
-  @Autowired private AccountInitializer accountInitializer;
+  private final ApplicationContext applicationContext;
+  private final AccountInitializer accountInitializer;
+  private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private final JdbcTemplate jdbcTemplate;
 
-  /**
-   * Clears all repositories in the correct dependency order. Automatically discovers all
-   * JpaRepository beans and deletes their data in reverse dependency order (children before
-   * parents).
-   */
+  @PersistenceContext private EntityManager entityManager;
+
   @Transactional
   @Override
   public void clearRepositories() {
@@ -59,27 +58,17 @@ public class DatabaseCleaner implements DatabaseCleanup {
     // Detach all managed entities to prevent dirty state from interfering with cleanup.
     entityManager.clear();
 
-    // Manually break known circular dependencies before doing anything else.
+    // 1. First break known circular dependencies and clear tables with many-to-many relationships
     breakCircularDependencies();
 
-    // Clear join tables first to handle Many-to-Many relationships without dedicated repositories
-    clearJoinTables();
-
-    // Discover all repositories
+    // 2. Discover all JPA repositories
     Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
-    log.info("📦 Discovered {} repositories", repositories.size());
 
-    // Get entity classes and determine deletion order
-    Set<Class<?>> entityClasses = getEntityClasses();
-    List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(entityClasses);
-
-    // Reverse the order for deletion (delete children before parents)
-    Collections.reverse(syncOrder);
-
+    // 3. Get the correct synchronization/deletion order
+    List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
     log.info("🔄 Deletion order: {}", syncOrder);
 
-    // Entities that should NOT be cleared as they contain static configuration data
-    // loaded by DataInitializer and needed by many views.
+    // Entities that should not be cleared (static config, core roles, etc.)
     Set<String> protectedEntities =
         new HashSet<>(
             Arrays.asList(
@@ -91,20 +80,22 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "campaignabilitycard",
                 "campaignupgrade",
                 "holiday",
-                "injurytype",
-                "universe"));
+                "injurytype"));
 
-    // Delete data in the correct order
+    // Delete data in the correct order (reverse of sync order)
     int deletedCount = 0;
-    for (String entityName : syncOrder) {
+    for (int i = syncOrder.size() - 1; i >= 0; i--) {
+      String entityName = syncOrder.get(i);
       if (protectedEntities.contains(entityName.toLowerCase())) {
         log.debug("🛡️ Skipping protected entity: {}", entityName);
         continue;
       }
+
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
         if (repository.count() > 0) {
           repository.deleteAllInBatch();
+          resetSequence(entityName);
           deletedCount++;
         }
       }
@@ -116,6 +107,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
           && !protectedEntities.contains(entry.getKey().toLowerCase())) {
         if (entry.getValue().count() > 0) {
           entry.getValue().deleteAllInBatch();
+          resetSequence(entry.getKey());
           deletedCount++;
         }
       }
@@ -139,7 +131,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
       entityManager.createNativeQuery("DELETE FROM heat_event").executeUpdate();
       entityManager.createNativeQuery("DELETE FROM wrestler_state").executeUpdate();
       entityManager.createNativeQuery("DELETE FROM team").executeUpdate();
-      log.debug("✅ Cleared heat_event, wrestler_state and team tables");
+      entityManager.createNativeQuery("DELETE FROM wrestler_relationship").executeUpdate();
+      log.debug("✅ Cleared heat_event, wrestler_state, team and wrestler_relationship tables");
     } catch (Exception e) {
       log.warn("Could not clear relationship tables: {}", e.getMessage());
     }
@@ -147,161 +140,56 @@ public class DatabaseCleaner implements DatabaseCleanup {
       entityManager.createNativeQuery("UPDATE faction SET leader_id = NULL").executeUpdate();
       log.debug("✅ Nullified faction.leader_id");
     } catch (Exception e) {
-      // This might fail if the table doesn't exist yet on first run, which is fine.
       log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
     }
     try {
-      entityManager.createNativeQuery("UPDATE wrestler SET account_id = NULL").executeUpdate();
-      log.debug("✅ Nullified wrestler.account_id");
+      entityManager.createNativeQuery("DELETE FROM league_roster").executeUpdate();
+      entityManager.createNativeQuery("DELETE FROM league_membership").executeUpdate();
+      log.debug("✅ Cleared league_roster and league_membership");
     } catch (Exception e) {
-      // This might fail if the table doesn't exist yet on first run, which is fine.
-      log.warn("Could not nullify wrestler.account_id: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery("UPDATE campaign_storyline SET current_milestone_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified campaign_storyline.current_milestone_id");
-    } catch (Exception e) {
-      log.warn("Could not nullify campaign_storyline.current_milestone_id: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery(
-              "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified storyline_milestone self-references");
-    } catch (Exception e) {
-      log.warn("Could not nullify storyline_milestone self-references: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery("UPDATE campaign_state SET active_storyline_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified campaign_state.active_storyline_id");
-    } catch (Exception e) {
-      log.warn("Could not nullify campaign_state.active_storyline_id: {}", e.getMessage());
-    }
-
-    try {
-      entityManager.createNativeQuery("DELETE FROM storyline_milestone").executeUpdate();
-      log.debug("✅ Explicitly cleared storyline_milestone");
-    } catch (Exception e) {
-      log.warn("Could not explicitly clear storyline_milestone: {}", e.getMessage());
-    }
-    try {
-      entityManager.createNativeQuery("DELETE FROM campaign_storyline").executeUpdate();
-      log.debug("✅ Explicitly cleared campaign_storyline");
-    } catch (Exception e) {
-      log.warn("Could not explicitly clear campaign_storyline: {}", e.getMessage());
+      log.warn("Could not clear league tables: {}", e.getMessage());
     }
   }
 
-  /**
-   * Discovers and clears all join tables defined with @JoinTable annotation. This is necessary for
-   * Many-to-Many relationships that don't have a dedicated repository.
-   */
-  private void clearJoinTables() {
-    Set<String> joinTableNames = new HashSet<>();
-    joinTableNames.add("heat_event");
-    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
-
-    for (EntityType<?> entity : entities) {
-      for (Attribute<?, ?> attribute : entity.getAttributes()) {
-        if (attribute.isCollection()) {
-          Member member = attribute.getJavaMember();
-          if (member instanceof AnnotatedElement annotatedElement) {
-            JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
-            if (joinTable != null) {
-              // Skip account_roles to prevent deleting user roles
-              if (!"account_roles".equalsIgnoreCase(joinTable.name())) {
-                joinTableNames.add(joinTable.name());
-              }
-            }
-          }
-        }
+  private void resetSequence(String tableName) {
+    try {
+      String sql = "ALTER TABLE " + tableName + " ALTER COLUMN id RESTART WITH 1";
+      if (tableName.equalsIgnoreCase("wrestler")) {
+        sql = "ALTER TABLE wrestler ALTER COLUMN wrestler_id RESTART WITH 1";
+      } else if (tableName.equalsIgnoreCase("show")) {
+        sql = "ALTER TABLE show ALTER COLUMN show_id RESTART WITH 1";
       }
-    }
 
-    if (!joinTableNames.isEmpty()) {
-      log.info("🧹 Clearing {} join tables...", joinTableNames.size());
-      for (String tableName : joinTableNames) {
-        try {
-          log.debug("Deleting all records from join table {}", tableName);
-          // Use uppercase to match database schema and no quotes to avoid case-sensitivity issues
-          entityManager
-              .createNativeQuery("DELETE FROM " + tableName.toUpperCase(Locale.ROOT))
-              .executeUpdate();
-          log.debug("✅ Deleted all records from join table {}", tableName);
-        } catch (Exception e) {
-          log.error("❌ Failed to delete from join table {}: {}", tableName, e.getMessage());
-        }
-      }
+      jdbcTemplate.execute(sql);
+      log.trace("✅ Reset sequence for table: {}", tableName);
+    } catch (Exception e) {
+      log.trace("Could not reset sequence for table {}: {}", tableName, e.getMessage());
     }
   }
 
-  /**
-   * Discovers all JpaRepository beans in the application context. Returns a map of entity name
-   * (lowercase) to repository instance.
-   */
+  private Set<Class<?>> getEntityClasses() {
+    Set<Class<?>> entityClasses = new HashSet<>();
+    Set<jakarta.persistence.metamodel.EntityType<?>> entities =
+        entityManager.getMetamodel().getEntities();
+
+    for (jakarta.persistence.metamodel.EntityType<?> entity : entities) {
+      entityClasses.add(entity.getJavaType());
+    }
+
+    return entityClasses;
+  }
+
+  /** Uses ApplicationContext to find all JpaRepository beans. */
   private Map<String, JpaRepository<?, ?>> discoverRepositories() {
     Map<String, JpaRepository<?, ?>> repositories = new HashMap<>();
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
-      // Explicitly clear account and role related tables if needed, or skip if handled by
-      // AccountInitializer
-      try {
-        JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
-
-        // Extract entity name from repository
-        String entityName = extractEntityName(repository, beanName);
-        if (entityName != null) {
-          repositories.put(entityName.toLowerCase(), repository);
-          log.debug("📍 Mapped repository {} to entity {}", beanName, entityName);
-        }
-      } catch (Exception e) {
-        log.debug("⚠️ Skipping bean {}: {}", beanName, e.getMessage());
-      }
+      // Repository names are typically entityNameRepository
+      String entityName = beanName.replace("Repository", "").toLowerCase();
+      repositories.put(entityName, (JpaRepository<?, ?>) applicationContext.getBean(beanName));
     }
 
     return repositories;
-  }
-
-  /**
-   * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
-   * repository interface generics.
-   */
-  private String extractEntityName(JpaRepository<?, ?> repository, String beanName) {
-    // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
-    if (beanName.endsWith("Repository")) {
-      return beanName.substring(0, beanName.length() - "Repository".length());
-    }
-
-    // Strategy 2: Try to find the entity class from repository methods
-    try {
-      Method findAllMethod = repository.getClass().getMethod("findAll");
-      Class<?> returnType = findAllMethod.getReturnType();
-      if (returnType != null) {
-        // This is a fallback, might not always work perfectly
-        return returnType.getSimpleName().toLowerCase();
-      }
-    } catch (Exception e) {
-      // Ignore
-    }
-
-    return null;
-  }
-
-  /** Gets all entity classes registered with the EntityManager. */
-  private Set<Class<?>> getEntityClasses() {
-    Set<Class<?>> entityClasses = new HashSet<>();
-    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
-
-    for (EntityType<?> entity : entities) {
-      entityClasses.add(entity.getJavaType());
-    }
-
-    return entityClasses;
   }
 }

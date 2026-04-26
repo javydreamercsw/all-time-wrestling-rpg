@@ -38,8 +38,6 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAdditio
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -70,7 +68,6 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired WrestlerStateRepository wrestlerStateRepository;
-  @Autowired UniverseRepository universeRepository;
   @Autowired SegmentRepository matchRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
   @MockitoBean private InjuryService injuryService;
@@ -85,17 +82,10 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   private SegmentType singlesSegmentType;
   private SegmentType tagTeamType;
   private Show testShow;
-  private Universe defaultUniverse;
 
   @BeforeEach
   @SneakyThrows
   public void setUp() {
-    defaultUniverse =
-        universeRepository
-            .findById(1L)
-            .orElseGet(
-                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
-
     if (showTypeRepository.findByName("Weekly").isEmpty()) {
       ShowType weeklyShowType = new ShowType();
       weeklyShowType.setName("Weekly");

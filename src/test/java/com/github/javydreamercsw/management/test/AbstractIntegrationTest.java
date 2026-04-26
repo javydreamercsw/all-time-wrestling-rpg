@@ -25,7 +25,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
@@ -104,14 +103,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(classes = Application.class)
 @Slf4j
-@WithCustomMockUser(
-    username = "admin",
-    roles = {"ADMIN"})
 @ActiveProfiles("test")
 @Import({TestAIConfiguration.class, TestNotionConfiguration.class})
-@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity(
-    securedEnabled = true,
-    jsr250Enabled = true)
 public abstract class AbstractIntegrationTest {
 
   static {
@@ -178,7 +171,12 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected DataInitializer dataInitializer;
   @Autowired protected com.github.javydreamercsw.base.AccountInitializer accountInitializer;
 
-  protected boolean skipDataInit = false;
+  @jakarta.persistence.PersistenceContext protected jakarta.persistence.EntityManager entityManager;
+
+  protected Universe defaultUniverse;
+
+  @org.springframework.beans.factory.annotation.Value("${data.initializer.enabled:true}")
+  protected boolean dataInitializerEnabled;
 
   @Autowired(required = false)
   protected CacheManager cacheManager;
@@ -186,7 +184,37 @@ public abstract class AbstractIntegrationTest {
   @BeforeEach
   public void baseSetUp() throws Exception {
     log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
+
+    // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
+    // during the REQUIRES_NEW transaction in clearAllRepositories
+    universeRepository
+        .findByName("Default Universe")
+        .ifPresent(
+            u -> {
+              this.defaultUniverse = u;
+              com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+              universeContextService.setCurrentUniverse(u);
+            });
+
     clearAllRepositories();
+
+    // Re-verify if not set by clearAllRepositories
+    if (this.defaultUniverse == null) {
+      universeRepository
+          .findByName("Default Universe")
+          .ifPresent(
+              u -> {
+                this.defaultUniverse = u;
+                com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                universeContextService.setCurrentUniverse(u);
+              });
+    }
+
+    // Default login as admin if no other authentication is present
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      log.info("No authentication found, logging in as default admin...");
+      loginAs("admin");
+    }
   }
 
   public Wrestler createTestWrestler(@NonNull String name) {
@@ -484,51 +512,82 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearAllRepositories() {
-    runAsAdmin(
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
         () -> {
+          // 1. Reset sequence in a separate transaction first
           transactionTemplate.setPropagationBehavior(
               org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+          transactionTemplate.execute(
+              status1 -> {
+                try {
+                  entityManager
+                      .createNativeQuery(
+                          "ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                      .executeUpdate();
+                  log.info("Reset wrestler_state sequence.");
+                } catch (Exception e) {
+                  log.trace("Could not reset sequence: {}", e.getMessage());
+                }
+                return null;
+              });
+          // 2. Perform cleanup and init in another separate transaction
           transactionTemplate.execute(
               status -> {
                 log.info("Cleaning up database using DatabaseCleanup...");
                 databaseCleanup.clearRepositories();
 
                 clearCache();
-                return null;
-              });
 
-          if (!skipDataInit) {
-            log.info("Initializing accounts using AccountInitializer...");
-            accountInitializer.init();
-
-            log.info("Re-initializing data using DataInitializer...");
-            dataInitializer.init();
-          }
-
-          // Always ensure at least one universe exists for tests
-          transactionTemplate.execute(
-              status -> {
-                if (universeRepository.count() == 0) {
+                // Always ensure at least one universe exists for tests
+                // Re-create what V70 migration does since we cleared it
+                synchronized (AbstractIntegrationTest.class) {
                   log.info("Creating default universe for test...");
-                  universeRepository.saveAndFlush(
-                      Universe.builder()
-                          .name("Default Universe")
-                          .type(Universe.UniverseType.GLOBAL)
-                          .build());
+                  try {
+                    Universe newUniverse =
+                        Universe.builder()
+                            .name("Default Universe")
+                            .type(Universe.UniverseType.GLOBAL)
+                            .build();
+                    newUniverse = universeRepository.saveAndFlush(newUniverse);
+                    this.defaultUniverse = newUniverse;
+                    com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
+                    universeContextService.setCurrentUniverse(newUniverse);
+                  } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                    log.info(
+                        "Default universe already exists in integration test setup (caught"
+                            + " violation).");
+                    universeRepository
+                        .findByName("Default Universe")
+                        .ifPresent(
+                            u -> {
+                              this.defaultUniverse = u;
+                              com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                              universeContextService.setCurrentUniverse(u);
+                            });
+                  }
                 }
-                universeRepository.findAll().stream()
-                    .findFirst()
-                    .ifPresent(
-                        u -> {
-                          com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                          universeContextService.setCurrentUniverse(u);
-                        });
+
+                if (dataInitializerEnabled) {
+                  log.info("Re-initializing data using DataInitializer...");
+                  dataInitializer.init();
+                }
+
                 return null;
               });
 
           log.info("Database reset complete.");
         });
+
+    // Clear the entity manager to ensure the test transaction's L1 cache is refreshed
+    // with the newly committed data from the REQUIRES_NEW transaction.
+    if (entityManager != null) {
+      log.info("Clearing EntityManager for the test transaction...");
+      entityManager.clear();
+    }
+
+    // Re-verify and refresh the authenticated user in the security context
     ensureAuthenticatedUserExists();
+    refreshSecurityContext();
   }
 
   protected void cleanupLeagues() {

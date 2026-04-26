@@ -23,7 +23,6 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +31,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class TitleServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TitleService titleService;
-  @Autowired private UniverseRepository universeRepository;
 
   @MockitoSpyBean private TitleRepository titleRepository;
 
@@ -44,9 +42,12 @@ class TitleServiceIT extends ManagementIntegrationTest {
     verify(titleRepository, times(1)).findAll();
 
     // Create a new title, should evict the cache
-    Long universeId = universeRepository.findAll().stream().findFirst().orElseThrow().getId();
     titleService.createTitle(
-        "Test Title", "Test Description", WrestlerTier.ROOKIE, ChampionshipType.SINGLE, universeId);
+        "Test Title",
+        "Test Description",
+        WrestlerTier.ROOKIE,
+        ChampionshipType.SINGLE,
+        defaultUniverse.getId());
 
     // Second call, should hit the repository again
     titleService.findAll();

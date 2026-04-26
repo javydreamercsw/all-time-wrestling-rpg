@@ -22,7 +22,6 @@ import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -136,9 +135,29 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @JoinColumn(name = "account_id")
   private Account account;
 
-  @OneToOne(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+  @OneToMany(
+      mappedBy = "wrestler",
+      cascade = CascadeType.ALL,
+      fetch = FetchType.EAGER,
+      orphanRemoval = true)
   @JsonIgnore
-  private WrestlerAlignment alignment;
+  @Builder.Default
+  private Set<WrestlerAlignment> alignments = new LinkedHashSet<>();
+
+  @JsonIgnore
+  public WrestlerAlignment getAlignment() {
+    return alignments.stream()
+        .filter(a -> a.getCampaign() == null)
+        .findFirst()
+        .orElse(alignments.isEmpty() ? null : alignments.iterator().next());
+  }
+
+  public void setAlignment(WrestlerAlignment alignment) {
+    if (alignment != null) {
+      alignment.setWrestler(this);
+      this.alignments.add(alignment);
+    }
+  }
 
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
   @JsonIgnore
@@ -215,6 +234,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   public Integer getEffectiveStartingHealth(Long universeId) {
     int bonus = 0;
     int penalty = 0;
+    WrestlerAlignment alignment = getAlignment();
     if (alignment != null
         && alignment.getCampaign() != null
         && alignment.getCampaign().getState() != null) {
@@ -243,6 +263,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @JsonIgnore
   public Integer getEffectiveStartingStamina() {
+    WrestlerAlignment alignment = getAlignment();
     int bonus =
         (alignment != null
                 && alignment.getCampaign() != null
@@ -300,14 +321,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     }
     if (expansionCode == null) {
       expansionCode = "BASE_GAME";
-    }
-    if (alignment == null) {
-      alignment =
-          WrestlerAlignment.builder()
-              .wrestler(this)
-              .alignmentType(AlignmentType.NEUTRAL)
-              .level(0)
-              .build();
     }
   }
 

@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.controller.AbstractRestControllerIT;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
-import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -56,28 +55,12 @@ class InjuryControllerIT extends AbstractRestControllerIT {
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
   @Autowired private WrestlerService wrestlerService;
 
-  private Universe defaultUniverse;
-
   @BeforeEach
   public void setUp() {
     // Manually build MockMvc for this controller to bypass Vaadin servlet issues
     mockMvc =
         MockMvcBuilders.standaloneSetup(new InjuryController(injuryService, wrestlerRepository))
             .build();
-
-    // Delete in correct order to avoid foreign key constraint violations
-    injuryRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseGet(
-                () ->
-                    universeRepository.saveAndFlush(
-                        Universe.builder().name("Default Universe").build()));
   }
 
   @org.junit.jupiter.api.Test

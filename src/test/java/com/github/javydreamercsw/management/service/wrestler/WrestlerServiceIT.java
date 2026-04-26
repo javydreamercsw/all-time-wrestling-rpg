@@ -33,8 +33,6 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -52,7 +50,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,25 +70,12 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Autowired private DataInitializer dataInitializer;
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private UniverseRepository universeRepository;
   @Autowired private UniverseContextService universeContextService;
   @Autowired private TierRecalculationService tierRecalculationService;
 
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
   @Autowired private TierBoundaryService tierBoundaryService;
-
-  private Universe defaultUniverse;
-
-  @BeforeEach
-  public void setUp() {
-    clearAllRepositories();
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("No universe found after init"));
-    universeContextService.setCurrentUniverseId(defaultUniverse.getId());
-  }
 
   private static final Long DEFAULT_UNIVERSE_ID = 1L;
 

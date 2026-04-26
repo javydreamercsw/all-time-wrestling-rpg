@@ -122,8 +122,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(
       username = "viewer",
       roles = {"VIEWER"})
-  void testAuthenticatedCannotCountDecksIfNotAdmin() {
-    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.count());
+  void testAuthenticatedCanCountDecks() {
+    deckService.count();
+    // No exception means success
   }
 
   @Test

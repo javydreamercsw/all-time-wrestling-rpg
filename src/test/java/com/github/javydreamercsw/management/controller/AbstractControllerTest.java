@@ -17,11 +17,7 @@
 package com.github.javydreamercsw.management.controller;
 
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.base.security.CustomUserDetailsService;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationScheduler;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -47,15 +43,11 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
   }
 
-  // Infrastructure mocks likely needed by multiple controllers or security
-  @MockitoBean protected CustomUserDetailsService customUserDetailsService;
-  @MockitoBean protected RankingService rankingService;
-  @MockitoBean protected WrestlerRepository wrestlerRepository;
-  @MockitoBean protected AccountRepository accountRepository;
-  @MockitoBean protected RoleRepository roleRepository;
+  // Infrastructure mocks still needed (e.g. for external services or scheduled tasks)
   @MockitoBean protected NotionApiExecutor notionApiExecutor;
-  @MockitoBean protected TierRecalculationService tierRecalculationService;
   @MockitoBean protected TierRecalculationScheduler tierRecalculationScheduler;
+  @MockitoBean protected RankingService rankingService;
+  @MockitoBean protected TierRecalculationService tierRecalculationService;
   @MockitoBean protected RivalryRepository rivalryRepository;
 
   @MockitoBean(name = "testUserInitializer")
@@ -67,7 +59,7 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
   @Override
   @BeforeEach
   public void baseSetUp() throws Exception {
-    this.skipDataInit = true;
+    this.dataInitializerEnabled = false;
     super.baseSetUp();
   }
 }

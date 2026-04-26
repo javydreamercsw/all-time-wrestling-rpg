@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class LeagueService {
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final ShowRepository showRepository;
   private final LeagueRosterRepository leagueRosterRepository;
+  private final UniverseContextService universeContextService;
 
   @Transactional
   public League createLeague(
@@ -55,6 +57,10 @@ public class LeagueService {
     league.setMaxPicksPerPlayer(maxPicks);
     league.setExcludedWrestlers(excluded);
     league.setStatus(League.LeagueStatus.PRE_DRAFT);
+
+    // Set universe from context if available
+    universeContextService.getCurrentUniverse().ifPresent(league::setUniverse);
+
     league = leagueRepository.save(league);
 
     // Add commissioner

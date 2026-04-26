@@ -22,13 +22,13 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Objects;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 
@@ -47,12 +47,14 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     org.mockito.MockitoAnnotations.openMocks(this);
     log.info("Preparing test environment for: {}", this.getClass().getSimpleName());
 
-    // Refresh security context to ensure the principal has persistent entities
-    // The DB was already cleared and mock user re-created by AbstractIntegrationTest.setUp()
-    refreshSecurityContext();
+    // If we have an authentication, try to refresh it
+    if (SecurityContextHolder.getContext().getAuthentication() != null) {
+      refreshSecurityContext();
+    }
 
-    // If no authentication was established (e.g. first run with empty DB or not using
-    // @WithMockUser), log in as the default admin
+    // If STILL no authentication was established (e.g. not using @WithMockUser),
+    // log in as the default admin for convenience in normal tests.
+    // BUT only if we didn't just clear it due to a refresh failure.
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       log.info("No security context found, logging in as default admin...");
       accountRepository.findByUsername("admin").ifPresent(this::login);
@@ -62,70 +64,65 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   /** Refreshes the current security context by re-loading the authenticated user from the DB. */
   protected void refreshSecurityContext() {
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth != null) {
-      final String username;
-      if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
-        username = accountPrincipal.getUsername();
-      } else if (currentAuth.getPrincipal() instanceof CustomUserDetails userDetails) {
-        username = userDetails.getUsername();
-      } else if (currentAuth.getPrincipal()
-          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-        username = userDetails.getUsername();
-      } else {
-        username = null;
-      }
+    if (currentAuth == null) return;
 
-      if (username != null) {
-        accountRepository
-            .findByUsername(username)
-            .ifPresentOrElse(
-                refreshedAccount -> {
-                  log.info(
-                      "Refreshing security context for user: {}", refreshedAccount.getUsername());
+    final String username;
+    if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
+      username = accountPrincipal.getUsername();
+    } else if (currentAuth.getPrincipal() instanceof CustomUserDetails userDetails) {
+      username = userDetails.getUsername();
+    } else if (currentAuth.getPrincipal()
+        instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+      username = userDetails.getUsername();
+    } else {
+      username = null;
+    }
 
-                  // Force reload of wrestler if available
-                  Wrestler wrestler = null;
-                  if (refreshedAccount.getActiveWrestlerId() != null) {
-                    wrestler =
-                        wrestlerRepository
-                            .findById(refreshedAccount.getActiveWrestlerId())
-                            .orElse(null);
-                  }
+    if (username != null) {
+      accountRepository
+          .findByUsername(username)
+          .ifPresentOrElse(
+              refreshedAccount -> {
+                log.info(
+                    "Refreshing security context for user: {}", refreshedAccount.getUsername());
 
-                  // Re-login to refresh the principal and authorities with persistent entities
-                  var principal = new CustomUserDetails(refreshedAccount, wrestler);
-                  var authorities =
-                      refreshedAccount.getRoles().stream()
-                          .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
-                          .toList();
+                // Force reload of wrestler if available
+                Wrestler wrestler = null;
+                if (refreshedAccount.getActiveWrestlerId() != null) {
+                  wrestler =
+                      wrestlerRepository
+                          .findById(refreshedAccount.getActiveWrestlerId())
+                          .orElse(null);
+                }
 
-                  var authentication =
-                      new UsernamePasswordAuthenticationToken(
-                          principal, refreshedAccount.getPassword(), authorities);
-
-                  SecurityContextHolder.getContext().setAuthentication(authentication);
-                  TestSecurityContextHolder.setAuthentication(authentication);
-                },
-                () -> {
-                  log.warn("Account not found during refresh: {}, clearing context", username);
-                  clearSecurityContext();
-                });
-      }
+                // Re-login to refresh the principal and authorities with persistent entities
+                login(refreshedAccount);
+              },
+              () -> {
+                log.warn("Account not found during refresh: {}, context remains as is", username);
+              });
     }
   }
 
   protected void login(Account account) {
     log.info("Logging in as user: {}", account.getUsername());
-    // Wrap the account in CustomUserDetails to match production behavior and provide username to
-    // getName()
-    var principal = new CustomUserDetails(account);
-    var authorities =
-        account.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
-            .toList();
+    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
+
+    var principal = new CustomUserDetails(account, wrestler);
+    Set<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
+        new java.util.HashSet<>();
+    for (com.github.javydreamercsw.base.domain.account.Role role : account.getRoles()) {
+      authorities.add(
+          new org.springframework.security.core.authority.SimpleGrantedAuthority(
+              role.getName().name()));
+      authorities.add(
+          new org.springframework.security.core.authority.SimpleGrantedAuthority(
+              "ROLE_" + role.getName().name()));
+    }
 
     var authentication =
-        new UsernamePasswordAuthenticationToken(principal, account.getPassword(), authorities);
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
 
     SecurityContextHolder.getContext().setAuthentication(authentication);
     TestSecurityContextHolder.setAuthentication(authentication);

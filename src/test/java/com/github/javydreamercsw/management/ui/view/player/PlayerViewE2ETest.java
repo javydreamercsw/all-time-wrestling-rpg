@@ -34,7 +34,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -108,35 +107,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
       wrestlerAlignmentRepository;
 
-  private Universe defaultUniverse;
-
   @BeforeEach
   public void setupTest() {
     cleanupLeagues();
-    // It's better to delete in order to avoid constraint violations.
-    wrestlerAlignmentRepository.deleteAllInBatch();
-    campaignStateRepository.deleteAllInBatch();
-    backstageActionHistoryRepository.deleteAllInBatch();
-    campaignEncounterRepository.deleteAllInBatch();
-    campaignRepository.deleteAllInBatch();
-    titleReignRepository
-        .findAll()
-        .forEach(
-            reign -> {
-              reign.setWonAtSegment(null);
-              titleReignRepository.save(reign);
-            });
-    titleReignRepository.deleteAll();
-    segmentRepository.deleteAll();
-    rivalryRepository.deleteAll();
-    inboxRepository.deleteAll();
-    showRepository.deleteAll();
-    titleChampionRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    universeRepository.deleteAll();
-
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
   }
 
   @Test

@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -67,7 +66,6 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   private Wrestler maleWrestler;
   private Wrestler femaleWrestler;
   private Title womensTitle;
-  private Universe defaultUniverse;
 
   @BeforeEach
   public void setupTestData() {
@@ -75,18 +73,6 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
-
-    wrestlerAlignmentRepository.deleteAllInBatch();
-    campaignStateRepository.deleteAllInBatch();
-    backstageActionHistoryRepository.deleteAllInBatch();
-    campaignEncounterRepository.deleteAllInBatch();
-    campaignRepository.deleteAllInBatch();
-    titleRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    universeRepository.deleteAll();
-
-    defaultUniverse = universeRepository.save(Universe.builder().name("Default Universe").build());
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");

@@ -25,6 +25,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
-  @Query("SELECT c FROM Campaign c WHERE c.wrestler = :wrestler AND c.status = 'ACTIVE'")
+  @Query("SELECT DISTINCT c FROM Campaign c WHERE c.wrestler = :wrestler AND c.status = 'ACTIVE'")
   Optional<Campaign> findActiveByWrestler(@Param("wrestler") Wrestler wrestler);
 }

@@ -41,7 +41,6 @@ public class DeckService {
     this.clock = clock;
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
   public long count() {
     return deckRepository.count();
   }

@@ -20,160 +20,92 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
-import jakarta.persistence.EntityManager;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionTemplate;
 
+/**
+ * Factory for creating a security context for @WithCustomMockUser. This factory is designed to be
+ * fast and avoid complex database operations that might interfere with test setup/cleanup.
+ */
 @Component
+@Slf4j
 public class WithCustomMockUserSecurityContextFactory
     implements WithSecurityContextFactory<WithCustomMockUser> {
-
-  @Autowired(required = false)
-  private PasswordEncoder passwordEncoder;
 
   @Autowired(required = false)
   private AccountRepository accountRepository;
 
   @Autowired(required = false)
-  private RoleRepository roleRepository;
-
-  @Autowired(required = false)
   private WrestlerRepository wrestlerRepository;
-
-  @Autowired(required = false)
-  private WrestlerStateRepository wrestlerStateRepository;
-
-  @Autowired(required = false)
-  private UniverseRepository universeRepository;
-
-  @Autowired(required = false)
-  private EntityManager entityManager;
-
-  @Autowired(required = false)
-  private TransactionTemplate transactionTemplate;
 
   @Override
   public SecurityContext createSecurityContext(WithCustomMockUser customUser) {
     String username = customUser.username();
     String[] roles = customUser.roles();
 
-    if (transactionTemplate != null && entityManager != null) {
-      return transactionTemplate.execute(
-          status -> {
-            // 1. Try to find real account
-            Account account = accountRepository.findByUsername(username).orElse(null);
+    log.debug("Creating security context for user: {}", username);
 
-            // 2. If not found, create saved account
-            if (account == null) {
-              account = new Account();
-              account.setUsername(username);
-              if (passwordEncoder != null) {
-                account.setPassword(passwordEncoder.encode("ValidPassword1!"));
-              } else {
-                account.setPassword("encoded_password");
-              }
-              account.setEmail(username + "@test.com");
-              account.setEnabled(true);
-              account.setAccountNonExpired(true);
-              account.setAccountNonLocked(true);
-              account.setCredentialsNonExpired(true);
+    Account account = null;
+    Wrestler wrestler = null;
 
-              // Find real roles
-              Set<Role> assignedRoles = new HashSet<>();
-              for (String roleNameStr : roles) {
-                RoleName roleName = RoleName.valueOf(roleNameStr);
-                roleRepository.findByName(roleName).ifPresent(assignedRoles::add);
-              }
-              account.setRoles(assignedRoles);
-              account = accountRepository.saveAndFlush(account);
-            }
-
-            // 3. Handle Wrestler
-            Wrestler wrestler =
-                wrestlerRepository.findByAccount(account).stream().findFirst().orElse(null);
-
-            if (wrestler == null) {
-              wrestler = new Wrestler();
-              wrestler.setName(account.getUsername() + " Wrestler");
-              wrestler.setIsPlayer(true);
-              wrestler.setAccount(account);
-              wrestler.setCreationDate(Instant.now());
-              wrestler.setExternalId("wrestler-" + account.getUsername());
-
-              // We need a universe for a real wrestler
-              Universe universe = universeRepository.findAll().stream().findFirst().orElse(null);
-              if (universe == null) {
-                universe =
-                    universeRepository.saveAndFlush(
-                        Universe.builder()
-                            .name("Default Universe")
-                            .type(Universe.UniverseType.GLOBAL)
-                            .build());
-              }
-              wrestler = wrestlerRepository.saveAndFlush(wrestler);
-
-              com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-                  com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
-                      .wrestler(wrestler)
-                      .universe(universe)
-                      .fans(0L)
-                      .tier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ROOKIE)
-                      .currentHealth(15)
-                      .bumps(0)
-                      .morale(100)
-                      .build();
-              wrestlerStateRepository.saveAndFlush(state);
-            }
-
-            return finishContext(username, roles, account, wrestler);
-          });
-    } else {
-      // Fallback for unit tests without DB
-      Account account = new Account();
-      account.setId(1L);
-      account.setUsername(username);
-      account.setPassword("password");
-      account.setEmail(username + "@test.com");
-
-      Wrestler wrestler = new Wrestler();
-      wrestler.setId(1L);
-      wrestler.setName(username + " Wrestler");
-
-      return finishContext(username, roles, account, wrestler);
+    // Try to find real account if repository is available
+    if (accountRepository != null) {
+      try {
+        account = accountRepository.findByUsername(username).orElse(null);
+        if (account != null && wrestlerRepository != null) {
+          wrestler = wrestlerRepository.findByAccount(account).stream().findFirst().orElse(null);
+        }
+      } catch (Exception e) {
+        log.trace("Could not load real account for mock context: {}", e.getMessage());
+      }
     }
-  }
 
-  private SecurityContext finishContext(
-      String username, String[] roles, Account account, Wrestler wrestler) {
+    // If not found, create a mock account object (not persisted)
+    if (account == null) {
+      account = new Account(username, "password", username + "@test.com");
+      account.setEnabled(true);
+      account.setAccountNonExpired(true);
+      account.setAccountNonLocked(true);
+      account.setCredentialsNonExpired(true);
+
+      Set<Role> mockRoles = new HashSet<>();
+      for (String roleNameStr : roles) {
+        String cleanRoleName = roleNameStr;
+        if (cleanRoleName.startsWith("ROLE_")) {
+          cleanRoleName = cleanRoleName.substring(5);
+        }
+        try {
+          RoleName rn = RoleName.valueOf(cleanRoleName);
+          mockRoles.add(new Role(rn, rn.name()));
+        } catch (IllegalArgumentException e) {
+          // Ignore
+        }
+      }
+      account.setRoles(mockRoles);
+    }
+
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
-
-    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-    for (String role : roles) {
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      authorities.add(new SimpleGrantedAuthority(role));
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+    for (String roleName : roles) {
+      authorities.add(new SimpleGrantedAuthority(roleName));
+      if (!roleName.startsWith("ROLE_")) {
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+      }
     }
 
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, "ValidPassword1!", authorities);
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);

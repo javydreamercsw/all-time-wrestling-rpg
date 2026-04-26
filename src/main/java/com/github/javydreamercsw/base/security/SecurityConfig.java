@@ -16,16 +16,16 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
@@ -33,72 +33,37 @@ import org.springframework.security.web.SecurityFilterChain;
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
   private final UserDetailsService userDetailsService;
   private final Environment environment;
 
-  @Value("${https.enforcement.disabled:false}")
-  private boolean httpsEnforcementDisabled;
-
   @Bean
-  @Profile("!test & !e2e")
-  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
-    // Public access to static resources
-    http.authorizeHttpRequests(
-        auth ->
-            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**", "/docs/**")
-                .permitAll());
-
-    // Disable CSRF for API endpoints
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
-
-    // Allow framing for H2 console
-    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
-
-    // Apply Vaadin security configurer and set the login view
-    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
-
-    // Configure remember-me functionality
-    http.rememberMe(
-        rememberMe ->
-            rememberMe
-                .key("atwrpg-remember-me-key") // Should be externalized to properties
-                .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 days
-                .userDetailsService(userDetailsService));
-
-    // Configure logout
-    http.logout(
-        logout ->
-            logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID", "remember-me")
-                .permitAll());
-
-    // Configure form login
-    http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
-
-    // Enforce HTTPS in production is handled by the deployment environment (e.g. Load Balancer)
-    // and configured via server.forward-headers-strategy=native
-
-    // Add security headers
-    http.headers(
-        headers ->
-            headers.httpStrictTransportSecurity(
-                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)));
+  @Profile("!test")
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http.csrf(csrf -> csrf.disable())
+        .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers("/api/auth/**", "/login", "/register", "/public/**")
+                    .permitAll()
+                    .requestMatchers("/api/admin/**")
+                    .hasRole(RoleName.ADMIN.name())
+                    .anyRequest()
+                    .authenticated());
 
     return http.build();
   }
 
   @Bean
-  @Profile("test & !e2e")
+  @Profile("test")
+  @Order(0)
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
+    http.csrf(csrf -> csrf.disable())
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
     return http.build();
   }

@@ -111,7 +111,6 @@ public class TeamService {
 
   /** Count all teams. */
   @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return teamRepository.count();
   }

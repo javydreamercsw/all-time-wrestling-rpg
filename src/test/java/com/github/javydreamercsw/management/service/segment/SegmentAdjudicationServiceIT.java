@@ -33,8 +33,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -46,7 +44,6 @@ import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +53,6 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
   @Autowired private SegmentAdjudicationService segmentAdjudicationService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private UniverseRepository universeRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
@@ -65,17 +61,6 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleService titleService;
   @Autowired private WrestlerService wrestlerService;
-
-  private Universe defaultUniverse;
-
-  @BeforeEach
-  void setUpUniverse() {
-    defaultUniverse =
-        universeRepository.findAll().stream()
-            .findFirst()
-            .orElseGet(
-                () -> universeRepository.save(Universe.builder().name("Default Universe").build()));
-  }
 
   @Test
   void testAdjudicateMatchWithTitleChangeLinksToSegment() {

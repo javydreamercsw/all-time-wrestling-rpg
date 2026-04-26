@@ -217,7 +217,6 @@ public class DataInitializer implements Initializable {
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
-      createDefaultUniverse();
       syncAiSettingsFromEnvironment();
       initializeGameDate();
       loadSegmentRulesFromFile();
@@ -241,16 +240,6 @@ public class DataInitializer implements Initializable {
       syncCommentaryTeamsFromFile();
       loadAchievements();
       syncRingsideActions();
-    }
-  }
-
-  private void createDefaultUniverse() {
-    if (universeRepository.count() == 0) {
-      log.info("Creating default universe...");
-      Universe defaultUniverse =
-          Universe.builder().name("Default Universe").type(Universe.UniverseType.GLOBAL).build();
-      universeRepository.saveAndFlush(defaultUniverse);
-      log.info("Default universe created.");
     }
   }
 
@@ -817,6 +806,7 @@ public class DataInitializer implements Initializable {
             List<Wrestler> wrestlersToProcess = new ArrayList<>();
             Map<String, WrestlerImportDTO> dtoMap = new HashMap<>();
 
+            List<Wrestler> toSaveBulk = new ArrayList<>();
             for (WrestlerImportDTO w : wrestlersFromFile) {
               Wrestler existingWrestler = wrestlerRepository.findByName(w.getName()).orElse(null);
               if (existingWrestler == null
@@ -826,6 +816,7 @@ public class DataInitializer implements Initializable {
                     wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
               }
 
+              Wrestler wrestlerToSave;
               if (existingWrestler != null) {
                 // Update fields
                 existingWrestler.setDeckSize(w.getDeckSize());
@@ -848,22 +839,20 @@ public class DataInitializer implements Initializable {
                   try {
                     AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
                     if (existingWrestler.getAlignment() == null) {
-                      existingWrestler.setAlignment(
+                      WrestlerAlignment alignment =
                           WrestlerAlignment.builder()
                               .wrestler(existingWrestler)
                               .alignmentType(at)
                               .level(0)
-                              .build());
+                              .build();
+                      existingWrestler.setAlignment(alignment);
                     }
                   } catch (IllegalArgumentException e) {
                     log.warn(
                         "Invalid alignment '{}' for wrestler '{}'", w.getAlignment(), w.getName());
                   }
                 }
-
-                Wrestler saved = wrestlerRepository.save(existingWrestler);
-                wrestlersToProcess.add(saved);
-                dtoMap.put(saved.getName(), w);
+                wrestlerToSave = existingWrestler;
               } else {
                 Wrestler newWrestler = new Wrestler();
                 newWrestler.setName(w.getName());
@@ -885,30 +874,33 @@ public class DataInitializer implements Initializable {
                 if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
                 if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
 
-                Wrestler saved = wrestlerRepository.save(newWrestler);
                 if (w.getAlignment() != null) {
                   try {
                     AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
-                    saved.setAlignment(
+                    newWrestler.setAlignment(
                         WrestlerAlignment.builder()
-                            .wrestler(saved)
+                            .wrestler(newWrestler)
                             .alignmentType(at)
                             .level(0)
                             .build());
-                    saved = wrestlerRepository.save(saved);
                   } catch (IllegalArgumentException e) {
                     log.warn(
                         "Invalid alignment '{}' for wrestler '{}'", w.getAlignment(), w.getName());
                   }
                 }
-                wrestlersToProcess.add(saved);
-                dtoMap.put(saved.getName(), w);
+                wrestlerToSave = newWrestler;
               }
+              toSaveBulk.add(wrestlerToSave);
+              dtoMap.put(wrestlerToSave.getName(), w);
             }
+
+            // Save all wrestlers in one batch
+            wrestlerRepository.saveAll(toSaveBulk);
+            wrestlerRepository.flush();
 
             // Process states in bulk-like manner (though getOrCreateState and tierRecalculation are
             // still single)
-            for (Wrestler wrestler : wrestlersToProcess) {
+            for (Wrestler wrestler : toSaveBulk) {
               WrestlerImportDTO w = dtoMap.get(wrestler.getName());
               WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
               if (w.getFans() != null && w.getFans() > state.getFans()) {
@@ -1011,6 +1003,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncDecksFromFile() {
+    if (skipIfNotEmpty && deckService.count() > 0) return;
     ClassPathResource resource = new ClassPathResource("decks.json");
     if (resource.exists()) {
       log.info("Loading decks from file: {}", resource.getPath());
