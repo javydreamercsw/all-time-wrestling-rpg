@@ -49,8 +49,23 @@ jobs:
             notion_changed:
               - 'src/main/java/com/github/javydreamercsw/management/service/sync/**'
 
-  build-and-unit-test:
+  rewrite-check:
     needs: check-paths
+    if: needs.check-paths.outputs.code_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+      - name: OpenRewrite dry-run (fail if changes needed)
+        run: mvn -B rewrite:dryRun
+
+  build-and-unit-test:
+    needs: [check-paths, rewrite-check]
     if: needs.check-paths.outputs.code_changed == 'true'
     runs-on: ubuntu-latest
 
