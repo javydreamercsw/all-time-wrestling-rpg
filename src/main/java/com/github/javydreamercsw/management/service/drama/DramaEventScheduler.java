@@ -233,13 +233,19 @@ public class DramaEventScheduler {
     double roll = random.nextDouble();
 
     // 75% chance of no events
-    if (roll < 0.75) return 0;
+    if (roll < 0.75) {
+      return 0;
+    }
 
     // 15% chance of 1 event
-    if (roll < 0.90) return 1;
+    if (roll < 0.90) {
+      return 1;
+    }
 
     // 5% chance of 2 events
-    if (roll < 0.95) return 2;
+    if (roll < 0.95) {
+      return 2;
+    }
 
     // 5% chance of 3 events
     return 3;

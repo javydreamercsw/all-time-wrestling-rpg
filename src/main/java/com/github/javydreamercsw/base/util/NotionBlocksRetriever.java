@@ -139,7 +139,9 @@ public class NotionBlocksRetriever {
   /** Parse a single block into readable text content. */
   private String parseBlock(@NonNull JsonNode block) {
     JsonNode typeNode = block.get("type");
-    if (typeNode == null) return null;
+    if (typeNode == null) {
+      return null;
+    }
 
     String blockType = typeNode.asText();
 
@@ -169,7 +171,9 @@ public class NotionBlocksRetriever {
   /** Parse a paragraph block. */
   private String parseParagraph(@NonNull JsonNode block) {
     JsonNode paragraph = block.get("paragraph");
-    if (paragraph == null) return null;
+    if (paragraph == null) {
+      return null;
+    }
 
     JsonNode richText = paragraph.get("rich_text");
     return parseRichText(richText);
@@ -179,12 +183,16 @@ public class NotionBlocksRetriever {
   private String parseHeading(@NonNull JsonNode block, int level) {
     String headingKey = "heading_" + level;
     JsonNode heading = block.get(headingKey);
-    if (heading == null) return null;
+    if (heading == null) {
+      return null;
+    }
 
     JsonNode richText = heading.get("rich_text");
     String text = parseRichText(richText);
 
-    if (text == null || text.trim().isEmpty()) return null;
+    if (text == null || text.trim().isEmpty()) {
+      return null;
+    }
 
     // Add markdown-style heading markers
     String prefix = "#".repeat(level) + " ";
@@ -194,36 +202,48 @@ public class NotionBlocksRetriever {
   /** Parse a bulleted list item. */
   private String parseBulletedListItem(@NonNull JsonNode block) {
     JsonNode listItem = block.get("bulleted_list_item");
-    if (listItem == null) return null;
+    if (listItem == null) {
+      return null;
+    }
 
     JsonNode richText = listItem.get("rich_text");
     String text = parseRichText(richText);
 
-    if (text == null || text.trim().isEmpty()) return null;
+    if (text == null || text.trim().isEmpty()) {
+      return null;
+    }
     return "• " + text;
   }
 
   /** Parse a numbered list item. */
   private String parseNumberedListItem(@NonNull JsonNode block) {
     JsonNode listItem = block.get("numbered_list_item");
-    if (listItem == null) return null;
+    if (listItem == null) {
+      return null;
+    }
 
     JsonNode richText = listItem.get("rich_text");
     String text = parseRichText(richText);
 
-    if (text == null || text.trim().isEmpty()) return null;
+    if (text == null || text.trim().isEmpty()) {
+      return null;
+    }
     return "1. " + text;
   }
 
   /** Parse a to-do item. */
   private String parseToDoItem(@NonNull JsonNode block) {
     JsonNode toDo = block.get("to_do");
-    if (toDo == null) return null;
+    if (toDo == null) {
+      return null;
+    }
 
     JsonNode richText = toDo.get("rich_text");
     String text = parseRichText(richText);
 
-    if (text == null || text.trim().isEmpty()) return null;
+    if (text == null || text.trim().isEmpty()) {
+      return null;
+    }
 
     JsonNode checked = toDo.get("checked");
     boolean isChecked = checked != null && checked.asBoolean();
@@ -234,24 +254,32 @@ public class NotionBlocksRetriever {
   /** Parse a quote block. */
   private String parseQuote(@NonNull JsonNode block) {
     JsonNode quote = block.get("quote");
-    if (quote == null) return null;
+    if (quote == null) {
+      return null;
+    }
 
     JsonNode richText = quote.get("rich_text");
     String text = parseRichText(richText);
 
-    if (text == null || text.trim().isEmpty()) return null;
+    if (text == null || text.trim().isEmpty()) {
+      return null;
+    }
     return "> " + text;
   }
 
   /** Parse a callout block. */
   private String parseCallout(@NonNull JsonNode block) {
     JsonNode callout = block.get("callout");
-    if (callout == null) return null;
+    if (callout == null) {
+      return null;
+    }
 
     JsonNode richText = callout.get("rich_text");
     String text = parseRichText(richText);
 
-    if (text == null || text.trim().isEmpty()) return null;
+    if (text == null || text.trim().isEmpty()) {
+      return null;
+    }
 
     // Get the icon if available
     JsonNode icon = callout.get("icon");
@@ -268,7 +296,9 @@ public class NotionBlocksRetriever {
 
   /** Parse rich text array into plain text with basic formatting. */
   private String parseRichText(@NonNull JsonNode richTextArray) {
-    if (!richTextArray.isArray()) return null;
+    if (!richTextArray.isArray()) {
+      return null;
+    }
 
     StringBuilder text = new StringBuilder();
 

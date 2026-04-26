@@ -48,7 +48,9 @@ public class CampaignController {
   @GetMapping("/{wrestlerId}/state")
   public ResponseEntity<CampaignState> getCampaignState(@PathVariable Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
-    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+    if (wrestler.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
     return campaign
@@ -65,10 +67,14 @@ public class CampaignController {
   public ResponseEntity<Void> purchaseUpgrade(
       @PathVariable Long wrestlerId, @RequestParam Long upgradeId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
-    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+    if (wrestler.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
-    if (campaign.isEmpty()) return ResponseEntity.notFound().build();
+    if (campaign.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     upgradeService.purchaseUpgrade(campaign.get(), upgradeId);
     return ResponseEntity.ok().build();
@@ -78,10 +84,14 @@ public class CampaignController {
   public ResponseEntity<Void> processMatchResult(
       @PathVariable Long wrestlerId, @RequestParam boolean won) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
-    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+    if (wrestler.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
-    if (campaign.isEmpty()) return ResponseEntity.notFound().build();
+    if (campaign.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     campaignService.processMatchResult(campaign.get(), won);
     return ResponseEntity.ok().build();
@@ -90,10 +100,14 @@ public class CampaignController {
   @PostMapping("/{wrestlerId}/test/advance-chapter")
   public ResponseEntity<Void> advanceChapter(@PathVariable Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
-    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+    if (wrestler.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
-    if (campaign.isEmpty()) return ResponseEntity.notFound().build();
+    if (campaign.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     campaignService.advanceChapter(campaign.get());
     return ResponseEntity.ok().build();
@@ -102,10 +116,14 @@ public class CampaignController {
   @PostMapping("/{wrestlerId}/test/skip-to-show")
   public ResponseEntity<Void> skipToShow(@PathVariable Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
-    if (wrestler.isEmpty()) return ResponseEntity.notFound().build();
+    if (wrestler.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     Optional<Campaign> campaign = campaignRepository.findActiveByWrestler(wrestler.get());
-    if (campaign.isEmpty()) return ResponseEntity.notFound().build();
+    if (campaign.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
     campaignService.completePostMatch(campaign.get());
     return ResponseEntity.ok().build();

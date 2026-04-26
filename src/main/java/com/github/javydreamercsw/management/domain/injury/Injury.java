@@ -108,7 +108,9 @@ public class Injury extends AbstractEntity<Long> {
 
   @JsonIgnore
   public String getStatusEmoji() {
-    if (!isActive) return "✅";
+    if (!isActive) {
+      return "✅";
+    }
     return severity.getEmoji();
   }
 

@@ -133,7 +133,9 @@ class SeasonServiceTest {
         .thenAnswer(
             invocation -> {
               Season season = invocation.getArgument(0);
-              if (season.getId() == null) season.setId(2L);
+              if (season.getId() == null) {
+                season.setId(2L);
+              }
               return season;
             });
 

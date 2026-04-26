@@ -173,7 +173,9 @@ public class CampaignAbilityCardListView extends Main {
   }
 
   private void createCard() {
-    if (name.getValue().isEmpty()) return;
+    if (name.getValue().isEmpty()) {
+      return;
+    }
     CampaignAbilityCard card = new CampaignAbilityCard();
     card.setName(name.getValue());
     card.setAlignmentType(AlignmentType.FACE); // Default

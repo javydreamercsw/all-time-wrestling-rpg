@@ -188,7 +188,9 @@ public class StorylineDirectorService {
     }
 
     StorylineMilestone current = storyline.getCurrentMilestone();
-    if (current == null) return;
+    if (current == null) {
+      return;
+    }
 
     log.info(
         "Evaluating progress for storyline: {}. Milestone: {}. Success: {}",

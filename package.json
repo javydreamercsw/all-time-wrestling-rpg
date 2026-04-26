@@ -89,7 +89,10 @@
     "lit": "3.3.2",
     "moment": "2.30.1",
     "moment-timezone": "0.6.0",
-    "onecolor": "4.1.0"
+    "onecolor": "4.1.0",
+    "react-dom": "19.2.4",
+    "react": "19.2.4",
+    "react-router": "7.13.1"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -106,7 +109,9 @@
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vite-plugin-checker": "0.12.0",
-    "workbox-build": "7.4.0"
+    "workbox-build": "7.4.0",
+    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.14"
   },
   "overrides": {
     "@vaadin/common-frontend": "0.0.22",
@@ -287,7 +292,10 @@
       "lit": "3.3.2",
       "moment": "2.30.1",
       "moment-timezone": "0.6.0",
-      "onecolor": "4.1.0"
+      "onecolor": "4.1.0",
+      "react-dom": "19.2.4",
+      "react": "19.2.4",
+      "react-router": "7.13.1"
     },
     "devDependencies": {
       "@babel/preset-react": "7.28.5",
@@ -304,7 +312,9 @@
       "typescript": "5.9.3",
       "vite": "7.3.1",
       "vite-plugin-checker": "0.12.0",
-      "workbox-build": "7.4.0"
+      "workbox-build": "7.4.0",
+      "@types/react-dom": "19.2.3",
+      "@types/react": "19.2.14"
     },
     "hash": "23344160e66d7e97dc5000b7507e9227fd98558809132dffa454bdb9ef9f480d"
   }

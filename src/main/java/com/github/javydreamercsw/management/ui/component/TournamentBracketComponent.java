@@ -37,14 +37,21 @@ public class TournamentBracketComponent extends HorizontalLayout {
 
     int totalRounds = tournament.getTotalRounds();
     // Fallback if totalRounds not set (legacy)
-    if (totalRounds <= 0) totalRounds = 4;
+    if (totalRounds <= 0) {
+      totalRounds = 4;
+    }
 
     for (int i = 1; i <= totalRounds; i++) {
       String title;
-      if (i == totalRounds) title = "Finals";
-      else if (i == totalRounds - 1) title = "Semi-Finals";
-      else if (i == totalRounds - 2) title = "Quarter-Finals";
-      else title = "Round " + i;
+      if (i == totalRounds) {
+        title = "Finals";
+      } else if (i == totalRounds - 1) {
+        title = "Semi-Finals";
+      } else if (i == totalRounds - 2) {
+        title = "Quarter-Finals";
+      } else {
+        title = "Round " + i;
+      }
 
       addRound(tournament, i, title, totalRounds);
     }

@@ -56,7 +56,9 @@ public class RingsideAiService {
       case HEEL -> {
         // Heels act often, especially illegal ones
         actionChance = 0.30;
-        if (awareness < 50) actionChance += 0.15;
+        if (awareness < 50) {
+          actionChance += 0.15;
+        }
       }
       case NEUTRAL -> {
         actionChance = 0.15;
@@ -93,25 +95,33 @@ public class RingsideAiService {
 
   private RingsideAction pickAction(AlignmentType alignment, int awareness) {
     List<RingsideAction> allActions = ringsideActionDataService.findAllActions();
-    if (allActions.isEmpty()) return null;
+    if (allActions.isEmpty()) {
+      return null;
+    }
 
     // Filter by alignment: Heels can do anything, Faces prefer non-Heel actions
     List<RingsideAction> suitableActions =
         allActions.stream()
             .filter(
                 a -> {
-                  if (alignment == AlignmentType.HEEL) return true;
+                  if (alignment == AlignmentType.HEEL) {
+                    return true;
+                  }
                   return a.getAlignment() != AlignmentType.HEEL;
                 })
             .toList();
 
-    if (suitableActions.isEmpty()) suitableActions = allActions;
+    if (suitableActions.isEmpty()) {
+      suitableActions = allActions;
+    }
 
     // If awareness is high, avoid risky/illegal actions
     if (awareness > 70) {
       List<RingsideAction> lowRisk =
           suitableActions.stream().filter(a -> a.getRisk() <= 20).toList();
-      if (!lowRisk.isEmpty()) suitableActions = lowRisk;
+      if (!lowRisk.isEmpty()) {
+        suitableActions = lowRisk;
+      }
     }
 
     return suitableActions.get(random.nextInt(suitableActions.size()));

@@ -160,7 +160,9 @@ public class GenericImageGenerationDialog extends Dialog {
   }
 
   private void saveImage() {
-    if (currentImageData == null) return;
+    if (currentImageData == null) {
+      return;
+    }
 
     try {
       String savedPath = storageService.saveImage(currentImageData, isBase64);

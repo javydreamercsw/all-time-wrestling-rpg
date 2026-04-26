@@ -944,14 +944,26 @@ public class CampaignService {
     state.setPendingL3Picks(0);
 
     if (type == AlignmentType.FACE) {
-      if (level >= 1 && level < 5) state.setPendingL1Picks(1);
-      if (level >= 4) state.setPendingL2Picks(1);
-      if (level >= 5) state.setPendingL3Picks(1);
+      if (level >= 1 && level < 5) {
+        state.setPendingL1Picks(1);
+      }
+      if (level >= 4) {
+        state.setPendingL2Picks(1);
+      }
+      if (level >= 5) {
+        state.setPendingL3Picks(1);
+      }
     } else {
       // HEEL
-      if (level >= 1 && level < 4) state.setPendingL1Picks(1);
-      if (level >= 4) state.setPendingL2Picks(1);
-      if (level >= 5) state.setPendingL1Picks(1); // Regain L1 slot
+      if (level >= 1 && level < 4) {
+        state.setPendingL1Picks(1);
+      }
+      if (level >= 4) {
+        state.setPendingL2Picks(1);
+      }
+      if (level >= 5) {
+        state.setPendingL1Picks(1); // Regain L1 slot
+      }
     }
   }
 
@@ -1045,9 +1057,15 @@ public class CampaignService {
 
     List<CampaignAbilityCard> pickable = new ArrayList<>();
 
-    if (state.getPendingL1Picks() > 0) pickable.addAll(getAvailableCards(type, 1));
-    if (state.getPendingL2Picks() > 0) pickable.addAll(getAvailableCards(type, 2));
-    if (state.getPendingL3Picks() > 0) pickable.addAll(getAvailableCards(type, 3));
+    if (state.getPendingL1Picks() > 0) {
+      pickable.addAll(getAvailableCards(type, 1));
+    }
+    if (state.getPendingL2Picks() > 0) {
+      pickable.addAll(getAvailableCards(type, 2));
+    }
+    if (state.getPendingL3Picks() > 0) {
+      pickable.addAll(getAvailableCards(type, 3));
+    }
 
     // Filter out cards already owned
     pickable.removeIf(state.getActiveCards()::contains);

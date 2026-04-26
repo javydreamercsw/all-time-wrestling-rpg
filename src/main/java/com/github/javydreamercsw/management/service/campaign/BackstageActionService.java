@@ -252,7 +252,9 @@ public class BackstageActionService {
    * @return List of roll results.
    */
   public java.util.List<Integer> rollDice(int numberOfDice) {
-    if (numberOfDice <= 0) return new ArrayList<>();
+    if (numberOfDice <= 0) {
+      return new ArrayList<>();
+    }
     int[] diceConfig = new int[numberOfDice];
     Arrays.fill(diceConfig, 6); // All d6s
     DiceBag diceBag = new DiceBag(diceConfig);

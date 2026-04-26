@@ -332,7 +332,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
             // Save to narration
             String currentNarration = narrationArea.getValue();
-            if (currentNarration == null) currentNarration = "";
+            if (currentNarration == null) {
+              currentNarration = "";
+            }
             currentNarration += "\n\nYou: " + text + "\n" + opponent.getName() + ": " + retort;
             narrationArea.setValue(currentNarration.trim());
 
@@ -480,7 +482,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 if (result.success()) {
                   // Add action to feedback for next generation
                   String currentFeedback = feedbackArea.getValue();
-                  if (currentFeedback == null) currentFeedback = "";
+                  if (currentFeedback == null) {
+                    currentFeedback = "";
+                  }
                   feedbackArea.setValue(
                       currentFeedback + "\nIncorporate successful " + action.getName() + ".");
                 }
@@ -913,7 +917,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       // Check if this is a campaign match for any participant
       boolean isCampaignMatch = false;
       for (Wrestler w : segment.getWrestlers()) {
-        if (w == null) continue;
+        if (w == null) {
+          continue;
+        }
         var campaignOpt = campaignRepository.findActiveByWrestler(w);
         if (campaignOpt.isPresent()) {
           var campaign = campaignOpt.get();
