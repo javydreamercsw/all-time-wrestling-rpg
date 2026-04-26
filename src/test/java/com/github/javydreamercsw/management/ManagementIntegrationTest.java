@@ -101,7 +101,8 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
                 login(refreshedAccount);
               },
               () -> {
-                log.warn("Account not found during refresh: {}, context remains as is", username);
+                log.warn("Account not found during refresh: {}, clearing context", username);
+                clearSecurityContext();
               });
     }
   }

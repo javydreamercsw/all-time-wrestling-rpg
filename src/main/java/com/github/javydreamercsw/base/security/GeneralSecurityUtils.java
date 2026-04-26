@@ -95,6 +95,14 @@ public final class GeneralSecurityUtils {
       @NonNull String password,
       @NonNull String role) {
     SecurityContext originalContext = SecurityContextHolder.getContext();
+    Authentication currentAuth = originalContext.getAuthentication();
+
+    // If already authenticated as the requested user, just run the supplier
+    if (currentAuth != null && currentAuth.getName().equals(username)) {
+      log.trace("Already authenticated as '{}', skipping context switch", username);
+      return supplier.get();
+    }
+
     try {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
 

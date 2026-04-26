@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.AccountInitializer;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -50,6 +51,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   @PersistenceContext private EntityManager entityManager;
 
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
   @Transactional
   @Override
   public void clearRepositories() {
@@ -114,7 +116,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
 
     // Re-initialize accounts to ensure admin, booker, etc. are available
-    accountInitializer.init();
+    GeneralSecurityUtils.runAsAdmin(accountInitializer::init);
 
     entityManager.flush();
     entityManager.clear();

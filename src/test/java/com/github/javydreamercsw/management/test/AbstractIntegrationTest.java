@@ -80,6 +80,7 @@ import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
@@ -184,6 +185,8 @@ public abstract class AbstractIntegrationTest {
   @BeforeEach
   public void baseSetUp() throws Exception {
     log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
+
+    forceLoginAsAdmin();
 
     // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
     // during the REQUIRES_NEW transaction in clearAllRepositories
@@ -512,82 +515,99 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearAllRepositories() {
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          // 1. Reset sequence in a separate transaction first
-          transactionTemplate.setPropagationBehavior(
-              org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transactionTemplate.execute(
-              status1 -> {
-                try {
-                  entityManager
-                      .createNativeQuery(
-                          "ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-                      .executeUpdate();
-                  log.info("Reset wrestler_state sequence.");
-                } catch (Exception e) {
-                  log.trace("Could not reset sequence: {}", e.getMessage());
-                }
-                return null;
-              });
-          // 2. Perform cleanup and init in another separate transaction
-          transactionTemplate.execute(
-              status -> {
-                log.info("Cleaning up database using DatabaseCleanup...");
-                databaseCleanup.clearRepositories();
+    forceLoginAsAdmin();
+    ensureAuthenticatedUserExists();
+    forceLoginAsAdmin();
 
-                clearCache();
+    // 1. Reset sequence (H2 specific) - Try directly first
+    try {
+      entityManager.clear();
+      transactionTemplate.setPropagationBehavior(
+          org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      transactionTemplate.execute(
+          status -> {
+            forceLoginAsAdmin();
+            entityManager
+                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                .executeUpdate();
+            return null;
+          });
+    } catch (Exception e) {
+      log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
+    }
 
-                // Always ensure at least one universe exists for tests
-                // Re-create what V70 migration does since we cleared it
-                synchronized (AbstractIntegrationTest.class) {
-                  log.info("Creating default universe for test...");
-                  try {
-                    Universe newUniverse =
-                        Universe.builder()
-                            .name("Default Universe")
-                            .type(Universe.UniverseType.GLOBAL)
-                            .build();
-                    newUniverse = universeRepository.saveAndFlush(newUniverse);
-                    this.defaultUniverse = newUniverse;
-                    com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
-                    universeContextService.setCurrentUniverse(newUniverse);
-                  } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                    log.info(
-                        "Default universe already exists in integration test setup (caught"
-                            + " violation).");
-                    universeRepository
-                        .findByName("Default Universe")
-                        .ifPresent(
-                            u -> {
-                              this.defaultUniverse = u;
-                              com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                              universeContextService.setCurrentUniverse(u);
-                            });
-                  }
-                }
+    // 2. Perform cleanup and init
+    transactionTemplate.execute(
+        status -> {
+          forceLoginAsAdmin();
 
-                if (dataInitializerEnabled) {
-                  log.info("Re-initializing data using DataInitializer...");
-                  dataInitializer.init();
-                }
+          log.info("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
 
-                return null;
-              });
+          clearCache();
 
-          log.info("Database reset complete.");
+          // Always ensure at least one universe exists for tests
+          synchronized (AbstractIntegrationTest.class) {
+            try {
+              Universe newUniverse =
+                  Universe.builder()
+                      .name("Default Universe")
+                      .type(Universe.UniverseType.GLOBAL)
+                      .build();
+              newUniverse = universeRepository.saveAndFlush(newUniverse);
+              this.defaultUniverse = newUniverse;
+              com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
+              universeContextService.setCurrentUniverse(newUniverse);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+              universeRepository
+                  .findByName("Default Universe")
+                  .ifPresent(
+                      u -> {
+                        this.defaultUniverse = u;
+                        com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                        universeContextService.setCurrentUniverse(u);
+                      });
+            }
+          }
+
+          // 3. Re-initialize data
+          if (dataInitializerEnabled) {
+            dataInitializer.init();
+          }
+          return null;
         });
 
-    // Clear the entity manager to ensure the test transaction's L1 cache is refreshed
-    // with the newly committed data from the REQUIRES_NEW transaction.
+    // Clear the entity manager
     if (entityManager != null) {
-      log.info("Clearing EntityManager for the test transaction...");
       entityManager.clear();
     }
 
-    // Re-verify and refresh the authenticated user in the security context
-    ensureAuthenticatedUserExists();
-    refreshSecurityContext();
+    // Re-verify and refresh the authenticated user
+    forceLoginAsAdmin();
+  }
+
+  private void forceLoginAsAdmin() {
+    accountRepository
+        .findByUsername("admin")
+        .ifPresentOrElse(
+            account -> {
+              SecurityContext context = SecurityContextHolder.createEmptyContext();
+              List<SimpleGrantedAuthority> authorities =
+                  account.getRoles().stream()
+                      .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+                      .toList();
+              UsernamePasswordAuthenticationToken auth =
+                  new UsernamePasswordAuthenticationToken(
+                      account.getUsername(), account.getPassword(), authorities);
+              context.setAuthentication(auth);
+
+              // Set both to be safe, but log the action
+              SecurityContextHolder.setContext(context);
+              TestSecurityContextHolder.setContext(context);
+
+              log.debug("Force logged in as admin. Authorities: {}", authorities);
+            },
+            () -> log.error("CRITICAL: Admin account not found during force login!"));
   }
 
   protected void cleanupLeagues() {
