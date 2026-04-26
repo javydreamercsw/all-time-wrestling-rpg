@@ -152,7 +152,9 @@ public class RingsideActionComponent extends VerticalLayout {
           actions.stream()
               .filter(
                   a -> {
-                    if (targetAlignment == AlignmentType.HEEL) return true;
+                    if (targetAlignment == AlignmentType.HEEL) {
+                      return true;
+                    }
                     return a.getAlignment() != AlignmentType.HEEL;
                   })
               .toList();

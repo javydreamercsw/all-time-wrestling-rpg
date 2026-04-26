@@ -542,10 +542,12 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     if (wrestlersStart != -1) {
       // Find the end of the wrestlers block (either next section or end of string)
       int wrestlersEnd = prompt.length();
-      if (prompt.indexOf("\"venue\"", wrestlersStart) != -1)
+      if (prompt.indexOf("\"venue\"", wrestlersStart) != -1) {
         wrestlersEnd = Math.min(wrestlersEnd, prompt.indexOf("\"venue\"", wrestlersStart));
-      if (prompt.indexOf("\"npcs\"", wrestlersStart) != -1)
+      }
+      if (prompt.indexOf("\"npcs\"", wrestlersStart) != -1) {
         wrestlersEnd = Math.min(wrestlersEnd, prompt.indexOf("\"npcs\"", wrestlersStart));
+      }
 
       String wrestlersSection = prompt.substring(wrestlersStart, wrestlersEnd);
 

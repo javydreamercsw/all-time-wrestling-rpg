@@ -455,9 +455,15 @@ public class DramaEventService {
   private DramaEventSeverity getRandomSeverity() {
     // Weight the probabilities: Neutral most common, Major least common
     double roll = random.nextDouble();
-    if (roll < 0.4) return DramaEventSeverity.NEUTRAL;
-    if (roll < 0.7) return DramaEventSeverity.NEGATIVE;
-    if (roll < 0.9) return DramaEventSeverity.POSITIVE;
+    if (roll < 0.4) {
+      return DramaEventSeverity.NEUTRAL;
+    }
+    if (roll < 0.7) {
+      return DramaEventSeverity.NEGATIVE;
+    }
+    if (roll < 0.9) {
+      return DramaEventSeverity.POSITIVE;
+    }
     return DramaEventSeverity.MAJOR;
   }
 

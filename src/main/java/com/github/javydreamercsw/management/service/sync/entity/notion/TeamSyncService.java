@@ -251,21 +251,29 @@ public class TeamSyncService extends BaseSyncService {
 
   /** Extracts a single relation ID from a Notion property. */
   private String extractRelationId(Object property) {
-    if (property == null) return null;
+    if (property == null) {
+      return null;
+    }
     if (property instanceof String str) {
       if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
         return str;
       }
     } else if (property instanceof java.util.List<?> list && !list.isEmpty()) {
       Object first = list.get(0);
-      if (first instanceof String str) return str;
+      if (first instanceof String str) {
+        return str;
+      }
       if (first instanceof Map<?, ?> map) {
         Object id = map.get("id");
-        if (id instanceof String str) return str;
+        if (id instanceof String str) {
+          return str;
+        }
       }
     } else if (property instanceof Map<?, ?> map) {
       Object id = map.get("id");
-      if (id instanceof String str) return str;
+      if (id instanceof String str) {
+        return str;
+      }
     }
     return null;
   }
@@ -357,10 +365,16 @@ public class TeamSyncService extends BaseSyncService {
       team.setThemeSong(dto.getThemeSong());
       team.setArtist(dto.getArtist());
       team.setTeamFinisher(dto.getTeamFinisher());
-      if (dto.getStatus() != null) team.setStatus(dto.getStatus());
+      if (dto.getStatus() != null) {
+        team.setStatus(dto.getStatus());
+      }
 
-      if (wrestler1 != null) team.setWrestler1(wrestler1);
-      if (wrestler2 != null) team.setWrestler2(wrestler2);
+      if (wrestler1 != null) {
+        team.setWrestler1(wrestler1);
+      }
+      if (wrestler2 != null) {
+        team.setWrestler2(wrestler2);
+      }
 
       // Resolve relationships
       if (dto.getManagerExternalId() != null) {

@@ -79,9 +79,15 @@ public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownab
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     DeckCard deckCard = (DeckCard) o;
     return Objects.equals(deck, deckCard.deck)
         && Objects.equals(card, deckCard.card)

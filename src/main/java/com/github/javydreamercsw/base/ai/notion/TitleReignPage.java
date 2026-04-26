@@ -80,7 +80,9 @@ public class TitleReignPage extends NotionPage {
             ids.add(str);
           } else if (item instanceof Map<?, ?> map) {
             Object id = map.get("id");
-            if (id instanceof String str) ids.add(str);
+            if (id instanceof String str) {
+              ids.add(str);
+            }
           }
         }
       } else if (prop instanceof String str) {

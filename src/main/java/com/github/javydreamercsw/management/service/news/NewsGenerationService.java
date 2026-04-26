@@ -102,10 +102,14 @@ public class NewsGenerationService {
 
   @Transactional
   public boolean generateMonthlySynthesis() {
-    if (!gameSettingService.isAiNewsEnabled()) return false;
+    if (!gameSettingService.isAiNewsEnabled()) {
+      return false;
+    }
 
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
-    if (aiService == null || !aiService.isAvailable()) return false;
+    if (aiService == null || !aiService.isAvailable()) {
+      return false;
+    }
 
     EventAggregationService.MonthlySummary summary = aggregationService.getMonthlySummary();
     String context = aggregationService.formatMonthlySummary(summary);
@@ -175,10 +179,14 @@ public class NewsGenerationService {
 
   @Transactional
   public void generateNewsForShow(@NonNull Show show) {
-    if (!gameSettingService.isAiNewsEnabled()) return;
+    if (!gameSettingService.isAiNewsEnabled()) {
+      return;
+    }
 
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
-    if (aiService == null || !aiService.isAvailable()) return;
+    if (aiService == null || !aiService.isAvailable()) {
+      return;
+    }
 
     StringBuilder context = new StringBuilder();
     context.append("Show: ").append(show.getName()).append("\n");
@@ -194,7 +202,9 @@ public class NewsGenerationService {
           .append(": ")
           .append(winners)
           .append(" won");
-      if (s.getIsTitleSegment()) context.append(" (TITLE MATCH)");
+      if (s.getIsTitleSegment()) {
+        context.append(" (TITLE MATCH)");
+      }
       context.append("\n");
     }
 
@@ -209,7 +219,9 @@ public class NewsGenerationService {
 
   @Transactional(readOnly = true)
   public void rollForRumor() {
-    if (!gameSettingService.isAiNewsEnabled()) return;
+    if (!gameSettingService.isAiNewsEnabled()) {
+      return;
+    }
 
     int chance = gameSettingService.getNewsRumorChance();
     if (random.nextInt(100) < chance) {
@@ -276,10 +288,14 @@ public class NewsGenerationService {
 
   public boolean isNewsWorthy(@NonNull Segment segment) {
     // 1. Title matches are always news-worthy
-    if (segment.getIsTitleSegment()) return true;
+    if (segment.getIsTitleSegment()) {
+      return true;
+    }
 
     // 2. Main events are news-worthy
-    if (segment.isMainEvent()) return true;
+    if (segment.isMainEvent()) {
+      return true;
+    }
 
     // 3. New injuries are news-worthy
     boolean hasInjuries =
@@ -289,7 +305,9 @@ public class NewsGenerationService {
                     !injuryRepository
                         .findByWrestlerAndInjuryDate(w, segment.getSegmentDate())
                         .isEmpty());
-    if (hasInjuries) return true;
+    if (hasInjuries) {
+      return true;
+    }
 
     // 4. Rivalry conclusions or high heat could be added here later
 

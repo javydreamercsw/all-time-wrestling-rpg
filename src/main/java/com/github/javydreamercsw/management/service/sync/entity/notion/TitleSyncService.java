@@ -239,7 +239,9 @@ public class TitleSyncService extends BaseSyncService {
             .getCurrentReign()
             .ifPresent(
                 reign -> {
-                  if (reign.getStartDate() == null) reign.setStartDate(java.time.Instant.now());
+                  if (reign.getStartDate() == null) {
+                    reign.setStartDate(java.time.Instant.now());
+                  }
                   syncServiceDependencies.getTitleReignRepository().saveAndFlush(reign);
                 });
       }

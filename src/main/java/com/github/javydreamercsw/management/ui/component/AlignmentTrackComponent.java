@@ -140,10 +140,15 @@ public class AlignmentTrackComponent extends Div {
             || (level == 0 && currentType == AlignmentType.NEUTRAL);
 
     if (isCurrent) {
-      if (spotType == AlignmentType.HEEL) spot.getStyle().set("background-color", "#f44336");
-      else if (spotType == AlignmentType.FACE) spot.getStyle().set("background-color", "#4caf50");
-      else spot.getStyle().set("background-color", "#9e9e9e"); // Neutral
+      if (spotType == AlignmentType.HEEL) {
+        spot.getStyle().set("background-color", "#f44336"); // Neutral
 
+      } else if (spotType == AlignmentType.FACE) {
+        spot.getStyle().set("background-color", "#4caf50"); // Neutral
+
+      } else {
+        spot.getStyle().set("background-color", "#9e9e9e"); // Neutral
+      }
       spot.getStyle().set("color", "white");
       spot.getStyle().set("transform", "scale(1.4)");
       spot.getStyle().set("box-shadow", "0 0 15px rgba(0,0,0,0.3)");
@@ -170,14 +175,26 @@ public class AlignmentTrackComponent extends Div {
   }
 
   private String getTooltipForMilestone(AlignmentType type, int level) {
-    if (level == 0) return "Starting Point: Neutral";
-    if (level == 1) return "Milestone: Pick your first Level 1 Ability Card.";
+    if (level == 0) {
+      return "Starting Point: Neutral";
+    }
+    if (level == 1) {
+      return "Milestone: Pick your first Level 1 Ability Card.";
+    }
     if (type == AlignmentType.FACE) {
-      if (level == 4) return "Milestone: Unlock a Level 2 Ability Card.";
-      if (level == 5) return "Milestone: Unlock Level 3 Finisher! (Lose 1 Level 1 card)";
+      if (level == 4) {
+        return "Milestone: Unlock a Level 2 Ability Card.";
+      }
+      if (level == 5) {
+        return "Milestone: Unlock Level 3 Finisher! (Lose 1 Level 1 card)";
+      }
     } else if (type == AlignmentType.HEEL) {
-      if (level == 4) return "Milestone: Unlock Level 2 Ability Card. (Lose 1 Level 1 card)";
-      if (level == 5) return "Milestone: Regain lost slot with another Level 1 Ability.";
+      if (level == 4) {
+        return "Milestone: Unlock Level 2 Ability Card. (Lose 1 Level 1 card)";
+      }
+      if (level == 5) {
+        return "Milestone: Regain lost slot with another Level 1 Ability.";
+      }
     }
     return "";
   }

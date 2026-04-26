@@ -106,7 +106,9 @@ public class SeasonStatsService {
   }
 
   private boolean isMatch(Segment segment) {
-    if (segment.getSegmentType() == null) return false;
+    if (segment.getSegmentType() == null) {
+      return false;
+    }
     String typeName = segment.getSegmentType().getName().toLowerCase();
     return !typeName.contains("promo")
         && !typeName.contains("beatdown")

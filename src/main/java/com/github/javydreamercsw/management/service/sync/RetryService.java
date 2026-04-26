@@ -55,7 +55,9 @@ public class RetryService {
         return callable.call(attempt);
       } catch (SocketTimeoutException e) {
         lastException = e;
-        if (attempt == maxAttempts) throw e;
+        if (attempt == maxAttempts) {
+          throw e;
+        }
         log.warn(
             "Attempt {}/{} failed for {} due to timeout, retrying in {}ms: {}",
             attempt,
@@ -70,7 +72,9 @@ public class RetryService {
 
         // Handle 429 rate limiting with Retry-After header
         if (isRateLimitError(e)) {
-          if (attempt == maxAttempts) throw e;
+          if (attempt == maxAttempts) {
+            throw e;
+          }
 
           long retryAfterMs = extractRetryAfterDelay(e);
           if (retryAfterMs > 0) {
@@ -95,7 +99,9 @@ public class RetryService {
           }
         } else if (e.getMessage().contains("rate_limited")) {
           // Fallback for other rate limiting errors
-          if (attempt == maxAttempts) throw e;
+          if (attempt == maxAttempts) {
+            throw e;
+          }
           log.warn(
               "Attempt {}/{} failed for {} due to rate limiting, retrying in {}ms: {}",
               attempt,

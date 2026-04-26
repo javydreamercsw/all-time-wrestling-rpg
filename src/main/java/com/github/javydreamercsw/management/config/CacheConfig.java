@@ -222,7 +222,9 @@ public class CacheConfig {
       sb.append(method.getName()).append("(");
 
       for (int i = 0; i < params.length; i++) {
-        if (i > 0) sb.append(",");
+        if (i > 0) {
+          sb.append(",");
+        }
         if (params[i] != null) {
           sb.append(params[i].toString());
         } else {

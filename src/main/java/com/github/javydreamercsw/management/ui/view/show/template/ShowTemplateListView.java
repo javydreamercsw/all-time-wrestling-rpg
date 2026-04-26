@@ -409,7 +409,9 @@ public class ShowTemplateListView extends Main {
     editWeekOfMonth.setItems(1, 2, 3, 4, -1);
     editWeekOfMonth.setItemLabelGenerator(
         i -> {
-          if (i == -1) return "Last";
+          if (i == -1) {
+            return "Last";
+          }
           return switch (i) {
             case 1 -> "First";
             case 2 -> "Second";
@@ -431,7 +433,9 @@ public class ShowTemplateListView extends Main {
     editGenderConstraint.setItems(Gender.values());
     editGenderConstraint.setItemLabelGenerator(
         g -> {
-          if (g == null) return "Both";
+          if (g == null) {
+            return "Both";
+          }
           return g.name();
         });
     editGenderConstraint.setPlaceholder("Both (No constraint)");

@@ -111,27 +111,38 @@ public class TeamNotionHandler {
   private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(
       Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
     TeamPage.NotionProperties props = new TeamPage.NotionProperties();
-    if (notionProperties == null) return props;
-    if (notionProperties.containsKey("Member 1"))
+    if (notionProperties == null) {
+      return props;
+    }
+    if (notionProperties.containsKey("Member 1")) {
       props.setMembers(toProperty(notionProperties.get("Member 1")));
-    if (notionProperties.containsKey("Leader"))
+    }
+    if (notionProperties.containsKey("Leader")) {
       props.setLeader(toProperty(notionProperties.get("Leader")));
-    if (notionProperties.containsKey("TeamType"))
+    }
+    if (notionProperties.containsKey("TeamType")) {
       props.setTeamType(toProperty(notionProperties.get("TeamType")));
-    if (notionProperties.containsKey("Status"))
+    }
+    if (notionProperties.containsKey("Status")) {
       props.setStatus(toProperty(notionProperties.get("Status")));
-    if (notionProperties.containsKey("FormedDate"))
+    }
+    if (notionProperties.containsKey("FormedDate")) {
       props.setFormedDate(toProperty(notionProperties.get("FormedDate")));
-    if (notionProperties.containsKey("DisbandedDate"))
+    }
+    if (notionProperties.containsKey("DisbandedDate")) {
       props.setDisbandedDate(toProperty(notionProperties.get("DisbandedDate")));
-    if (notionProperties.containsKey("Faction"))
+    }
+    if (notionProperties.containsKey("Faction")) {
       props.setFaction(toProperty(notionProperties.get("Faction")));
+    }
     return props;
   }
 
   /** Converts a Notion PageProperty to a TeamPage.Property. */
   private TeamPage.Property toProperty(notion.api.v1.model.pages.PageProperty pageProperty) {
-    if (pageProperty == null) return null;
+    if (pageProperty == null) {
+      return null;
+    }
     TeamPage.Property property = new TeamPage.Property();
     property.setId(pageProperty.getId());
     property.setType(pageProperty.getType() != null ? pageProperty.getType().getValue() : null);

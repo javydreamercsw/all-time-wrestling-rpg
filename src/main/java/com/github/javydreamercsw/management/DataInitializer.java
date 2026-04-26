@@ -847,13 +847,25 @@ public class DataInitializer implements Initializable {
                   }
                 }
 
-                if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
+                if (w.getDrive() != null) {
+                  existingWrestler.setDrive(w.getDrive());
+                }
+                if (w.getResilience() != null) {
+                  existingWrestler.setResilience(w.getResilience());
+                }
+                if (w.getCharisma() != null) {
+                  existingWrestler.setCharisma(w.getCharisma());
+                }
+                if (w.getBrawl() != null) {
+                  existingWrestler.setBrawl(w.getBrawl());
+                }
 
-                if (existingWrestler.getActive() == null) existingWrestler.setActive(true);
-                if (existingWrestler.getIsPlayer() == null) existingWrestler.setIsPlayer(false);
+                if (existingWrestler.getActive() == null) {
+                  existingWrestler.setActive(true);
+                }
+                if (existingWrestler.getIsPlayer() == null) {
+                  existingWrestler.setIsPlayer(false);
+                }
 
                 wrestlerRepository.save(existingWrestler);
                 log.debug("Updated existing wrestler: {}", existingWrestler.getName());
@@ -887,10 +899,18 @@ public class DataInitializer implements Initializable {
                     newWrestler.setManager(manager);
                   }
                 }
-                if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
+                if (w.getDrive() != null) {
+                  newWrestler.setDrive(w.getDrive());
+                }
+                if (w.getResilience() != null) {
+                  newWrestler.setResilience(w.getResilience());
+                }
+                if (w.getCharisma() != null) {
+                  newWrestler.setCharisma(w.getCharisma());
+                }
+                if (w.getBrawl() != null) {
+                  newWrestler.setBrawl(w.getBrawl());
+                }
 
                 wrestlerRepository.save(newWrestler);
                 log.debug("Saved new wrestler: {}", newWrestler.getName());
