@@ -202,7 +202,9 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @JsonIgnore
   public java.util.Optional<WrestlerState> getState(Long universeId) {
-    if (universeId == null) return java.util.Optional.empty();
+    if (universeId == null) {
+      return java.util.Optional.empty();
+    }
     return wrestlerStates.stream()
         .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
         .findFirst();
@@ -222,7 +224,9 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @JsonIgnore
   public Long getFans(Long universeId) {
-    if (universeId == null) return 0L;
+    if (universeId == null) {
+      return 0L;
+    }
     return wrestlerStates.stream()
         .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
         .map(WrestlerState::getFans)

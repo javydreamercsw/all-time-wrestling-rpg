@@ -191,14 +191,26 @@ public class AlignmentService {
     state.setPendingL3Picks(0);
 
     if (type == AlignmentType.FACE) {
-      if (level >= 1 && level < 5) state.setPendingL1Picks(1);
-      if (level >= 4) state.setPendingL2Picks(1);
-      if (level >= 5) state.setPendingL3Picks(1);
+      if (level >= 1 && level < 5) {
+        state.setPendingL1Picks(1);
+      }
+      if (level >= 4) {
+        state.setPendingL2Picks(1);
+      }
+      if (level >= 5) {
+        state.setPendingL3Picks(1);
+      }
     } else {
       // HEEL
-      if (level >= 1 && level < 4) state.setPendingL1Picks(1);
-      if (level >= 4) state.setPendingL2Picks(1);
-      if (level >= 5) state.setPendingL1Picks(1); // Regain L1 slot
+      if (level >= 1 && level < 4) {
+        state.setPendingL1Picks(1);
+      }
+      if (level >= 4) {
+        state.setPendingL2Picks(1);
+      }
+      if (level >= 5) {
+        state.setPendingL1Picks(1); // Regain L1 slot
+      }
     }
   }
 }

@@ -149,8 +149,12 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
     StringBuilder hpTooltip = new StringBuilder();
     hpTooltip.append("Base Health: ").append(wrestler.getStartingHealth());
 
-    if (bonus > 0) hpTooltip.append("\nCampaign Bonus: +").append(bonus);
-    if (penalty > 0) hpTooltip.append("\nCampaign Penalty: -").append(penalty);
+    if (bonus > 0) {
+      hpTooltip.append("\nCampaign Bonus: +").append(bonus);
+    }
+    if (penalty > 0) {
+      hpTooltip.append("\nCampaign Penalty: -").append(penalty);
+    }
 
     if (state.getBumps() > 0) {
       hpTooltip.append("\nBump Penalty: -").append(state.getBumps());

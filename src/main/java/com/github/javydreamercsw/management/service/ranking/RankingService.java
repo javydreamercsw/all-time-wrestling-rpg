@@ -280,7 +280,9 @@ public class RankingService {
   @PreAuthorize("isAuthenticated()")
   public List<ChampionDTO> getCurrentChampions(@NonNull Long championshipId) {
     Optional<Title> titleOpt = titleRepository.findById(championshipId);
-    if (titleOpt.isEmpty()) return Collections.emptyList();
+    if (titleOpt.isEmpty()) {
+      return Collections.emptyList();
+    }
     Title title = titleOpt.get();
     final Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
 

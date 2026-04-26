@@ -19,8 +19,11 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
@@ -30,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -166,13 +168,106 @@ public class TeamSyncService extends BaseSyncService {
             .getNotionPageDataExtractor()
             .extractRelationIds(teamPage, "Members"));
 
+    // Fallback to Member 1 and Member 2 if Members is empty
+    if (dto.getMemberExternalIds().isEmpty()) {
+      dto.setWrestler1ExternalId(extractRelationId(rawProperties.get("Member 1")));
+      dto.setWrestler2ExternalId(extractRelationId(rawProperties.get("Member 2")));
+    }
+
+    // Fallback to names if IDs aren't present (less reliable but preserves old behavior)
+    if (dto.getMemberExternalIds().isEmpty() && dto.getWrestler1ExternalId() == null) {
+      dto.setWrestler1Name(extractWrestlerNameFromTeamPage(teamPage, "Member 1"));
+    }
+    if (dto.getMemberExternalIds().isEmpty() && dto.getWrestler2ExternalId() == null) {
+      dto.setWrestler2Name(extractWrestlerNameFromTeamPage(teamPage, "Member 2"));
+    }
+
+    // Extract relationship IDs
+    dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
+    String factionId = extractRelationId(rawProperties.get("Faction"));
+    if (factionId != null) {
+      dto.setFactionName(factionId); // Using ID as placeholder
+    }
+
+    // Extract new fields
+    Object themeSongObj = rawProperties.get("Theme Song");
+    if (themeSongObj instanceof String) {
+      dto.setThemeSong((String) themeSongObj);
+    }
+
+    Object artistObj = rawProperties.get("Artist");
+    if (artistObj instanceof String) {
+      dto.setArtist((String) artistObj);
+    }
+
+    Object teamFinisherObj = rawProperties.get("Team Finisher");
+    if (teamFinisherObj instanceof String) {
+      dto.setTeamFinisher((String) teamFinisherObj);
+    }
+
+    // Extract status
+    Object statusObj = rawProperties.get("Status");
+    if (statusObj instanceof Boolean) {
+      dto.setStatus((Boolean) statusObj ? TeamStatus.ACTIVE : TeamStatus.INACTIVE);
+    } else {
+      dto.setStatus(TeamStatus.ACTIVE); // Default status
+    }
+
     // Description/Narration (from page content)
     dto.setDescription(
         syncServiceDependencies
             .getNotionPageDataExtractor()
             .extractDescriptionFromNotionPage(teamPage));
 
+    log.debug("Successfully converted team page '{}' to DTO", dto.getName());
     return dto;
+  }
+
+  /** Extracts a single relation ID from a Notion property. */
+  private String extractRelationId(Object property) {
+    switch (property) {
+      case null -> {
+        return null;
+      }
+      case String str -> {
+        if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+          return str;
+        }
+      }
+      case List<?> list when !list.isEmpty() -> {
+        Object first = list.getFirst();
+        if (first instanceof String str) {
+          return str;
+        }
+        if (first instanceof Map<?, ?> map) {
+          Object id = map.get("id");
+          if (id instanceof String str) {
+            return str;
+          }
+        }
+      }
+      case Map<?, ?> map -> {
+        Object id = map.get("id");
+        if (id instanceof String str) {
+          return str;
+        }
+      }
+      default -> {}
+    }
+    return null;
+  }
+
+  /** Extracts wrestler name from team page with enhanced relation handling. */
+  private String extractWrestlerNameFromTeamPage(
+      @NonNull TeamPage teamPage, @NonNull String propertyName) {
+    if (teamPage.getRawProperties() == null) {
+      return null;
+    }
+
+    // Use NotionPageDataExtractor to get the property string
+    return syncServiceDependencies
+        .getNotionPageDataExtractor()
+        .extractPropertyAsString(teamPage.getRawProperties(), propertyName);
   }
 
   /** Saves a single team DTO to the database. */
@@ -225,16 +320,91 @@ public class TeamSyncService extends BaseSyncService {
       }
 
       // Resolve Members (Team expects exactly 2 wrestlers)
-      if (dto.getMemberExternalIds() != null && dto.getMemberExternalIds().size() >= 2) {
-        Optional<Wrestler> w1 = wrestlerService.findByExternalId(dto.getMemberExternalIds().get(0));
-        Optional<Wrestler> w2 = wrestlerService.findByExternalId(dto.getMemberExternalIds().get(1));
+      Wrestler wrestler1 = null;
+      Wrestler wrestler2 = null;
 
-        if (w1.isPresent() && !w1.get().equals(team.getWrestler1())) {
-          team.setWrestler1(w1.get());
+      if (dto.getMemberExternalIds() != null && dto.getMemberExternalIds().size() >= 2) {
+        wrestler1 =
+            wrestlerService.findByExternalId(dto.getMemberExternalIds().get(0)).orElse(null);
+        wrestler2 =
+            wrestlerService.findByExternalId(dto.getMemberExternalIds().get(1)).orElse(null);
+      }
+
+      // Fallback to individual external IDs
+      if (wrestler1 == null && dto.getWrestler1ExternalId() != null) {
+        wrestler1 = wrestlerService.findByExternalId(dto.getWrestler1ExternalId()).orElse(null);
+      }
+      if (wrestler2 == null && dto.getWrestler2ExternalId() != null) {
+        wrestler2 = wrestlerService.findByExternalId(dto.getWrestler2ExternalId()).orElse(null);
+      }
+
+      // Fallback to names
+      if (wrestler1 == null && dto.getWrestler1Name() != null) {
+        wrestler1 = wrestlerService.findByName(dto.getWrestler1Name()).orElse(null);
+      }
+      if (wrestler2 == null && dto.getWrestler2Name() != null) {
+        wrestler2 = wrestlerService.findByName(dto.getWrestler2Name()).orElse(null);
+      }
+
+      if (wrestler1 != null && !Objects.equals(wrestler1, team.getWrestler1())) {
+        team.setWrestler1(wrestler1);
+        changed = true;
+      }
+      if (wrestler2 != null && !Objects.equals(wrestler2, team.getWrestler2())) {
+        team.setWrestler2(wrestler2);
+        changed = true;
+      }
+
+      // Update basic fields
+      if (!Objects.equals(team.getThemeSong(), dto.getThemeSong())) {
+        team.setThemeSong(dto.getThemeSong());
+        changed = true;
+      }
+      if (!Objects.equals(team.getArtist(), dto.getArtist())) {
+        team.setArtist(dto.getArtist());
+        changed = true;
+      }
+      if (!Objects.equals(team.getTeamFinisher(), dto.getTeamFinisher())) {
+        team.setTeamFinisher(dto.getTeamFinisher());
+        changed = true;
+      }
+      if (dto.getStatus() != null && !Objects.equals(team.getStatus(), dto.getStatus())) {
+        team.setStatus(dto.getStatus());
+        changed = true;
+      }
+
+      // Resolve relationships
+      if (dto.getManagerExternalId() != null) {
+        Npc manager =
+            syncServiceDependencies
+                .getNpcRepository()
+                .findByExternalId(dto.getManagerExternalId())
+                .orElse(null);
+        if (manager != null && !Objects.equals(team.getManager(), manager)) {
+          team.setManager(manager);
           changed = true;
         }
-        if (w2.isPresent() && !w2.get().equals(team.getWrestler2())) {
-          team.setWrestler2(w2.get());
+      }
+
+      if (dto.getFactionName() != null) {
+        Faction faction = null;
+        // If it's a UUID, resolve by external ID
+        if (dto.getFactionName()
+            .matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+          faction =
+              syncServiceDependencies
+                  .getFactionRepository()
+                  .findByExternalId(dto.getFactionName())
+                  .orElse(null);
+        } else {
+          faction =
+              syncServiceDependencies
+                  .getFactionRepository()
+                  .findByName(dto.getFactionName())
+                  .orElse(null);
+        }
+        if (faction != null && !Objects.equals(team.getFaction(), faction)) {
+          team.setFaction(faction);
           changed = true;
         }
       }
@@ -269,5 +439,15 @@ public class TeamSyncService extends BaseSyncService {
     private String description;
     private String externalId; // Notion page ID
     private List<String> memberExternalIds = new ArrayList<>();
+    private String wrestler1ExternalId;
+    private String wrestler2ExternalId;
+    private String wrestler1Name;
+    private String wrestler2Name;
+    private String managerExternalId;
+    private String factionName;
+    private String themeSong;
+    private String artist;
+    private String teamFinisher;
+    private TeamStatus status;
   }
 }

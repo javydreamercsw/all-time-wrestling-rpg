@@ -186,8 +186,12 @@ class MatchPromoUITest extends AbstractViewTest {
         .thenAnswer(
             invocation -> {
               Long wrestlerId = invocation.getArgument(0);
-              if (wrestlerId == 1L) return playerWrestler.getState(1L).orElseThrow();
-              if (wrestlerId == 2L) return opponent.getState(1L).orElseThrow();
+              if (wrestlerId == 1L) {
+                return playerWrestler.getState(1L).orElseThrow();
+              }
+              if (wrestlerId == 2L) {
+                return opponent.getState(1L).orElseThrow();
+              }
               throw new RuntimeException("Unexpected wrestler ID: " + wrestlerId);
             });
     when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
@@ -248,7 +252,9 @@ class MatchPromoUITest extends AbstractViewTest {
         .thenAnswer(
             invocation -> {
               Long wrestlerId = invocation.getArgument(0);
-              if (wrestlerId == 3L) return playerWrestler.getState(1L).orElseThrow();
+              if (wrestlerId == 3L) {
+                return playerWrestler.getState(1L).orElseThrow();
+              }
               throw new RuntimeException("Unexpected wrestler ID: " + wrestlerId);
             });
     // No campaign

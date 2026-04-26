@@ -182,16 +182,24 @@ public class InjurySyncService extends BaseSyncService {
       dto.setHealedDate((String) props.get("Healed Date"));
 
       Object costObj = props.get("Healing Cost");
-      if (costObj instanceof Number n) dto.setHealingCost(n.longValue());
+      if (costObj instanceof Number n) {
+        dto.setHealingCost(n.longValue());
+      }
 
       Object hPenalty = props.get("Health Penalty");
-      if (hPenalty instanceof Number n) dto.setHealthPenalty(n.intValue());
+      if (hPenalty instanceof Number n) {
+        dto.setHealthPenalty(n.intValue());
+      }
 
       Object sPenalty = props.get("Stamina Penalty");
-      if (sPenalty instanceof Number n) dto.setStaminaPenalty(n.intValue());
+      if (sPenalty instanceof Number n) {
+        dto.setStaminaPenalty(n.intValue());
+      }
 
       Object handPenalty = props.get("Hand Size Penalty");
-      if (handPenalty instanceof Number n) dto.setHandSizePenalty(n.intValue());
+      if (handPenalty instanceof Number n) {
+        dto.setHandSizePenalty(n.intValue());
+      }
 
       dto.setInjuryNotes((String) props.get("Injury Notes"));
       dto.setDescription(

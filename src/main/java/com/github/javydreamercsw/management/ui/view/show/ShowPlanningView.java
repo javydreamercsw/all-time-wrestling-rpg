@@ -302,7 +302,9 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private void loadContext() {
     Show show = showComboBox.getValue();
-    if (show == null) return;
+    if (show == null) {
+      return;
+    }
 
     try {
       ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
@@ -318,7 +320,9 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private void proposeSegments() {
     Show show = showComboBox.getValue();
-    if (show == null) return;
+    if (show == null) {
+      return;
+    }
 
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       notificationService.showError("No AI providers available.");
@@ -340,7 +344,9 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private void approvePlanning() {
     Show show = showComboBox.getValue();
-    if (show == null || segments.isEmpty()) return;
+    if (show == null || segments.isEmpty()) {
+      return;
+    }
 
     try {
       showPlanningService.approveSegments(show, segments);

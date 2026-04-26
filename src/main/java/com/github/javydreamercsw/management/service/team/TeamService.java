@@ -238,8 +238,12 @@ public class TeamService {
       return Optional.empty();
     }
 
-    if (name != null) team.setName(name);
-    if (description != null) team.setDescription(description);
+    if (name != null) {
+      team.setName(name);
+    }
+    if (description != null) {
+      team.setDescription(description);
+    }
     if (status != null) {
       team.setStatus(status);
       if (status == TeamStatus.DISBANDED) {

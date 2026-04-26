@@ -767,11 +767,21 @@ public class SegmentAdjudicationService {
     int roll = d20.roll();
 
     // 1-20 roll mapped to 0-100 base rating
-    if (roll <= 5) return roll * 4; // 1-5 -> 4-20
-    if (roll <= 10) return 20 + (roll - 5) * 6; // 6-10 -> 26-50
-    if (roll <= 15) return 50 + (roll - 10) * 6; // 11-15 -> 56-80
-    if (roll <= 18) return 80 + (roll - 15) * 5; // 16-18 -> 85-95
-    if (roll == 19) return 96 + random.nextInt(2); // 96-97
+    if (roll <= 5) {
+      return roll * 4; // 1-5 -> 4-20
+    }
+    if (roll <= 10) {
+      return 20 + (roll - 5) * 6; // 6-10 -> 26-50
+    }
+    if (roll <= 15) {
+      return 50 + (roll - 10) * 6; // 11-15 -> 56-80
+    }
+    if (roll <= 18) {
+      return 80 + (roll - 15) * 5; // 16-18 -> 85-95
+    }
+    if (roll == 19) {
+      return 96 + random.nextInt(2); // 96-97
+    }
     return 98 + random.nextInt(3); // 98-100
   }
 }

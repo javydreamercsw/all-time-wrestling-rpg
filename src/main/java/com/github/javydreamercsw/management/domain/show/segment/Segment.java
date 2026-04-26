@@ -191,14 +191,18 @@ public class Segment extends AbstractSyncableEntity<Long> {
 
   /** Get all wrestlers participating in the segment. */
   public List<Wrestler> getWrestlers() {
-    if (participants == null) return new ArrayList<>();
+    if (participants == null) {
+      return new ArrayList<>();
+    }
     return participants.stream()
         .map(SegmentParticipant::getWrestler)
         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getWinners() {
-    if (participants == null) return new ArrayList<>();
+    if (participants == null) {
+      return new ArrayList<>();
+    }
     return participants.stream()
         .filter(SegmentParticipant::getIsWinner)
         .map(SegmentParticipant::getWrestler)
@@ -206,7 +210,9 @@ public class Segment extends AbstractSyncableEntity<Long> {
   }
 
   public List<Wrestler> getLosers() {
-    if (participants == null) return new ArrayList<>();
+    if (participants == null) {
+      return new ArrayList<>();
+    }
     return participants.stream()
         .filter(participant -> !participant.getIsWinner())
         .map(SegmentParticipant::getWrestler)
@@ -214,17 +220,23 @@ public class Segment extends AbstractSyncableEntity<Long> {
   }
 
   public Set<SegmentRule> getSegmentRules() {
-    if (segmentRules == null) segmentRules = new HashSet<>();
+    if (segmentRules == null) {
+      segmentRules = new HashSet<>();
+    }
     return segmentRules;
   }
 
   public Set<Title> getTitles() {
-    if (titles == null) titles = new HashSet<>();
+    if (titles == null) {
+      titles = new HashSet<>();
+    }
     return titles;
   }
 
   public void setWinners(List<Wrestler> winners) {
-    if (participants == null) participants = new HashSet<>();
+    if (participants == null) {
+      participants = new HashSet<>();
+    }
     if (winners == null || winners.isEmpty()) {
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(false);

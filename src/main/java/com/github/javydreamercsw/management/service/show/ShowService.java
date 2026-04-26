@@ -349,9 +349,15 @@ public class ShowService {
         .findById(id)
         .map(
             show -> {
-              if (name != null) show.setName(name);
-              if (description != null) show.setDescription(description);
-              if (showDate != null) show.setShowDate(showDate);
+              if (name != null) {
+                show.setName(name);
+              }
+              if (description != null) {
+                show.setDescription(description);
+              }
+              if (showDate != null) {
+                show.setShowDate(showDate);
+              }
 
               if (showTypeId != null) {
                 ShowType showType =
@@ -492,10 +498,14 @@ public class ShowService {
   }
 
   private void processGmModeUpdates(Show show, Set<Long> participatingWrestlerIds) {
-    if (show.getUniverse() == null) return;
+    if (show.getUniverse() == null) {
+      return;
+    }
 
     League league = leagueRepository.findByUniverse(show.getUniverse()).orElse(null);
-    if (league == null) return;
+    if (league == null) {
+      return;
+    }
 
     Long universeId = show.getUniverse().getId();
 

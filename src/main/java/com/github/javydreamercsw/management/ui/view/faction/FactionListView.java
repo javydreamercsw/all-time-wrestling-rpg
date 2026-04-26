@@ -283,7 +283,9 @@ public class FactionListView extends VerticalLayout {
 
     // Fetch fresh faction data to ensure members are loaded
     Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
-    if (updatedFaction.isEmpty()) return;
+    if (updatedFaction.isEmpty()) {
+      return;
+    }
 
     Faction loadedFaction = updatedFaction.get();
     dialog.setHeaderTitle(

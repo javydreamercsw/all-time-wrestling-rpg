@@ -34,7 +34,9 @@ public class TitleEffectContext {
 
   public void gainInitiative() {
     String instr = segmentContext.getInstructions();
-    if (instr == null) instr = "";
+    if (instr == null) {
+      instr = "";
+    }
     instr +=
         "\n\nIMPORTANT: The champion, "
             + champion.getName()
@@ -47,7 +49,9 @@ public class TitleEffectContext {
     champion.setHealth(champion.getHealth() + amount);
 
     String instr = segmentContext.getInstructions();
-    if (instr == null) instr = "";
+    if (instr == null) {
+      instr = "";
+    }
     instr +=
         "\n\nNOTE: "
             + champion.getName()
@@ -60,7 +64,9 @@ public class TitleEffectContext {
 
   public void modifyRoll(int modifier) {
     String instr = segmentContext.getInstructions();
-    if (instr == null) instr = "";
+    if (instr == null) {
+      instr = "";
+    }
     instr +=
         "\n\nNOTE: "
             + champion.getName()

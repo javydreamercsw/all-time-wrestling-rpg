@@ -339,7 +339,9 @@ class TeamServiceTest extends ManagementIntegrationTest {
         .allMatch(
             team -> {
               Assertions.assertNotNull(team.getWrestler1().getId());
-              if (team.getWrestler1().getId().equals(wrestler1.getId())) return true;
+              if (team.getWrestler1().getId().equals(wrestler1.getId())) {
+                return true;
+              }
               Assertions.assertNotNull(team.getWrestler2().getId());
               return team.getWrestler2().getId().equals(wrestler1.getId());
             });

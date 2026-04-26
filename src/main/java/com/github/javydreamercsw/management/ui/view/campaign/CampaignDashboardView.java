@@ -132,7 +132,9 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private boolean getFeatureBoolean(@NonNull CampaignState state, @NonNull String key) {
-    if (state.getFeatureData() == null) return false;
+    if (state.getFeatureData() == null) {
+      return false;
+    }
     try {
       java.util.Map<String, Object> data =
           objectMapper.readValue(
@@ -454,7 +456,9 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void addStorylineSection(@NonNull CampaignState state, @NonNull VerticalLayout parent) {
-    if (state.getActiveStoryline() == null) return;
+    if (state.getActiveStoryline() == null) {
+      return;
+    }
 
     com.github.javydreamercsw.management.domain.campaign.CampaignStoryline storyline =
         state.getActiveStoryline();
@@ -575,7 +579,9 @@ public class CampaignDashboardView extends VerticalLayout {
 
   private void addSkillUpgradesSection(@NonNull Campaign campaign, @NonNull VerticalLayout parent) {
     CampaignState state = campaign.getState();
-    if (state.getSkillTokens() < 8) return;
+    if (state.getSkillTokens() < 8) {
+      return;
+    }
 
     VerticalLayout upgradeSection = new VerticalLayout();
     upgradeSection.setPadding(true);
@@ -767,7 +773,9 @@ public class CampaignDashboardView extends VerticalLayout {
     List<com.github.javydreamercsw.management.domain.campaign.CampaignStoryline> history =
         campaignService.getStorylineHistory(currentCampaign);
 
-    if (history.isEmpty()) return;
+    if (history.isEmpty()) {
+      return;
+    }
 
     VerticalLayout journalContent = new VerticalLayout();
     journalContent.setPadding(true);

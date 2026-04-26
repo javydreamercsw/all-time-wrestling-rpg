@@ -331,7 +331,9 @@ public class ShowBookingService {
 
     int bookedSegments = 0;
     for (Rivalry rivalry : activeRivalries) {
-      if (bookedSegments >= maxSegments) break;
+      if (bookedSegments >= maxSegments) {
+        break;
+      }
 
       Wrestler wrestler1 = rivalry.getWrestler1();
       Wrestler wrestler2 = rivalry.getWrestler2();
@@ -369,7 +371,9 @@ public class ShowBookingService {
 
     int bookedSegments = 0;
     for (Rivalry rivalry : highHeatRivalries) {
-      if (bookedSegments >= maxSegments) break;
+      if (bookedSegments >= maxSegments) {
+        break;
+      }
 
       Wrestler wrestler1 = rivalry.getWrestler1();
       Wrestler wrestler2 = rivalry.getWrestler2();
@@ -658,7 +662,9 @@ public class ShowBookingService {
   /** Check if a segment involves wrestlers with an active rivalry. */
   private boolean isRivalrySegment(Segment segment) {
     List<Wrestler> wrestlers = segment.getWrestlers();
-    if (wrestlers.size() != 2) return false;
+    if (wrestlers.size() != 2) {
+      return false;
+    }
 
     return rivalryService
         .getRivalryBetweenWrestlers(wrestlers.get(0).getId(), wrestlers.get(1).getId())

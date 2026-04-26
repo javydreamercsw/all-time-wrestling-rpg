@@ -294,7 +294,9 @@ public class ShowListView extends Main {
     showGrid
         .addComponentColumn(
             show -> {
-              if (show.getType() == null) return new Span("No Type");
+              if (show.getType() == null) {
+                return new Span("No Type");
+              }
 
               Span typeSpan = new Span(show.getType().getName());
               typeSpan.addClassNames(
@@ -475,7 +477,9 @@ public class ShowListView extends Main {
   }
 
   private void openGenerateArtDialog(ShowTemplate template) {
-    if (template == null) return;
+    if (template == null) {
+      return;
+    }
 
     java.util.function.Supplier<String> promptSupplier =
         () -> {
@@ -625,7 +629,9 @@ public class ShowListView extends Main {
   }
 
   private void openEditDialog(Show show) {
-    if (editDialog == null) setupEditDialog();
+    if (editDialog == null) {
+      setupEditDialog();
+    }
     editingShow = show;
     editName.setValue(show.getName() != null ? show.getName() : "");
     editDescription.setValue(show.getDescription() != null ? show.getDescription() : "");

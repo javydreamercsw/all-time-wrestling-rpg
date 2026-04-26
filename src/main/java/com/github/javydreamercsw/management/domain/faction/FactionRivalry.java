@@ -190,9 +190,15 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
 
   /** Get rivalry intensity level based on heat. */
   public RivalryIntensity getIntensity() {
-    if (heat < 10) return RivalryIntensity.SIMMERING;
-    if (heat < 20) return RivalryIntensity.HEATED;
-    if (heat < 30) return RivalryIntensity.INTENSE;
+    if (heat < 10) {
+      return RivalryIntensity.SIMMERING;
+    }
+    if (heat < 20) {
+      return RivalryIntensity.HEATED;
+    }
+    if (heat < 30) {
+      return RivalryIntensity.INTENSE;
+    }
     return RivalryIntensity.EXPLOSIVE;
   }
 

@@ -44,8 +44,12 @@ public abstract class AbstractEntity<ID> implements NamedEntity {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof AbstractEntity<?> that)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof AbstractEntity<?> that)) {
+      return false;
+    }
     return getId() != null && Objects.equals(getId(), that.getId());
   }
 

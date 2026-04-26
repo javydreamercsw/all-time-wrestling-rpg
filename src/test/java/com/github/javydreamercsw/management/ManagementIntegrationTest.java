@@ -64,7 +64,9 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   /** Refreshes the current security context by re-loading the authenticated user from the DB. */
   protected void refreshSecurityContext() {
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth == null) return;
+    if (currentAuth == null) {
+      return;
+    }
 
     final String username;
     if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {

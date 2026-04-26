@@ -161,6 +161,35 @@ public class DramaEventService {
     }
   }
 
+  /** Get a random severity level. */
+  private DramaEventSeverity getRandomSeverity() {
+    // Weight the probabilities: Neutral most common, Major least common
+    double roll = random.nextDouble();
+    if (roll < 0.4) {
+      return DramaEventSeverity.NEUTRAL;
+    }
+    if (roll < 0.7) {
+      return DramaEventSeverity.NEGATIVE;
+    }
+    if (roll < 0.9) {
+      return DramaEventSeverity.POSITIVE;
+    }
+    return DramaEventSeverity.MAJOR;
+  }
+
+  /** Get a random opponent for multi-wrestler events. */
+  private Wrestler getRandomOpponent(@NonNull Wrestler wrestler) {
+    List<Long> allWrestlerIds = wrestlerRepository.findAllIds();
+    List<Long> eligibleIds =
+        allWrestlerIds.stream().filter(id -> !id.equals(wrestler.getId())).toList();
+
+    if (eligibleIds.isEmpty()) {
+      return null;
+    }
+    Long randomId = eligibleIds.get(random.nextInt(eligibleIds.size()));
+    return wrestlerRepository.findById(randomId).orElse(null);
+  }
+
   /** Process a specific drama event, applying its effects. */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public int processEvent(@NonNull DramaEvent event) {

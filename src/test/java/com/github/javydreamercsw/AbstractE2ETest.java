@@ -240,7 +240,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].querySelector('input');", usernameField);
 
-    if (usernameInput == null) usernameInput = usernameField;
+    if (usernameInput == null) {
+      usernameInput = usernameField;
+    }
 
     ((JavascriptExecutor) driver)
         .executeScript(
@@ -257,7 +259,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].querySelector('input');", passwordField);
 
-    if (passwordInput == null) passwordInput = passwordField;
+    if (passwordInput == null) {
+      passwordInput = passwordField;
+    }
 
     ((JavascriptExecutor) driver)
         .executeScript(
@@ -732,8 +736,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected int getGridSize(@NonNull WebElement grid) {
     Object size =
         ((JavascriptExecutor) driver).executeScript("return arguments[0].size || 0;", grid);
-    if (size instanceof Long) return ((Long) size).intValue();
-    if (size instanceof Integer) return (Integer) size;
+    if (size instanceof Long) {
+      return ((Long) size).intValue();
+    }
+    if (size instanceof Integer) {
+      return (Integer) size;
+    }
     return 0;
   }
 

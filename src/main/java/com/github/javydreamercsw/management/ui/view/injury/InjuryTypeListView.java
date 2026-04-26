@@ -295,7 +295,9 @@ public class InjuryTypeListView extends Main {
   }
 
   private String formatEffect(Integer effect) {
-    if (effect == null) return "0";
+    if (effect == null) {
+      return "0";
+    }
     return effect >= 0 ? "+" + effect : effect.toString();
   }
 

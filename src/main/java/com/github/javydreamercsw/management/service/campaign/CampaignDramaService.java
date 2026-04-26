@@ -58,7 +58,9 @@ public class CampaignDramaService {
     Wrestler player = campaign.getWrestler();
 
     CampaignChapterDTO chapter = campaignService.getCurrentChapter(campaign).orElse(null);
-    if (chapter == null) return Optional.empty();
+    if (chapter == null) {
+      return Optional.empty();
+    }
 
     // Tournament Chapter: Rivalry
     if (chapter.isTournament()) {
@@ -162,7 +164,9 @@ public class CampaignDramaService {
     // Filter out player
     List<Long> opponentIds = allIds.stream().filter(id -> !id.equals(player.getId())).toList();
 
-    if (opponentIds.isEmpty()) return null;
+    if (opponentIds.isEmpty()) {
+      return null;
+    }
 
     Long randomId = opponentIds.get(random.nextInt(opponentIds.size()));
     return wrestlerRepository.findById(randomId).orElse(null);

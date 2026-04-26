@@ -190,7 +190,9 @@ public class Team extends AbstractSyncableEntity<Long> {
 
   /** Check if both wrestlers belong to the same faction in this team's universe. */
   public boolean areFromSameFaction() {
-    if (universe == null) return false;
+    if (universe == null) {
+      return false;
+    }
     Long universeId = universe.getId();
 
     Faction f1 =
@@ -209,7 +211,9 @@ public class Team extends AbstractSyncableEntity<Long> {
 
   /** Get the common faction if both wrestlers belong to the same one in this team's universe. */
   public Faction getCommonFaction() {
-    if (universe == null) return null;
+    if (universe == null) {
+      return null;
+    }
     Long universeId = universe.getId();
 
     Faction f1 =

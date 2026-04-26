@@ -71,7 +71,9 @@ public class RingsideActionService {
 
   @Transactional(readOnly = true)
   public boolean hasSupportAtRingside(Segment segment, Wrestler wrestler) {
-    if (wrestler == null || segment == null) return false;
+    if (wrestler == null || segment == null) {
+      return false;
+    }
 
     // Refresh/Reattach to ensure session is open for lazy loading
     Segment attachedSegment = segmentRepository.findById(segment.getId()).orElse(segment);
@@ -85,16 +87,22 @@ public class RingsideActionService {
         attachedWrestler.getState(universeId).orElse(null);
 
     // Check for direct manager
-    if (state != null && state.getManager() != null) return true;
+    if (state != null && state.getManager() != null) {
+      return true;
+    }
 
     // Check for faction manager or other members
     if (state != null && state.getFaction() != null) {
-      if (state.getFaction().getManager() != null) return true;
+      if (state.getFaction().getManager() != null) {
+        return true;
+      }
 
       boolean otherFactionMembersExist =
           state.getFaction().getMembers().stream()
               .anyMatch(m -> !attachedSegment.getWrestlers().contains(m.getWrestler()));
-      if (otherFactionMembersExist) return true;
+      if (otherFactionMembersExist) {
+        return true;
+      }
     }
 
     // Check for team members not in the match
@@ -103,14 +111,18 @@ public class RingsideActionService {
             .filter(t -> t.getUniverse() != null && t.getUniverse().getId().equals(universeId))
             .anyMatch(
                 t -> !attachedSegment.getWrestlers().contains(t.getPartner(attachedWrestler)));
-    if (otherTeamMembersExist) return true;
+    if (otherTeamMembersExist) {
+      return true;
+    }
 
     return false;
   }
 
   @Transactional(readOnly = true)
   public Object getBestSupporter(Segment segment, Wrestler wrestler) {
-    if (wrestler == null || segment == null) return null;
+    if (wrestler == null || segment == null) {
+      return null;
+    }
 
     Segment attachedSegment = segmentRepository.findById(segment.getId()).orElse(segment);
     Wrestler attachedWrestler = wrestlerRepository.findById(wrestler.getId()).orElse(wrestler);
@@ -123,7 +135,9 @@ public class RingsideActionService {
         attachedWrestler.getState(universeId).orElse(null);
 
     // 1. Direct Manager
-    if (state != null && state.getManager() != null) return state.getManager();
+    if (state != null && state.getManager() != null) {
+      return state.getManager();
+    }
 
     // 2. Faction Manager
     if (state != null && state.getFaction() != null && state.getFaction().getManager() != null) {
@@ -138,7 +152,9 @@ public class RingsideActionService {
               .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getWrestler)
               .findFirst()
               .orElse(null);
-      if (otherMember != null) return otherMember;
+      if (otherMember != null) {
+        return otherMember;
+      }
     }
 
     // 4. Team Partner (not in match)

@@ -279,7 +279,9 @@ public class FactionService {
     Faction faction = factionOpt.get();
     Wrestler wrestler = wrestlerOpt.get();
 
-    if (faction.getUniverse() == null) return Optional.empty();
+    if (faction.getUniverse() == null) {
+      return Optional.empty();
+    }
     Long universeId = faction.getUniverse().getId();
 
     com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =

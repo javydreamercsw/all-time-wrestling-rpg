@@ -114,7 +114,9 @@ public class Injury extends AbstractSyncableEntity<Long> {
 
   @JsonIgnore
   public String getStatusEmoji() {
-    if (!isActive) return "✅";
+    if (!isActive) {
+      return "✅";
+    }
     return severity.getEmoji();
   }
 

@@ -193,10 +193,14 @@ public class SegmentSyncService extends BaseSyncService {
             .extractDescriptionFromNotionPage(segmentPage));
 
     Object summaryObj = rawProperties.get("Summary");
-    if (summaryObj instanceof String) dto.setSummary((String) summaryObj);
+    if (summaryObj instanceof String) {
+      dto.setSummary((String) summaryObj);
+    }
 
     Object orderObj = rawProperties.get("Order");
-    if (orderObj instanceof Number) dto.setSegmentOrder(((Number) orderObj).intValue());
+    if (orderObj instanceof Number) {
+      dto.setSegmentOrder(((Number) orderObj).intValue());
+    }
 
     Object mainEventObj = rawProperties.get("Main Event");
     dto.setMainEvent(Boolean.TRUE.equals(mainEventObj));
@@ -205,11 +209,14 @@ public class SegmentSyncService extends BaseSyncService {
     dto.setIsTitleSegment(Boolean.TRUE.equals(isTitleSegmentObj));
 
     Object statusObj = rawProperties.get("Status");
-    if (statusObj instanceof String) dto.setStatus((String) statusObj);
+    if (statusObj instanceof String) {
+      dto.setStatus((String) statusObj);
+    }
 
     Object adjudicationStatusObj = rawProperties.get("Adjudication Status");
-    if (adjudicationStatusObj instanceof String)
+    if (adjudicationStatusObj instanceof String) {
       dto.setAdjudicationStatus((String) adjudicationStatusObj);
+    }
 
     // Extract Relations
     dto.setShowExternalId(

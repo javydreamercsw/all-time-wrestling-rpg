@@ -249,7 +249,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRingsideActionTypesFromFile() {
-    if (skipIfNotEmpty && ringsideActionDataService.countTypes() > 0) return;
+    if (skipIfNotEmpty && ringsideActionDataService.countTypes() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
     if (resource.exists()) {
       log.info("Loading ringside action types from file: {}", resource.getPath());
@@ -276,7 +278,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRingsideActionsFromFile() {
-    if (skipIfNotEmpty && ringsideActionDataService.countActions() > 0) return;
+    if (skipIfNotEmpty && ringsideActionDataService.countActions() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("ringside_actions.json");
     if (resource.exists()) {
       log.info("Loading ringside actions from file: {}", resource.getPath());
@@ -305,7 +309,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadAchievements() {
-    if (skipIfNotEmpty && achievementRepository.count() > 0) return;
+    if (skipIfNotEmpty && achievementRepository.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("achievements.json");
     if (resource.exists()) {
       log.info("Loading achievements from file: {}", resource.getPath());
@@ -339,7 +345,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCommentatorsFromFile() {
-    if (skipIfNotEmpty && commentaryService.countCommentators() > 0) return;
+    if (skipIfNotEmpty && commentaryService.countCommentators() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("commentators.json");
     if (resource.exists()) {
       log.info("Loading commentators from file: {}", resource.getPath());
@@ -367,7 +375,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCommentaryTeamsFromFile() {
-    if (skipIfNotEmpty && commentaryService.countTeams() > 0) return;
+    if (skipIfNotEmpty && commentaryService.countTeams() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("commentary_teams.json");
     if (resource.exists()) {
       log.info("Loading commentary teams from file: {}", resource.getPath());
@@ -503,7 +513,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCampaignAbilityCardsFromFile() {
-    if (skipIfNotEmpty && campaignAbilityCardService.count() > 0) return;
+    if (skipIfNotEmpty && campaignAbilityCardService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
     if (resource.exists()) {
       log.info("Loading campaign ability cards from file: {}", resource.getPath());
@@ -535,7 +547,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentRulesFromFile() {
-    if (skipIfNotEmpty && segmentRuleService.count() > 0) return;
+    if (skipIfNotEmpty && segmentRuleService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
       log.debug("Loading segment rules from file: {}", resource.getPath());
@@ -568,7 +582,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncShowTypesFromFile() {
-    if (skipIfNotEmpty && showTypeService.count() > 0) return;
+    if (skipIfNotEmpty && showTypeService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("show_types.json");
     if (resource.exists()) {
       log.info("Loading show types from file: {}", resource.getPath());
@@ -594,7 +610,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentTypesFromFile() {
-    if (skipIfNotEmpty && segmentTypeService.count() > 0) return;
+    if (skipIfNotEmpty && segmentTypeService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("segment_types.json");
     if (resource.exists()) {
       log.info("Loading segment types from file: {}", resource.getPath());
@@ -686,7 +704,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncSetsFromFile() {
-    if (skipIfNotEmpty && cardSetService.count() > 0) return;
+    if (skipIfNotEmpty && cardSetService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("sets.json");
     if (resource.exists()) {
       log.info("Loading card sets from file: {}", resource.getPath());
@@ -715,7 +735,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCardsFromFile() {
-    if (skipIfNotEmpty && cardService.count() > 0) return;
+    if (skipIfNotEmpty && cardService.count() > 0) {
+      return;
+    }
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
       Map<String, CardSet> setCache = new HashMap<>();
@@ -783,7 +805,9 @@ public class DataInitializer implements Initializable {
   }
 
   protected void syncWrestlersFromFile() {
-    if (skipIfNotEmpty && wrestlerRepository.count() > 0) return;
+    if (skipIfNotEmpty && wrestlerRepository.count() > 0) {
+      return;
+    }
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
       // Load universe once
@@ -826,33 +850,64 @@ public class DataInitializer implements Initializable {
                 existingWrestler.setLowStamina(w.getLowStamina());
                 existingWrestler.setDescription(w.getDescription());
                 existingWrestler.setGender(w.getGender());
-                if (w.getImageUrl() != null) existingWrestler.setImageUrl(w.getImageUrl());
-                if (w.getHeritageTag() != null) existingWrestler.setHeritageTag(w.getHeritageTag());
-                if (w.getSet() != null) existingWrestler.setExpansionCode(w.getSet());
-                if (w.getExternalId() != null) existingWrestler.setExternalId(w.getExternalId());
-                if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
+                if (w.getImageUrl() != null) {
+                  existingWrestler.setImageUrl(w.getImageUrl());
+                }
+                if (w.getHeritageTag() != null) {
+                  existingWrestler.setHeritageTag(w.getHeritageTag());
+                }
+                if (w.getSet() != null) {
+                  existingWrestler.setExpansionCode(w.getSet());
+                }
+                if (w.getExternalId() != null) {
+                  existingWrestler.setExternalId(w.getExternalId());
+                }
+                if (w.getDrive() != null) {
+                  existingWrestler.setDrive(w.getDrive());
+                }
+                if (w.getResilience() != null) {
+                  existingWrestler.setResilience(w.getResilience());
+                }
+                if (w.getCharisma() != null) {
+                  existingWrestler.setCharisma(w.getCharisma());
+                }
+                if (w.getBrawl() != null) {
+                  existingWrestler.setBrawl(w.getBrawl());
+                }
 
                 if (w.getAlignment() != null) {
-                  try {
-                    AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
-                    if (existingWrestler.getAlignment() == null) {
-                      WrestlerAlignment alignment =
+                  if (existingWrestler.getAlignment() == null
+                      || existingWrestler.getAlignment().getAlignmentType() == null) {
+                    try {
+                      AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+                      existingWrestler.setAlignment(
                           WrestlerAlignment.builder()
                               .wrestler(existingWrestler)
                               .alignmentType(at)
                               .level(0)
-                              .build();
-                      existingWrestler.setAlignment(alignment);
+                              .build());
+                      log.debug(
+                          "Initialized alignment for existing wrestler {}: {}",
+                          existingWrestler.getName(),
+                          at);
+                    } catch (IllegalArgumentException e) {
+                      log.warn(
+                          "Invalid alignment '{}' for wrestler '{}'",
+                          w.getAlignment(),
+                          w.getName());
                     }
-                  } catch (IllegalArgumentException e) {
-                    log.warn(
-                        "Invalid alignment '{}' for wrestler '{}'", w.getAlignment(), w.getName());
                   }
                 }
+
+                if (existingWrestler.getActive() == null) {
+                  existingWrestler.setActive(true);
+                }
+                if (existingWrestler.getIsPlayer() == null) {
+                  existingWrestler.setIsPlayer(false);
+                }
+
                 wrestlerToSave = existingWrestler;
+                log.debug("Updated existing wrestler: {}", existingWrestler.getName());
               } else {
                 Wrestler newWrestler = new Wrestler();
                 newWrestler.setName(w.getName());
@@ -867,12 +922,32 @@ public class DataInitializer implements Initializable {
                 newWrestler.setIsPlayer(false);
                 newWrestler.setImageUrl(w.getImageUrl());
                 newWrestler.setHeritageTag(w.getHeritageTag());
-                if (w.getSet() != null) newWrestler.setExpansionCode(w.getSet());
-                if (w.getExternalId() != null) newWrestler.setExternalId(w.getExternalId());
-                if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
-                if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
-                if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
-                if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
+                if (w.getSet() != null) {
+                  newWrestler.setExpansionCode(w.getSet());
+                }
+                newWrestler.setTier(WrestlerTier.fromFanCount(newWrestler.getFans()));
+                tierRecalculationService.recalculateTier(newWrestler);
+                if (w.getExternalId() != null) {
+                  newWrestler.setExternalId(w.getExternalId());
+                }
+                if (w.getManager() != null) {
+                  Npc manager = npcService.findByName(w.getManager());
+                  if (manager != null) {
+                    newWrestler.setManager(manager);
+                  }
+                }
+                if (w.getDrive() != null) {
+                  newWrestler.setDrive(w.getDrive());
+                }
+                if (w.getResilience() != null) {
+                  newWrestler.setResilience(w.getResilience());
+                }
+                if (w.getCharisma() != null) {
+                  newWrestler.setCharisma(w.getCharisma());
+                }
+                if (w.getBrawl() != null) {
+                  newWrestler.setBrawl(w.getBrawl());
+                }
 
                 if (w.getAlignment() != null) {
                   try {
@@ -914,7 +989,9 @@ public class DataInitializer implements Initializable {
 
               if (w.getManager() != null) {
                 Npc manager = npcService.findByName(w.getManager());
-                if (manager != null) state.setManager(manager);
+                if (manager != null) {
+                  state.setManager(manager);
+                }
               }
               wrestlerStateRepository.save(state);
             }
@@ -929,7 +1006,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncChampionshipsFromFile() {
-    if (skipIfNotEmpty && titleService.count() > 0) return;
+    if (skipIfNotEmpty && titleService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("championships.json");
     if (resource.exists()) {
       log.info("Loading championships from file: {}", resource.getPath());
@@ -972,7 +1051,9 @@ public class DataInitializer implements Initializable {
           if (dto.getCurrentChampionName() != null
               && !dto.getCurrentChampionName().trim().isEmpty()) {
             Title title = titleService.findByName(dto.getName()).orElse(null);
-            if (title == null) continue;
+            if (title == null) {
+              continue;
+            }
 
             String[] championNames = dto.getCurrentChampionName().split(",");
             List<Wrestler> champions = new ArrayList<>();
@@ -1003,7 +1084,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncDecksFromFile() {
-    if (skipIfNotEmpty && deckService.count() > 0) return;
+    if (skipIfNotEmpty && deckService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("decks.json");
     if (resource.exists()) {
       log.info("Loading decks from file: {}", resource.getPath());
@@ -1019,7 +1102,9 @@ public class DataInitializer implements Initializable {
         List<Deck> decksToSave = new ArrayList<>();
         for (DeckDTO deckDTO : decksFromFile) {
           Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
-          if (wrestler == null) continue;
+          if (wrestler == null) {
+            continue;
+          }
 
           List<Deck> byWrestler = deckService.findByWrestler(wrestler);
           Deck deck =
@@ -1107,7 +1192,9 @@ public class DataInitializer implements Initializable {
   }
 
   void syncNpcsFromFile() {
-    if (skipIfNotEmpty && npcService.count() > 0) return;
+    if (skipIfNotEmpty && npcService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
       log.info("Loading npcs from file: {}", resource.getPath());
@@ -1123,8 +1210,12 @@ public class DataInitializer implements Initializable {
           }
           npc.setDescription(dto.getDescription());
           npc.setNpcType(dto.getType());
-          if (dto.getSet() != null) npc.setExpansionCode(dto.getSet());
-          if (dto.getAwareness() != null) npcService.setAwareness(npc, dto.getAwareness());
+          if (dto.getSet() != null) {
+            npc.setExpansionCode(dto.getSet());
+          }
+          if (dto.getAwareness() != null) {
+            npcService.setAwareness(npc, dto.getAwareness());
+          }
           if (dto.getAlignment() != null) {
             try {
               AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
@@ -1146,7 +1237,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncFactionsFromFile() {
-    if (skipIfNotEmpty && factionService.count() > 0) return;
+    if (skipIfNotEmpty && factionService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("factions.json");
     if (resource.exists()) {
       log.info("Loading factions from file: {}", resource.getPath());
@@ -1192,7 +1285,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncTeamsFromFile() {
-    if (skipIfNotEmpty && teamService.count() > 0) return;
+    if (skipIfNotEmpty && teamService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("teams.json");
     if (resource.exists()) {
       log.info("Loading teams from file: {}", resource.getPath());
@@ -1237,14 +1332,18 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncLocationsFromFile() {
-    if (skipIfNotEmpty && locationRepository.count() > 0) return;
+    if (skipIfNotEmpty && locationRepository.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("locations.json");
     if (resource.exists()) {
       log.info("Loading locations from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
         var locationsFromFile =
             objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
-        if (locationsFromFile == null) return;
+        if (locationsFromFile == null) {
+          return;
+        }
 
         List<Location> toSave = new ArrayList<>();
         for (LocationImportDTO dto : locationsFromFile) {
@@ -1273,7 +1372,9 @@ public class DataInitializer implements Initializable {
               existing.setCulturalTags(dto.getCulturalTags());
               changed = true;
             }
-            if (changed) toSave.add(existing);
+            if (changed) {
+              toSave.add(existing);
+            }
           }
         }
         locationRepository.saveAll(toSave);
@@ -1289,14 +1390,18 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncArenasFromFile() {
-    if (skipIfNotEmpty && arenaRepository.count() > 0) return;
+    if (skipIfNotEmpty && arenaRepository.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("arenas.json");
     if (resource.exists()) {
       log.info("Loading arenas from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
         var arenasFromFile =
             objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
-        if (arenasFromFile == null) return;
+        if (arenasFromFile == null) {
+          return;
+        }
 
         List<Arena> toSave = new ArrayList<>();
         for (ArenaImportDTO dto : arenasFromFile) {
@@ -1343,7 +1448,9 @@ public class DataInitializer implements Initializable {
               existing.setLocation(locationOpt.get());
               changed = true;
             }
-            if (changed) toSave.add(existing);
+            if (changed) {
+              toSave.add(existing);
+            }
           }
         }
         arenaRepository.saveAll(toSave);
@@ -1357,7 +1464,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRelationshipsFromFile() {
-    if (skipIfNotEmpty && relationshipService.count() > 0) return;
+    if (skipIfNotEmpty && relationshipService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("relationships.json");
     if (resource.exists()) {
       log.info("Loading relationships from file: {}", resource.getPath());

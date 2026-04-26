@@ -100,7 +100,9 @@ public class PromoBookingService {
 
     int bookedPromos = 0;
     for (Rivalry rivalry : activeRivalries) {
-      if (bookedPromos >= maxPromos) break;
+      if (bookedPromos >= maxPromos) {
+        break;
+      }
 
       Wrestler wrestler1 = rivalry.getWrestler1();
       Wrestler wrestler2 = rivalry.getWrestler2();

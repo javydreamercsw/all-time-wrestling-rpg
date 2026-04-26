@@ -159,22 +159,30 @@ public class DramaEvent extends AbstractEntity<Long> {
     }
 
     if (heatImpact != null && heatImpact != 0) {
-      if (!summary.isEmpty()) summary.append(", ");
+      if (!summary.isEmpty()) {
+        summary.append(", ");
+      }
       summary.append(heatImpact > 0 ? "+" : "").append(heatImpact).append(" heat");
     }
 
     if (injuryCaused) {
-      if (!summary.isEmpty()) summary.append(", ");
+      if (!summary.isEmpty()) {
+        summary.append(", ");
+      }
       summary.append("injury caused");
     }
 
     if (rivalryCreated) {
-      if (!summary.isEmpty()) summary.append(", ");
+      if (!summary.isEmpty()) {
+        summary.append(", ");
+      }
       summary.append("rivalry created");
     }
 
     if (rivalryEnded) {
-      if (!summary.isEmpty()) summary.append(", ");
+      if (!summary.isEmpty()) {
+        summary.append(", ");
+      }
       summary.append("rivalry ended");
     }
 
