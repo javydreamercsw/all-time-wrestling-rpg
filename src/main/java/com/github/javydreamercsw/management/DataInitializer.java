@@ -127,12 +127,10 @@ public class DataInitializer implements Initializable {
   private final CampaignUpgradeService campaignUpgradeService;
   private final LocationRepository locationRepository;
   private final ArenaRepository arenaRepository;
-  private final WrestlerRelationshipService
-      relationshipService;
+  private final WrestlerRelationshipService relationshipService;
   private final Environment env;
   private final AchievementRepository achievementRepository;
-  private final RingsideActionDataService
-      ringsideActionDataService;
+  private final RingsideActionDataService ringsideActionDataService;
   private final ResourcePatternResolver resourcePatternResolver;
   private final ObjectMapper objectMapper;
 
@@ -354,7 +352,7 @@ public class DataInitializer implements Initializable {
           commentaryService.createOrUpdateTeam(teamDto.getTeamName(), teamDto.getMemberNames());
           log.debug("Loaded commentary team: {}", teamDto.getTeamName());
         }
-        log.info("Commentary team loading completed - {} teams loaded", teamDto.size());
+        log.info("Commentary team loading completed - {} teams loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading commentary teams from file", e);
       }
@@ -474,7 +472,7 @@ public class DataInitializer implements Initializable {
   private void syncCampaignAbilityCardsFromFile() {
     ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
     if (resource.exists()) {
-      log.info("Loading campaign ability cards from file: {}", resource.getPath());
+      log.debug("Loading campaign ability cards from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var cardsFromFile =
