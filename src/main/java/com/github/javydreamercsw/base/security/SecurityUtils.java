@@ -50,8 +50,7 @@ public class SecurityUtils {
    * @return true if the user has the role
    */
   public boolean hasRole(String role) {
-    return authenticationContext
-        .getAuthenticatedUser(CustomUserDetails.class)
+    return getAuthenticatedUser()
         .map(
             user ->
                 user.getAuthorities().stream()
@@ -186,7 +185,10 @@ public class SecurityUtils {
    * @return the authenticated user, or empty if not authenticated
    */
   public Optional<CustomUserDetails> getAuthenticatedUser() {
-    return authenticationContext.getAuthenticatedUser(CustomUserDetails.class);
+    return authenticationContext
+        .getAuthenticatedUser(Object.class)
+        .filter(CustomUserDetails.class::isInstance)
+        .map(CustomUserDetails.class::cast);
   }
 
   /**

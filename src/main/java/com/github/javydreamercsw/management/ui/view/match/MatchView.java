@@ -904,13 +904,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           && securityUtils.isPlayer()
           && !securityUtils.isAdmin()
           && !securityUtils.isBooker()) {
-        matchFulfillmentService.submitResult(
-            fulfillmentOpt.get(),
-            winners.isEmpty() ? null : winners.getFirst(),
-            securityUtils.getAuthenticatedUser().get().getAccount());
-        Notification.show("Match result reported to league commissioner.")
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        UI.getCurrent().navigate("player");
+        securityUtils
+            .getAuthenticatedUser()
+            .ifPresent(
+                userDetails -> {
+                  matchFulfillmentService.submitResult(
+                      fulfillmentOpt.get(),
+                      winners.isEmpty() ? null : winners.getFirst(),
+                      userDetails.getAccount());
+                  Notification.show("Match result reported to league commissioner.")
+                      .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                  UI.getCurrent().navigate("player");
+                });
         return;
       }
 
