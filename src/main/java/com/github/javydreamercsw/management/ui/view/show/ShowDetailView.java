@@ -303,6 +303,7 @@ public class ShowDetailView extends Main
     }
 
     Details infoDetails = new Details("Show Information & Description", infoCollapseLayout);
+    infoDetails.setId("show-info-details");
     infoDetails.setOpened(false); // Collapsed by default to maximize segment space
     infoDetails.setWidthFull();
     infoDetails.addClassNames(
