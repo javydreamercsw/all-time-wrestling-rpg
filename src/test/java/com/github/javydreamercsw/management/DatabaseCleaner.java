@@ -33,7 +33,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implementation of DatabaseCleanup using Spring's ApplicationContext to find all repositories and
@@ -51,75 +50,83 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   @PersistenceContext private EntityManager entityManager;
 
-  @Transactional
   @Override
   public void clearRepositories() {
-    log.info("🧹 Starting database cleanup...");
+    log.info("Starting database cleanup...");
 
-    // Detach all managed entities to prevent dirty state from interfering with cleanup.
-    entityManager.clear();
+    // Ensure we have admin privileges for this manual execution
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          // 1. First break known circular dependencies and clear tables with many-to-many
+          // relationships
+          breakCircularDependencies();
 
-    // 1. First break known circular dependencies and clear tables with many-to-many relationships
-    breakCircularDependencies();
+          // 2. Discover all JPA repositories
+          Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
 
-    // 2. Discover all JPA repositories
-    Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
+          // 3. Get the correct synchronization/deletion order
+          List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
+          log.info("Deletion order: {}", syncOrder);
 
-    // 3. Get the correct synchronization/deletion order
-    List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
-    log.info("🔄 Deletion order: {}", syncOrder);
+          // Entities that should not be cleared (static config, core roles, etc.)
+          Set<String> protectedEntities =
+              new HashSet<>(
+                  Arrays.asList(
+                      "showtype",
+                      "segmenttype",
+                      "segmentrule",
+                      "cardset",
+                      "card",
+                      "campaignabilitycard",
+                      "campaignupgrade",
+                      "holiday",
+                      "injurytype"));
 
-    // Entities that should not be cleared (static config, core roles, etc.)
-    Set<String> protectedEntities =
-        new HashSet<>(
-            Arrays.asList(
-                "showtype",
-                "segmenttype",
-                "segmentrule",
-                "cardset",
-                "card",
-                "campaignabilitycard",
-                "campaignupgrade",
-                "holiday",
-                "injurytype"));
+          // Delete data in the correct order (reverse of sync order)
+          int deletedCount = 0;
+          for (int i = syncOrder.size() - 1; i >= 0; i--) {
+            String entityName = syncOrder.get(i);
+            if (protectedEntities.contains(entityName.toLowerCase())) {
+              log.debug("Skipping protected entity: {}", entityName);
+              continue;
+            }
 
-    // Delete data in the correct order (reverse of sync order)
-    int deletedCount = 0;
-    for (int i = syncOrder.size() - 1; i >= 0; i--) {
-      String entityName = syncOrder.get(i);
-      if (protectedEntities.contains(entityName.toLowerCase())) {
-        log.debug("🛡️ Skipping protected entity: {}", entityName);
-        continue;
-      }
+            JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
+            if (repository != null) {
+              try {
+                if (repository.count() > 0) {
+                  repository.deleteAllInBatch();
+                  resetSequence(entityName);
+                  deletedCount++;
+                }
+              } catch (Exception e) {
+                log.warn("Could not clear repository {}: {}", entityName, e.getMessage());
+              }
+            }
+          }
 
-      JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
-      if (repository != null) {
-        if (repository.count() > 0) {
-          repository.deleteAllInBatch();
-          resetSequence(entityName);
-          deletedCount++;
-        }
-      }
-    }
+          // Clean up any remaining repositories not in the entity list
+          for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
+            if (!syncOrder.contains(entry.getKey())
+                && !protectedEntities.contains(entry.getKey().toLowerCase())) {
+              try {
+                if (entry.getValue().count() > 0) {
+                  entry.getValue().deleteAllInBatch();
+                  resetSequence(entry.getKey());
+                  deletedCount++;
+                }
+              } catch (Exception e) {
+                log.trace(
+                    "Could not clear remaining repository {}: {}", entry.getKey(), e.getMessage());
+              }
+            }
+          }
 
-    // Clean up any remaining repositories not in the entity list
-    for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
-      if (!syncOrder.contains(entry.getKey())
-          && !protectedEntities.contains(entry.getKey().toLowerCase())) {
-        if (entry.getValue().count() > 0) {
-          entry.getValue().deleteAllInBatch();
-          resetSequence(entry.getKey());
-          deletedCount++;
-        }
-      }
-    }
+          // Re-initialize accounts to ensure admin, booker, etc. are available
+          accountInitializer.init();
 
-    // Re-initialize accounts to ensure admin, booker, etc. are available
-    GeneralSecurityUtils.runAsAdmin(accountInitializer::init);
-
-    entityManager.flush();
-    entityManager.clear();
-    log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+          log.info("Database cleanup completed. Cleared {} repositories", deletedCount);
+        });
   }
 
   /**
@@ -142,6 +149,24 @@ public class DatabaseCleaner implements DatabaseCleanup {
       log.debug("✅ Nullified faction.leader_id");
     } catch (Exception e) {
       log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
+    }
+    try {
+      entityManager
+          .createNativeQuery(
+              "UPDATE storyline_milestone SET next_milestone_on_success_id = NULL,"
+                  + " next_milestone_on_failure_id = NULL")
+          .executeUpdate();
+      log.debug("✅ Nullified storyline_milestone self-referential links");
+    } catch (Exception e) {
+      log.warn("Could not nullify storyline_milestone self-referential links: {}", e.getMessage());
+    }
+    try {
+      entityManager
+          .createNativeQuery("UPDATE campaign_storyline SET current_milestone_id = NULL")
+          .executeUpdate();
+      log.debug("✅ Nullified campaign_storyline.current_milestone_id");
+    } catch (Exception e) {
+      log.warn("Could not nullify campaign_storyline.current_milestone_id: {}", e.getMessage());
     }
     try {
       entityManager.createNativeQuery("DELETE FROM league_roster").executeUpdate();

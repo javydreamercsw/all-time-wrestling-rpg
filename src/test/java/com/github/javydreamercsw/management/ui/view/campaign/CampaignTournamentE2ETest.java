@@ -20,11 +20,10 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
-import java.util.Objects;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -53,15 +52,26 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     wrestlerRepository.saveAndFlush(playerWrestler);
 
     // Create Campaign
-    Campaign campaign = new Campaign();
-    campaign.setAccount(account);
-    campaign.setWrestler(playerWrestler);
-    campaign.setName("Tournament Campaign");
-    campaign.setUniverse(defaultUniverse);
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(playerWrestler)
+            .status(com.github.javydreamercsw.management.domain.campaign.CampaignStatus.ACTIVE)
+            .startedAt(java.time.LocalDateTime.now())
+            .universe(defaultUniverse)
+            .build();
+    campaign = campaignRepository.saveAndFlush(campaign);
+
+    CampaignState state =
+        CampaignState.builder()
+            .campaign(campaign)
+            .victoryPoints(9)
+            .currentGameDate(java.time.LocalDate.now())
+            .build();
+    campaign.setState(state);
     campaignRepository.saveAndFlush(campaign);
 
     // Chapter 1: The Tournament (Using Chapter 4 from All or Nothing)
-    campaignChapterService.loadStorylineFromFile("all_or_nothing.json");
+    campaignChapterService.loadChapters();
     campaignService.advanceChapter(campaign); // Advance to Chapter 4
     campaignService.advanceChapter(campaign);
     campaignService.advanceChapter(campaign);
@@ -88,11 +98,12 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
       else if (round == expectedRounds - 2) expectedTitle = "Quarter-Finals";
 
       final String currentTitle = expectedTitle;
-      
+
       // Wait for the bracket to update
       new WebDriverWait(driver, Duration.ofSeconds(30))
-          .until(ExpectedConditions.textToBePresentInElementLocated(
-              By.tagName("h4"), "Tournament Bracket"));
+          .until(
+              ExpectedConditions.textToBePresentInElementLocated(
+                  By.tagName("h4"), "Tournament Bracket"));
 
       if (round < expectedRounds) {
         // Simulate Winning the match

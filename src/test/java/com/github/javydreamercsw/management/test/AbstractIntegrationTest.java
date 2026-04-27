@@ -282,45 +282,36 @@ public abstract class AbstractIntegrationTest {
     }
 
     // 2. Perform cleanup and init
-    transactionTemplate.execute(
-        status -> {
-          forceLoginAsAdmin();
+    log.info("Cleaning up database using DatabaseCleanup...");
+    databaseCleanup.clearRepositories();
 
-          log.info("Cleaning up database using DatabaseCleanup...");
-          databaseCleanup.clearRepositories();
+    clearCache();
 
-          clearCache();
+    // Always ensure at least one universe exists for tests
+    synchronized (AbstractIntegrationTest.class) {
+      try {
+        Universe newUniverse =
+            Universe.builder().name("Default Universe").type(Universe.UniverseType.GLOBAL).build();
+        newUniverse = universeRepository.saveAndFlush(newUniverse);
+        this.defaultUniverse = newUniverse;
+        com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
+        universeContextService.setCurrentUniverse(newUniverse);
+      } catch (org.springframework.dao.DataIntegrityViolationException e) {
+        universeRepository
+            .findByName("Default Universe")
+            .ifPresent(
+                u -> {
+                  this.defaultUniverse = u;
+                  com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                  universeContextService.setCurrentUniverse(u);
+                });
+      }
+    }
 
-          // Always ensure at least one universe exists for tests
-          synchronized (AbstractIntegrationTest.class) {
-            try {
-              Universe newUniverse =
-                  Universe.builder()
-                      .name("Default Universe")
-                      .type(Universe.UniverseType.GLOBAL)
-                      .build();
-              newUniverse = universeRepository.saveAndFlush(newUniverse);
-              this.defaultUniverse = newUniverse;
-              com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
-              universeContextService.setCurrentUniverse(newUniverse);
-            } catch (org.springframework.dao.DataIntegrityViolationException e) {
-              universeRepository
-                  .findByName("Default Universe")
-                  .ifPresent(
-                      u -> {
-                        this.defaultUniverse = u;
-                        com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                        universeContextService.setCurrentUniverse(u);
-                      });
-            }
-          }
-
-          // 3. Re-initialize data
-          if (dataInitializerEnabled) {
-            dataInitializer.init();
-          }
-          return null;
-        });
+    // 3. Re-initialize data
+    if (dataInitializerEnabled) {
+      dataInitializer.init();
+    }
 
     // Clear the entity manager
     if (entityManager != null) {

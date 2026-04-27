@@ -28,11 +28,15 @@ public enum RoleName {
   PLAYER,
 
   /** Read-only access to content */
-  VIEWER;
+  VIEWER,
+
+  /** Background tasks and system operations */
+  SYSTEM;
 
   // String constants for use in @RolesAllowed annotations
   public static final String ADMIN_ROLE = "ADMIN";
   public static final String BOOKER_ROLE = "BOOKER";
   public static final String PLAYER_ROLE = "PLAYER";
   public static final String VIEWER_ROLE = "VIEWER";
+  public static final String SYSTEM_ROLE = "SYSTEM";
 }
