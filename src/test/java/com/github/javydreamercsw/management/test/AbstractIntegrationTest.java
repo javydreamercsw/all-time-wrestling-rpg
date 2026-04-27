@@ -70,6 +70,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -174,11 +175,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected CampaignService campaignService;
   @Autowired protected CampaignStateRepository campaignStateRepository;
   @Autowired protected CampaignChapterService campaignChapterService;
-
-  @Autowired
-  protected com.github.javydreamercsw.management.service.campaign.StorylineDirectorService
-      storylineDirectorService;
-
+  @Autowired protected StorylineDirectorService storylineDirectorService;
   @Autowired protected DatabaseCleanup databaseCleanup;
   @Autowired protected TransactionTemplate transactionTemplate;
   @PersistenceContext protected EntityManager entityManager;
@@ -200,6 +197,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
   @Autowired protected GameSettingService gameSettingService;
   @Autowired protected FactionRivalryService factionRivalryService;
+
   protected Universe defaultUniverse;
 
   @Value("${data.initializer.enabled:true}")
@@ -245,7 +243,7 @@ public abstract class AbstractIntegrationTest {
     // Restore original context if it existed
     restoreSecurityContext(originalAuth, originalTestAuth);
 
-    // Default login as admin ONLY if no other authentication is present
+    // Default login as admin ONLY if no other valid authentication is present
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
     if (currentAuth == null
         || "system".equals(currentAuth.getName())

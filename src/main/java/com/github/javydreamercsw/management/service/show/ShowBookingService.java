@@ -89,7 +89,7 @@ public class ShowBookingService {
    * @return The booked show with all segments
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'SYSTEM')")
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
@@ -111,7 +111,7 @@ public class ShowBookingService {
    * @return The booked show with all segments
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'SYSTEM')")
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
@@ -208,7 +208,7 @@ public class ShowBookingService {
    * @return The booked PPV show
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'SYSTEM')")
   public Optional<Show> bookPPV(@NonNull String ppvName, @NonNull String ppvDescription) {
     try {
       // Get PPV show type

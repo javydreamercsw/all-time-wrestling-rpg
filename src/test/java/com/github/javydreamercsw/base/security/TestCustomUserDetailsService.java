@@ -109,7 +109,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
               // Create default accounts if they don't exist
               Account account = new Account();
               account.setUsername(username);
-              account.setPassword(passwordEncoder.encode("password")); // Default password for tests
+              account.setPassword(passwordEncoder.encode("admin123")); // Default password for tests
               account.setRoles(rolesToAssign);
               account.setEmail(username + "@test.com");
               accountRepository.save(account);

