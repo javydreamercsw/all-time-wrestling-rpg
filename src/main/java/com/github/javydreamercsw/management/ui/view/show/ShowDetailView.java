@@ -56,6 +56,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -136,6 +137,8 @@ public class ShowDetailView extends Main
   private Long currentShowId;
   private Show currentShow;
   private Grid<Segment> segmentsGrid;
+  private Button adjudicateButton;
+  private Span noSegmentsMessage;
 
   private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
 
@@ -280,23 +283,40 @@ public class ShowDetailView extends Main
     contentLayout.removeAll();
     showTitle.setText(show.getName());
 
-    // Show header with basic info
+    // Show header with basic info (Always visible)
     Div headerCard = createHeaderCard(show);
     contentLayout.add(headerCard);
 
+    // Collapsible Show Details and Description
+    VerticalLayout infoCollapseLayout = new VerticalLayout();
+    infoCollapseLayout.setPadding(false);
+    infoCollapseLayout.setSpacing(true);
+
     // Show details card
     Div detailsCard = createDetailsCard(show);
-    contentLayout.add(detailsCard);
+    infoCollapseLayout.add(detailsCard);
 
     // Show description card
     if (show.getDescription() != null && !show.getDescription().trim().isEmpty()) {
       Div descriptionCard = createDescriptionCard(show);
-      contentLayout.add(descriptionCard);
+      infoCollapseLayout.add(descriptionCard);
     }
+
+    Details infoDetails = new Details("Show Information & Description", infoCollapseLayout);
+    infoDetails.setId("show-info-details");
+    infoDetails.setOpened(false); // Collapsed by default to maximize segment space
+    infoDetails.setWidthFull();
+    infoDetails.addClassNames(
+        LumoUtility.Background.BASE,
+        LumoUtility.Padding.SMALL,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM);
+    contentLayout.add(infoDetails);
 
     // Show segments card
     Div segmentsCard = createSegmentsCard(show);
     contentLayout.add(segmentsCard);
+    contentLayout.setFlexGrow(1, segmentsCard);
   }
 
   private Div createHeaderCard(@NonNull Show show) {
@@ -600,7 +620,7 @@ public class ShowDetailView extends Main
     H3 segmentsTitle = new H3("Segments");
     segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
 
-    Button adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
+    adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     adjudicateButton.setId("adjudicate-show-btn");
     adjudicateButton.addClickListener(e -> adjudicateShow(show));
@@ -633,18 +653,18 @@ public class ShowDetailView extends Main
 
     // Always initialize segmentsGrid and its wrapper
     segmentsGrid = createSegmentsGrid(segments);
-    segmentsGrid.setHeight("400px");
+    segmentsGrid.setSizeFull();
     segmentsGrid.setId("segments-grid");
 
     // Wrap the grid in a Div to enable horizontal scrolling
     Div gridWrapper = new Div(segmentsGrid);
     gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-    gridWrapper.getStyle().set("flex-grow", "4");
+    gridWrapper.setSizeFull();
     gridWrapper.setId("segments-grid-wrapper");
     segmentsLayout.add(gridWrapper);
-    segmentsLayout.setFlexGrow(4, gridWrapper);
+    segmentsLayout.setFlexGrow(1, gridWrapper);
 
-    Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
+    noSegmentsMessage = new Span("No segments scheduled for this show yet.");
     noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
     noSegmentsMessage.setId("no-segments-message");
     segmentsLayout.add(noSegmentsMessage);
@@ -1429,67 +1449,18 @@ public class ShowDetailView extends Main
       // Update visibility of grid and noSegmentsMessage
       boolean hasSegments = !updatedSegments.isEmpty();
       segmentsGrid.setVisible(hasSegments);
-      // Find the noSegmentsMessage and set its visibility
-      contentLayout
-          .getChildren()
-          .filter(VerticalLayout.class::isInstance)
-          .map(VerticalLayout.class::cast)
-          .filter(
-              layout ->
-                  layout
-                      .getChildren()
-                      .anyMatch(
-                          component ->
-                              component instanceof Span
-                                  && "no-segments-message".equals(component.getId().get())))
-          .findFirst()
-          .flatMap(
-              layout ->
-                  layout
-                      .getChildren()
-                      .filter(Span.class::isInstance)
-                      .map(Span.class::cast)
-                      .filter(span -> "no-segments-message".equals(span.getId().get()))
-                      .findFirst())
-          .ifPresent(span -> span.setVisible(!hasSegments));
+      if (noSegmentsMessage != null) {
+        noSegmentsMessage.setVisible(!hasSegments);
+      }
+
       // Re-enable/disable adjudicate button based on new segment status
       boolean hasPendingSegments =
           updatedSegments.stream()
               .anyMatch(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING);
-      // Find the adjudicate button and update its enabled state
-      contentLayout
-          .getChildren()
-          .filter(Div.class::isInstance)
-          .map(Div.class::cast)
-          .filter(
-              card ->
-                  card.getChildren()
-                      .anyMatch(
-                          component ->
-                              component instanceof HorizontalLayout
-                                  && component
-                                      .getChildren()
-                                      .anyMatch(
-                                          btn ->
-                                              btn instanceof Button
-                                                  && "Adjudicate Fans"
-                                                      .equals(((Button) btn).getText()))))
-          .findFirst()
-          .flatMap(
-              card ->
-                  card.getChildren()
-                      .filter(HorizontalLayout.class::isInstance)
-                      .map(HorizontalLayout.class::cast)
-                      .findFirst())
-          .flatMap(
-              header ->
-                  header
-                      .getChildren()
-                      .filter(Button.class::isInstance)
-                      .map(Button.class::cast)
-                      .filter(btn -> "Adjudicate Fans".equals(btn.getText()))
-                      .findFirst())
-          .ifPresent(btn -> btn.setEnabled(hasPendingSegments));
+
+      if (adjudicateButton != null) {
+        adjudicateButton.setEnabled(hasPendingSegments);
+      }
     }
   }
 
