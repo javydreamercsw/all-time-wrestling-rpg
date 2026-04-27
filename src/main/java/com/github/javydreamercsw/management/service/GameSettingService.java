@@ -141,6 +141,7 @@ public class GameSettingService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public GameSetting save(GameSetting gameSetting) {
     log.debug(
         "Saving game setting: {} = {}",
@@ -150,6 +151,7 @@ public class GameSettingService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void save(String key, String value) {
     GameSetting setting = repository.findById(key).orElseGet(GameSetting::new);
     setting.setId(key);

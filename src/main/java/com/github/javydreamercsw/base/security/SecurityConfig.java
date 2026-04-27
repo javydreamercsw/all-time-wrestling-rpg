@@ -33,16 +33,9 @@ import org.springframework.security.web.SecurityFilterChain;
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-  /**
-   * Enable method security only when not in test profile to avoid issues with test initialization.
-   */
-  @Configuration
-  @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
-  @Profile("!test")
-  public static class MethodSecurityConfig {}
 
   private final UserDetailsService userDetailsService;
   private final Environment environment;

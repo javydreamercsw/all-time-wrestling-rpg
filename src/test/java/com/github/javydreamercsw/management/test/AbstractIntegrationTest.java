@@ -186,34 +186,48 @@ public abstract class AbstractIntegrationTest {
   public void baseSetUp() throws Exception {
     log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
-    forceLoginAsAdmin();
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
 
-    // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
-    // during the REQUIRES_NEW transaction in clearAllRepositories
-    universeRepository
-        .findByName("Default Universe")
-        .ifPresent(
-            u -> {
-              this.defaultUniverse = u;
-              com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-              universeContextService.setCurrentUniverse(u);
-            });
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          forceLoginAsAdmin();
+
+          // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
+          // during the REQUIRES_NEW transaction in clearAllRepositories
+          universeRepository
+              .findByName("Default Universe")
+              .ifPresent(
+                  u -> {
+                    this.defaultUniverse = u;
+                    com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                    universeContextService.setCurrentUniverse(u);
+                  });
+          return null;
+        });
 
     clearAllRepositories();
 
-    // Re-verify if not set by clearAllRepositories
-    if (this.defaultUniverse == null) {
-      universeRepository
-          .findByName("Default Universe")
-          .ifPresent(
-              u -> {
-                this.defaultUniverse = u;
-                com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                universeContextService.setCurrentUniverse(u);
-              });
-    }
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          // Re-verify if not set by clearAllRepositories
+          if (this.defaultUniverse == null) {
+            universeRepository
+                .findByName("Default Universe")
+                .ifPresent(
+                    u -> {
+                      this.defaultUniverse = u;
+                      com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                      universeContextService.setCurrentUniverse(u);
+                    });
+          }
+          return null;
+        });
 
-    // Default login as admin if no other authentication is present
+    // Restore original context if it existed
+    restoreSecurityContext(originalAuth, originalTestAuth);
+
+    // Default login as admin ONLY if no other authentication is present
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       log.info("No authentication found, logging in as default admin...");
       loginAs("admin");
@@ -304,34 +318,35 @@ public abstract class AbstractIntegrationTest {
    */
   protected void runAsAdmin(@NonNull Runnable task) {
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
 
     // Create a temporary system-like authentication with ADMIN role
     Set<SimpleGrantedAuthority> authorities = new HashSet<>();
     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
     authorities.add(new SimpleGrantedAuthority("ADMIN"));
 
-    org.springframework.security.core.userdetails.UserDetails systemUser =
-        org.springframework.security.core.userdetails.User.withUsername("system")
-            .password("password")
-            .authorities(authorities)
-            .build();
+    Account systemAccount = new Account("system", "password", "system@example.com");
+    systemAccount.setRoles(
+        Collections.singleton(
+            new com.github.javydreamercsw.base.domain.account.Role(
+                com.github.javydreamercsw.base.domain.account.RoleName.ADMIN, "ADMIN")));
+    com.github.javydreamercsw.base.security.CustomUserDetails principal =
+        new com.github.javydreamercsw.base.security.CustomUserDetails(systemAccount, null);
 
     UsernamePasswordAuthenticationToken adminAuth =
-        new UsernamePasswordAuthenticationToken(systemUser, "password", authorities);
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(adminAuth);
+
     SecurityContextHolder.setContext(context);
+    TestSecurityContextHolder.setContext(context);
 
     try {
       task.run();
     } finally {
-      // Restore original context
-      if (originalAuth != null) {
-        SecurityContextHolder.getContext().setAuthentication(originalAuth);
-      } else {
-        SecurityContextHolder.clearContext();
-      }
+      // Restore original contexts
+      restoreSecurityContext(originalAuth, originalTestAuth);
     }
   }
 
@@ -353,7 +368,9 @@ public abstract class AbstractIntegrationTest {
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);
+
     SecurityContextHolder.setContext(context);
+    TestSecurityContextHolder.setContext(context);
   }
 
   protected void loginAs(String username) {
@@ -369,6 +386,10 @@ public abstract class AbstractIntegrationTest {
   /** Refreshes the current security context by re-loading the authenticated user from the DB. */
   protected void refreshSecurityContext() {
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth == null) {
+      currentAuth = TestSecurityContextHolder.getContext().getAuthentication();
+    }
+
     if (currentAuth != null) {
       final String username;
       if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
@@ -516,6 +537,11 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearAllRepositories() {
+    log.info("AbstractIntegrationTest.clearAllRepositories() called");
+
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
+
     forceLoginAsAdmin();
     ensureAuthenticatedUserExists();
     forceLoginAsAdmin();
@@ -583,8 +609,9 @@ public abstract class AbstractIntegrationTest {
       entityManager.clear();
     }
 
-    // Re-verify and refresh the authenticated user
-    forceLoginAsAdmin();
+    // Restore original context if it existed
+    restoreSecurityContext(originalAuth, originalTestAuth);
+    refreshSecurityContext();
   }
 
   private void forceLoginAsAdmin() {
@@ -592,6 +619,11 @@ public abstract class AbstractIntegrationTest {
         .findByUsername("admin")
         .ifPresentOrElse(
             account -> {
+              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
+              com.github.javydreamercsw.base.security.CustomUserDetails principal =
+                  new com.github.javydreamercsw.base.security.CustomUserDetails(account, wrestler);
+
               SecurityContext context = SecurityContextHolder.createEmptyContext();
               List<SimpleGrantedAuthority> authorities =
                   account.getRoles().stream()
@@ -599,10 +631,11 @@ public abstract class AbstractIntegrationTest {
                       .toList();
               UsernamePasswordAuthenticationToken auth =
                   new UsernamePasswordAuthenticationToken(
-                      account.getUsername(), account.getPassword(), authorities);
+                      principal, account.getPassword(), authorities);
               context.setAuthentication(auth);
 
               SecurityContextHolder.setContext(context);
+              TestSecurityContextHolder.setContext(context);
 
               log.debug("Force logged in as admin. Authorities: {}", authorities);
             },
@@ -612,18 +645,22 @@ public abstract class AbstractIntegrationTest {
               authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
               authorities.add(new SimpleGrantedAuthority("ADMIN"));
 
-              org.springframework.security.core.userdetails.UserDetails systemUser =
-                  org.springframework.security.core.userdetails.User.withUsername("system")
-                      .password("password")
-                      .authorities(authorities)
-                      .build();
+              Account systemAccount = new Account("system", "password", "system@example.com");
+              systemAccount.setRoles(
+                  Collections.singleton(
+                      new com.github.javydreamercsw.base.domain.account.Role(
+                          com.github.javydreamercsw.base.domain.account.RoleName.ADMIN, "ADMIN")));
+              com.github.javydreamercsw.base.security.CustomUserDetails principal =
+                  new com.github.javydreamercsw.base.security.CustomUserDetails(
+                      systemAccount, null);
 
               UsernamePasswordAuthenticationToken adminAuth =
-                  new UsernamePasswordAuthenticationToken(systemUser, "password", authorities);
+                  new UsernamePasswordAuthenticationToken(principal, "password", authorities);
 
               SecurityContext context = SecurityContextHolder.createEmptyContext();
               context.setAuthentication(adminAuth);
               SecurityContextHolder.setContext(context);
+              TestSecurityContextHolder.setContext(context);
             });
   }
 

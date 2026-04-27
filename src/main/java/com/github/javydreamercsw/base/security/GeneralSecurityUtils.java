@@ -17,14 +17,19 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -95,28 +100,46 @@ public final class GeneralSecurityUtils {
       @NonNull String password,
       @NonNull String role) {
     SecurityContext originalContext = SecurityContextHolder.getContext();
+    Authentication currentAuth = originalContext.getAuthentication();
+
+    // If already authenticated as the requested user, just run the supplier
+    if (currentAuth != null && currentAuth.getName().equals(username)) {
+      log.trace("Already authenticated as '{}', skipping context switch", username);
+      return supplier.get();
+    }
 
     try {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
 
       // Create a mock account and role for the principal
       Account account = new Account(username, password, username + "@example.com");
-      account.setId(1L);
+      RoleName rn = RoleName.valueOf(role.replace("ROLE_", ""));
+      Role r = new Role(rn, rn.name());
+      account.setRoles(Collections.singleton(r));
+
+      // Try to reload real account if possible to have a valid ID and more data
       try {
-        RoleName roleName = RoleName.valueOf(role);
-        Role r = new Role(roleName, roleName.name() + " role");
-        r.setId((long) roleName.ordinal() + 100);
-        account.setRoles(Collections.singleton(r));
-      } catch (IllegalArgumentException e) {
-        log.warn("Invalid role provided: {}", role);
+        ApplicationContext appCtx =
+            com.github.javydreamercsw.base.config.ApplicationContextProvider
+                .getApplicationContext();
+        if (appCtx != null) {
+          AccountRepository repo = appCtx.getBean(AccountRepository.class);
+          account = repo.findByUsername(username).orElse(account);
+        }
+      } catch (Exception e) {
+        // Fallback to mock
       }
 
-      CustomUserDetails userDetails = new CustomUserDetails(account, null);
-      java.util.Collection<? extends org.springframework.security.core.GrantedAuthority>
-          authorities = userDetails.getAuthorities();
+      CustomUserDetails principal = new CustomUserDetails(account, null);
+
+      Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+      authorities.add(new SimpleGrantedAuthority(role));
+      if (!role.startsWith("ROLE_")) {
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+      }
 
       Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
+          new UsernamePasswordAuthenticationToken(principal, password, authorities);
       context.setAuthentication(authentication);
 
       log.debug(
@@ -124,7 +147,6 @@ public final class GeneralSecurityUtils {
           username,
           authorities);
       SecurityContextHolder.setContext(context);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
 
       // Also update TestSecurityContextHolder via reflection if it exists
       try {
