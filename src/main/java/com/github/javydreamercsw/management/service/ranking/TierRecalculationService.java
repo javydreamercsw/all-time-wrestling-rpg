@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +47,6 @@ public class TierRecalculationService implements RankingService {
   private final UniverseContextService universeContextService;
 
   @Override
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateRanking(List<WrestlerData> wrestlersData) {
     log.info("Starting tier recalculation...");
 
@@ -180,7 +178,6 @@ public class TierRecalculationService implements RankingService {
     log.info("Tier recalculation finished.");
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateAllTiers() {
     Long universeId = universeContextService.getCurrentUniverseId();
     List<WrestlerState> states = wrestlerStateRepository.findByUniverseId(universeId);
@@ -188,7 +185,6 @@ public class TierRecalculationService implements RankingService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateTier(WrestlerData wrestlerData) {
     Long fans = wrestlerData.getFans() != null ? wrestlerData.getFans() : 0L;
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());

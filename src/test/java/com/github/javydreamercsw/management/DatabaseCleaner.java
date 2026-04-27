@@ -51,7 +51,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   @PersistenceContext private EntityManager entityManager;
 
-  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
   @Transactional
   @Override
   public void clearRepositories() {

@@ -104,8 +104,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -214,33 +212,37 @@ public class DataInitializer implements Initializable {
     this.objectMapper = objectMapper;
   }
 
-  @Transactional(propagation = Propagation.REQUIRED, timeout = 1200)
+  @org.springframework.security.access.prepost.PreAuthorize("permitAll()")
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
-      syncAiSettingsFromEnvironment();
-      initializeGameDate();
-      loadSegmentRulesFromFile();
-      syncShowTypesFromFile();
-      loadSegmentTypesFromFile();
-      loadShowTemplatesFromFile();
-      syncSetsFromFile();
-      syncCardsFromFile();
-      syncNpcsFromFile();
-      syncLocationsFromFile();
-      syncArenasFromFile();
-      syncWrestlersFromFile();
-      syncRelationshipsFromFile();
-      syncChampionshipsFromFile();
-      syncDecksFromFile();
-      syncFactionsFromFile();
-      syncTeamsFromFile();
-      syncCampaignAbilityCardsFromFile();
-      campaignUpgradeService.loadUpgrades();
-      syncCommentatorsFromFile();
-      syncCommentaryTeamsFromFile();
-      loadAchievements();
-      syncRingsideActions();
+      com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+          () -> {
+            syncAiSettingsFromEnvironment();
+            initializeGameDate();
+            loadSegmentRulesFromFile();
+            syncShowTypesFromFile();
+            loadSegmentTypesFromFile();
+            loadShowTemplatesFromFile();
+            syncSetsFromFile();
+            syncCardsFromFile();
+            syncNpcsFromFile();
+            syncLocationsFromFile();
+            syncArenasFromFile();
+            syncWrestlersFromFile();
+            syncRelationshipsFromFile();
+            syncChampionshipsFromFile();
+            syncDecksFromFile();
+            syncFactionsFromFile();
+            syncTeamsFromFile();
+            syncCampaignAbilityCardsFromFile();
+            campaignUpgradeService.loadUpgrades();
+            syncCommentatorsFromFile();
+            syncCommentaryTeamsFromFile();
+            loadAchievements();
+            syncRingsideActions();
+            return null;
+          });
     }
   }
 
