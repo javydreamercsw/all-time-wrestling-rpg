@@ -52,6 +52,9 @@ import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
 import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
+import com.github.javydreamercsw.management.dto.RelationshipImportDTO;
+import com.github.javydreamercsw.management.dto.RingsideActionDTO;
+import com.github.javydreamercsw.management.dto.RingsideActionTypeDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
@@ -234,12 +237,9 @@ public class DataInitializer implements Initializable {
       log.debug("Loading ringside action types from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos =
-            mapper.readValue(
-                is,
-                new TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RingsideActionTypeDTO>>() {});
-        for (com.github.javydreamercsw.management.dto.RingsideActionTypeDTO dto : dtos) {
+        List<RingsideActionTypeDTO> dtos =
+            mapper.readValue(is, new TypeReference<List<RingsideActionTypeDTO>>() {});
+        for (RingsideActionTypeDTO dto : dtos) {
           ringsideActionDataService.createOrUpdateType(
               dto.getName(),
               dto.isIncreasesAwareness(),
@@ -260,12 +260,8 @@ public class DataInitializer implements Initializable {
       log.debug("Loading ringside actions from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos =
-            mapper.readValue(
-                is,
-                new TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RingsideActionDTO>>() {});
-        for (com.github.javydreamercsw.management.dto.RingsideActionDTO dto : dtos) {
+        List<RingsideActionDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
+        for (RingsideActionDTO dto : dtos) {
           ringsideActionDataService.createOrUpdateAction(
               dto.getName(),
               dto.getType(),
@@ -288,7 +284,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading achievements from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var achievementsFromFile = mapper.readValue(is, new TypeReference<List<Achievement>>() {});
+        List<Achievement> achievementsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (Achievement a : achievementsFromFile) {
           Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
           if (existingOpt.isPresent()) {
@@ -320,7 +316,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading commentators from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<CommentatorImportDTO>>() {});
+        List<CommentatorImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (CommentatorImportDTO cDto : dtos) {
           commentaryService.createOrUpdateCommentator(
               cDto.getNpcName(),
@@ -347,7 +343,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading commentary teams from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<CommentaryTeamImportDTO>>() {});
+        List<CommentaryTeamImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (CommentaryTeamImportDTO teamDto : dtos) {
           commentaryService.createOrUpdateTeam(teamDto.getTeamName(), teamDto.getMemberNames());
           log.debug("Loaded commentary team: {}", teamDto.getTeamName());
@@ -475,8 +471,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading campaign ability cards from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var cardsFromFile =
-            mapper.readValue(is, new TypeReference<List<CampaignAbilityCardDTO>>() {});
+        List<CampaignAbilityCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (CampaignAbilityCardDTO dto : cardsFromFile) {
           campaignAbilityCardService.createOrUpdateCard(
               dto.getName(),
@@ -506,8 +501,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading segment rules from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var segmentRulesFromFile =
-            mapper.readValue(is, new TypeReference<List<SegmentRuleDTO>>() {});
+        List<SegmentRuleDTO> segmentRulesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (SegmentRuleDTO dto : segmentRulesFromFile) {
           segmentRuleService.createOrUpdateRule(
@@ -538,7 +532,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading show types from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
+        List<ShowType> showTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (ShowType st : showTypesFromFile) {
           showTypeService.createOrUpdateShowType(
               st.getName(), st.getDescription(), st.getExpectedMatches(), st.getExpectedPromos());
@@ -563,8 +557,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading segment types from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var segmentTypesFromFile =
-            mapper.readValue(is, new TypeReference<List<SegmentTypeDTO>>() {});
+        List<SegmentTypeDTO> segmentTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (SegmentTypeDTO dto : segmentTypesFromFile) {
           // Only create if it's new
@@ -606,7 +599,7 @@ public class DataInitializer implements Initializable {
           "Show templates table is empty - loading templates from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var templatesFromFile = mapper.readValue(is, new TypeReference<List<ShowTemplateDTO>>() {});
+        List<ShowTemplateDTO> templatesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (ShowTemplateDTO dto : templatesFromFile) {
           ShowTemplate template =
@@ -655,7 +648,7 @@ public class DataInitializer implements Initializable {
       // Load card sets from JSON file
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var setsFromFile = mapper.readValue(is, new TypeReference<List<CardSet>>() {});
+        List<CardSet> setsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (CardSet c : setsFromFile) {
           Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getCode());
           if (existingSetOpt.isPresent()) {
@@ -696,7 +689,7 @@ public class DataInitializer implements Initializable {
           // Load cards from JSON file
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
-            var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
+            List<CardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
 
             for (CardDTO dto : cardsFromFile) {
               CardSet set = setCache.get(dto.getSet());
@@ -754,8 +747,8 @@ public class DataInitializer implements Initializable {
           // Load wrestlers from JSON file
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
-            var wrestlersFromFile =
-                mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
+            List<WrestlerImportDTO> wrestlersFromFile =
+                mapper.readValue(is, new TypeReference<>() {});
             // Map existing wrestlers by name (handle duplicates by keeping the first one)
             Map<String, Wrestler> existing =
                 wrestlerRepository.findAll().stream()
@@ -930,7 +923,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading championships from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var championshipsFromFile = mapper.readValue(is, new TypeReference<List<TitleDTO>>() {});
+        List<TitleDTO> championshipsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (TitleDTO dto : championshipsFromFile) {
           Optional<Title> existingTitle = titleService.findByName(dto.getName());
           Title title;
@@ -1008,7 +1001,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading decks from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
+        List<DeckDTO> decksFromFile = mapper.readValue(is, new TypeReference<>() {});
         Map<String, Wrestler> wrestlers =
             wrestlerRepository.findAll().stream()
                 .collect(
@@ -1128,7 +1121,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading npcs from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<NpcDTO>>() {});
+        List<NpcDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (NpcDTO dto : dtos) {
           Npc npc = npcService.findByName(dto.getName());
           if (npc == null) {
@@ -1169,7 +1162,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading factions from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<FactionImportDTO>>() {});
+        List<FactionImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (FactionImportDTO dto : dtos) {
           Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
           if (leaderOpt.isPresent()) {
@@ -1213,7 +1206,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading teams from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<TeamImportDTO>>() {});
+        List<TeamImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (TeamImportDTO dto : dtos) {
           Optional<Wrestler> wrestler1Opt = wrestlerRepository.findByName(dto.getWrestler1());
           Optional<Wrestler> wrestler2Opt = wrestlerRepository.findByName(dto.getWrestler2());
@@ -1256,8 +1249,8 @@ public class DataInitializer implements Initializable {
     if (resource.exists()) {
       log.debug("Loading locations from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
-        var locationsFromFile =
-            objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+        List<LocationImportDTO> locationsFromFile =
+            objectMapper.readValue(is, new TypeReference<>() {});
         if (locationsFromFile == null) {
           log.warn("No locations found in {}", resource.getPath());
           return;
@@ -1300,8 +1293,7 @@ public class DataInitializer implements Initializable {
     if (resource.exists()) {
       log.debug("Loading arenas from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
-        var arenasFromFile =
-            objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+        List<ArenaImportDTO> arenasFromFile = objectMapper.readValue(is, new TypeReference<>() {});
         if (arenasFromFile == null) {
           log.warn("No arenas found in {}", resource.getPath());
           return;
@@ -1363,13 +1355,10 @@ public class DataInitializer implements Initializable {
     if (resource.exists()) {
       log.debug("Loading relationships from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
-        var dtos =
-            objectMapper.readValue(
-                is,
-                new com.fasterxml.jackson.core.type.TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+        List<RelationshipImportDTO> dtos =
+            objectMapper.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
 
-        for (com.github.javydreamercsw.management.dto.RelationshipImportDTO dto : dtos) {
+        for (RelationshipImportDTO dto : dtos) {
           Optional<Wrestler> w1 = wrestlerRepository.findByName(dto.getWrestler1());
           Optional<Wrestler> w2 = wrestlerRepository.findByName(dto.getWrestler2());
 
