@@ -47,8 +47,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.hasRole(RoleName.ADMIN)).isTrue();
     assertThat(securityUtils.hasRole(RoleName.PLAYER)).isFalse();
@@ -60,8 +59,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.isAdmin()).isTrue();
     assertThat(securityUtils.isBooker()).isFalse();
@@ -80,13 +78,11 @@ class SecurityUtilsTest {
   void testGetCurrentUsername() {
     CustomUserDetails user = mock(CustomUserDetails.class);
     when(user.getUsername()).thenReturn("testuser");
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.getCurrentUsername()).isEqualTo("testuser");
 
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.empty());
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.empty());
     assertThat(securityUtils.getCurrentUsername()).isEqualTo("anonymous");
   }
 
@@ -94,13 +90,11 @@ class SecurityUtilsTest {
   void testGetCurrentAccountId() {
     CustomUserDetails user = mock(CustomUserDetails.class);
     when(user.getId()).thenReturn(123L);
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.getCurrentAccountId()).contains(123L);
 
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.empty());
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.empty());
     assertThat(securityUtils.getCurrentAccountId()).isEmpty();
   }
 
@@ -110,8 +104,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.canCreate()).isTrue();
 
@@ -127,8 +120,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.canEdit()).isTrue();
 
@@ -149,8 +141,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_BOOKER")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     assertThat(securityUtils.canDelete()).isTrue();
 
@@ -176,8 +167,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     Object target = new Object();
     assertThat(securityUtils.canEdit(target)).isTrue();
@@ -198,8 +188,7 @@ class SecurityUtilsTest {
     when(user.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_BOOKER")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
 
     Object target = new Object();
     assertThat(securityUtils.canDelete(target)).isTrue();
@@ -208,6 +197,17 @@ class SecurityUtilsTest {
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
     assertThat(securityUtils.canDelete(target)).isFalse();
+  }
+
+  @Test
+  void testGetAuthenticatedUserWithAnonymousUser() {
+    // Simulate anonymous user with a String principal
+    when(authenticationContext.getAuthenticatedUser(Object.class))
+        .thenReturn(Optional.of("anonymousUser"));
+
+    Optional<CustomUserDetails> result = securityUtils.getAuthenticatedUser();
+
+    assertThat(result).isEmpty();
   }
 
   @Test
