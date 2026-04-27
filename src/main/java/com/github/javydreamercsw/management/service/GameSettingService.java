@@ -44,12 +44,12 @@ public class GameSettingService {
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
   public String getNotionToken() {
     return repository.findById(NOTION_TOKEN_KEY).map(GameSetting::getValue).orElse(null);
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
   @Transactional
   public void setNotionToken(String token) {
     save(NOTION_TOKEN_KEY, token);
@@ -64,7 +64,7 @@ public class GameSettingService {
         .orElse(true); // Enabled by default
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
   @Transactional
   public void setWearAndTearEnabled(boolean enabled) {
     save(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
@@ -93,19 +93,19 @@ public class GameSettingService {
     return repository.findById(NEWS_STRATEGY_KEY).map(GameSetting::getValue).orElse("SEGMENT");
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
   @Transactional
   public void setAiNewsEnabled(boolean enabled) {
     save(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
   @Transactional
   public void setNewsRumorChance(int chance) {
     save(NEWS_RUMOR_CHANCE_KEY, String.valueOf(chance));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
   @Transactional
   public void setNewsStrategy(String strategy) {
     save(NEWS_STRATEGY_KEY, strategy);

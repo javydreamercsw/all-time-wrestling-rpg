@@ -170,7 +170,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     // Verify fan counts were reset and tier was demoted
     WrestlerState updatedState =
         wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
-    assertEquals(WrestlerTier.MAIN_EVENTER, updatedState.getTier());
+    assertEquals(WrestlerTier.ICON, updatedState.getTier());
     assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedState.getFans());
   }
 

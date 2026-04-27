@@ -25,7 +25,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
@@ -34,6 +33,11 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
@@ -51,6 +55,7 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
@@ -62,6 +67,10 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -78,19 +87,22 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -140,6 +152,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected ShowTemplateRepository showTemplateRepository;
   @Autowired protected ShowTemplateService showTemplateService;
   @Autowired protected AccountRepository accountRepository;
+  @Autowired protected Environment environment;
   @Autowired protected RoleRepository roleRepository;
   @Autowired protected PasswordEncoder passwordEncoder;
   @Autowired protected LeagueRepository leagueRepository;
@@ -148,35 +161,48 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected RivalryRepository rivalryRepository;
   @Autowired protected WrestlerStateRepository wrestlerStateRepository;
   @Autowired protected ShowTypeService showTypeService;
-  @Autowired protected TeamService teamService;
-  @Autowired protected ObjectMapper objectMapper;
-  @Autowired protected TransactionTemplate transactionTemplate;
-  @Autowired protected FactionRivalryRepository factionRivalryRepository;
-  @Autowired protected FactionRepository factionRepository;
-  @Autowired protected TeamRepository teamRepository;
-  @Autowired protected NpcRepository npcRepository;
+  @Autowired protected SegmentRuleRepository segmentRuleRepository;
   @Autowired protected TitleRepository titleRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
+  @Autowired protected CommentaryTeamRepository commentaryTeamRepository;
+  @Autowired protected CommentatorRepository commentatorRepository;
+  @Autowired protected TeamRepository teamRepository;
+  @Autowired protected TeamService teamService;
   @Autowired protected UniverseRepository universeRepository;
   @Autowired protected UniverseContextService universeContextService;
-  @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
-  @Autowired protected DraftRepository draftRepository;
-  @Autowired protected DraftPickRepository draftPickRepository;
-  @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
   @Autowired protected CampaignRepository campaignRepository;
+  @Autowired protected CampaignService campaignService;
   @Autowired protected CampaignStateRepository campaignStateRepository;
+  @Autowired protected CampaignChapterService campaignChapterService;
+
+  @Autowired
+  protected com.github.javydreamercsw.management.service.campaign.StorylineDirectorService
+      storylineDirectorService;
+
+  @Autowired protected DatabaseCleanup databaseCleanup;
+  @Autowired protected TransactionTemplate transactionTemplate;
+  @PersistenceContext protected EntityManager entityManager;
+  @Autowired protected ObjectMapper objectMapper;
+  @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired protected SegmentNarrationService segmentNarrationService;
   @Autowired protected BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired protected CampaignEncounterRepository campaignEncounterRepository;
   @Autowired protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
-  @Autowired protected DatabaseCleanup databaseCleanup;
-  @Autowired protected DataInitializer dataInitializer;
-  @Autowired protected com.github.javydreamercsw.base.AccountInitializer accountInitializer;
-
-  @jakarta.persistence.PersistenceContext protected jakarta.persistence.EntityManager entityManager;
-
+  @Autowired protected DraftRepository draftRepository;
+  @Autowired protected DraftPickRepository draftPickRepository;
+  @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
+  @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
+  @Autowired protected FactionRivalryRepository factionRivalryRepository;
+  @Autowired protected FactionRepository factionRepository;
+  @Autowired protected NpcRepository npcRepository;
+  @Autowired protected CardRepository cardRepository;
+  @Autowired protected CardSetRepository cardSetRepository;
+  @Autowired protected DeckCardRepository deckCardRepository;
+  @Autowired protected GameSettingService gameSettingService;
+  @Autowired protected FactionRivalryService factionRivalryService;
   protected Universe defaultUniverse;
 
-  @org.springframework.beans.factory.annotation.Value("${data.initializer.enabled:true}")
+  @Value("${data.initializer.enabled:true}")
   protected boolean dataInitializerEnabled;
 
   @Autowired(required = false)
@@ -189,52 +215,131 @@ public abstract class AbstractIntegrationTest {
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
     Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
 
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          forceLoginAsAdmin();
+    forceLoginAsAdmin();
 
-          // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
-          // during the REQUIRES_NEW transaction in clearAllRepositories
-          universeRepository
-              .findByName("Default Universe")
-              .ifPresent(
-                  u -> {
-                    this.defaultUniverse = u;
-                    com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                    universeContextService.setCurrentUniverse(u);
-                  });
-          return null;
-        });
+    // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
+    // during the REQUIRES_NEW transaction in clearAllRepositories
+    universeRepository
+        .findByName("Default Universe")
+        .ifPresent(
+            u -> {
+              this.defaultUniverse = u;
+              com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+              universeContextService.setCurrentUniverse(u);
+            });
 
     clearAllRepositories();
 
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          // Re-verify if not set by clearAllRepositories
-          if (this.defaultUniverse == null) {
-            universeRepository
-                .findByName("Default Universe")
-                .ifPresent(
-                    u -> {
-                      this.defaultUniverse = u;
-                      com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                      universeContextService.setCurrentUniverse(u);
-                    });
-          }
-          return null;
-        });
+    // Re-verify if not set by clearAllRepositories
+    if (this.defaultUniverse == null) {
+      universeRepository
+          .findByName("Default Universe")
+          .ifPresent(
+              u -> {
+                this.defaultUniverse = u;
+                com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                universeContextService.setCurrentUniverse(u);
+              });
+    }
 
     // Restore original context if it existed
     restoreSecurityContext(originalAuth, originalTestAuth);
 
     // Default login as admin ONLY if no other authentication is present
-    if (SecurityContextHolder.getContext().getAuthentication() == null) {
-      log.info("No authentication found, logging in as default admin...");
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth == null
+        || "system".equals(currentAuth.getName())
+        || "anonymousUser".equals(currentAuth.getName())
+        || !currentAuth.isAuthenticated()) {
+      log.info("No valid authentication found, logging in as default admin...");
       loginAs("admin");
     }
   }
 
-  public Wrestler createTestWrestler(@NonNull String name) {
+  protected void clearAllRepositories() {
+    log.info("AbstractIntegrationTest.clearAllRepositories() called");
+
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
+
+    forceLoginAsAdmin();
+    ensureAuthenticatedUserExists();
+    forceLoginAsAdmin();
+
+    // 1. Reset sequence (H2 specific) - Try directly first
+    try {
+      entityManager.clear();
+      transactionTemplate.setPropagationBehavior(
+          org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      transactionTemplate.execute(
+          status -> {
+            forceLoginAsAdmin();
+            entityManager
+                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                .executeUpdate();
+            return null;
+          });
+    } catch (Exception e) {
+      log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
+    }
+
+    // 2. Perform cleanup and init
+    transactionTemplate.execute(
+        status -> {
+          forceLoginAsAdmin();
+
+          log.info("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
+
+          clearCache();
+
+          // Always ensure at least one universe exists for tests
+          synchronized (AbstractIntegrationTest.class) {
+            try {
+              Universe newUniverse =
+                  Universe.builder()
+                      .name("Default Universe")
+                      .type(Universe.UniverseType.GLOBAL)
+                      .build();
+              newUniverse = universeRepository.saveAndFlush(newUniverse);
+              this.defaultUniverse = newUniverse;
+              com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
+              universeContextService.setCurrentUniverse(newUniverse);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+              universeRepository
+                  .findByName("Default Universe")
+                  .ifPresent(
+                      u -> {
+                        this.defaultUniverse = u;
+                        com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                        universeContextService.setCurrentUniverse(u);
+                      });
+            }
+          }
+
+          // 3. Re-initialize data
+          if (dataInitializerEnabled) {
+            dataInitializer.init();
+          }
+          return null;
+        });
+
+    // Clear the entity manager
+    if (entityManager != null) {
+      entityManager.clear();
+    }
+
+    // Restore original context if it existed
+    restoreSecurityContext(originalAuth, originalTestAuth);
+  }
+
+  protected void clearCache() {
+    if (cacheManager != null) {
+      cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
+  }
+
+  protected Wrestler createTestWrestler(@NonNull String name) {
     return createTestWrestler(name, 0L);
   }
 
@@ -254,68 +359,17 @@ public abstract class AbstractIntegrationTest {
 
   protected Account createTestAccount(
       @NonNull String username, @NonNull String password, @NonNull RoleName roleName) {
-    Optional<Account> existing = accountRepository.findByUsername(username);
-    if (existing.isPresent()) {
-      return existing.get();
-    }
-
     Role role =
         roleRepository
             .findByName(roleName)
             .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name())));
 
     Account account =
-        new Account(username, passwordEncoder.encode(password), username + "@example.com");
+        new Account(username, passwordEncoder.encode(password), username + "@test.com");
     account.setRoles(Collections.singleton(role));
-    return accountRepository.save(account);
+    return accountRepository.saveAndFlush(account);
   }
 
-  protected SegmentNarrationService.SegmentNarrationContext createCustomSegmentContext() {
-    SegmentNarrationService.SegmentNarrationContext context =
-        new SegmentNarrationService.SegmentNarrationContext();
-
-    SegmentNarrationService.SegmentTypeContext matchType =
-        new SegmentNarrationService.SegmentTypeContext();
-    matchType.setSegmentType("Hell in a Cell");
-    matchType.setStipulation("King of the Ring 1998");
-    matchType.setRules(java.util.Arrays.asList("No Disqualification", "Falls Count Anywhere"));
-    context.setSegmentType(matchType);
-
-    SegmentNarrationService.VenueContext venue = new SegmentNarrationService.VenueContext();
-    venue.setName("Civic Arena");
-    venue.setLocation("Pittsburgh, Pennsylvania");
-    venue.setType("Indoor Arena");
-    venue.setCapacity(17_000);
-    venue.setDescription("Historic venue for legendary matches");
-    venue.setAtmosphere("Intense and foreboding");
-    venue.setSignificance("Site of the most famous Hell in a Cell segment");
-    context.setVenue(venue);
-
-    SegmentNarrationService.WrestlerContext undertaker =
-        new SegmentNarrationService.WrestlerContext();
-    undertaker.setName("The Undertaker");
-    undertaker.setDescription("The Deadman - Phenom of WWE");
-
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext mankind =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
-    mankind.setName("Mankind");
-    mankind.setDescription("Hardcore legend Mick Foley");
-
-    context.setWrestlers(java.util.Arrays.asList(undertaker, mankind));
-
-    context.setAudience("Shocked and horrified crowd of 17,000");
-    context.setDeterminedOutcome(
-        "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
-
-    return context;
-  }
-
-  /**
-   * Helper to run a task with ADMIN privileges in tests, synchronizing both standard and test
-   * security contexts.
-   *
-   * @param task The task to run
-   */
   protected void runAsAdmin(@NonNull Runnable task) {
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
     Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
@@ -400,6 +454,8 @@ public abstract class AbstractIntegrationTest {
       } else if (currentAuth.getPrincipal()
           instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
         username = userDetails.getUsername();
+      } else if (currentAuth.getPrincipal() instanceof String s) {
+        username = s;
       } else {
         username = null;
       }
@@ -426,98 +482,73 @@ public abstract class AbstractIntegrationTest {
     TestSecurityContextHolder.clearContext();
   }
 
-  protected void clearCache() {
-    if (cacheManager != null) {
-      log.info("Clearing all caches...");
-      cacheManager
-          .getCacheNames()
-          .forEach(
-              cacheName -> {
-                var cache = cacheManager.getCache(cacheName);
-                if (cache != null) {
-                  cache.clear();
-                }
-              });
-    }
-  }
-
-  protected void restoreSecurityContext(
-      Authentication originalAuth, Authentication originalTestAuth) {
+  void restoreSecurityContext(Authentication originalAuth, Authentication originalTestAuth) {
     if (originalAuth != null) {
-      SecurityContext originalContext = SecurityContextHolder.createEmptyContext();
-      originalContext.setAuthentication(originalAuth);
-      SecurityContextHolder.setContext(originalContext);
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      context.setAuthentication(originalAuth);
+      SecurityContextHolder.setContext(context);
     } else {
       SecurityContextHolder.clearContext();
     }
 
     if (originalTestAuth != null) {
-      TestSecurityContextHolder.setAuthentication(originalTestAuth);
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      context.setAuthentication(originalTestAuth);
+      TestSecurityContextHolder.setContext(context);
     } else {
       TestSecurityContextHolder.clearContext();
     }
   }
 
-  protected void clearRepositoriesOnly() {
-    transactionTemplate.execute(
-        status -> {
-          runAsAdmin(
-              () -> {
-                log.info("Cleaning up database using DatabaseCleanup (No init)...");
-                databaseCleanup.clearRepositories();
-                clearCache();
-              });
-          return null;
-        });
-  }
-
+  /**
+   * Helper to ensure the currently authenticated user actually exists in the database. Useful when
+   * switching between transactional contexts or after a database reset.
+   */
   protected void ensureAuthenticatedUserExists() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null) {
-      String username = null;
-      com.github.javydreamercsw.base.security.CustomUserDetails customUserDetails = null;
-
-      if (auth.getPrincipal()
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null && currentAuth.isAuthenticated()) {
+      final String username;
+      if (currentAuth.getPrincipal() instanceof Account account) {
+        username = account.getUsername();
+      } else if (currentAuth.getPrincipal()
           instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
         username = userDetails.getUsername();
-        customUserDetails = userDetails;
-      } else if (auth.getPrincipal()
+      } else if (currentAuth.getPrincipal()
           instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
         username = userDetails.getUsername();
+      } else if (currentAuth.getPrincipal() instanceof String s) {
+        username = s;
+      } else {
+        username = null;
       }
 
-      if (username != null) {
-        log.info("ensureAuthenticatedUserExists found current user: {}", username);
+      if (username != null && !username.equals("system") && !username.equals("anonymousUser")) {
         Account account = accountRepository.findByUsername(username).orElse(null);
         if (account == null) {
           log.info("Re-creating missing authenticated user in DB: {}", username);
           account =
-              new Account(username, passwordEncoder.encode("password"), username + "@example.com");
-
-          Set<Role> roles = new HashSet<>();
-          for (org.springframework.security.core.GrantedAuthority authority :
-              auth.getAuthorities()) {
-            String roleNameStr = authority.getAuthority();
-            if (roleNameStr.startsWith("ROLE_")) {
-              roleNameStr = roleNameStr.substring(5);
-            }
-            try {
-              RoleName roleName = RoleName.valueOf(roleNameStr);
-              roles.add(
-                  roleRepository
-                      .findByName(roleName)
-                      .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name()))));
-            } catch (IllegalArgumentException e) {
-              // Not a standard role, skip
-            }
-          }
-          account.setRoles(roles);
-          account = accountRepository.saveAndFlush(account);
+              createTestAccount(
+                  username,
+                  RoleName.valueOf(
+                      currentAuth.getAuthorities().stream()
+                          .map(a -> a.getAuthority().replace("ROLE_", ""))
+                          .filter(
+                              a -> {
+                                try {
+                                  RoleName.valueOf(a);
+                                  return true;
+                                } catch (Exception e) {
+                                  return false;
+                                }
+                              })
+                          .findFirst()
+                          .orElse("PLAYER")));
         }
 
-        // Re-create wrestler if it was in the original context but is now missing from DB
-        if (customUserDetails != null && customUserDetails.getWrestler() != null) {
-          String wrestlerName = customUserDetails.getWrestler().getName();
+        // Check if wrestler exists if this is a PLAYER role
+        if (currentAuth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_PLAYER"))) {
+          final String wrestlerName = username; // Default to username for test consistency
           if (wrestlerRepository.findByName(wrestlerName).isEmpty()) {
             log.info("Re-creating missing authenticated wrestler in DB: {}", wrestlerName);
             createTestWrestler(wrestlerName);
@@ -534,84 +565,6 @@ public abstract class AbstractIntegrationTest {
         }
       }
     }
-  }
-
-  protected void clearAllRepositories() {
-    log.info("AbstractIntegrationTest.clearAllRepositories() called");
-
-    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
-    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
-
-    forceLoginAsAdmin();
-    ensureAuthenticatedUserExists();
-    forceLoginAsAdmin();
-
-    // 1. Reset sequence (H2 specific) - Try directly first
-    try {
-      entityManager.clear();
-      transactionTemplate.setPropagationBehavior(
-          org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      transactionTemplate.execute(
-          status -> {
-            forceLoginAsAdmin();
-            entityManager
-                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-                .executeUpdate();
-            return null;
-          });
-    } catch (Exception e) {
-      log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
-    }
-
-    // 2. Perform cleanup and init
-    transactionTemplate.execute(
-        status -> {
-          forceLoginAsAdmin();
-
-          log.info("Cleaning up database using DatabaseCleanup...");
-          databaseCleanup.clearRepositories();
-
-          clearCache();
-
-          // Always ensure at least one universe exists for tests
-          synchronized (AbstractIntegrationTest.class) {
-            try {
-              Universe newUniverse =
-                  Universe.builder()
-                      .name("Default Universe")
-                      .type(Universe.UniverseType.GLOBAL)
-                      .build();
-              newUniverse = universeRepository.saveAndFlush(newUniverse);
-              this.defaultUniverse = newUniverse;
-              com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
-              universeContextService.setCurrentUniverse(newUniverse);
-            } catch (org.springframework.dao.DataIntegrityViolationException e) {
-              universeRepository
-                  .findByName("Default Universe")
-                  .ifPresent(
-                      u -> {
-                        this.defaultUniverse = u;
-                        com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                        universeContextService.setCurrentUniverse(u);
-                      });
-            }
-          }
-
-          // 3. Re-initialize data
-          if (dataInitializerEnabled) {
-            dataInitializer.init();
-          }
-          return null;
-        });
-
-    // Clear the entity manager
-    if (entityManager != null) {
-      entityManager.clear();
-    }
-
-    // Restore original context if it existed
-    restoreSecurityContext(originalAuth, originalTestAuth);
-    refreshSecurityContext();
   }
 
   private void forceLoginAsAdmin() {
@@ -666,5 +619,13 @@ public abstract class AbstractIntegrationTest {
 
   protected void cleanupLeagues() {
     clearAllRepositories();
+  }
+
+  protected void clearRepositoriesOnly() {
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          databaseCleanup.clearRepositories();
+          return null;
+        });
   }
 }
