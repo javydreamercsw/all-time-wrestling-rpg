@@ -37,6 +37,7 @@ import org.jspecify.annotations.Nullable;
 public class Injury extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "injury_id")
   private Long id;
 
@@ -151,11 +152,6 @@ public class Injury extends AbstractSyncableEntity<Long> {
       long months = days / 30;
       return months + (months == 1 ? " month" : " months");
     }
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   @PrePersist

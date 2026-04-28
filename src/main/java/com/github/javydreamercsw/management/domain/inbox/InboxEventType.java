@@ -17,23 +17,19 @@
 package com.github.javydreamercsw.management.domain.inbox;
 
 import java.util.Objects;
+import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 
 public final class InboxEventType {
+  @Getter(onMethod_ = {@NonNull})
   private final @NonNull String name;
+
+  @Getter(onMethod_ = {@NonNull})
   private final @NonNull String friendlyName;
 
   public InboxEventType(@NonNull String name, @NonNull String friendlyName) {
     this.name = name;
     this.friendlyName = friendlyName;
-  }
-
-  public @NonNull String getName() {
-    return name;
-  }
-
-  public @NonNull String getFriendlyName() {
-    return friendlyName;
   }
 
   @Override

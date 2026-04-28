@@ -43,6 +43,7 @@ import org.jspecify.annotations.Nullable;
 public class MultiWrestlerFeud extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "multi_wrestler_feud_id")
   private Long id;
 
@@ -81,11 +82,6 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   @OneToMany(mappedBy = "feud", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"feud"})
   private List<FeudHeatEvent> heatEvents = new ArrayList<>();
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

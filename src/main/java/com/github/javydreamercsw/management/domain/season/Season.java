@@ -44,6 +44,7 @@ import org.jspecify.annotations.Nullable;
 public class Season extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "season_id")
   private Long id;
 
@@ -139,11 +140,6 @@ public class Season extends AbstractSyncableEntity<Long> {
   public long getDurationDays() {
     Instant end = endDate != null ? endDate : Instant.now();
     return java.time.Duration.between(startDate, end).toDays();
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   @PrePersist

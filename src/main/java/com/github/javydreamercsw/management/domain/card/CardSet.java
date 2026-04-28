@@ -37,6 +37,7 @@ import org.jspecify.annotations.Nullable;
 public class CardSet extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "set_id")
   private Long id;
 
@@ -50,11 +51,6 @@ public class CardSet extends AbstractSyncableEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /** Ensure default values before persisting. */
   @PrePersist

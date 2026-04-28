@@ -40,6 +40,7 @@ import org.jspecify.annotations.Nullable;
 public class ShowType extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "show_type_id")
   private Long id;
 
@@ -57,11 +58,6 @@ public class ShowType extends AbstractSyncableEntity<Long> {
 
   @Column(name = "expected_promos", nullable = false)
   private int expectedPromos;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /** Ensure default values before persisting. */
   @PrePersist

@@ -53,6 +53,7 @@ public class ShowTemplate extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "template_id")
   private Long id;
 
@@ -109,11 +110,6 @@ public class ShowTemplate extends AbstractSyncableEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /**
    * Check if this is a Premium Live Event (PLE) template.

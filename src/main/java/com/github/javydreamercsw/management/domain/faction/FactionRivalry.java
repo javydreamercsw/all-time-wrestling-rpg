@@ -41,6 +41,7 @@ import org.jspecify.annotations.Nullable;
 public class FactionRivalry extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "faction_rivalry_id")
   private Long id;
 
@@ -77,11 +78,6 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
   @OneToMany(mappedBy = "factionRivalry", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"factionRivalry"})
   private List<FactionHeatEvent> heatEvents = new ArrayList<>();
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

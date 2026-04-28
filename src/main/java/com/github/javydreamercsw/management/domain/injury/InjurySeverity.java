@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.injury;
 
 import java.util.Random;
+import lombok.Getter;
 
 /**
  * Represents the severity levels of injuries in the ATW RPG system. Different severities have
@@ -35,15 +36,15 @@ public enum InjurySeverity {
   /** Critical injury - very high health penalty, very expensive to heal */
   CRITICAL("Critical", 4, 7, 2, 3, 1, 1, 25000L, "💀");
 
-  private final String displayName;
-  private final int minHealthPenalty;
-  private final int maxHealthPenalty;
-  private final int minStaminaPenalty;
-  private final int maxStaminaPenalty;
-  private final int minHandSizePenalty;
-  private final int maxHandSizePenalty;
-  private final Long baseHealingCost;
-  private final String emoji;
+  @Getter private final String displayName;
+  @Getter private final int minHealthPenalty;
+  @Getter private final int maxHealthPenalty;
+  @Getter private final int minStaminaPenalty;
+  @Getter private final int maxStaminaPenalty;
+  @Getter private final int minHandSizePenalty;
+  @Getter private final int maxHandSizePenalty;
+  @Getter private final Long baseHealingCost;
+  @Getter private final String emoji;
 
   InjurySeverity(
       String displayName,
@@ -109,43 +110,6 @@ public enum InjurySeverity {
   public int getHealingSuccessPercentage() {
     int threshold = getHealingSuccessThreshold();
     return ((6 - threshold + 1) * 100) / 6;
-  }
-
-  // Getters
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public int getMinHealthPenalty() {
-    return minHealthPenalty;
-  }
-
-  public int getMaxHealthPenalty() {
-    return maxHealthPenalty;
-  }
-
-  public int getMinStaminaPenalty() {
-    return minStaminaPenalty;
-  }
-
-  public int getMaxStaminaPenalty() {
-    return maxStaminaPenalty;
-  }
-
-  public int getMinHandSizePenalty() {
-    return minHandSizePenalty;
-  }
-
-  public int getMaxHandSizePenalty() {
-    return maxHandSizePenalty;
-  }
-
-  public Long getBaseHealingCost() {
-    return baseHealingCost;
-  }
-
-  public String getEmoji() {
-    return emoji;
   }
 
   /** Get display string with emoji. */

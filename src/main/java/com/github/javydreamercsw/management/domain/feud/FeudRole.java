@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.feud;
 
+import lombok.Getter;
+
 /**
  * Represents the role of a wrestler in a multi-wrestler feud. Roles help define storyline dynamics
  * and segment booking priorities.
@@ -45,9 +47,9 @@ public enum FeudRole {
   AUTHORITY(
       "Authority Figure", "Official, manager, or authority figure involved in the feud", "👔");
 
-  private final String displayName;
-  private final String description;
-  private final String emoji;
+  @Getter private final String displayName;
+  @Getter private final String description;
+  @Getter private final String emoji;
 
   FeudRole(String displayName, String description, String emoji) {
     this.displayName = displayName;
@@ -124,19 +126,6 @@ public enum FeudRole {
       case NEUTRAL -> 3;
       case AUTHORITY -> 1; // Lowest priority for matches
     };
-  }
-
-  // Getters
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getEmoji() {
-    return emoji;
   }
 
   /** Get display string with emoji. */

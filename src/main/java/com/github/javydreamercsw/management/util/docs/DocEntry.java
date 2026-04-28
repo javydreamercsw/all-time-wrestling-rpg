@@ -17,16 +17,18 @@
 package com.github.javydreamercsw.management.util.docs;
 
 import java.io.Serializable;
+import lombok.Getter;
+import lombok.Setter;
 
 public class DocEntry implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private String id;
-  private String category;
-  private String title;
-  private String description;
-  private String imagePath;
-  private int order;
+  @Getter @Setter private String id;
+  @Getter @Setter private String category;
+  @Getter @Setter private String title;
+  @Getter @Setter private String description;
+  @Getter @Setter private String imagePath;
+  @Getter @Setter private int order;
 
   public DocEntry() {}
 
@@ -37,54 +39,6 @@ public class DocEntry implements Serializable {
     this.title = title;
     this.description = description;
     this.imagePath = imagePath;
-    this.order = order;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getCategory() {
-    return category;
-  }
-
-  public void setCategory(String category) {
-    this.category = category;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getImagePath() {
-    return imagePath;
-  }
-
-  public void setImagePath(String imagePath) {
-    this.imagePath = imagePath;
-  }
-
-  public int getOrder() {
-    return order;
-  }
-
-  public void setOrder(int order) {
     this.order = order;
   }
 }

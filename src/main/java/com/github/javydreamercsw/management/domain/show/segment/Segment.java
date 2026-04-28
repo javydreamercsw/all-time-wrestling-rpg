@@ -69,6 +69,7 @@ import org.jspecify.annotations.Nullable;
 public class Segment extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "segment_id")
   private Long id;
 
@@ -153,12 +154,7 @@ public class Segment extends AbstractSyncableEntity<Long> {
   private com.github.javydreamercsw.management.domain.npc.Npc referee;
 
   @Column(name = "referee_awareness_level", nullable = false)
-  private int refereeAwarenessLevel = 0; // The "Detection Meter" (0-100)
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
+  private int refereeAwarenessLevel = 0;
 
   /** Ensure default values before persisting. */
   @PrePersist

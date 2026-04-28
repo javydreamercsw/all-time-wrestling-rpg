@@ -45,6 +45,7 @@ import org.jspecify.annotations.Nullable;
 public class Title extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "title_id")
   private Long id;
 
@@ -186,11 +187,6 @@ public class Title extends AbstractSyncableEntity<Long> {
       return "👑❓";
     }
     return "👑";
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   @PrePersist

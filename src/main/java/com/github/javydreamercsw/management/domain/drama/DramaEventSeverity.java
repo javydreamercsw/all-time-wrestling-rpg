@@ -40,7 +40,9 @@ public enum DramaEventSeverity {
    */
   MAJOR("Major", "Significant events with lasting consequences", "🚨");
 
+  @Getter(onMethod_ = {@JsonValue})
   private final String displayName;
+
   private final String description;
   private final String emoji;
 
@@ -61,11 +63,6 @@ public enum DramaEventSeverity {
       }
     }
     throw new IllegalArgumentException("Unknown DramaEventSeverity: " + value);
-  }
-
-  @JsonValue
-  public String getDisplayName() {
-    return displayName;
   }
 
   /** Get the typical fan impact range for this severity level. */

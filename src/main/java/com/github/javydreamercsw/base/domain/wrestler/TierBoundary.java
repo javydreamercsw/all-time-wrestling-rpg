@@ -39,6 +39,7 @@ public class TierBoundary {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   private Long id;
 
   @Column(name = "tier", nullable = false)
@@ -60,8 +61,4 @@ public class TierBoundary {
 
   @Column(name = "contender_entry_fee", nullable = false)
   private Long contenderEntryFee;
-
-  public @Nullable Long getId() {
-    return id;
-  }
 }

@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.base.domain.wrestler;
 
+import lombok.Getter;
+
 /**
  * Represents the different championship tiers in the ATW RPG system. Each title has specific fan
  * requirements and challenge costs.
@@ -39,10 +41,10 @@ public enum TitleTier {
       15000L,
       "Main event — top of the card, only the most over should get a shot.");
 
-  private final String titleName;
-  private final Long requiredFans;
-  private final Long challengeCost;
-  private final String description;
+  @Getter private final String titleName;
+  @Getter private final Long requiredFans;
+  @Getter private final Long challengeCost;
+  @Getter private final String description;
 
   TitleTier(String titleName, Long requiredFans, Long challengeCost, String description) {
     this.titleName = titleName;
@@ -101,23 +103,6 @@ public enum TitleTier {
 
     // Return the last (highest) title since enum is ordered by prestige
     return eligible[eligible.length - 1];
-  }
-
-  // Getters
-  public String getTitleName() {
-    return titleName;
-  }
-
-  public Long getRequiredFans() {
-    return requiredFans;
-  }
-
-  public Long getChallengeCost() {
-    return challengeCost;
-  }
-
-  public String getDescription() {
-    return description;
   }
 
   /**

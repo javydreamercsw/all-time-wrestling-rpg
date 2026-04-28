@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -49,7 +50,7 @@ public class BackstageActionService {
   private final CampaignService campaignService;
   private final SegmentRuleRepository segmentRuleRepository;
   private final WrestlerService wrestlerService;
-  private final BackstageEncounterService backstageEncounterService;
+  @Getter private final BackstageEncounterService backstageEncounterService;
 
   public BackstageActionService(
       CampaignStateRepository campaignStateRepository,
@@ -66,10 +67,6 @@ public class BackstageActionService {
     this.segmentRuleRepository = segmentRuleRepository;
     this.wrestlerService = wrestlerService;
     this.backstageEncounterService = backstageEncounterService;
-  }
-
-  public BackstageEncounterService getBackstageEncounterService() {
-    return backstageEncounterService;
   }
 
   /**

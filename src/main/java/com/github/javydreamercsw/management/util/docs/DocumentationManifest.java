@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
+import lombok.Setter;
 
 public class DocumentationManifest {
   private static final List<DocEntry> ENTRIES = new CopyOnWriteArrayList<>();
@@ -91,14 +93,6 @@ public class DocumentationManifest {
 
   /** Inner wrapper class for JSON root structure. */
   private static class ManifestWrapper {
-    private List<DocEntry> features;
-
-    public List<DocEntry> getFeatures() {
-      return features;
-    }
-
-    public void setFeatures(List<DocEntry> features) {
-      this.features = features;
-    }
+    @Getter @Setter private List<DocEntry> features;
   }
 }

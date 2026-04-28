@@ -38,6 +38,7 @@ public class Commentator extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "commentator_id")
   private Long id;
 
@@ -52,10 +53,5 @@ public class Commentator extends AbstractSyncableEntity<Long> {
   private String catchphrase;
 
   @Column(name = "persona_description", length = 4000)
-  private String personaDescription; // Extra AI persona details
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
+  private String personaDescription;
 }

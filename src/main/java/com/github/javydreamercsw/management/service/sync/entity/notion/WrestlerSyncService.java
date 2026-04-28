@@ -66,14 +66,10 @@ public class WrestlerSyncService extends BaseSyncService {
   private final NpcRepository npcRepository;
   private final InjuryRepository injuryRepository;
 
-  @Autowired @Lazy protected WrestlerSyncService self;
+  @Autowired @Lazy @Setter protected WrestlerSyncService self;
 
   protected WrestlerSyncService getSelf() {
     return self != null ? self : this;
-  }
-
-  public void setSelf(WrestlerSyncService self) {
-    this.self = self;
   }
 
   public WrestlerSyncService(

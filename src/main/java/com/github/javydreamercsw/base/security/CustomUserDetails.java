@@ -31,7 +31,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class CustomUserDetails implements UserDetails, Principal {
 
   private final Account account;
-  private final Wrestler wrestler; // Added field
+  @Getter private final Wrestler wrestler; // Added field
 
   public CustomUserDetails(Account account, Wrestler wrestler) { // Updated constructor
     this.account = account;
@@ -110,9 +110,5 @@ public class CustomUserDetails implements UserDetails, Principal {
    */
   public Long getId() {
     return account.getId();
-  }
-
-  public Wrestler getWrestler() { // Re-added method
-    return wrestler;
   }
 }

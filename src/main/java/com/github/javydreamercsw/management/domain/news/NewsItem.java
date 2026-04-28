@@ -48,6 +48,7 @@ import org.jspecify.annotations.Nullable;
 public class NewsItem extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "news_item_id")
   private Long id;
 
@@ -71,11 +72,6 @@ public class NewsItem extends AbstractEntity<Long> {
   @Min(1) @Max(5) @Builder.Default
   @Column(name = "importance", nullable = false)
   private Integer importance = 3;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

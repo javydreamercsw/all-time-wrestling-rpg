@@ -29,6 +29,7 @@ public class InboxItemTarget extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter
   @Column(name = "inbox_item_target_id")
   private Long id;
 
@@ -42,11 +43,6 @@ public class InboxItemTarget extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   @Column(name = "target_type", nullable = false)
   private TargetType targetType = TargetType.ACCOUNT;
-
-  @Override
-  public Long getId() {
-    return id;
-  }
 
   public enum TargetType {
     ACCOUNT,

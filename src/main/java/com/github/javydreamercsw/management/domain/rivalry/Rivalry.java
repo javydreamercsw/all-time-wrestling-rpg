@@ -47,6 +47,7 @@ import org.jspecify.annotations.Nullable;
 public class Rivalry extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "rivalry_id")
   private Long id;
 
@@ -74,9 +75,11 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   private Boolean isActive = true;
 
   @Column(name = "started_date", nullable = false)
+  @Getter
   private Instant startedDate;
 
   @Column(name = "ended_date")
+  @Getter
   private Instant endedDate;
 
   @Lob
@@ -217,19 +220,6 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   public long getDurationDays() {
     Instant end = endedDate != null ? endedDate : Instant.now();
     return java.time.Duration.between(startedDate, end).toDays();
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
-  public Instant getStartedDate() {
-    return startedDate;
-  }
-
-  public Instant getEndedDate() {
-    return endedDate;
   }
 
   @PrePersist

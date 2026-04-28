@@ -36,6 +36,7 @@ public class Achievement extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "achievement_id")
   private Long id;
 
@@ -57,9 +58,4 @@ public class Achievement extends AbstractSyncableEntity<Long> {
 
   @Column(name = "icon_url")
   @Size(max = 512) private String iconUrl;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

@@ -41,6 +41,7 @@ import org.jspecify.annotations.Nullable;
 public class RingsideAction extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "ringside_action_id")
   private Long id;
 
@@ -63,9 +64,4 @@ public class RingsideAction extends AbstractSyncableEntity<Long> {
   @ManyToOne(fetch = FetchType.EAGER, optional = false)
   @JoinColumn(name = "ringside_action_type_id", nullable = false)
   private RingsideActionType type;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

@@ -37,6 +37,7 @@ import org.jspecify.annotations.Nullable;
 public class FactionHeatEvent extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "faction_heat_event_id")
   private Long id;
 
@@ -58,11 +59,6 @@ public class FactionHeatEvent extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

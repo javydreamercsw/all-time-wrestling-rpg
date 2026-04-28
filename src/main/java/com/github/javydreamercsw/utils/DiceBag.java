@@ -17,9 +17,10 @@
 package com.github.javydreamercsw.utils;
 
 import java.util.Random;
+import lombok.Getter;
 
 public class DiceBag {
-  private int[] dice;
+  @Getter private int[] dice;
   private Random random;
   private int[] lastRoll; // Store the results of the last roll
 
@@ -33,10 +34,6 @@ public class DiceBag {
     this.dice = dice;
     this.random = random;
     validateDice(dice);
-  }
-
-  public int[] getDice() {
-    return dice;
   }
 
   /** Get the individual results from the last roll */

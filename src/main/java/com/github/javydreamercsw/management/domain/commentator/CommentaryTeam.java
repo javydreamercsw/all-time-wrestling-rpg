@@ -41,6 +41,7 @@ public class CommentaryTeam extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "team_id")
   private Long id;
 
@@ -53,9 +54,4 @@ public class CommentaryTeam extends AbstractSyncableEntity<Long> {
       joinColumns = @JoinColumn(name = "team_id"),
       inverseJoinColumns = @JoinColumn(name = "commentator_id"))
   private List<Commentator> commentators = new ArrayList<>();
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

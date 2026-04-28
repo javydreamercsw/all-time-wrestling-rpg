@@ -46,6 +46,7 @@ import org.jspecify.annotations.Nullable;
 public class SegmentParticipant extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "segment_participant_id")
   private Long id;
 
@@ -61,9 +62,4 @@ public class SegmentParticipant extends AbstractSyncableEntity<Long> {
 
   @Column(name = "is_winner", nullable = false)
   private Boolean isWinner = false;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

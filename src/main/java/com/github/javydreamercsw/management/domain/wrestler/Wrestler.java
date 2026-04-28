@@ -56,6 +56,7 @@ import org.jspecify.annotations.Nullable;
 public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerData {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "wrestler_id")
   private Long id;
 
@@ -88,6 +89,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   // ==================== ATW RPG FIELDS ====================
 
   @Enumerated(EnumType.STRING)
+  @Getter(onMethod_ = {@NonNull})
   @Column(nullable = false)
   @Builder.Default
   private Gender gender = Gender.MALE;
@@ -210,11 +212,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
         .findFirst();
   }
 
-  @Override
-  public @NonNull Gender getGender() {
-    return this.gender;
-  }
-
   // ==================== ATW RPG METHODS ====================
 
   @JsonIgnore
@@ -306,11 +303,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   public boolean hasActiveRivalryWith(Wrestler otherWrestler) {
     return getActiveRivalries().stream()
         .anyMatch(rivalry -> rivalry.involvesWrestler(otherWrestler));
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   // ==================== JPA LIFECYCLE METHODS ====================

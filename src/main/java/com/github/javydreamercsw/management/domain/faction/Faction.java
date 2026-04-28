@@ -58,6 +58,7 @@ import org.jspecify.annotations.Nullable;
 public class Faction extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "faction_id")
   private Long id;
 
@@ -135,11 +136,6 @@ public class Faction extends AbstractSyncableEntity<Long> {
   @Builder.Default
   @ToString.Exclude
   private Set<FactionRivalry> rivalriesAsFaction2 = new HashSet<>();
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

@@ -72,7 +72,9 @@ public enum DramaEventType {
   RELATIONSHIP_MILESTONE(
       "Relationship Milestone", "Key moments in wrestler's personal relationships");
 
+  @Getter(onMethod_ = {@JsonValue})
   private final String displayName;
+
   private final String description;
 
   DramaEventType(String displayName, String description) {
@@ -91,11 +93,6 @@ public enum DramaEventType {
       }
     }
     throw new IllegalArgumentException("Unknown DramaEventType: " + value);
-  }
-
-  @JsonValue
-  public String getDisplayName() {
-    return displayName;
   }
 
   /** Check if this event type typically involves multiple wrestlers. */

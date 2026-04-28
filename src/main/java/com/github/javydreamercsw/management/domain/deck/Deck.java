@@ -46,6 +46,7 @@ import org.jspecify.annotations.Nullable;
 public class Deck extends AbstractSyncableEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "deck_id")
   private Long id;
 
@@ -62,11 +63,6 @@ public class Deck extends AbstractSyncableEntity<Long> { // Removed implements O
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   public void addCard(@NonNull Card card, @NonNull CardSet set, int amount) {
     DeckCard newDeckCard = new DeckCard();

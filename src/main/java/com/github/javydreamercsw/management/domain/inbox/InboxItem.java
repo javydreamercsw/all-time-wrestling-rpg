@@ -33,6 +33,7 @@ public class InboxItem extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter
   @Column(name = "inbox_item_id")
   private Long id;
 
@@ -55,11 +56,6 @@ public class InboxItem extends AbstractEntity<Long> {
       orphanRemoval = true,
       fetch = FetchType.EAGER)
   private List<InboxItemTarget> targets = new ArrayList<>();
-
-  @Override
-  public Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

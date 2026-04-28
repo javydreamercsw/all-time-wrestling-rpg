@@ -56,6 +56,7 @@ import org.jspecify.annotations.Nullable;
 public class DramaEvent extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "drama_event_id")
   private Long id;
 
@@ -122,11 +123,6 @@ public class DramaEvent extends AbstractEntity<Long> {
   @Lob
   @Column(name = "processing_notes")
   private String processingNotes;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /** Check if this event involves multiple wrestlers. */
   public boolean isMultiWrestlerEvent() {

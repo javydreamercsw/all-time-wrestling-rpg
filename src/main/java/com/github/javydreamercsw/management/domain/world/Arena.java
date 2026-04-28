@@ -52,6 +52,7 @@ import org.jspecify.annotations.Nullable;
 public class Arena extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "arena_id")
   private Long id;
 
@@ -82,25 +83,16 @@ public class Arena extends AbstractSyncableEntity<Long> {
   @Builder.Default
   private Set<String> environmentalTraits = new HashSet<>();
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   public enum AlignmentBias {
     FACE_FAVORABLE("Face Favorable"),
     HEEL_FAVORABLE("Heel Favorable"),
     ANARCHIC("Anarchic"),
     NEUTRAL("Neutral");
 
-    private final String displayName;
+    @Getter private final String displayName;
 
     AlignmentBias(String displayName) {
       this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-      return displayName;
     }
   }
 }
