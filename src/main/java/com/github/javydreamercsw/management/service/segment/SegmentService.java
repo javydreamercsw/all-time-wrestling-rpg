@@ -170,7 +170,8 @@ public class SegmentService {
    * @param matchDate The date/time of the match
    * @return The created Segment
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment createSegment(
       @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
     return createSegment(show, matchType, matchDate, new HashSet<>());
@@ -185,7 +186,8 @@ public class SegmentService {
    * @param titles The titles contested in this segment
    * @return The created Segment
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment createSegment(
       @NonNull Show show,
       @NonNull SegmentType matchType,
@@ -213,7 +215,7 @@ public class SegmentService {
    * @throws IllegalArgumentException if the segment with the given ID is not found.
    */
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (isAuthenticated() and"
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (isAuthenticated() and"
           + " @segmentService.canUserUpdateSegment(#id))")
   public Segment updateSegment(@NonNull Long id, @NonNull SegmentDTO dto) {
     return segmentRepository
@@ -245,7 +247,7 @@ public class SegmentService {
    * @return The updated Segment
    */
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (isAuthenticated() and"
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (isAuthenticated() and"
           + " @segmentService.canUserUpdateSegment(#segment.id))")
   public Segment updateSegment(@NonNull Segment segment) {
     return segmentRepository.save(segment);
@@ -520,7 +522,8 @@ public class SegmentService {
    *
    * @param id The ID of the match to delete
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void deleteSegment(@NonNull Long id) {
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
@@ -581,7 +584,8 @@ public class SegmentService {
     return segmentRepository.findUpcomingSegmentsForWrestler(wrestler, referenceDate, pageable);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment saveSegment(@NonNull Segment segment) {
     boolean isNew = segment.getId() == null;
     Segment saved = segmentRepository.save(segment);
@@ -651,7 +655,8 @@ public class SegmentService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
     segment.addParticipant(wrestler);
     segmentRepository.save(segment);
@@ -662,13 +667,15 @@ public class SegmentService {
     }
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void setWinner(@NonNull Segment segment, @NonNull Wrestler winner) {
     segment.setWinners(List.of(winner));
     segmentRepository.save(segment);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void setAdjudicationStatus(
       @NonNull Segment segment,
       @NonNull com.github.javydreamercsw.management.domain.AdjudicationStatus status) {

@@ -45,12 +45,14 @@ public class DeckService {
     return deckRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or"
+          + " @permissionService.isOwner(#deck.wrestler)")
   public void delete(@NonNull Deck deck) {
     deckRepository.delete(deck);
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public List<Deck> findAll() {
     return deckRepository.findAll();
   }
@@ -61,24 +63,29 @@ public class DeckService {
         .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public List<Deck> list(@NonNull Pageable pageable) {
     return deckRepository.findAll(pageable).getContent();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck.wrestler)")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or"
+          + " @permissionService.isOwner(#deck.wrestler)")
   public Deck save(@NonNull Deck deck) {
     deck.setCreationDate(clock.instant());
     return deckRepository.saveAndFlush(deck);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public List<Deck> saveAll(@NonNull List<Deck> decks) {
     decks.forEach(deck -> deck.setCreationDate(clock.instant()));
     return deckRepository.saveAll(decks);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or"
+          + " @permissionService.isOwner(#wrestler)")
   public Deck createDeck(@NonNull Wrestler wrestler) {
     Deck deck = new Deck();
     deck.setWrestler(wrestler);
@@ -86,7 +93,9 @@ public class DeckService {
     return deck;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#wrestler)")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_VIEWER') or"
+          + " @permissionService.isOwner(#wrestler)")
   public List<Deck> findByWrestler(Wrestler wrestler) {
     return deckRepository.findByWrestler(wrestler);
   }

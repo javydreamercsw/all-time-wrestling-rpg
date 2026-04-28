@@ -58,13 +58,13 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
 
     // Get the initial order of heat values
     List<Integer> initialOrder =
-        getColumnData(grid, 2).stream().map(Integer::parseInt).collect(Collectors.toList());
+        getGridColumnData(grid, 2).stream().map(Integer::parseInt).collect(Collectors.toList());
 
     // Click to sort ascending
     heatHeader.click();
     wait.until(ExpectedConditions.attributeContains(heatHeader, "direction", "asc"));
     List<Integer> ascOrder =
-        getColumnData(grid, 2).stream().map(Integer::parseInt).collect(Collectors.toList());
+        getGridColumnData(grid, 2).stream().map(Integer::parseInt).collect(Collectors.toList());
     List<Integer> sortedInitial = new ArrayList<>(initialOrder);
     Collections.sort(sortedInitial);
     assertEquals(sortedInitial, ascOrder);
@@ -73,7 +73,7 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
     heatHeader.click();
     wait.until(ExpectedConditions.attributeContains(heatHeader, "direction", "desc"));
     List<Integer> descOrder =
-        getColumnData(grid, 2).stream().map(Integer::parseInt).collect(Collectors.toList());
+        getGridColumnData(grid, 2).stream().map(Integer::parseInt).collect(Collectors.toList());
     Collections.reverse(sortedInitial);
     assertEquals(sortedInitial, descOrder);
   }

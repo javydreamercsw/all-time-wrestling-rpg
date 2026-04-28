@@ -22,10 +22,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
@@ -33,24 +33,29 @@ import org.springframework.security.web.SecurityFilterChain;
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
   private final UserDetailsService userDetailsService;
-  private final Environment environment;
 
   @Bean
   @Profile("!test")
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.disable())
+    http.csrf(AbstractHttpConfigurer::disable)
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/auth/**", "/login", "/register", "/public/**")
+                auth.requestMatchers(
+                        "/api/auth/**",
+                        "/login",
+                        "/register",
+                        "/public/**",
+                        "/health",
+                        "/api/system/health")
                     .permitAll()
                     .requestMatchers("/api/admin/**")
-                    .hasRole(RoleName.ADMIN.name())
+                    .hasRole(RoleName.ADMIN_ROLE)
                     .anyRequest()
                     .authenticated());
 

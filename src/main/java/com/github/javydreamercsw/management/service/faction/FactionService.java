@@ -190,7 +190,8 @@ public class FactionService {
   }
 
   /** Create a new faction in a universe. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Faction> createFaction(
       @NonNull String name, String description, Long leaderId, @NonNull Long universeId) {
     if (factionRepository.existsByName(name)) {
@@ -240,7 +241,8 @@ public class FactionService {
   }
 
   /** Add a member to a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Faction> addMemberToFaction(@NonNull Long factionId, @NonNull Long wrestlerId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
@@ -258,15 +260,16 @@ public class FactionService {
 
     Long universeId = faction.getUniverse().getId();
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
+    wrestlerStateRepository
+        .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
+        .ifPresent(faction::addMember);
 
-    faction.addMember(state);
     return Optional.of(factionRepository.saveAndFlush(faction));
   }
 
   /** Remove a member from a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Faction> removeMemberFromFaction(
       @NonNull Long factionId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
@@ -296,7 +299,8 @@ public class FactionService {
   }
 
   /** Change faction leader. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Faction> changeFactionLeader(@NonNull Long factionId, @NonNull Long newLeaderId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> newLeaderOpt = wrestlerRepository.findById(newLeaderId);
@@ -313,7 +317,8 @@ public class FactionService {
   }
 
   /** Disband a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Faction> disbandFaction(@NonNull Long factionId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
@@ -361,7 +366,8 @@ public class FactionService {
   }
 
   /** Save a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Faction save(@NonNull Faction faction) {
     if (faction.getId() == null) {
       faction.setCreationDate(clock.instant());
@@ -373,7 +379,8 @@ public class FactionService {
   }
 
   /** Delete a faction by ID. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void deleteById(@NonNull Long id) {
     factionRepository.deleteById(id);
   }
@@ -392,7 +399,8 @@ public class FactionService {
   }
 
   /** Add affinity points to a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void addAffinity(@NonNull Long factionId, int points) {
     factionRepository
         .findById(factionId)

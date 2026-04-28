@@ -93,9 +93,13 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     for (int round = 1; round <= expectedRounds; round++) {
       // Determine expected title
       String expectedTitle = "Round " + round;
-      if (round == expectedRounds) expectedTitle = "Finals";
-      else if (round == expectedRounds - 1) expectedTitle = "Semi-Finals";
-      else if (round == expectedRounds - 2) expectedTitle = "Quarter-Finals";
+      if (round == expectedRounds) {
+        expectedTitle = "Finals";
+      } else if (round == expectedRounds - 1) {
+        expectedTitle = "Semi-Finals";
+      } else if (round == expectedRounds - 2) {
+        expectedTitle = "Quarter-Finals";
+      }
 
       final String currentTitle = expectedTitle;
 

@@ -78,7 +78,8 @@ public class NPCSegmentResolutionService {
    * @return Segment with determined winner and details
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'SYSTEM')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment resolveTeamSegment(
       @NonNull SegmentTeam team1,
       @NonNull SegmentTeam team2,
@@ -148,7 +149,8 @@ public class NPCSegmentResolutionService {
    * @return Segment with determined winner and details
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'SYSTEM')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment resolveMultiTeamSegment(
       @NonNull List<SegmentTeam> teams,
       @NonNull SegmentType segmentType,

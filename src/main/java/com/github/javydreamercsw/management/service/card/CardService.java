@@ -42,7 +42,7 @@ public class CardService {
   @Autowired private Clock clock;
   @Autowired private Validator validator;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Card createCard(@NonNull String name) {
     Card card = new Card();
     card.setName(name);
@@ -79,7 +79,7 @@ public class CardService {
     return cardRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Card save(@NonNull Card card) {
     card.setCreationDate(clock.instant());
     var violations = validator.validate(card);
@@ -89,7 +89,7 @@ public class CardService {
     return cardRepository.saveAndFlush(card);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<Card> saveAll(@NonNull List<Card> cards) {
     cards.forEach(
         card -> {
@@ -112,7 +112,7 @@ public class CardService {
     return cardRepository.findByNumberAndSetCode(number, setCode);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void delete(Long id) {
     cardRepository.deleteById(id);
   }

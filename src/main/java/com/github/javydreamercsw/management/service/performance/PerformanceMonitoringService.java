@@ -149,7 +149,7 @@ public class PerformanceMonitoringService {
   }
 
   /** Gets comprehensive performance metrics. */
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Map<String, Object> getPerformanceMetrics() {
     Map<String, Object> metrics = new HashMap<>();
 
@@ -327,7 +327,7 @@ public class PerformanceMonitoringService {
   }
 
   /** Resets all performance metrics - useful for testing. */
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void resetMetrics() {
     counters.clear();
     timers.clear();

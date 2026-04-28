@@ -46,7 +46,7 @@ public class SeasonService {
   @Autowired private Clock clock;
   @Autowired private GameSettingService gameSettingService;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -61,7 +61,7 @@ public class SeasonService {
   }
 
   /** Create a new season. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -130,7 +130,7 @@ public class SeasonService {
   }
 
   /** Save a season. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -146,7 +146,7 @@ public class SeasonService {
   }
 
   /** End the current season. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -157,7 +157,7 @@ public class SeasonService {
   }
 
   /** End a specific season. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -167,7 +167,7 @@ public class SeasonService {
   }
 
   /** Add a show to the active season. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -200,7 +200,7 @@ public class SeasonService {
   }
 
   /** Update season settings. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -221,7 +221,7 @@ public class SeasonService {
   }
 
   /** Update season with Season object. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
@@ -238,7 +238,7 @@ public class SeasonService {
   }
 
   /** Delete a season (only if not active and has no shows). */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)

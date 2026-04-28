@@ -36,7 +36,7 @@ public class CardSetService {
   @Autowired private CardSetRepository cardSetRepository;
   @Autowired private Clock clock;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public CardSet createCardSet(@NonNull String name, @NonNull String setCode) {
     CardSet card = new CardSet();
     card.setName(name);
@@ -53,13 +53,13 @@ public class CardSetService {
     return cardSetRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public CardSet save(@NonNull CardSet card) {
     card.setCreationDate(clock.instant());
     return cardSetRepository.saveAndFlush(card);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<CardSet> saveAll(@NonNull List<CardSet> cardSets) {
     cardSets.forEach(cardSet -> cardSet.setCreationDate(clock.instant()));
     return cardSetRepository.saveAll(cardSets);

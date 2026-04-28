@@ -77,7 +77,7 @@ public class ShowTemplateService {
    * @param showTemplate The show template to save
    * @return The saved show template
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
@@ -206,7 +206,7 @@ public class ShowTemplateService {
    * @return The created or updated show template
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
@@ -279,7 +279,7 @@ public class ShowTemplateService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
@@ -350,7 +350,7 @@ public class ShowTemplateService {
    * @return Optional containing the updated show template if found
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
@@ -432,7 +432,7 @@ public class ShowTemplateService {
    * @return Optional containing the updated show template if found
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
@@ -472,7 +472,7 @@ public class ShowTemplateService {
    * @return true if the template was deleted, false if not found
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       allEntries = true)

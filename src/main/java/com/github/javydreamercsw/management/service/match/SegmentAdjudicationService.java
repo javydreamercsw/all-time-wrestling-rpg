@@ -155,12 +155,12 @@ public class SegmentAdjudicationService {
     this.random = random;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment) {
     adjudicateMatch(segment, 1.0);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
     // Check for league fulfillment
     matchFulfillmentRepository

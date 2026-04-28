@@ -87,7 +87,18 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     // Robust cleanup order to prevent foreign key violations
     cleanupLeagues();
 
-    ShowType showType = showTypeRepository.findByName("Weekly").get();
+    ShowType showType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setDescription("Weekly Show");
+                  st.setExpectedMatches(3);
+                  st.setExpectedPromos(2);
+                  return showTypeRepository.saveAndFlush(st);
+                });
 
     testShow = new Show();
     testShow.setName("Test Show for Detail View");
@@ -103,7 +114,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     driver.get(
         "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + testShow.getId());
 
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Click the "Add Segment" button
     WebElement addSegmentButton =

@@ -51,7 +51,7 @@ public class ThemeService {
     return gameSettingRepository.findById(DEFAULT_THEME_KEY).map(GameSetting::getValue);
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void updateGlobalDefaultTheme(String theme) {
     GameSetting setting =
         gameSettingRepository.findById(DEFAULT_THEME_KEY).orElse(new GameSetting());

@@ -103,6 +103,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -212,38 +213,51 @@ public class DataInitializer implements Initializable {
     this.objectMapper = objectMapper;
   }
 
-  @org.springframework.security.access.prepost.PreAuthorize("permitAll()")
   public void init() {
     log.info("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
-      com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-          () -> {
-            syncAiSettingsFromEnvironment();
-            initializeGameDate();
-            loadSegmentRulesFromFile();
-            syncShowTypesFromFile();
-            loadSegmentTypesFromFile();
-            loadShowTemplatesFromFile();
-            syncSetsFromFile();
-            syncCardsFromFile();
-            syncNpcsFromFile();
-            syncLocationsFromFile();
-            syncArenasFromFile();
-            syncWrestlersFromFile();
-            syncRelationshipsFromFile();
-            syncChampionshipsFromFile();
-            syncDecksFromFile();
-            syncFactionsFromFile();
-            syncTeamsFromFile();
-            syncCampaignAbilityCardsFromFile();
-            campaignUpgradeService.loadUpgrades();
-            syncCommentatorsFromFile();
-            syncCommentaryTeamsFromFile();
-            loadAchievements();
-            syncRingsideActions();
-            return null;
-          });
+      Authentication auth =
+          org.springframework.security.core.context.SecurityContextHolder.getContext()
+              .getAuthentication();
+
+      // If already authenticated as 'system', just run
+      if (auth != null && auth.isAuthenticated() && "system".equals(auth.getName())) {
+        performInit();
+      } else {
+        // Otherwise, run as admin to ensure we have enough power for all service calls
+        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+            () -> {
+              performInit();
+              return null;
+            });
+      }
     }
+  }
+
+  private void performInit() {
+    syncAiSettingsFromEnvironment();
+    initializeGameDate();
+    loadSegmentRulesFromFile();
+    syncShowTypesFromFile();
+    loadSegmentTypesFromFile();
+    loadShowTemplatesFromFile();
+    syncSetsFromFile();
+    syncCardsFromFile();
+    syncNpcsFromFile();
+    syncLocationsFromFile();
+    syncArenasFromFile();
+    syncWrestlersFromFile();
+    syncRelationshipsFromFile();
+    syncChampionshipsFromFile();
+    syncDecksFromFile();
+    syncFactionsFromFile();
+    syncTeamsFromFile();
+    syncCampaignAbilityCardsFromFile();
+    campaignUpgradeService.loadUpgrades();
+    syncCommentatorsFromFile();
+    syncCommentaryTeamsFromFile();
+    loadAchievements();
+    syncRingsideActions();
   }
 
   private void syncRingsideActions() {

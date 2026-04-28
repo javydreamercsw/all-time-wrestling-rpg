@@ -211,12 +211,12 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "asc"));
     wait.until(
         d -> {
-          List<String> currentOrder = getColumnData(grid, 0);
+          List<String> currentOrder = getGridColumnData(grid, 0);
           List<String> sortedCurrentOrder = new ArrayList<>(currentOrder);
           Collections.sort(sortedCurrentOrder);
           return sortedCurrentOrder.equals(currentOrder);
         });
-    List<String> ascOrder = getColumnData(grid, 0);
+    List<String> ascOrder = getGridColumnData(grid, 0);
     List<String> manuallySortedAsc = new ArrayList<>(ascOrder);
     Collections.sort(manuallySortedAsc);
     assertEquals(manuallySortedAsc, ascOrder); // Assert that the list *is* sorted ascending
@@ -226,12 +226,12 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "desc"));
     wait.until(
         d -> {
-          List<String> currentOrder = getColumnData(grid, 0);
+          List<String> currentOrder = getGridColumnData(grid, 0);
           List<String> sortedCurrentOrder = new ArrayList<>(currentOrder);
           sortedCurrentOrder.sort(Collections.reverseOrder());
           return sortedCurrentOrder.equals(currentOrder);
         });
-    List<String> descOrder = getColumnData(grid, 0);
+    List<String> descOrder = getGridColumnData(grid, 0);
     List<String> manuallySortedDesc = new ArrayList<>(descOrder);
     manuallySortedDesc.sort(Collections.reverseOrder());
     assertEquals(manuallySortedDesc, descOrder); // Assert that the list *is* sorted descending

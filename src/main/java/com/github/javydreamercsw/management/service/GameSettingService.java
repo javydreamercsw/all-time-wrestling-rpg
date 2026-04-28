@@ -44,12 +44,12 @@ public class GameSettingService {
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public String getNotionToken() {
     return repository.findById(NOTION_TOKEN_KEY).map(GameSetting::getValue).orElse(null);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setNotionToken(String token) {
     save(NOTION_TOKEN_KEY, token);
@@ -64,7 +64,7 @@ public class GameSettingService {
         .orElse(true); // Enabled by default
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setWearAndTearEnabled(boolean enabled) {
     save(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
@@ -93,19 +93,19 @@ public class GameSettingService {
     return repository.findById(NEWS_STRATEGY_KEY).map(GameSetting::getValue).orElse("SEGMENT");
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setAiNewsEnabled(boolean enabled) {
     save(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setNewsRumorChance(int chance) {
     save(NEWS_RUMOR_CHANCE_KEY, String.valueOf(chance));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setNewsStrategy(String strategy) {
     save(NEWS_STRATEGY_KEY, strategy);
@@ -120,7 +120,8 @@ public class GameSettingService {
         .orElse(LocalDate.now()); // Fallback to real date if not set
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void saveCurrentGameDate(LocalDate date) {
     LocalDate oldDate = getCurrentGameDate();
@@ -141,7 +142,8 @@ public class GameSettingService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public GameSetting save(GameSetting gameSetting) {
     log.debug(
         "Saving game setting: {} = {}",
@@ -151,7 +153,8 @@ public class GameSettingService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void save(String key, String value) {
     GameSetting setting = repository.findById(key).orElseGet(GameSetting::new);
     setting.setId(key);

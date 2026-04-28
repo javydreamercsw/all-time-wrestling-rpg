@@ -19,7 +19,6 @@ package com.github.javydreamercsw.base.security;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -40,35 +39,12 @@ public final class GeneralSecurityUtils {
   }
 
   /**
-   * Run a task with the given user and role.
-   *
-   * @param task The task to run.
-   * @param username The username to use.
-   * @param password The password to use.
-   * @param role The role to use.
-   */
-  public static void runAs(
-      @NonNull Runnable task,
-      @NonNull String username,
-      @NonNull String password,
-      @NonNull String role) {
-    runAs(
-        () -> {
-          task.run();
-          return null;
-        },
-        username,
-        password,
-        role);
-  }
-
-  /**
    * Run a task as an admin user.
    *
    * @param task The task to run.
    */
   public static void runAsAdmin(@NonNull Runnable task) {
-    runAs(task, "system", "password", "ROLE_SYSTEM");
+    runAs(task, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM");
   }
 
   /**
@@ -79,24 +55,24 @@ public final class GeneralSecurityUtils {
    * @return The result of the task.
    */
   public static <T> T runAsAdmin(@NonNull Supplier<T> supplier) {
-    return runAs(supplier, "system", "password", "ROLE_SYSTEM");
+    return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM");
   }
 
   /**
-   * Run a task with the given user and role.
+   * Run a task with the given user and roles.
    *
    * @param <T> The return type of the supplier.
    * @param supplier The supplier to run.
    * @param username The username to use.
    * @param password The password to use.
-   * @param role The role to use.
+   * @param roles The roles to use.
    * @return The result of the supplier.
    */
   public static <T> T runAs(
       @NonNull Supplier<T> supplier,
       @NonNull String username,
       @NonNull String password,
-      @NonNull String role) {
+      @NonNull String... roles) {
     SecurityContext originalContext = SecurityContextHolder.getContext();
     Authentication currentAuth = originalContext.getAuthentication();
 
@@ -121,26 +97,30 @@ public final class GeneralSecurityUtils {
     try {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
 
-      // Create a mock account and role for the principal
+      // Create a mock account and roles for the principal
       Account account = new Account(username, password, username + "@example.com");
       account.setId(-1L); // Use a non-null ID for mock accounts
 
-      String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
-      try {
-        RoleName roleName = RoleName.valueOf(cleanRole);
-        Role r = new Role(roleName, roleName.name());
-        account.setRoles(Collections.singleton(r));
-      } catch (IllegalArgumentException e) {
-        log.warn("Invalid role provided to runAs: {}", role);
+      Set<Role> accountRoles = new HashSet<>();
+      Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+
+      for (String role : roles) {
+        String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+        try {
+          RoleName roleName = RoleName.valueOf(cleanRole);
+          accountRoles.add(new Role(roleName, roleName.name()));
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid role provided to runAs: {}", role);
+        }
+
+        authorities.add(new SimpleGrantedAuthority(role));
+        if (!role.startsWith("ROLE_")) {
+          authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+        }
       }
+      account.setRoles(accountRoles);
 
       CustomUserDetails principal = new CustomUserDetails(account, null);
-
-      Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-      authorities.add(new SimpleGrantedAuthority(role));
-      if (!role.startsWith("ROLE_")) {
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      }
 
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(principal, password, authorities);
@@ -158,6 +138,29 @@ public final class GeneralSecurityUtils {
           "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
       SecurityContextHolder.setContext(originalContext);
     }
+  }
+
+  /**
+   * Run a task with the given user and roles.
+   *
+   * @param task The task to run.
+   * @param username The username to use.
+   * @param password The password to use.
+   * @param roles The roles to use.
+   */
+  public static void runAs(
+      @NonNull Runnable task,
+      @NonNull String username,
+      @NonNull String password,
+      @NonNull String... roles) {
+    runAs(
+        () -> {
+          task.run();
+          return null;
+        },
+        username,
+        password,
+        roles);
   }
 
   /**

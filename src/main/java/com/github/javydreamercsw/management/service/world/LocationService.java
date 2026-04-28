@@ -40,7 +40,7 @@ public class LocationService {
   private final LocationRepository repository;
   private final DefaultImageService imageService;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Location createLocation(
       String name, String description, String imageUrl, Set<String> culturalTags) {
     Location location =
@@ -53,7 +53,7 @@ public class LocationService {
     return repository.save(location);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<Location> updateLocation(
       Long id, String name, String description, String imageUrl, Set<String> culturalTags) {
     return repository
@@ -68,17 +68,17 @@ public class LocationService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<Location> findById(Long id) {
     return repository.findById(id);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<Location> findAll() {
     return repository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Page<Location> list(Pageable pageable) {
     return repository.findAll(pageable);
   }
@@ -87,12 +87,12 @@ public class LocationService {
     return repository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void deleteLocation(Long id) {
     repository.deleteById(id);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<Location> findByName(String name) {
     return repository.findByName(name);
   }

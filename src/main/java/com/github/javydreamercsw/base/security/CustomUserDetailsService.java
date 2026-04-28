@@ -50,7 +50,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
     Account account =
         accountRepository
-            .findByUsernameWithRoles(username)
+            .findByUsername(username)
             .orElseGet(
                 () -> {
                   if ("system".equals(username)) {
@@ -63,6 +63,10 @@ public class CustomUserDetailsService implements UserDetailsService {
                   throw new UsernameNotFoundException("No user found with username: " + username);
                 });
 
+    // Force load roles to ensure they are available in the session
+    if (account.getId() != null) {
+      account.getRoles().size();
+    }
     // Check if account lock has expired and unlock if necessary
     if (!account.isAccountNonLocked() && account.isLockExpired()) {
       account = accountUnlockService.unlockAndReloadAccount(account.getUsername()); // Pass username

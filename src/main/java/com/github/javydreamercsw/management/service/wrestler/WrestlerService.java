@@ -111,7 +111,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public Wrestler save(@NonNull Wrestler wrestler) {
     return wrestlerRepository.save(wrestler);
   }
@@ -120,7 +120,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void delete(@NonNull Long id) {
     wrestlerRepository.deleteById(id);
   }
@@ -253,7 +253,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public Wrestler createWrestler(
       @NonNull String name, @NonNull Boolean isPlayer, String description) {
     Wrestler wrestler = new Wrestler();
@@ -273,7 +273,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public Wrestler createWrestler(
       @NonNull String name,
       @NonNull Boolean isPlayer,
@@ -290,7 +290,7 @@ public class WrestlerService {
   }
 
   @Transactional
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void setAccountForWrestler(@NonNull Long wrestlerId, Long accountId) {
     wrestlerRepository
         .findById(wrestlerId)
@@ -360,7 +360,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasRole('ADMIN') or hasRole('BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<WrestlerState> awardFans(
       @NonNull Long wrestlerId, @NonNull Long universeId, @NonNull Long fans) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);

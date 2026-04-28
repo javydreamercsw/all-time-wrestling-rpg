@@ -36,8 +36,9 @@ class CardSetTest extends AbstractJpaTest {
   @Autowired private CardSetRepository repository;
 
   @AfterEach
-  void tearDown() {
+  public void tearDown() throws Exception {
     entityManager.clear();
+    super.tearDown();
   }
 
   @Test

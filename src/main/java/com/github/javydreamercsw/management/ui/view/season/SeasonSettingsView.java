@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.season;
 
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
@@ -38,7 +39,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @PageTitle("Season Settings")
-@RolesAllowed({"ROLE_ADMIN"}) // Only admin should do this
+@RolesAllowed(RoleName.ADMIN_ROLE) // Only admin should do this
 @Slf4j
 @Component
 @Lazy
@@ -150,13 +151,14 @@ public class SeasonSettingsView extends VerticalLayout {
                         try {
                           wrestlerService.resetAllFanCountsToZero(
                               universeContextService.getCurrentUniverseId());
-                          notificationService.showSuccess("All fan counts reset to 0.");
+                          notificationService.showSuccess(
+                              "All wrestler fan counts have been reset to 0.");
                         } catch (Exception e) {
                           notificationService.showError("Error during reset: " + e.getMessage());
                         }
                         dialog.close();
                       });
-              confirmButton.setId("confirm-reset-fans-button");
+              confirmButton.setId("confirm-full-reset-button");
 
               Button cancelButton = new Button("Cancel", event -> dialog.close());
               cancelButton.setId("cancel-reset-fans-button");
@@ -164,7 +166,7 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.getFooter().add(cancelButton, confirmButton);
               dialog.open();
             });
-    resetFansButton.setId("reset-fans-button");
+    resetFansButton.setId("full-reset-button");
 
     Button scheduleShowButton =
         new Button(
@@ -185,6 +187,5 @@ public class SeasonSettingsView extends VerticalLayout {
 
   private void resetTiers() {
     tierBoundaryService.resetTierBoundaries();
-    notificationService.showSuccess("Tier boundaries reset successfully.");
   }
 }

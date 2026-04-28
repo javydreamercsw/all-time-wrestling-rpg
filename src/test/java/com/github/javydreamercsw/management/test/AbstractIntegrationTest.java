@@ -206,72 +206,78 @@ public abstract class AbstractIntegrationTest {
   @Autowired(required = false)
   protected CacheManager cacheManager;
 
+  @org.junit.jupiter.api.AfterEach
+  public void tearDown() throws Exception {
+    log.info("AbstractIntegrationTest.tearDown() called");
+    clearSecurityContext();
+    clearCache();
+  }
+
   @BeforeEach
   public void baseSetUp() throws Exception {
     log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
-    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
-    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
+    // 1. Absolute clean slate
+    clearSecurityContext();
 
-    forceLoginAsAdmin();
-
-    // Pre-initialize defaultUniverse from DB if it exists, to avoid race conditions
-    // during the REQUIRES_NEW transaction in clearAllRepositories
+    // 2. Pre-initialize defaultUniverse from DB if it exists
     universeRepository
         .findByName("Default Universe")
         .ifPresent(
             u -> {
               this.defaultUniverse = u;
-              com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+              TestUtils.setDefaultUniverse(u);
               universeContextService.setCurrentUniverse(u);
             });
 
+    // 3. Cleanup and Init
     clearAllRepositories();
 
-    // Re-verify if not set by clearAllRepositories
+    // 4. Final verification of universe
     if (this.defaultUniverse == null) {
       universeRepository
           .findByName("Default Universe")
           .ifPresent(
               u -> {
                 this.defaultUniverse = u;
-                com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
+                TestUtils.setDefaultUniverse(u);
                 universeContextService.setCurrentUniverse(u);
               });
     }
 
-    // Restore original context if it existed
-    restoreSecurityContext(originalAuth, originalTestAuth);
-
-    // Default login as admin ONLY if no other valid authentication is present
-    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth == null
-        || "system".equals(currentAuth.getName())
-        || "anonymousUser".equals(currentAuth.getName())
-        || !currentAuth.isAuthenticated()) {
-      log.info("No valid authentication found, logging in as default admin...");
-      loginAs("admin");
-    }
+    // 5. Default login as admin to provide a valid context for the test
+    log.info("Establishing default admin context for test...");
+    loginAs("admin");
   }
+
+  private static boolean initialDataLoaded = false;
 
   protected void clearAllRepositories() {
     log.info("AbstractIntegrationTest.clearAllRepositories() called");
 
-    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
-    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
+    // Ensure we have a valid system context for the entire cleanup process
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    authorities.add(new SimpleGrantedAuthority("ROLE_SYSTEM"));
+    Account systemAccount = new Account("system", "password", "system@example.com");
+    systemAccount.setRoles(
+        Set.of(new Role(RoleName.ADMIN, "ADMIN"), new Role(RoleName.SYSTEM, "SYSTEM")));
+    com.github.javydreamercsw.base.security.CustomUserDetails principal =
+        new com.github.javydreamercsw.base.security.CustomUserDetails(systemAccount, null);
+    UsernamePasswordAuthenticationToken systemAuth =
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
 
-    forceLoginAsAdmin();
-    ensureAuthenticatedUserExists();
-    forceLoginAsAdmin();
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(systemAuth);
+    SecurityContextHolder.setContext(context);
+    TestSecurityContextHolder.setContext(context);
 
     // 1. Reset sequence (H2 specific) - Try directly first
     try {
-      entityManager.clear();
       transactionTemplate.setPropagationBehavior(
           org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
       transactionTemplate.execute(
           status -> {
-            forceLoginAsAdmin();
             entityManager
                 .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
                 .executeUpdate();
@@ -281,45 +287,52 @@ public abstract class AbstractIntegrationTest {
       log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
     }
 
-    // 2. Perform cleanup and init
-    log.info("Cleaning up database using DatabaseCleanup...");
-    databaseCleanup.clearRepositories();
+    // 2. Perform cleanup and init in a new transaction to avoid conflicts
+    transactionTemplate.setPropagationBehavior(
+        org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transactionTemplate.execute(
+        status -> {
+          log.info("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
 
-    clearCache();
+          clearCache();
 
-    // Always ensure at least one universe exists for tests
-    synchronized (AbstractIntegrationTest.class) {
-      try {
-        Universe newUniverse =
-            Universe.builder().name("Default Universe").type(Universe.UniverseType.GLOBAL).build();
-        newUniverse = universeRepository.saveAndFlush(newUniverse);
-        this.defaultUniverse = newUniverse;
-        com.github.javydreamercsw.TestUtils.setDefaultUniverse(newUniverse);
-        universeContextService.setCurrentUniverse(newUniverse);
-      } catch (org.springframework.dao.DataIntegrityViolationException e) {
-        universeRepository
-            .findByName("Default Universe")
-            .ifPresent(
-                u -> {
-                  this.defaultUniverse = u;
-                  com.github.javydreamercsw.TestUtils.setDefaultUniverse(u);
-                  universeContextService.setCurrentUniverse(u);
-                });
-      }
-    }
+          // Always ensure at least one universe exists for tests
+          synchronized (AbstractIntegrationTest.class) {
+            try {
+              Universe newUniverse =
+                  Universe.builder()
+                      .name("Default Universe")
+                      .type(Universe.UniverseType.GLOBAL)
+                      .build();
+              newUniverse = universeRepository.saveAndFlush(newUniverse);
+              this.defaultUniverse = newUniverse;
+              TestUtils.setDefaultUniverse(newUniverse);
+              universeContextService.setCurrentUniverse(newUniverse);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+              universeRepository
+                  .findByName("Default Universe")
+                  .ifPresent(
+                      u -> {
+                        this.defaultUniverse = u;
+                        TestUtils.setDefaultUniverse(u);
+                        universeContextService.setCurrentUniverse(u);
+                      });
+            }
+          }
 
-    // 3. Re-initialize data
-    if (dataInitializerEnabled) {
-      dataInitializer.init();
-    }
+          // 3. Re-initialize data - Only if not already loaded or if requested
+          if (dataInitializerEnabled && !initialDataLoaded) {
+            dataInitializer.init();
+            initialDataLoaded = true;
+          }
+          return null;
+        });
 
     // Clear the entity manager
     if (entityManager != null) {
       entityManager.clear();
     }
-
-    // Restore original context if it existed
-    restoreSecurityContext(originalAuth, originalTestAuth);
   }
 
   protected void clearCache() {
@@ -360,37 +373,7 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void runAsAdmin(@NonNull Runnable task) {
-    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
-    Authentication originalTestAuth = TestSecurityContextHolder.getContext().getAuthentication();
-
-    // Create a temporary system-like authentication with ADMIN role
-    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-    authorities.add(new SimpleGrantedAuthority("ADMIN"));
-
-    Account systemAccount = new Account("system", "password", "system@example.com");
-    systemAccount.setRoles(
-        Collections.singleton(
-            new com.github.javydreamercsw.base.domain.account.Role(
-                com.github.javydreamercsw.base.domain.account.RoleName.ADMIN, "ADMIN")));
-    com.github.javydreamercsw.base.security.CustomUserDetails principal =
-        new com.github.javydreamercsw.base.security.CustomUserDetails(systemAccount, null);
-
-    UsernamePasswordAuthenticationToken adminAuth =
-        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
-
-    SecurityContext context = SecurityContextHolder.createEmptyContext();
-    context.setAuthentication(adminAuth);
-
-    SecurityContextHolder.setContext(context);
-    TestSecurityContextHolder.setContext(context);
-
-    try {
-      task.run();
-    } finally {
-      // Restore original contexts
-      restoreSecurityContext(originalAuth, originalTestAuth);
-    }
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(task);
   }
 
   protected void login(Account account) {
@@ -489,23 +472,19 @@ public abstract class AbstractIntegrationTest {
     }
   }
 
-  /**
-   * Helper to ensure the currently authenticated user actually exists in the database. Useful when
-   * switching between transactional contexts or after a database reset.
-   */
   protected void ensureAuthenticatedUserExists() {
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
     if (currentAuth != null && currentAuth.isAuthenticated()) {
       final String username;
-      if (currentAuth.getPrincipal() instanceof Account account) {
-        username = account.getUsername();
-      } else if (currentAuth.getPrincipal()
-          instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
-        username = userDetails.getUsername();
-      } else if (currentAuth.getPrincipal()
-          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-        username = userDetails.getUsername();
-      } else if (currentAuth.getPrincipal() instanceof String s) {
+      Object principal = currentAuth.getPrincipal();
+      if (principal instanceof com.github.javydreamercsw.base.security.CustomUserDetails ud) {
+        username = ud.getUsername();
+      } else if (principal
+          instanceof org.springframework.security.core.userdetails.UserDetails ud) {
+        username = ud.getUsername();
+      } else if (principal instanceof com.github.javydreamercsw.base.domain.account.Account a) {
+        username = a.getUsername();
+      } else if (principal instanceof String s) {
         username = s;
       } else {
         username = null;
@@ -540,16 +519,9 @@ public abstract class AbstractIntegrationTest {
           final String wrestlerName = username; // Default to username for test consistency
           if (wrestlerRepository.findByName(wrestlerName).isEmpty()) {
             log.info("Re-creating missing authenticated wrestler in DB: {}", wrestlerName);
-            createTestWrestler(wrestlerName);
-            // Link wrestler to account if needed (Account normally has a list or ref)
-            final Account finalAccount = account;
-            wrestlerRepository
-                .findByName(wrestlerName)
-                .ifPresent(
-                    w -> {
-                      w.setAccount(finalAccount);
-                      wrestlerRepository.saveAndFlush(w);
-                    });
+            Wrestler w = createTestWrestler(wrestlerName);
+            w.setAccount(account);
+            wrestlerRepository.saveAndFlush(w);
           }
         }
       }
@@ -585,13 +557,11 @@ public abstract class AbstractIntegrationTest {
               log.warn("Admin account not found during force login, using system admin context");
               Set<SimpleGrantedAuthority> authorities = new HashSet<>();
               authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-              authorities.add(new SimpleGrantedAuthority("ADMIN"));
+              authorities.add(new SimpleGrantedAuthority("ROLE_SYSTEM"));
 
               Account systemAccount = new Account("system", "password", "system@example.com");
               systemAccount.setRoles(
-                  Collections.singleton(
-                      new com.github.javydreamercsw.base.domain.account.Role(
-                          com.github.javydreamercsw.base.domain.account.RoleName.ADMIN, "ADMIN")));
+                  Set.of(new Role(RoleName.ADMIN, "ADMIN"), new Role(RoleName.SYSTEM, "SYSTEM")));
               com.github.javydreamercsw.base.security.CustomUserDetails principal =
                   new com.github.javydreamercsw.base.security.CustomUserDetails(
                       systemAccount, null);

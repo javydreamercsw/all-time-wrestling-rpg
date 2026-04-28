@@ -93,7 +93,7 @@ public class DramaEventService {
   }
 
   /** Create a manual drama event. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<DramaEvent> createDramaEvent(
       @NonNull Long wrestler1Id,
       Long wrestler2Id,
@@ -130,7 +130,7 @@ public class DramaEventService {
   }
 
   /** Generate a random drama event for a wrestler. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<DramaEvent> generateRandomDramaEvent(
       @NonNull Long wrestlerId, @NonNull Long universeId) {
     // Basic implementation for generating random events
@@ -154,7 +154,7 @@ public class DramaEventService {
   }
 
   /** Process all unprocessed drama events. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void processUnprocessedEvents() {
     List<DramaEvent> unprocessed = dramaEventRepository.findByIsProcessedFalseOrderByEventDateAsc();
     for (DramaEvent event : unprocessed) {
@@ -192,7 +192,7 @@ public class DramaEventService {
   }
 
   /** Process a specific drama event, applying its effects. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public int processEvent(@NonNull DramaEvent event) {
     if (Boolean.TRUE.equals(event.getIsProcessed())) {
       return 0;

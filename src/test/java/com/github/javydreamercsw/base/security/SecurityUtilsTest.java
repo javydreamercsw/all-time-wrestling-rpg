@@ -21,72 +21,77 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.vaadin.flow.spring.security.AuthenticationContext;
 import java.util.Collections;
-import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 class SecurityUtilsTest {
 
-  private AuthenticationContext authenticationContext;
   private PermissionService permissionService;
   private SecurityUtils securityUtils;
+  private SecurityContext originalContext;
 
   @BeforeEach
   void setUp() {
-    authenticationContext = mock(AuthenticationContext.class);
+    originalContext = SecurityContextHolder.getContext();
+    SecurityContextHolder.clearContext();
     permissionService = mock(PermissionService.class);
-    securityUtils = new SecurityUtils(authenticationContext, permissionService);
+    securityUtils = new SecurityUtils(permissionService);
+  }
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.setContext(originalContext);
+  }
+
+  private void setMockUser(String username, String role) {
+    CustomUserDetails user = mock(CustomUserDetails.class);
+    when(user.getUsername()).thenReturn(username);
+    when(user.getAuthorities())
+        .thenAnswer(invocation -> Collections.singletonList(new SimpleGrantedAuthority(role)));
+
+    Authentication auth =
+        new UsernamePasswordAuthenticationToken(user, "password", user.getAuthorities());
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(auth);
+    SecurityContextHolder.setContext(context);
   }
 
   @Test
   void testHasRole() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_ADMIN");
     assertThat(securityUtils.hasRole(RoleName.ADMIN)).isTrue();
     assertThat(securityUtils.hasRole(RoleName.PLAYER)).isFalse();
   }
 
   @Test
   void testIsAdmin() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_ADMIN");
     assertThat(securityUtils.isAdmin()).isTrue();
     assertThat(securityUtils.isBooker()).isFalse();
   }
 
   @Test
   void testIsAuthenticated() {
-    when(authenticationContext.isAuthenticated()).thenReturn(true);
+    setMockUser("testuser", "ROLE_PLAYER");
     assertThat(securityUtils.isAuthenticated()).isTrue();
 
-    when(authenticationContext.isAuthenticated()).thenReturn(false);
+    SecurityContextHolder.clearContext();
     assertThat(securityUtils.isAuthenticated()).isFalse();
   }
 
   @Test
   void testGetCurrentUsername() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getUsername()).thenReturn("testuser");
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_PLAYER");
     assertThat(securityUtils.getCurrentUsername()).isEqualTo("testuser");
 
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.empty());
+    SecurityContextHolder.clearContext();
     assertThat(securityUtils.getCurrentUsername()).isEqualTo("anonymous");
   }
 
@@ -94,69 +99,46 @@ class SecurityUtilsTest {
   void testGetCurrentAccountId() {
     CustomUserDetails user = mock(CustomUserDetails.class);
     when(user.getId()).thenReturn(123L);
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
+
+    Authentication auth =
+        new UsernamePasswordAuthenticationToken(user, "password", Collections.emptyList());
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(auth);
+    SecurityContextHolder.setContext(context);
 
     assertThat(securityUtils.getCurrentAccountId()).contains(123L);
 
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.empty());
+    SecurityContextHolder.clearContext();
     assertThat(securityUtils.getCurrentAccountId()).isEmpty();
   }
 
   @Test
   void testCanCreate() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_ADMIN");
     assertThat(securityUtils.canCreate()).isTrue();
 
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_VIEWER")));
+    setMockUser("testuser", "ROLE_VIEWER");
     assertThat(securityUtils.canCreate()).isFalse();
   }
 
   @Test
   void testCanEdit() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_ADMIN");
     assertThat(securityUtils.canEdit()).isTrue();
 
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    setMockUser("testuser", "ROLE_PLAYER");
     assertThat(securityUtils.canEdit()).isTrue();
 
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_VIEWER")));
+    setMockUser("testuser", "ROLE_VIEWER");
     assertThat(securityUtils.canEdit()).isFalse();
   }
 
   @Test
   void testCanDelete() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_BOOKER")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_BOOKER");
     assertThat(securityUtils.canDelete()).isTrue();
 
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    setMockUser("testuser", "ROLE_PLAYER");
     assertThat(securityUtils.canDelete()).isFalse();
   }
 
@@ -172,19 +154,11 @@ class SecurityUtilsTest {
 
   @Test
   void testCanEditTarget() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_ADMIN");
     Object target = new Object();
     assertThat(securityUtils.canEdit(target)).isTrue();
 
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    setMockUser("testuser", "ROLE_PLAYER");
     when(permissionService.isOwner(target)).thenReturn(true);
     assertThat(securityUtils.canEdit(target)).isTrue();
 
@@ -194,25 +168,20 @@ class SecurityUtilsTest {
 
   @Test
   void testCanDeleteTarget() {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_BOOKER")));
-    when(authenticationContext.getAuthenticatedUser(CustomUserDetails.class))
-        .thenReturn(Optional.of(user));
-
+    setMockUser("testuser", "ROLE_BOOKER");
     Object target = new Object();
     assertThat(securityUtils.canDelete(target)).isTrue();
 
-    when(user.getAuthorities())
-        .thenAnswer(
-            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    setMockUser("testuser", "ROLE_PLAYER");
     assertThat(securityUtils.canDelete(target)).isFalse();
   }
 
   @Test
   void testLogout() {
+    setMockUser("testuser", "ROLE_PLAYER");
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+
     securityUtils.logout();
-    org.mockito.Mockito.verify(authenticationContext).logout();
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
   }
 }

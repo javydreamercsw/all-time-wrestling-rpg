@@ -40,8 +40,9 @@ class FactionRepositoryTest extends AbstractJpaTest {
   private Faction testFaction;
 
   @AfterEach
-  void tearDown() {
+  public void tearDown() throws Exception {
     entityManager.clear();
+    super.tearDown();
   }
 
   @Override

@@ -136,44 +136,54 @@ public class DatabaseCleaner implements DatabaseCleanup {
   private void breakCircularDependencies() {
     log.info("💔 Breaking circular dependencies...");
     try {
-      entityManager.createNativeQuery("DELETE FROM heat_event").executeUpdate();
-      entityManager.createNativeQuery("DELETE FROM wrestler_state").executeUpdate();
-      entityManager.createNativeQuery("DELETE FROM team").executeUpdate();
-      entityManager.createNativeQuery("DELETE FROM wrestler_relationship").executeUpdate();
-      log.debug("✅ Cleared heat_event, wrestler_state, team and wrestler_relationship tables");
+      jdbcTemplate.execute(
+          "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
+      log.debug("✅ Nullified campaign_state links");
     } catch (Exception e) {
-      log.warn("Could not clear relationship tables: {}", e.getMessage());
+      log.warn("Could not nullify campaign_state links: {}", e.getMessage());
     }
     try {
-      entityManager.createNativeQuery("UPDATE faction SET leader_id = NULL").executeUpdate();
-      log.debug("✅ Nullified faction.leader_id");
-    } catch (Exception e) {
-      log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery(
-              "UPDATE storyline_milestone SET next_milestone_on_success_id = NULL,"
-                  + " next_milestone_on_failure_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified storyline_milestone self-referential links");
-    } catch (Exception e) {
-      log.warn("Could not nullify storyline_milestone self-referential links: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery("UPDATE campaign_storyline SET current_milestone_id = NULL")
-          .executeUpdate();
+      jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
       log.debug("✅ Nullified campaign_storyline.current_milestone_id");
     } catch (Exception e) {
       log.warn("Could not nullify campaign_storyline.current_milestone_id: {}", e.getMessage());
     }
     try {
-      entityManager.createNativeQuery("DELETE FROM league_roster").executeUpdate();
-      entityManager.createNativeQuery("DELETE FROM league_membership").executeUpdate();
+      jdbcTemplate.execute(
+          "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL,"
+              + " storyline_id = NULL");
+      log.debug("✅ Nullified storyline_milestone links");
+    } catch (Exception e) {
+      log.warn("Could not nullify storyline_milestone links: {}", e.getMessage());
+    }
+    try {
+      jdbcTemplate.execute("DELETE FROM storyline_milestone");
+      jdbcTemplate.execute("DELETE FROM campaign_storyline");
+      log.debug("✅ Manually cleared storyline tables");
+    } catch (Exception e) {
+      log.warn("Could not manually clear storyline tables: {}", e.getMessage());
+    }
+    try {
+      jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
+      log.debug("✅ Nullified faction links");
+    } catch (Exception e) {
+      log.warn("Could not nullify faction links: {}", e.getMessage());
+    }
+    try {
+      jdbcTemplate.execute("DELETE FROM league_roster");
+      jdbcTemplate.execute("DELETE FROM league_membership");
       log.debug("✅ Cleared league_roster and league_membership");
     } catch (Exception e) {
       log.warn("Could not clear league tables: {}", e.getMessage());
+    }
+    try {
+      jdbcTemplate.execute("DELETE FROM heat_event");
+      jdbcTemplate.execute("DELETE FROM wrestler_state");
+      jdbcTemplate.execute("DELETE FROM team");
+      jdbcTemplate.execute("DELETE FROM wrestler_relationship");
+      log.debug("✅ Cleared heat_event, wrestler_state, team and wrestler_relationship tables");
+    } catch (Exception e) {
+      log.warn("Could not clear relationship tables: {}", e.getMessage());
     }
   }
 

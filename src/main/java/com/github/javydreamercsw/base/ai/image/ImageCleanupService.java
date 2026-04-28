@@ -68,7 +68,7 @@ public class ImageCleanupService {
    * @return The number of deleted images.
    * @throws IOException If file operations fail.
    */
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public int cleanupUnusedImages() throws IOException {
     Path directory = storageProperties.getResolvedImageDir();
     if (!Files.exists(directory)) {

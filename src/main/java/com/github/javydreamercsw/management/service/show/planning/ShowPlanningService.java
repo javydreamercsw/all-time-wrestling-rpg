@@ -75,7 +75,7 @@ public class ShowPlanningService {
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     if (show.getShowDate() == null) {
       throw new IllegalStateException(
@@ -250,7 +250,7 @@ public class ShowPlanningService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
     if (show.getShowDate() == null) {
       throw new IllegalStateException(

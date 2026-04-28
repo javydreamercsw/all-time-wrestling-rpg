@@ -99,14 +99,14 @@ public class MultiWrestlerFeudService {
   }
 
   /** Create a new multi-wrestler feud. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> createFeud(
       @NonNull String name, @NonNull String description, @NonNull String storylineNotes) {
     return createFeud(name, description, storylineNotes, List.of());
   }
 
   /** Create a new multi-wrestler feud. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> createFeud(
       @NonNull String name,
       @NonNull String description,
@@ -149,7 +149,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Add a participant to a feud. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> addParticipant(
       @NonNull Long feudId, @NonNull Long wrestlerId, @NonNull FeudRole role) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
@@ -187,7 +187,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Remove a participant from a feud. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> removeParticipant(
       @NonNull Long feudId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
@@ -219,7 +219,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Add heat to a feud. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> addHeat(
       @NonNull Long feudId, int heatGain, @NonNull String reason) {
     return multiWrestlerFeudRepository
@@ -254,7 +254,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** End a feud. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> endFeud(@NonNull Long feudId, @NonNull String reason) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
 
@@ -412,7 +412,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Delete a feud by ID. */
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void deleteFeud(@NonNull Long feudId) {
     log.info("Deleting feud with ID: {}", feudId);
     multiWrestlerFeudRepository.deleteById(feudId);

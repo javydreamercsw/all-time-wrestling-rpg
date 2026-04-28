@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.vaadin.flow.spring.security.AuthenticationContext;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecurityUtils {
 
-  private final AuthenticationContext authenticationContext;
   private final PermissionService permissionService;
 
   /**
@@ -50,14 +48,13 @@ public class SecurityUtils {
    * @return true if the user has the role
    */
   public boolean hasRole(String role) {
-    return authenticationContext
-        .getAuthenticatedUser(CustomUserDetails.class)
-        .map(
-            user ->
-                user.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .anyMatch(authority -> authority.equals(role)))
-        .orElse(false);
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated()) {
+      return false;
+    }
+    return auth.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch(authority -> authority.equals(role));
   }
 
   /**
@@ -186,7 +183,11 @@ public class SecurityUtils {
    * @return the authenticated user, or empty if not authenticated
    */
   public Optional<CustomUserDetails> getAuthenticatedUser() {
-    return authenticationContext.getAuthenticatedUser(CustomUserDetails.class);
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails ud) {
+      return Optional.of(ud);
+    }
+    return Optional.empty();
   }
 
   /**
@@ -213,7 +214,8 @@ public class SecurityUtils {
    * @return true if authenticated
    */
   public boolean isAuthenticated() {
-    return authenticationContext.isAuthenticated();
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    return auth != null && auth.isAuthenticated();
   }
 
   /**
@@ -227,6 +229,6 @@ public class SecurityUtils {
 
   /** Logs the user out. */
   public void logout() {
-    authenticationContext.logout();
+    SecurityContextHolder.clearContext();
   }
 }

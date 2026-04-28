@@ -46,7 +46,7 @@ public class AccountService {
   @Lazy private final PasswordEncoder passwordEncoder;
   private final WrestlerRepository wrestlerRepository;
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Account createAccount(String username, String password, String email, RoleName roleName) {
     if (!CustomPasswordValidator.isValid(password)) {
       throw new IllegalArgumentException("Password is not valid.");
@@ -65,8 +65,8 @@ public class AccountService {
   }
 
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #entity.id =="
-          + " authentication.principal.id)")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (hasAuthority('ROLE_PLAYER')"
+          + " and #entity.id == authentication.principal.id)")
   public Account update(Account entity) {
     Account original =
         accountRepository
@@ -162,8 +162,8 @@ public class AccountService {
   }
 
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
-          + " authentication.principal.id)")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (hasAuthority('ROLE_PLAYER')"
+          + " and #accountId == authentication.principal.id)")
   public Account updateThemePreference(Long accountId, String themePreference) {
     Account account =
         accountRepository
@@ -174,8 +174,8 @@ public class AccountService {
   }
 
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
-          + " authentication.principal.id)")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (hasAuthority('ROLE_PLAYER')"
+          + " and #accountId == authentication.principal.id)")
   public Account setActiveWrestlerId(Long accountId, Long wrestlerId) {
     Account account =
         accountRepository
