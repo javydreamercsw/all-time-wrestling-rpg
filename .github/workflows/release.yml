@@ -226,6 +226,17 @@ jobs:
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
 
+      - name: Rename Installers
+        shell: bash
+        run: |
+          cd target/dist
+          VERSION="${{ github.event.inputs.version }}"
+          for f in *; do
+            if [[ "$f" == *.dmg ]]; then mv "$f" "All Time Wrestling-$VERSION.dmg"; fi
+            if [[ "$f" == *.msi ]]; then mv "$f" "All Time Wrestling-$VERSION.msi"; fi
+            if [[ "$f" == *.deb ]]; then mv "$f" "all-time-wrestling-rpg-$VERSION.deb"; fi
+          done
+
       - name: Upload Installer to Release
         uses: softprops/action-gh-release@v2
         env:
