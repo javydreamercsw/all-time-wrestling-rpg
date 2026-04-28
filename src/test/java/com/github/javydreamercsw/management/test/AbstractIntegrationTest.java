@@ -321,10 +321,9 @@ public abstract class AbstractIntegrationTest {
             }
           }
 
-          // 3. Re-initialize data - Only if not already loaded or if requested
-          if (dataInitializerEnabled && !initialDataLoaded) {
+          // 3. Re-initialize data
+          if (dataInitializerEnabled) {
             dataInitializer.init();
-            initialDataLoaded = true;
           }
           return null;
         });

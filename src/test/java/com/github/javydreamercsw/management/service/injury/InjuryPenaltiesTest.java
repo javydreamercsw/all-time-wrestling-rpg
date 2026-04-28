@@ -25,42 +25,43 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 class InjuryPenaltiesTest extends AbstractIntegrationTest {
 
   @Autowired private InjuryService injuryService;
 
   @Test
-  @Transactional
   void testInjuryCreationIncludesPenalties() {
-    // Switch to BOOKER context after setUp() (which requires ADMIN) has completed.
-    // Using @WithCustomMockUser(roles={"BOOKER"}) at method level would set the BOOKER context
-    // before @BeforeEach runs, interfering with the ADMIN-privileged data initialization.
+    // 1. Establish context BEFORE any transaction
     loginAs("booker");
 
-    Wrestler wrestler = createTestWrestler("Penalty Tester");
-    wrestler = wrestlerRepository.save(wrestler);
+    // 2. Run test logic in a transaction
+    transactionTemplate.execute(
+        status -> {
+          Wrestler wrestler = createTestWrestler("Penalty Tester");
+          wrestler = wrestlerRepository.save(wrestler);
 
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        universeRepository.findAll().stream().findFirst().orElseThrow();
+          com.github.javydreamercsw.management.domain.universe.Universe universe =
+              universeRepository.findAll().stream().findFirst().orElseThrow();
 
-    Optional<Injury> injury =
-        injuryService.createInjury(
-            wrestler.getId(),
-            universe.getId(),
-            "Test Injury",
-            "Description",
-            InjurySeverity.CRITICAL,
-            "Notes");
+          Optional<Injury> injury =
+              injuryService.createInjury(
+                  wrestler.getId(),
+                  universe.getId(),
+                  "Test Injury",
+                  "Description",
+                  InjurySeverity.CRITICAL,
+                  "Notes");
 
-    assertThat(injury).isPresent();
-    assertThat(injury.get().getHealthPenalty()).isPositive();
-    assertThat(injury.get().getStaminaPenalty()).isGreaterThanOrEqualTo(0);
-    assertThat(injury.get().getHandSizePenalty()).isGreaterThanOrEqualTo(0);
+          assertThat(injury).isPresent();
+          assertThat(injury.get().getHealthPenalty()).isPositive();
+          assertThat(injury.get().getStaminaPenalty()).isGreaterThanOrEqualTo(0);
+          assertThat(injury.get().getHandSizePenalty()).isGreaterThanOrEqualTo(0);
 
-    // Critical injuries should have some penalties based on our enum definition
-    assertThat(injury.get().getStaminaPenalty()).isBetween(2, 3);
-    assertThat(injury.get().getHandSizePenalty()).isEqualTo(1);
+          // Critical injuries should have some penalties based on our enum definition
+          assertThat(injury.get().getStaminaPenalty()).isBetween(2, 3);
+          assertThat(injury.get().getHandSizePenalty()).isEqualTo(1);
+          return null;
+        });
   }
 }
