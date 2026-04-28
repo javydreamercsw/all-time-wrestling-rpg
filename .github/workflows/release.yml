@@ -175,6 +175,7 @@ jobs:
           body_path: CHANGELOG.md
           draft: false
           prerelease: true
+          make_latest: false
           fail_on_unmatched_files: true
           files: |
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.jar
