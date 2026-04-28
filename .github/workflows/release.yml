@@ -2,7 +2,8 @@ name: Create Release
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  MAVEN_OPTS: "-Xmx3g -XX:+UseG1GC"
+  MAVEN_OPTS: "-Xmx4g -XX:+UseG1GC"
+  _JAVA_OPTIONS: "-Xmx4g"
 
 permissions:
   contents: write

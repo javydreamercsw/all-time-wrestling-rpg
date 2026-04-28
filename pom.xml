@@ -1339,20 +1339,20 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.panteleyev</groupId>
-            <artifactId>jpackage-maven-plugin</artifactId>
-            <version>1.6.0</version>
-            <executions>
-              <execution>
-                <id>jpackage</id>
-                <goals>
-                  <goal>jpackage</goal>
-                </goals>
-                <phase>package</phase>
-                <configuration>
-                  <name>${jpackage.appName}</name>
-                  <vendor>Javier Ortiz Bultron</vendor>
-                  <appVersion>${jpackage.appVersion}</appVersion>
+          <groupId>org.panteleyev</groupId>
+          <artifactId>jpackage-maven-plugin</artifactId>
+          <version>1.6.0</version>
+          <executions>
+            <execution>
+              <id>jpackage</id>
+              <goals>
+                <goal>jpackage</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <verbose>true</verbose>
+                <name>${jpackage.appName}</name>
+                <vendor>Javier Ortiz Bultron</vendor>                  <appVersion>${jpackage.appVersion}</appVersion>
                   <input>${project.build.directory}/jpackage-input</input>
                   <mainJar>${project.build.finalName}-thin.jar</mainJar>
                   <mainClass>com.github.javydreamercsw.Application</mainClass>
