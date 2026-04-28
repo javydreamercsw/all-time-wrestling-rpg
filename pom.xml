@@ -1245,7 +1245,7 @@
     <profile>
       <id>desktop</id>
       <properties>
-        <jpackage.appVersion>1.7.0</jpackage.appVersion>
+        <jpackage.appVersion>${project.version}</jpackage.appVersion>
         <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
         <jpackage.type>DMG</jpackage.type>
       </properties>

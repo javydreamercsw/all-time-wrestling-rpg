@@ -175,6 +175,7 @@ jobs:
           body_path: CHANGELOG.md
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
           files: |
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.jar
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.war
@@ -219,7 +220,7 @@ jobs:
       - name: Build with Maven and JPackage
         shell: bash
         run: |
-          mvn spotless:apply -B package -Pproduction,desktop \
+          mvn spotless:apply -B verify -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
@@ -230,6 +231,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.event.inputs.version }}
+          fail_on_unmatched_files: true
           files: target/dist/*
 
   deploy_pages:
