@@ -1074,7 +1074,11 @@
             <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-core</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
-            <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>org.springframework.boot:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>org.springframework:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>org.springframework.hateoas:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>io.micrometer:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>tools.jackson.core:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.vaadin:*</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
           <ignoredNonTestScopedDependencies>
@@ -1245,12 +1249,47 @@
     <profile>
       <id>desktop</id>
       <properties>
-        <jpackage.appVersion>${project.version}</jpackage.appVersion>
+        <jpackage.appName>All Time Wrestling</jpackage.appName>
         <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
         <jpackage.type>DMG</jpackage.type>
       </properties>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.5.0</version>
+            <executions>
+              <execution>
+                <id>sanitize-version</id>
+                <goals>
+                  <goal>regex-property</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <name>jpackage.appVersion</name>
+                  <value>${project.version}</value>
+                  <regex>^([0-9]+(\.[0-9]+){0,2}).*$</regex>
+                  <replacement>$1</replacement>
+                  <failIfNoMatch>false</failIfNoMatch>
+                </configuration>
+              </execution>
+              <execution>
+                <id>set-snapshot-name</id>
+                <goals>
+                  <goal>regex-property</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <name>jpackage.appName</name>
+                  <value>${project.version}</value>
+                  <regex>.*-SNAPSHOT</regex>
+                  <replacement>All Time Wrestling (Snapshot)</replacement>
+                  <failIfNoMatch>false</failIfNoMatch>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
@@ -1288,7 +1327,7 @@
                 <goals>
                   <goal>run</goal>
                 </goals>
-                <phase>verify</phase>
+                <phase>package</phase>
                 <configuration>
                   <target>
                     <mkdir dir="${project.build.directory}/jpackage-input"/>
@@ -1308,10 +1347,10 @@
                 <goals>
                   <goal>jpackage</goal>
                 </goals>
-                <phase>verify</phase>
+                <phase>package</phase>
                 <configuration>
-                  <name>AllTimeWrestling</name>
-                  <vendor>javydreamercsw</vendor>
+                  <name>${jpackage.appName}</name>
+                  <vendor>Javier Ortiz Bultron</vendor>
                   <appVersion>${jpackage.appVersion}</appVersion>
                   <input>${project.build.directory}/jpackage-input</input>
                   <mainJar>${project.build.finalName}-thin.jar</mainJar>
@@ -1326,7 +1365,7 @@
                   <type>${jpackage.type}</type>
                   <icon>${jpackage.icon}</icon>
                   <!-- Platform specific configurations -->
-                  <macPackageName>All Time Wrestling RPG</macPackageName>
+                  <macPackageName>${jpackage.appName} RPG</macPackageName>
                   <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
                 </configuration>
               </execution>
@@ -1350,7 +1389,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>

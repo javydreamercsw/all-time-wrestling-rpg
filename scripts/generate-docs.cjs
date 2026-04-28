@@ -155,23 +155,31 @@ if (fs.existsSync(indexPath)) {
 
   if (version) {
     console.log(`Updating links for version: ${version}`);
-    const baseUrl = 'https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/v' + version;
+    const isSnapshot = version.includes('-SNAPSHOT');
+    const sanitizedVersion = version.replace('-SNAPSHOT', '');
+    const tagVersion = isSnapshot ? version : 'v' + version;
+    const downloadBaseUrl = 'https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/' + tagVersion;
+    
+    // jpackage naming: [name]-[version].[type]
+    // Spaces in name are preserved in filename but must be %20 in URL
+    const appName = isSnapshot ? 'All Time Wrestling (Snapshot)' : 'All Time Wrestling';
+    const encodedAppName = encodeURIComponent(appName);
     
     indexContent = indexContent.replace(
       /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest" class="vplug-button brand">Download for Windows \(\.msi\)/g,
-      `href="${baseUrl}/AllTimeWrestling-${version}.msi" class="vplug-button brand">Download for Windows (.msi)`
+      `href="${downloadBaseUrl}/${encodedAppName}-${sanitizedVersion}.msi" class="vplug-button brand">Download for Windows (.msi)`
     );
     indexContent = indexContent.replace(
       /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest" class="vplug-button brand">Download for macOS \(\.dmg\)/g,
-      `href="${baseUrl}/AllTimeWrestling-${version}.dmg" class="vplug-button brand">Download for macOS (.dmg)`
+      `href="${downloadBaseUrl}/${encodedAppName}-${sanitizedVersion}.dmg" class="vplug-button brand">Download for macOS (.dmg)`
     );
     indexContent = indexContent.replace(
       /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest" class="vplug-button brand">Download for Linux \(\.deb\)/g,
-      `href="${baseUrl}/AllTimeWrestling-${version}.deb" class="vplug-button brand">Download for Linux (.deb)`
+      `href="${downloadBaseUrl}/${encodedAppName}-${sanitizedVersion}.deb" class="vplug-button brand">Download for Linux (.deb)`
     );
     indexContent = indexContent.replace(
       /\[Get Portable Version\]\(https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest\)/g,
-      `[Get Portable Version](${baseUrl}/all-time-wrestling-rpg-${version}.zip)`
+      `[Get Portable Version](${downloadBaseUrl}/all-time-wrestling-rpg-${version}.zip)`
     );
 
     fs.writeFileSync(indexPath, indexContent);
