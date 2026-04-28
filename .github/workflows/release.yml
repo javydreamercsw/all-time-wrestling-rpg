@@ -174,7 +174,7 @@ jobs:
           name: Release v${{ github.event.inputs.version }}
           body_path: CHANGELOG.md
           draft: false
-          prerelease: false
+          prerelease: true
           fail_on_unmatched_files: true
           files: |
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.jar
@@ -235,7 +235,7 @@ jobs:
           files: target/dist/*
 
   deploy_pages:
-    needs: build_and_release
+    needs: [build_and_release, build_desktop_installers]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -245,8 +245,29 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+  approve_release:
+    needs: [build_desktop_installers, deploy_pages]
+    runs-on: ubuntu-latest
+    environment:
+      name: release-approval
+    steps:
+      - name: Awaiting Manual Approval
+        run: echo "Release approved! Proceeding to finalize."
+
+  finalize_release:
+    needs: approve_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Mark Release as Final
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit v${{ github.event.inputs.version }} --prerelease=false
+
   build_and_publish_docker:
-    needs: build_and_release
+    needs: finalize_release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -272,7 +293,7 @@ jobs:
         run: mvn clean spotless:apply package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }} -DskipTests
 
   merge_to_main:
-    needs: [build_and_release, build_desktop_installers, build_and_publish_docker, deploy_pages]
+    needs: finalize_release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
