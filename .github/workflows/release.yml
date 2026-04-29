@@ -222,6 +222,12 @@ jobs:
 
       - name: Build with Maven and JPackage
         shell: bash
+        # Override JAVA_TOOL_OPTIONS: the global -Xmx3g is picked up by jpackage
+        # itself, which can exhaust Windows runner resources during icon embedding.
+        # A smaller heap is sufficient for the packaging step.
+        env:
+          JAVA_TOOL_OPTIONS: "-Xmx1g"
+          MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
           mvn -B verify -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \

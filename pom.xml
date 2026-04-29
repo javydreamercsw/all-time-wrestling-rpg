@@ -1253,6 +1253,8 @@
                   <winMenu>true</winMenu>
                   <winShortcut>true</winShortcut>
                   <winMenuGroup>All Time Wrestling</winMenuGroup>
+                  <!-- Stable UUID ensures MSI upgrades replace the existing install -->
+                  <winUpgradeUuid>3b8e2f1a-4c7d-4e9b-a2f0-8d6c5e3b1a9f</winUpgradeUuid>
                 </configuration>
               </execution>
             </executions>
