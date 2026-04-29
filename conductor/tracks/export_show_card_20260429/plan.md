@@ -14,14 +14,9 @@
 
 ## Phase 2: UI - Export Modal Dialog
 
-- [ ] Task: Create ExportModal Component
-  - [ ] Create a Vaadin Dialog component `ShowExportDialog`.
-  - [ ] Retrieve available formats from `ShowExportService` and populate a format selector (ComboBox).
-  - [ ] Add a read-only text area for the preview.
-  - [ ] Add a "Copy to Clipboard" button using Vaadin's clipboard capabilities.
-- [ ] Task: Integrate Export Service with Modal
-  - [ ] Wire the format selector to call the `ShowExportService` and update the text area with the generated text based on the selected show and format.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: UI - Export Modal Dialog' (Protocol in workflow.md)
+- [x] Task: Create ExportModal Component [dd43f65]
+- [x] Task: Integrate Export Service with Modal [dd43f65]
+- [~] Task: Conductor - User Manual Verification 'Phase 2: UI - Export Modal Dialog' (Protocol in workflow.md)
 
 ## Phase 3: UI - Integration into Show Views
 
