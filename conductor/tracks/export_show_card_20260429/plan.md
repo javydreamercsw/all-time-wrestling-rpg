@@ -4,13 +4,13 @@
 
 - [x] Task: Create a new git branch for this feature (`feat/export-show-card`). [0e9a54c]
 
-## Phase 1: Extensible Export Service and Formatter Logic
+## Phase 1: Extensible Export Service and Formatter Logic [checkpoint: 560a760]
 
 - [x] Task: Define ShowCardFormatter Interface [56fe22c]
 - [x] Task: Implement Markdown Formatter [ab6d953]
 - [x] Task: Implement Social Media Formatters [ab6d953]
 - [x] Task: Implement Export Service with Auto-Discovery [ab6d953]
-- [~] Task: Conductor - User Manual Verification 'Phase 1: Extensible Export Service and Formatter Logic' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Extensible Export Service and Formatter Logic' (Protocol in workflow.md) [560a760]
 
 ## Phase 2: UI - Export Modal Dialog
 
