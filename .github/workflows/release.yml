@@ -229,21 +229,15 @@ jobs:
 
       - name: Build with Maven and JPackage
         shell: bash
-        # Override JAVA_TOOL_OPTIONS: the global -Xmx3g is picked up by jpackage
-        # itself, which can exhaust Windows runner resources during icon embedding.
-        # A smaller heap is sufficient for the packaging step.
+        # Override JAVA_TOOL_OPTIONS: the global -Xmx6g is too high for jpackage
+        # sub-processes on the 7GB runner. Scoped to -Xmx2g.
         env:
-          JAVA_TOOL_OPTIONS: "-Xmx1g"
+          JAVA_TOOL_OPTIONS: "-Xmx2g"
           MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
-          ICON_PARAM="-Djpackage.icon=${{ matrix.icon }}"
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "Skipping icon for Windows build to troubleshoot memory issues..."
-            ICON_PARAM=""
-          fi
           mvn -B package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
-            $ICON_PARAM \
+            -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
 
       - name: Rename Installers
