@@ -1,5 +1,8 @@
 # Implementation Plan: Export Show Card
 
+## Phase 0: Setup
+- [ ] Task: Create a new git branch for this feature (`feat/export-show-card`).
+
 ## Phase 1: Extensible Export Service and Formatter Logic
 - [ ] Task: Define ShowCardFormatter Interface
     - [ ] Create an interface `ShowCardFormatter` with methods like `getFormatName()`, `format(Show show)`, and potentially an `order()` or `priority()` for sorting in the UI.
