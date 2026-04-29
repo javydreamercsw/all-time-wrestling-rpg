@@ -77,6 +77,15 @@ jobs:
           echo "$LATEST_H2" > src/main/resources/db/migration/h2/.released
           echo "$LATEST_MYSQL" > src/main/resources/db/migration/mysql/.released
 
+      - name: Format and Push initial changes
+        run: |
+          mvn spotless:apply
+          git add .
+          if ! git diff-index --quiet --cached HEAD; then
+            git commit -m "chore: Update version to ${{ github.event.inputs.version }} and migration metadata"
+            git push -u origin "release/${{ github.event.inputs.version }}"
+          fi
+
       # --- 3. DEPENDENCY INSTALLATION ---
       - name: Install root and docs dependencies
         run: |
@@ -119,7 +128,7 @@ jobs:
           git add .
           if ! git diff-index --quiet --cached HEAD; then
             git commit -m "docs: Regenerate Game Guide for v${{ github.event.inputs.version }}"
-            git push -u origin release/${{ github.event.inputs.version }}
+            git push -u origin "release/${{ github.event.inputs.version }}"
           fi
 
       - name: Upload Docs Artifact
