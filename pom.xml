@@ -1319,30 +1319,37 @@
     </profile>
     <profile>
       <id>generate-docs</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <surefire.skip>true</surefire.skip>
+      </properties>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>3.6.3</version>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{failsafeArgLine} -Dgenerate.docs=true</argLine>
+              <includes>
+                <include>**/*DocsE2ETest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+                <!-- Exclude non-Docs E2Es -->
+                <exclude>**/*E2ETest.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <headless>${headless}</headless>
+              </systemPropertyVariables>
+            </configuration>
             <executions>
               <execution>
                 <goals>
-                  <goal>java</goal>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
                 </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <mainClass>com.github.javydreamercsw.base.ui.DocumentationGenerator</mainClass>
-                  <arguments>
-                    <argument>docs/manifest.json</argument>
-                  </arguments>
-                  <systemProperties>
-                    <systemProperty>
-                      <key>java.awt.headless</key>
-                      <value>${headless}</value>
-                    </systemProperty>
-                  </systemProperties>
-                </configuration>
               </execution>
             </executions>
           </plugin>
