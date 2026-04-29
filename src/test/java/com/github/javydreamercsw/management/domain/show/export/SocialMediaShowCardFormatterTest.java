@@ -57,6 +57,9 @@ class SocialMediaShowCardFormatterTest {
     when(segment.getWrestlers()).thenReturn(Arrays.asList(w1, w2));
     when(segment.getIsTitleSegment()).thenReturn(true);
     when(segment.getSummary()).thenReturn("A brutal battle for the gold.");
+    when(segment.isMainEvent()).thenReturn(true);
+    when(segment.hasSegmentRules()).thenReturn(true);
+    when(segment.getSegmentRulesAsString()).thenReturn("No DQ");
 
     Title title = mock(Title.class);
     when(title.getName()).thenReturn("ATW World Title");
@@ -76,6 +79,8 @@ class SocialMediaShowCardFormatterTest {
     assertTrue(result.contains("Stone Cold vs. The Rock"));
     assertTrue(result.contains("🏆"));
     assertTrue(result.contains("ATW World Title"));
+    assertTrue(result.contains("⭐ MAIN EVENT ⭐"));
+    assertTrue(result.contains("📜 Rules: No DQ"));
     assertTrue(result.contains("A brutal battle for the gold."));
     assertTrue(result.contains("#AllTimeWrestling"));
   }

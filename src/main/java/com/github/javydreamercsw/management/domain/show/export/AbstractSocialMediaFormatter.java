@@ -59,7 +59,15 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
           sb.append(" (").append(titles).append(")");
         }
       }
+
+      if (segment.isMainEvent()) {
+        sb.append(" ⭐ MAIN EVENT ⭐");
+      }
       sb.append("\n");
+
+      if (segment.hasSegmentRules()) {
+        sb.append("📜 Rules: ").append(segment.getSegmentRulesAsString()).append("\n");
+      }
 
       if (segment.getSummary() != null && !segment.getSummary().trim().isEmpty()) {
         sb.append("📝 ").append(segment.getSummary().trim()).append("\n");
