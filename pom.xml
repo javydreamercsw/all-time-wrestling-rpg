@@ -1128,10 +1128,46 @@
       </build>
     </profile>
     <profile>
-      <id>desktop</id>
+      <id>os-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/windows/icon.ico</jpackage.icon>
+        <jpackage.type>MSI</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>os-macos</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
       <properties>
         <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
         <jpackage.type>DMG</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>os-linux</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>linux</name>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/linux/icon.png</jpackage.icon>
+        <jpackage.type>DEB</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>desktop</id>
+      <properties>
+        <jpackage.appName>All Time Wrestling</jpackage.appName>
       </properties>
       <build>
         <plugins>
@@ -1163,9 +1199,9 @@
                 <phase>initialize</phase>
                 <configuration>
                   <name>jpackage.appName</name>
-                  <value>All Time Wrestling</value>
-                  <regex>^(.*)$</regex>
-                  <replacement>$1</replacement>
+                  <value>${project.version}</value>
+                  <regex>.*-SNAPSHOT</regex>
+                  <replacement>All Time Wrestling (Snapshot)</replacement>
                   <failIfNoMatch>false</failIfNoMatch>
                 </configuration>
               </execution>
