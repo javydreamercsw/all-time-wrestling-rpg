@@ -23,9 +23,12 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +42,7 @@ class SocialMediaShowCardFormatterTest {
   void setUp() {
     show = mock(Show.class);
     when(show.getName()).thenReturn("Friday Night Heat");
+    when(show.getShowDate()).thenReturn(LocalDate.of(2026, 4, 29));
 
     Segment segment = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
@@ -52,6 +56,11 @@ class SocialMediaShowCardFormatterTest {
 
     when(segment.getWrestlers()).thenReturn(Arrays.asList(w1, w2));
     when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getSummary()).thenReturn("A brutal battle for the gold.");
+
+    Title title = mock(Title.class);
+    when(title.getName()).thenReturn("ATW World Title");
+    when(segment.getTitles()).thenReturn(new HashSet<>(Collections.singletonList(title)));
 
     segments = Collections.singletonList(segment);
   }
@@ -62,8 +71,12 @@ class SocialMediaShowCardFormatterTest {
     String result = formatter.format(show, segments);
 
     assertTrue(result.contains("Friday Night Heat"));
+    assertTrue(result.contains("Apr 29, 2026"));
+    assertTrue(result.contains("[Main Event]"));
     assertTrue(result.contains("Stone Cold vs. The Rock"));
     assertTrue(result.contains("🏆"));
+    assertTrue(result.contains("ATW World Title"));
+    assertTrue(result.contains("A brutal battle for the gold."));
     assertTrue(result.contains("#AllTimeWrestling"));
   }
 

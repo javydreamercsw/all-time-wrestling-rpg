@@ -69,6 +69,10 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
         sb.append("*Rules: ").append(segment.getSegmentRulesAsString()).append("*\n");
       }
 
+      if (segment.getSummary() != null && !segment.getSummary().trim().isEmpty()) {
+        sb.append("\n").append(segment.getSummary().trim()).append("\n");
+      }
+
       sb.append("\n");
     }
 

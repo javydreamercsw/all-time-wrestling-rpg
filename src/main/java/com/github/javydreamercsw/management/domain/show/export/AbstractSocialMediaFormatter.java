@@ -18,7 +18,9 @@ package com.github.javydreamercsw.management.domain.show.export;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,9 +30,20 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
   @Override
   public String format(Show show, List<Segment> segments) {
     StringBuilder sb = new StringBuilder();
-    sb.append("📺 ").append(show.getName()).append("\n\n");
+    sb.append("📺 ").append(show.getName());
+    if (show.getShowDate() != null) {
+      sb.append(" (")
+          .append(show.getShowDate().format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
+          .append(")");
+    }
+    sb.append("\n\n");
 
     for (Segment segment : segments) {
+      String type = segment.getSegmentType() != null ? segment.getSegmentType().getName() : "";
+      if (!type.isEmpty()) {
+        sb.append("[").append(type).append("] ");
+      }
+
       String participants =
           segment.getWrestlers().stream()
               .map(Wrestler::getName)
@@ -40,11 +53,21 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
 
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())) {
         sb.append(" 🏆");
+        if (!segment.getTitles().isEmpty()) {
+          String titles =
+              segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(", "));
+          sb.append(" (").append(titles).append(")");
+        }
+      }
+      sb.append("\n");
+
+      if (segment.getSummary() != null && !segment.getSummary().trim().isEmpty()) {
+        sb.append("📝 ").append(segment.getSummary().trim()).append("\n");
       }
       sb.append("\n");
     }
 
-    sb.append("\n").append(getHashtags());
+    sb.append(getHashtags());
 
     String result = sb.toString();
     return limitLength(result);
