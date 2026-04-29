@@ -20,11 +20,7 @@
 
 ## Phase 3: UI - Integration into Show Views
 
-- [ ] Task: Integrate Export into Show List View
-  - [ ] Add an "Export Card" action to the context menu/action buttons for each row in the Show List view.
-  - [ ] Bind the action to open the `ShowExportDialog` with the selected show.
-- [ ] Task: Integrate Export into Show Details View
-  - [ ] Add an "Export Card" button to the Show Details view.
-  - [ ] Bind the button to open the `ShowExportDialog` with the current show.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md)
+- [x] Task: Integrate Export into Show List View [1761d76]
+- [x] Task: Integrate Export into Show Details View [1761d76]
+- [~] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md)
 
