@@ -2,8 +2,8 @@ name: Create Release
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  MAVEN_OPTS: "-Xmx3g -XX:+UseG1GC"
-  JAVA_TOOL_OPTIONS: "-Xmx3g"
+  MAVEN_OPTS: "-Xmx6g -XX:+UseG1GC"
+  JAVA_TOOL_OPTIONS: "-Xmx6g"
 
 permissions:
   contents: write
@@ -199,8 +199,6 @@ jobs:
           - os: windows-latest
             type: MSI
             icon: src/main/resources/jpackage/windows/icon.ico
-            env:
-              _JAVA_OPTIONS: "-Xmx6g"
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -231,7 +229,7 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Xmx1g"
           MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
-          mvn -B clean package -Pproduction,desktop \
+          mvn -B package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
