@@ -85,6 +85,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -557,6 +559,33 @@ class DataInitializerTest {
       var arenas = objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
       assertNotNull(arenas);
       assertFalse(arenas.isEmpty());
+    }
+  }
+
+  @Test
+  void validateArenaLocationsExistInLocationsJson() throws IOException {
+    Set<String> locationNames;
+    try (var is = new ClassPathResource("locations.json").getInputStream()) {
+      locationNames =
+          objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {}).stream()
+              .map(LocationImportDTO::getName)
+              .collect(Collectors.toSet());
+    }
+
+    try (var is = new ClassPathResource("arenas.json").getInputStream()) {
+      List<ArenaImportDTO> arenas = objectMapper.readValue(is, new TypeReference<>() {});
+      var missingLocationRefs =
+          arenas.stream()
+              .map(ArenaImportDTO::getLocation)
+              .filter(location -> !locationNames.contains(location))
+              .distinct()
+              .toList();
+
+      assertEquals(
+          List.of(),
+          missingLocationRefs,
+          "Every arena location must exist in locations.json to avoid skipped arenas during seed"
+              + " sync.");
     }
   }
 
