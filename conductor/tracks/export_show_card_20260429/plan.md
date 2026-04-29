@@ -1,7 +1,7 @@
 # Implementation Plan: Export Show Card
 
 ## Phase 0: Setup
-- [x] Task: Create a new git branch for this feature (`feat/export-show-card`).
+- [x] Task: Create a new git branch for this feature (`feat/export-show-card`). [0e9a54c]
 
 ## Phase 1: Extensible Export Service and Formatter Logic
 - [ ] Task: Define ShowCardFormatter Interface
