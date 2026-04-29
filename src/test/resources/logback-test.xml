@@ -26,9 +26,18 @@
     <!-- Disable Notion SDK logging completely -->
     <logger name="notion.api.v1.logging.StdoutLogger" level="OFF" />
 
-    <!-- Set atmosphere logging to warn as configured in application.properties -->
+    <!-- Framework noise reduction -->
     <logger name="org.atmosphere" level="WARN"/>
+    <logger name="org.flywaydb" level="ERROR" />
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.apache.catalina" level="WARN"/>
+    <logger name="org.apache.tomcat" level="WARN"/>
+    <logger name="com.vaadin" level="WARN"/>
+    <logger name="io.github.bonigarcia" level="WARN"/>
+    <logger name="org.openqa.selenium" level="WARN"/>
 
+    <!-- Application logging -->
     <logger name="com.github.javydreamercsw" level="INFO" />
 
     <!-- Root logger -->

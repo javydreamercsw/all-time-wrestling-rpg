@@ -11,6 +11,14 @@
   "description": "A hub for the European wrestling scene, known for its rowdy, singing crowds and a mix of technical and hard-hitting styles.",
   "culturalTags": [ "uk", "british-strong-style", "europe", "historic", "vocal-crowd" ]
 }, {
+  "name": "Rome",
+  "description": "The Eternal City, where ancient gladiator heritage meets modern global wrestling spectacle in packed coliseums.",
+  "culturalTags": [ "italy", "europe", "historic", "gladiator-legacy", "ancient-ruins" ]
+}, {
+  "name": "Athens",
+  "description": "The cradle of classical civilization and modern Greek sport culture, known for dramatic open-air wrestling events.",
+  "culturalTags": [ "greece", "europe", "historic", "classical", "open-air" ]
+}, {
   "name": "Chicago",
   "description": "The 'Windy City', home to some of the most passionate and vocal wrestling fans in the world. A true blue-collar wrestling town.",
   "culturalTags": [ "usa", "midwest", "blue-collar", "passionate-fans", "windy-city" ]

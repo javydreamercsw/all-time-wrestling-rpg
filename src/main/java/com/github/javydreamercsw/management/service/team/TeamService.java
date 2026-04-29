@@ -201,7 +201,7 @@ public class TeamService {
     }
 
     Team savedTeam = teamRepository.saveAndFlush(team);
-    log.info(
+    log.debug(
         "Created team: {} with members {} & {}",
         savedTeam.getName(),
         wrestler1.getName(),

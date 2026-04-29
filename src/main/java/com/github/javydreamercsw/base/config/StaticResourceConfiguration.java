@@ -38,8 +38,8 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
     String imagePath = storageProperties.getResolvedImageDir().toUri().toString();
     String defaultImagePath = storageProperties.getResolvedDefaultImageDir().toUri().toString();
 
-    log.info("Mapping images/generated/** to {}", imagePath);
-    log.info("Mapping images/defaults/** to {}", defaultImagePath);
+    log.debug("Mapping images/generated/** to {}", imagePath);
+    log.debug("Mapping images/defaults/** to {}", defaultImagePath);
 
     registry.addResourceHandler("/images/generated/**").addResourceLocations(imagePath);
     registry.addResourceHandler("/images/defaults/**").addResourceLocations(defaultImagePath);

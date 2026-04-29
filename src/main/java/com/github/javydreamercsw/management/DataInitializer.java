@@ -198,7 +198,7 @@ public class DataInitializer implements Initializable {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
-    log.info("DataInitializer.init() called. enabled={}", enabled);
+    log.debug("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
       syncAiSettingsFromEnvironment();
       initializeGameDate();
@@ -247,7 +247,7 @@ public class DataInitializer implements Initializable {
               dto.getBaseRiskMultiplier());
           log.debug("Loaded ringside action type: {}", dto.getName());
         }
-        log.info("Ringside action type loading completed - {} types loaded", dtos.size());
+        log.debug("Ringside action type loading completed - {} types loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading ringside action types from file", e);
       }
@@ -271,7 +271,7 @@ public class DataInitializer implements Initializable {
               dto.getAlignment());
           log.debug("Loaded ringside action: {}", dto.getName());
         }
-        log.info("Ringside action loading completed - {} actions loaded", dtos.size());
+        log.debug("Ringside action loading completed - {} actions loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading ringside actions from file", e);
       }
@@ -328,7 +328,7 @@ public class DataInitializer implements Initializable {
               cDto.getPersonaDescription());
           log.debug("Loaded commentator: {}", cDto.getNpcName());
         }
-        log.info("Commentator loading completed - {} commentators loaded", dtos.size());
+        log.debug("Commentator loading completed - {} commentators loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading commentators from file", e);
       }
@@ -348,7 +348,7 @@ public class DataInitializer implements Initializable {
           commentaryService.createOrUpdateTeam(teamDto.getTeamName(), teamDto.getMemberNames());
           log.debug("Loaded commentary team: {}", teamDto.getTeamName());
         }
-        log.info("Commentary team loading completed - {} teams loaded", dtos.size());
+        log.debug("Commentary team loading completed - {} teams loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading commentary teams from file", e);
       }
@@ -358,7 +358,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncAiSettingsFromEnvironment() {
-    log.info(
+    log.debug(
         "Syncing AI settings from environment variables/system properties/Spring environment...");
 
     syncSetting("AI_TIMEOUT", "300");
@@ -390,13 +390,7 @@ public class DataInitializer implements Initializable {
     boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
     boolean geminiEnabled = isSettingEnabled("AI_GEMINI_ENABLED");
 
-    if (!openAiEnabled && !claudeEnabled && !geminiEnabled) {
-      log.info("All AI providers are disabled. Enabling Gemini.");
-      // Only set if missing so we don't flip a user's explicit DB config.
-      saveIfMissing("AI_GEMINI_ENABLED", "true");
-    }
-
-    log.info("AI settings synchronization complete.");
+    log.debug("AI settings synchronization complete.");
   }
 
   private void syncSetting(@NonNull String key, String defaultValue) {
@@ -486,7 +480,8 @@ public class DataInitializer implements Initializable {
               dto.getSecondaryTiming());
           log.debug("Loaded campaign ability card: {}", dto.getName());
         }
-        log.info("Campaign ability card loading completed - {} cards loaded", cardsFromFile.size());
+        log.debug(
+            "Campaign ability card loading completed - {} cards loaded", cardsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading campaign ability cards from file", e);
       }
@@ -517,7 +512,7 @@ public class DataInitializer implements Initializable {
               dto.isNoDq(),
               dto.getBumpAddition());
         }
-        log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
+        log.debug("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
       } catch (IOException e) {
         log.error("Error loading segment rules from file", e);
       }
@@ -542,7 +537,7 @@ public class DataInitializer implements Initializable {
               st.getExpectedMatches(),
               st.getExpectedPromos());
         }
-        log.info("Show type loading completed - {} types loaded", showTypesFromFile.size());
+        log.debug("Show type loading completed - {} types loaded", showTypesFromFile.size());
       } catch (IOException e) {
         log.error("Error loading show types from file", e);
       }
@@ -574,7 +569,7 @@ public class DataInitializer implements Initializable {
           }
         }
 
-        log.info("Segment type loading completed");
+        log.debug("Segment type loading completed");
       } catch (IOException e) {
         log.error("Error loading segment types from file", e);
       }
@@ -986,7 +981,7 @@ public class DataInitializer implements Initializable {
             }
           } else {
             // If no champion is specified in DTO leave it as it is currently.
-            log.info("Leaving title {} as is in the database.", title.getName());
+            log.debug("Leaving title {} as is in the database.", title.getName());
           }
         }
       } catch (IOException e) {
@@ -1110,7 +1105,7 @@ public class DataInitializer implements Initializable {
 
   private void initializeGameDate() {
     if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
-      log.info("In-game date not set. Initializing to current date.");
+      log.debug("In-game date not set. Initializing to current date.");
       gameSettingService.saveCurrentGameDate(LocalDate.now());
     }
   }
@@ -1147,7 +1142,7 @@ public class DataInitializer implements Initializable {
           npcService.save(npc);
           log.debug("Loaded npc: {}", dto.getName());
         }
-        log.info("Npc loading completed - {} npcs loaded", dtos.size());
+        log.debug("Npc loading completed - {} npcs loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading npcs from file", e);
       }
@@ -1191,7 +1186,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded faction: {}", dto.getName());
         }
-        log.info("Faction loading completed - {} factions loaded", dtos.size());
+        log.debug("Faction loading completed - {} factions loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading factions from file", e);
       }
@@ -1235,7 +1230,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded team: {}", dto.getName());
         }
-        log.info("Team loading completed - {} teams loaded", dtos.size());
+        log.debug("Team loading completed - {} teams loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading teams from file", e);
       }
@@ -1255,7 +1250,7 @@ public class DataInitializer implements Initializable {
           log.warn("No locations found in {}", resource.getPath());
           return;
         }
-        log.info("Found {} locations in JSON file", locationsFromFile.size());
+        log.debug("Found {} locations in JSON file", locationsFromFile.size());
         for (LocationImportDTO dto : locationsFromFile) {
           Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
           if (existingLocation.isEmpty()) {
@@ -1274,11 +1269,11 @@ public class DataInitializer implements Initializable {
             existing.setImageUrl(dto.getImageUrl());
             existing.setCulturalTags(dto.getCulturalTags());
             locationRepository.save(existing);
-            log.info("Updated existing location: {}", existing.getName());
+            log.debug("Updated existing location: {}", existing.getName());
           }
         }
         locationRepository.flush();
-        log.info("Location loading completed - {} locations processed", locationsFromFile.size());
+        log.debug("Location loading completed - {} locations processed", locationsFromFile.size());
 
       } catch (IOException e) {
         log.error("Error loading locations from file", e);
@@ -1298,7 +1293,7 @@ public class DataInitializer implements Initializable {
           log.warn("No arenas found in {}", resource.getPath());
           return;
         }
-        log.info("Found {} arenas in JSON file", arenasFromFile.size());
+        log.debug("Found {} arenas in JSON file", arenasFromFile.size());
         for (ArenaImportDTO dto : arenasFromFile) {
           Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
           if (existingArena.isEmpty()) {
@@ -1338,10 +1333,10 @@ public class DataInitializer implements Initializable {
                         dto.getLocation(),
                         dto.getName()));
             arenaRepository.save(existing);
-            log.info("Updated existing arena: {}", existing.getName());
+            log.debug("Updated existing arena: {}", existing.getName());
           }
         }
-        log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());
+        log.debug("Arena loading completed - {} arenas processed", arenasFromFile.size());
       } catch (IOException e) {
         log.error("Error loading arenas from file", e);
       }
@@ -1385,7 +1380,7 @@ public class DataInitializer implements Initializable {
             }
           }
         }
-        log.info("Relationship loading completed - {} relationships processed", dtos.size());
+        log.debug("Relationship loading completed - {} relationships processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading relationships from file", e);
       }

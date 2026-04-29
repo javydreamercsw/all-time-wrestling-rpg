@@ -1,8 +1,0 @@
-{
-  "track_id": "export_show_card_20260429",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-04-29T12:00:00Z",
-  "updated_at": "2026-04-29T12:00:00Z",
-  "description": "Add a feature to export a Show card (matches for the show copied to the clipboard) in multiple formats (mark down, Facebook post, X (tweeter), Bluesky)"
-}
