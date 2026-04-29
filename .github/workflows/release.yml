@@ -98,7 +98,7 @@ jobs:
             --future-release v${{ github.event.inputs.version }}
 
       - name: Generate screenshots and manifest
-        run: mvn -B verify -Pgenerate-docs -Dheadless=true
+        run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
