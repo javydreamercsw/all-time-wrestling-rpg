@@ -1117,6 +1117,7 @@
                 </goals>
                 <phase>package</phase>
                 <configuration>
+                  <appendAssemblyId>false</appendAssemblyId>
                   <descriptors>
                     <descriptor>src/main/assembly/portable.xml</descriptor>
                   </descriptors>
@@ -1308,8 +1309,32 @@
     </profile>
     <profile>
       <id>war</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-tomcat</artifactId>
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.4.0</version>
+            <executions>
+              <execution>
+                <id>default-war</id>
+                <goals>
+                  <goal>war</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-maven-plugin</artifactId>
