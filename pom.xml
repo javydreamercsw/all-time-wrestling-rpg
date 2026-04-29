@@ -1324,11 +1324,11 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>3.4.1</version>
+            <version>3.6.3</version>
             <executions>
               <execution>
                 <goals>
-                  <goal>exec</goal>
+                  <goal>java</goal>
                 </goals>
                 <phase>verify</phase>
                 <configuration>

@@ -61,7 +61,7 @@ public class CampaignUpgradeService {
       // Clear existing upgrades before saving new ones to ensure idempotency
       upgradeRepository.deleteAllInBatch();
       upgradeRepository.saveAll(upgrades);
-      log.info("Loaded {} campaign upgrades into database.", upgrades.size());
+      log.debug("Loaded {} campaign upgrades into database.", upgrades.size());
     } catch (IOException e) {
       log.error("Error loading campaign upgrades from JSON", e);
     }

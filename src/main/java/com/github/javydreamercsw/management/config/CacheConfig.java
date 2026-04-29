@@ -93,7 +93,7 @@ public class CacheConfig {
             .maximumSize(500)
             .recordStats());
 
-    log.info("✅ Cache manager initialized with {} caches", cacheManager.getCacheNames().size());
+    log.debug("✅ Cache manager initialized with {} caches", cacheManager.getCacheNames().size());
     return cacheManager;
   }
 
@@ -120,7 +120,7 @@ public class CacheConfig {
 
     /** Logs cache statistics for monitoring performance. */
     public void logCacheStatistics() {
-      log.info("📊 Cache Statistics:");
+      log.debug("📊 Cache Statistics:");
 
       cacheManager
           .getCacheNames()
@@ -128,13 +128,13 @@ public class CacheConfig {
               cacheName -> {
                 var cache = cacheManager.getCache(cacheName);
                 if (cache instanceof CaffeineCache caffeineCache) {
-                  log.info(
+                  log.debug(
                       "   - {}: {} entries (Hit Rate: {})",
                       cacheName,
                       caffeineCache.getNativeCache().estimatedSize(),
                       String.format("%.2f", caffeineCache.getNativeCache().stats().hitRate()));
                 } else if (cache != null) {
-                  log.info("   - {}: active (non-Caffeine cache)", cacheName);
+                  log.debug("   - {}: active (non-Caffeine cache)", cacheName);
                 }
               });
     }
@@ -170,7 +170,7 @@ public class CacheConfig {
 
     /** Clears all caches - useful for testing or when data is updated. */
     public void clearAllCaches() {
-      log.info("🧹 Clearing all caches...");
+      log.debug("🧹 Clearing all caches...");
       cacheManager
           .getCacheNames()
           .forEach(
@@ -181,7 +181,7 @@ public class CacheConfig {
                   log.debug("Cleared cache: {}", cacheName);
                 }
               });
-      log.info("✅ All caches cleared");
+      log.debug("✅ All caches cleared");
     }
 
     /** Clears a specific cache by name. */
@@ -189,7 +189,7 @@ public class CacheConfig {
       var cache = cacheManager.getCache(cacheName);
       if (cache != null) {
         cache.clear();
-        log.info("🧹 Cleared cache: {}", cacheName);
+        log.debug("🧹 Cleared cache: {}", cacheName);
       } else {
         log.warn("Cache not found: {}", cacheName);
       }
@@ -200,13 +200,13 @@ public class CacheConfig {
      * startup.
      */
     public void warmUpCaches() {
-      log.info("🔥 Warming up caches...");
+      log.debug("🔥 Warming up caches...");
       try {
         // Warm up NPCs cache
         log.debug("Warming up NPCs cache...");
         npcService.findAll();
 
-        log.info("✅ Cache warm-up completed");
+        log.debug("✅ Cache warm-up completed");
       } catch (Exception e) {
         log.error("❌ Error during cache warm-up", e);
       }

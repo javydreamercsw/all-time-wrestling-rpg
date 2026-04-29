@@ -216,11 +216,11 @@ public abstract class AbstractIntegrationTest {
   protected void cleanupLeagues() {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
-          log.info("Cleaning up database using DatabaseCleanup...");
+          log.debug("Cleaning up database using DatabaseCleanup...");
           databaseCleanup.clearRepositories();
 
           if (cacheManager != null) {
-            log.info("Clearing all caches...");
+            log.debug("Clearing all caches...");
             cacheManager
                 .getCacheNames()
                 .forEach(
@@ -232,9 +232,9 @@ public abstract class AbstractIntegrationTest {
                     });
           }
 
-          log.info("Re-initializing data using DataInitializer...");
+          log.debug("Re-initializing data using DataInitializer...");
           dataInitializer.init();
-          log.info("Database reset complete.");
+          log.debug("Database reset complete.");
         });
   }
 }
