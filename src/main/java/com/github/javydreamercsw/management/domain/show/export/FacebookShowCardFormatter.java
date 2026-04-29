@@ -16,35 +16,29 @@
 */
 package com.github.javydreamercsw.management.domain.show.export;
 
-import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import java.util.List;
+import org.springframework.stereotype.Component;
 
-/** Interface for formatting a show card for export. */
-public interface ShowCardFormatter {
+@Component
+public class FacebookShowCardFormatter extends AbstractSocialMediaFormatter {
 
-  /**
-   * Get the display name of the export format.
-   *
-   * @return display name
-   */
-  String getFormatName();
+  @Override
+  public String getFormatName() {
+    return "Facebook";
+  }
 
-  /**
-   * Format the show card.
-   *
-   * @param show the show to format
-   * @param segments the segments of the show
-   * @return formatted text
-   */
-  String format(Show show, List<Segment> segments);
+  @Override
+  protected String getHashtags() {
+    return "#AllTimeWrestling #WrestlingRPG #WrestlingCard";
+  }
 
-  /**
-   * Get the priority for sorting in the UI. Lower values come first.
-   *
-   * @return priority
-   */
-  default int getPriority() {
-    return 100;
+  @Override
+  protected String limitLength(String text) {
+    // Facebook has high limits, so we don't really need to truncate for a show card
+    return text;
+  }
+
+  @Override
+  public int getPriority() {
+    return 20;
   }
 }
