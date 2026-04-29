@@ -32,6 +32,8 @@
 
     <logger name="com.github.javydreamercsw" level="INFO" />
 
+    <logger name="org.flywaydb.core.internal.command" level="ERROR" />
+
     <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

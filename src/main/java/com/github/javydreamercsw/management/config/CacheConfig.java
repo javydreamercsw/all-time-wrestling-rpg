@@ -64,7 +64,7 @@ public class CacheConfig {
    */
   @Bean
   public CacheManager cacheManager() {
-    log.info("🚀 Initializing cache manager with performance optimizations...");
+    log.debug("🚀 Initializing cache manager with performance optimizations...");
 
     CaffeineCacheManager cacheManager = new CaffeineCacheManager();
     cacheManager.setCacheNames(

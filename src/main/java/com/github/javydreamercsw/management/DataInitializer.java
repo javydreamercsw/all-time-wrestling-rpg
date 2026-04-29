@@ -198,7 +198,7 @@ public class DataInitializer implements Initializable {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
-    log.info("DataInitializer.init() called. enabled={}", enabled);
+    log.debug("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
       syncAiSettingsFromEnvironment();
       initializeGameDate();
@@ -358,7 +358,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncAiSettingsFromEnvironment() {
-    log.info(
+    log.debug(
         "Syncing AI settings from environment variables/system properties/Spring environment...");
 
     syncSetting("AI_TIMEOUT", "300");
@@ -396,7 +396,7 @@ public class DataInitializer implements Initializable {
       saveIfMissing("AI_GEMINI_ENABLED", "true");
     }
 
-    log.info("AI settings synchronization complete.");
+    log.debug("AI settings synchronization complete.");
   }
 
   private void syncSetting(@NonNull String key, String defaultValue) {
@@ -986,7 +986,7 @@ public class DataInitializer implements Initializable {
             }
           } else {
             // If no champion is specified in DTO leave it as it is currently.
-            log.info("Leaving title {} as is in the database.", title.getName());
+            log.debug("Leaving title {} as is in the database.", title.getName());
           }
         }
       } catch (IOException e) {
@@ -1110,7 +1110,7 @@ public class DataInitializer implements Initializable {
 
   private void initializeGameDate() {
     if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
-      log.info("In-game date not set. Initializing to current date.");
+      log.debug("In-game date not set. Initializing to current date.");
       gameSettingService.saveCurrentGameDate(LocalDate.now());
     }
   }
@@ -1255,7 +1255,7 @@ public class DataInitializer implements Initializable {
           log.warn("No locations found in {}", resource.getPath());
           return;
         }
-        log.info("Found {} locations in JSON file", locationsFromFile.size());
+        log.debug("Found {} locations in JSON file", locationsFromFile.size());
         for (LocationImportDTO dto : locationsFromFile) {
           Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
           if (existingLocation.isEmpty()) {
