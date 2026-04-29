@@ -229,9 +229,14 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Xmx1g"
           MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
+          ICON_PARAM="-Djpackage.icon=${{ matrix.icon }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "Skipping icon for Windows build to troubleshoot memory issues..."
+            ICON_PARAM=""
+          fi
           mvn -B package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
-            -Djpackage.icon=${{ matrix.icon }} \
+            $ICON_PARAM \
             -DskipTests --file pom.xml
 
       - name: Rename Installers
