@@ -26,5 +26,6 @@
 ---
 
 - [x] **Track: Export Show Card**
-*Link: [./tracks/export_show_card_20260429/](./tracks/export_show_card_20260429/)*
-*Status: Completed (2026-04-29)*
+  *Link: [./tracks/export_show_card_20260429/](./tracks/export_show_card_20260429/)*
+  *Status: Completed (2026-04-29)*
+
