@@ -199,6 +199,8 @@ jobs:
           - os: windows-latest
             type: MSI
             icon: src/main/resources/jpackage/windows/icon.ico
+            env:
+              _JAVA_OPTIONS: "-Xmx6g"
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -229,7 +231,7 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Xmx1g"
           MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
-          mvn -B verify -Pproduction,desktop \
+          mvn -B clean package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
