@@ -22,5 +22,5 @@
 
 - [x] Task: Integrate Export into Show List View [265bd12]
 - [x] Task: Integrate Export into Show Details View [265bd12]
-- [x] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md) [718186c]
+- [x] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md) [a0efdbc]
 
