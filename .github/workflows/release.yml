@@ -212,6 +212,13 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
+      - name: Install WiX Toolset (Windows only)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          dotnet tool install --global wix --version 4.0.1
+          wix extension add WixToolset.UI.wixext --global
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
