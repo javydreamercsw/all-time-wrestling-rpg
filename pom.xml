@@ -1130,10 +1130,47 @@
     <profile>
       <id>desktop</id>
       <properties>
-        <jpackage.appVersion>${project.version}</jpackage.appVersion>
+        <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
+        <jpackage.type>DMG</jpackage.type>
       </properties>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.5.0</version>
+            <executions>
+              <execution>
+                <id>sanitize-version</id>
+                <goals>
+                  <goal>regex-property</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <name>jpackage.appVersion</name>
+                  <value>${project.version}</value>
+                  <!-- Strictly numeric X.Y.Z for jpackage compatibility on all OS -->
+                  <regex>^([0-9]+(\.[0-9]+){0,2}).*$</regex>
+                  <replacement>$1</replacement>
+                  <failIfNoMatch>false</failIfNoMatch>
+                </configuration>
+              </execution>
+              <execution>
+                <id>set-dynamic-app-name</id>
+                <goals>
+                  <goal>regex-property</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <name>jpackage.appName</name>
+                  <value>All Time Wrestling</value>
+                  <regex>^(.*)$</regex>
+                  <replacement>$1</replacement>
+                  <failIfNoMatch>false</failIfNoMatch>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
@@ -1193,15 +1230,15 @@
                 </goals>
                 <phase>verify</phase>
                 <configuration>
-                  <name>All Time Wrestling</name>
-                  <vendor>javydreamercsw</vendor>
+                  <verbose>true</verbose>
+                  <name>${jpackage.appName}</name>
+                  <vendor>Javier Ortiz Bultron</vendor>
                   <appVersion>${jpackage.appVersion}</appVersion>
                   <input>${project.build.directory}/jpackage-input</input>
                   <mainJar>${project.build.finalName}-thin.jar</mainJar>
                   <mainClass>com.github.javydreamercsw.Application</mainClass>
                   <destination>${project.build.directory}/dist</destination>
                   <javaOptions>
-                    <option>-Xmx1g</option>
                     <option>-Dspring.profiles.active=prod</option>
                     <option>-Djava.awt.headless=false</option>
                     <option>-Datw.desktop.enabled=true</option>
@@ -1210,8 +1247,12 @@
                   <type>${jpackage.type}</type>
                   <icon>${jpackage.icon}</icon>
                   <!-- Platform specific configurations -->
-                  <macPackageName>All Time Wrestling RPG</macPackageName>
+                  <macPackageName>${jpackage.appName} RPG</macPackageName>
                   <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
+                  <winDirChooser>true</winDirChooser>
+                  <winMenu>true</winMenu>
+                  <winShortcut>true</winShortcut>
+                  <winMenuGroup>All Time Wrestling</winMenuGroup>
                 </configuration>
               </execution>
             </executions>
