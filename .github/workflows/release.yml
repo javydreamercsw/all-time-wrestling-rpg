@@ -2,8 +2,7 @@ name: Create Release
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  MAVEN_OPTS: "-Xmx4g -XX:+UseG1GC"
-  _JAVA_OPTIONS: "-Xmx4g"
+  MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
 
 permissions:
   contents: write
@@ -159,7 +158,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build JAR with Maven
-        run: mvn spotless:apply -B package -DskipTests --file pom.xml
+        run: mvn -B package -DskipTests --file pom.xml
 
       - name: Build WAR with Maven
         run: mvn -B package -Pwar -DskipTests --file pom.xml
@@ -223,7 +222,7 @@ jobs:
       - name: Build with Maven and JPackage
         shell: bash
         run: |
-          mvn spotless:apply -B verify -Pproduction,desktop \
+          mvn -B verify -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
