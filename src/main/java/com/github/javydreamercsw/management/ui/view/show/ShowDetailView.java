@@ -1181,6 +1181,25 @@ public class ShowDetailView extends Main
     wrestlersCombo.setRequired(true);
     wrestlersCombo.setId("edit-wrestlers-combo-box");
 
+    // Winner selection (multi-select)
+    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
+    winnersCombo.setItemLabelGenerator(Wrestler::getName);
+    winnersCombo.setWidthFull();
+    winnersCombo.setId("edit-winners-combo-box");
+
+    wrestlersCombo.addValueChangeListener(
+        e -> {
+          winnersCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
+          // Clear winners if selected participants no longer include them
+          winnersCombo.setValue(
+              winnersCombo.getValue().stream()
+                  .filter(e.getValue()::contains)
+                  .collect(Collectors.toSet()));
+        });
+
     // Filter logic helper
     java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
         (selected) -> {
@@ -1198,26 +1217,7 @@ public class ShowDetailView extends Main
     alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
     genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
-    // Winner selection (multi-select)
-    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
-    winnersCombo.setItemLabelGenerator(Wrestler::getName);
-    winnersCombo.setWidthFull();
-    winnersCombo.setItems(
-        segment.getWrestlers().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     winnersCombo.setValue(new HashSet<>(segment.getWinners()));
-    winnersCombo.setId("edit-winners-combo-box");
-
-    // Update winner options when wrestlers change
-    wrestlersCombo.addValueChangeListener(
-        e -> {
-          winnersCombo.setItems(
-              e.getValue().stream()
-                  .sorted(Comparator.comparing(Wrestler::getName))
-                  .collect(Collectors.toList()));
-          winnersCombo.clear();
-        });
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");

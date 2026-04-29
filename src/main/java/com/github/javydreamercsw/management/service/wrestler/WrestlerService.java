@@ -95,12 +95,17 @@ public class WrestlerService {
       @Nullable AlignmentType alignment,
       @Nullable Gender gender,
       @Nullable Set<Wrestler> includedWrestlers) {
-    return findAll().stream()
+    java.util.Set<Wrestler> resultSet = new java.util.HashSet<>();
+
+    // Always include requested wrestlers
+    if (includedWrestlers != null) {
+      resultSet.addAll(includedWrestlers);
+    }
+
+    // Add wrestlers matching filters from the full active roster
+    findAll().stream()
         .filter(
             w -> {
-              if (includedWrestlers != null && includedWrestlers.contains(w)) {
-                return true;
-              }
               boolean matchesAlignment =
                   alignment == null
                       || (w.getAlignment() != null
@@ -108,6 +113,9 @@ public class WrestlerService {
               boolean matchesGender = gender == null || w.getGender() == gender;
               return matchesAlignment && matchesGender;
             })
+        .forEach(resultSet::add);
+
+    return resultSet.stream()
         .sorted(Comparator.comparing(Wrestler::getName))
         .collect(Collectors.toList());
   }

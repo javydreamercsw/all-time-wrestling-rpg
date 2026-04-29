@@ -1248,10 +1248,10 @@
             <version>3.4.1</version>
             <executions>
               <execution>
-                <phase>verify</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>verify</phase>
                 <configuration>
                   <mainClass>com.github.javydreamercsw.base.ui.DocumentationGenerator</mainClass>
                   <arguments>
