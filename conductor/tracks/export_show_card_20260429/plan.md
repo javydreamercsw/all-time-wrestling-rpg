@@ -4,7 +4,7 @@
 - [x] Task: Create a new git branch for this feature (`feat/export-show-card`). [0e9a54c]
 
 ## Phase 1: Extensible Export Service and Formatter Logic
-- [ ] Task: Define ShowCardFormatter Interface
+- [x] Task: Define ShowCardFormatter Interface [56fe22c]
     - [ ] Create an interface `ShowCardFormatter` with methods like `getFormatName()`, `format(Show show)`, and potentially an `order()` or `priority()` for sorting in the UI.
 - [ ] Task: Implement Markdown Formatter
     - [ ] Write unit tests for `MarkdownShowCardFormatter`.
