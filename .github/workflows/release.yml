@@ -198,7 +198,8 @@ jobs:
             icon: src/main/resources/jpackage/mac/icon.icns
           - os: windows-latest
             type: MSI
-            icon: src/main/resources/jpackage/windows/icon.ico
+            # CI uses a BMP-only ICO to avoid sporadic jpackage UpdateResource failures.
+            icon: src/main/resources/jpackage/windows/icon-ci.ico
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
