@@ -18,9 +18,9 @@
 - [x] Task: Integrate Export Service with Modal [32bae45]
 - [x] Task: Conductor - User Manual Verification 'Phase 2: UI - Export Modal Dialog' (Protocol in workflow.md) [3ff941d]
 
-## Phase 3: UI - Integration into Show Views
+## Phase 3: UI - Integration into Show Views [checkpoint: 718186c]
 
 - [x] Task: Integrate Export into Show List View [265bd12]
 - [x] Task: Integrate Export into Show Details View [265bd12]
-- [~] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md) [718186c]
 
