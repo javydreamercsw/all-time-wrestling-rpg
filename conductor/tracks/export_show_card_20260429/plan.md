@@ -25,3 +25,6 @@
 - [x] Task: Add E2E Documentation Test [850f1b2]
 - [x] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md) [a0efdbc]
 
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions [affc866]
+
