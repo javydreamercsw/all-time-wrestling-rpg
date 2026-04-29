@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -92,6 +93,7 @@ public class ShowListView extends Main {
   private final AiSettingsService aiSettingsService;
 
   private final ShowExportService exportService;
+  private final NotificationService notificationService;
 
   private final ComboBox<Season> newSeason;
   private final ComboBox<ShowTemplate> newTemplate; // New field
@@ -127,6 +129,7 @@ public class ShowListView extends Main {
       @NonNull AiSettingsService aiSettingsService,
       @NonNull ArenaService arenaService,
       @NonNull ShowExportService exportService,
+      @NonNull NotificationService notificationService,
       Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -136,6 +139,7 @@ public class ShowListView extends Main {
     this.securityUtils = securityUtils;
     this.arenaService = arenaService;
     this.exportService = exportService;
+    this.notificationService = notificationService;
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
@@ -401,7 +405,8 @@ public class ShowListView extends Main {
               exportBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               exportBtn.setTooltipText("Export Show Card");
               exportBtn.setId("export-show-button-" + show.getId());
-              exportBtn.addClickListener(e -> new ShowExportDialog(exportService, show).open());
+              exportBtn.addClickListener(
+                  e -> new ShowExportDialog(exportService, notificationService, show).open());
 
               // Calendar button (if show has date)
               if (show.getShowDate() != null) {

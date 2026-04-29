@@ -528,7 +528,8 @@ public class ShowDetailView extends Main
     exportCardButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     exportCardButton.setTooltipText("Export this show card");
     exportCardButton.setId("export-show-card-button");
-    exportCardButton.addClickListener(e -> new ShowExportDialog(exportService, show).open());
+    exportCardButton.addClickListener(
+        e -> new ShowExportDialog(exportService, notificationService, show).open());
 
     HorizontalLayout buttonGroup =
         new HorizontalLayout(planShowButton, exportCardButton, editDetailsButton);

@@ -71,7 +71,7 @@ class SocialMediaShowCardFormatterTest {
   @Test
   void testFacebookFormat() {
     FacebookShowCardFormatter formatter = new FacebookShowCardFormatter();
-    String result = formatter.format(show, segments);
+    String result = formatter.format(show, segments, true, true);
 
     assertTrue(result.contains("Friday Night Heat"));
     assertTrue(result.contains("Apr 29, 2026"));
@@ -88,7 +88,7 @@ class SocialMediaShowCardFormatterTest {
   @Test
   void testXFormat() {
     XShowCardFormatter formatter = new XShowCardFormatter();
-    String result = formatter.format(show, segments);
+    String result = formatter.format(show, segments, true, true);
 
     assertTrue(result.contains("Friday Night Heat"));
     assertTrue(result.contains("Stone Cold vs. The Rock"));
@@ -99,7 +99,7 @@ class SocialMediaShowCardFormatterTest {
   @Test
   void testBlueskyFormat() {
     BlueskyShowCardFormatter formatter = new BlueskyShowCardFormatter();
-    String result = formatter.format(show, segments);
+    String result = formatter.format(show, segments, true, true);
 
     assertTrue(result.contains("Friday Night Heat"));
     assertTrue(result.contains("Stone Cold vs. The Rock"));

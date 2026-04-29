@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -138,6 +139,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     ArenaService arenaService = mock(ArenaService.class);
 
     ShowExportService exportService = mock(ShowExportService.class);
+    NotificationService notificationService = mock(NotificationService.class);
 
     ShowListView showListView =
         new ShowListView(
@@ -152,6 +154,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             aiSettingsService,
             arenaService,
             exportService,
+            notificationService,
             clock);
     Grid<Show> grid = showListView.showGrid;
 

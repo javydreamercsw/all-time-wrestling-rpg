@@ -16,16 +16,16 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -37,14 +37,21 @@ import lombok.NonNull;
 public class ShowExportDialog extends Dialog {
 
   private final ShowExportService exportService;
+  private final NotificationService notificationService;
   private final Show show;
 
   private final ComboBox<String> formatSelector = new ComboBox<>("Export Format");
+  private final Checkbox includeResults = new Checkbox("Include Match Results", true);
+  private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
   private final TextArea previewArea = new TextArea("Preview");
   private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
 
-  public ShowExportDialog(@NonNull ShowExportService exportService, @NonNull Show show) {
+  public ShowExportDialog(
+      @NonNull ShowExportService exportService,
+      @NonNull NotificationService notificationService,
+      @NonNull Show show) {
     this.exportService = exportService;
+    this.notificationService = notificationService;
     this.show = show;
 
     setHeaderTitle("Export Show Card: " + show.getName());
@@ -52,12 +59,18 @@ public class ShowExportDialog extends Dialog {
     setDraggable(true);
     setResizable(true);
     setWidth("700px");
-    setHeight("600px");
+    setHeight("700px");
 
     formatSelector.setWidthFull();
     List<String> formats = exportService.getAvailableFormats();
     formatSelector.setItems(formats);
     formatSelector.addValueChangeListener(event -> updatePreview());
+
+    includeResults.addValueChangeListener(event -> updatePreview());
+    includeSummary.addValueChangeListener(event -> updatePreview());
+
+    HorizontalLayout optionsLayout = new HorizontalLayout(includeResults, includeSummary);
+    optionsLayout.setSpacing(true);
 
     previewArea.setWidthFull();
     previewArea.setHeight("400px");
@@ -73,7 +86,7 @@ public class ShowExportDialog extends Dialog {
     footer.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
     footer.setWidthFull();
 
-    VerticalLayout layout = new VerticalLayout(formatSelector, previewArea, footer);
+    VerticalLayout layout = new VerticalLayout(formatSelector, optionsLayout, previewArea, footer);
     layout.setPadding(true);
     layout.setSpacing(true);
     layout.setSizeFull();
@@ -98,17 +111,25 @@ public class ShowExportDialog extends Dialog {
     return copyButton;
   }
 
+  public Checkbox getIncludeResults() {
+    return includeResults;
+  }
+
+  public Checkbox getIncludeSummary() {
+    return includeSummary;
+  }
+
   private void updatePreview() {
     String format = formatSelector.getValue();
     if (format != null) {
       try {
-        String content = exportService.export(show, format);
+        String content =
+            exportService.export(
+                show, format, includeSummary.getValue(), includeResults.getValue());
         previewArea.setValue(content);
         copyButton.setEnabled(true);
       } catch (Exception e) {
-        Notification.show(
-                "Error generating export: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        notificationService.showError("Error generating export: " + e.getMessage());
         previewArea.setValue("");
         copyButton.setEnabled(false);
       }
@@ -121,14 +142,9 @@ public class ShowExportDialog extends Dialog {
   private void copyToClipboard() {
     String content = previewArea.getValue();
     if (content != null && !content.isEmpty()) {
-      // Escape special characters for JS string
-      String escapedContent =
-          content.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$").replace("'", "\\'");
-
       getElement().executeJs("navigator.clipboard.writeText($0)", content);
 
-      Notification.show("Copied to clipboard!", 2000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      notificationService.showSuccess("Copied to clipboard!");
     }
   }
 }

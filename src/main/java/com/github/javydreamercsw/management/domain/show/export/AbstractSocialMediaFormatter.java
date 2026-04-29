@@ -28,7 +28,8 @@ import java.util.stream.Collectors;
 public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter {
 
   @Override
-  public String format(Show show, List<Segment> segments) {
+  public String format(
+      Show show, List<Segment> segments, boolean includeSummary, boolean includeResults) {
     StringBuilder sb = new StringBuilder();
     sb.append("📺 ").append(show.getName());
     if (show.getShowDate() != null) {
@@ -69,7 +70,15 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
         sb.append("📜 Rules: ").append(segment.getSegmentRulesAsString()).append("\n");
       }
 
-      if (segment.getSummary() != null && !segment.getSummary().trim().isEmpty()) {
+      if (includeResults && !segment.getWinners().isEmpty()) {
+        String winners =
+            segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+        sb.append("✅ Winner(s): ").append(winners).append("\n");
+      }
+
+      if (includeSummary
+          && segment.getSummary() != null
+          && !segment.getSummary().trim().isEmpty()) {
         sb.append("📝 ").append(segment.getSummary().trim()).append("\n");
       }
       sb.append("\n");

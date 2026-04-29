@@ -66,9 +66,9 @@ class ShowExportServiceTest {
     List<Segment> segments = Collections.singletonList(mock(Segment.class));
     when(segmentRepository.findByShowOrderBySegmentOrderAsc(show)).thenReturn(segments);
 
-    when(formatter2.format(show, segments)).thenReturn("Formatted Content");
+    when(formatter2.format(show, segments, true, true)).thenReturn("Formatted Content");
 
-    String result = service.export(show, "Format 2");
+    String result = service.export(show, "Format 2", true, true);
     assertEquals("Formatted Content", result);
   }
 }
