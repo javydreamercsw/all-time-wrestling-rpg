@@ -5,18 +5,10 @@
 
 ## Phase 1: Extensible Export Service and Formatter Logic
 - [x] Task: Define ShowCardFormatter Interface [56fe22c]
-    - [ ] Create an interface `ShowCardFormatter` with methods like `getFormatName()`, `format(Show show)`, and potentially an `order()` or `priority()` for sorting in the UI.
-- [ ] Task: Implement Markdown Formatter
-    - [ ] Write unit tests for `MarkdownShowCardFormatter`.
-    - [ ] Implement the logic and annotate with `@Component` for Spring discovery.
-- [ ] Task: Implement Social Media Formatters
-    - [ ] Write unit tests for Facebook, X, and Bluesky formatter implementations.
-    - [ ] Implement the respective logic and annotate with `@Component`.
-- [ ] Task: Implement Export Service with Auto-Discovery
-    - [ ] Write unit tests for `ShowExportService` that takes a Show and a format name, delegating to the correct formatter.
-    - [ ] Implement `ShowExportService`, injecting a `List<ShowCardFormatter>` so Spring automatically discovers all formatter implementations.
-    - [ ] Add a method to `ShowExportService` to return all available format names for the UI dropdown.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Extensible Export Service and Formatter Logic' (Protocol in workflow.md)
+- [x] Task: Implement Markdown Formatter [ab6d953]
+- [x] Task: Implement Social Media Formatters [ab6d953]
+- [x] Task: Implement Export Service with Auto-Discovery [ab6d953]
+- [~] Task: Conductor - User Manual Verification 'Phase 1: Extensible Export Service and Formatter Logic' (Protocol in workflow.md)
 
 ## Phase 2: UI - Export Modal Dialog
 - [ ] Task: Create ExportModal Component

@@ -1155,8 +1155,8 @@
       <id>os-linux</id>
       <activation>
         <os>
-          <family>unix</family>
           <name>linux</name>
+          <family>unix</family>
         </os>
       </activation>
       <properties>
