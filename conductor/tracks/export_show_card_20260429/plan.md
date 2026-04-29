@@ -1,9 +1,11 @@
 # Implementation Plan: Export Show Card
 
 ## Phase 0: Setup
+
 - [x] Task: Create a new git branch for this feature (`feat/export-show-card`). [0e9a54c]
 
 ## Phase 1: Extensible Export Service and Formatter Logic
+
 - [x] Task: Define ShowCardFormatter Interface [56fe22c]
 - [x] Task: Implement Markdown Formatter [ab6d953]
 - [x] Task: Implement Social Media Formatters [ab6d953]
@@ -11,20 +13,23 @@
 - [~] Task: Conductor - User Manual Verification 'Phase 1: Extensible Export Service and Formatter Logic' (Protocol in workflow.md)
 
 ## Phase 2: UI - Export Modal Dialog
+
 - [ ] Task: Create ExportModal Component
-    - [ ] Create a Vaadin Dialog component `ShowExportDialog`.
-    - [ ] Retrieve available formats from `ShowExportService` and populate a format selector (ComboBox).
-    - [ ] Add a read-only text area for the preview.
-    - [ ] Add a "Copy to Clipboard" button using Vaadin's clipboard capabilities.
+  - [ ] Create a Vaadin Dialog component `ShowExportDialog`.
+  - [ ] Retrieve available formats from `ShowExportService` and populate a format selector (ComboBox).
+  - [ ] Add a read-only text area for the preview.
+  - [ ] Add a "Copy to Clipboard" button using Vaadin's clipboard capabilities.
 - [ ] Task: Integrate Export Service with Modal
-    - [ ] Wire the format selector to call the `ShowExportService` and update the text area with the generated text based on the selected show and format.
+  - [ ] Wire the format selector to call the `ShowExportService` and update the text area with the generated text based on the selected show and format.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: UI - Export Modal Dialog' (Protocol in workflow.md)
 
 ## Phase 3: UI - Integration into Show Views
+
 - [ ] Task: Integrate Export into Show List View
-    - [ ] Add an "Export Card" action to the context menu/action buttons for each row in the Show List view.
-    - [ ] Bind the action to open the `ShowExportDialog` with the selected show.
+  - [ ] Add an "Export Card" action to the context menu/action buttons for each row in the Show List view.
+  - [ ] Bind the action to open the `ShowExportDialog` with the selected show.
 - [ ] Task: Integrate Export into Show Details View
-    - [ ] Add an "Export Card" button to the Show Details view.
-    - [ ] Bind the button to open the `ShowExportDialog` with the current show.
+  - [ ] Add an "Export Card" button to the Show Details view.
+  - [ ] Bind the button to open the `ShowExportDialog` with the current show.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: UI - Integration into Show Views' (Protocol in workflow.md)
+
