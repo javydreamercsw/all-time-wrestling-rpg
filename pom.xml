@@ -1152,7 +1152,7 @@
     <profile>
       <id>desktop</id>
       <properties>
-        <jpackage.appName>all-time-wrestling-rpg</jpackage.appName>
+        <jpackage.appName>All Time Wrestling</jpackage.appName>
       </properties>
       <build>
         <plugins>
@@ -1186,7 +1186,7 @@
                   <name>jpackage.appName</name>
                   <value>${project.version}</value>
                   <regex>.*-SNAPSHOT</regex>
-                  <replacement>all-time-wrestling-rpg-snapshot</replacement>
+                  <replacement>All Time Wrestling (Snapshot)</replacement>
                   <failIfNoMatch>false</failIfNoMatch>
                 </configuration>
               </execution>

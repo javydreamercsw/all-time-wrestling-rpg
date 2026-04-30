@@ -52,26 +52,26 @@ if (fs.existsSync(indexPath)) {
     const tagVersion = isSnapshot ? version : 'v' + version;
     const downloadBaseUrl = 'https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/' + tagVersion;
     
-    // Consistent naming from workflow: all-time-wrestling-rpg-[VERSION].[type]
-    const appName = 'all-time-wrestling-rpg';
-    const encodedAppName = encodeURIComponent(appName);
+    // GitHub Release asset naming behavior: spaces become dots.
+    const dottedAppName = 'All.Time.Wrestling';
+    const slugAppName = 'all-time-wrestling-rpg';
     
     // Using more flexible regex to match the links
     indexContent = indexContent.replace(
       /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for Windows \(\.msi\))/g,
-      `href="${downloadBaseUrl}/${encodedAppName}-${version}.msi"$1`
+      `href="${downloadBaseUrl}/${dottedAppName}-${version}.msi"$1`
     );
     indexContent = indexContent.replace(
       /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for macOS \(\.dmg\))/g,
-      `href="${downloadBaseUrl}/${encodedAppName}-${version}.dmg"$1`
+      `href="${downloadBaseUrl}/${dottedAppName}-${version}.dmg"$1`
     );
     indexContent = indexContent.replace(
       /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for Linux \(\.deb\))/g,
-      `href="${downloadBaseUrl}/${encodedAppName}-${version}.deb"$1`
+      `href="${downloadBaseUrl}/${slugAppName}-${version}.deb"$1`
     );
     indexContent = indexContent.replace(
       /\[Get Portable Version\]\(https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest\)/g,
-      `[Get Portable Version](${downloadBaseUrl}/${encodedAppName}-${version}.zip)`
+      `[Get Portable Version](${downloadBaseUrl}/${slugAppName}-${version}.zip)`
     );
 
     fs.writeFileSync(indexPath, indexContent);

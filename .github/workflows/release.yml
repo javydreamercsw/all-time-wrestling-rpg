@@ -251,11 +251,11 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           mkdir -p target/dist
-          # jpackage with name 'all-time-wrestling-rpg' produces files starting with that name
-          # We ensure they have the exact version-prefixed name expected by the links
-          find target/dist -name "*.dmg" -exec mv {} "target/dist/all-time-wrestling-rpg-$VERSION.dmg" \;
-          find target/dist -name "*.msi" -exec mv {} "target/dist/all-time-wrestling-rpg-$VERSION.msi" \;
-          find target/dist -name "*.deb" -exec mv {} "target/dist/all-time-wrestling-rpg-$VERSION.deb" \;
+          # GitHub automatically replaces spaces with dots in release assets.
+          # We rename them here explicitly to match that behavior and ensure our links work.
+          find target/dist -name "*.dmg" -exec bash -c 'mv "$1" "target/dist/All.Time.Wrestling-$2.dmg"' _ {} "$VERSION" \;
+          find target/dist -name "*.msi" -exec bash -c 'mv "$1" "target/dist/All.Time.Wrestling-$2.msi"' _ {} "$VERSION" \;
+          find target/dist -name "*.deb" -exec bash -c 'mv "$1" "target/dist/all-time-wrestling-rpg-$2.deb"' _ {} "$VERSION" \;
           ls -R target/dist
 
       - name: Upload Installer to Release
