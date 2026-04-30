@@ -1,7 +1,10 @@
 {
-  "name": "no-name",
+  "name": "all-time-wrestling-rpg",
   "license": "UNLICENSED",
   "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
   "dependencies": {
     "@fullcalendar/core": "6.1.20",
     "@fullcalendar/daygrid": "6.1.20",
