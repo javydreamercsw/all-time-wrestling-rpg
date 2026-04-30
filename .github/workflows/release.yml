@@ -165,7 +165,7 @@ jobs:
         run: mvn -B package -DskipTests --file pom.xml
 
       - name: Build WAR with Maven
-        run: mvn -B package -Pwar -DskipTests --file pom.xml
+        run: mvn -B war:war -Pwar -DskipTests --file pom.xml
 
       - name: Build Portable ZIP
         run: mvn -B package -Pportable -DskipTests --file pom.xml

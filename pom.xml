@@ -1324,7 +1324,7 @@
             <version>3.4.0</version>
             <executions>
               <execution>
-                <id>default-war</id>
+                <id>build-war</id>
                 <goals>
                   <goal>war</goal>
                 </goals>
