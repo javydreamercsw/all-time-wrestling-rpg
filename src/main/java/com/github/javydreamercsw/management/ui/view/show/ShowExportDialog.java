@@ -31,6 +31,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 
 /** Dialog for exporting a show card. */
@@ -40,11 +41,11 @@ public class ShowExportDialog extends Dialog {
   private final NotificationService notificationService;
   private final Show show;
 
-  private final ComboBox<String> formatSelector = new ComboBox<>("Export Format");
-  private final Checkbox includeResults = new Checkbox("Include Match Results", true);
-  private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
-  private final TextArea previewArea = new TextArea("Preview");
-  private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
+  @Getter private final ComboBox<String> formatSelector = new ComboBox<>("Export Format");
+  @Getter private final Checkbox includeResults = new Checkbox("Include Match Results", true);
+  @Getter private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
+  @Getter private final TextArea previewArea = new TextArea("Preview");
+  @Getter private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
 
   public ShowExportDialog(
       @NonNull ShowExportService exportService,
@@ -97,26 +98,6 @@ public class ShowExportDialog extends Dialog {
     if (!formats.isEmpty()) {
       formatSelector.setValue(formats.get(0));
     }
-  }
-
-  public ComboBox<String> getFormatSelector() {
-    return formatSelector;
-  }
-
-  public TextArea getPreviewArea() {
-    return previewArea;
-  }
-
-  public Button getCopyButton() {
-    return copyButton;
-  }
-
-  public Checkbox getIncludeResults() {
-    return includeResults;
-  }
-
-  public Checkbox getIncludeSummary() {
-    return includeSummary;
   }
 
   private void updatePreview() {
