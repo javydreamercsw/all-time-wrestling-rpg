@@ -240,6 +240,12 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       log.info("Waiting for show detail URL");
       wait.until(ExpectedConditions.urlContains("/show-detail"));
 
+      // Expand the details to see the plan button
+      log.info("Expanding show details");
+      WebElement showInfoDetails =
+          wait.until(ExpectedConditions.presenceOfElementLocated(By.id("show-info-details")));
+      clickElement(showInfoDetails);
+
       // Click the "Planning Show" button
       log.info("Navigating to show planning view");
       WebElement planningShowButton =

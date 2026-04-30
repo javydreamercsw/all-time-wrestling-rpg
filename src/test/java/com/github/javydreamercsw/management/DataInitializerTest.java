@@ -16,16 +16,29 @@
 */
 package com.github.javydreamercsw.management;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.domain.GameSetting;
+import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -35,6 +48,18 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.dto.ArenaImportDTO;
+import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
+import com.github.javydreamercsw.management.dto.CardDTO;
+import com.github.javydreamercsw.management.dto.DeckDTO;
+import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.LocationImportDTO;
+import com.github.javydreamercsw.management.dto.NpcDTO;
+import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
+import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
+import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.TeamImportDTO;
+import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
@@ -56,15 +81,20 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
@@ -196,18 +226,294 @@ class DataInitializerTest {
     dto.setFans(1000L);
 
     when(wrestlerRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(wrestlerRepository.save(any(Wrestler.class))).thenAnswer(i -> i.getArguments()[0]);
+    when(wrestlerRepository.saveAll(any())).thenAnswer(i -> i.getArguments()[0]);
 
     // Mock Universe and State for new wrestler
     Universe mockUniverse = mock(Universe.class);
-    when(universeRepository.findById(1L)).thenReturn(Optional.of(mockUniverse));
+    when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
     when(wrestlerService.getOrCreateState(any(), eq(1L))).thenReturn(new WrestlerState());
 
-    // We can't easily test protected syncWrestlersFromFile(List) here because it's void and
-    // protected.
-    // But we test the public entry point or the side effects if it were accessible.
-    // Since it's protected, we can test it if we're in the same package or through reflection if
-    // needed.
-    // For now, verify no exceptions.
+    // We test the entry point
+    dataInitializer.syncWrestlersFromFile();
+    // Since it's protected and we are in same package, it's accessible
+  }
+
+  @Test
+  void validateCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
+              new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
+          org.springframework.core.io.Resource[] resources =
+              resolver.getResources("classpath*:cards/*.json");
+          for (org.springframework.core.io.Resource resource : resources) {
+            new ObjectMapper()
+                .readValue(resource.getInputStream(), new TypeReference<List<CardDTO>>() {});
+          }
+        });
+  }
+
+  @Test
+  void validateDecksJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("decks.json").getInputStream(),
+                  new TypeReference<List<DeckDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateChampionshipsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("championships.json").getInputStream(),
+                  new TypeReference<List<TitleDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateSetsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("sets.json").getInputStream(),
+                  new TypeReference<List<CardSet>>() {});
+        });
+  }
+
+  @Test
+  void validateShowTemplatesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("show_templates.json").getInputStream(),
+                  new TypeReference<List<ShowTemplateDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateShowTypesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("show_types.json").getInputStream(),
+                  new TypeReference<List<ShowType>>() {});
+        });
+  }
+
+  @Test
+  void validateSegmentRulesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("segment_rules.json").getInputStream(),
+                  new TypeReference<List<SegmentRuleDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateSegmentTypesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("segment_types.json").getInputStream(),
+                  new TypeReference<List<SegmentTypeDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateNpcsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("npcs.json").getInputStream(),
+                  new TypeReference<List<NpcDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateFactionsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("factions.json").getInputStream(),
+                  new TypeReference<List<FactionImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateTeamsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("teams.json").getInputStream(),
+                  new TypeReference<List<TeamImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateCampaignAbilityCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("campaign_ability_cards.json").getInputStream(),
+                  new TypeReference<List<CampaignAbilityCardDTO>>() {});
+        });
+  }
+
+  @Test
+  void testSyncWrestlersFromFile_existingWrestler() throws IOException {
+    // Given
+    Wrestler existingWrestler = new Wrestler();
+    existingWrestler.setName("Rob Van Dam");
+    
+    Universe mockUniverse = mock(Universe.class);
+    when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
+
+    lenient().when(wrestlerRepository.count()).thenReturn(1L);
+    lenient()
+        .when(wrestlerRepository.findByName("Rob Van Dam"))
+        .thenReturn(Optional.of(existingWrestler));
+    lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
+
+    Resource wrestlersResource = new ClassPathResource("wrestlers.json");
+    when(resourcePatternResolver.getResources("classpath*:wrestlers*.json"))
+        .thenReturn(new Resource[] {wrestlersResource});
+
+    // When
+    dataInitializer.syncWrestlersFromFile();
+
+    // Then
+    verify(wrestlerRepository, atLeastOnce()).saveAll(any());
+  }
+
+  @Test
+  void syncAiSettingsFromEnvironment_doesNotOverwriteExistingDbValueByDefault() {
+    // Simulate an environment variable being set
+    when(env.getProperty("AI_OPENAI_ENABLED")).thenReturn("true");
+
+    // But the DB already has a value (e.g., user explicitly disabled it)
+    GameSetting existingSetting = mock(GameSetting.class);
+    when(existingSetting.getValue()).thenReturn("false");
+    when(gameSettingService.findById("AI_OPENAI_ENABLED")).thenReturn(Optional.of(existingSetting));
+
+    dataInitializer.init();
+
+    // Should NOT overwrite existing DB value unless forceOverride is enabled
+    verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
+  }
+
+  @Test
+  void validateRelationshipsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("relationships.json").getInputStream(),
+                  new TypeReference<
+                      List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void testSyncRelationshipsFromFile() throws IOException {
+    // Given
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    w1.setName("Johnny All Time");
+
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    w2.setName("Taya Valkyrie");
+
+    when(wrestlerRepository.findByName("Johnny All Time")).thenReturn(Optional.of(w1));
+    when(wrestlerRepository.findByName("Taya Valkyrie")).thenReturn(Optional.of(w2));
+
+    // When
+    dataInitializer.init();
+
+    // Then
+    verify(relationshipService, atLeastOnce())
+        .createOrUpdateRelationship(
+            eq(1L),
+            eq(2L),
+            any(),
+            anyInt(),
+            anyBoolean(),
+            anyString());
+  }
+
+  @Test
+  void validateLocationsJson() throws IOException {
+    ClassPathResource resource = new ClassPathResource("locations.json");
+    try (var is = resource.getInputStream()) {
+      var locations = objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+      assertNotNull(locations);
+      assertFalse(locations.isEmpty());
+    }
+  }
+
+  @Test
+  void validateArenasJson() throws IOException {
+    ClassPathResource resource = new ClassPathResource("arenas.json");
+    try (var is = resource.getInputStream()) {
+      var arenas = objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+      assertNotNull(arenas);
+      assertFalse(arenas.isEmpty());
+    }
+  }
+
+  @Test
+  void validateArenaLocationsExistInLocationsJson() throws IOException {
+    Set<String> locationNames;
+    try (var is = new ClassPathResource("locations.json").getInputStream()) {
+      locationNames =
+          objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {}).stream()
+              .map(LocationImportDTO::getName)
+              .collect(Collectors.toSet());
+    }
+
+    try (var is = new ClassPathResource("arenas.json").getInputStream()) {
+      List<ArenaImportDTO> arenas = objectMapper.readValue(is, new TypeReference<>() {});
+      var missingLocationRefs =
+          arenas.stream()
+              .map(ArenaImportDTO::getLocation)
+              .filter(location -> !locationNames.contains(location))
+              .distinct()
+              .toList();
+
+      assertEquals(
+          List.of(),
+          missingLocationRefs,
+          "Every arena location must exist in locations.json to avoid skipped arenas during seed"
+              + " sync.");
+    }
+  }
+
+  @Test
+  void testSyncNpcsFromFile() throws IOException {
+    // Given
+    Npc npc = new Npc();
+    npc.setName("Mock NPC");
+    when(npcService.findByName(anyString())).thenReturn(null);
+
+    // When
+    dataInitializer.syncNpcsFromFile();
+
+    // Then
+    verify(npcService, atLeastOnce()).saveAll(any());
   }
 }

@@ -1,0 +1,40 @@
+name: Discard Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The release version to discard (e.g., 1.2.0)'
+        required: true
+
+jobs:
+  discard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Delete GitHub Release and Tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ github.event.inputs.version }}"
+          echo "Discarding release and tag: $TAG"
+          
+          # Delete the release if it exists
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release delete "$TAG" --yes
+            echo "Release $TAG deleted."
+          else
+            echo "Release $TAG not found."
+          fi
+          
+          # Delete the remote tag if it exists
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+            git push origin ":refs/tags/$TAG"
+            echo "Remote tag $TAG deleted."
+          else
+            echo "Remote tag $TAG not found."
+          fi

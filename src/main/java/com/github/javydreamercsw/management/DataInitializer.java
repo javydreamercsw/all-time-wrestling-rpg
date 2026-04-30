@@ -56,6 +56,9 @@ import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
 import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
+import com.github.javydreamercsw.management.dto.RelationshipImportDTO;
+import com.github.javydreamercsw.management.dto.RingsideActionDTO;
+import com.github.javydreamercsw.management.dto.RingsideActionTypeDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
@@ -74,6 +77,7 @@ import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -136,13 +140,10 @@ public class DataInitializer implements Initializable {
   private final CampaignUpgradeService campaignUpgradeService;
   private final LocationRepository locationRepository;
   private final ArenaRepository arenaRepository;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
+  private final WrestlerRelationshipService relationshipService;
   private final Environment env;
   private final AchievementRepository achievementRepository;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
+  private final RingsideActionDataService ringsideActionDataService;
   private final ResourcePatternResolver resourcePatternResolver;
   private final ObjectMapper objectMapper;
 
@@ -214,7 +215,7 @@ public class DataInitializer implements Initializable {
   }
 
   public void init() {
-    log.info("DataInitializer.init() called. enabled={}", enabled);
+    log.debug("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
       Authentication auth =
           org.springframework.security.core.context.SecurityContextHolder.getContext()
@@ -271,15 +272,12 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
     if (resource.exists()) {
-      log.info("Loading ringside action types from file: {}", resource.getPath());
+      log.debug("Loading ringside action types from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos =
-            mapper.readValue(
-                is,
-                new TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RingsideActionTypeDTO>>() {});
-        for (com.github.javydreamercsw.management.dto.RingsideActionTypeDTO dto : dtos) {
+        List<RingsideActionTypeDTO> dtos =
+            mapper.readValue(is, new TypeReference<List<RingsideActionTypeDTO>>() {});
+        for (RingsideActionTypeDTO dto : dtos) {
           ringsideActionDataService.createOrUpdateType(
               dto.getName(),
               dto.isIncreasesAwareness(),
@@ -287,7 +285,7 @@ public class DataInitializer implements Initializable {
               dto.getBaseRiskMultiplier());
           log.debug("Loaded ringside action type: {}", dto.getName());
         }
-        log.info("Ringside action type loading completed - {} types loaded", dtos.size());
+        log.debug("Ringside action type loading completed - {} types loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading ringside action types from file", e);
       }
@@ -300,15 +298,11 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("ringside_actions.json");
     if (resource.exists()) {
-      log.info("Loading ringside actions from file: {}", resource.getPath());
+      log.debug("Loading ringside actions from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos =
-            mapper.readValue(
-                is,
-                new TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RingsideActionDTO>>() {});
-        for (com.github.javydreamercsw.management.dto.RingsideActionDTO dto : dtos) {
+        List<RingsideActionDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
+        for (RingsideActionDTO dto : dtos) {
           ringsideActionDataService.createOrUpdateAction(
               dto.getName(),
               dto.getType(),
@@ -318,7 +312,7 @@ public class DataInitializer implements Initializable {
               dto.getAlignment());
           log.debug("Loaded ringside action: {}", dto.getName());
         }
-        log.info("Ringside action loading completed - {} actions loaded", dtos.size());
+        log.debug("Ringside action loading completed - {} actions loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading ringside actions from file", e);
       }
@@ -331,10 +325,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("achievements.json");
     if (resource.exists()) {
-      log.info("Loading achievements from file: {}", resource.getPath());
+      log.debug("Loading achievements from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var achievementsFromFile = mapper.readValue(is, new TypeReference<List<Achievement>>() {});
+        List<Achievement> achievementsFromFile = mapper.readValue(is, new TypeReference<>() {});
         List<Achievement> toSave = new ArrayList<>();
         for (Achievement a : achievementsFromFile) {
           Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
@@ -367,10 +361,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("commentators.json");
     if (resource.exists()) {
-      log.info("Loading commentators from file: {}", resource.getPath());
+      log.debug("Loading commentators from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<CommentatorImportDTO>>() {});
+        List<CommentatorImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (CommentatorImportDTO cDto : dtos) {
           commentaryService.createOrUpdateCommentator(
               cDto.getNpcName(),
@@ -382,7 +376,7 @@ public class DataInitializer implements Initializable {
               cDto.getPersonaDescription());
           log.debug("Loaded commentator: {}", cDto.getNpcName());
         }
-        log.info("Commentator loading completed - {} commentators loaded", dtos.size());
+        log.debug("Commentator loading completed - {} commentators loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading commentators from file", e);
       }
@@ -397,15 +391,15 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("commentary_teams.json");
     if (resource.exists()) {
-      log.info("Loading commentary teams from file: {}", resource.getPath());
+      log.debug("Loading commentary teams from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<CommentaryTeamImportDTO>>() {});
+        List<CommentaryTeamImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (CommentaryTeamImportDTO teamDto : dtos) {
           commentaryService.createOrUpdateTeam(teamDto.getTeamName(), teamDto.getMemberNames());
           log.debug("Loaded commentary team: {}", teamDto.getTeamName());
         }
-        log.info("Commentary team loading completed - {} teams loaded", dtos.size());
+        log.debug("Commentary team loading completed - {} teams loaded", dtos.size());
       } catch (IOException e) {
         log.error("Error loading commentary teams from file", e);
       }
@@ -422,7 +416,7 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncAiSettingsFromEnvironment() {
-    log.info(
+    log.debug(
         "Syncing AI settings from environment variables/system properties/Spring environment...");
 
     syncSetting("AI_TIMEOUT", "300");
@@ -450,17 +444,7 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_GEMINI_API_KEY", null);
     syncSetting("AI_GEMINI_MODEL_NAME", "gemini-2.5-flash");
 
-    boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");
-    boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
-    boolean geminiEnabled = isSettingEnabled("AI_GEMINI_ENABLED");
-
-    if (!openAiEnabled && !claudeEnabled && !geminiEnabled) {
-      log.info("All AI providers are disabled. Enabling Gemini.");
-      // Only set if missing so we don't flip a user's explicit DB config.
-      saveIfMissing("AI_GEMINI_ENABLED", "true");
-    }
-
-    log.info("AI settings synchronization complete.");
+    log.debug("AI settings synchronization complete.");
   }
 
   private void syncSetting(@NonNull String key, String defaultValue) {
@@ -535,11 +519,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
     if (resource.exists()) {
-      log.info("Loading campaign ability cards from file: {}", resource.getPath());
+      log.debug("Loading campaign ability cards from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var cardsFromFile =
-            mapper.readValue(is, new TypeReference<List<CampaignAbilityCardDTO>>() {});
+        List<CampaignAbilityCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (CampaignAbilityCardDTO dto : cardsFromFile) {
           campaignAbilityCardService.createOrUpdateCard(
               dto.getName(),
@@ -554,7 +537,8 @@ public class DataInitializer implements Initializable {
               dto.getSecondaryTiming());
           log.debug("Loaded campaign ability card: {}", dto.getName());
         }
-        log.info("Campaign ability card loading completed - {} cards loaded", cardsFromFile.size());
+        log.debug(
+            "Campaign ability card loading completed - {} cards loaded", cardsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading campaign ability cards from file", e);
       }
@@ -572,8 +556,7 @@ public class DataInitializer implements Initializable {
       log.debug("Loading segment rules from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var segmentRulesFromFile =
-            mapper.readValue(is, new TypeReference<List<SegmentRuleDTO>>() {});
+        List<SegmentRuleDTO> segmentRulesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (SegmentRuleDTO dto : segmentRulesFromFile) {
           segmentRuleService.createOrUpdateRule(
@@ -582,14 +565,14 @@ public class DataInitializer implements Initializable {
               dto.isRequiresHighHeat(),
               dto.isNoDq(),
               dto.getBumpAddition());
-          log.info(
+          log.debug(
               "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
               dto.getName(),
               dto.isRequiresHighHeat(),
               dto.isNoDq(),
               dto.getBumpAddition());
         }
-        log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
+        log.debug("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
       } catch (IOException e) {
         log.error("Error loading segment rules from file", e);
       }
@@ -604,10 +587,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("show_types.json");
     if (resource.exists()) {
-      log.info("Loading show types from file: {}", resource.getPath());
+      log.debug("Loading show types from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
+        List<ShowType> showTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (ShowType st : showTypesFromFile) {
           showTypeService.createOrUpdateShowType(
               st.getName(), st.getDescription(), st.getExpectedMatches(), st.getExpectedPromos());
@@ -617,7 +600,7 @@ public class DataInitializer implements Initializable {
               st.getExpectedMatches(),
               st.getExpectedPromos());
         }
-        log.info("Show type loading completed - {} types loaded", showTypesFromFile.size());
+        log.debug("Show type loading completed - {} types loaded", showTypesFromFile.size());
       } catch (IOException e) {
         log.error("Error loading show types from file", e);
       }
@@ -632,11 +615,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("segment_types.json");
     if (resource.exists()) {
-      log.info("Loading segment types from file: {}", resource.getPath());
+      log.debug("Loading segment types from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var segmentTypesFromFile =
-            mapper.readValue(is, new TypeReference<List<SegmentTypeDTO>>() {});
+        List<SegmentTypeDTO> segmentTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (SegmentTypeDTO dto : segmentTypesFromFile) {
           // Only create if it's new
@@ -653,7 +635,7 @@ public class DataInitializer implements Initializable {
           }
         }
 
-        log.info("Segment type loading completed");
+        log.debug("Segment type loading completed");
       } catch (IOException e) {
         log.error("Error loading segment types from file", e);
       }
@@ -666,7 +648,7 @@ public class DataInitializer implements Initializable {
     // Only load show templates from file if the table is empty
     long existingTemplatesCount = showTemplateService.count();
     if (existingTemplatesCount > 0) {
-      log.info(
+      log.debug(
           "Show templates table already contains {} templates - skipping file import",
           existingTemplatesCount);
       return;
@@ -674,11 +656,11 @@ public class DataInitializer implements Initializable {
 
     ClassPathResource resource = new ClassPathResource("show_templates.json");
     if (resource.exists()) {
-      log.info(
+      log.debug(
           "Show templates table is empty - loading templates from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var templatesFromFile = mapper.readValue(is, new TypeReference<List<ShowTemplateDTO>>() {});
+        List<ShowTemplateDTO> templatesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (ShowTemplateDTO dto : templatesFromFile) {
           ShowTemplate template =
@@ -726,11 +708,11 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("sets.json");
     if (resource.exists()) {
-      log.info("Loading card sets from file: {}", resource.getPath());
+      log.debug("Loading card sets from file: {}", resource.getPath());
       // Load card sets from JSON file
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var setsFromFile = mapper.readValue(is, new TypeReference<List<CardSet>>() {});
+        List<CardSet> setsFromFile = mapper.readValue(is, new TypeReference<>() {});
         List<CardSet> toSave = new ArrayList<>();
         for (CardSet c : setsFromFile) {
           Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getCode());
@@ -771,11 +753,11 @@ public class DataInitializer implements Initializable {
 
       for (Resource resource : resources) {
         if (resource.exists()) {
-          log.info("Loading cards from file: {}", resource.getFilename());
+          log.debug("Loading cards from file: {}", resource.getFilename());
           // Load cards from JSON file
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
-            var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
+            List<CardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
             List<Card> toSave = new ArrayList<>();
             for (CardDTO dto : cardsFromFile) {
               CardSet set = setCache.get(dto.getSet());
@@ -836,18 +818,17 @@ public class DataInitializer implements Initializable {
 
       for (Resource resource : resources) {
         if (resource.exists()) {
-          log.info("Loading wrestlers from file: {}", resource.getFilename());
+          log.debug("Loading wrestlers from file: {}", resource.getFilename());
           // Load wrestlers from JSON file
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
-            var wrestlersFromFile =
-                mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
+            List<WrestlerImportDTO> wrestlersFromFile =
+                mapper.readValue(is, new TypeReference<>() {});
 
             // Collect all wrestlers that need state refresh/creation
-            List<Wrestler> wrestlersToProcess = new ArrayList<>();
             Map<String, WrestlerImportDTO> dtoMap = new HashMap<>();
-
             List<Wrestler> toSaveBulk = new ArrayList<>();
+
             for (WrestlerImportDTO w : wrestlersFromFile) {
               Wrestler existingWrestler = wrestlerRepository.findByName(w.getName()).orElse(null);
               if (existingWrestler == null
@@ -1032,10 +1013,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("championships.json");
     if (resource.exists()) {
-      log.info("Loading championships from file: {}", resource.getPath());
+      log.debug("Loading championships from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var championshipsFromFile = mapper.readValue(is, new TypeReference<List<TitleDTO>>() {});
+        List<TitleDTO> championshipsFromFile = mapper.readValue(is, new TypeReference<>() {});
         Long universeId = getGlobalUniverseId();
         List<Title> toSave = new ArrayList<>();
         for (TitleDTO dto : championshipsFromFile) {
@@ -1096,6 +1077,9 @@ public class DataInitializer implements Initializable {
                     dto.getCurrentChampionName());
               }
             }
+          } else {
+            // If no champion is specified in DTO leave it as it is currently.
+            log.debug("Leaving title {} as is in the database.", dto.getName());
           }
         }
       } catch (IOException e) {
@@ -1110,10 +1094,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("decks.json");
     if (resource.exists()) {
-      log.info("Loading decks from file: {}", resource.getPath());
+      log.debug("Loading decks from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
+        List<DeckDTO> decksFromFile = mapper.readValue(is, new TypeReference<>() {});
         Map<String, Wrestler> wrestlers =
             wrestlerRepository.findAll().stream()
                 .collect(
@@ -1207,7 +1191,7 @@ public class DataInitializer implements Initializable {
 
   private void initializeGameDate() {
     if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
-      log.info("In-game date not set. Initializing to current date.");
+      log.debug("In-game date not set. Initializing to current date.");
       gameSettingService.saveCurrentGameDate(LocalDate.now());
     }
   }
@@ -1218,10 +1202,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
-      log.info("Loading npcs from file: {}", resource.getPath());
+      log.debug("Loading npcs from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<NpcDTO>>() {});
+        List<NpcDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         List<Npc> toSave = new ArrayList<>();
         for (NpcDTO dto : dtos) {
           Npc npc = npcService.findByName(dto.getName());
@@ -1263,10 +1247,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("factions.json");
     if (resource.exists()) {
-      log.info("Loading factions from file: {}", resource.getPath());
+      log.debug("Loading factions from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<FactionImportDTO>>() {});
+        List<FactionImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         Long universeId = getGlobalUniverseId();
         for (FactionImportDTO dto : dtos) {
           Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
@@ -1311,10 +1295,10 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("teams.json");
     if (resource.exists()) {
-      log.info("Loading teams from file: {}", resource.getPath());
+      log.debug("Loading teams from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var dtos = mapper.readValue(is, new TypeReference<List<TeamImportDTO>>() {});
+        List<TeamImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (TeamImportDTO dto : dtos) {
           Optional<Wrestler> wrestler1Opt = wrestlerRepository.findByName(dto.getWrestler1());
           Optional<Wrestler> wrestler2Opt = wrestlerRepository.findByName(dto.getWrestler2());
@@ -1358,15 +1342,16 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("locations.json");
     if (resource.exists()) {
-      log.info("Loading locations from file: {}", resource.getPath());
+      log.debug("Loading locations from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
-        var locationsFromFile =
-            objectMapper.readValue(is, new TypeReference<List<LocationImportDTO>>() {});
+        List<LocationImportDTO> locationsFromFile =
+            objectMapper.readValue(is, new TypeReference<>() {});
         if (locationsFromFile == null) {
           return;
         }
 
         List<Location> toSave = new ArrayList<>();
+        log.debug("Found {} locations in JSON file", locationsFromFile.size());
         for (LocationImportDTO dto : locationsFromFile) {
           Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
           if (existingLocation.isEmpty()) {
@@ -1400,7 +1385,7 @@ public class DataInitializer implements Initializable {
         }
         locationRepository.saveAll(toSave);
         locationRepository.flush();
-        log.info("Location loading completed - {} locations processed", locationsFromFile.size());
+        log.debug("Location loading completed - {} locations processed", locationsFromFile.size());
 
       } catch (IOException e) {
         log.error("Error loading locations from file", e);
@@ -1416,15 +1401,15 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("arenas.json");
     if (resource.exists()) {
-      log.info("Loading arenas from file: {}", resource.getPath());
+      log.debug("Loading arenas from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
-        var arenasFromFile =
-            objectMapper.readValue(is, new TypeReference<List<ArenaImportDTO>>() {});
+        List<ArenaImportDTO> arenasFromFile = objectMapper.readValue(is, new TypeReference<>() {});
         if (arenasFromFile == null) {
           return;
         }
 
         List<Arena> toSave = new ArrayList<>();
+        log.debug("Found {} arenas in JSON file", arenasFromFile.size());
         for (ArenaImportDTO dto : arenasFromFile) {
           Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
           if (existingArena.isEmpty()) {
@@ -1490,15 +1475,12 @@ public class DataInitializer implements Initializable {
     }
     ClassPathResource resource = new ClassPathResource("relationships.json");
     if (resource.exists()) {
-      log.info("Loading relationships from file: {}", resource.getPath());
+      log.debug("Loading relationships from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
-        var dtos =
-            objectMapper.readValue(
-                is,
-                new com.fasterxml.jackson.core.type.TypeReference<
-                    List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+        List<RelationshipImportDTO> dtos =
+            objectMapper.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
 
-        for (com.github.javydreamercsw.management.dto.RelationshipImportDTO dto : dtos) {
+        for (RelationshipImportDTO dto : dtos) {
           Optional<Wrestler> w1 = wrestlerRepository.findByName(dto.getWrestler1());
           Optional<Wrestler> w2 = wrestlerRepository.findByName(dto.getWrestler2());
 
@@ -1512,7 +1494,7 @@ public class DataInitializer implements Initializable {
                 dto.getNotes());
           }
         }
-        log.info("Relationship loading completed - {} relationships processed", dtos.size());
+        log.debug("Relationship loading completed - {} relationships processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading relationships from file", e);
       }

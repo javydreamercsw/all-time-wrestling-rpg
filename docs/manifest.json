@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "community-community-show-export",
+    "category": "Community",
+    "title": "Social Media Export",
+    "description": "Share your show cards with the world! The Social Media Export tool generates perfectly formatted match cards for Markdown, Facebook, X (Twitter), and Bluesky. Choose to include match results, segment summaries, and highlighted main events to keep your community engaged and informed.",
+    "imagePath": "screenshots/community-show-export.png",
+    "order": 0
+  }, {
     "id": "wrestler-profile-wrestler-profile-redesign",
     "category": "Wrestler Profile",
     "title": "Modernized Wrestler Dashboard",

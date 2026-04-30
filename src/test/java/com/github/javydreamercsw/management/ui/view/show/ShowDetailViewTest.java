@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -146,6 +147,8 @@ class ShowDetailViewTest {
 
       Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
 
+      ShowExportService exportService = mock(ShowExportService.class);
+
       ShowDetailView showDetailView =
           new ShowDetailView(
               showService,
@@ -170,8 +173,8 @@ class ShowDetailViewTest {
               ringsideActionService,
               arenaService,
               relationshipService,
-              notificationService);
-
+              notificationService,
+              exportService);
       ReflectionTestUtils.invokeMethod(
           showDetailView,
           "validateAndSaveSegment",
@@ -227,6 +230,8 @@ class ShowDetailViewTest {
           .thenReturn(initialSegments);
       when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
 
+      ShowExportService exportService = mock(ShowExportService.class);
+
       ShowDetailView showDetailView =
           new ShowDetailView(
               showService,
@@ -251,8 +256,8 @@ class ShowDetailViewTest {
               ringsideActionService,
               arenaService,
               relationshipService,
-              notificationService);
-
+              notificationService,
+              exportService);
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());

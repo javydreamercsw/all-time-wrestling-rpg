@@ -178,28 +178,10 @@ public class EditSegmentDialog extends Dialog {
             .map(java.util.Optional::get)
             .collect(Collectors.toSet());
 
-    refreshParticipantsList(existingParticipants);
-
-    // Filter logic
-    alignmentFilter.addValueChangeListener(
-        e -> refreshParticipantsList(participantsCombo.getValue()));
-    genderFilter.addValueChangeListener(e -> refreshParticipantsList(participantsCombo.getValue()));
-
-    participantsCombo.setValue(existingParticipants);
-
     winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
     winnersCombo.setWidthFull();
     winnersCombo.setId("edit-winners-combo-box");
-    // Pre-select existing winners if any
-    if (segment.getWinners() != null) {
-      winnersCombo.setValue(
-          segment.getWinners().stream()
-              .map(wrestlerRepository::findByName)
-              .filter(java.util.Optional::isPresent)
-              .map(java.util.Optional::get)
-              .collect(Collectors.toSet()));
-    }
 
     participantsCombo.addValueChangeListener(
         e -> {
@@ -214,6 +196,25 @@ public class EditSegmentDialog extends Dialog {
                   .filter(e.getValue()::contains)
                   .collect(Collectors.toSet()));
         });
+
+    refreshParticipantsList(existingParticipants);
+
+    // Filter logic
+    alignmentFilter.addValueChangeListener(
+        e -> refreshParticipantsList(participantsCombo.getValue()));
+    genderFilter.addValueChangeListener(e -> refreshParticipantsList(participantsCombo.getValue()));
+
+    participantsCombo.setValue(existingParticipants);
+
+    // Pre-select existing winners if any
+    if (segment.getWinners() != null) {
+      winnersCombo.setValue(
+          segment.getWinners().stream()
+              .map(wrestlerRepository::findByName)
+              .filter(java.util.Optional::isPresent)
+              .map(java.util.Optional::get)
+              .collect(Collectors.toSet()));
+    }
 
     updateSynergyBonus(existingParticipants);
 

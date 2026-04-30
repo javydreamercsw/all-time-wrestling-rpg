@@ -127,16 +127,36 @@ public final class GeneralSecurityUtils {
       context.setAuthentication(authentication);
 
       log.debug(
-          "Setting temporary SecurityContext for user '{}' with authorities: {}",
+          "Setting SecurityContext for user '{}' with authorities '{}' in thread '{}'",
           username,
-          authorities);
+          authorities,
+          Thread.currentThread().getName());
       SecurityContextHolder.setContext(context);
+
+      // Verification log to catch immediate failure
+      Authentication verifiedAuth = SecurityContextHolder.getContext().getAuthentication();
+      if (verifiedAuth == null) {
+        log.error(
+            "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
+            username,
+            Thread.currentThread().getName());
+      } else {
+        log.debug(
+            "SecurityContext successfully set for '{}' with authorities: {}",
+            username,
+            verifiedAuth.getAuthorities());
+      }
 
       return supplier.get();
     } finally {
-      log.debug(
-          "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-      SecurityContextHolder.setContext(originalContext);
+      if (originalContext != null && originalContext.getAuthentication() != null) {
+        log.debug(
+            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
+        SecurityContextHolder.setContext(originalContext);
+      } else {
+        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+        SecurityContextHolder.clearContext();
+      }
     }
   }
 
@@ -177,7 +197,14 @@ public final class GeneralSecurityUtils {
       SecurityContextHolder.setContext(context);
       return supplier.get();
     } finally {
-      SecurityContextHolder.setContext(originalContext);
+      if (originalContext != null && originalContext.getAuthentication() != null) {
+        log.debug(
+            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
+        SecurityContextHolder.setContext(originalContext);
+      } else {
+        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+        SecurityContextHolder.clearContext();
+      }
     }
   }
 }

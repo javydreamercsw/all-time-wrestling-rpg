@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -27,6 +28,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRep
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -38,6 +40,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -56,6 +59,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -123,10 +127,7 @@ public class ShowDetailView extends Main
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final RingsideActionService ringsideActionService;
   private final ArenaService arenaService;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final WrestlerRelationshipService relationshipService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -135,6 +136,11 @@ public class ShowDetailView extends Main
   private Long currentShowId;
   private Show currentShow;
   private Grid<Segment> segmentsGrid;
+  private Button adjudicateButton;
+  private Span noSegmentsMessage;
+
+  private final NotificationService notificationService;
+  private final ShowExportService exportService;
 
   @Autowired
   public ShowDetailView(
@@ -159,9 +165,9 @@ public class ShowDetailView extends Main
       CommentaryTeamRepository commentaryTeamRepository,
       RingsideActionService ringsideActionService,
       ArenaService arenaService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      WrestlerRelationshipService relationshipService,
+      NotificationService notificationService,
+      ShowExportService exportService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -185,6 +191,7 @@ public class ShowDetailView extends Main
     this.arenaService = arenaService;
     this.relationshipService = relationshipService;
     this.notificationService = notificationService;
+    this.exportService = exportService;
     initializeComponents();
   }
 
@@ -265,11 +272,41 @@ public class ShowDetailView extends Main
   private void displayShow(@NonNull Show show) {
     contentLayout.removeAll();
     showTitle.setText(show.getName());
-    contentLayout.add(createHeaderCard(show), createDetailsCard(show));
+
+    // Show header with basic info (Always visible)
+    Div headerCard = createHeaderCard(show);
+    contentLayout.add(headerCard);
+
+    // Collapsible Show Details and Description
+    VerticalLayout infoCollapseLayout = new VerticalLayout();
+    infoCollapseLayout.setPadding(false);
+    infoCollapseLayout.setSpacing(true);
+
+    // Show details card
+    Div detailsCard = createDetailsCard(show);
+    infoCollapseLayout.add(detailsCard);
+
+    // Show description card
     if (show.getDescription() != null && !show.getDescription().trim().isEmpty()) {
-      contentLayout.add(createDescriptionCard(show));
+      Div descriptionCard = createDescriptionCard(show);
+      infoCollapseLayout.add(descriptionCard);
     }
-    contentLayout.add(createSegmentsCard(show));
+
+    Details infoDetails = new Details("Show Information & Description", infoCollapseLayout);
+    infoDetails.setId("show-info-details");
+    infoDetails.setOpened(false); // Collapsed by default to maximize segment space
+    infoDetails.setWidthFull();
+    infoDetails.addClassNames(
+        LumoUtility.Background.BASE,
+        LumoUtility.Padding.SMALL,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM);
+    contentLayout.add(infoDetails);
+
+    // Show segments card
+    Div segmentsCard = createSegmentsCard(show);
+    contentLayout.add(segmentsCard);
+    contentLayout.setFlexGrow(1, segmentsCard);
   }
 
   private Div createHeaderCard(@NonNull Show show) {
@@ -370,7 +407,14 @@ public class ShowDetailView extends Main
                     .open());
     editDetailsButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
 
-    HorizontalLayout header = new HorizontalLayout(detailsTitle, editDetailsButton);
+    Button exportCardButton = new Button("Export Card", new Icon(VaadinIcon.DOWNLOAD));
+    exportCardButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    exportCardButton.setTooltipText("Export this show card");
+    exportCardButton.setId("export-show-card-button");
+    exportCardButton.addClickListener(
+        e -> new ShowExportDialog(exportService, notificationService, show).open());
+
+    HorizontalLayout header = new HorizontalLayout(detailsTitle, exportCardButton, editDetailsButton);
     header.setWidthFull();
     header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
@@ -413,19 +457,73 @@ public class ShowDetailView extends Main
         LumoUtility.Background.BASE);
     card.setSizeFull();
 
-    H3 title = new H3("Segments");
+    // Header with title and add button
+    HorizontalLayout header = new HorizontalLayout();
+    header.setWidthFull();
+    header.setJustifyContentMode(HorizontalLayout.JustifyContentMode.BETWEEN);
+    header.setAlignItems(HorizontalLayout.Alignment.CENTER);
+
+    H3 segmentsTitle = new H3("Segments");
+    segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
+
+    adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
+    adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    adjudicateButton.setId("adjudicate-show-btn");
+    adjudicateButton.addClickListener(e -> adjudicateShow(show));
+
+    // Check if there are any pending segments
+    boolean hasPendingSegments =
+        segmentRepository.findByShow(show).stream()
+            .anyMatch(
+                segment ->
+                    segment.getAdjudicationStatus()
+                        == com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
+    adjudicateButton.setEnabled(hasPendingSegments);
+
     Button addSegmentBtn =
         new Button("Add Segment", new Icon(VaadinIcon.PLUS), e -> openAddSegmentDialog(show));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-    HorizontalLayout header = new HorizontalLayout(title, addSegmentBtn);
-    header.setWidthFull();
-    header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+    header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentBtn));
 
-    segmentsGrid = createSegmentsGrid(new ArrayList<>());
-    segmentsGrid.setHeight("400px");
+    // Get segments for this show
+    List<Segment> segments = segmentRepository.findByShow(show);
+    log.debug("Found {} segments for show: {}", segments.size(), show.getName());
 
-    card.add(header, segmentsGrid);
+    VerticalLayout segmentsLayout = new VerticalLayout();
+    segmentsLayout.setSpacing(false);
+    segmentsLayout.setPadding(false);
+    segmentsLayout.setSizeFull();
+    segmentsLayout.addClassNames(LumoUtility.Width.FULL);
+
+    // Always initialize segmentsGrid and its wrapper
+    segmentsGrid = createSegmentsGrid(segments);
+    segmentsGrid.setSizeFull();
+    segmentsGrid.setId("segments-grid");
+
+    // Wrap the grid in a Div to enable horizontal scrolling
+    Div gridWrapper = new Div(segmentsGrid);
+    gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+    gridWrapper.setSizeFull();
+    gridWrapper.setId("segments-grid-wrapper");
+    segmentsLayout.add(gridWrapper);
+    segmentsLayout.setFlexGrow(1, gridWrapper);
+
+    noSegmentsMessage = new Span("No segments scheduled for this show yet.");
+    noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
+    noSegmentsMessage.setId("no-segments-message");
+    segmentsLayout.add(noSegmentsMessage);
+
+    // Conditionally show/hide the grid and the "no segments" message
+    if (segments.isEmpty()) {
+      segmentsGrid.setVisible(false);
+      noSegmentsMessage.setVisible(true);
+    } else {
+      segmentsGrid.setVisible(true);
+      noSegmentsMessage.setVisible(false);
+    }
+
+    card.add(header, segmentsLayout);
     return card;
   }
 
@@ -931,6 +1029,25 @@ public class ShowDetailView extends Main
     wrestlersCombo.setRequired(true);
     wrestlersCombo.setId("edit-wrestlers-combo-box");
 
+    // Winner selection (multi-select)
+    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
+    winnersCombo.setItemLabelGenerator(Wrestler::getName);
+    winnersCombo.setWidthFull();
+    winnersCombo.setId("edit-winners-combo-box");
+
+    wrestlersCombo.addValueChangeListener(
+        e -> {
+          winnersCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
+          // Clear winners if selected participants no longer include them
+          winnersCombo.setValue(
+              winnersCombo.getValue().stream()
+                  .filter(e.getValue()::contains)
+                  .collect(Collectors.toSet()));
+        });
+
     // Filter logic helper
     java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
         (selected) -> {
@@ -950,26 +1067,7 @@ public class ShowDetailView extends Main
     alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
     genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
-    // Winner selection (multi-select)
-    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
-    winnersCombo.setItemLabelGenerator(Wrestler::getName);
-    winnersCombo.setWidthFull();
-    winnersCombo.setItems(
-        segment.getWrestlers().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     winnersCombo.setValue(new HashSet<>(segment.getWinners()));
-    winnersCombo.setId("edit-winners-combo-box");
-
-    // Update winner options when wrestlers change
-    wrestlersCombo.addValueChangeListener(
-        e -> {
-          winnersCombo.setItems(
-              e.getValue().stream()
-                  .sorted(Comparator.comparing(Wrestler::getName))
-                  .collect(Collectors.toList()));
-          winnersCombo.clear();
-        });
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");
@@ -1194,7 +1292,24 @@ public class ShowDetailView extends Main
 
   private void refreshSegmentsGrid() {
     if (currentShow != null && segmentsGrid != null) {
-      segmentsGrid.setItems(segmentRepository.findByShow(currentShow));
+      List<Segment> updatedSegments = segmentRepository.findByShow(currentShow);
+      segmentsGrid.setItems(updatedSegments);
+
+      // Update visibility of grid and noSegmentsMessage
+      boolean hasSegments = !updatedSegments.isEmpty();
+      segmentsGrid.setVisible(hasSegments);
+      if (noSegmentsMessage != null) {
+        noSegmentsMessage.setVisible(!hasSegments);
+      }
+
+      // Re-enable/disable adjudicate button based on new segment status
+      boolean hasPendingSegments =
+          updatedSegments.stream()
+              .anyMatch(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING);
+
+      if (adjudicateButton != null) {
+        adjudicateButton.setEnabled(hasPendingSegments);
+      }
     }
   }
 

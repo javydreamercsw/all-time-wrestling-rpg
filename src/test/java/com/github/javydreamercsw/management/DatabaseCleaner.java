@@ -20,11 +20,17 @@ import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.EntityType;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Member;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +58,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   @Override
   public void clearRepositories() {
-    log.info("Starting database cleanup...");
+    log.info("🧹 Starting database cleanup...");
 
     // Ensure we have admin privileges for this manual execution
     GeneralSecurityUtils.runAsAdmin(
@@ -63,10 +69,11 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
           // 2. Discover all JPA repositories
           Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
+          log.debug("📦 Discovered {} repositories", repositories.size());
 
           // 3. Get the correct synchronization/deletion order
           List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
-          log.info("Deletion order: {}", syncOrder);
+          log.info("🔄 Deletion order: {}", syncOrder);
 
           // Entities that should not be cleared (static config, core roles, etc.)
           Set<String> protectedEntities =
@@ -87,7 +94,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
           for (int i = syncOrder.size() - 1; i >= 0; i--) {
             String entityName = syncOrder.get(i);
             if (protectedEntities.contains(entityName.toLowerCase())) {
-              log.debug("Skipping protected entity: {}", entityName);
+              log.debug("🛡️ Skipping protected entity: {}", entityName);
               continue;
             }
 
@@ -124,8 +131,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
           // Re-initialize accounts to ensure admin, booker, etc. are available
           accountInitializer.init();
-
-          log.info("Database cleanup completed. Cleared {} repositories", deletedCount);
+          entityManager.flush();
+          entityManager.clear();
+          log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
         });
   }
 
@@ -134,7 +142,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * before batch deletion to avoid constraint violations.
    */
   private void breakCircularDependencies() {
-    log.info("💔 Breaking circular dependencies...");
+    log.debug("💔 Breaking circular dependencies...");
     try {
       jdbcTemplate.execute(
           "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
@@ -187,6 +195,49 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
   }
 
+  /**
+   * Discovers and clears all join tables defined with @JoinTable annotation. This is necessary for
+   * Many-to-Many relationships that don't have a dedicated repository.
+   */
+  private void clearJoinTables() {
+    Set<String> joinTableNames = new HashSet<>();
+    joinTableNames.add("heat_event");
+    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
+
+    for (EntityType<?> entity : entities) {
+      for (Attribute<?, ?> attribute : entity.getAttributes()) {
+        if (attribute.isCollection()) {
+          Member member = attribute.getJavaMember();
+          if (member instanceof AnnotatedElement annotatedElement) {
+            JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
+            if (joinTable != null) {
+              // Skip account_roles to prevent deleting user roles
+              if (!"account_roles".equalsIgnoreCase(joinTable.name())) {
+                joinTableNames.add(joinTable.name());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!joinTableNames.isEmpty()) {
+      log.debug("🧹 Clearing {} join tables...", joinTableNames.size());
+      for (String tableName : joinTableNames) {
+        try {
+          log.debug("Deleting all records from join table {}", tableName);
+          // Use uppercase to match database schema and no quotes to avoid case-sensitivity issues
+          entityManager
+              .createNativeQuery("DELETE FROM " + tableName.toUpperCase(Locale.ROOT))
+              .executeUpdate();
+          log.debug("✅ Deleted all records from join table {}", tableName);
+        } catch (Exception e) {
+          log.error("❌ Failed to delete from join table {}: {}", tableName, e.getMessage());
+        }
+      }
+    }
+  }
+
   private void resetSequence(String tableName) {
     try {
       String sql = "ALTER TABLE " + tableName + " ALTER COLUMN id RESTART WITH 1";
@@ -215,17 +266,47 @@ public class DatabaseCleaner implements DatabaseCleanup {
     return entityClasses;
   }
 
-  /** Uses ApplicationContext to find all JpaRepository beans. */
+  /**
+   * Discovers all JpaRepository beans in the application context. Returns a map of entity name
+   * (lowercase) to repository instance.
+   */
   private Map<String, JpaRepository<?, ?>> discoverRepositories() {
     Map<String, JpaRepository<?, ?>> repositories = new HashMap<>();
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
-      // Repository names are typically entityNameRepository
-      String entityName = beanName.replace("Repository", "").toLowerCase();
-      repositories.put(entityName, (JpaRepository<?, ?>) applicationContext.getBean(beanName));
+      // Skip account and role repositories to avoid deleting test users
+      if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
+        continue;
+      }
+      try {
+        JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
+
+        // Extract entity name from repository
+        String entityName = extractEntityName(repository, beanName);
+        if (entityName != null) {
+          repositories.put(entityName.toLowerCase(), repository);
+          log.debug("📍 Mapped repository {} to entity {}", beanName, entityName);
+        }
+      } catch (Exception e) {
+        log.debug("⚠️ Skipping bean {}: {}", beanName, e.getMessage());
+      }
     }
 
     return repositories;
+  }
+
+  /**
+   * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
+   * repository interface generics.
+   */
+  private String extractEntityName(JpaRepository<?, ?> repository, String beanName) {
+    // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
+    if (beanName.endsWith("Repository")) {
+      return beanName.substring(0, beanName.length() - "Repository".length());
+    }
+
+    // Strategy 2: Fallback to manual replacement if strategy 1 fails for some reason
+    return beanName.replace("Repository", "").toLowerCase();
   }
 }

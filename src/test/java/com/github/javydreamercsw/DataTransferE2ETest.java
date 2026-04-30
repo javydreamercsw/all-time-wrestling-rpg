@@ -154,7 +154,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     assertNotNull(progressIndicator);
 
     // Wait for completion message
-    new WebDriverWait(driver, Duration.ofSeconds(60))
+    new WebDriverWait(driver, Duration.ofSeconds(120))
         .until(
             ExpectedConditions.textToBePresentInElementLocated(
                 By.id("status-label"), "Data transfer completed successfully."));

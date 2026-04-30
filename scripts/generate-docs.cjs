@@ -34,6 +34,53 @@ if (fs.existsSync(screenshotsDir)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const features = manifest.features || [];
 
+// 3. Update installer links in index.md
+console.log('Updating installer links in index.md...');
+const indexPath = path.join(rootDir, 'docs', 'site', 'index.md');
+if (fs.existsSync(indexPath)) {
+  let indexContent = fs.readFileSync(indexPath, 'utf8');
+  const pomContent = fs.readFileSync(path.join(rootDir, 'pom.xml'), 'utf8');
+  
+  // Improved version extraction: look for project version specifically
+  const versionMatch = pomContent.match(/<artifactId>all-time-wrestling-rpg<\/artifactId>\s*<version>([^<]+)<\/version>/) 
+                    || pomContent.match(/<version>([^<]+)<\/version>/);
+  const version = versionMatch ? versionMatch[1].trim() : null;
+
+  if (version) {
+    console.log(`Updating links for version: ${version}`);
+    const isSnapshot = version.includes('-SNAPSHOT');
+    const tagVersion = isSnapshot ? version : 'v' + version;
+    const downloadBaseUrl = 'https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/' + tagVersion;
+    
+    // GitHub Release asset naming behavior: spaces become dots.
+    const dottedAppName = 'All.Time.Wrestling';
+    const slugAppName = 'all-time-wrestling-rpg';
+    
+    // Using more flexible regex to match the links
+    indexContent = indexContent.replace(
+      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for Windows \(\.msi\))/g,
+      `href="${downloadBaseUrl}/${dottedAppName}-${version}.msi"$1`
+    );
+    indexContent = indexContent.replace(
+      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for macOS \(\.dmg\))/g,
+      `href="${downloadBaseUrl}/${dottedAppName}-${version}.dmg"$1`
+    );
+    indexContent = indexContent.replace(
+      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for Linux \(\.deb\))/g,
+      `href="${downloadBaseUrl}/${slugAppName}-${version}.deb"$1`
+    );
+    indexContent = indexContent.replace(
+      /\[Get Portable Version\]\(https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest\)/g,
+      `[Get Portable Version](${downloadBaseUrl}/${slugAppName}-${version}.zip)`
+    );
+
+    fs.writeFileSync(indexPath, indexContent);
+    console.log('Successfully updated installer links in index.md');
+  } else {
+    console.warn('Could not determine project version from pom.xml');
+  }
+}
+
 // Group features by category
 const categories = {};
 features.forEach(feature => {

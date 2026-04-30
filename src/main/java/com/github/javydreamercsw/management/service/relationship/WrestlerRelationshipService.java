@@ -101,7 +101,7 @@ public class WrestlerRelationshipService {
     relationship.setNotes(notes);
 
     WrestlerRelationship saved = relationshipRepository.save(relationship);
-    log.info(
+    log.debug(
         "Saved relationship: {} {} {} (Level: {})",
         w1.getName(),
         type.getDisplayName(),

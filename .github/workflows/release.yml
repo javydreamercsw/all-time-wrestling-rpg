@@ -2,6 +2,8 @@ name: Create Release
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  MAVEN_OPTS: "-Xmx6g -XX:+UseG1GC"
+  JAVA_TOOL_OPTIONS: "-Xmx6g"
 
 permissions:
   contents: write
@@ -29,21 +31,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      # --- 1. SETUP PHASE ---
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.0'
+          bundler-cache: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Configure Git
         run: |
@@ -60,6 +66,7 @@ jobs:
             git checkout -b "release/${{ github.event.inputs.version }}"
           fi
 
+      # --- 2. METADATA UPDATE PHASE ---
       - name: Update POM version
         run: mvn versions:set -DnewVersion=${{ github.event.inputs.version }} -DgenerateBackupPoms=false
 
@@ -69,17 +76,26 @@ jobs:
           LATEST_MYSQL=$(ls src/main/resources/db/migration/mysql/V*__*.sql | grep -o 'V[0-9]*' | sort -V | tail -n 1)
           echo "$LATEST_H2" > src/main/resources/db/migration/h2/.released
           echo "$LATEST_MYSQL" > src/main/resources/db/migration/mysql/.released
-          git add pom.xml src/main/resources/db/migration/h2/.released src/main/resources/db/migration/mysql/.released
+
+      - name: Format and Push initial changes
+        run: |
+          mvn spotless:apply
+          git add .
           if ! git diff-index --quiet --cached HEAD; then
             git commit -m "chore: Update version to ${{ github.event.inputs.version }} and migration metadata"
+            git push -u origin "release/${{ github.event.inputs.version }}"
           fi
+
+      # --- 3. DEPENDENCY INSTALLATION ---
+      - name: Install root and docs dependencies
+        run: |
+          npm install --legacy-peer-deps
+          cd docs/site && npm install
 
       - name: Install changelog generator
         run: gem install github_changelog_generator
 
-      - name: Push release branch to origin
-        run: git push -u origin "release/${{ github.event.inputs.version }}"  
-
+      # --- 4. ARTIFACT GENERATION PHASE ---
       - name: Generate Changelog
         run: |
           github_changelog_generator \
@@ -89,18 +105,6 @@ jobs:
             --output CHANGELOG.md \
             --release-branch release/${{ github.event.inputs.version }} \
             --future-release v${{ github.event.inputs.version }}
-          git add CHANGELOG.md
-          if ! git diff-index --quiet --cached HEAD; then
-            git commit -m "docs: Generate changelog for v${{ github.event.inputs.version }}"
-          fi
-
-      - name: Install root dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Install docs dependencies
-        run: |
-          cd docs/site
-          npm install
 
       - name: Generate screenshots and manifest
         run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
@@ -115,18 +119,17 @@ jobs:
         env:
           BASE_URL: /${{ github.event.repository.name }}/
 
+      # --- 5. CLEANUP, COMMIT & PUSH PHASE ---
       - name: Format
         run: mvn spotless:apply
 
-      - name: Commit documentation changes
+      - name: Commit and Push documentation changes
         run: |
-          git add docs/manifest.json docs/screenshots/*.png src/main/resources/META-INF/resources/docs/*
+          git add .
           if ! git diff-index --quiet --cached HEAD; then
             git commit -m "docs: Regenerate Game Guide for v${{ github.event.inputs.version }}"
+            git push -u origin "release/${{ github.event.inputs.version }}"
           fi
-
-      - name: Push changes
-        run: git push --set-upstream origin release/${{ github.event.inputs.version }}
 
       - name: Upload Docs Artifact
         uses: actions/upload-pages-artifact@v4
@@ -147,20 +150,22 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install root dependencies
         run: npm install --legacy-peer-deps
 
       - name: Build JAR with Maven
-        run: mvn spotless:apply -B package -DskipTests --file pom.xml
+        run: mvn -B package -DskipTests --file pom.xml
 
       - name: Build WAR with Maven
-        run: mvn -B package -Pwar -DskipTests --file pom.xml
+        run: mvn -B war:war -Pwar -DskipTests --file pom.xml
 
       - name: Build Portable ZIP
         run: mvn -B package -Pportable -DskipTests --file pom.xml
@@ -174,7 +179,9 @@ jobs:
           name: Release v${{ github.event.inputs.version }}
           body_path: CHANGELOG.md
           draft: false
-          prerelease: false
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
           files: |
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.jar
             ./target/all-time-wrestling-rpg-${{ github.event.inputs.version }}.war
@@ -194,7 +201,8 @@ jobs:
             icon: src/main/resources/jpackage/mac/icon.icns
           - os: windows-latest
             type: MSI
-            icon: src/main/resources/jpackage/windows/icon.ico
+            # CI uses a BMP-only ICO to avoid sporadic jpackage UpdateResource failures.
+            icon: src/main/resources/jpackage/windows/icon-ci.ico
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -207,22 +215,48 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Install WiX Toolset (Windows only)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          dotnet tool install --global wix --version 4.0.1
+          wix extension add WixToolset.UI.wixext --global
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install root dependencies
         run: npm install --legacy-peer-deps
 
       - name: Build with Maven and JPackage
         shell: bash
+        # Override JAVA_TOOL_OPTIONS: the global -Xmx6g is too high for jpackage
+        # sub-processes on the 7GB runner. Scoped to -Xmx2g.
+        env:
+          JAVA_TOOL_OPTIONS: "-Xmx2g"
+          MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
-          mvn spotless:apply -B package -Pproduction,desktop \
+          mvn -B package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
+
+      - name: Rename Installers
+        shell: bash
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          mkdir -p target/dist
+          # GitHub automatically replaces spaces with dots in release assets.
+          # We rename them here explicitly to match that behavior and ensure our links work.
+          find target/dist -name "*.dmg" -exec bash -c 'mv "$1" "target/dist/All.Time.Wrestling-$2.dmg"' _ {} "$VERSION" \;
+          find target/dist -name "*.msi" -exec bash -c 'mv "$1" "target/dist/All.Time.Wrestling-$2.msi"' _ {} "$VERSION" \;
+          find target/dist -name "*.deb" -exec bash -c 'mv "$1" "target/dist/all-time-wrestling-rpg-$2.deb"' _ {} "$VERSION" \;
+          ls -R target/dist
 
       - name: Upload Installer to Release
         uses: softprops/action-gh-release@v2
@@ -230,10 +264,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.event.inputs.version }}
+          fail_on_unmatched_files: true
           files: target/dist/*
 
   deploy_pages:
-    needs: build_and_release
+    needs: [build_and_release, build_desktop_installers]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -243,8 +278,29 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+  approve_release:
+    needs: [build_desktop_installers, deploy_pages]
+    runs-on: ubuntu-latest
+    environment:
+      name: release-approval
+    steps:
+      - name: Awaiting Manual Approval
+        run: echo "Release approved! Proceeding to finalize."
+
+  finalize_release:
+    needs: approve_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Mark Release as Final
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit v${{ github.event.inputs.version }} --prerelease=false
+
   build_and_publish_docker:
-    needs: build_and_release
+    needs: finalize_release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -257,11 +313,13 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install root dependencies
         run: npm install --legacy-peer-deps
@@ -269,8 +327,8 @@ jobs:
       - name: Build and Publish Docker Image
         run: mvn clean spotless:apply package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }} -DskipTests
 
-  finalize_release:
-    needs: [build_and_release, build_desktop_installers, build_and_publish_docker, deploy_pages]
+  merge_to_main:
+    needs: build_and_publish_docker
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository

@@ -48,7 +48,7 @@ public class AccountInitializer implements Initializable {
   @Transactional
   public void init() {
     if (enabled) {
-      log.info("Initializing accounts...");
+      log.debug("Initializing accounts...");
       // Create roles if they don't exist
       Map<RoleName, Role> roles =
           roleRepository.findAll().stream().collect(Collectors.toMap(Role::getName, role -> role));
@@ -58,7 +58,7 @@ public class AccountInitializer implements Initializable {
           Role role = new Role(roleName, roleName.name() + " role");
           roleRepository.save(role);
           roles.put(roleName, role);
-          log.info("Created role: {}", roleName);
+          log.debug("Created role: {}", roleName);
         }
       }
 
@@ -67,7 +67,7 @@ public class AccountInitializer implements Initializable {
       createAccount("booker", "booker123", Set.of(roles.get(RoleName.BOOKER)));
       createAccount("player", "player123", Set.of(roles.get(RoleName.PLAYER)));
       createAccount("viewer", "viewer123", Set.of(roles.get(RoleName.VIEWER)));
-      log.info("Account initialization complete.");
+      log.debug("Account initialization complete.");
     }
   }
 
@@ -78,7 +78,7 @@ public class AccountInitializer implements Initializable {
           new Account(username, passwordEncoder.encode(password), username + "@example.com");
       account.setRoles(roles);
       accountRepository.save(account);
-      log.info("Created account: {}", username);
+      log.debug("Created account: {}", username);
     }
   }
 }

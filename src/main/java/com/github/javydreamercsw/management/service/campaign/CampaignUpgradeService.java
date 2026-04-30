@@ -53,7 +53,7 @@ public class CampaignUpgradeService {
   }
 
   public void loadUpgrades() {
-    log.info("Loading campaign upgrades...");
+    log.debug("Loading campaign upgrades...");
     try (InputStream is = getClass().getResourceAsStream("/campaign_upgrades.json")) {
       if (is == null) {
         log.error("campaign_upgrades.json not found in resources.");
@@ -65,7 +65,7 @@ public class CampaignUpgradeService {
       // Clear existing upgrades before saving new ones to ensure idempotency
       upgradeRepository.deleteAllInBatch();
       upgradeRepository.saveAll(upgrades);
-      log.info("Loaded {} campaign upgrades into database.", upgrades.size());
+      log.debug("Loaded {} campaign upgrades into database.", upgrades.size());
     } catch (IOException e) {
       log.error("Error loading campaign upgrades from JSON", e);
     }
@@ -100,7 +100,7 @@ public class CampaignUpgradeService {
     state.getUpgrades().add(upgrade);
     stateRepository.save(state);
 
-    log.info(
+    log.debug(
         "Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
 
     if ("HEALTH".equals(upgrade.getType())) {
@@ -110,18 +110,7 @@ public class CampaignUpgradeService {
       com.github.javydreamercsw.management.domain.wrestler.WrestlerState wrestlerState =
           wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
-      // Manual health refresh logic
-      int bonus = 0;
-      int penalty = 0;
-      if (wrestler.getAlignment() != null
-          && wrestler.getAlignment().getCampaign() != null
-          && wrestler.getAlignment().getCampaign().getState() != null) {
-        bonus = wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
-        penalty = wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
-      }
-
-      int effective = wrestler.getStartingHealth() + bonus - penalty;
-      wrestlerState.setCurrentHealth(Math.max(1, effective));
+      wrestlerState.setCurrentHealth(wrestler.getEffectiveStartingHealth(universeId));
       wrestlerStateRepository.save(wrestlerState);
 
       log.info("Refreshed health for wrestler {} in universe {}", wrestler.getName(), universeId);

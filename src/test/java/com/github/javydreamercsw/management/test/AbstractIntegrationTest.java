@@ -582,7 +582,25 @@ public abstract class AbstractIntegrationTest {
   protected void clearRepositoriesOnly() {
     com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
         () -> {
+          log.debug("Cleaning up database using DatabaseCleanup...");
           databaseCleanup.clearRepositories();
+
+          if (cacheManager != null) {
+            log.debug("Clearing all caches...");
+            cacheManager
+                .getCacheNames()
+                .forEach(
+                    cacheName -> {
+                      var cache = cacheManager.getCache(cacheName);
+                      if (cache != null) {
+                        cache.clear();
+                      }
+                    });
+          }
+
+          log.debug("Re-initializing data using DataInitializer...");
+          dataInitializer.init();
+          log.debug("Database reset complete.");
           return null;
         });
   }

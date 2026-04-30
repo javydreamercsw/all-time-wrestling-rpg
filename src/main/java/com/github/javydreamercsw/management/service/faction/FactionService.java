@@ -264,7 +264,15 @@ public class FactionService {
         .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
         .ifPresent(faction::addMember);
 
-    return Optional.of(factionRepository.saveAndFlush(faction));
+    Faction savedFaction = factionRepository.saveAndFlush(faction);
+    log.debug(
+        "Added {} to faction: {} (now {} members) in universe {}",
+        wrestler.getName(),
+        faction.getName(),
+        faction.getMemberCount(),
+        universeId);
+
+    return Optional.of(savedFaction);
   }
 
   /** Remove a member from a faction. */

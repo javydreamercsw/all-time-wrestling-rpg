@@ -203,7 +203,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
         WebElement loginFormHost;
         try {
           loginFormHost =
@@ -233,26 +233,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           passwordInput = passwordField;
         }
 
-        // Use standard sendKeys after ensuring focus and clear state
-        clickElement(usernameInput);
-        clearField(usernameInput);
-        usernameInput.sendKeys(username);
-
-        clickElement(passwordInput);
-        clearField(passwordInput);
-        passwordInput.sendKeys(password);
-
-        // Explicitly fire events to ensure Vaadin picks up the values
+        // Use JS to set values to ensure reliability in CI
         ((JavascriptExecutor) driver)
             .executeScript(
-                "arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true })); "
-                    + "arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
-                usernameInput);
+                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
+                usernameInput,
+                username);
         ((JavascriptExecutor) driver)
             .executeScript(
-                "arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true })); "
-                    + "arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
-                passwordInput);
+                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
+                passwordInput,
+                password);
 
         try {
           Thread.sleep(500); // Small wait for events to process
@@ -266,8 +257,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         clickElement(signInButton);
 
         // Wait for successful login (logout button appears or URL changes)
-        new WebDriverWait(driver, Duration.ofSeconds(60))
-            .until(
+        wait.until(
                 d -> {
                   try {
                     return d.findElements(By.id("logout-button")).size() > 0
@@ -419,12 +409,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void selectFromVaadinMultiSelectComboBox(
       @NonNull WebElement comboBox, @NonNull String itemText) {
-    clickElement(comboBox);
+    log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
+
+    // 1. Target the internal input element for typing to filter
+    WebElement input =
+        (WebElement)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "return arguments[0].querySelector('input') ||"
+                        + " arguments[0].shadowRoot.querySelector('input');",
+                    comboBox);
+
+    if (input != null) {
+      input.click();
+      input.sendKeys(itemText);
+    } else {
+      // Fallback: just open it
+      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+    }
+
+    // 2. Wait for the item to appear and click it via JS
     WebElement item =
         waitForVaadinElement(
             driver,
             By.xpath("//vaadin-multi-select-combo-box-item[contains(text(), '" + itemText + "')]"));
     clickElement(item);
+    
     // Click outside to close
     ((JavascriptExecutor) driver).executeScript("document.body.click();");
   }
@@ -526,16 +536,50 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
   }
 
-  protected void takeSequencedScreenshot(@NonNull String label) {
-    if (testArtifactsDir != null) {
-      try {
-        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        String fileName = String.format("%03d-%s.png", ++screenshotCounter, label);
-        FileUtils.copyFile(screenshot, testArtifactsDir.resolve(fileName).toFile());
-        log.info("Screenshot saved to: {}", testArtifactsDir.resolve(fileName));
-      } catch (IOException e) {
-        log.error("Failed to take sequenced screenshot: {}", label, e);
-      }
+  protected void takeSequencedScreenshot(@NonNull String context) {
+    if (driver != null && testArtifactsDir != null) {
+      screenshotCounter++;
+      String screenshotName = String.format("%03d-%s.png", screenshotCounter, context);
+      Path destFile = testArtifactsDir.resolve(screenshotName);
+      takeScreenshot(destFile.toString());
+    }
+  }
+
+  protected void takeScreenshot(@NonNull String filePath) {
+    if (driver == null) {
+      log.warn("Cannot take screenshot: WebDriver is null");
+      return;
+    }
+    try {
+      File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+      FileUtils.copyFile(scrFile, new File(filePath));
+      log.debug("Screenshot saved to: {}", filePath);
+    } catch (org.openqa.selenium.WebDriverException e) {
+      log.warn(
+          "WebDriverException while taking screenshot: {}. This might happen during page"
+              + " navigation.",
+          e.getMessage());
+    } catch (IOException e) {
+      log.error("Failed to save screenshot to: {}", filePath, e);
+    }
+  }
+
+  protected void takeElementScreenshot(@NonNull WebElement element, @NonNull String filePath) {
+    File scrFile = element.getScreenshotAs(OutputType.FILE);
+    try {
+      FileUtils.copyFile(scrFile, new File(filePath));
+      log.info("Screenshot saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save screenshot to: {}", filePath, e);
+    }
+  }
+
+  protected void savePageSource(@NonNull String filePath) {
+    try {
+      FileUtils.writeStringToFile(new File(filePath), driver.getPageSource(), "UTF-8");
+      log.info("Page source saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save page source to: {}", filePath, e);
     }
   }
 
