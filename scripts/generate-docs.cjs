@@ -34,6 +34,53 @@ if (fs.existsSync(screenshotsDir)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const features = manifest.features || [];
 
+// 3. Update installer links in index.md
+console.log('Updating installer links in index.md...');
+const indexPath = path.join(rootDir, 'docs', 'site', 'index.md');
+if (fs.existsSync(indexPath)) {
+  let indexContent = fs.readFileSync(indexPath, 'utf8');
+  const pomContent = fs.readFileSync(path.join(rootDir, 'pom.xml'), 'utf8');
+  
+  // Improved version extraction: look for project version specifically
+  const versionMatch = pomContent.match(/<artifactId>all-time-wrestling-rpg<\/artifactId>\s*<version>([^<]+)<\/version>/) 
+                    || pomContent.match(/<version>([^<]+)<\/version>/);
+  const version = versionMatch ? versionMatch[1].trim() : null;
+
+  if (version) {
+    console.log(`Updating links for version: ${version}`);
+    const isSnapshot = version.includes('-SNAPSHOT');
+    const tagVersion = isSnapshot ? version : 'v' + version;
+    const downloadBaseUrl = 'https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/' + tagVersion;
+    
+    // Consistent naming from workflow: all-time-wrestling-rpg-[VERSION].[type]
+    const appName = 'all-time-wrestling-rpg';
+    const encodedAppName = encodeURIComponent(appName);
+    
+    // Using more flexible regex to match the links
+    indexContent = indexContent.replace(
+      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for Windows \(\.msi\))/g,
+      `href="${downloadBaseUrl}/${encodedAppName}-${version}.msi"$1`
+    );
+    indexContent = indexContent.replace(
+      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for macOS \(\.dmg\))/g,
+      `href="${downloadBaseUrl}/${encodedAppName}-${version}.dmg"$1`
+    );
+    indexContent = indexContent.replace(
+      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest"([^>]*>Download for Linux \(\.deb\))/g,
+      `href="${downloadBaseUrl}/${encodedAppName}-${version}.deb"$1`
+    );
+    indexContent = indexContent.replace(
+      /\[Get Portable Version\]\(https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest\)/g,
+      `[Get Portable Version](${downloadBaseUrl}/${encodedAppName}-${version}.zip)`
+    );
+
+    fs.writeFileSync(indexPath, indexContent);
+    console.log('Successfully updated installer links in index.md');
+  } else {
+    console.warn('Could not determine project version from pom.xml');
+  }
+}
+
 // Group features by category
 const categories = {};
 features.forEach(feature => {
@@ -140,51 +187,6 @@ if (fs.existsSync(buildDistDir)) {
 } else {
   console.error('Build output not found at:', buildDistDir);
   process.exit(1);
-}
-
-// 7. Update installer links in index.md
-console.log('Updating installer links in index.md...');
-const indexPath = path.join(rootDir, 'docs', 'site', 'index.md');
-if (fs.existsSync(indexPath)) {
-  let indexContent = fs.readFileSync(indexPath, 'utf8');
-  const pomContent = fs.readFileSync(path.join(rootDir, 'pom.xml'), 'utf8');
-  const versionMatch = pomContent.match(/<version>(.*?)<\/version>/);
-  // The first version tag is usually the project version, but let's be more specific
-  const projectVersionMatch = pomContent.match(/<artifactId>all-time-wrestling-rpg<\/artifactId>\s*<version>(.*?)<\/version>/);
-  const version = projectVersionMatch ? projectVersionMatch[1] : (versionMatch ? versionMatch[1] : null);
-
-  if (version) {
-    console.log(`Updating links for version: ${version}`);
-    const isSnapshot = version.includes('-SNAPSHOT');
-    const tagVersion = isSnapshot ? version : 'v' + version;
-    const downloadBaseUrl = 'https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/' + tagVersion;
-    
-    // Consistent naming from workflow: All Time Wrestling-[VERSION].[type]
-    const appName = 'All Time Wrestling';
-    const encodedAppName = encodeURIComponent(appName);
-    
-    indexContent = indexContent.replace(
-      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest" class="vplug-button brand">Download for Windows \(\.msi\)/g,
-      `href="${downloadBaseUrl}/${encodedAppName}-${version}.msi" class="vplug-button brand">Download for Windows (.msi)`
-    );
-    indexContent = indexContent.replace(
-      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest" class="vplug-button brand">Download for macOS \(\.dmg\)/g,
-      `href="${downloadBaseUrl}/${encodedAppName}-${version}.dmg" class="vplug-button brand">Download for macOS (.dmg)`
-    );
-    indexContent = indexContent.replace(
-      /href="https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest" class="vplug-button brand">Download for Linux \(\.deb\)/g,
-      `href="${downloadBaseUrl}/all-time-wrestling-rpg-${version}.deb" class="vplug-button brand">Download for Linux (.deb)`
-    );
-    indexContent = indexContent.replace(
-      /\[Get Portable Version\]\(https:\/\/github\.com\/javydreamercsw\/all-time-wrestling-rpg\/releases\/latest\)/g,
-      `[Get Portable Version](${downloadBaseUrl}/all-time-wrestling-rpg-${version}.zip)`
-    );
-
-    fs.writeFileSync(indexPath, indexContent);
-    console.log('Successfully updated installer links in index.md');
-  } else {
-    console.warn('Could not determine project version from pom.xml');
-  }
 }
 
 console.log('Documentation integration complete.');

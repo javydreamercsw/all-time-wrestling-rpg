@@ -1152,7 +1152,7 @@
     <profile>
       <id>desktop</id>
       <properties>
-        <jpackage.appName>All Time Wrestling</jpackage.appName>
+        <jpackage.appName>all-time-wrestling-rpg</jpackage.appName>
       </properties>
       <build>
         <plugins>
@@ -1186,7 +1186,7 @@
                   <name>jpackage.appName</name>
                   <value>${project.version}</value>
                   <regex>.*-SNAPSHOT</regex>
-                  <replacement>All Time Wrestling (Snapshot)</replacement>
+                  <replacement>all-time-wrestling-rpg-snapshot</replacement>
                   <failIfNoMatch>false</failIfNoMatch>
                 </configuration>
               </execution>
@@ -1268,7 +1268,7 @@
                   <type>${jpackage.type}</type>
                   <icon>${jpackage.icon}</icon>
                   <!-- Platform specific configurations -->
-                  <macPackageName>${jpackage.appName} RPG</macPackageName>
+                  <macPackageName>All Time Wrestling RPG</macPackageName>
                   <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
                   <winDirChooser>true</winDirChooser>
                   <winMenu>true</winMenu>

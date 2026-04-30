@@ -249,13 +249,14 @@ jobs:
       - name: Rename Installers
         shell: bash
         run: |
-          cd target/dist
           VERSION="${{ github.event.inputs.version }}"
-          for f in *; do
-            if [[ "$f" == *.dmg ]]; then mv "$f" "All Time Wrestling-$VERSION.dmg"; fi
-            if [[ "$f" == *.msi ]]; then mv "$f" "All Time Wrestling-$VERSION.msi"; fi
-            if [[ "$f" == *.deb ]]; then mv "$f" "all-time-wrestling-rpg-$VERSION.deb"; fi
-          done
+          mkdir -p target/dist
+          # jpackage with name 'all-time-wrestling-rpg' produces files starting with that name
+          # We ensure they have the exact version-prefixed name expected by the links
+          find target/dist -name "*.dmg" -exec mv {} "target/dist/all-time-wrestling-rpg-$VERSION.dmg" \;
+          find target/dist -name "*.msi" -exec mv {} "target/dist/all-time-wrestling-rpg-$VERSION.msi" \;
+          find target/dist -name "*.deb" -exec mv {} "target/dist/all-time-wrestling-rpg-$VERSION.deb" \;
+          ls -R target/dist
 
       - name: Upload Installer to Release
         uses: softprops/action-gh-release@v2
