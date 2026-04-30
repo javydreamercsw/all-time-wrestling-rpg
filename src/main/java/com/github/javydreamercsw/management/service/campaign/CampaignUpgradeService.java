@@ -49,7 +49,7 @@ public class CampaignUpgradeService {
   }
 
   public void loadUpgrades() {
-    log.info("Loading campaign upgrades...");
+    log.debug("Loading campaign upgrades...");
     try (InputStream is = getClass().getResourceAsStream("/campaign_upgrades.json")) {
       if (is == null) {
         log.error("campaign_upgrades.json not found in resources.");
@@ -61,7 +61,7 @@ public class CampaignUpgradeService {
       // Clear existing upgrades before saving new ones to ensure idempotency
       upgradeRepository.deleteAllInBatch();
       upgradeRepository.saveAll(upgrades);
-      log.info("Loaded {} campaign upgrades into database.", upgrades.size());
+      log.debug("Loaded {} campaign upgrades into database.", upgrades.size());
     } catch (IOException e) {
       log.error("Error loading campaign upgrades from JSON", e);
     }
@@ -96,7 +96,7 @@ public class CampaignUpgradeService {
     state.getUpgrades().add(upgrade);
     stateRepository.save(state);
 
-    log.info(
+    log.debug(
         "Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
 
     if ("HEALTH".equals(upgrade.getType())) {
@@ -104,7 +104,7 @@ public class CampaignUpgradeService {
           campaign.getWrestler();
       wrestler.refreshCurrentHealth();
       wrestlerRepository.save(wrestler);
-      log.info("Refreshed health for wrestler {}", wrestler.getName());
+      log.debug("Refreshed health for wrestler {}", wrestler.getName());
     }
   }
 }

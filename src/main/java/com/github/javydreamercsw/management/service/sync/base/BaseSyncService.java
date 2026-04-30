@@ -196,12 +196,16 @@ public abstract class BaseSyncService {
                                     Thread.currentThread().interrupt();
                                     String msg = "Interrupted while processing item";
                                     log.error(msg);
-                                    if (messageConsumer != null) messageConsumer.accept(msg);
+                                    if (messageConsumer != null) {
+                                      messageConsumer.accept(msg);
+                                    }
                                     throw new RuntimeException("Processing interrupted", e);
                                   } catch (Exception e) {
                                     String msg = "Error processing item: " + e.getMessage();
                                     log.error(msg);
-                                    if (messageConsumer != null) messageConsumer.accept(msg);
+                                    if (messageConsumer != null) {
+                                      messageConsumer.accept(msg);
+                                    }
                                     throw new RuntimeException("Processing failed", e);
                                   }
                                 };
@@ -234,7 +238,9 @@ public abstract class BaseSyncService {
                       } catch (Exception e) {
                         String msg = "Failed to complete processing future: " + e.getMessage();
                         log.error(msg);
-                        if (messageConsumer != null) messageConsumer.accept(msg);
+                        if (messageConsumer != null) {
+                          messageConsumer.accept(msg);
+                        }
                         throw new RuntimeException("Future completion failed", e);
                       }
                     })
@@ -268,7 +274,9 @@ public abstract class BaseSyncService {
         Thread.currentThread().interrupt();
         String msg = "Interrupted while processing batch";
         log.error(msg);
-        if (messageConsumer != null) messageConsumer.accept(msg);
+        if (messageConsumer != null) {
+          messageConsumer.accept(msg);
+        }
         throw new RuntimeException("Batch processing interrupted", e);
       }
     }

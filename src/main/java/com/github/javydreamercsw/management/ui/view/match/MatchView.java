@@ -108,6 +108,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       ringsideAiService;
   private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
       ringsideActionDataService;
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
   private final com.github.javydreamercsw.management.service.team.TeamService teamService;
   private final com.github.javydreamercsw.management.service.title.TitleScriptService
       titleScriptService;
@@ -140,7 +141,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
           ringsideActionDataService,
       com.github.javydreamercsw.management.service.team.TeamService teamService,
-      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService) {
+      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
@@ -159,6 +161,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.ringsideActionDataService = ringsideActionDataService;
     this.teamService = teamService;
     this.titleScriptService = titleScriptService;
+    this.notificationService = notificationService;
   }
 
   @Override
@@ -329,7 +332,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
             // Save to narration
             String currentNarration = narrationArea.getValue();
-            if (currentNarration == null) currentNarration = "";
+            if (currentNarration == null) {
+              currentNarration = "";
+            }
             currentNarration += "\n\nYou: " + text + "\n" + opponent.getName() + ": " + retort;
             narrationArea.setValue(currentNarration.trim());
 
@@ -477,7 +482,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 if (result.success()) {
                   // Add action to feedback for next generation
                   String currentFeedback = feedbackArea.getValue();
-                  if (currentFeedback == null) currentFeedback = "";
+                  if (currentFeedback == null) {
+                    currentFeedback = "";
+                  }
                   feedbackArea.setValue(
                       currentFeedback + "\nIncorporate successful " + action.getName() + ".");
                 }
@@ -871,15 +878,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                           segment.setNarration(generated);
                           segmentService.updateSegment(segment);
                           updateCommentaryDisplay();
-                          Notification.show("Narration generated!")
-                              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                          notificationService.showSuccess("Narration generated!");
                           ui.push();
                         }));
       }
     } catch (Exception e) {
       log.error("Failed to generate AI narration", e);
-      Notification.show("Failed to generate narration. Please check AI settings.")
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      notificationService.showAIServiceError(e);
     }
   }
 
@@ -899,20 +904,27 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           && securityUtils.isPlayer()
           && !securityUtils.isAdmin()
           && !securityUtils.isBooker()) {
-        matchFulfillmentService.submitResult(
-            fulfillmentOpt.get(),
-            winners.isEmpty() ? null : winners.getFirst(),
-            securityUtils.getAuthenticatedUser().get().getAccount());
-        Notification.show("Match result reported to league commissioner.")
-            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        UI.getCurrent().navigate("player");
+        securityUtils
+            .getAuthenticatedUser()
+            .ifPresent(
+                userDetails -> {
+                  matchFulfillmentService.submitResult(
+                      fulfillmentOpt.get(),
+                      winners.isEmpty() ? null : winners.getFirst(),
+                      userDetails.getAccount());
+                  Notification.show("Match result reported to league commissioner.")
+                      .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                  UI.getCurrent().navigate("player");
+                });
         return;
       }
 
       // Check if this is a campaign match for any participant
       boolean isCampaignMatch = false;
       for (Wrestler w : segment.getWrestlers()) {
-        if (w == null) continue;
+        if (w == null) {
+          continue;
+        }
         var campaignOpt = campaignRepository.findActiveByWrestler(w);
         if (campaignOpt.isPresent()) {
           var campaign = campaignOpt.get();

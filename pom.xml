@@ -11,13 +11,13 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.7.1</version>
+  <version>1.7.2-RC1</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
 
   <properties>
-    <archunit.version>1.4.1</archunit.version>
+    <archunit.version>1.4.2</archunit.version>
 
     <!--
       Hard gate for E2E tests:
@@ -39,7 +39,7 @@
     <jacoco.version>0.8.14</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
-    <lombok.version>1.18.44</lombok.version>
+    <lombok.version>1.18.46</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
@@ -47,7 +47,7 @@
     <skipTests>false</skipTests>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
-    <testcontainers.version>2.0.4</testcontainers.version>
+    <testcontainers.version>2.0.5</testcontainers.version>
     <vaadin.version>25.1.1</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
@@ -95,7 +95,7 @@
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.18.44</version>
+        <version>1.18.46</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -106,7 +106,7 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
-        <version>2.0.4</version>
+        <version>2.0.5</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -243,7 +243,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>6.11.1</version>
+      <version>6.12.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -269,7 +269,7 @@
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
-      <version>7.1.6</version>
+      <version>7.2.1</version>
     </dependency>
     <!-- Persistence -->
     <dependency>
@@ -291,7 +291,7 @@
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
-      <version>9.6.0</version>
+      <version>9.7.0</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -525,7 +525,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.21.0</version>
+      <version>2.22.0</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -682,6 +682,25 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.openrewrite.maven</groupId>
+        <artifactId>rewrite-maven-plugin</artifactId>
+        <version>6.37.0</version>
+        <configuration>
+          <failOnDryRunResults>true</failOnDryRunResults>
+          <activeRecipes>
+            <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
+          </activeRecipes>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-static-analysis</artifactId>
+            <version>2.33.1</version>
+            <scope>runtime</scope>
+          </dependency>
+        </dependencies>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -943,6 +962,7 @@
             <flexmark/>
             <excludes>
               <exclude>node_modules/**</exclude>
+              <exclude>node/**</exclude>
               <exclude>docs/site/**</exclude>
             </excludes>
           </markdown>
@@ -955,6 +975,7 @@
               <exclude>target/**</exclude>
               <exclude>data/**</exclude>
               <exclude>node_modules/**</exclude>
+              <exclude>node/**</exclude>
               <exclude>tsconfig.json</exclude>
               <exclude>**/tsconfig.json</exclude>
               <exclude>package.json</exclude>
@@ -1000,186 +1021,14 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-wrapper-plugin</artifactId>
-        <version>3.3.4</version>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.9.0</version>
-        <configuration>
-          <failOnWarning>true</failOnWarning>
-          <ignoredUnusedDeclaredDependencies>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-spring-boot-starter</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev-server</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.github.oshi:oshi-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-tomcat</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>jakarta.transaction:jakarta.transaction-api</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>jakarta.inject:jakarta.inject-api</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.json:json</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.github.mvysny.kaributesting:karibu-testing-v24</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUnusedDeclaredDependency>
-            <!--Only used with MySQL-->
-            <ignoredUnusedDeclaredDependency>com.mysql:mysql-connector-j</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-mysql</ignoredUnusedDeclaredDependency>
-            <!--Only used with H2-->
-            <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-flyway</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-test</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa-test</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-webmvc-test</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-aop</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-test-autoconfigure</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-web</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-validation</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-core</ignoredUnusedDeclaredDependency>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredUsedUndeclaredDependencies>
-            <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>
-            <ignoredUsedUndeclaredDependency>com.vaadin:*</ignoredUsedUndeclaredDependency>
-          </ignoredUsedUndeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>junit:junit</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>commons-io:commons-io</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>org.flywaydb:flyway-core</ignoredNonTestScopedDependency>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
-        <executions>
-          <execution>
-            <id>dependency-analyze</id>
-            <goals>
-              <goal>analyze</goal>
-            </goals>
-            <phase>package</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.google.cloud.tools</groupId>
-        <artifactId>jib-maven-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <from>
-            <image>eclipse-temurin:25-jre</image>
-          </from>
-          <to>
-            <image>javydreamercsw/all-time-wrestling-rpg</image>
-          </to>
-          <container>
-            <ports>
-              <port>8080</port>
-            </ports>
-            <mainClass>com.github.javydreamercsw.Application</mainClass>
-          </container>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-maven-plugin</artifactId>
-        <dependencies>
-          <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>2.4.240</version>
-          </dependency>
-          <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>9.6.0</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.version} before Vaadin plugin runs -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.6.3</version>
-        <executions>
-          <execution>
-            <id>sync-vaadin-frontend-versions</id>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <executable>node</executable>
-              <workingDirectory>${project.basedir}</workingDirectory>
-              <arguments>
-                <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
-                <argument>${vaadin.version}</argument>
-              </arguments>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
   <profiles>
     <profile>
-      <id>war</id>
-      <dependencies>
-        <dependency>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-tomcat</artifactId>
-          <scope>provided</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.tomcat.embed</groupId>
-          <artifactId>tomcat-embed-core</artifactId>
-          <scope>provided</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.tomcat</groupId>
-          <artifactId>tomcat-annotations-api</artifactId>
-          <scope>provided</scope>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-war-plugin</artifactId>
-            <version>3.4.0</version>
-            <executions>
-              <execution>
-                <id>default-war</id>
-                <goals>
-                  <goal>war</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>vaadin-upgrade</id>
+      <id>production</id>
       <properties>
-        <!-- Force a clean frontend regeneration to avoid stale Vite/Vaadin artifacts after version bumps -->
-        <vaadin.clean-frontend>true</vaadin.clean-frontend>
+        <vaadin.productionMode>true</vaadin.productionMode>
       </properties>
       <build>
         <plugins>
@@ -1189,127 +1038,10 @@
             <version>${vaadin.version}</version>
             <executions>
               <execution>
-                <id>vaadin-prepare-frontend-upgrade</id>
                 <goals>
-                  <goal>prepare-frontend</goal>
+                  <goal>build-frontend</goal>
                 </goals>
-                <phase>generate-resources</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>3.6.3</version>
-            <executions>
-              <execution>
-                <id>sync-vaadin-npm-overrides</id>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <executable>node</executable>
-                  <workingDirectory>${project.basedir}</workingDirectory>
-                  <arguments>
-                    <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
-                    <argument>${vaadin.version}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>desktop</id>
-      <properties>
-        <jpackage.appVersion>1.7.0</jpackage.appVersion>
-        <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
-        <jpackage.type>DMG</jpackage.type>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <version>3.9.0</version>
-            <executions>
-              <execution>
-                <id>dependency-analyze</id>
-                <goals>
-                  <goal>analyze</goal>
-                </goals>
-                <configuration>
-                  <skip>true</skip>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-dependencies-for-jpackage</id>
-                <goals>
-                  <goal>copy-dependencies</goal>
-                </goals>
-                <phase>package</phase>
-                <configuration>
-                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
-                  <includeScope>runtime</includeScope>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.1.0</version>
-            <executions>
-              <execution>
-                <id>prepare-jpackage-input</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <target>
-                    <mkdir dir="${project.build.directory}/jpackage-input"/>
-                    <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.panteleyev</groupId>
-            <artifactId>jpackage-maven-plugin</artifactId>
-            <version>1.6.0</version>
-            <executions>
-              <execution>
-                <id>jpackage</id>
-                <goals>
-                  <goal>jpackage</goal>
-                </goals>
-                <phase>verify</phase>
-                <configuration>
-                  <name>AllTimeWrestling</name>
-                  <vendor>javydreamercsw</vendor>
-                  <appVersion>${jpackage.appVersion}</appVersion>
-                  <input>${project.build.directory}/jpackage-input</input>
-                  <mainJar>${project.build.finalName}-thin.jar</mainJar>
-                  <mainClass>com.github.javydreamercsw.Application</mainClass>
-                  <destination>${project.build.directory}/dist</destination>
-                  <javaOptions>
-                    <option>-Dspring.profiles.active=prod</option>
-                    <option>-Djava.awt.headless=false</option>
-                    <option>-Datw.desktop.enabled=true</option>
-                    <option>-Dserver.port=0</option>
-                  </javaOptions>
-                  <type>${jpackage.type}</type>
-                  <icon>${jpackage.icon}</icon>
-                  <!-- Platform specific configurations -->
-                  <macPackageName>All Time Wrestling RPG</macPackageName>
-                  <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
-                </configuration>
+                <phase>compile</phase>
               </execution>
             </executions>
           </plugin>
@@ -1317,8 +1049,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-maven-plugin</artifactId>
             <configuration>
-              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true -Dserver.port=0</jvmArguments>
-              <classifier>exec</classifier>
+              <mainClass>com.github.javydreamercsw.Application</mainClass>
             </configuration>
           </plugin>
         </plugins>
@@ -1370,10 +1101,10 @@
                 </goals>
                 <phase>package</phase>
                 <configuration>
+                  <appendAssemblyId>false</appendAssemblyId>
                   <descriptors>
                     <descriptor>src/main/assembly/portable.xml</descriptor>
                   </descriptors>
-                  <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
               </execution>
             </executions>
@@ -1382,258 +1113,215 @@
       </build>
     </profile>
     <profile>
-      <id>production</id>
+      <id>os-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/windows/icon.ico</jpackage.icon>
+        <jpackage.type>MSI</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>os-macos</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
+        <jpackage.type>DMG</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>os-linux</id>
+      <activation>
+        <os>
+          <name>linux</name>
+          <family>unix</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/linux/icon.png</jpackage.icon>
+        <jpackage.type>DEB</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>desktop</id>
+      <properties>
+        <jpackage.appName>All Time Wrestling</jpackage.appName>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.5.0</version>
+            <executions>
+              <execution>
+                <id>sanitize-version</id>
+                <goals>
+                  <goal>regex-property</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <name>jpackage.appVersion</name>
+                  <value>${project.version}</value>
+                  <!-- Strictly numeric X.Y.Z for jpackage compatibility on all OS -->
+                  <regex>^([0-9]+(\.[0-9]+){0,2}).*$</regex>
+                  <replacement>$1</replacement>
+                  <failIfNoMatch>false</failIfNoMatch>
+                </configuration>
+              </execution>
+              <execution>
+                <id>set-dynamic-app-name</id>
+                <goals>
+                  <goal>regex-property</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <name>jpackage.appName</name>
+                  <value>${project.version}</value>
+                  <regex>.*-SNAPSHOT</regex>
+                  <replacement>All Time Wrestling (Snapshot)</replacement>
+                  <failIfNoMatch>false</failIfNoMatch>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.9.0</version>
+            <executions>
+              <execution>
+                <id>dependency-analyze</id>
+                <goals>
+                  <goal>analyze</goal>
+                </goals>
+                <configuration>
+                  <skip>true</skip>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-dependencies-for-jpackage</id>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <includeScope>runtime</includeScope>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>prepare-jpackage-input</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <target>
+                    <mkdir dir="${project.build.directory}/jpackage-input"/>
+                    <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.panteleyev</groupId>
+            <artifactId>jpackage-maven-plugin</artifactId>
+            <version>1.6.0</version>
+            <executions>
+              <execution>
+                <id>jpackage</id>
+                <goals>
+                  <goal>jpackage</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <verbose>true</verbose>
+                  <name>${jpackage.appName}</name>
+                  <vendor>Javier Ortiz Bultron</vendor>
+                  <appVersion>${jpackage.appVersion}</appVersion>
+                  <input>${project.build.directory}/jpackage-input</input>
+                  <mainJar>${project.build.finalName}-thin.jar</mainJar>
+                  <mainClass>com.github.javydreamercsw.Application</mainClass>
+                  <destination>${project.build.directory}/dist</destination>
+                  <javaOptions>
+                    <option>-Dspring.profiles.active=prod</option>
+                    <option>-Djava.awt.headless=false</option>
+                    <option>-Datw.desktop.enabled=true</option>
+                    <option>-Dserver.port=0</option>
+                  </javaOptions>
+                  <type>${jpackage.type}</type>
+                  <icon>${jpackage.icon}</icon>
+                  <!-- Platform specific configurations -->
+                  <macPackageName>All Time Wrestling RPG</macPackageName>
+                  <macPackageIdentifier>com.github.javydreamercsw.atw</macPackageIdentifier>
+                  <winDirChooser>true</winDirChooser>
+                  <winMenu>true</winMenu>
+                  <winShortcut>true</winShortcut>
+                  <winMenuGroup>All Time Wrestling</winMenuGroup>
+                  <!-- Stable UUID ensures MSI upgrades replace the existing install -->
+                  <winUpgradeUuid>3b8e2f1a-4c7d-4e9b-a2f0-8d6c5e3b1a9f</winUpgradeUuid>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true -Dserver.port=0</jvmArguments>
+              <classifier>exec</classifier>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>war</id>
       <dependencies>
-        <!-- Exclude development dependencies from production -->
         <dependency>
-          <groupId>com.vaadin</groupId>
-          <artifactId>vaadin-core</artifactId>
-          <exclusions>
-            <exclusion>
-              <groupId>com.vaadin</groupId>
-              <artifactId>vaadin-dev</artifactId>
-            </exclusion>
-          </exclusions>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-tomcat</artifactId>
+          <scope>provided</scope>
         </dependency>
       </dependencies>
       <build>
         <plugins>
           <plugin>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-maven-plugin</artifactId>
-            <version>${vaadin.version}</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>build-frontend</goal>
-                </goals>
-                <phase>compile</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>coverage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <configuration>
-              <fileSets>
-                <fileSet>
-                  <directory>${project.build.directory}</directory>
-                  <includes>
-                    <include>*.exec</include>
-                  </includes>
-                </fileSet>
-              </fileSets>
-              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
-            </configuration>
-            <executions>
-              <execution>
-                <id>report</id>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>integration-test</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/*IT.java</include>
-                <include>**/*IntegrationTest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*E2ETest.java</exclude>
-                <exclude>**/DockerPackageIT.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.4.0</version>
             <executions>
               <execution>
-                <id>report-integration</id>
+                <id>build-war</id>
                 <goals>
-                  <goal>report-integration</goal>
+                  <goal>war</goal>
                 </goals>
+                <phase>package</phase>
                 <configuration>
-                  <dataFile>${jacoco.it.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-it</outputDirectory>
+                  <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
               </execution>
             </executions>
           </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>e2e</id>
-      <properties>
-        <!-- Explicitly enable E2E in this profile. -->
-        <e2e.skipITs>false</e2e.skipITs>
-        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
-        <jacoco.it.destFile>${project.build.directory}/jacoco-e2e.exec</jacoco.it.destFile>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- Ensure E2E is not skipped in this profile. -->
-              <skipITs>false</skipITs>
-
-              <includes>
-                <include>**/*E2ETest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-              </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
-              <systemPropertyVariables>
-                <webdriver.chrome.whitelistedIps/>
-                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                <headless>${headless}</headless>
-              </systemPropertyVariables>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-e2e</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <configuration>
-                  <dataFile>${jacoco.it.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-e2e</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>notion-it</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <jacoco.it.destFile>${jacoco.notion.it.destFile}</jacoco.it.destFile>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/*Notion*IT.java</include>
-                <include>**/Notion*IT.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*E2ETest.java</exclude>
-                <exclude>**/DockerPackageIT.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-notion-it</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <configuration>
-                  <dataFile>${jacoco.notion.it.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-notion-it</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>notion-e2e</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
-        <jacoco.it.destFile>${jacoco.notion.e2e.destFile}</jacoco.it.destFile>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- Ensure E2E is not skipped in this profile. -->
-              <skipITs>false</skipITs>
-
-              <includes>
-                <include>**/*Notion*E2ETest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-              </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test,e2e -Dflyway.cleanDisabled=false</argLine>
-              <systemPropertyVariables>
-                <webdriver.chrome.whitelistedIps/>
-                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                <headless>${headless}</headless>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-notion-e2e</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <configuration>
-                  <dataFile>${jacoco.notion.e2e.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-notion-e2e</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>
@@ -1678,137 +1366,10 @@
       </build>
     </profile>
     <profile>
-      <id>remote-deploy</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven3-plugin</artifactId>
-            <version>1.10.26</version>
-            <configuration>
-              <container>
-                <containerId>tomcat11x</containerId>
-                <type>remote</type>
-              </container>
-              <configuration>
-                <type>runtime</type>
-                <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/text</cargo.tomcat.manager.url>
-                  <cargo.remote.username>${env.TOMCAT_USERNAME}</cargo.remote.username>
-                  <cargo.remote.password>${env.TOMCAT_PASSWORD}</cargo.remote.password>
-                </properties>
-              </configuration>
-              <deployer>
-                <type>remote</type>
-              </deployer>
-              <deployables>
-                <deployable>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>${project.artifactId}</artifactId>
-                  <type>war</type>
-                  <location>${project.build.directory}/${project.build.finalName}.war</location>
-                  <properties>
-                    <context>/atw-rpg</context>
-                  </properties>
-                </deployable>
-              </deployables>
-            </configuration>
-            <executions>
-              <execution>
-                <id>cargo-deploy</id>
-                <goals>
-                  <goal>redeploy</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>embedded-tomcat</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
-              <mainClass>com.github.javydreamercsw.Application</mainClass>
-              <jvmArguments>-Dserver.port=9090 -Dspring.profiles.active=test -Dspring.datasource.url=jdbc:h2:mem:e2edb</jvmArguments>
-            </configuration>
-            <executions>
-              <execution>
-                <id>run-embedded</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>docker-it</id>
+      <id>e2e</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
-        <surefire.skip>true</surefire.skip>
       </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-invoker-plugin</artifactId>
-            <version>3.9.0</version>
-            <configuration>
-              <projectsDirectory>./</projectsDirectory>
-              <pomIncludes>
-                <pomInclude>pom.xml</pomInclude>
-              </pomIncludes>
-              <goals>
-                <goal>package</goal>
-              </goals>
-              <profiles>
-                <profile>production</profile>
-                <profile>war</profile>
-              </profiles>
-            </configuration>
-            <executions>
-              <execution>
-                <id>build-prod</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/DockerPackageIT.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*E2ETest.java</exclude>
-                <!-- Exclude other ITs -->
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-              </excludes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 </project>

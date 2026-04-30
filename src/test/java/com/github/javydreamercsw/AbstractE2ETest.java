@@ -220,6 +220,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void login(@NonNull String username, @NonNull String password) {
+    log.info("Attempting login for user: {}", username);
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     takeSequencedScreenshot("on-login-page");
@@ -238,7 +239,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].querySelector('input');", usernameField);
 
-    if (usernameInput == null) usernameInput = usernameField;
+    if (usernameInput == null) {
+      usernameInput = usernameField;
+    }
 
     ((JavascriptExecutor) driver)
         .executeScript(
@@ -255,7 +258,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].querySelector('input');", passwordField);
 
-    if (passwordInput == null) passwordInput = passwordField;
+    if (passwordInput == null) {
+      passwordInput = passwordField;
+    }
 
     ((JavascriptExecutor) driver)
         .executeScript(
@@ -273,6 +278,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     try {
       // Use a more robust check for successful login - presence of logout button or main layout
       wait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
+      log.info("Login successful for user: {}", username);
       takeSequencedScreenshot("after-successful-login");
     } catch (Exception e) {
       log.error("Login failed for user: {}", username);
@@ -730,8 +736,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected int getGridSize(@NonNull WebElement grid) {
     Object size =
         ((JavascriptExecutor) driver).executeScript("return arguments[0].size || 0;", grid);
-    if (size instanceof Long) return ((Long) size).intValue();
-    if (size instanceof Integer) return (Integer) size;
+    if (size instanceof Long) {
+      return ((Long) size).intValue();
+    }
+    if (size instanceof Integer) {
+      return (Integer) size;
+    }
     return 0;
   }
 
@@ -833,10 +843,19 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void takeScreenshot(@NonNull String filePath) {
-    File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+    if (driver == null) {
+      log.warn("Cannot take screenshot: WebDriver is null");
+      return;
+    }
     try {
+      File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
       FileUtils.copyFile(scrFile, new File(filePath));
-      log.info("Screenshot saved to: {}", filePath);
+      log.debug("Screenshot saved to: {}", filePath);
+    } catch (org.openqa.selenium.WebDriverException e) {
+      log.warn(
+          "WebDriverException while taking screenshot: {}. This might happen during page"
+              + " navigation.",
+          e.getMessage());
     } catch (IOException e) {
       log.error("Failed to save screenshot to: {}", filePath, e);
     }

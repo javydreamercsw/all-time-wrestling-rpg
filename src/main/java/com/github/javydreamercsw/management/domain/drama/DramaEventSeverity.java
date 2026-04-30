@@ -116,7 +116,9 @@ public enum DramaEventSeverity {
   /** Represents a range of fan impact values. */
   public record FanImpactRange(Long min, Long max) {
     public Long getRandomValue(java.util.Random random) {
-      if (min.equals(max)) return min;
+      if (min.equals(max)) {
+        return min;
+      }
       return min + (long) (random.nextDouble() * (max - min));
     }
   }
@@ -124,7 +126,9 @@ public enum DramaEventSeverity {
   /** Represents a range of heat impact values. */
   public record HeatImpactRange(Integer min, Integer max) {
     public Integer getRandomValue(java.util.Random random) {
-      if (min.equals(max)) return min;
+      if (min.equals(max)) {
+        return min;
+      }
       return min + random.nextInt(max - min + 1);
     }
   }

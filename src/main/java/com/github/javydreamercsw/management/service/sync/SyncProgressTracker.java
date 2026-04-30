@@ -256,7 +256,9 @@ public class SyncProgressTracker {
      * @return Progress percentage
      */
     public double getProgressPercentage() {
-      if (totalSteps == 0) return completed ? 1.0 : 0.0;
+      if (totalSteps == 0) {
+        return completed ? 1.0 : 0.0;
+      }
       return Math.min(1.0, (double) currentStep / totalSteps);
     }
 
@@ -266,10 +268,14 @@ public class SyncProgressTracker {
      * @return Estimated seconds remaining, or -1 if cannot estimate
      */
     public long getEstimatedSecondsRemaining() {
-      if (completed || currentStep == 0) return -1;
+      if (completed || currentStep == 0) {
+        return -1;
+      }
 
       long elapsedSeconds = java.time.Duration.between(startedAt, LocalDateTime.now()).getSeconds();
-      if (elapsedSeconds == 0) return -1;
+      if (elapsedSeconds == 0) {
+        return -1;
+      }
 
       double progressRate = (double) currentStep / elapsedSeconds;
       int remainingSteps = totalSteps - currentStep;

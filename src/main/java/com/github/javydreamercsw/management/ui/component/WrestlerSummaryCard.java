@@ -135,10 +135,12 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                     wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
                 campaignPenalty =
                     wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
-                if (campaignBonus > 0)
+                if (campaignBonus > 0) {
                   hpTooltip.append("\nCampaign Bonus: +").append(campaignBonus);
-                if (campaignPenalty > 0)
+                }
+                if (campaignPenalty > 0) {
                   hpTooltip.append("\nCampaign Penalty: -").append(campaignPenalty);
+                }
               }
 
               if (wrestlerWithInjuries.getBumps() > 0) {

@@ -123,7 +123,7 @@ public final class GeneralSecurityUtils {
           new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
 
-      log.info(
+      log.debug(
           "Setting SecurityContext for user '{}' with role '{}' in thread '{}'",
           username,
           role,
@@ -138,7 +138,7 @@ public final class GeneralSecurityUtils {
             username,
             Thread.currentThread().getName());
       } else {
-        log.info(
+        log.debug(
             "SecurityContext successfully set for '{}' with authorities: {}",
             username,
             currentAuth.getAuthorities());
@@ -147,11 +147,11 @@ public final class GeneralSecurityUtils {
       return supplier.get();
     } finally {
       if (originalContext != null && originalContext.getAuthentication() != null) {
-        log.info(
+        log.debug(
             "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
         SecurityContextHolder.setContext(originalContext);
       } else {
-        log.info("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
         SecurityContextHolder.clearContext();
       }
     }

@@ -306,4 +306,18 @@
   "pin": true,
   "number": 23,
   "set": "WOW"
+}, {
+  "name": "Headlock",
+  "type": "Grapple",
+  "damage": 1,
+  "stamina": 1,
+  "target": 2,
+  "momentum": 1,
+  "signature": false,
+  "finisher": false,
+  "taunt": false,
+  "recover": false,
+  "pin": true,
+  "number": 22,
+  "set": "WOW"
 } ]

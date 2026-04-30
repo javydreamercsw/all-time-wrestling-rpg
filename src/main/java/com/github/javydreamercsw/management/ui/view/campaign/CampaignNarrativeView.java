@@ -38,7 +38,6 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -65,6 +64,7 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final CampaignService campaignService;
   private final SecurityUtils securityUtils;
   private final SegmentNarrationServiceFactory aiFactory;
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
 
   private Campaign currentCampaign;
   private VerticalLayout narrativeContainer;
@@ -77,12 +77,14 @@ public class CampaignNarrativeView extends VerticalLayout {
       CampaignEncounterService encounterService,
       CampaignService campaignService,
       SecurityUtils securityUtils,
-      SegmentNarrationServiceFactory aiFactory) {
+      SegmentNarrationServiceFactory aiFactory,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
     this.securityUtils = securityUtils;
     this.aiFactory = aiFactory;
+    this.notificationService = notificationService;
 
     setSpacing(true);
     setPadding(true);
@@ -185,6 +187,7 @@ public class CampaignNarrativeView extends VerticalLayout {
               reason + " Please check your configuration and ensure the AI service is running.");
       narrativeContainer.add(p);
 
+      notificationService.showError(reason);
       addRetryButton();
       return;
     }
@@ -202,8 +205,7 @@ public class CampaignNarrativeView extends VerticalLayout {
             displayEncounter(encounter);
           } catch (Exception e) {
             log.error("Failed to generate encounter", e);
-            Notification.show("Failed to connect to the Story Director. Please try again.")
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showAIServiceError(e);
             addRetryButton();
           } finally {
             showLoading(false);

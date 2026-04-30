@@ -33,8 +33,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -59,6 +57,8 @@ public class BackstageEncounterView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
 
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+
   private Campaign currentCampaign;
   private Wrestler playerWrestler;
 
@@ -72,12 +72,14 @@ public class BackstageEncounterView extends VerticalLayout {
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       SecurityUtils securityUtils,
-      CampaignService campaignService) {
+      CampaignService campaignService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.backstageEncounterService = backstageEncounterService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
+    this.notificationService = notificationService;
 
     setSpacing(true);
     setPadding(true);
@@ -160,8 +162,7 @@ public class BackstageEncounterView extends VerticalLayout {
             displaySituation(encounter);
           } catch (Exception e) {
             log.error("Failed to start backstage situation", e);
-            Notification.show("Failed to connect to the Backstage Director.")
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showAIServiceError(e);
             addBackButton();
           } finally {
             showLoading(false);
@@ -201,8 +202,7 @@ public class BackstageEncounterView extends VerticalLayout {
             displayOutcome(choice);
           } catch (Exception e) {
             log.error("Failed to process backstage choice synchronously", e);
-            Notification.show("Failed to resolve the situation: " + e.getMessage())
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showAIServiceError(e);
             addBackButton();
           } finally {
             showLoading(false);

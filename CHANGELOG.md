@@ -1,5 +1,35 @@
 # Changelog
 
+## [v1.7.2-RC1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.2-RC1) (2026-04-30)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.2-RC1...v1.7.2-RC1)
+
+**Implemented enhancements:**
+
+- Adds social media export for show cards [\#267](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/267) ([javydreamercsw](https://github.com/javydreamercsw))
+- UI Redesign: Make Show details collapsible in ShowDetailView to maximize segment list space [\#261](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/261) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Build\(deps\): Bump org.testcontainers:testcontainers-bom from 2.0.4 to 2.0.5 [\#266](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/266) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-assembly-plugin from 3.7.1 to 3.8.0 [\#265](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/265) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump com.tngtech.archunit:archunit from 1.4.1 to 1.4.2 [\#263](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/263) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.codehaus.cargo:cargo-maven3-plugin from 1.10.26 to 1.10.27 [\#262](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/262) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 0.11.3 to 1.0.0 [\#260](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/260) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump org.testcontainers:testcontainers-bom from 2.0.4 to 2.0.5 [\#259](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/259) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.codehaus.cargo:cargo-maven3-plugin from 1.10.26 to 1.10.27 [\#258](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/258) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-assembly-plugin from 3.7.1 to 3.8.0 [\#257](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/257) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-war-plugin from 3.4.0 to 3.5.1 [\#256](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/256) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump esbuild from 0.27.3 to 0.27.7 [\#248](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/248) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v1.7.2-RC1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.2-RC1) (2026-04-20)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.1...v1.7.2-RC1)
+
+**Merged pull requests:**
+
+- Release/1.7.1 [\#255](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/255) ([javydreamercsw](https://github.com/javydreamercsw))
+
 ## [v1.7.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.1) (2026-04-20)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.0...v1.7.1)

@@ -235,15 +235,23 @@ public class Faction extends AbstractEntity<Long> {
 
   /** Get faction type based on member count. */
   public String getFactionType() {
-    if (members.size() == 1) return "Singles";
-    if (members.size() == 2) return "Tag Team";
+    if (members.size() == 1) {
+      return "Singles";
+    }
+    if (members.size() == 2) {
+      return "Tag Team";
+    }
     return "Stable";
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     Faction faction = (Faction) o;
     return id != null && Objects.equals(id, faction.id);
   }

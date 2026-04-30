@@ -414,9 +414,15 @@ public class ShowService {
         .findById(id)
         .map(
             show -> {
-              if (name != null) show.setName(name);
-              if (description != null) show.setDescription(description);
-              if (showDate != null) show.setShowDate(showDate);
+              if (name != null) {
+                show.setName(name);
+              }
+              if (description != null) {
+                show.setDescription(description);
+              }
+              if (showDate != null) {
+                show.setShowDate(showDate);
+              }
 
               if (showTypeId != null) {
                 ShowType showType =
@@ -560,7 +566,9 @@ public class ShowService {
 
   private void processGmModeUpdates(Show show, Set<Long> participatingWrestlerIds) {
     League league = show.getLeague();
-    if (league == null) return;
+    if (league == null) {
+      return;
+    }
 
     java.math.BigDecimal totalExpenses = java.math.BigDecimal.ZERO;
     java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO;

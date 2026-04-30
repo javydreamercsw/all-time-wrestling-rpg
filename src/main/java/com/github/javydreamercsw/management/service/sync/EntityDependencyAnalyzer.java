@@ -101,7 +101,7 @@ public class EntityDependencyAnalyzer {
     // Also scan domain packages directly
     entityClasses.addAll(scanDomainPackages());
 
-    log.info(
+    log.debug(
         "🔍 Discovered {} entity classes: {}",
         entityClasses.size(),
         entityClasses.stream().map(Class::getSimpleName).collect(Collectors.toList()));
@@ -140,7 +140,7 @@ public class EntityDependencyAnalyzer {
    * @return List of entity names in sync order (dependencies first)
    */
   public List<String> determineSyncOrder(Set<Class<?>> entityClasses) {
-    log.info("🔍 Analyzing {} entity classes for dependency relationships", entityClasses.size());
+    log.debug("🔍 Analyzing {} entity classes for dependency relationships", entityClasses.size());
 
     // Build dependency graph
     Map<String, Set<String>> dependencies = buildDependencyGraph(entityClasses);
@@ -148,7 +148,7 @@ public class EntityDependencyAnalyzer {
     // Perform topological sort
     List<String> syncOrder = topologicalSort(dependencies);
 
-    log.info("📋 Determined sync order: {}", syncOrder);
+    log.debug("📋 Determined sync order: {}", syncOrder);
     return syncOrder;
   }
 

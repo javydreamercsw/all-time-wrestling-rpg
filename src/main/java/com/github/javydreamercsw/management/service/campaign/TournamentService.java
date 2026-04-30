@@ -93,7 +93,9 @@ public class TournamentService {
       bracketSize *= 2;
     }
     // Minimum size 4 for a decent tournament
-    if (bracketSize < 4) bracketSize = 4;
+    if (bracketSize < 4) {
+      bracketSize = 4;
+    }
 
     int totalRounds = (int) (Math.log(bracketSize) / Math.log(2));
 
@@ -195,7 +197,9 @@ public class TournamentService {
   @Transactional
   public void advanceTournament(@NonNull Campaign campaign, boolean playerWon, Show show) {
     TournamentDTO tournament = getTournamentState(campaign);
-    if (tournament == null) return;
+    if (tournament == null) {
+      return;
+    }
 
     int currentRound = tournament.getCurrentRound();
     log.info("Advancing tournament. Current Round: {}", currentRound);
@@ -354,7 +358,9 @@ public class TournamentService {
 
   public TournamentMatch getCurrentPlayerMatch(@NonNull Campaign campaign) {
     TournamentDTO tournament = getTournamentState(campaign);
-    if (tournament == null) return null;
+    if (tournament == null) {
+      return null;
+    }
 
     // Return the first unresolved player match, regardless of round
     return tournament.getMatches().stream()
@@ -365,7 +371,9 @@ public class TournamentService {
 
   public boolean isPlayerChampion(@NonNull Campaign campaign) {
     TournamentDTO tournament = getTournamentState(campaign);
-    if (tournament == null) return false;
+    if (tournament == null) {
+      return false;
+    }
 
     int totalRounds = tournament.getTotalRounds();
     TournamentMatch finals =

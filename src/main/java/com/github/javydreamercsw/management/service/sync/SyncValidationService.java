@@ -416,7 +416,9 @@ public class SyncValidationService {
 
   /** Check if a date string is a placeholder value that should be ignored. */
   private boolean isDatePlaceholder(String dateStr) {
-    if (dateStr == null) return false;
+    if (dateStr == null) {
+      return false;
+    }
 
     String normalized = dateStr.trim().toLowerCase();
     return normalized.equals("date")

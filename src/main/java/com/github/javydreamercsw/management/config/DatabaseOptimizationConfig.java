@@ -59,17 +59,17 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
    * been processed and tables created.
    */
   public void createDatabaseIndexes() {
-    log.info("🚀 Starting database optimization - creating indexes...");
+    log.debug("🚀 Starting database optimization - creating indexes...");
 
     try (Connection connection = dataSource.getConnection()) {
       // Execute the database optimization script
       ScriptUtils.executeSqlScript(
           connection, new ClassPathResource("db/optimization/indexes.sql"));
 
-      log.info("✅ Database indexes created successfully");
+      log.debug("✅ Database indexes created successfully");
 
       // Log current database statistics
-      log.info("📊 Database Statistics: {}", getDatabaseStatistics());
+      log.debug("📊 Database Statistics: {}", getDatabaseStatistics());
 
     } catch (Exception e) {
       log.warn("⚠️ Failed to create some database indexes: {}", e.getMessage());
@@ -126,7 +126,7 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
    * @return A list of performance suggestions and warnings.
    */
   public java.util.List<String> analyzeQueryPerformance() {
-    log.info("🔍 Analyzing query performance...");
+    log.debug("🔍 Analyzing query performance...");
     java.util.List<String> suggestions = new java.util.ArrayList<>();
 
     try {
@@ -183,7 +183,7 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
     tips.add("   - Use pagination for large result sets");
     tips.add("   - Implement connection pooling for high concurrency");
 
-    tips.forEach(log::info);
+    tips.forEach(log::debug);
     return tips;
   }
 
@@ -195,7 +195,7 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
       jdbcTemplate.execute("SET CACHE_SIZE 65536"); // 64MB cache
       jdbcTemplate.execute("SET LOCK_TIMEOUT 10000"); // 10 second lock timeout
 
-      log.info("✅ Database connection settings optimized");
+      log.debug("✅ Database connection settings optimized");
 
     } catch (Exception e) {
       log.debug("Could not optimize connection settings: {}", e.getMessage());

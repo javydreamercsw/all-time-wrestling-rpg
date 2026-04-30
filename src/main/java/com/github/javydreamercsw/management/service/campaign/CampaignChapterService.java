@@ -60,7 +60,7 @@ public class CampaignChapterService {
         return;
       }
       chapters = objectMapper.readValue(is, new TypeReference<>() {});
-      log.info("Loaded {} campaign chapters.", chapters.size());
+      log.debug("Loaded {} campaign chapters.", chapters.size());
     } catch (IOException e) {
       log.error("Error loading campaign chapters from JSON", e);
     }
@@ -101,7 +101,9 @@ public class CampaignChapterService {
    * @return true if any exit point is active.
    */
   public boolean isChapterComplete(@NonNull CampaignState state) {
-    if (state.getCurrentChapterId() == null) return false;
+    if (state.getCurrentChapterId() == null) {
+      return false;
+    }
 
     return getChapter(state.getCurrentChapterId())
         .map(c -> isAnyPointActive(c.getExitPoints(), state))
@@ -121,7 +123,9 @@ public class CampaignChapterService {
 
   private boolean areAllCriteriaMet(
       @NonNull List<ChapterCriteriaDTO> criteriaList, @NonNull CampaignState state) {
-    if (criteriaList.isEmpty()) return true;
+    if (criteriaList.isEmpty()) {
+      return true;
+    }
 
     return criteriaList.stream().allMatch(c -> isCriteriaMet(c, state));
   }

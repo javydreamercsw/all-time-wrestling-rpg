@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -62,6 +63,7 @@ class NarrationDialogTest {
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
   @Mock private RingsideActionService ringsideActionService;
+  @Mock private NotificationService notificationService;
 
   @Mock
   private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
@@ -131,7 +133,8 @@ class NarrationDialogTest {
             segmentNarrationController,
             segmentNarrationServiceFactory,
             ringsideActionService,
-            relationshipService);
+            relationshipService,
+            notificationService);
 
     // Create mocks for the UI components that teamsLayout would contain
     VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);

@@ -145,7 +145,9 @@ public class GmDashboardView extends VerticalLayout {
   }
 
   private void updateDashboard(League league) {
-    if (league == null) return;
+    if (league == null) {
+      return;
+    }
 
     budgetLabel.setText(
         String.format("$%,.2f", league.getBudget() != null ? league.getBudget() : 0.0));

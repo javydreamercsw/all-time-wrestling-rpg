@@ -36,8 +36,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -64,6 +62,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
   private final SegmentService segmentService;
+  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
 
   private Campaign currentCampaign;
   private Wrestler playerWrestler;
@@ -80,12 +79,14 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
       CampaignRepository campaignRepository,
       WrestlerRepository wrestlerRepository,
       SecurityUtils securityUtils,
-      SegmentService segmentService) {
+      SegmentService segmentService,
+      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.smartPromoService = smartPromoService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
     this.segmentService = segmentService;
+    this.notificationService = notificationService;
 
     setSpacing(true);
     setPadding(true);
@@ -186,8 +187,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
             displayPromoContext(promoContext);
           } catch (Exception e) {
             log.error("Failed to start promo", e);
-            Notification.show("Failed to connect to the Promo Director.")
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showAIServiceError(e);
             addBackButton();
           } finally {
             showLoading(false);
@@ -228,8 +228,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
             displayOutcome(hook, outcome);
           } catch (Exception e) {
             log.error("Failed to process promo hook synchronously", e);
-            Notification.show("Failed to resolve the promo: " + e.getMessage())
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notificationService.showAIServiceError(e);
             addBackButton();
           } finally {
             showLoading(false);

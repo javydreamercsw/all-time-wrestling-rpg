@@ -1,5 +1,5 @@
 #!/bin/bash
-JAR_FILE="all-time-wrestling-rpg-1.7.0-SNAPSHOT.jar"
+JAR_FILE=$(ls all-time-wrestling-rpg-*.jar | head -n 1)
 echo "Starting All Time Wrestling RPG..."
 java -jar "$JAR_FILE" --atw.desktop.enabled=true --spring.profiles.active=prod
 if [ $? -ne 0 ]; then
