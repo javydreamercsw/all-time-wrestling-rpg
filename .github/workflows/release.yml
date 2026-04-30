@@ -241,7 +241,7 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Xmx2g"
           MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
-          mvn -B verify -Pproduction,desktop \
+          mvn -B package -Pproduction,desktop \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
