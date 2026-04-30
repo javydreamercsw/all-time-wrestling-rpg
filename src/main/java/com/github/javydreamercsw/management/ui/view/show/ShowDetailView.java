@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -28,6 +29,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -39,6 +41,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -127,9 +130,7 @@ public class ShowDetailView extends Main
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final RingsideActionService ringsideActionService;
   private final ArenaService arenaService;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
+  private final WrestlerRelationshipService relationshipService;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -140,7 +141,8 @@ public class ShowDetailView extends Main
   private Button adjudicateButton;
   private Span noSegmentsMessage;
 
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final NotificationService notificationService;
+  private final ShowExportService exportService;
 
   public ShowDetailView(
       ShowService showService,
@@ -163,9 +165,9 @@ public class ShowDetailView extends Main
       CommentaryTeamRepository commentaryTeamRepository,
       RingsideActionService ringsideActionService,
       ArenaService arenaService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      WrestlerRelationshipService relationshipService,
+      NotificationService notificationService,
+      ShowExportService exportService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -188,6 +190,7 @@ public class ShowDetailView extends Main
     this.arenaService = arenaService;
     this.relationshipService = relationshipService;
     this.notificationService = notificationService;
+    this.exportService = exportService;
     initializeComponents();
   }
 
@@ -521,7 +524,15 @@ public class ShowDetailView extends Main
           dialog.open();
         });
 
-    HorizontalLayout buttonGroup = new HorizontalLayout(planShowButton, editDetailsButton);
+    Button exportCardButton = new Button("Export Card", new Icon(VaadinIcon.DOWNLOAD));
+    exportCardButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    exportCardButton.setTooltipText("Export this show card");
+    exportCardButton.setId("export-show-card-button");
+    exportCardButton.addClickListener(
+        e -> new ShowExportDialog(exportService, notificationService, show).open());
+
+    HorizontalLayout buttonGroup =
+        new HorizontalLayout(planShowButton, exportCardButton, editDetailsButton);
     detailsHeader.add(buttonGroup);
 
     card.add(detailsHeader, detailsLayout);
@@ -1181,6 +1192,25 @@ public class ShowDetailView extends Main
     wrestlersCombo.setRequired(true);
     wrestlersCombo.setId("edit-wrestlers-combo-box");
 
+    // Winner selection (multi-select)
+    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
+    winnersCombo.setItemLabelGenerator(Wrestler::getName);
+    winnersCombo.setWidthFull();
+    winnersCombo.setId("edit-winners-combo-box");
+
+    wrestlersCombo.addValueChangeListener(
+        e -> {
+          winnersCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
+          // Clear winners if selected participants no longer include them
+          winnersCombo.setValue(
+              winnersCombo.getValue().stream()
+                  .filter(e.getValue()::contains)
+                  .collect(Collectors.toSet()));
+        });
+
     // Filter logic helper
     java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
         (selected) -> {
@@ -1198,26 +1228,7 @@ public class ShowDetailView extends Main
     alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
     genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
 
-    // Winner selection (multi-select)
-    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
-    winnersCombo.setItemLabelGenerator(Wrestler::getName);
-    winnersCombo.setWidthFull();
-    winnersCombo.setItems(
-        segment.getWrestlers().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     winnersCombo.setValue(new HashSet<>(segment.getWinners()));
-    winnersCombo.setId("edit-winners-combo-box");
-
-    // Update winner options when wrestlers change
-    wrestlersCombo.addValueChangeListener(
-        e -> {
-          winnersCombo.setItems(
-              e.getValue().stream()
-                  .sorted(Comparator.comparing(Wrestler::getName))
-                  .collect(Collectors.toList()));
-          winnersCombo.clear();
-        });
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");

@@ -253,7 +253,7 @@ public class FactionService {
     }
 
     Faction savedFaction = factionRepository.saveAndFlush(faction);
-    log.info(
+    log.debug(
         "Created faction: {} with {} members",
         savedFaction.getName(),
         savedFaction.getMemberCount());
@@ -292,7 +292,7 @@ public class FactionService {
     faction.addMember(wrestler);
     Faction savedFaction = factionRepository.saveAndFlush(faction);
 
-    log.info(
+    log.debug(
         "Added {} to faction: {} (now {} members)",
         wrestler.getName(),
         faction.getName(),

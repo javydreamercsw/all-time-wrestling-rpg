@@ -22,10 +22,12 @@ import com.github.javydreamercsw.base.ai.image.ui.GenericImageGenerationDialog;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.world.Arena;
@@ -90,6 +92,9 @@ public class ShowListView extends Main {
   private final ImageStorageService imageStorageService;
   private final AiSettingsService aiSettingsService;
 
+  private final ShowExportService exportService;
+  private final NotificationService notificationService;
+
   private final ComboBox<Season> newSeason;
   private final ComboBox<ShowTemplate> newTemplate; // New field
   private final ComboBox<League> newLeague; // New field
@@ -123,6 +128,8 @@ public class ShowListView extends Main {
       @NonNull ImageStorageService imageStorageService,
       @NonNull AiSettingsService aiSettingsService,
       @NonNull ArenaService arenaService,
+      @NonNull ShowExportService exportService,
+      @NonNull NotificationService notificationService,
       Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -131,6 +138,8 @@ public class ShowListView extends Main {
     this.leagueRepository = leagueRepository;
     this.securityUtils = securityUtils;
     this.arenaService = arenaService;
+    this.exportService = exportService;
+    this.notificationService = notificationService;
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
@@ -391,6 +400,14 @@ public class ShowListView extends Main {
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
               deleteBtn.setVisible(securityUtils.canDelete());
 
+              // Export button
+              Button exportBtn = new Button(new Icon(VaadinIcon.DOWNLOAD));
+              exportBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+              exportBtn.setTooltipText("Export Show Card");
+              exportBtn.setId("export-show-button-" + show.getId());
+              exportBtn.addClickListener(
+                  e -> new ShowExportDialog(exportService, notificationService, show).open());
+
               // Calendar button (if show has date)
               if (show.getShowDate() != null) {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
@@ -412,7 +429,7 @@ public class ShowListView extends Main {
                 actions.add(calendarBtn);
               }
 
-              actions.add(viewBtn, editBtn, generateArtBtn, deleteBtn);
+              actions.add(viewBtn, editBtn, generateArtBtn, deleteBtn, exportBtn);
               return actions;
             })
         .setHeader("Actions")

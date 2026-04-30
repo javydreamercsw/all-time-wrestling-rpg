@@ -1,0 +1,54 @@
+name: Cleanup on Rejection
+
+on:
+  workflow_run:
+    workflows: ["Create Release"]
+    types:
+      - completed
+
+jobs:
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Extract version from POM
+        id: get_version
+        run: |
+          VERSION=$(grep -A 1 "<artifactId>all-time-wrestling-rpg</artifactId>" pom.xml | grep "<version>" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Cleanup Pre-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          echo "Checking for pre-release to cleanup: $TAG"
+          
+          # Check if release exists and is a pre-release
+          RELEASE_INFO=$(gh release view "$TAG" --json isPrerelease 2>/dev/null || echo "not_found")
+          
+          if [[ "$RELEASE_INFO" == "not_found" ]]; then
+            echo "No release found for $TAG. Nothing to clean up."
+          else
+            IS_PRERELEASE=$(echo "$RELEASE_INFO" | jq -r '.isPrerelease')
+            if [[ "$IS_PRERELEASE" == "true" ]]; then
+              echo "Found pre-release $TAG. Deleting..."
+              gh release delete "$TAG" --yes
+              
+              # Delete the remote tag
+              if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+                git push origin ":refs/tags/$TAG"
+                echo "Remote tag $TAG deleted."
+              fi
+            else
+              echo "Release $TAG is a FINAL release. Skipping automated cleanup for safety."
+            fi
+          fi

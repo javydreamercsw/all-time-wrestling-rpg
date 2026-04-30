@@ -60,7 +60,7 @@ public class CampaignChapterService {
         return;
       }
       chapters = objectMapper.readValue(is, new TypeReference<>() {});
-      log.info("Loaded {} campaign chapters.", chapters.size());
+      log.debug("Loaded {} campaign chapters.", chapters.size());
     } catch (IOException e) {
       log.error("Error loading campaign chapters from JSON", e);
     }

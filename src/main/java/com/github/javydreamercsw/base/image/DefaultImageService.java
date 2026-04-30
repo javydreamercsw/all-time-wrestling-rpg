@@ -34,7 +34,7 @@ public class DefaultImageService {
   public DefaultImageService(List<ImageSource> sources) {
     this.sources =
         sources.stream().sorted(Comparator.comparingInt(ImageSource::getPriority)).toList();
-    log.info("Initialized DefaultImageService with {} sources", sources.size());
+    log.debug("Initialized DefaultImageService with {} sources", sources.size());
   }
 
   /**

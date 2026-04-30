@@ -62,7 +62,7 @@ public class CommentaryService {
       String personaDescription) {
     Npc npc = npcRepository.findByName(npcName).orElse(null);
     if (npc == null) {
-      log.info("Creating new NPC for commentator: {}", npcName);
+      log.debug("Creating new NPC for commentator: {}", npcName);
       npc = new Npc();
       npc.setName(npcName);
       npc.setNpcType("Commentator");

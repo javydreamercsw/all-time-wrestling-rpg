@@ -232,7 +232,7 @@ public class PerformanceMonitoringService {
   /** Scheduled method to log performance metrics periodically. */
   @Scheduled(fixedRate = 300000) // Every 5 minutes
   public void logPerformanceMetrics() {
-    log.info("📊 Performance Metrics Summary:");
+    log.debug("📊 Performance Metrics Summary:");
 
     // Capture snapshot for history
     captureSnapshot();
@@ -241,19 +241,19 @@ public class PerformanceMonitoringService {
     counters.entrySet().stream()
         .sorted((e1, e2) -> Long.compare(e2.getValue().get(), e1.getValue().get()))
         .limit(5)
-        .forEach(entry -> log.info("   Counter: {} = {}", entry.getKey(), entry.getValue().get()));
+        .forEach(entry -> log.debug("   Counter: {} = {}", entry.getKey(), entry.getValue().get()));
 
     // Log memory usage
     var heapMemory = memoryBean.getHeapMemoryUsage();
     double memoryUsagePercent = (double) heapMemory.getUsed() / heapMemory.getMax() * 100;
-    log.info(
+    log.debug(
         "   Memory Usage: {}% ({} MB / {} MB)",
         String.format("%.1f", memoryUsagePercent),
         heapMemory.getUsed() / 1024 / 1024,
         heapMemory.getMax() / 1024 / 1024);
 
     // Log thread count
-    log.info("   Active Threads: {}", threadBean.getThreadCount());
+    log.debug("   Active Threads: {}", threadBean.getThreadCount());
 
     // Log cache statistics
     cacheMonitor.logCacheStatistics();

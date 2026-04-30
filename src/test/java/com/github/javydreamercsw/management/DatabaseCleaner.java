@@ -54,7 +54,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
   @Transactional
   @Override
   public void clearRepositories() {
-    log.info("🧹 Starting database cleanup...");
+    log.debug("🧹 Starting database cleanup...");
 
     // Detach all managed entities to prevent dirty state from interfering with cleanup.
     entityManager.clear();
@@ -67,7 +67,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     // Discover all repositories
     Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
-    log.info("📦 Discovered {} repositories", repositories.size());
+    log.debug("📦 Discovered {} repositories", repositories.size());
 
     // Get entity classes and determine deletion order
     Set<Class<?>> entityClasses = getEntityClasses();
@@ -76,7 +76,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
     // Reverse the order for deletion (delete children before parents)
     Collections.reverse(syncOrder);
 
-    log.info("🔄 Deletion order: {}", syncOrder);
+    log.debug("🔄 Deletion order: {}", syncOrder);
 
     // Entities that should NOT be cleared as they contain static configuration data
 
@@ -124,7 +124,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
     accountInitializer.init();
     entityManager.flush();
     entityManager.clear();
-    log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+    log.debug("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
   }
 
   /**
@@ -132,7 +132,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * before batch deletion to avoid constraint violations.
    */
   private void breakCircularDependencies() {
-    log.info("💔 Breaking circular dependencies...");
+    log.debug("💔 Breaking circular dependencies...");
     try {
       entityManager.createNativeQuery("DELETE FROM heat_event").executeUpdate();
       entityManager.createNativeQuery("UPDATE wrestler SET faction_id = NULL").executeUpdate();
@@ -222,7 +222,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
 
     if (!joinTableNames.isEmpty()) {
-      log.info("🧹 Clearing {} join tables...", joinTableNames.size());
+      log.debug("🧹 Clearing {} join tables...", joinTableNames.size());
       for (String tableName : joinTableNames) {
         try {
           log.debug("Deleting all records from join table {}", tableName);
