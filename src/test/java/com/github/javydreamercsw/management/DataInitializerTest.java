@@ -88,7 +88,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -177,6 +176,25 @@ class DataInitializerTest {
         .thenReturn(new Resource[] {mockResource});
     when(mockResource.getInputStream())
         .thenReturn(new java.io.ByteArrayInputStream("[]".getBytes()));
+
+    // Mock segmentTypeService to return a non-null SegmentType to avoid NPE in
+    // loadSegmentTypesFromFile
+    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType mockSegmentType =
+        mock(com.github.javydreamercsw.management.domain.show.segment.type.SegmentType.class);
+    when(mockSegmentType.getName()).thenReturn("Mock Type");
+    when(segmentTypeService.createOrUpdateSegmentType(anyString(), anyString()))
+        .thenReturn(mockSegmentType);
+
+    // Mock universeRepository to return a non-null Universe to avoid IllegalStateException in
+    // syncWrestlersFromFile
+    Universe mockUniverse = mock(Universe.class);
+    when(mockUniverse.getId()).thenReturn(1L);
+    when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
+
+    com.github.javydreamercsw.management.domain.title.Title mockTitle =
+        mock(com.github.javydreamercsw.management.domain.title.Title.class);
+    when(titleService.createTitle(anyString(), anyString(), any(), any(), any(), any()))
+        .thenReturn(mockTitle);
   }
 
   @Test
@@ -379,7 +397,7 @@ class DataInitializerTest {
     // Given
     Wrestler existingWrestler = new Wrestler();
     existingWrestler.setName("Rob Van Dam");
-    
+
     Universe mockUniverse = mock(Universe.class);
     when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
 
@@ -388,6 +406,12 @@ class DataInitializerTest {
         .when(wrestlerRepository.findByName("Rob Van Dam"))
         .thenReturn(Optional.of(existingWrestler));
     lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
+
+    // Mock wrestler state to avoid NPE in syncWrestlersFromFile
+    WrestlerState mockState = new WrestlerState();
+    mockState.setFans(0L);
+    mockState.setBumps(0);
+    lenient().when(wrestlerService.getOrCreateState(any(), any())).thenReturn(mockState);
 
     Resource wrestlersResource = new ClassPathResource("wrestlers.json");
     when(resourcePatternResolver.getResources("classpath*:wrestlers*.json"))
@@ -447,13 +471,7 @@ class DataInitializerTest {
 
     // Then
     verify(relationshipService, atLeastOnce())
-        .createOrUpdateRelationship(
-            eq(1L),
-            eq(2L),
-            any(),
-            anyInt(),
-            anyBoolean(),
-            anyString());
+        .createOrUpdateRelationship(eq(1L), eq(2L), any(), anyInt(), anyBoolean(), anyString());
   }
 
   @Test

@@ -217,10 +217,13 @@ public abstract class AbstractIntegrationTest {
   public void baseSetUp() throws Exception {
     log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
-    // 1. Absolute clean slate
+    // 1. Capture original authentication if set (e.g. by @WithCustomMockUser)
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+
+    // 2. Absolute clean slate
     clearSecurityContext();
 
-    // 2. Pre-initialize defaultUniverse from DB if it exists
+    // 3. Pre-initialize defaultUniverse from DB if it exists
     universeRepository
         .findByName("Default Universe")
         .ifPresent(
@@ -230,10 +233,10 @@ public abstract class AbstractIntegrationTest {
               universeContextService.setCurrentUniverse(u);
             });
 
-    // 3. Cleanup and Init
+    // 4. Cleanup and Init
     clearAllRepositories();
 
-    // 4. Final verification of universe
+    // 5. Final verification of universe
     if (this.defaultUniverse == null) {
       universeRepository
           .findByName("Default Universe")
@@ -245,9 +248,15 @@ public abstract class AbstractIntegrationTest {
               });
     }
 
-    // 5. Default login as admin to provide a valid context for the test
-    log.info("Establishing default admin context for test...");
-    loginAs("admin");
+    // 6. Restore original context if it was present, otherwise default to admin
+    if (originalAuth != null) {
+      log.info("Restoring original security context for user: {}", originalAuth.getName());
+      SecurityContextHolder.getContext().setAuthentication(originalAuth);
+      TestSecurityContextHolder.setAuthentication(originalAuth);
+    } else {
+      log.info("Establishing default admin context for test...");
+      loginAs("admin");
+    }
   }
 
   private static boolean initialDataLoaded = false;

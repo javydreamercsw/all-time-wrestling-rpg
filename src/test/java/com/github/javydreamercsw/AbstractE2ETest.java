@@ -236,12 +236,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         // Use JS to set values to ensure reliability in CI
         ((JavascriptExecutor) driver)
             .executeScript(
-                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
+                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new"
+                    + " CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new"
+                    + " CustomEvent('change', { bubbles: true }));",
                 usernameInput,
                 username);
         ((JavascriptExecutor) driver)
             .executeScript(
-                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
+                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new"
+                    + " CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new"
+                    + " CustomEvent('change', { bubbles: true }));",
                 passwordInput,
                 password);
 
@@ -258,14 +262,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
         // Wait for successful login (logout button appears or URL changes)
         wait.until(
-                d -> {
-                  try {
-                    return d.findElements(By.id("logout-button")).size() > 0
-                        || !d.getCurrentUrl().endsWith("/login");
-                  } catch (Exception e) {
-                    return false;
-                  }
-                });
+            d -> {
+              try {
+                return d.findElements(By.id("logout-button")).size() > 0
+                    || !d.getCurrentUrl().endsWith("/login");
+              } catch (Exception e) {
+                return false;
+              }
+            });
         takeSequencedScreenshot("after-successful-login");
         log.info("Login successful for user: {}", username);
         return; // Success!
@@ -434,7 +438,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             driver,
             By.xpath("//vaadin-multi-select-combo-box-item[contains(text(), '" + itemText + "')]"));
     clickElement(item);
-    
+
     // Click outside to close
     ((JavascriptExecutor) driver).executeScript("document.body.click();");
   }

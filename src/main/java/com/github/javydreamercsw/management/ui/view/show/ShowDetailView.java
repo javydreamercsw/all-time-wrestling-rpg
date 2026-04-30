@@ -414,7 +414,8 @@ public class ShowDetailView extends Main
     exportCardButton.addClickListener(
         e -> new ShowExportDialog(exportService, notificationService, show).open());
 
-    HorizontalLayout header = new HorizontalLayout(detailsTitle, exportCardButton, editDetailsButton);
+    HorizontalLayout header =
+        new HorizontalLayout(detailsTitle, exportCardButton, editDetailsButton);
     header.setWidthFull();
     header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
