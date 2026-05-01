@@ -298,14 +298,12 @@ public class PlayerView extends VerticalLayout {
 
     Account account = playerWrestler.getAccount();
 
-    Span legacyScoreLabel =
-        new Span("Legacy: " + (account != null ? account.getLegacyScore() : 0));
+    Span legacyScoreLabel = new Span("Legacy: " + (account != null ? account.getLegacyScore() : 0));
     legacyScoreLabel.getElement().getThemeList().add("badge contrast");
     Tooltip.forComponent(legacyScoreLabel)
         .setText("Total points earned through fans and achievements");
 
-    Span prestigeLabel =
-        new Span("Prestige: " + (account != null ? account.getPrestige() : 0));
+    Span prestigeLabel = new Span("Prestige: " + (account != null ? account.getPrestige() : 0));
     prestigeLabel.getElement().getThemeList().add("badge");
     Tooltip.forComponent(prestigeLabel).setText("Permanent XP earned from achievements");
 
