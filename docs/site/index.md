@@ -32,12 +32,12 @@ For the best experience, use the **Native Installer** for your operating system.
 :::
 
 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
-  <a href="https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/v1.7.2/All.Time.Wrestling-1.7.2.msi" class="vplug-button brand">Download for Windows (.msi)</a>
-  <a href="https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/v1.7.2/All.Time.Wrestling-1.7.2.dmg" class="vplug-button brand">Download for macOS (.dmg)</a>
-  <a href="https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/v1.7.2/all-time-wrestling-rpg-1.7.2.deb" class="vplug-button brand">Download for Linux (.deb)</a>
+  <a :href="`${__GITHUB_DOWNLOAD_BASE__}/All.Time.Wrestling-${__RELEASE_VERSION__}.msi`" class="vplug-button brand">Download for Windows (.msi)</a>
+  <a :href="`${__GITHUB_DOWNLOAD_BASE__}/All.Time.Wrestling-${__RELEASE_VERSION__}.dmg`" class="vplug-button brand">Download for macOS (.dmg)</a>
+  <a :href="`${__GITHUB_DOWNLOAD_BASE__}/all-time-wrestling-rpg-${__RELEASE_VERSION__}.deb`" class="vplug-button brand">Download for Linux (.deb)</a>
 </div>
 
 ### Other Formats
 
-*   **Portable ZIP**: Download, unzip, and run without installation. [Get Portable Version](https://github.com/javydreamercsw/all-time-wrestling-rpg/releases/download/v1.7.2/all-time-wrestling-rpg-1.7.2.zip)
+*   **Portable ZIP**: Download, unzip, and run without installation. <a :href="`${__GITHUB_DOWNLOAD_BASE__}/all-time-wrestling-rpg-${__RELEASE_VERSION__}.zip`">Get Portable Version</a>
 *   **Docker**: For advanced users. `docker pull javydreamercsw/all-time-wrestling-rpg`
