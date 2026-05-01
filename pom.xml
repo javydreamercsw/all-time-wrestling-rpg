@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.7.2</version>
+  <version>1.8.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -1205,7 +1205,7 @@
               <configuration>
                 <type>runtime</type>
                 <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/html</cargo.tomcat.manager.url>
+                  <cargo.tomcat.manager.url>http://localhost:8080/manager/text</cargo.tomcat.manager.url>
                   <cargo.remote.username>${env.TOMCAT_USERNAME}</cargo.remote.username>
                   <cargo.remote.password>${env.TOMCAT_PASSWORD}</cargo.remote.password>
                   <cargo.remote.timeout>300000</cargo.remote.timeout>

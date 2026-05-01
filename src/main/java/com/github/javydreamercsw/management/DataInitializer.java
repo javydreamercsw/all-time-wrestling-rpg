@@ -1002,6 +1002,9 @@ public class DataInitializer implements Initializable {
                 .collect(
                     Collectors.toMap(
                         Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
+        // Seed cache with all managed CardSet instances already in the persistence context
+        Map<Long, CardSet> setCache = new HashMap<>();
+        cardSetService.findAll().forEach(cs -> setCache.put(cs.getId(), cs));
         for (DeckDTO deckDTO : decksFromFile) {
           Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
           if (wrestler == null) {
@@ -1016,13 +1019,29 @@ public class DataInitializer implements Initializable {
             deck = deckService.createDeck(wrestler);
           }
 
+          // Normalize existing DeckCard.set references to the canonical managed instances
+          deck.getCards()
+              .forEach(
+                  dc -> {
+                    if (dc.getSet() != null && dc.getSet().getId() != null) {
+                      dc.setSet(setCache.getOrDefault(dc.getSet().getId(), dc.getSet()));
+                    }
+                    if (dc.getCard() != null
+                        && dc.getCard().getSet() != null
+                        && dc.getCard().getSet().getId() != null) {
+                      dc.getCard()
+                          .setSet(
+                              setCache.getOrDefault(
+                                  dc.getCard().getSet().getId(), dc.getCard().getSet()));
+                    }
+                  });
+
           // Keep track of cards to be removed
           Set<DeckCard> cardsToRemove = new HashSet<>(deck.getCards());
 
           // Aggregate cards from DTO
           Map<String, Integer> cardKeyToAmount = new HashMap<>();
           Map<String, Card> cardKeyToCard = new HashMap<>();
-          Map<Long, CardSet> setCache = new HashMap<>(); // Cache for CardSet instances
 
           for (DeckCardDTO cardDTO : deckDTO.getCards()) {
             log.debug(
