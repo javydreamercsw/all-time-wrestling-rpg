@@ -1191,45 +1191,46 @@
     </profile>
     <profile>
       <id>remote-deploy</id>
+      <properties>
+        <!-- Override these on the command line or via environment if needed -->
+        <tomcat.webapps>${env.TOMCAT_WEBAPPS}</tomcat.webapps>
+        <tomcat.manager.url>http://localhost:8080/manager/text</tomcat.manager.url>
+      </properties>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven3-plugin</artifactId>
-            <version>1.10.11</version>
-            <configuration>
-              <container>
-                <containerId>tomcat11x</containerId>
-                <type>remote</type>
-              </container>
-              <configuration>
-                <type>runtime</type>
-                <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/text</cargo.tomcat.manager.url>
-                  <cargo.remote.username>${env.TOMCAT_USERNAME}</cargo.remote.username>
-                  <cargo.remote.password>${env.TOMCAT_PASSWORD}</cargo.remote.password>
-                  <cargo.remote.timeout>300000</cargo.remote.timeout>
-                </properties>
-              </configuration>
-              <deployer>
-                <type>remote</type>
-              </deployer>
-              <deployables>
-                <deployable>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>${project.artifactId}</artifactId>
-                  <type>war</type>
-                  <location>${project.build.directory}/${project.artifactId}.war</location>
-                </deployable>
-              </deployables>
-            </configuration>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
             <executions>
               <execution>
-                <id>cargo-deploy</id>
-                <goals>
-                  <goal>redeploy</goal>
-                </goals>
+                <id>local-deploy</id>
                 <phase>install</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <!-- Undeploy if currently running (ignore failure if not deployed) -->
+                    <exec executable="curl" failonerror="false">
+                      <arg value="-s"/>
+                      <arg value="-u"/>
+                      <arg value="${env.TOMCAT_USERNAME}:${env.TOMCAT_PASSWORD}"/>
+                      <arg value="${tomcat.manager.url}/undeploy?path=/${project.artifactId}"/>
+                    </exec>
+                    <!-- Copy WAR directly into webapps — no HTTP streaming -->
+                    <copy file="${project.build.directory}/${project.artifactId}.war"
+                          todir="${tomcat.webapps}"
+                          overwrite="true"/>
+                    <!-- Trigger deploy via Manager (lightweight path-only request, no upload) -->
+                    <exec executable="curl" failonerror="true">
+                      <arg value="-s"/>
+                      <arg value="-u"/>
+                      <arg value="${env.TOMCAT_USERNAME}:${env.TOMCAT_PASSWORD}"/>
+                      <arg value="${tomcat.manager.url}/deploy?path=/${project.artifactId}&amp;war=file:${tomcat.webapps}/${project.artifactId}.war"/>
+                    </exec>
+                  </target>
+                </configuration>
               </execution>
             </executions>
           </plugin>
