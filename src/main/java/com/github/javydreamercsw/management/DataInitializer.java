@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -116,6 +117,7 @@ public class DataInitializer implements Initializable {
   private final SegmentRuleService segmentRuleService;
   private final SegmentTypeService segmentTypeService;
   private final CardSetService cardSetService;
+  private final CardSetRepository cardSetRepository;
   private final CardService cardService;
   private final TitleService titleService;
   private final DeckService deckService;
@@ -146,6 +148,7 @@ public class DataInitializer implements Initializable {
       SegmentRuleService segmentRuleService,
       SegmentTypeService segmentTypeService,
       CardSetService cardSetService,
+      CardSetRepository cardSetRepository,
       CardService cardService,
       TitleService titleService,
       DeckService deckService,
@@ -174,6 +177,7 @@ public class DataInitializer implements Initializable {
     this.segmentRuleService = segmentRuleService;
     this.segmentTypeService = segmentTypeService;
     this.cardSetService = cardSetService;
+    this.cardSetRepository = cardSetRepository;
     this.cardService = cardService;
     this.titleService = titleService;
     this.deckService = deckService;
@@ -1002,9 +1006,11 @@ public class DataInitializer implements Initializable {
                 .collect(
                     Collectors.toMap(
                         Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
-        // Seed cache with all managed CardSet instances already in the persistence context
+        // Seed cache using the repository directly (REQUIRED propagation) so all CardSet
+        // instances stay managed in the current persistence context and Hibernate sees
+        // only one instance per ID during cascade merge.
         Map<Long, CardSet> setCache = new HashMap<>();
-        cardSetService.findAll().forEach(cs -> setCache.put(cs.getId(), cs));
+        cardSetRepository.findAll().forEach(cs -> setCache.put(cs.getId(), cs));
         for (DeckDTO deckDTO : decksFromFile) {
           Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
           if (wrestler == null) {
