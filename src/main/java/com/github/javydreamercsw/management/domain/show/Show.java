@@ -20,6 +20,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -78,6 +79,10 @@ public class Show extends AbstractSyncableEntity<Long> {
   private Season season;
 
   @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "league_id")
+  private League league;
+
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "universe_id")
   private Universe universe;
 
@@ -109,6 +114,7 @@ public class Show extends AbstractSyncableEntity<Long> {
   public @Nullable Long getId() {
     return id;
   }
+
   /**
    * Check if this show is based on a Premium Live Event template.
    *

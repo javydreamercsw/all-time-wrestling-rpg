@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -387,13 +386,17 @@ public class NPCSegmentResolutionService {
   /** Calculator for team statistics used in segment resolution. */
   public class TeamStatsCalculator {
     private final Show show;
+    private final Long universeId;
 
     public TeamStatsCalculator() {
       this.show = null;
+      this.universeId = 1L;
     }
 
     public TeamStatsCalculator(Show show) {
       this.show = show;
+      this.universeId =
+          show != null && show.getUniverse() != null ? show.getUniverse().getId() : 1L;
     }
 
     /** Calculate total team weight based on individual wrestler stats. */
@@ -402,9 +405,11 @@ public class NPCSegmentResolutionService {
           team.getMembers().stream()
               .mapToInt(
                   wrestler -> {
-                    int fanWeight = wrestler.getFanWeight();
-                    int tierBonus = getTierBonus(wrestler.getTier());
-                    int healthPenalty = getHealthPenalty(wrestler);
+                    WrestlerState state =
+                        wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+                    int fanWeight = Math.toIntExact(state.getFans() / 5);
+                    int tierBonus = getTierBonus(state.getTier());
+                    int healthPenalty = getHealthPenalty(wrestler, universeId);
                     int weight = Math.max(1, fanWeight + tierBonus - healthPenalty);
                     if (isHomeTerritory(wrestler)) {
                       weight += (int) (weight * 0.10);
@@ -420,9 +425,9 @@ public class NPCSegmentResolutionService {
       int synergyBonus = 0;
       java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
       for (Wrestler w : team.getMembers()) {
-        Faction faction = wrestlerService.getOrCreateState(w.getId(), universeId).getFaction();
-        if (faction != null) {
-          Long fid = faction.getId();
+        WrestlerState state = wrestlerService.getOrCreateState(w.getId(), universeId);
+        if (state != null && state.getFaction() != null) {
+          Long fid = state.getFaction().getId();
           factionCounts.put(fid, factionCounts.getOrDefault(fid, 0) + 1);
         }
       }

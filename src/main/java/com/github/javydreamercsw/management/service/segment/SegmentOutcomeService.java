@@ -89,8 +89,8 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     String outcome =
         switch (context.getWrestlers().size()) {
           case 1 -> determineSingleWrestlerOutcome(context.getWrestlers().get(0));
-          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers(), venue);
-          default -> determineMultiWrestlerOutcome(context.getWrestlers(), venue);
+          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers(), venue, universeId);
+          default -> determineMultiWrestlerOutcome(context.getWrestlers(), venue, universeId);
         };
 
     context.setDeterminedOutcome(outcome);
@@ -106,11 +106,13 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   /** Determines outcome for a two-wrestler match using weighted probability. */
   private String determineTwoWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
-    return determineTwoWrestlerOutcome(wrestlers, null);
+    return determineTwoWrestlerOutcome(wrestlers, null, 1L);
   }
 
   private String determineTwoWrestlerOutcome(
-      @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
+      @NonNull List<WrestlerContext> wrestlers,
+      SegmentNarrationService.VenueContext venue,
+      Long universeId) {
     WrestlerContext wrestler1 = wrestlers.get(0);
     WrestlerContext wrestler2 = wrestlers.get(1);
 
@@ -118,8 +120,8 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     Optional<Wrestler> dbWrestler2 = findWrestlerByName(wrestler2.getName());
 
     // Calculate weights
-    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1, venue);
-    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2, venue);
+    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1, venue, universeId);
+    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2, venue, universeId);
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
@@ -146,17 +148,20 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   /** Determines outcome for a multi-wrestler match. */
   private String determineMultiWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
-    return determineMultiWrestlerOutcome(wrestlers, null);
+    return determineMultiWrestlerOutcome(wrestlers, null, 1L);
   }
 
   private String determineMultiWrestlerOutcome(
-      @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
+      @NonNull List<WrestlerContext> wrestlers,
+      SegmentNarrationService.VenueContext venue,
+      Long universeId) {
     List<WrestlerWeight> wrestlerWeights =
         wrestlers.stream()
             .map(
                 wrestler -> {
                   Optional<Wrestler> dbWrestler = findWrestlerByName(wrestler.getName());
-                  int weight = calculateWrestlerWeight(dbWrestler.orElse(null), wrestler, venue);
+                  int weight =
+                      calculateWrestlerWeight(dbWrestler.orElse(null), wrestler, venue, universeId);
                   return new WrestlerWeight(wrestler, weight);
                 })
             .toList();
@@ -185,20 +190,20 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   /** Calculates wrestler weight for match outcome determination. */
   private int calculateWrestlerWeight(Wrestler dbWrestler, WrestlerContext contextWrestler) {
-    return calculateWrestlerWeight(dbWrestler, contextWrestler, null);
+    return calculateWrestlerWeight(dbWrestler, contextWrestler, null, 1L);
   }
 
   private int calculateWrestlerWeight(
       Wrestler dbWrestler,
       WrestlerContext contextWrestler,
-      SegmentNarrationService.VenueContext venue) {
+      SegmentNarrationService.VenueContext venue,
+      Long universeId) {
     if (dbWrestler == null) {
       log.debug(
           "Wrestler {} not found in database, using default weight", contextWrestler.getName());
       return 50;
     }
 
-    Long universeId = contextWrestler.getUniverseId() != null ? contextWrestler.getUniverseId() : 1L;
     com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
         wrestlerService.getOrCreateState(dbWrestler.getId(), universeId);
 
