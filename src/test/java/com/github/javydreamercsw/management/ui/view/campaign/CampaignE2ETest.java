@@ -101,7 +101,6 @@ class CampaignE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains("Victory Points"));
 
     takeSequencedScreenshot("campaign-dashboard-initial");
-    takeDocScreenshot("campaign-dashboard");
 
     // 2. Navigate to Backstage Actions
     WebElement actionsButton =
@@ -109,7 +108,6 @@ class CampaignE2ETest extends AbstractE2ETest {
     clickElement(actionsButton);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("backstage-actions-view");
-    takeDocScreenshot("backstage-actions");
 
     // Verify we are on the backstage actions view
     waitForText("Backstage Actions");
