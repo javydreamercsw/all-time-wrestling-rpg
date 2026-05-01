@@ -264,88 +264,77 @@ public abstract class AbstractIntegrationTest {
   protected void clearAllRepositories() {
     log.info("AbstractIntegrationTest.clearAllRepositories() called");
 
-    // Ensure we have a valid system context for the entire cleanup process
-    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-    authorities.add(new SimpleGrantedAuthority("ROLE_SYSTEM"));
-    Account systemAccount = new Account("system", "password", "system@example.com");
-    systemAccount.setRoles(
-        Set.of(new Role(RoleName.ADMIN, "ADMIN"), new Role(RoleName.SYSTEM, "SYSTEM")));
-    com.github.javydreamercsw.base.security.CustomUserDetails principal =
-        new com.github.javydreamercsw.base.security.CustomUserDetails(systemAccount, null);
-    UsernamePasswordAuthenticationToken systemAuth =
-        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
-
-    SecurityContext context = SecurityContextHolder.createEmptyContext();
-    context.setAuthentication(systemAuth);
-    SecurityContextHolder.setContext(context);
-    TestSecurityContextHolder.setContext(context);
-
-    // 1. Reset sequence (H2 specific) - Try directly first
-    try {
-      transactionTemplate.setPropagationBehavior(
-          org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      transactionTemplate.execute(
-          status -> {
-            entityManager
-                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-                .executeUpdate();
-            return null;
-          });
-    } catch (Exception e) {
-      log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
-    }
-
-    // 2. Perform cleanup and init in a new transaction to avoid conflicts
-    transactionTemplate.setPropagationBehavior(
-        org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-    transactionTemplate.execute(
-        status -> {
-          log.info("Cleaning up database using DatabaseCleanup...");
-          databaseCleanup.clearRepositories();
-
-          clearCache();
-
-          // Always ensure at least one universe exists for tests
-          synchronized (AbstractIntegrationTest.class) {
-            try {
-              Universe newUniverse =
-                  Universe.builder()
-                      .name("Default Universe")
-                      .type(Universe.UniverseType.GLOBAL)
-                      .build();
-              newUniverse = universeRepository.saveAndFlush(newUniverse);
-              this.defaultUniverse = newUniverse;
-              TestUtils.setDefaultUniverse(newUniverse);
-              universeContextService.setCurrentUniverse(newUniverse);
-            } catch (org.springframework.dao.DataIntegrityViolationException e) {
-              universeRepository
-                  .findByName("Default Universe")
-                  .ifPresent(
-                      u -> {
-                        this.defaultUniverse = u;
-                        TestUtils.setDefaultUniverse(u);
-                        universeContextService.setCurrentUniverse(u);
-                      });
-            }
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          // 1. Reset sequence (H2 specific) - Try directly first
+          try {
+            transactionTemplate.setPropagationBehavior(
+                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transactionTemplate.execute(
+                status -> {
+                  entityManager
+                      .createNativeQuery(
+                          "ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                      .executeUpdate();
+                  return null;
+                });
+          } catch (Exception e) {
+            log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
           }
 
-          // 3. Re-initialize data
-          if (dataInitializerEnabled) {
-            dataInitializer.init();
+          // 2. Perform cleanup and init in a new transaction to avoid conflicts
+          transactionTemplate.setPropagationBehavior(
+              org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+          transactionTemplate.execute(
+              status -> {
+                log.info("Cleaning up database using DatabaseCleanup...");
+                databaseCleanup.clearRepositories();
+
+                clearCache();
+
+                // Always ensure at least one universe exists for tests
+                ensureDefaultUniverseExists();
+
+                // 3. Re-initialize data
+                if (dataInitializerEnabled) {
+                  dataInitializer.init();
+                }
+                return null;
+              });
+
+          // Clear the entity manager
+          if (entityManager != null) {
+            entityManager.clear();
           }
           return null;
         });
-
-    // Clear the entity manager
-    if (entityManager != null) {
-      entityManager.clear();
-    }
   }
 
   protected void clearCache() {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
+  }
+
+  protected void ensureDefaultUniverseExists() {
+    synchronized (AbstractIntegrationTest.class) {
+      try {
+        Universe newUniverse =
+            Universe.builder().name("Default Universe").type(Universe.UniverseType.GLOBAL).build();
+        newUniverse = universeRepository.saveAndFlush(newUniverse);
+        this.defaultUniverse = newUniverse;
+        TestUtils.setDefaultUniverse(newUniverse);
+        universeContextService.setCurrentUniverse(newUniverse);
+      } catch (org.springframework.dao.DataIntegrityViolationException e) {
+        universeRepository
+            .findByName("Default Universe")
+            .ifPresent(
+                u -> {
+                  this.defaultUniverse = u;
+                  TestUtils.setDefaultUniverse(u);
+                  universeContextService.setCurrentUniverse(u);
+                });
+      }
     }
   }
 
@@ -589,27 +578,38 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearRepositoriesOnly() {
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          log.debug("Cleaning up database using DatabaseCleanup...");
-          databaseCleanup.clearRepositories();
+    transactionTemplate.setPropagationBehavior(
+        org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transactionTemplate.execute(
+        status -> {
+          com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                log.debug("Cleaning up database using DatabaseCleanup...");
+                databaseCleanup.clearRepositories();
 
-          if (cacheManager != null) {
-            log.debug("Clearing all caches...");
-            cacheManager
-                .getCacheNames()
-                .forEach(
-                    cacheName -> {
-                      var cache = cacheManager.getCache(cacheName);
-                      if (cache != null) {
-                        cache.clear();
-                      }
-                    });
-          }
+                if (cacheManager != null) {
+                  log.debug("Clearing all caches...");
+                  cacheManager
+                      .getCacheNames()
+                      .forEach(
+                          cacheName -> {
+                            var cache = cacheManager.getCache(cacheName);
+                            if (cache != null) {
+                              cache.clear();
+                            }
+                          });
+                }
 
-          log.debug("Re-initializing data using DataInitializer...");
-          dataInitializer.init();
-          log.debug("Database reset complete.");
+                // Always ensure at least one universe exists for tests
+                ensureDefaultUniverseExists();
+
+                if (dataInitializerEnabled) {
+                  log.debug("Re-initializing data using DataInitializer...");
+                  dataInitializer.init();
+                }
+                log.debug("Database reset complete.");
+                return null;
+              });
           return null;
         });
   }

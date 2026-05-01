@@ -47,6 +47,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
     username = "admin",
     roles = {"ADMIN"})
 @DisplayName("TeamService Integration Tests")
+@org.springframework.test.context.TestPropertySource(
+    properties = {"data.initializer.enabled=false"})
 class TeamServiceTest extends ManagementIntegrationTest {
 
   @MockitoSpyBean private ExpansionService expansionService;

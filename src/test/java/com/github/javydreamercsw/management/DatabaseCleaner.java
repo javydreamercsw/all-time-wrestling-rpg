@@ -73,7 +73,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
           // 3. Get the correct synchronization/deletion order
           List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
-          log.info("🔄 Deletion order: {}", syncOrder);
+          log.debug("🔄 Deletion order: {}", syncOrder);
 
           // Entities that should not be cleared (static config, core roles, etc.)
           Set<String> protectedEntities =
@@ -275,8 +275,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
-      // Skip account and role repositories to avoid deleting test users
-      if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
+      // Skip role repository to avoid deleting core roles
+      if (beanName.equals("roleRepository")) {
         continue;
       }
       try {

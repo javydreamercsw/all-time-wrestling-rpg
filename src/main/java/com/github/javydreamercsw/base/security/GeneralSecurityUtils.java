@@ -132,6 +132,7 @@ public final class GeneralSecurityUtils {
           authorities,
           Thread.currentThread().getName());
       SecurityContextHolder.setContext(context);
+      setTestSecurityContext(context);
 
       // Verification log to catch immediate failure
       Authentication verifiedAuth = SecurityContextHolder.getContext().getAuthentication();
@@ -153,9 +154,11 @@ public final class GeneralSecurityUtils {
         log.debug(
             "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
         SecurityContextHolder.setContext(originalContext);
+        setTestSecurityContext(originalContext);
       } else {
         log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
         SecurityContextHolder.clearContext();
+        clearTestSecurityContext();
       }
     }
   }
@@ -195,16 +198,58 @@ public final class GeneralSecurityUtils {
     SecurityContext originalContext = SecurityContextHolder.getContext();
     try {
       SecurityContextHolder.setContext(context);
+      setTestSecurityContext(context);
       return supplier.get();
     } finally {
       if (originalContext != null && originalContext.getAuthentication() != null) {
         log.debug(
             "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
         SecurityContextHolder.setContext(originalContext);
+        setTestSecurityContext(originalContext);
       } else {
         log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
         SecurityContextHolder.clearContext();
+        clearTestSecurityContext();
       }
+    }
+  }
+
+  /**
+   * Use reflection to set TestSecurityContextHolder if it's available on the classpath (i.e.,
+   * during tests).
+   *
+   * @param context The SecurityContext to set.
+   */
+  private static void setTestSecurityContext(SecurityContext context) {
+    try {
+      Class<?> testHolderClass =
+          Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
+      java.lang.reflect.Method setContextMethod =
+          testHolderClass.getMethod("setContext", SecurityContext.class);
+      setContextMethod.invoke(null, context);
+      log.trace("TestSecurityContextHolder set via reflection");
+    } catch (ClassNotFoundException e) {
+      // Not on classpath, normal for production
+    } catch (Exception e) {
+      log.warn("Failed to set TestSecurityContextHolder via reflection", e);
+    }
+  }
+
+  /**
+   * Use reflection to clear TestSecurityContextHolder if it's available on the classpath (i.e.,
+   * during tests).
+   */
+  private static void clearTestSecurityContext() {
+    try {
+      Class<?> testHolderClass =
+          Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
+      java.lang.reflect.Method clearContextMethod = testHolderClass.getMethod("clearContext");
+      clearContextMethod.invoke(null);
+      log.trace("TestSecurityContextHolder cleared via reflection");
+    } catch (ClassNotFoundException e) {
+      // Not on classpath, normal for production
+    } catch (Exception e) {
+      log.warn("Failed to clear TestSecurityContextHolder via reflection", e);
     }
   }
 }
