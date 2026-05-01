@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -103,6 +104,8 @@ class DataInitializerTest {
 
   private DataInitializer dataInitializer;
 
+  @Mock private CardSetRepository cardSetRepository;
+  @Mock private DeckService deckService;
   @Mock private ShowTemplateService showTemplateService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
@@ -149,6 +152,7 @@ class DataInitializerTest {
             segmentRuleService,
             segmentTypeService,
             cardSetService,
+            cardSetRepository,
             cardService,
             titleService,
             deckService,

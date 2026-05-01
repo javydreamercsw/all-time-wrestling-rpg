@@ -82,6 +82,15 @@ public class SegmentAdjudicationService {
       relationshipService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
+  private com.github.javydreamercsw.management.service.show.ShowService showService;
+
+  @Autowired
+  @org.springframework.context.annotation.Lazy
+  public void setShowService(
+      com.github.javydreamercsw.management.service.show.ShowService showService) {
+    this.showService = showService;
+  }
+
   @Autowired
   public SegmentAdjudicationService(
       RivalryService rivalryService,
@@ -423,6 +432,10 @@ public class SegmentAdjudicationService {
           }
         }
       }
+    }
+
+    if (showService != null) {
+      showService.finalizeShowIfComplete(segment.getShow());
     }
   }
 

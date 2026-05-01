@@ -233,7 +233,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>6.12.0</version>
+      <version>7.0.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -561,7 +561,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
-      <version>2.2.48</version>
+      <version>2.2.49</version>
     </dependency>
     <dependency>
       <groupId>jakarta.persistence</groupId>
@@ -598,7 +598,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-models-jakarta</artifactId>
-      <version>2.2.48</version>
+      <version>2.2.49</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -940,6 +940,7 @@
             <excludes>
               <exclude>node_modules/**</exclude>
               <exclude>docs/site/**</exclude>
+              <exclude>src/main/resources/META-INF/resources/docs/**</exclude>
             </excludes>
           </markdown>
           <json>
@@ -951,6 +952,9 @@
               <exclude>target/**</exclude>
               <exclude>data/**</exclude>
               <exclude>node_modules/**</exclude>
+              <exclude>node/**</exclude>
+              <exclude>docs/site/**</exclude>
+              <exclude>src/main/resources/META-INF/resources/docs/**</exclude>
               <exclude>tsconfig.json</exclude>
               <exclude>**/tsconfig.json</exclude>
               <exclude>package.json</exclude>
@@ -1217,6 +1221,90 @@
       </build>
     </profile>
 
+    <profile>
+      <id>remote-deploy</id>
+      <properties>
+        <tomcat.context.path>atw-rpg</tomcat.context.path>
+        <tomcat.manager.url>http://localhost:8080/manager/text</tomcat.manager.url>
+        <!-- Override these on the command line or via environment if needed -->
+        <tomcat.webapps>${env.TOMCAT_WEBAPPS}</tomcat.webapps>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>local-deploy</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>install</phase>
+                <configuration>
+                  <target>
+                    <!-- Undeploy if currently running (ignore failure if not deployed) -->
+                    <exec executable="curl" failonerror="false">
+                      <arg value="-s"/>
+                      <arg value="-u"/>
+                      <arg value="${env.TOMCAT_USERNAME}:${env.TOMCAT_PASSWORD}"/>
+                      <arg value="${tomcat.manager.url}/undeploy?path=/${tomcat.context.path}"/>
+                    </exec>
+                    <!-- Copy WAR as atw-rpg.war — Tomcat uses filename as context path -->
+                    <copy file="${project.build.directory}/${project.artifactId}.war" overwrite="true" tofile="${tomcat.webapps}/${tomcat.context.path}.war"/>
+                    <!-- Trigger deploy via Manager in case autoDeploy is disabled; ignore failure if autoDeploy already handled it -->
+                    <exec executable="curl" failonerror="false">
+                      <arg value="-s"/>
+                      <arg value="-u"/>
+                      <arg value="${env.TOMCAT_USERNAME}:${env.TOMCAT_PASSWORD}"/>
+                      <arg value="${tomcat.manager.url}/deploy?path=/${tomcat.context.path}&amp;war=file:${tomcat.webapps}/${tomcat.context.path}.war"/>
+                    </exec>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>os-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/windows/icon.ico</jpackage.icon>
+        <jpackage.type>MSI</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>os-macos</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/mac/icon.icns</jpackage.icon>
+        <jpackage.type>DMG</jpackage.type>
+      </properties>
+    </profile>
+    <profile>
+      <id>os-linux</id>
+      <activation>
+        <os>
+          <name>linux</name>
+          <family>unix</family>
+        </os>
+      </activation>
+      <properties>
+        <jpackage.icon>src/main/resources/jpackage/linux/icon.png</jpackage.icon>
+        <jpackage.type>DEB</jpackage.type>
+      </properties>
+    </profile>
     <profile>
       <id>desktop</id>
       <properties>
@@ -1665,55 +1753,6 @@
                   <goal>integration-test</goal>
                   <goal>verify</goal>
                 </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>remote-deploy</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven3-plugin</artifactId>
-            <version>1.10.27</version>
-            <configuration>
-              <container>
-                <containerId>tomcat11x</containerId>
-                <type>remote</type>
-              </container>
-              <configuration>
-                <type>runtime</type>
-                <properties>
-                  <cargo.tomcat.manager.url>http://localhost:8080/manager/text</cargo.tomcat.manager.url>
-                  <cargo.remote.username>${env.TOMCAT_USERNAME}</cargo.remote.username>
-                  <cargo.remote.password>${env.TOMCAT_PASSWORD}</cargo.remote.password>
-                </properties>
-              </configuration>
-              <deployer>
-                <type>remote</type>
-              </deployer>
-              <deployables>
-                <deployable>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>${project.artifactId}</artifactId>
-                  <type>war</type>
-                  <location>${project.build.directory}/${project.build.finalName}.war</location>
-                  <properties>
-                    <context>/atw-rpg</context>
-                  </properties>
-                </deployable>
-              </deployables>
-            </configuration>
-            <executions>
-              <execution>
-                <id>cargo-deploy</id>
-                <goals>
-                  <goal>redeploy</goal>
-                </goals>
-                <phase>package</phase>
               </execution>
             </executions>
           </plugin>

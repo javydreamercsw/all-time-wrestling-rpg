@@ -598,4 +598,110 @@ public class ShowService {
   public List<Show> getShowsByUniverse(@NonNull Universe universe) {
     return showRepository.findByUniverse(universe);
   }
+
+  /**
+   * Checks if all segments for the show are adjudicated and, if so, finalizes attendance and gate
+   * revenue. The guard on existing attendance prevents re-running.
+   */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public void finalizeShowIfComplete(@NonNull Show show) {
+    if (show.getAttendance() != null && show.getAttendance() > 0) {
+      return;
+    }
+    List<Segment> segments = segmentRepository.findByShow(show);
+    if (segments.isEmpty()) {
+      return;
+    }
+    boolean allAdjudicated =
+        segments.stream()
+            .allMatch(
+                s ->
+                    com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED
+                        .equals(s.getAdjudicationStatus()));
+    if (allAdjudicated) {
+      finalizeShow(show, segments);
+    }
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  public Show finalizeShow(@NonNull Show show, @NonNull List<Segment> segments) {
+    // Collect unique wrestlers across all segments
+    java.util.Set<Long> seen = new java.util.HashSet<>();
+    long totalFanWeight =
+        segments.stream()
+            .flatMap(s -> s.getWrestlers().stream())
+            .filter(w -> w.getId() != null && seen.add(w.getId()))
+            .mapToLong(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getFanWeight)
+            .sum();
+
+    int baseAttendance = (int) (totalFanWeight / 2);
+
+    double showMultiplier = show.isPremiumLiveEvent() ? 1.5 : 1.0;
+
+    double traitMultiplier = 1.0;
+    if (show.getArena() != null && !show.getArena().getEnvironmentalTraits().isEmpty()) {
+      long matchingTraits =
+          show.getArena().getEnvironmentalTraits().stream()
+              .filter(trait -> traitMatchesCard(trait, segments))
+              .count();
+      traitMultiplier = 1.0 + Math.min(matchingTraits * 0.05, 0.20);
+    }
+
+    int projected = (int) (baseAttendance * showMultiplier * traitMultiplier);
+    int finalAttendance =
+        (show.getArena() != null && show.getArena().getCapacity() != null)
+            ? Math.min(projected, show.getArena().getCapacity())
+            : projected;
+
+    java.math.BigDecimal ticketPrice =
+        show.isPremiumLiveEvent()
+            ? new java.math.BigDecimal("75.00")
+            : new java.math.BigDecimal("25.00");
+    java.math.BigDecimal gateRevenue =
+        ticketPrice.multiply(java.math.BigDecimal.valueOf(finalAttendance));
+
+    show.setAttendance(finalAttendance);
+    show.setGateRevenue(gateRevenue);
+    Show saved = showRepository.save(show);
+
+    // Credit gate revenue to league budget (GM mode only)
+    if (show.getLeague() != null) {
+      League league = show.getLeague();
+      java.math.BigDecimal current =
+          league.getBudget() != null ? league.getBudget() : java.math.BigDecimal.ZERO;
+      league.setBudget(current.add(gateRevenue));
+      leagueRepository.save(league);
+      log.info(
+          "Show '{}' finalized: attendance={}, gate revenue={}, added to league '{}'",
+          show.getName(),
+          finalAttendance,
+          gateRevenue,
+          league.getName());
+    } else {
+      log.info(
+          "Show '{}' finalized: attendance={}, gate revenue={}",
+          show.getName(),
+          finalAttendance,
+          gateRevenue);
+    }
+
+    return saved;
+  }
+
+  private boolean traitMatchesCard(@NonNull String trait, @NonNull List<Segment> segments) {
+    String t = trait.toLowerCase();
+    boolean isHardcore = t.contains("hardcore") || t.contains("barbed-wire");
+    if (isHardcore) {
+      return segments.stream()
+          .anyMatch(
+              s ->
+                  s.getSegmentRules().stream()
+                      .anyMatch(
+                          r ->
+                              Boolean.TRUE.equals(r.getNoDq())
+                                  || r.getName().toLowerCase().contains("hardcore")
+                                  || r.getName().toLowerCase().contains("extreme")));
+    }
+    return false;
+  }
 }

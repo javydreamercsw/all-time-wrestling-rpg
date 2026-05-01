@@ -387,9 +387,72 @@ public class ShowDetailView extends Main
         createDetailRow(
             "Universe:",
             show.getUniverse() != null ? show.getUniverse().getName() : "No universe assigned"));
-    detailsLayout.add(
+    // Arena
+    HorizontalLayout arenaLayout =
         createDetailRow(
-            "Arena:", show.getArena() != null ? show.getArena().getName() : "No arena assigned"));
+            "Arena:",
+            show.getArena() != null
+                ? show.getArena().getName()
+                    + " ("
+                    + show.getArena().getLocation().getName()
+                    + ", Capacity: "
+                    + show.getArena().getCapacity()
+                    + ", Bias: "
+                    + show.getArena().getAlignmentBias().getDisplayName()
+                    + ")"
+                : "No arena assigned");
+    detailsLayout.add(arenaLayout);
+
+    // Event Results (only shown once show is finalized)
+    if (show.getAttendance() != null && show.getAttendance() > 0) {
+      String attendanceText = String.format("%,d", show.getAttendance());
+      if (show.getArena() != null && show.getArena().getCapacity() != null) {
+        int fillPct = (int) ((double) show.getAttendance() / show.getArena().getCapacity() * 100);
+        attendanceText += String.format(" / %,d (%d%%)", show.getArena().getCapacity(), fillPct);
+      }
+      detailsLayout.add(createDetailRow("Attendance:", attendanceText));
+      if (show.getGateRevenue() != null) {
+        detailsLayout.add(
+            createDetailRow("Gate Revenue:", "$" + String.format("%,.2f", show.getGateRevenue())));
+      }
+    }
+
+    // Show ID
+    assert show.getId() != null;
+    HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());
+    detailsLayout.add(idLayout);
+
+    // Show status/flags
+    if (show.isPremiumLiveEvent()) {
+      HorizontalLayout pleLayout = createDetailRow("Event Type:", "Premium Live Event");
+      detailsLayout.add(pleLayout);
+    } else if (show.isWeeklyShow()) {
+      HorizontalLayout weeklyLayout = createDetailRow("Event Type:", "Weekly Show");
+      detailsLayout.add(weeklyLayout);
+    }
+
+    // Creation date
+    if (show.getCreationDate() != null) {
+      HorizontalLayout createdLayout =
+          createDetailRow(
+              "Created:",
+              show.getCreationDate()
+                  .atZone(java.time.ZoneId.systemDefault())
+                  .format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a")));
+      detailsLayout.add(createdLayout);
+    }
+
+    HorizontalLayout detailsHeader = new HorizontalLayout(detailsTitle);
+    detailsHeader.setAlignItems(FlexComponent.Alignment.CENTER);
+    detailsHeader.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+    detailsHeader.setWidthFull();
+
+    Button planShowButton = new Button("Plan Show", new Icon(VaadinIcon.CALENDAR_CLOCK));
+    planShowButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    planShowButton.setTooltipText("Plan this show");
+    planShowButton.setId("plan-show-button");
+    planShowButton.addClickListener(
+        e -> getUI().ifPresent(ui -> ui.navigate(ShowPlanningView.class, show.getId())));
 
     Button editDetailsButton =
         new Button(

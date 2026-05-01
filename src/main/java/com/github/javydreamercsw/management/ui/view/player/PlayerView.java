@@ -306,12 +306,14 @@ public class PlayerView extends VerticalLayout {
     legacyLayout.setAlignItems(FlexComponent.Alignment.CENTER);
     legacyLayout.setSpacing(true);
 
-    Span legacyScoreLabel = new Span("Legacy: " + playerWrestler.getAccount().getLegacyScore());
+    Account account = playerWrestler.getAccount();
+
+    Span legacyScoreLabel = new Span("Legacy: " + (account != null ? account.getLegacyScore() : 0));
     legacyScoreLabel.getElement().getThemeList().add("badge contrast");
     Tooltip.forComponent(legacyScoreLabel)
         .setText("Total points earned through fans and achievements");
 
-    Span prestigeLabel = new Span("Prestige: " + playerWrestler.getAccount().getPrestige());
+    Span prestigeLabel = new Span("Prestige: " + (account != null ? account.getPrestige() : 0));
     prestigeLabel.getElement().getThemeList().add("badge");
     Tooltip.forComponent(prestigeLabel).setText("Permanent XP earned from achievements");
 
@@ -320,9 +322,7 @@ public class PlayerView extends VerticalLayout {
     HorizontalLayout badgesLayout = new HorizontalLayout();
     badgesLayout.setPadding(false);
     badgesLayout.setSpacing(true);
-    playerWrestler
-        .getAccount()
-        .getAchievements()
+    (account != null ? account.getAchievements() : Collections.<Achievement>emptySet())
         .forEach(
             achievement -> {
               Icon badgeIcon = VaadinIcon.MEDAL.create();
@@ -490,9 +490,11 @@ public class PlayerView extends VerticalLayout {
     grid.addComponentColumn(
             achievement -> {
               Icon icon = VaadinIcon.MEDAL.create();
+              Account acct = playerWrestler.getAccount();
               boolean earned =
-                  playerWrestler.getAccount().getAchievements().stream()
-                      .anyMatch(a -> a.getKey().equals(achievement.getKey()));
+                  acct != null
+                      && acct.getAchievements().stream()
+                          .anyMatch(a -> a.getKey().equals(achievement.getKey()));
               if (earned) {
                 icon.setColor("var(--lumo-success-color)");
               } else {

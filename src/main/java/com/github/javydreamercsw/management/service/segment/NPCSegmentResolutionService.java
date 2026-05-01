@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -100,8 +101,7 @@ public class NPCSegmentResolutionService {
         show.getUniverse() != null ? show.getUniverse().getId() : 1L);
 
     // Calculate team statistics
-    Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
-    TeamStatsCalculator calculator = new TeamStatsCalculator(universeId);
+    TeamStatsCalculator calculator = new TeamStatsCalculator(show);
     team1.calculateTeamStats(calculator);
     team2.calculateTeamStats(calculator);
 
@@ -174,8 +174,7 @@ public class NPCSegmentResolutionService {
         show.getUniverse() != null ? show.getUniverse().getId() : 1L);
 
     // Calculate team statistics
-    Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
-    TeamStatsCalculator calculator = new TeamStatsCalculator(universeId);
+    TeamStatsCalculator calculator = new TeamStatsCalculator(show);
     teams.forEach(team -> team.calculateTeamStats(calculator));
 
     // Determine winning team using weighted random selection
@@ -387,24 +386,33 @@ public class NPCSegmentResolutionService {
 
   /** Calculator for team statistics used in segment resolution. */
   public class TeamStatsCalculator {
-    private final Long universeId;
+    private final Show show;
 
-    public TeamStatsCalculator(Long universeId) {
-      this.universeId = universeId != null ? universeId : 1L;
+    public TeamStatsCalculator() {
+      this.show = null;
     }
 
-    /** Calculate total team weight based on individual wrestler stats in the given universe. */
+    public TeamStatsCalculator(Show show) {
+      this.show = show;
+    }
+
+    /** Calculate total team weight based on individual wrestler stats. */
     public int calculateTeamWeight(@NonNull SegmentTeam team) {
       int baseWeight =
           team.getMembers().stream()
               .mapToInt(
                   wrestler -> {
-                    WrestlerState state =
-                        wrestlerService.getOrCreateState(wrestler.getId(), universeId);
-                    int fanWeight = Math.toIntExact(state.getFans() / 5);
-                    int tierBonus = getTierBonus(state.getTier());
-                    int healthPenalty = getHealthPenalty(wrestler, universeId);
-                    return Math.max(1, fanWeight + tierBonus - healthPenalty);
+                    int fanWeight = wrestler.getFanWeight();
+                    int tierBonus = getTierBonus(wrestler.getTier());
+                    int healthPenalty = getHealthPenalty(wrestler);
+                    int weight = Math.max(1, fanWeight + tierBonus - healthPenalty);
+                    if (isHomeTerritory(wrestler)) {
+                      weight += (int) (weight * 0.10);
+                      log.debug(
+                          "Home field bonus (+10%) applied to {} weight: {}",
+                          wrestler.getName(), weight);
+                    }
+                    return weight;
                   })
               .sum();
 
@@ -493,6 +501,29 @@ public class NPCSegmentResolutionService {
     /** Calculate total health penalty for the team in the given universe. */
     public int calculateTeamHealthPenalty(@NonNull SegmentTeam team) {
       return team.getMembers().stream().mapToInt(w -> getHealthPenalty(w, universeId)).sum();
+    }
+
+    private boolean isHomeTerritory(@NonNull Wrestler wrestler) {
+      if (show == null
+          || show.getArena() == null
+          || show.getArena().getLocation() == null
+          || wrestler.getHeritageTag() == null
+          || wrestler.getHeritageTag().isBlank()) {
+        return false;
+      }
+      Location location = show.getArena().getLocation();
+      for (String tag : wrestler.getHeritageTag().toLowerCase().split(",")) {
+        String trimmed = tag.trim();
+        if (trimmed.isEmpty()) {
+          continue;
+        }
+        if (location.getName().toLowerCase().contains(trimmed)
+            || location.getCulturalTags().stream()
+                .anyMatch(ct -> ct.toLowerCase().contains(trimmed))) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }
