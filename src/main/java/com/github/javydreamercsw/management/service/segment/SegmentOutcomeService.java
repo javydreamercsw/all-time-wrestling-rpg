@@ -79,12 +79,14 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
       return context;
     }
 
+    SegmentNarrationService.VenueContext venue = context.getVenue();
+
     // Determine outcome based on number of wrestlers
     String outcome =
         switch (context.getWrestlers().size()) {
           case 1 -> determineSingleWrestlerOutcome(context.getWrestlers().get(0));
-          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers());
-          default -> determineMultiWrestlerOutcome(context.getWrestlers());
+          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers(), venue);
+          default -> determineMultiWrestlerOutcome(context.getWrestlers(), venue);
         };
 
     context.setDeterminedOutcome(outcome);
@@ -100,16 +102,20 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   /** Determines outcome for a two-wrestler match using weighted probability. */
   private String determineTwoWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
+    return determineTwoWrestlerOutcome(wrestlers, null);
+  }
+
+  private String determineTwoWrestlerOutcome(
+      @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
     WrestlerContext wrestler1 = wrestlers.get(0);
     WrestlerContext wrestler2 = wrestlers.get(1);
 
-    // Get wrestler data from database for accurate stats
     Optional<Wrestler> dbWrestler1 = findWrestlerByName(wrestler1.getName());
     Optional<Wrestler> dbWrestler2 = findWrestlerByName(wrestler2.getName());
 
     // Calculate weights
-    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1);
-    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2);
+    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1, venue);
+    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2, venue);
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
@@ -136,13 +142,17 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   /** Determines outcome for a multi-wrestler match. */
   private String determineMultiWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
-    // Calculate weights for all wrestlers
+    return determineMultiWrestlerOutcome(wrestlers, null);
+  }
+
+  private String determineMultiWrestlerOutcome(
+      @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
     List<WrestlerWeight> wrestlerWeights =
         wrestlers.stream()
             .map(
                 wrestler -> {
                   Optional<Wrestler> dbWrestler = findWrestlerByName(wrestler.getName());
-                  int weight = calculateWrestlerWeight(dbWrestler.orElse(null), wrestler);
+                  int weight = calculateWrestlerWeight(dbWrestler.orElse(null), wrestler, venue);
                   return new WrestlerWeight(wrestler, weight);
                 })
             .toList();
@@ -171,29 +181,44 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   /** Calculates wrestler weight for match outcome determination. */
   private int calculateWrestlerWeight(Wrestler dbWrestler, WrestlerContext contextWrestler) {
+    return calculateWrestlerWeight(dbWrestler, contextWrestler, null);
+  }
+
+  private int calculateWrestlerWeight(
+      Wrestler dbWrestler,
+      WrestlerContext contextWrestler,
+      SegmentNarrationService.VenueContext venue) {
     if (dbWrestler == null) {
-      // Use default weight if wrestler not found in database
       log.debug(
           "Wrestler {} not found in database, using default weight", contextWrestler.getName());
-      return 50; // Default weight
+      return 50;
     }
 
-    // Base weight from fan weight
     int fanWeight = dbWrestler.getFanWeight();
-
-    // Tier bonus
     int tierBonus = getTierBonus(dbWrestler);
-
-    // Health penalty from bumps and active injuries
-    int healthPenalty = dbWrestler.getBumps(); // Each bump = -1 penalty
-
-    // Add injury penalties (active injuries significantly reduce effectiveness)
+    int healthPenalty = dbWrestler.getBumps();
     long activeInjuries =
         dbWrestler.getInjuries().stream().filter(Injury::isCurrentlyActive).count();
-    healthPenalty += (int) activeInjuries * 3; // Each active injury = -3 penalty
+    healthPenalty += (int) activeInjuries * 3;
 
-    // Calculate total weight (minimum 1)
     int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty);
+
+    // Home territory bonus (+10%) when venue location matches wrestler heritage
+    if (venue != null
+        && venue.getLocation() != null
+        && contextWrestler.getHailingFrom() != null
+        && !contextWrestler.getHailingFrom().isBlank()) {
+      String venueLoc = venue.getLocation().toLowerCase();
+      for (String tag : contextWrestler.getHailingFrom().toLowerCase().split(",")) {
+        String trimmed = tag.trim();
+        if (!trimmed.isEmpty() && venueLoc.contains(trimmed)) {
+          totalWeight += (int) (totalWeight * 0.10);
+          log.debug(
+              "Home field bonus (+10%) applied to {} in {}", dbWrestler.getName(), venue.getName());
+          break;
+        }
+      }
+    }
 
     log.debug(
         "Calculated weight for {}: {} (fan: {}, tier: {}, health: {})",
