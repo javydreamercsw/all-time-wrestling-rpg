@@ -4,7 +4,7 @@ RUN keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 \
     -storetype JKS -keystore /usr/local/tomcat/conf/keystore.jks \
     -validity 36500 -storepass changeit -keypass changeit \
     -dname "CN=localhost, OU=Test, O=Test, L=Test, S=Test, C=US"
-COPY target/all-time-wrestling-rpg-*.war /usr/local/tomcat/webapps/atw-rpg.war
+COPY target/all-time-wrestling-rpg*.war /usr/local/tomcat/webapps/atw-rpg.war
 
 # Default non-sensitive configurations
 ENV AI_TIMEOUT=300
