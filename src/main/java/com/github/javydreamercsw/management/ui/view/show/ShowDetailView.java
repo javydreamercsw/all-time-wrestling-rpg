@@ -463,6 +463,20 @@ public class ShowDetailView extends Main
                 : "No arena assigned");
     detailsLayout.add(arenaLayout);
 
+    // Event Results (only shown once show is finalized)
+    if (show.getAttendance() != null && show.getAttendance() > 0) {
+      String attendanceText = String.format("%,d", show.getAttendance());
+      if (show.getArena() != null && show.getArena().getCapacity() != null) {
+        int fillPct = (int) ((double) show.getAttendance() / show.getArena().getCapacity() * 100);
+        attendanceText += String.format(" / %,d (%d%%)", show.getArena().getCapacity(), fillPct);
+      }
+      detailsLayout.add(createDetailRow("Attendance:", attendanceText));
+      if (show.getGateRevenue() != null) {
+        detailsLayout.add(
+            createDetailRow("Gate Revenue:", "$" + String.format("%,.2f", show.getGateRevenue())));
+      }
+    }
+
     // Show ID
     assert show.getId() != null;
     HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());

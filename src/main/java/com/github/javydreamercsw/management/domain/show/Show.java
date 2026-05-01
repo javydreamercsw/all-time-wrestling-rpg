@@ -35,7 +35,9 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import lombok.Getter;
@@ -88,6 +90,12 @@ public class Show extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
+
+  @Column(name = "attendance")
+  @Min(0) private Integer attendance = 0;
+
+  @Column(name = "gate_revenue")
+  private BigDecimal gateRevenue = BigDecimal.ZERO;
 
   @Override
   public @Nullable Long getId() {

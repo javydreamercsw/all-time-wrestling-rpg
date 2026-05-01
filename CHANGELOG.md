@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.7.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.3) (2026-05-01)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.3...v1.7.3)
+
+**Implemented enhancements:**
+
+- Feature: arena home field and attendance [\#272](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/272) ([javydreamercsw](https://github.com/javydreamercsw))
+
+## [v1.7.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.3) (2026-04-30)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.2...v1.7.3)
+
 ## [v1.7.2](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.2) (2026-04-30)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.2-RC1...v1.7.2)

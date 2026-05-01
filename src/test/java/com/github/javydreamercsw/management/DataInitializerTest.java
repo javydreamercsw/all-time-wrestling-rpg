@@ -39,6 +39,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -108,6 +109,7 @@ class DataInitializerTest {
 
   @Mock private WrestlerService wrestlerService;
   @Mock private CardSetService cardSetService;
+  @Mock private CardSetRepository cardSetRepository;
   @Mock private CardService cardService;
   @Mock private DeckService deckService;
   @Mock private ShowTypeService showTypeService;
@@ -151,6 +153,7 @@ class DataInitializerTest {
             segmentRuleService,
             segmentTypeService,
             cardSetService,
+            cardSetRepository,
             cardService,
             titleService,
             deckService,
