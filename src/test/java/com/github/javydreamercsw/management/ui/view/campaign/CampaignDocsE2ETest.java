@@ -53,6 +53,30 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(0)
+  void testCaptureDashboardOverview() {
+    // 1. Setup — use the beginning chapter so alignment track is visible
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    waitForVaadinClientToLoad();
+
+    // 3. Wait for full content including alignment track before capturing
+    waitForText("Campaign: All or Nothing");
+    waitForText("Chapter:");
+    documentFeature(
+        "Campaign",
+        "Campaign Dashboard",
+        "Track your wrestler's progress through the campaign. The alignment track shows your"
+            + " current position between Face and Heel, while the dashboard displays available"
+            + " actions and victory points.",
+        "campaign-dashboard");
+  }
+
+  @Test
   @Order(1)
   void testCaptureBeginningView() {
     // 1. Setup
