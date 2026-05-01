@@ -1192,9 +1192,9 @@
     <profile>
       <id>remote-deploy</id>
       <properties>
+        <tomcat.manager.url>http://localhost:8080/manager/text</tomcat.manager.url>
         <!-- Override these on the command line or via environment if needed -->
         <tomcat.webapps>${env.TOMCAT_WEBAPPS}</tomcat.webapps>
-        <tomcat.manager.url>http://localhost:8080/manager/text</tomcat.manager.url>
       </properties>
       <build>
         <plugins>
@@ -1205,10 +1205,10 @@
             <executions>
               <execution>
                 <id>local-deploy</id>
-                <phase>install</phase>
                 <goals>
                   <goal>run</goal>
                 </goals>
+                <phase>install</phase>
                 <configuration>
                   <target>
                     <!-- Undeploy if currently running (ignore failure if not deployed) -->
@@ -1219,9 +1219,7 @@
                       <arg value="${tomcat.manager.url}/undeploy?path=/${project.artifactId}"/>
                     </exec>
                     <!-- Copy WAR directly into webapps — no HTTP streaming -->
-                    <copy file="${project.build.directory}/${project.artifactId}.war"
-                          todir="${tomcat.webapps}"
-                          overwrite="true"/>
+                    <copy file="${project.build.directory}/${project.artifactId}.war" overwrite="true" todir="${tomcat.webapps}"/>
                     <!-- Trigger deploy via Manager (lightweight path-only request, no upload) -->
                     <exec executable="curl" failonerror="true">
                       <arg value="-s"/>
