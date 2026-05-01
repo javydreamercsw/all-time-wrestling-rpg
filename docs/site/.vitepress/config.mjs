@@ -8,12 +8,9 @@ export default defineConfig({
   title: "All Time Wrestling RPG",
   description: "The comprehensive game guide.",
   base: process.env.BASE_URL ? (process.env.BASE_URL.startsWith('/') ? process.env.BASE_URL : `/${process.env.BASE_URL}`) : "/",
-  define: {
-    __RELEASE_VERSION__: JSON.stringify(releaseVersion),
-    __RELEASE_TAG__: JSON.stringify(releaseTag),
-    __GITHUB_DOWNLOAD_BASE__: JSON.stringify(`${githubBase}/${releaseTag}`),
-  },
   themeConfig: {
+    releaseVersion,
+    downloadBase: `${githubBase}/${releaseTag}`,
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/campaign' }
