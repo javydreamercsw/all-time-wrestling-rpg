@@ -94,13 +94,13 @@ class CampaignE2ETest extends AbstractE2ETest {
     // 1. Navigate directly to Campaign Dashboard
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
     waitForVaadinClientToLoad();
-    takeSequencedScreenshot("campaign-dashboard-initial");
-    takeDocScreenshot("campaign-dashboard");
 
-    // Verify dashboard loaded
+    // Verify dashboard loaded before taking screenshots
     waitForText("Campaign: All or Nothing");
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Chapter"));
     assertTrue(driver.getPageSource().contains("Victory Points"));
+
+    takeSequencedScreenshot("campaign-dashboard-initial");
 
     // 2. Navigate to Backstage Actions
     WebElement actionsButton =
@@ -108,7 +108,6 @@ class CampaignE2ETest extends AbstractE2ETest {
     clickElement(actionsButton);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("backstage-actions-view");
-    takeDocScreenshot("backstage-actions");
 
     // Verify we are on the backstage actions view
     waitForText("Backstage Actions");

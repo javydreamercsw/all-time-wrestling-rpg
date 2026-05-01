@@ -48,12 +48,17 @@ jobs:
       - name: Generate Markdown Content
         run: node scripts/generate-docs.cjs
 
+      - name: Get project version
+        id: project-version
+        run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+
       - name: Build documentation for GitHub Pages
         run: |
           cd docs/site
           npm run docs:build
         env:
           BASE_URL: /${{ github.event.repository.name }}/
+          RELEASE_VERSION: ${{ steps.project-version.outputs.version }}
 
       - name: Create .nojekyll
         run: touch docs/site/.vitepress/dist/.nojekyll

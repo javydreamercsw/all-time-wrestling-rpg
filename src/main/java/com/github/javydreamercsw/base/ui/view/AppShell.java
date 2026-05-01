@@ -24,7 +24,7 @@ import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
 
-@Push(value = PushMode.AUTOMATIC, transport = Transport.WEBSOCKET_XHR)
+@Push(value = PushMode.AUTOMATIC, transport = Transport.WEBSOCKET)
 @Theme(value = "default")
 @StyleSheet(Lumo.UTILITY_STYLESHEET)
 public class AppShell implements AppShellConfigurator {}
