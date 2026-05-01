@@ -1192,6 +1192,7 @@
     <profile>
       <id>remote-deploy</id>
       <properties>
+        <tomcat.context.path>atw-rpg</tomcat.context.path>
         <tomcat.manager.url>http://localhost:8080/manager/text</tomcat.manager.url>
         <!-- Override these on the command line or via environment if needed -->
         <tomcat.webapps>${env.TOMCAT_WEBAPPS}</tomcat.webapps>
@@ -1216,16 +1217,16 @@
                       <arg value="-s"/>
                       <arg value="-u"/>
                       <arg value="${env.TOMCAT_USERNAME}:${env.TOMCAT_PASSWORD}"/>
-                      <arg value="${tomcat.manager.url}/undeploy?path=/${project.artifactId}"/>
+                      <arg value="${tomcat.manager.url}/undeploy?path=/${tomcat.context.path}"/>
                     </exec>
-                    <!-- Copy WAR directly into webapps — no HTTP streaming -->
-                    <copy file="${project.build.directory}/${project.artifactId}.war" overwrite="true" todir="${tomcat.webapps}"/>
-                    <!-- Trigger deploy via Manager (lightweight path-only request, no upload) -->
-                    <exec executable="curl" failonerror="true">
+                    <!-- Copy WAR as atw-rpg.war — Tomcat uses filename as context path -->
+                    <copy file="${project.build.directory}/${project.artifactId}.war" overwrite="true" tofile="${tomcat.webapps}/${tomcat.context.path}.war"/>
+                    <!-- Trigger deploy via Manager in case autoDeploy is disabled; ignore failure if autoDeploy already handled it -->
+                    <exec executable="curl" failonerror="false">
                       <arg value="-s"/>
                       <arg value="-u"/>
                       <arg value="${env.TOMCAT_USERNAME}:${env.TOMCAT_PASSWORD}"/>
-                      <arg value="${tomcat.manager.url}/deploy?path=/${project.artifactId}&amp;war=file:${tomcat.webapps}/${project.artifactId}.war"/>
+                      <arg value="${tomcat.manager.url}/deploy?path=/${tomcat.context.path}&amp;war=file:${tomcat.webapps}/${tomcat.context.path}.war"/>
                     </exec>
                   </target>
                 </configuration>
