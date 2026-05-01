@@ -48,12 +48,16 @@ public class AlignmentTrackComponent extends Div {
     Div trackContainer = new Div();
     trackContainer.addClassNames(
         LumoUtility.Display.FLEX,
+        LumoUtility.FlexDirection.ROW,
         LumoUtility.JustifyContent.BETWEEN,
         LumoUtility.AlignItems.CENTER,
-        LumoUtility.Position.RELATIVE,
-        LumoUtility.Padding.Horizontal.LARGE,
+        LumoUtility.Width.FULL,
+        LumoUtility.Padding.Horizontal.MEDIUM,
         LumoUtility.Margin.Vertical.MEDIUM);
-    trackContainer.setHeight("40px");
+    trackContainer.setMinHeight("56px");
+    trackContainer.getStyle().set("flex-wrap", "nowrap");
+    trackContainer.getStyle().set("overflow", "visible");
+    trackContainer.getStyle().set("box-sizing", "border-box");
 
     // Multi-color gradient for bidirectional track
     trackContainer
@@ -80,6 +84,7 @@ public class AlignmentTrackComponent extends Div {
     Div legendContainer = new Div();
     legendContainer.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.JustifyContent.BETWEEN, LumoUtility.Gap.MEDIUM);
+    legendContainer.getStyle().set("flex-wrap", "nowrap");
 
     Div heelLegend = new Div();
     heelHelegendStyle(heelLegend);
@@ -116,8 +121,9 @@ public class AlignmentTrackComponent extends Div {
   private Div createSpot(
       AlignmentType spotType, int level, AlignmentType currentType, int currentLevel) {
     Div spot = new Div();
-    spot.setWidth("30px");
-    spot.setHeight("30px");
+    spot.setWidth("32px");
+    spot.setHeight("32px");
+    spot.getStyle().set("flex-shrink", "0");
     spot.addClassNames(
         LumoUtility.Display.FLEX,
         LumoUtility.AlignItems.CENTER,
