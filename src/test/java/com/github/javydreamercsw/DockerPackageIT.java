@@ -39,9 +39,17 @@ class DockerPackageIT {
   @Test
   void testDockerPackage() throws Exception {
     // Build the image from the Dockerfile
+    File dockerfile = new File("./Dockerfile").getAbsoluteFile();
+    File targetDir = new File(dockerfile.getParentFile(), "target");
+    File warFile = new File(targetDir, "all-time-wrestling-rpg.war");
+    File serverXml =
+        new File(dockerfile.getParentFile(), "src/main/resources/docker/tomcat/server.xml");
+
     ImageFromDockerfile image =
         new ImageFromDockerfile()
-            .withDockerfile(new File("./Dockerfile").getAbsoluteFile().toPath());
+            .withFileFromPath("src/main/resources/docker/tomcat/server.xml", serverXml.toPath())
+            .withFileFromPath("target/all-time-wrestling-rpg.war", warFile.toPath())
+            .withDockerfile(dockerfile.toPath());
     final int port = Integer.parseInt(System.getProperty("server.port", "9090"));
     final String contextPath = System.getProperty("server.servlet.context-path", "/atw-rpg");
 
