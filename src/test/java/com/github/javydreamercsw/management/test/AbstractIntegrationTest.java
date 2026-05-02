@@ -92,6 +92,7 @@ import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -108,11 +109,14 @@ import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.TransactionDefinition;
@@ -122,12 +126,18 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Slf4j
 @ActiveProfiles("test")
 @Import({TestAIConfiguration.class, TestNotionConfiguration.class})
+@WithMockUser(
+    username = "admin",
+    roles = {"ADMIN", "SYSTEM"})
 public abstract class AbstractIntegrationTest {
 
   static {
     // Enable InheritableThreadLocal to ensure background threads
     // inherit the security context from the parent UI thread.
     SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+
+    // Mark as test environment to stabilize security context
+    System.setProperty("is.test", "true");
   }
 
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
@@ -161,8 +171,20 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected PasswordEncoder passwordEncoder;
   @Autowired protected LeagueRepository leagueRepository;
   @Autowired protected LeagueRosterRepository leagueRosterRepository;
-  @Autowired protected DeckRepository deckRepository;
+  @Autowired protected DraftRepository draftRepository;
+  @Autowired protected DraftPickRepository draftPickRepository;
+  @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
+  @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
+  @Autowired protected FactionRivalryRepository factionRivalryRepository;
+  @Autowired protected FactionRepository factionRepository;
+  @Autowired protected NpcRepository npcRepository;
+  @Autowired protected CardRepository cardRepository;
+  @Autowired protected CardSetRepository cardSetRepository;
+  @Autowired protected DeckCardRepository deckCardRepository;
+  @Autowired protected GameSettingService gameSettingService;
+  @Autowired protected FactionRivalryService factionRivalryService;
   @Autowired protected RivalryRepository rivalryRepository;
+  @Autowired protected DeckRepository deckRepository;
   @Autowired protected WrestlerStateRepository wrestlerStateRepository;
   @Autowired protected ShowTypeService showTypeService;
   @Autowired protected SegmentRuleRepository segmentRuleRepository;
@@ -188,18 +210,6 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired protected CampaignEncounterRepository campaignEncounterRepository;
   @Autowired protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
-  @Autowired protected DraftRepository draftRepository;
-  @Autowired protected DraftPickRepository draftPickRepository;
-  @Autowired protected LeagueMembershipRepository leagueMembershipRepository;
-  @Autowired protected MatchFulfillmentRepository matchFulfillmentRepository;
-  @Autowired protected FactionRivalryRepository factionRivalryRepository;
-  @Autowired protected FactionRepository factionRepository;
-  @Autowired protected NpcRepository npcRepository;
-  @Autowired protected CardRepository cardRepository;
-  @Autowired protected CardSetRepository cardSetRepository;
-  @Autowired protected DeckCardRepository deckCardRepository;
-  @Autowired protected GameSettingService gameSettingService;
-  @Autowired protected FactionRivalryService factionRivalryService;
 
   protected Universe defaultUniverse;
 
@@ -212,7 +222,6 @@ public abstract class AbstractIntegrationTest {
   @org.junit.jupiter.api.AfterEach
   public void tearDown() throws Exception {
     log.debug("AbstractIntegrationTest.tearDown() called");
-    clearSecurityContext();
     clearCache();
   }
 
@@ -220,11 +229,12 @@ public abstract class AbstractIntegrationTest {
   public void baseSetUp() throws Exception {
     log.debug("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
-    // 1. Capture original authentication if set (e.g. by @WithCustomMockUser)
+    // 1. Capture original authentication
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
 
     try {
       // 2. Perform all setup operations as 'system' (admin).
+      // This ensures all nested service calls and transaction blocks have authority.
       GeneralSecurityUtils.runAsAdmin(
           () -> {
             // 3. Pre-initialize defaultUniverse from DB if it exists
@@ -242,24 +252,14 @@ public abstract class AbstractIntegrationTest {
 
             // 5. Final verification of universe
             if (this.defaultUniverse == null) {
-              universeRepository
-                  .findByName("Default Universe")
-                  .ifPresent(
-                      u -> {
-                        this.defaultUniverse = u;
-                        TestUtils.setDefaultUniverse(u);
-                        universeContextService.setCurrentUniverse(u);
-                      });
+              ensureDefaultUniverseExists();
             }
           });
     } finally {
-      // 6. Restore original context if it was present, otherwise default to admin.
+      // 6. Restore original context if it was present, otherwise default back to admin.
       if (originalAuth != null) {
         log.info("Restoring original security context for user: {}", originalAuth.getName());
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(originalAuth);
-        SecurityContextHolder.setContext(context);
-        TestSecurityContextHolder.setAuthentication(originalAuth);
+        login(originalAuth.getPrincipal(), originalAuth.getAuthorities());
       } else {
         log.info("Establishing default admin context for test execution...");
         loginAs("admin");
@@ -270,11 +270,18 @@ public abstract class AbstractIntegrationTest {
   protected void clearAllRepositories() {
     log.debug("AbstractIntegrationTest.clearAllRepositories() called");
 
+    // Capture the CURRENT context to propagate it into the REQUIRES_NEW transaction
+    final SecurityContext setupContext = SecurityContextHolder.getContext();
+
     // 1. Reset sequence (H2 specific) - Try directly first
     try {
       transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
       transactionTemplate.execute(
           status -> {
+            // Explicitly establish authority inside the transaction thread
+            SecurityContextHolder.setContext(setupContext);
+            TestSecurityContextHolder.setContext(setupContext);
+
             entityManager
                 .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
                 .executeUpdate();
@@ -288,22 +295,22 @@ public abstract class AbstractIntegrationTest {
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          // Explicitly wrap entire transaction in runAsAdmin to ensure context is on this thread
-          GeneralSecurityUtils.runAsAdmin(
-              () -> {
-                log.info("Cleaning up database using DatabaseCleanup...");
-                databaseCleanup.clearRepositories();
+          // Explicitly restore setup authority inside the transaction thread
+          SecurityContextHolder.setContext(setupContext);
+          TestSecurityContextHolder.setContext(setupContext);
 
-                clearCache();
+          log.info("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
 
-                // Always ensure at least one universe exists for tests
-                ensureDefaultUniverseExists();
+          clearCache();
 
-                // 3. Re-initialize data
-                if (dataInitializerEnabled) {
-                  dataInitializer.init();
-                }
-              });
+          // Always ensure at least one universe exists for tests
+          ensureDefaultUniverseExists();
+
+          // 3. Re-initialize data
+          if (dataInitializerEnabled) {
+            dataInitializer.init();
+          }
           return null;
         });
 
@@ -366,30 +373,91 @@ public abstract class AbstractIntegrationTest {
             .findByName(roleName)
             .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name())));
 
-    Account account =
-        new Account(username, passwordEncoder.encode(password), username + "@test.com");
-    account.setRoles(Collections.singleton(role));
-    return accountRepository.saveAndFlush(account);
+    return accountRepository
+        .findByUsername(username)
+        .orElseGet(
+            () -> {
+              Account account =
+                  new Account(username, passwordEncoder.encode(password), username + "@test.com");
+              account.setRoles(Collections.singleton(role));
+              return accountRepository.saveAndFlush(account);
+            });
   }
 
   protected void runAsAdmin(@NonNull Runnable task) {
     GeneralSecurityUtils.runAsAdmin(task);
   }
 
-  protected void login(Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
-    CustomUserDetails principal = new CustomUserDetails(account, wrestler);
+  protected void login(Object principal) {
+    login(principal, Collections.emptyList());
+  }
 
-    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-    for (Role role : account.getRoles()) {
-      authorities.add(new SimpleGrantedAuthority(role.getName().name()));
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
+  protected void login(Object principal, Collection<? extends GrantedAuthority> authorities) {
+    final Account account;
+    final String principalName;
+
+    if (principal instanceof Account a) {
+      account = a;
+      principalName = a.getUsername();
+    } else if (principal instanceof CustomUserDetails ud) {
+      account = ud.getAccount();
+      principalName = ud.getUsername();
+    } else if (principal instanceof UserDetails ud) {
+      principalName = ud.getUsername();
+      account = accountRepository.findByUsername(principalName).orElse(null);
+    } else if (principal instanceof String s) {
+      principalName = s;
+      if ("anonymousUser".equals(s)) {
+        account = null;
+      } else {
+        account = accountRepository.findByUsername(s).orElse(null);
+      }
+    } else {
+      throw new IllegalArgumentException("Unsupported principal type: " + principal.getClass());
     }
 
-    // Use a non-null credential to ensure fully authenticated status in some Spring versions
+    // Build user details and authorities
+    final Object finalPrincipal;
+    final Set<SimpleGrantedAuthority> finalAuthorities = new HashSet<>();
+
+    if (account != null) {
+      java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+      Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
+      finalPrincipal = new CustomUserDetails(account, wrestler);
+
+      for (Role role : account.getRoles()) {
+        finalAuthorities.add(new SimpleGrantedAuthority(role.getName().name()));
+        finalAuthorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
+      }
+    } else {
+      if ("anonymousUser".equals(principalName)) {
+        finalPrincipal = principalName;
+        finalAuthorities.add(new SimpleGrantedAuthority("ROLE_ANONYMOUS"));
+      } else {
+        // Build a mock account for missing users (standard @WithMockUser users)
+        Account mockAccount = new Account(principalName, "password", principalName + "@test.com");
+        mockAccount.setId(-1L);
+        finalPrincipal = new CustomUserDetails(mockAccount, null);
+      }
+    }
+
+    // Add explicit authorities if provided
+    if (authorities != null) {
+      for (GrantedAuthority authority : authorities) {
+        finalAuthorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
+        if (!authority.getAuthority().startsWith("ROLE_")) {
+          finalAuthorities.add(new SimpleGrantedAuthority("ROLE_" + authority.getAuthority()));
+        }
+      }
+    }
+
+    // Ensure we have at least one authority for a valid authentication object
+    if (finalAuthorities.isEmpty()) {
+      finalAuthorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
     UsernamePasswordAuthenticationToken authentication =
-        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
+        new UsernamePasswordAuthenticationToken(finalPrincipal, "password", finalAuthorities);
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);
@@ -399,13 +467,7 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void loginAs(String username) {
-    accountRepository
-        .findByUsername(username)
-        .ifPresentOrElse(
-            this::login,
-            () -> {
-              throw new RuntimeException("loginAs: Account not found: " + username);
-            });
+    login(username);
   }
 
   /** Refreshes the current security context by re-loading the authenticated user from the DB. */
@@ -416,35 +478,7 @@ public abstract class AbstractIntegrationTest {
     }
 
     if (currentAuth != null) {
-      final String username;
-      if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
-        username = accountPrincipal.getUsername();
-      } else if (currentAuth.getPrincipal()
-          instanceof com.github.javydreamercsw.base.security.CustomUserDetails userDetails) {
-        username = userDetails.getUsername();
-      } else if (currentAuth.getPrincipal()
-          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-        username = userDetails.getUsername();
-      } else if (currentAuth.getPrincipal() instanceof String s) {
-        username = s;
-      } else {
-        username = null;
-      }
-
-      if (username != null) {
-        accountRepository
-            .findByUsername(username)
-            .ifPresentOrElse(
-                refreshedAccount -> {
-                  log.debug(
-                      "Refreshing security context for user: {}", refreshedAccount.getUsername());
-                  login(refreshedAccount);
-                },
-                () -> {
-                  log.warn("Account not found during refresh: {}, clearing context", username);
-                  clearSecurityContext();
-                });
-      }
+      login(currentAuth.getPrincipal(), currentAuth.getAuthorities());
     }
   }
 

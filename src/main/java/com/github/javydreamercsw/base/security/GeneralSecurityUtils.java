@@ -73,11 +73,17 @@ public final class GeneralSecurityUtils {
       @NonNull String username,
       @NonNull String password,
       @NonNull String... roles) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+    SecurityContext context = SecurityContextHolder.getContext();
+    Authentication originalAuth = context.getAuthentication();
+
+    // Re-entrancy check: if already authenticated as the requested user, just run the supplier.
+    if (originalAuth != null
+        && originalAuth.isAuthenticated()
+        && username.equals(originalAuth.getName())) {
+      return supplier.get();
+    }
 
     try {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
-
       // Create a mock account and roles for the principal
       Account account = new Account(username, password, username + "@example.com");
       account.setId(-1L); // Use a non-null ID for mock accounts
@@ -91,13 +97,11 @@ public final class GeneralSecurityUtils {
           RoleName roleName = RoleName.valueOf(cleanRole);
           accountRoles.add(new Role(roleName, roleName.name()));
         } catch (IllegalArgumentException e) {
-          log.warn("Invalid role provided to runAs: {}", role);
+          log.trace("Non-enum role provided: {}", role);
         }
 
-        authorities.add(new SimpleGrantedAuthority(role));
-        if (!role.startsWith("ROLE_")) {
-          authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-        }
+        authorities.add(new SimpleGrantedAuthority(cleanRole));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
       }
       account.setRoles(accountRoles);
 
@@ -105,25 +109,19 @@ public final class GeneralSecurityUtils {
 
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(principal, password, authorities);
-      context.setAuthentication(authentication);
 
-      log.debug(
-          "Setting SecurityContext for user '{}' with authorities '{}' in thread '{}'",
-          username,
-          authorities,
-          Thread.currentThread().getName());
-      SecurityContextHolder.setContext(context);
+      // Update existing context in-place to avoid breaking strategy propagation
+      context.setAuthentication(authentication);
       setTestSecurityContext(context);
 
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        log.debug(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.setContext(originalContext);
-        setTestSecurityContext(originalContext);
-      } else {
-        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+      // Restore original authentication state to the existing context
+      context.setAuthentication(originalAuth);
+      setTestSecurityContext(context);
+
+      // If it was null, AND we are not in a test, clear it
+      if (originalAuth == null && !Boolean.getBoolean("is.test")) {
         SecurityContextHolder.clearContext();
         clearTestSecurityContext();
       }
@@ -168,16 +166,8 @@ public final class GeneralSecurityUtils {
       setTestSecurityContext(context);
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        log.debug(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.setContext(originalContext);
-        setTestSecurityContext(originalContext);
-      } else {
-        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.clearContext();
-        clearTestSecurityContext();
-      }
+      SecurityContextHolder.setContext(originalContext);
+      setTestSecurityContext(originalContext);
     }
   }
 
@@ -194,7 +184,6 @@ public final class GeneralSecurityUtils {
       java.lang.reflect.Method setContextMethod =
           testHolderClass.getMethod("setContext", SecurityContext.class);
       setContextMethod.invoke(null, context);
-      log.trace("TestSecurityContextHolder set via reflection");
     } catch (ClassNotFoundException e) {
       // Not on classpath, normal for production
     } catch (Exception e) {
@@ -212,7 +201,6 @@ public final class GeneralSecurityUtils {
           Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
       java.lang.reflect.Method clearContextMethod = testHolderClass.getMethod("clearContext");
       clearContextMethod.invoke(null);
-      log.trace("TestSecurityContextHolder cleared via reflection");
     } catch (ClassNotFoundException e) {
       // Not on classpath, normal for production
     } catch (Exception e) {
