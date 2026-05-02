@@ -74,25 +74,6 @@ public final class GeneralSecurityUtils {
       @NonNull String password,
       @NonNull String... roles) {
     SecurityContext originalContext = SecurityContextHolder.getContext();
-    Authentication currentAuth = originalContext.getAuthentication();
-
-    // If already authenticated as the requested user, just run the supplier
-    if (currentAuth != null && currentAuth.isAuthenticated()) {
-      String currentUsername = null;
-      Object principal = currentAuth.getPrincipal();
-      if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {
-        currentUsername = ud.getUsername();
-      } else if (principal instanceof com.github.javydreamercsw.base.domain.account.Account a) {
-        currentUsername = a.getUsername();
-      } else if (principal instanceof String s) {
-        currentUsername = s;
-      }
-
-      if (username.equals(currentUsername)) {
-        log.trace("Already authenticated as '{}', skipping context switch", username);
-        return supplier.get();
-      }
-    }
 
     try {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
