@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -24,7 +26,10 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Set;
@@ -46,6 +51,8 @@ class NPCSegmentResolutionHomeFieldTest {
   @Mock private Wrestler homeWrestler;
   @Mock private Wrestler awayWrestler;
   @Mock private RingsideActionDataService ringsideActionDataService;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private InjuryService injuryService;
 
   private NPCSegmentResolutionService.TeamStatsCalculator calculator;
   private NPCSegmentResolutionServiceTestHelper helper;
@@ -53,12 +60,33 @@ class NPCSegmentResolutionHomeFieldTest {
   @BeforeEach
   void setUp() throws Exception {
     helper = new NPCSegmentResolutionServiceTestHelper();
-    // Inject the mock so calculateTeamWeight() doesn't NPE on findAllActions()
+    // Inject mocks so calculateTeamWeight() doesn't NPE
     Field field = NPCSegmentResolutionService.class.getDeclaredField("ringsideActionDataService");
     field.setAccessible(true);
     field.set(helper, ringsideActionDataService);
+
+    Field wsField = NPCSegmentResolutionService.class.getDeclaredField("wrestlerService");
+    wsField.setAccessible(true);
+    wsField.set(helper, wrestlerService);
+
+    Field isField = NPCSegmentResolutionService.class.getDeclaredField("injuryService");
+    isField.setAccessible(true);
+    isField.set(helper, injuryService);
+
     when(ringsideActionDataService.findAllActions()).thenReturn(Collections.emptyList());
+    when(injuryService.getTotalHealthPenaltyForWrestler(anyLong(), anyLong())).thenReturn(0);
+
+    // Mock WrestlerStates
+    WrestlerState homeState =
+        WrestlerState.builder().fans(10_000L).tier(WrestlerTier.MIDCARDER).build();
+    WrestlerState awayState =
+        WrestlerState.builder().fans(10_000L).tier(WrestlerTier.MIDCARDER).build();
+
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(homeState);
+    when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(awayState);
+
     // Both wrestlers: equal fans and tier, no injuries, no bumps
+    when(homeWrestler.getId()).thenReturn(1L);
     when(homeWrestler.getFans()).thenReturn(10_000L);
     when(homeWrestler.getFanWeight()).thenReturn(2000);
     when(homeWrestler.getTier()).thenReturn(WrestlerTier.MIDCARDER);
@@ -68,6 +96,7 @@ class NPCSegmentResolutionHomeFieldTest {
     when(homeWrestler.getManager()).thenReturn(null);
     when(homeWrestler.getHeritageTag()).thenReturn("Japan");
 
+    when(awayWrestler.getId()).thenReturn(2L);
     when(awayWrestler.getFans()).thenReturn(10_000L);
     when(awayWrestler.getFanWeight()).thenReturn(2000);
     when(awayWrestler.getTier()).thenReturn(WrestlerTier.MIDCARDER);

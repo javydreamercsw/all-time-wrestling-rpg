@@ -117,7 +117,6 @@ class DataInitializerTest {
   @Mock private CardSetService cardSetService;
   @Mock private CardService cardService;
   @Mock private TitleService titleService;
-  @Mock private DeckService deckService;
   @Mock private GameSettingService gameSettingService;
   @Mock private NpcService npcService;
   @Mock private FactionService factionService;
@@ -216,6 +215,7 @@ class DataInitializerTest {
             segmentRuleService,
             segmentTypeService,
             cardSetService,
+            cardSetRepository,
             cardService,
             titleService,
             deckService,

@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRep
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -34,17 +35,23 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -65,8 +72,13 @@ import org.springframework.context.ApplicationEventPublisher;
 class ShowFinalizationTest {
 
   @Mock private ShowRepository showRepository;
+  @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private SeasonRepository seasonRepository;
+  @Mock private ShowTemplateRepository showTemplateRepository;
+  @Mock private UniverseRepository universeRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private LeagueRepository leagueRepository;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
@@ -80,6 +92,7 @@ class ShowFinalizationTest {
   @Mock private WrestlerContractRepository contractRepository;
   @Mock private SalaryCalculator salaryCalculator;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private RetirementService retirementService;
 
   private ShowService showService;
 
@@ -88,10 +101,12 @@ class ShowFinalizationTest {
     showService =
         new ShowService(
             showRepository,
-            null,
-            null,
-            null,
+            showTypeRepository,
+            seasonRepository,
+            showTemplateRepository,
+            universeRepository,
             leagueRepository,
+            wrestlerStateRepository,
             java.time.Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
@@ -106,7 +121,8 @@ class ShowFinalizationTest {
             arenaRepository,
             leagueRosterRepository,
             contractRepository,
-            salaryCalculator);
+            salaryCalculator,
+            retirementService);
 
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }
@@ -114,7 +130,10 @@ class ShowFinalizationTest {
   private Wrestler makeWrestler(long id, long fans) {
     Wrestler w = new Wrestler();
     w.setId(id);
-    w.setFans(fans);
+    WrestlerState state = new WrestlerState();
+    state.setWrestler(w);
+    w.getWrestlerStates().add(state);
+    w.addFans(fans);
     return w;
   }
 

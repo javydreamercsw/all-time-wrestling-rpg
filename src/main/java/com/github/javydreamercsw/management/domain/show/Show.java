@@ -110,11 +110,6 @@ public class Show extends AbstractSyncableEntity<Long> {
   @Column(name = "gate_revenue")
   private BigDecimal gateRevenue = BigDecimal.ZERO;
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   /**
    * Check if this show is based on a Premium Live Event template.
    *
