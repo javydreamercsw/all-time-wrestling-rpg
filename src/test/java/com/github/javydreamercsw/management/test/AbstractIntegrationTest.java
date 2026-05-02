@@ -218,26 +218,16 @@ public abstract class AbstractIntegrationTest {
     log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
     // 1. Capture original authentication if set (e.g. by @WithCustomMockUser)
+    // and original TestSecurityContextHolder authentication
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
 
-    // 2. Absolute clean slate
-    clearSecurityContext();
+    // 2. Establish a stable admin context for the duration of the setup phase.
+    // This ensures all cleanup and initialization steps have proper authority,
+    // especially when running in new transactions or background threads.
+    loginAs("admin");
 
-    // 3. Pre-initialize defaultUniverse from DB if it exists
-    universeRepository
-        .findByName("Default Universe")
-        .ifPresent(
-            u -> {
-              this.defaultUniverse = u;
-              TestUtils.setDefaultUniverse(u);
-              universeContextService.setCurrentUniverse(u);
-            });
-
-    // 4. Cleanup and Init
-    clearAllRepositories();
-
-    // 5. Final verification of universe
-    if (this.defaultUniverse == null) {
+    try {
+      // 3. Pre-initialize defaultUniverse from DB if it exists
       universeRepository
           .findByName("Default Universe")
           .ifPresent(
@@ -246,16 +236,34 @@ public abstract class AbstractIntegrationTest {
                 TestUtils.setDefaultUniverse(u);
                 universeContextService.setCurrentUniverse(u);
               });
-    }
 
-    // 6. Restore original context if it was present, otherwise default to admin
-    if (originalAuth != null) {
-      log.info("Restoring original security context for user: {}", originalAuth.getName());
-      SecurityContextHolder.getContext().setAuthentication(originalAuth);
-      TestSecurityContextHolder.setAuthentication(originalAuth);
-    } else {
-      log.info("Establishing default admin context for test...");
-      loginAs("admin");
+      // 4. Cleanup and Init
+      clearAllRepositories();
+
+      // 5. Final verification of universe
+      if (this.defaultUniverse == null) {
+        universeRepository
+            .findByName("Default Universe")
+            .ifPresent(
+                u -> {
+                  this.defaultUniverse = u;
+                  TestUtils.setDefaultUniverse(u);
+                  universeContextService.setCurrentUniverse(u);
+                });
+      }
+    } finally {
+      // 6. Restore original context if it was present, otherwise default back to admin
+      // (which we are already logged in as, but this ensures consistency)
+      if (originalAuth != null) {
+        log.info("Restoring original security context for user: {}", originalAuth.getName());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(originalAuth);
+        SecurityContextHolder.setContext(context);
+        TestSecurityContextHolder.setAuthentication(originalAuth);
+      } else {
+        log.info("Maintaining default admin context for test execution.");
+        loginAs("admin");
+      }
     }
   }
 

@@ -134,20 +134,6 @@ public final class GeneralSecurityUtils {
       SecurityContextHolder.setContext(context);
       setTestSecurityContext(context);
 
-      // Verification log to catch immediate failure
-      Authentication verifiedAuth = SecurityContextHolder.getContext().getAuthentication();
-      if (verifiedAuth == null) {
-        log.error(
-            "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
-            username,
-            Thread.currentThread().getName());
-      } else {
-        log.debug(
-            "SecurityContext successfully set for '{}' with authorities: {}",
-            username,
-            verifiedAuth.getAuthorities());
-      }
-
       return supplier.get();
     } finally {
       if (originalContext != null && originalContext.getAuthentication() != null) {
