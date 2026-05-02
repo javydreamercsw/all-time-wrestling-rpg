@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -82,14 +83,7 @@ public class SegmentAdjudicationService {
       relationshipService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
-  private com.github.javydreamercsw.management.service.show.ShowService showService;
-
-  @Autowired
-  @org.springframework.context.annotation.Lazy
-  public void setShowService(
-      com.github.javydreamercsw.management.service.show.ShowService showService) {
-    this.showService = showService;
-  }
+  @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy}) private com.github.javydreamercsw.management.service.show.ShowService showService;
 
   @Autowired
   public SegmentAdjudicationService(
