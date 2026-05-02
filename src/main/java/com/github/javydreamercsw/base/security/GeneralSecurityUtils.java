@@ -73,14 +73,13 @@ public final class GeneralSecurityUtils {
       @NonNull String username,
       @NonNull String password,
       @NonNull String... roles) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+    SecurityContext context = SecurityContextHolder.getContext();
+    Authentication originalAuth = context.getAuthentication();
 
     try {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
-
       // Create a mock account and roles for the principal
       Account account = new Account(username, password, username + "@example.com");
-      account.setId(-1L); // Use a non-null ID for mock accounts
+      account.setId(-1L);
 
       Set<Role> accountRoles = new HashSet<>();
       Set<SimpleGrantedAuthority> authorities = new HashSet<>();
@@ -91,39 +90,30 @@ public final class GeneralSecurityUtils {
           RoleName roleName = RoleName.valueOf(cleanRole);
           accountRoles.add(new Role(roleName, roleName.name()));
         } catch (IllegalArgumentException e) {
-          log.warn("Invalid role provided to runAs: {}", role);
+          log.trace("Non-enum role: {}", role);
         }
 
-        authorities.add(new SimpleGrantedAuthority(role));
-        if (!role.startsWith("ROLE_")) {
-          authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-        }
+        authorities.add(new SimpleGrantedAuthority(cleanRole));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
       }
       account.setRoles(accountRoles);
 
       CustomUserDetails principal = new CustomUserDetails(account, null);
-
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(principal, password, authorities);
-      context.setAuthentication(authentication);
 
-      log.debug(
-          "Setting SecurityContext for user '{}' with authorities '{}' in thread '{}'",
-          username,
-          authorities,
-          Thread.currentThread().getName());
-      SecurityContextHolder.setContext(context);
+      // Update context in-place to avoid breaking strategy propagation
+      context.setAuthentication(authentication);
       setTestSecurityContext(context);
 
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        log.debug(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.setContext(originalContext);
-        setTestSecurityContext(originalContext);
-      } else {
-        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
+      // Restore original authentication state to the existing context
+      context.setAuthentication(originalAuth);
+      setTestSecurityContext(context);
+
+      // If it was null, AND we are not in a test, clear it
+      if (originalAuth == null && !Boolean.getBoolean("is.test")) {
         SecurityContextHolder.clearContext();
         clearTestSecurityContext();
       }
@@ -175,8 +165,10 @@ public final class GeneralSecurityUtils {
         setTestSecurityContext(originalContext);
       } else {
         log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.clearContext();
-        clearTestSecurityContext();
+        if (!Boolean.getBoolean("is.test")) {
+          SecurityContextHolder.clearContext();
+          clearTestSecurityContext();
+        }
       }
     }
   }

@@ -67,11 +67,14 @@ public class DatabaseCleaner implements DatabaseCleanup {
           // relationships
           breakCircularDependencies();
 
-          // 2. Discover all JPA repositories
+          // 2. Clear join tables (defined via @JoinTable)
+          clearJoinTables();
+
+          // 3. Discover all JPA repositories
           Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
           log.debug("📦 Discovered {} repositories", repositories.size());
 
-          // 3. Get the correct synchronization/deletion order
+          // 4. Get the correct synchronization/deletion order
           List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
           log.debug("🔄 Deletion order: {}", syncOrder);
 
@@ -87,7 +90,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
                       "campaignabilitycard",
                       "campaignupgrade",
                       "holiday",
-                      "injurytype"));
+                      "injurytype",
+                      "role"));
 
           // Delete data in the correct order (reverse of sync order)
           int deletedCount = 0;
@@ -108,6 +112,14 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 }
               } catch (Exception e) {
                 log.warn("Could not clear repository {}: {}", entityName, e.getMessage());
+                // Fallback to manual DELETE for critical tables if repository fails
+                try {
+                  jdbcTemplate.execute("DELETE FROM " + entityName.toUpperCase(Locale.ROOT));
+                  resetSequence(entityName);
+                  deletedCount++;
+                } catch (Exception ex) {
+                  log.trace("Manual delete also failed for {}: {}", entityName, ex.getMessage());
+                }
               }
             }
           }
@@ -143,55 +155,43 @@ public class DatabaseCleaner implements DatabaseCleanup {
    */
   private void breakCircularDependencies() {
     log.debug("💔 Breaking circular dependencies...");
-    try {
-      jdbcTemplate.execute(
-          "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
-      log.debug("✅ Nullified campaign_state links");
-    } catch (Exception e) {
-      log.warn("Could not nullify campaign_state links: {}", e.getMessage());
-    }
-    try {
-      jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
-      log.debug("✅ Nullified campaign_storyline.current_milestone_id");
-    } catch (Exception e) {
-      log.warn("Could not nullify campaign_storyline.current_milestone_id: {}", e.getMessage());
-    }
-    try {
-      jdbcTemplate.execute(
-          "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL,"
-              + " storyline_id = NULL");
-      log.debug("✅ Nullified storyline_milestone links");
-    } catch (Exception e) {
-      log.warn("Could not nullify storyline_milestone links: {}", e.getMessage());
-    }
-    try {
-      jdbcTemplate.execute("DELETE FROM storyline_milestone");
-      jdbcTemplate.execute("DELETE FROM campaign_storyline");
-      log.debug("✅ Manually cleared storyline tables");
-    } catch (Exception e) {
-      log.warn("Could not manually clear storyline tables: {}", e.getMessage());
-    }
-    try {
-      jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
-      log.debug("✅ Nullified faction links");
-    } catch (Exception e) {
-      log.warn("Could not nullify faction links: {}", e.getMessage());
-    }
-    try {
-      jdbcTemplate.execute("DELETE FROM league_roster");
-      jdbcTemplate.execute("DELETE FROM league_membership");
-      log.debug("✅ Cleared league_roster and league_membership");
-    } catch (Exception e) {
-      log.warn("Could not clear league tables: {}", e.getMessage());
-    }
-    try {
-      jdbcTemplate.execute("DELETE FROM heat_event");
-      jdbcTemplate.execute("DELETE FROM wrestler_state");
-      jdbcTemplate.execute("DELETE FROM team");
-      jdbcTemplate.execute("DELETE FROM wrestler_relationship");
-      log.debug("✅ Cleared heat_event, wrestler_state, team and wrestler_relationship tables");
-    } catch (Exception e) {
-      log.warn("Could not clear relationship tables: {}", e.getMessage());
+    // Order matters here to handle foreign key constraints correctly
+    String[] manualTables = {
+      "campaign_state",
+      "storyline_milestone",
+      "campaign_storyline",
+      "wrestler_relationship",
+      "wrestler_state",
+      "league_roster",
+      "league_membership",
+      "team_members",
+      "team",
+      "faction_members",
+      "faction",
+      "account_roles",
+      "account"
+    };
+
+    for (String table : manualTables) {
+      try {
+        if (table.equals("campaign_state")) {
+          jdbcTemplate.execute(
+              "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
+        } else if (table.equals("campaign_storyline")) {
+          jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
+        } else if (table.equals("storyline_milestone")) {
+          jdbcTemplate.execute(
+              "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL,"
+                  + " storyline_id = NULL");
+        } else if (table.equals("faction")) {
+          jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
+        }
+
+        jdbcTemplate.execute("DELETE FROM " + table);
+        log.debug("✅ Manually cleared table: {}", table);
+      } catch (Exception e) {
+        log.trace("Could not manually clear table {}: {}", table, e.getMessage());
+      }
     }
   }
 
