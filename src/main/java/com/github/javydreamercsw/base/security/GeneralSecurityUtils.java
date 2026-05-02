@@ -79,12 +79,16 @@ public final class GeneralSecurityUtils {
     // If already authenticated as the requested user, just run the supplier
     if (currentAuth != null && currentAuth.isAuthenticated()) {
       String currentUsername = null;
-      Object principal = currentAuth.getPrincipal();
-      if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {
-        currentUsername = ud.getUsername();
-      } else if (principal instanceof com.github.javydreamercsw.base.domain.account.Account a) {
+      Object principalObj = currentAuth.getPrincipal();
+
+      if (principalObj instanceof CustomUserDetails userDetails) {
+        currentUsername = userDetails.getUsername();
+      } else if (principalObj
+          instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+        currentUsername = userDetails.getUsername();
+      } else if (principalObj instanceof com.github.javydreamercsw.base.domain.account.Account a) {
         currentUsername = a.getUsername();
-      } else if (principal instanceof String s) {
+      } else if (principalObj instanceof String s) {
         currentUsername = s;
       }
 

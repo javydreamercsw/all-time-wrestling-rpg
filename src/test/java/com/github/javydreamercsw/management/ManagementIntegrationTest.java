@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest
 import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
@@ -107,7 +108,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     }
   }
 
-  protected void login(Account account) {
+  protected void login(@NonNull Account account) {
     log.info("Logging in as user: {}", account.getUsername());
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);

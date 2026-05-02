@@ -25,6 +25,8 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
@@ -92,7 +94,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -104,6 +105,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -113,6 +115,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(classes = Application.class)
@@ -208,23 +211,33 @@ public abstract class AbstractIntegrationTest {
 
   @org.junit.jupiter.api.AfterEach
   public void tearDown() throws Exception {
-    log.info("AbstractIntegrationTest.tearDown() called");
+    log.debug("AbstractIntegrationTest.tearDown() called");
     clearSecurityContext();
     clearCache();
   }
 
   @BeforeEach
   public void baseSetUp() throws Exception {
-    log.info("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
+    log.debug("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
     // 1. Capture original authentication if set (e.g. by @WithCustomMockUser)
-    // and original TestSecurityContextHolder authentication
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
 
-    // 2. Establish a stable admin context for the duration of the setup phase.
-    // This ensures all cleanup and initialization steps have proper authority,
-    // especially when running in new transactions or background threads.
-    loginAs("admin");
+    // 2. Establish a stable system context for the duration of the setup phase.
+    // Build a mock principal that doesn't depend on the database being populated yet.
+    Account systemAccount = new Account("system", "password", "system@test.com");
+    systemAccount.setId(-1L);
+    Set<SimpleGrantedAuthority> authorities =
+        Set.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_SYSTEM"));
+    com.github.javydreamercsw.base.security.CustomUserDetails principal =
+        new com.github.javydreamercsw.base.security.CustomUserDetails(systemAccount, null);
+    Authentication systemAuth =
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
+
+    SecurityContext systemContext = SecurityContextHolder.createEmptyContext();
+    systemContext.setAuthentication(systemAuth);
+    SecurityContextHolder.setContext(systemContext);
+    TestSecurityContextHolder.setAuthentication(systemAuth);
 
     try {
       // 3. Pre-initialize defaultUniverse from DB if it exists
@@ -252,8 +265,8 @@ public abstract class AbstractIntegrationTest {
                 });
       }
     } finally {
-      // 6. Restore original context if it was present, otherwise default back to admin
-      // (which we are already logged in as, but this ensures consistency)
+      // 6. Restore original context if it was present, otherwise default to admin.
+      // This ensures test methods run with the expected authority.
       if (originalAuth != null) {
         log.info("Restoring original security context for user: {}", originalAuth.getName());
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -261,61 +274,55 @@ public abstract class AbstractIntegrationTest {
         SecurityContextHolder.setContext(context);
         TestSecurityContextHolder.setAuthentication(originalAuth);
       } else {
-        log.info("Maintaining default admin context for test execution.");
+        log.info("Establishing default admin context for test execution...");
         loginAs("admin");
       }
     }
   }
 
-  private static boolean initialDataLoaded = false;
-
   protected void clearAllRepositories() {
-    log.info("AbstractIntegrationTest.clearAllRepositories() called");
+    log.debug("AbstractIntegrationTest.clearAllRepositories() called");
 
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-        () -> {
-          // 1. Reset sequence (H2 specific) - Try directly first
-          try {
-            transactionTemplate.setPropagationBehavior(
-                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            transactionTemplate.execute(
-                status -> {
-                  entityManager
-                      .createNativeQuery(
-                          "ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-                      .executeUpdate();
-                  return null;
-                });
-          } catch (Exception e) {
-            log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
-          }
+    // 1. Reset sequence (H2 specific) - Try directly first
+    try {
+      transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      transactionTemplate.execute(
+          status -> {
+            entityManager
+                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                .executeUpdate();
+            return null;
+          });
+    } catch (Exception e) {
+      log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
+    }
 
-          // 2. Perform cleanup and init in a new transaction to avoid conflicts
-          transactionTemplate.setPropagationBehavior(
-              org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-          transactionTemplate.execute(
-              status -> {
-                log.info("Cleaning up database using DatabaseCleanup...");
-                databaseCleanup.clearRepositories();
+    // 2. Perform cleanup and init in a new transaction to avoid conflicts
+    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transactionTemplate.execute(
+        status -> {
+          log.info("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
 
-                clearCache();
+          clearCache();
 
-                // Always ensure at least one universe exists for tests
-                ensureDefaultUniverseExists();
+          // Always ensure at least one universe exists for tests
+          ensureDefaultUniverseExists();
 
-                // 3. Re-initialize data
-                if (dataInitializerEnabled) {
-                  dataInitializer.init();
-                }
-                return null;
-              });
-
-          // Clear the entity manager
-          if (entityManager != null) {
-            entityManager.clear();
+          // 3. Re-initialize data
+          if (dataInitializerEnabled) {
+            log.debug(
+                "Calling DataInitializer.init() with authentication: {}",
+                SecurityContextHolder.getContext().getAuthentication());
+            GeneralSecurityUtils.runAsAdmin(dataInitializer::init);
           }
           return null;
         });
+
+    // Clear the entity manager
+    if (entityManager != null) {
+      entityManager.clear();
+    }
   }
 
   protected void clearCache() {
@@ -333,7 +340,7 @@ public abstract class AbstractIntegrationTest {
         this.defaultUniverse = newUniverse;
         TestUtils.setDefaultUniverse(newUniverse);
         universeContextService.setCurrentUniverse(newUniverse);
-      } catch (org.springframework.dao.DataIntegrityViolationException e) {
+      } catch (DataIntegrityViolationException e) {
         universeRepository
             .findByName("Default Universe")
             .ifPresent(
@@ -378,14 +385,13 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void runAsAdmin(@NonNull Runnable task) {
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(task);
+    GeneralSecurityUtils.runAsAdmin(task);
   }
 
   protected void login(Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
-    com.github.javydreamercsw.base.security.CustomUserDetails principal =
-        new com.github.javydreamercsw.base.security.CustomUserDetails(account, wrestler);
+    CustomUserDetails principal = new CustomUserDetails(account, wrestler);
 
     Set<SimpleGrantedAuthority> authorities = new HashSet<>();
     for (Role role : account.getRoles()) {
@@ -459,138 +465,15 @@ public abstract class AbstractIntegrationTest {
     TestSecurityContextHolder.clearContext();
   }
 
-  void restoreSecurityContext(Authentication originalAuth, Authentication originalTestAuth) {
-    if (originalAuth != null) {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
-      context.setAuthentication(originalAuth);
-      SecurityContextHolder.setContext(context);
-    } else {
-      SecurityContextHolder.clearContext();
-    }
-
-    if (originalTestAuth != null) {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
-      context.setAuthentication(originalTestAuth);
-      TestSecurityContextHolder.setContext(context);
-    } else {
-      TestSecurityContextHolder.clearContext();
-    }
-  }
-
-  protected void ensureAuthenticatedUserExists() {
-    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth != null && currentAuth.isAuthenticated()) {
-      final String username;
-      Object principal = currentAuth.getPrincipal();
-      if (principal instanceof com.github.javydreamercsw.base.security.CustomUserDetails ud) {
-        username = ud.getUsername();
-      } else if (principal
-          instanceof org.springframework.security.core.userdetails.UserDetails ud) {
-        username = ud.getUsername();
-      } else if (principal instanceof com.github.javydreamercsw.base.domain.account.Account a) {
-        username = a.getUsername();
-      } else if (principal instanceof String s) {
-        username = s;
-      } else {
-        username = null;
-      }
-
-      if (username != null && !username.equals("system") && !username.equals("anonymousUser")) {
-        Account account = accountRepository.findByUsername(username).orElse(null);
-        if (account == null) {
-          log.info("Re-creating missing authenticated user in DB: {}", username);
-          account =
-              createTestAccount(
-                  username,
-                  RoleName.valueOf(
-                      currentAuth.getAuthorities().stream()
-                          .map(a -> a.getAuthority().replace("ROLE_", ""))
-                          .filter(
-                              a -> {
-                                try {
-                                  RoleName.valueOf(a);
-                                  return true;
-                                } catch (Exception e) {
-                                  return false;
-                                }
-                              })
-                          .findFirst()
-                          .orElse("PLAYER")));
-        }
-
-        // Check if wrestler exists if this is a PLAYER role
-        if (currentAuth.getAuthorities().stream()
-            .anyMatch(a -> a.getAuthority().equals("ROLE_PLAYER"))) {
-          final String wrestlerName = username; // Default to username for test consistency
-          if (wrestlerRepository.findByName(wrestlerName).isEmpty()) {
-            log.info("Re-creating missing authenticated wrestler in DB: {}", wrestlerName);
-            Wrestler w = createTestWrestler(wrestlerName);
-            w.setAccount(account);
-            wrestlerRepository.saveAndFlush(w);
-          }
-        }
-      }
-    }
-  }
-
-  private void forceLoginAsAdmin() {
-    accountRepository
-        .findByUsername("admin")
-        .ifPresentOrElse(
-            account -> {
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-              Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
-              com.github.javydreamercsw.base.security.CustomUserDetails principal =
-                  new com.github.javydreamercsw.base.security.CustomUserDetails(account, wrestler);
-
-              SecurityContext context = SecurityContextHolder.createEmptyContext();
-              List<SimpleGrantedAuthority> authorities =
-                  account.getRoles().stream()
-                      .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
-                      .toList();
-              UsernamePasswordAuthenticationToken auth =
-                  new UsernamePasswordAuthenticationToken(
-                      principal, account.getPassword(), authorities);
-              context.setAuthentication(auth);
-
-              SecurityContextHolder.setContext(context);
-              TestSecurityContextHolder.setContext(context);
-
-              log.debug("Force logged in as admin. Authorities: {}", authorities);
-            },
-            () -> {
-              log.warn("Admin account not found during force login, using system admin context");
-              Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-              authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-              authorities.add(new SimpleGrantedAuthority("ROLE_SYSTEM"));
-
-              Account systemAccount = new Account("system", "password", "system@example.com");
-              systemAccount.setRoles(
-                  Set.of(new Role(RoleName.ADMIN, "ADMIN"), new Role(RoleName.SYSTEM, "SYSTEM")));
-              com.github.javydreamercsw.base.security.CustomUserDetails principal =
-                  new com.github.javydreamercsw.base.security.CustomUserDetails(
-                      systemAccount, null);
-
-              UsernamePasswordAuthenticationToken adminAuth =
-                  new UsernamePasswordAuthenticationToken(principal, "password", authorities);
-
-              SecurityContext context = SecurityContextHolder.createEmptyContext();
-              context.setAuthentication(adminAuth);
-              SecurityContextHolder.setContext(context);
-              TestSecurityContextHolder.setContext(context);
-            });
-  }
-
   protected void cleanupLeagues() {
     clearAllRepositories();
   }
 
   protected void clearRepositoriesOnly() {
-    transactionTemplate.setPropagationBehavior(
-        org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+          GeneralSecurityUtils.runAsAdmin(
               () -> {
                 log.debug("Cleaning up database using DatabaseCleanup...");
                 databaseCleanup.clearRepositories();
