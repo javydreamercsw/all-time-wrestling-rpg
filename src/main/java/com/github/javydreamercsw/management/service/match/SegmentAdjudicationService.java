@@ -83,7 +83,8 @@ public class SegmentAdjudicationService {
       relationshipService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
-  @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy}) private com.github.javydreamercsw.management.service.show.ShowService showService;
+  @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
+  private com.github.javydreamercsw.management.service.show.ShowService showService;
 
   @Autowired
   public SegmentAdjudicationService(
