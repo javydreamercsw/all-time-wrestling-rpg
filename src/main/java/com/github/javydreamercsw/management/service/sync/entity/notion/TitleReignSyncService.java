@@ -140,7 +140,7 @@ public class TitleReignSyncService extends BaseSyncService {
                 .findByExternalId(page.getId())
                 .or(
                     () ->
-                        (page.getReignNumber() != null)
+                        page.getReignNumber() != null
                             ? syncServiceDependencies
                                 .getTitleReignRepository()
                                 .findByTitleAndReignNumber(title, page.getReignNumber())

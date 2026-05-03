@@ -44,7 +44,7 @@ public class SecurityConfig {
 
   @Bean
   @Profile("!test & !e2e")
-  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) {
     // Public access to static resources
     http.authorizeHttpRequests(
         auth ->
@@ -95,7 +95,7 @@ public class SecurityConfig {
 
   @Bean
   @Profile("test")
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());

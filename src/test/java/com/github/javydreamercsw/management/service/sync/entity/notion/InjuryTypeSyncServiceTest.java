@@ -132,7 +132,7 @@ class InjuryTypeSyncServiceTest extends AbstractSyncTest {
 
   @Test
   @DisplayName("Should sync injury types from Notion sample data successfully")
-  void shouldSyncInjuryTypesFromNotionSampleDataSuccessfully() throws Exception {
+  void shouldSyncInjuryTypesFromNotionSampleDataSuccessfully() {
     List<InjuryPage> sampleInjuries = loadSampleInjuries();
     when(syncProperties.isEntityEnabled(SyncEntityType.INJURY_TYPES.getKey())).thenReturn(true);
     when(syncServiceDependencies.getNotionHandler().loadAllInjuryTypes())

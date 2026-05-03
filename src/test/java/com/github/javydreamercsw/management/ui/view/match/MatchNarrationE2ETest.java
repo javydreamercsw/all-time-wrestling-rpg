@@ -34,7 +34,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.io.IOException;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +61,7 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
   private Segment matchSegment;
 
   @BeforeEach
-  public void setupData() throws IOException {
+  public void setupData() {
     // Clean up
     cleanupLeagues();
     segmentRepository.deleteAll();

@@ -62,14 +62,14 @@ public class TeamNotionSyncService extends BaseNotionSyncService<Team> {
     properties.put(
         "Manager",
         NotionPropertyBuilder.createRelationProperty(
-            (entity.getManager() != null && entity.getManager().getExternalId() != null)
+            entity.getManager() != null && entity.getManager().getExternalId() != null
                 ? java.util.Collections.singletonList(entity.getManager().getExternalId())
                 : java.util.Collections.emptyList()));
 
     properties.put(
         "Faction",
         NotionPropertyBuilder.createRelationProperty(
-            (entity.getFaction() != null && entity.getFaction().getExternalId() != null)
+            entity.getFaction() != null && entity.getFaction().getExternalId() != null
                 ? java.util.Collections.singletonList(entity.getFaction().getExternalId())
                 : java.util.Collections.emptyList()));
 

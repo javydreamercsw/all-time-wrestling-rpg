@@ -100,9 +100,9 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
       }
 
       // Logging for troubleshooting
-      int keyLen = (apiKey != null) ? apiKey.length() : 0;
-      String keyStart = (keyLen > 4) ? apiKey.substring(0, 4) : "***";
-      String keyEnd = (keyLen > 4) ? apiKey.substring(keyLen - 4) : "***";
+      int keyLen = apiKey != null ? apiKey.length() : 0;
+      String keyStart = keyLen > 4 ? apiKey.substring(0, 4) : "***";
+      String keyEnd = keyLen > 4 ? apiKey.substring(keyLen - 4) : "***";
 
       log.debug(
           "Gemini Request - URL: {}, Model: {}, Key Length: {}, Key: {}...{}",

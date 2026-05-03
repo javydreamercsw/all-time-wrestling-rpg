@@ -46,7 +46,6 @@ public class GmDashboardView extends VerticalLayout {
   private final SecurityUtils securityUtils;
 
   private final ComboBox<League> leagueSelector = new ComboBox<>("Select League");
-  private final VerticalLayout statsLayout = new VerticalLayout();
   private final Grid<Wrestler> rosterGrid = new Grid<>(Wrestler.class, false);
   private final Span budgetLabel = new Span();
 

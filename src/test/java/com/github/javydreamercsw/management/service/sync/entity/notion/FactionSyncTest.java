@@ -18,14 +18,14 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -160,23 +160,5 @@ class FactionSyncTest {
     assertEquals(2, dto.getTeams().size());
     assertTrue(dto.getTeams().contains("Team Alpha"));
     assertTrue(dto.getTeams().contains("Team Beta"));
-  }
-
-  /** Helper method to create a mock FactionPage for testing. */
-  private FactionPage createMockFactionPage(String name, String description, String leader) {
-    FactionPage factionPage = new FactionPage();
-    factionPage.setId("faction-" + name.toLowerCase().replace(" ", "-"));
-
-    Map<String, Object> rawProperties = new HashMap<>();
-    rawProperties.put("Name", name);
-    rawProperties.put("Description", description);
-    rawProperties.put("Leader", leader);
-    rawProperties.put("Status", "Active");
-    rawProperties.put("FormedDate", "2024-01-01");
-    rawProperties.put("Members", "3 relations");
-    rawProperties.put("Teams", "2 relations");
-
-    factionPage.setRawProperties(rawProperties);
-    return factionPage;
   }
 }

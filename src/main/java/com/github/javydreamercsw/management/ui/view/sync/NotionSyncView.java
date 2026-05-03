@@ -222,7 +222,7 @@ public class NotionSyncView extends Main {
     if (selectedEntity != null && !selectedEntity.isEmpty()) {
       LocalDateTime lastSync = notionSyncScheduler.getLastSyncTime(selectedEntity);
       String timestamp =
-          (lastSync != null)
+          lastSync != null
               ? lastSync.format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm:ss"))
               : "Never";
       lastEntitySyncLabel.setText("Last Sync: " + timestamp);
@@ -382,37 +382,6 @@ public class NotionSyncView extends Main {
                 false, 0, 0, displayName + " sync failed: " + e.getMessage());
           }
         });
-  }
-
-  private void startSyncOperation(@NonNull String operationName, @NonNull SyncOperation operation) {
-    syncInProgress = true;
-    updateButtonStates();
-    showProgressSection();
-    addLogEntry("Started: " + operationName, "INFO");
-
-    SecurityContext context = SecurityContextHolder.getContext();
-    CompletableFuture.supplyAsync(
-            () -> GeneralSecurityUtils.runWithContext(context, operation::execute))
-        .whenComplete(
-            (result, throwable) -> {
-              getUI()
-                  .ifPresent(
-                      ui ->
-                          ui.access(
-                              () -> {
-                                syncInProgress = false;
-                                hideProgressSection();
-                                updateButtonStates();
-
-                                if (throwable != null) {
-                                  handleSyncError(throwable);
-                                } else {
-                                  handleSyncResult(result);
-                                }
-
-                                updateLastSyncTime();
-                              }));
-            });
   }
 
   private void startSyncOperationWithProgress(

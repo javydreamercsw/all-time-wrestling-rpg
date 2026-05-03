@@ -33,7 +33,7 @@ class MainErrorHandler {
 
   @Bean
   public VaadinServiceInitListener errorHandlerInitializer() {
-    return (event) ->
+    return event ->
         event
             .getSource()
             .addSessionInitListener(

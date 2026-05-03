@@ -304,7 +304,7 @@ public class ShowTemplateListView extends Main {
         };
 
     java.util.function.Consumer<String> imageSaver =
-        (imageUrl) -> {
+        imageUrl -> {
           template.setImageUrl(imageUrl);
           showTemplateService.save(template);
           editImageUrl.setValue(imageUrl);

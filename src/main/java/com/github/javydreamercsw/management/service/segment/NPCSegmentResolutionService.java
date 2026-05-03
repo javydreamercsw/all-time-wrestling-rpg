@@ -84,7 +84,7 @@ public class NPCSegmentResolutionService {
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
-        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
+        stipulation != null && !stipulation.trim().isEmpty() ? stipulation : "Standard Match";
 
     log.info(
         "Resolving team segment: {} vs {} on show {} ({})",
@@ -155,7 +155,7 @@ public class NPCSegmentResolutionService {
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
-        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
+        stipulation != null && !stipulation.trim().isEmpty() ? stipulation : "Standard Match";
 
     log.info(
         "Resolving {}-team segment on show {} ({}): {}",
@@ -312,43 +312,6 @@ public class NPCSegmentResolutionService {
     if (result.getSegmentRules().isEmpty()) {
       log.warn("No segment rules found for rule: {}", stipulation);
     }
-  }
-
-  /** Calculate individual wrestler weight for multi-person segments. */
-  private WrestlerWeight calculateWrestlerWeight(@NonNull Wrestler wrestler) {
-    int fanWeight = wrestler.getFanWeight();
-    int tierBonus = getTierBonus(wrestler.getTier());
-    int healthPenalty = getHealthPenalty(wrestler);
-
-    // Individual bonus if they have a manager from the same faction
-    int synergyBonus = 0;
-    if (wrestler.getManager() != null && wrestler.getFaction() != null) {
-      // Check if manager is part of the faction (some managers might be NPCs in factions)
-      // For now, let's keep it simple: if you have a manager and a faction, you get a small boost
-      // based on affinity.
-      synergyBonus = wrestler.getFaction().getAffinity() / 20; // Max +5 at 100 affinity
-    }
-
-    int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty + synergyBonus);
-
-    return new WrestlerWeight(wrestler, totalWeight, fanWeight, tierBonus, healthPenalty);
-  }
-
-  /** Determine winner in multi-person segment using weighted random selection. */
-  private Wrestler determineMultiPersonWinner(@NonNull List<WrestlerWeight> wrestlerWeights) {
-    int totalWeight = wrestlerWeights.stream().mapToInt(WrestlerWeight::totalWeight).sum();
-    int randomValue = random.nextInt(totalWeight);
-
-    int currentWeight = 0;
-    for (WrestlerWeight wrestlerWeight : wrestlerWeights) {
-      currentWeight += wrestlerWeight.totalWeight();
-      if (randomValue < currentWeight) {
-        return wrestlerWeight.wrestler();
-      }
-    }
-
-    // Fallback (should never happen)
-    return wrestlerWeights.get(0).wrestler();
   }
 
   /** Data class for wrestler weight calculations. */
