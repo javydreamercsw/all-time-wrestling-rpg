@@ -81,6 +81,19 @@ public class StatusCardService {
             () -> new EntityNotFoundException("StatusCard with key " + key + " not found"));
   }
 
+  public StatusCard save(StatusCard card) {
+    return statusCardRepository.save(card);
+  }
+
+  public void delete(Long id) {
+    statusCardRepository.deleteById(id);
+  }
+
+  public org.springframework.data.domain.Page<StatusCard> list(
+      org.springframework.data.domain.Pageable pageable) {
+    return statusCardRepository.findAll(pageable);
+  }
+
   public java.util.List<StatusCard> findAll() {
     return statusCardRepository.findAll();
   }
