@@ -18,10 +18,13 @@ package com.github.javydreamercsw.management.domain.campaign;
 
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface WrestlerStatusRepository extends JpaRepository<WrestlerStatus, Long> {
   List<WrestlerStatus> findByWrestler(Wrestler wrestler);
+
+  Optional<WrestlerStatus> findByWrestlerAndStatusCard(Wrestler wrestler, StatusCard statusCard);
 }

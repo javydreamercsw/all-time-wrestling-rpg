@@ -16,8 +16,11 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface StatusCardRepository extends JpaRepository<StatusCard, Long> {}
+public interface StatusCardRepository extends JpaRepository<StatusCard, Long> {
+  Optional<StatusCard> findByKey(String key);
+}
