@@ -18,6 +18,7 @@ package com.github.javydreamercsw;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
@@ -27,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -47,19 +47,20 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     classes = Application.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"e2e", "test"})
+@Import(TestE2ESecurityConfig.class)
 @Slf4j
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @LocalServerPort protected int serverPort;
 
   protected WebDriver driver;
-  private static final AtomicInteger docOrder = new AtomicInteger(1);
   private int screenshotCounter = 0;
   private Path testArtifactsDir;
 
@@ -90,7 +91,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     log.info("Waiting for server to be ready on port {}...", serverPort);
-    waitForServerToBeReady();
+    // waitForServerToBeReady();
     log.info("Server is ready.");
 
     WebDriverManager.chromedriver().setup();

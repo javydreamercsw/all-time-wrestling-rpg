@@ -88,6 +88,7 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import jakarta.persistence.EntityManager;
@@ -142,6 +143,7 @@ public abstract class AbstractIntegrationTest {
 
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
+  @MockitoBean protected AuthenticationContext authenticationContext;
 
   @Autowired protected ApplicationContext applicationContext;
   @Autowired protected InboxRepository inboxRepository;
