@@ -306,6 +306,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private void updateView() {
     if (wrestler != null && wrestler.getId() != null) {
+      // Re-fetch to ensure we have the latest state (e.g., after status changes)
+      wrestlerService.findByIdWithDetails(wrestler.getId()).ifPresent(w -> wrestler = w);
+
       heroDetailsColumn
           .getChildren()
           .filter(c -> c instanceof WrestlerActionMenu)
@@ -538,7 +541,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
     ComboBox<StatusCard> cardCombo = new ComboBox<>("Add Status Card");
     cardCombo.setItems(statusCardService.findAll());
-    cardCombo.setItemLabelGenerator(StatusCard::getKey);
+    cardCombo.setItemLabelGenerator(StatusCard::getLevel1Name);
     cardCombo.setPlaceholder("Select a status card");
     cardCombo.setWidthFull();
 
