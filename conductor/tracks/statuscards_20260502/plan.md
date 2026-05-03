@@ -17,7 +17,7 @@
 - [x] Task: Create Flyway migration script for the new tables. [da939f2]
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Database Entities and Repositories' (Protocol in workflow.md)
 
-## Phase 2: Status Card Management and Data Initialization
+## Phase 2: Status Card Management and Data Initialization [checkpoint: 7736217]
 - [x] Task: Refactor `StatusCard` to use `key`, `level1Name`, and `level2Name` instead of `name`. [7d5f39d]
     - [x] Update `StatusCard` entity, `StatusCardDTO`, and tests.
     - [x] Update Flyway migration scripts (H2 and MySQL).
@@ -28,7 +28,7 @@
 - [x] Task: Update `DataInitializer` to sync status cards from JSON on startup. [449e5cd]
     - [x] Write integration tests for `DataInitializer` sync.
     - [x] Implement `syncStatusCardsFromFile` in `DataInitializer`.
-- [~] Task: Conductor - User Manual Verification 'Phase 2: Status Card Management and Data Initialization' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Status Card Management and Data Initialization' (Protocol in workflow.md)
 
 ## Phase 3: Core Service Logic
 
