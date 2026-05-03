@@ -18,17 +18,16 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Database Entities and Repositories' (Protocol in workflow.md)
 
 ## Phase 2: Status Card Management and Data Initialization
-
-- [ ] Task: Refactor `StatusCard` to use `key`, `level1Name`, and `level2Name` instead of `name`.
-  - [ ] Update `StatusCard` entity, `StatusCardDTO`, and tests.
-  - [ ] Update Flyway migration scripts (H2 and MySQL).
+- [x] Task: Refactor `StatusCard` to use `key`, `level1Name`, and `level2Name` instead of `name`. [7d5f39d]
+    - [x] Update `StatusCard` entity, `StatusCardDTO`, and tests.
+    - [x] Update Flyway migration scripts (H2 and MySQL).
 - [x] Task: Create `StatusCardService` to manage `StatusCard` entities. [2b1a05b]
-  - [x] Write unit tests for `StatusCardService`.
-  - [x] Implement `StatusCardService`.
+    - [x] Write unit tests for `StatusCardService`.
+    - [x] Implement `StatusCardService`.
 - [x] Task: Create `src/main/resources/status_cards.json` with initial statuses. [525ab53]
 - [x] Task: Update `DataInitializer` to sync status cards from JSON on startup. [449e5cd]
-  - [x] Write integration tests for `DataInitializer` sync.
-  - [x] Implement `syncStatusCardsFromFile` in `DataInitializer`.
+    - [x] Write integration tests for `DataInitializer` sync.
+    - [x] Implement `syncStatusCardsFromFile` in `DataInitializer`.
 - [~] Task: Conductor - User Manual Verification 'Phase 2: Status Card Management and Data Initialization' (Protocol in workflow.md)
 
 ## Phase 3: Core Service Logic
