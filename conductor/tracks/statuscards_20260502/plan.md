@@ -42,14 +42,14 @@
   - [x] Implement `WrestlerStatusService` methods to pass all tests.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Core Service Logic' (Protocol in workflow.md)
 
-## Phase 4: Settings & Expansion Integration
+## Phase 4: Settings & Expansion Integration [checkpoint: c131681]
 - [x] Task: Add a global system setting to enable/disable Status Cards.
     - [x] Write unit tests.
     - [x] Implement setting toggle in `GameSettingsService` or equivalent.
 - [x] Task: Integrate with Expansion management (tie to "Women's Expansion").
     - [x] Write unit tests verifying statuses are disabled if the expansion is disabled.
     - [x] Implement logic to hook into expansion state changes.
-- [~] Task: Conductor - User Manual Verification 'Phase 4: Settings & Expansion Integration' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Settings & Expansion Integration' (Protocol in workflow.md)
 
 ## Phase 5: Match, Campaign, and Procedural Integration
 
