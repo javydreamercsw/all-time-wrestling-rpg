@@ -285,6 +285,11 @@ public class SegmentSyncService extends BaseSyncService {
       segmentDTO.setNarration(
           syncServiceDependencies.getNotionHandler().getPageContentPlainText(segmentPage.getId()));
 
+      Object notesProperty = segmentPage.getRawProperties().get("Notes");
+      if (notesProperty instanceof String && !((String) notesProperty).isEmpty()) {
+        segmentDTO.setNotes((String) notesProperty);
+      }
+
       return segmentDTO;
     } catch (Exception e) {
       String msg =
@@ -424,6 +429,10 @@ public class SegmentSyncService extends BaseSyncService {
       if (segmentDTO.getNarration() != null
           && !segmentDTO.getNarration().equals(segment.getNarration())) {
         segment.setNarration(segmentDTO.getNarration());
+      }
+
+      if (segmentDTO.getNotes() != null && !segmentDTO.getNotes().equals(segment.getNotes())) {
+        segment.setNotes(segmentDTO.getNotes());
       }
 
       segmentService.updateSegment(segment);

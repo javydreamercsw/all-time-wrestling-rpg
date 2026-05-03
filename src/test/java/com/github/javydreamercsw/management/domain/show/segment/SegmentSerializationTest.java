@@ -89,6 +89,7 @@ class SegmentSerializationTest {
     segment.addSegmentRule(segmentRule);
     segment.setNarration("Test narration");
     segment.setSummary("Test summary");
+    segment.setNotes("Test notes");
 
     // When
     String json = objectMapper.writeValueAsString(segment);
@@ -96,6 +97,7 @@ class SegmentSerializationTest {
     // Then
     assertThat(json).isNotNull();
     assertThat(json).contains("Test narration");
+    assertThat(json).contains("Test notes");
     // Add more assertions as needed
   }
 }
