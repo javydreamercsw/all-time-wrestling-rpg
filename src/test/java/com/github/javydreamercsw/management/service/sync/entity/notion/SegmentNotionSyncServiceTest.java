@@ -87,6 +87,7 @@ class SegmentNotionSyncServiceTest extends AbstractSyncTest {
     segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
     segment.setNarration("Exciting match");
     segment.setSummary("Wrestler 1 won");
+    segment.setNotes("Test feedback notes");
     segment.setSegmentOrder(1);
     segment.setMainEvent(true);
     segment.setIsTitleSegment(false);

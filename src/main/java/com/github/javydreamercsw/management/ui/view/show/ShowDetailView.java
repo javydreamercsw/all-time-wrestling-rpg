@@ -1058,6 +1058,12 @@ public class ShowDetailView extends Main
     narrationArea.setId("narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
+    // Notes
+    TextArea notesArea = new TextArea("Notes/Feedback");
+    notesArea.setWidthFull();
+    notesArea.setId("notes-text-area");
+    formLayout.setColspan(notesArea, 2);
+
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
@@ -1069,7 +1075,8 @@ public class ShowDetailView extends Main
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
-        narrationArea);
+        narrationArea,
+        notesArea);
 
     // Buttons
     Button saveButton =
@@ -1084,6 +1091,7 @@ public class ShowDetailView extends Main
               Segment newSegment = new Segment();
               newSegment.setNarration(narrationArea.getValue());
               newSegment.setSummary(summaryArea.getValue());
+              newSegment.setNotes(notesArea.getValue());
               newSegment.setSegmentOrder(segmentRepository.findByShow(show).size() + 1);
               newSegment.setShow(show);
               newSegment.setSegmentDate(java.time.Instant.now());
@@ -1258,6 +1266,13 @@ public class ShowDetailView extends Main
     narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
+    // Notes
+    TextArea notesArea = new TextArea("Notes/Feedback");
+    notesArea.setWidthFull();
+    notesArea.setValue(segment.getNotes() != null ? segment.getNotes() : "");
+    notesArea.setId("edit-notes-text-area");
+    formLayout.setColspan(notesArea, 2);
+
     // Title selection (multi-select) - only visible if segment is a title segment
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
     titleMultiSelectComboBox.setItems(
@@ -1293,7 +1308,8 @@ public class ShowDetailView extends Main
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
-        narrationArea);
+        narrationArea,
+        notesArea);
 
     // Buttons
     Button saveButton =
@@ -1302,6 +1318,7 @@ public class ShowDetailView extends Main
             e -> {
               segment.setNarration(narrationArea.getValue());
               segment.setSummary(summaryArea.getValue());
+              segment.setNotes(notesArea.getValue());
               segment.setReferee(refereeCombo.getValue());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
