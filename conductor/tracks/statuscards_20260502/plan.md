@@ -43,43 +43,54 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Core Service Logic' (Protocol in workflow.md)
 
 ## Phase 4: Settings & Expansion Integration [checkpoint: c131681]
+
 - [x] Task: Add a global system setting to enable/disable Status Cards.
-    - [x] Write unit tests.
-    - [x] Implement setting toggle in `GameSettingsService` or equivalent.
+  - [x] Write unit tests.
+  - [x] Implement setting toggle in `GameSettingsService` or equivalent.
 - [x] Task: Integrate with Expansion management (tie to "Women's Expansion").
-    - [x] Write unit tests verifying statuses are disabled if the expansion is disabled.
-    - [x] Implement logic to hook into expansion state changes.
+  - [x] Write unit tests verifying statuses are disabled if the expansion is disabled.
+  - [x] Implement logic to hook into expansion state changes.
 - [x] Task: Conductor - User Manual Verification 'Phase 4: Settings & Expansion Integration' (Protocol in workflow.md)
 
-## Phase 5: Match, Campaign, and Procedural Integration
+## Phase 5: Match, Campaign, and Procedural Integration [checkpoint: 61c556a]
 
-- [ ] Task: Integrate Status Cards into Match Setup (Pre-Match Phase).
-  - [ ] Write unit tests for applying modifiers (momentum, hand size, etc.) during match initialization.
-  - [ ] Update Match engine / service to apply active status modifiers.
-- [ ] Task: Integrate Status Cards into Match Evaluation (Post-Match Phase).
-  - [ ] Write unit tests for trigger condition evaluation at the end of a match.
-  - [ ] Update Match resolution logic to call `WrestlerStatusService` to evaluate triggers.
-- [ ] Task: Update Campaign Chapter Configuration schema to support defining Status Card rewards/penalties on branches.
-  - [ ] Write unit tests.
-  - [ ] Implement schema updates and parsing logic.
-- [ ] Task: Document Status Card mechanics and scripting in `docs/`.
-  - [ ] Update `docs/GAME_MECHANICS.md` with double-sided card details and keys.
-  - [ ] Update `docs/CAMPAIGN_SCRIPTING.md` with instructions on referencing status keys in campaign branches.
-- [ ] Task: Implement Procedural Assignment hooks (framework for non-campaign assignments).
-  - [ ] Write unit tests.
-  - [ ] Implement event listeners or scheduled tasks for procedural assignment.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Match, Campaign, and Procedural Integration' (Protocol in workflow.md)
+- [x] Task: Integrate Status Cards into Match Setup (Pre-Match Phase).
+  - [x] Write unit tests for applying modifiers (momentum, hand size, etc.) during match initialization.
+  - [x] Update Match engine / service to apply active status modifiers.
+- [x] Task: Integrate Status Cards into Match Evaluation (Post-Match Phase).
+  - [x] Write unit tests for trigger condition evaluation at the end of a match.
+  - [x] Update Match resolution logic to call `WrestlerStatusService` to evaluate triggers.
+- [x] Task: Update Campaign Chapter Configuration schema to support defining Status Card rewards/penalties on branches.
+  - [x] Write unit tests.
+  - [x] Implement schema updates and parsing logic.
+- [x] Task: Document Status Card mechanics and scripting in `docs/`.
+  - [x] Update `docs/GAME_MECHANICS.md` with double-sided card details and keys.
+  - [x] Update `docs/CAMPAIGN_SCRIPTING.md` with instructions on referencing status keys in campaign branches.
+- [x] Task: Implement Procedural Assignment hooks (framework for non-campaign assignments).
+  - [x] Write unit tests.
+  - [x] Implement event listeners or scheduled tasks for procedural assignment.
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Match, Campaign, and Procedural Integration' (Protocol in workflow.md)
 
-## Phase 6: UI Integration
+## Phase 6: UI Integration [checkpoint: 8a82c3c]
 
-- [ ] Task: Add active status icons to the Wrestler Profile view.
-  - [ ] Write E2E/UI tests.
-  - [ ] Update Vaadin views to display status cards. Should somehow indicate level (I vs II), which one is active and allow flip to the other side.
-- [ ] Task: Integrate Status visibility and interaction into the Match Setup UI.
-  - [ ] Write E2E/UI tests.
-  - [ ] Update Match Setup views.
-- [ ] Task: Implement Admin controls for manual status assignment/overrides.
-  - [ ] Write E2E/UI tests.
-  - [ ] Add controls to the Admin/GM dashboards.
-- [ ] Task: Conductor - User Manual Verification 'Phase 6: UI Integration' (Protocol in workflow.md)
+- [x] Task: Add active status icons to the Wrestler Profile view.
+  - [x] Write E2E/UI tests.
+  - [x] Update Vaadin views to display icons/tooltips.
+- [x] Task: Integrate Status visibility and interaction into the Match Setup UI.
+  - [x] Write E2E/UI tests.
+  - [x] Update Match Setup views.
+- [x] Task: Implement Admin controls for manual status assignment/overrides. [8a82c3c]
+    - [x] Write E2E/UI tests.
+    - [x] Add controls to the Admin/GM dashboards.
+- [x] Task: Conductor - User Manual Verification 'Phase 6: UI Integration' (Protocol in workflow.md)
 
+## Summary of Implementation
+- [x] Database entities and repositories for Status Cards.
+- [x] StatusCardService for definition management.
+- [x] Data initialization from JSON.
+- [x] WrestlerStatusService for core logic (gain/flip/remove/evaluate).
+- [x] Global toggle and Expansion integration.
+- [x] Effective stat calculation (Momentum, Hand Size).
+- [x] UI integration in Profile and Match views.
+- [x] Campaign and Global Adjudication integration.
+- [x] Documentation in GAME_MECHANICS.md and CAMPAIGN_SCRIPTING.md.
