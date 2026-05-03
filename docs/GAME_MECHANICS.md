@@ -62,13 +62,13 @@ Gaining fans is the primary way to advance through tiers and unlock title eligib
 
 The number of fans gained from matches and events is subject to diminishing returns based on the wrestler's current tier:
 
-| Tier | Gain Efficiency | Description |
-| :--- | :--- | :--- |
-| **Rookie / Riser** | 100% | Full gains. Every new fan counts. |
-| **Contender** | 97% | Minor friction in growth. |
-| **Midcarder** | 95% | Growth begins to stabilize. |
-| **Main Eventer** | 93% | Significant effort required to reach the top. |
-| **Icon** | 90% | The "Legend Tax." Only the most impactful moments grow an already massive base. |
+| Tier               | Gain Efficiency | Description                                                                     |
+|:-------------------|:----------------|:--------------------------------------------------------------------------------|
+| **Rookie / Riser** | 100%            | Full gains. Every new fan counts.                                               |
+| **Contender**      | 97%             | Minor friction in growth.                                                       |
+| **Midcarder**      | 95%             | Growth begins to stabilize.                                                     |
+| **Main Eventer**   | 93%             | Significant effort required to reach the top.                                   |
+| **Icon**           | 90%             | The "Legend Tax." Only the most impactful moments grow an already massive base. |
 
 ### Rounding & Deductions
 
