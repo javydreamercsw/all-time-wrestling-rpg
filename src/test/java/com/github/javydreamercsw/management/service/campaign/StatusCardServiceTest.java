@@ -45,13 +45,24 @@ class StatusCardServiceTest {
     when(statusCardRepository.findOne(any(Example.class))).thenReturn(Optional.empty());
 
     statusCardService.createOrUpdateCard(
-        "New Card", "Description", true, "L1 Effect", "L2 Effect", "Up", "Down", "Discard");
+        "status_draw",
+        "Draw",
+        "Main Eventer",
+        "Description",
+        true,
+        "L1 Effect",
+        "L2 Effect",
+        "Up",
+        "Down",
+        "Discard");
 
     ArgumentCaptor<StatusCard> captor = ArgumentCaptor.forClass(StatusCard.class);
     verify(statusCardRepository).save(captor.capture());
     StatusCard saved = captor.getValue();
 
-    assertEquals("New Card", saved.getName());
+    assertEquals("status_draw", saved.getKey());
+    assertEquals("Draw", saved.getLevel1Name());
+    assertEquals("Main Eventer", saved.getLevel2Name());
     assertEquals("Description", saved.getDescription());
     assertTrue(saved.isPositive());
     assertEquals("L1 Effect", saved.getLevel1Effect());
@@ -65,13 +76,16 @@ class StatusCardServiceTest {
   void testCreateOrUpdateCard_Existing() {
     StatusCard existing = new StatusCard();
     existing.setId(1L);
-    existing.setName("Existing Card");
+    existing.setKey("status_existing");
+    existing.setLevel1Name("Old L1 Name");
     existing.setDescription("Old Description");
 
     when(statusCardRepository.findOne(any(Example.class))).thenReturn(Optional.of(existing));
 
     statusCardService.createOrUpdateCard(
-        "Existing Card",
+        "status_existing",
+        "New L1 Name",
+        "New L2 Name",
         "New Description",
         false,
         "New L1",
@@ -81,6 +95,7 @@ class StatusCardServiceTest {
         "New Discard");
 
     verify(statusCardRepository).save(existing);
+    assertEquals("New L1 Name", existing.getLevel1Name());
     assertEquals("New Description", existing.getDescription());
     assertEquals("New L1", existing.getLevel1Effect());
     assertEquals(false, existing.isPositive());

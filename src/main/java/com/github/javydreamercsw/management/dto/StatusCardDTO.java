@@ -20,7 +20,9 @@ import lombok.Data;
 
 @Data
 public class StatusCardDTO {
-  private String name;
+  private String key;
+  private String level1Name;
+  private String level2Name;
   private String description;
   private boolean positive;
   private String level1Effect;

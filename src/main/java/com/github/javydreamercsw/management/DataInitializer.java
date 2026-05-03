@@ -509,7 +509,9 @@ public class DataInitializer implements Initializable {
         List<StatusCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (StatusCardDTO dto : cardsFromFile) {
           statusCardService.createOrUpdateCard(
-              dto.getName(),
+              dto.getKey(),
+              dto.getLevel1Name(),
+              dto.getLevel2Name(),
               dto.getDescription(),
               dto.isPositive(),
               dto.getLevel1Effect(),
@@ -517,7 +519,7 @@ public class DataInitializer implements Initializable {
               dto.getFlipUpCondition(),
               dto.getFlipDownCondition(),
               dto.getDiscardCondition());
-          log.debug("Loaded status card: {}", dto.getName());
+          log.debug("Loaded status card: {}", dto.getKey());
         }
         log.debug("Status card loading completed - {} cards loaded", cardsFromFile.size());
       } catch (IOException e) {

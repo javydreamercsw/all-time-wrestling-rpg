@@ -43,8 +43,14 @@ public class StatusCard {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false)
-  private String name;
+  @Column(name = "status_key", nullable = false, unique = true)
+  private String key;
+
+  @Column(name = "level_1_name", nullable = false)
+  private String level1Name;
+
+  @Column(name = "level_2_name")
+  private String level2Name;
 
   @Column(columnDefinition = "TEXT")
   private String description;

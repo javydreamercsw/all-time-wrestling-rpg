@@ -28,7 +28,9 @@ class StatusCardTest {
   void testStatusCardEntity() {
     StatusCard card =
         StatusCard.builder()
-            .name("Draw / Main Eventer")
+            .key("status_draw")
+            .level1Name("Draw")
+            .level2Name("Main Eventer")
             .description("Represents the wrestler's ability to draw a crowd.")
             .positive(true)
             .level1Effect("momentum: +4")
@@ -39,7 +41,9 @@ class StatusCardTest {
             .build();
 
     assertNotNull(card);
-    assertEquals("Draw / Main Eventer", card.getName());
+    assertEquals("status_draw", card.getKey());
+    assertEquals("Draw", card.getLevel1Name());
+    assertEquals("Main Eventer", card.getLevel2Name());
     assertEquals("Represents the wrestler's ability to draw a crowd.", card.getDescription());
     assertTrue(card.isPositive());
     assertEquals("momentum: +4", card.getLevel1Effect());

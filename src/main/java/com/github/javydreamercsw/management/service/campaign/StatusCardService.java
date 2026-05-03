@@ -34,7 +34,9 @@ public class StatusCardService {
   private final StatusCardRepository statusCardRepository;
 
   public StatusCard createOrUpdateCard(
-      String name,
+      String key,
+      String level1Name,
+      String level2Name,
       String description,
       boolean positive,
       String level1Effect,
@@ -44,20 +46,22 @@ public class StatusCardService {
       String discardCondition) {
 
     StatusCard probe = new StatusCard();
-    probe.setName(name);
+    probe.setKey(key);
 
     Optional<StatusCard> existingOpt = statusCardRepository.findOne(Example.of(probe));
 
     StatusCard card;
     if (existingOpt.isPresent()) {
       card = existingOpt.get();
-      log.debug("Updating existing status card: {}", name);
+      log.debug("Updating existing status card: {}", key);
     } else {
       card = new StatusCard();
-      card.setName(name);
-      log.debug("Creating new status card: {}", name);
+      card.setKey(key);
+      log.debug("Creating new status card: {}", key);
     }
 
+    card.setLevel1Name(level1Name);
+    card.setLevel2Name(level2Name);
     card.setDescription(description);
     card.setPositive(positive);
     card.setLevel1Effect(level1Effect);

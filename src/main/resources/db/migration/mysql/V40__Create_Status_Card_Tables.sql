@@ -2,7 +2,9 @@
 
 CREATE TABLE status_card (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    status_key VARCHAR(255) NOT NULL UNIQUE,
+    level_1_name VARCHAR(255) NOT NULL,
+    level_2_name VARCHAR(255),
     description TEXT,
     positive BOOLEAN NOT NULL DEFAULT TRUE,
     level_1_effect VARCHAR(255),

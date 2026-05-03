@@ -40,7 +40,9 @@ class StatusRepositoryIT extends ManagementIntegrationTest {
     // 1. Create and save a StatusCard
     StatusCard card =
         StatusCard.builder()
-            .name("Draw / Main Eventer")
+            .key("status_draw")
+            .level1Name("Draw")
+            .level2Name("Main Eventer")
             .description("Represents the wrestler's ability to draw a crowd.")
             .positive(true)
             .level1Effect("momentum: +4")

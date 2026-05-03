@@ -30,7 +30,7 @@ class WrestlerStatusHistoryTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
 
-    StatusCard card = StatusCard.builder().id(10L).name("Draw / Main Eventer").build();
+    StatusCard card = StatusCard.builder().id(10L).key("status_draw").level1Name("Draw").build();
 
     LocalDateTime now = LocalDateTime.now();
     WrestlerStatusHistory history =
