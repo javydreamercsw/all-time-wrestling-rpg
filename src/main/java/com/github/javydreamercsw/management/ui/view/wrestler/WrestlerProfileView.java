@@ -132,7 +132,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
-  private final VerticalLayout relationshipsLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
 
   @Autowired private SecurityUtils securityUtils;

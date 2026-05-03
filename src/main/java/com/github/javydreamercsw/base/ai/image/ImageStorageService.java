@@ -94,7 +94,7 @@ public class ImageStorageService {
     }
 
     String scheme = uri.getScheme();
-    if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+    if (scheme == null || !scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
       throw new IOException("Unsupported image URI scheme: " + scheme);
     }
 

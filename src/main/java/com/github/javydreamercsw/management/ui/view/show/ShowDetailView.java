@@ -980,7 +980,7 @@ public class ShowDetailView extends Main
     genderFilter.setPlaceholder("All genders");
     genderFilter.setWidthFull();
     Gender defaultGender =
-        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+        show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
     genderFilter.setValue(defaultGender);
     genderFilter.setId("add-gender-filter-combo-box");
 
@@ -994,7 +994,7 @@ public class ShowDetailView extends Main
     // Filter logic helper
 
     java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
-        (selected) -> {
+        selected -> {
           AlignmentType alignment = alignmentFilter.getValue();
 
           Gender gender = genderFilter.getValue();
@@ -1201,7 +1201,7 @@ public class ShowDetailView extends Main
     genderFilter.setPlaceholder("All genders");
     genderFilter.setWidthFull();
     Gender defaultGender =
-        (segment.getShow() != null && segment.getShow().getTemplate() != null)
+        segment.getShow() != null && segment.getShow().getTemplate() != null
             ? segment.getShow().getTemplate().getGenderConstraint()
             : null;
     genderFilter.setValue(defaultGender);
@@ -1235,7 +1235,7 @@ public class ShowDetailView extends Main
 
     // Filter logic helper
     java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
-        (selected) -> {
+        selected -> {
           AlignmentType alignment = alignmentFilter.getValue();
 
           Gender gender = genderFilter.getValue();
@@ -1433,7 +1433,7 @@ public class ShowDetailView extends Main
         log.info("Updating existing segment: {}", segment.getId());
       } else {
         // Use the passed object if present (for new segments with data), or create new
-        segment = (segmentToUpdate != null) ? segmentToUpdate : new Segment();
+        segment = segmentToUpdate != null ? segmentToUpdate : new Segment();
 
         if (segment.getShow() == null) {
           segment.setShow(show);

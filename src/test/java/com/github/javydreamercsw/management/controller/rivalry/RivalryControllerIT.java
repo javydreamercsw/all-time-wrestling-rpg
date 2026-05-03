@@ -55,7 +55,7 @@ class RivalryControllerIT extends AbstractIntegrationTest {
   @Autowired private DeckRepository deckRepository;
 
   @BeforeEach
-  public void setUp() throws Exception {
+  public void setUp() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
 
     // Delete in correct order to avoid foreign key constraint violations

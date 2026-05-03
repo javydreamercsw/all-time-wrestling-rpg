@@ -93,19 +93,17 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
       team.setWrestler2(w3);
       team.setStatus(TeamStatus.ACTIVE);
       teamRepository.save(team);
-    } else {
-      // If wrestlers exist, ensure at least one team exists that doesn't have the player
-      if (teamRepository.count() == 0) {
-        List<Wrestler> others =
-            wrestlerRepository.findAll().stream().filter(w -> !w.equals(player)).toList();
-        if (others.size() >= 2) {
-          Team team = new Team();
-          team.setName("Test Team");
-          team.setWrestler1(others.get(0));
-          team.setWrestler2(others.get(1));
-          team.setStatus(TeamStatus.ACTIVE);
-          teamRepository.save(team);
-        }
+    } else // If wrestlers exist, ensure at least one team exists that doesn't have the player
+    if (teamRepository.count() == 0) {
+      List<Wrestler> others =
+          wrestlerRepository.findAll().stream().filter(w -> !w.equals(player)).toList();
+      if (others.size() >= 2) {
+        Team team = new Team();
+        team.setName("Test Team");
+        team.setWrestler1(others.get(0));
+        team.setWrestler2(others.get(1));
+        team.setStatus(TeamStatus.ACTIVE);
+        teamRepository.save(team);
       }
     }
 

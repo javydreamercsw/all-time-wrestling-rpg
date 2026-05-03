@@ -103,11 +103,7 @@ public class RingsideActionService {
         teamService.getActiveTeamsByWrestler(attachedWrestler).stream()
             .anyMatch(
                 t -> !attachedSegment.getWrestlers().contains(t.getPartner(attachedWrestler)));
-    if (otherTeamMembersExist) {
-      return true;
-    }
-
-    return false;
+    return otherTeamMembersExist;
   }
 
   @Transactional(readOnly = true)

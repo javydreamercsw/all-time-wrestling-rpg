@@ -25,7 +25,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -34,8 +33,6 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class CampaignScriptService {
-
-  private final Map<String, groovy.lang.Script> scriptCache = new ConcurrentHashMap<>();
 
   /**
    * Executes an effect script (e.g. from an ability card) within the context of a campaign.

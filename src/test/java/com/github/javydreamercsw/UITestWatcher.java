@@ -82,15 +82,13 @@ public class UITestWatcher implements AfterTestExecutionCallback {
                   }
                 }
               });
-    } else {
-      // Test was successful, clean up the directory for this test.
-      if (Files.exists(outputDir)) {
-        try {
-          log.debug("Test successful, cleaning up artifact directory: {}", outputDir);
-          FileUtils.deleteDirectory(outputDir.toFile());
-        } catch (IOException e) {
-          log.warn("Failed to clean up test artifact directory: {}", outputDir, e);
-        }
+    } else // Test was successful, clean up the directory for this test.
+    if (Files.exists(outputDir)) {
+      try {
+        log.debug("Test successful, cleaning up artifact directory: {}", outputDir);
+        FileUtils.deleteDirectory(outputDir.toFile());
+      } catch (IOException e) {
+        log.warn("Failed to clean up test artifact directory: {}", outputDir, e);
       }
     }
   }

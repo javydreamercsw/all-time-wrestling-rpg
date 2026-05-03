@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 
 import com.github.javydreamercsw.base.config.StorageProperties;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +63,7 @@ class ImageGenerationTest {
   }
 
   @Test
-  void testSaveImageBase64(@TempDir Path tempDir) throws IOException {
+  void testSaveImageBase64(@TempDir Path tempDir) {
     // Override storage location for test?
     // ImageStorageService hardcodes the path. I should probably make it configurable or protected.
     // For unit test, I can verify the logic if I refactor ImageStorageService to accept a base

@@ -224,13 +224,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     takeSequencedScreenshot("on-login-page");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
-
-    String os = System.getProperty("os.name").toLowerCase();
-
-    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
 
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
 
@@ -359,7 +355,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
@@ -408,7 +404,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                         "const g = arguments[0];"
                             + "try { return !!g.loading; } catch(e) { return false; }",
                         grid);
-            return loading instanceof Boolean && !((Boolean) loading);
+            return loading instanceof Boolean && !(Boolean) loading;
           } catch (Exception e) {
             return true; // If we can't read the property, don't block.
           }
@@ -509,7 +505,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   /** Waits for the Vaadin client-side application to fully load and become idle. */
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -1024,7 +1020,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForPageSourceToContain(@NonNull String text) {
-    new WebDriverWait(driver, java.time.Duration.ofSeconds(60))
+    new WebDriverWait(driver, java.time.Duration.ofMinutes(1))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

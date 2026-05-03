@@ -90,7 +90,7 @@ class InjuryTypeNotionSyncServiceTest extends AbstractSyncTest {
 
   @Test
   @DisplayName("Test Sync to Notion with a single existing Injury Type")
-  void testSyncToNotionSingleExisting() throws Exception {
+  void testSyncToNotionSingleExisting() {
     // Given
     String operationId = UUID.randomUUID().toString();
 

@@ -135,7 +135,7 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
 
     // 6. Verify outcome (synchronous processing may take a few seconds due to Mock AI sleep)
     log.info("Waiting for outcome text...");
-    new WebDriverWait(driver, Duration.ofSeconds(120))
+    new WebDriverWait(driver, Duration.ofMinutes(2))
         .until(
             ExpectedConditions.textToBePresentInElementLocated(
                 By.id("narrative-container"), "Promo SUCCESSFUL"));

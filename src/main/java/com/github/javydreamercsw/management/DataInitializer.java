@@ -416,19 +416,17 @@ public class DataInitializer implements Initializable {
             key,
             maskIfSecret(key, envValue));
         gameSettingService.save(key, envValue);
+      } else if (gameSettingService.findById(key).isPresent()) {
+        log.debug(
+            "AI setting sync: skipping '{}' from environment because DB already has a value: {}",
+            key,
+            maskIfSecret(key, envValue));
       } else {
-        if (gameSettingService.findById(key).isPresent()) {
-          log.debug(
-              "AI setting sync: skipping '{}' from environment because DB already has a value: {}",
-              key,
-              maskIfSecret(key, envValue));
-        } else {
-          log.debug(
-              "AI setting sync: saving missing '{}' from environment: {}",
-              key,
-              maskIfSecret(key, envValue));
-          saveIfMissing(key, envValue);
-        }
+        log.debug(
+            "AI setting sync: saving missing '{}' from environment: {}",
+            key,
+            maskIfSecret(key, envValue));
+        saveIfMissing(key, envValue);
       }
       return;
     }

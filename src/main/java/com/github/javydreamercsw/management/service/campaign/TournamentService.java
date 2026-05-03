@@ -153,7 +153,7 @@ public class TournamentService {
 
     // Subsequent Rounds placeholders
     int matchesInRound = matchCountR1;
-    for (int r = 2; r <= totalRounds; r++) {
+    for (int r = 2; r < totalRounds + 1; r++) {
       matchesInRound /= 2;
       for (int i = 0; i < matchesInRound; i++) {
         TournamentMatch match = new TournamentMatch();
@@ -238,28 +238,26 @@ public class TournamentService {
                   ? match.getWrestler2Id()
                   : match.getWrestler1Id();
         }
+      } else // NPC vs NPC Simulation
+      if (match.getWrestler1Id() == null && match.getWrestler2Id() == null) {
+        // Bye vs Bye -> Double Bye
+        match.setWrestler1Name("BYE");
+        winnerId = -1L; // Mark as resolved (Bye advances)
+      } else if (match.getWrestler1Id() == null) {
+        winnerId = match.getWrestler2Id();
+      } else if (match.getWrestler2Id() == null) {
+        winnerId = match.getWrestler1Id();
       } else {
-        // NPC vs NPC Simulation
-        if (match.getWrestler1Id() == null && match.getWrestler2Id() == null) {
-          // Bye vs Bye -> Double Bye
-          match.setWrestler1Name("BYE");
-          winnerId = -1L; // Mark as resolved (Bye advances)
-        } else if (match.getWrestler1Id() == null) {
-          winnerId = match.getWrestler2Id();
-        } else if (match.getWrestler2Id() == null) {
+        // Real match
+        if (random.nextBoolean()) {
           winnerId = match.getWrestler1Id();
         } else {
-          // Real match
-          if (random.nextBoolean()) {
-            winnerId = match.getWrestler1Id();
-          } else {
-            winnerId = match.getWrestler2Id();
-          }
+          winnerId = match.getWrestler2Id();
+        }
 
-          // Create Segment for record keeping if Show is provided and both wrestlers exist
-          if (show != null && winnerId > 0) {
-            createSimulatedMatch(show, match.getWrestler1Id(), match.getWrestler2Id(), winnerId);
-          }
+        // Create Segment for record keeping if Show is provided and both wrestlers exist
+        if (show != null && winnerId > 0) {
+          createSimulatedMatch(show, match.getWrestler1Id(), match.getWrestler2Id(), winnerId);
         }
       }
       match.setWinnerId(winnerId);

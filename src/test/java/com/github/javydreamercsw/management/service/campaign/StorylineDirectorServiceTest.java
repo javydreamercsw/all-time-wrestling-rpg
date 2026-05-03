@@ -82,7 +82,7 @@ class StorylineDirectorServiceTest {
   }
 
   @Test
-  void testInitializeStoryline() throws Exception {
+  void testInitializeStoryline() {
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     CampaignState state = new CampaignState();
