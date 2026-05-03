@@ -177,7 +177,7 @@ class TierRecalculationServiceTest {
     TierBoundary femaleMeBoundary = femaleBoundaries.get(WrestlerTier.MAIN_EVENTER);
     assertEquals(15000L, femaleMeBoundary.getMinFans());
 
-    verify(wrestlerStateRepository, times(18)).save(wrestlerStateCaptor.capture());
+    verify(wrestlerStateRepository, times(20)).save(wrestlerStateCaptor.capture());
   }
 
   @Test
