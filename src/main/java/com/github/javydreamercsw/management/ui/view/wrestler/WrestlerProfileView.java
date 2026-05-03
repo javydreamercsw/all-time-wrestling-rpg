@@ -17,10 +17,12 @@
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -47,6 +49,7 @@ import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
@@ -56,7 +59,10 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -97,10 +103,15 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final AccountService accountService;
   private final NpcService npcService;
   private final CampaignService campaignService;
+  private final SeasonService seasonService;
   private final ImageStorageService imageStorageService;
   private final com.github.javydreamercsw.management.service.relationship
           .WrestlerRelationshipService
       relationshipService;
+  private final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+  private final com.github.javydreamercsw.management.service.campaign.StatusCardService
+      statusCardService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -142,7 +153,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       CampaignService campaignService,
       ImageStorageService imageStorageService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService) {
+          relationshipService,
+      com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+          wrestlerStatusService,
+      com.github.javydreamercsw.management.service.campaign.StatusCardService statusCardService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -154,9 +168,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.npcService = npcService;
     this.accountService = accountService;
     this.campaignService = campaignService;
+    this.seasonService = seasonService;
     this.imageStorageService = imageStorageService;
     this.relationshipService = relationshipService;
-
+    this.wrestlerStatusService = wrestlerStatusService;
+    this.statusCardService = statusCardService;
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
@@ -350,7 +366,17 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
       // Status Cards
       statusesLayout.removeAll();
-      statusesLayout.add(new H3("Active Status Cards"));
+      HorizontalLayout statusHeader = new HorizontalLayout(new H3("Active Status Cards"));
+      statusHeader.setWidthFull();
+      statusHeader.setAlignItems(Alignment.CENTER);
+
+      if (securityUtils.hasAnyRole(RoleName.ADMIN, RoleName.BOOKER)) {
+        Button manageBtn = new Button("Manage Statuses", event -> showManageStatusesDialog());
+        manageBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        statusHeader.add(manageBtn);
+      }
+      statusesLayout.add(statusHeader);
+
       if (wrestler.getStatuses().isEmpty()) {
         statusesLayout.add(new Paragraph("No active status cards."));
       } else {
@@ -501,6 +527,70 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
       updateMatchAndFeudHistory(); // Initial call to populate match and feud history
     }
+  }
+
+  private void showManageStatusesDialog() {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Manage Status Cards for " + wrestler.getName());
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.setSpacing(true);
+
+    ComboBox<StatusCard> cardCombo = new ComboBox<>("Add Status Card");
+    cardCombo.setItems(statusCardService.findAll());
+    cardCombo.setItemLabelGenerator(StatusCard::getKey);
+    cardCombo.setPlaceholder("Select a status card");
+    cardCombo.setWidthFull();
+
+    Button addBtn =
+        new Button(
+            "Add/Flip",
+            event -> {
+              if (cardCombo.getValue() != null) {
+                wrestlerStatusService.assignStatus(wrestler.getId(), cardCombo.getValue().getKey());
+                updateView(); // Refresh the profile
+                Notification.show("Status assigned/flipped.");
+                dialog.close();
+              }
+            });
+    addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    HorizontalLayout addLayout = new HorizontalLayout(cardCombo, addBtn);
+    addLayout.setAlignItems(Alignment.BASELINE);
+    addLayout.setWidthFull();
+
+    content.add(addLayout);
+
+    if (!wrestler.getStatuses().isEmpty()) {
+      content.add(new H4("Active Statuses (Click to Remove)"));
+      wrestler
+          .getStatuses()
+          .forEach(
+              status -> {
+                Button removeBtn =
+                    new Button(
+                        (status.getLevel() == 1
+                                ? status.getStatusCard().getLevel1Name()
+                                : status.getStatusCard().getLevel2Name())
+                            + " (L"
+                            + status.getLevel()
+                            + ")",
+                        event -> {
+                          wrestlerStatusService.removeStatus(
+                              wrestler.getId(), status.getStatusCard().getKey());
+                          updateView();
+                          Notification.show("Status removed.");
+                          dialog.close();
+                        });
+                removeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
+                content.add(removeBtn);
+              });
+    }
+
+    dialog.add(content);
+    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
+    dialog.open();
   }
 
   private void updateMatchAndFeudHistory() {
