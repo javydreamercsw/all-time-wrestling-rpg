@@ -11,8 +11,10 @@ To ensure a fast feedback loop and efficient context usage, always follow this h
 	-   **Immediately** run ONLY the specific test class or method that failed.
 	-   **Goal:** Confirm the fix works for the reported issue without waiting for the entire suite.
 	-   **Command Example:** `./mvnw test -Dtest=ClassName#methodName`
+	-   **Short-Circuit Rule:** If the change is **strictly limited to test code** (e.g., updating an assertion, fixing a mock, or adjusting local test data) and does not modify any application source code (`src/main`) or shared test infrastructure (e.g., `AbstractIntegrationTest`, `DatabaseCleaner`), you may skip Progressive Validation after the targeted test passes.
 
 2.  **Progressive Validation:**
+	-   **Mandatory** if any changes were made to application source code (`src/main`) or shared test infrastructure.
 	-   **ONLY** after the targeted test passes, proceed to wider validation in this order:
 	-   **Level 1: Basic Unit Tests:** Run all unit tests to ensure no core regressions.
 		-   Command: `./mvnw test`
