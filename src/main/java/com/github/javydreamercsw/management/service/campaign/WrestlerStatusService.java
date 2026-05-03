@@ -23,6 +23,8 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistor
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.HashMap;
@@ -39,13 +41,27 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WrestlerStatusService {
 
+  public static final String STATUS_CARDS_EXPANSION_CODE = "ATW_VS_WOW";
+
   private final WrestlerStatusRepository wrestlerStatusRepository;
   private final WrestlerStatusHistoryRepository wrestlerStatusHistoryRepository;
   private final StatusCardService statusCardService;
   private final WrestlerService wrestlerService;
   private final CampaignScriptService campaignScriptService;
+  private final GameSettingService gameSettingService;
+  private final ExpansionService expansionService;
+
+  public boolean isStatusMechanicEnabled() {
+    return gameSettingService.isStatusCardsEnabled()
+        && expansionService.isExpansionEnabled(STATUS_CARDS_EXPANSION_CODE);
+  }
 
   public void assignStatus(Long wrestlerId, String statusKey) {
+    if (!isStatusMechanicEnabled()) {
+      log.debug("Status Cards mechanic is disabled. Ignoring assignment: {}", statusKey);
+      return;
+    }
+
     Wrestler wrestler =
         wrestlerService
             .findById(wrestlerId)
@@ -79,6 +95,11 @@ public class WrestlerStatusService {
   }
 
   public void removeStatus(Long wrestlerId, String statusKey) {
+    if (!isStatusMechanicEnabled()) {
+      log.debug("Status Cards mechanic is disabled. Ignoring removal: {}", statusKey);
+      return;
+    }
+
     Wrestler wrestler =
         wrestlerService
             .findById(wrestlerId)
@@ -104,6 +125,11 @@ public class WrestlerStatusService {
    * @param isLoss Whether the wrestler lost the match.
    */
   public void evaluateTriggerConditions(WrestlerStatus status, int finalMomentum, boolean isLoss) {
+    if (!isStatusMechanicEnabled()) {
+      log.debug("Status Cards mechanic is disabled. Skipping evaluation.");
+      return;
+    }
+
     StatusCard card = status.getStatusCard();
     Wrestler wrestler = status.getWrestler();
 

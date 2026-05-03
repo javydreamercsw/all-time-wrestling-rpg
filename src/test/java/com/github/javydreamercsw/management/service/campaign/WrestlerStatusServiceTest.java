@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -32,6 +34,8 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistor
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -49,11 +53,38 @@ class WrestlerStatusServiceTest {
   @Mock private StatusCardService statusCardService;
   @Mock private WrestlerService wrestlerService;
   @Mock private CampaignScriptService campaignScriptService;
+  @Mock private GameSettingService gameSettingService;
+  @Mock private ExpansionService expansionService;
 
   @InjectMocks private WrestlerStatusService wrestlerStatusService;
 
+  private void mockEnabled(boolean enabled) {
+    when(gameSettingService.isStatusCardsEnabled()).thenReturn(enabled);
+    if (enabled) {
+      when(expansionService.isExpansionEnabled(WrestlerStatusService.STATUS_CARDS_EXPANSION_CODE))
+          .thenReturn(true);
+    }
+  }
+
+  @Test
+  void testIsStatusMechanicEnabled() {
+    when(gameSettingService.isStatusCardsEnabled()).thenReturn(true);
+    when(expansionService.isExpansionEnabled(WrestlerStatusService.STATUS_CARDS_EXPANSION_CODE))
+        .thenReturn(true);
+    assertTrue(wrestlerStatusService.isStatusMechanicEnabled());
+
+    when(gameSettingService.isStatusCardsEnabled()).thenReturn(false);
+    assertFalse(wrestlerStatusService.isStatusMechanicEnabled());
+
+    when(gameSettingService.isStatusCardsEnabled()).thenReturn(true);
+    when(expansionService.isExpansionEnabled(WrestlerStatusService.STATUS_CARDS_EXPANSION_CODE))
+        .thenReturn(false);
+    assertFalse(wrestlerStatusService.isStatusMechanicEnabled());
+  }
+
   @Test
   void testAssignStatus_GainLevel1() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card = new StatusCard();
@@ -79,7 +110,15 @@ class WrestlerStatusServiceTest {
   }
 
   @Test
+  void testAssignStatus_Disabled() {
+    mockEnabled(false);
+    wrestlerStatusService.assignStatus(1L, "status_draw");
+    verify(wrestlerStatusRepository, never()).save(any());
+  }
+
+  @Test
   void testAssignStatus_FlipToLevel2() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card = new StatusCard();
@@ -108,6 +147,7 @@ class WrestlerStatusServiceTest {
 
   @Test
   void testAssignStatus_AlreadyLevel2_Ignored() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card = new StatusCard();
@@ -129,6 +169,7 @@ class WrestlerStatusServiceTest {
 
   @Test
   void testRemoveStatus() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card = new StatusCard();
@@ -155,6 +196,7 @@ class WrestlerStatusServiceTest {
 
   @Test
   void testEvaluateTriggerConditions_FlipUp() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card =
@@ -173,6 +215,7 @@ class WrestlerStatusServiceTest {
 
   @Test
   void testEvaluateTriggerConditions_FlipDown() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card =
@@ -191,6 +234,7 @@ class WrestlerStatusServiceTest {
 
   @Test
   void testEvaluateTriggerConditions_Discard() {
+    mockEnabled(true);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     StatusCard card =
