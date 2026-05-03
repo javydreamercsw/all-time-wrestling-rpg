@@ -13,7 +13,7 @@
 - [x] Task: Create Spring Data JPA repositories for the new entities. [452fec5]
     - [x] Write integration tests for repositories.
     - [x] Implement repositories.
-- [x] Task: Create Flyway migration script for the new tables.
+- [x] Task: Create Flyway migration script for the new tables. [da939f2]
 - [~] Task: Conductor - User Manual Verification 'Phase 1: Database Entities and Repositories' (Protocol in workflow.md)
 
 ## Phase 2: Core Service Logic
