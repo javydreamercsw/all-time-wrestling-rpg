@@ -155,6 +155,12 @@ class TierRecalculationServiceTest {
     assertEquals(20000L, maleIconBoundary.getMinFans());
     assertEquals(Long.MAX_VALUE, maleIconBoundary.getMaxFans());
 
+    // MAIN_EVENTER (15% = 1.5 -> 2):
+    // currentWrestlerIndex was 1. numWrestlersInTier = Math.round(10 * 0.15) = 2.
+    // boundaryIndex = 1 + 2 - 1 = 2. Wrestler 2 (male) has 16000 fans.
+    TierBoundary maleMeBoundary = maleBoundaries.get(WrestlerTier.MAIN_EVENTER);
+    assertEquals(16000L, maleMeBoundary.getMinFans());
+
     // Female wrestlers (10 wrestlers)
     Map<WrestlerTier, TierBoundary> femaleBoundaries = inMemoryTierBoundaries.get(Gender.FEMALE);
     assertEquals(
@@ -162,10 +168,14 @@ class TierRecalculationServiceTest {
         femaleBoundaries.size(),
         "Should have boundaries for all tiers for females.");
 
-    // ICON (5% = 1 of 10 -> 1): Wrestler 1 (19000 fans)
+    // ICON (5% = 0.5 -> 1): Wrestler 1 (19000 fans)
     TierBoundary femaleIconBoundary = femaleBoundaries.get(WrestlerTier.ICON);
     assertEquals(19000L, femaleIconBoundary.getMinFans());
     assertEquals(Long.MAX_VALUE, femaleIconBoundary.getMaxFans());
+
+    // MAIN_EVENTER (15% = 1.5 -> 2): Wrestler 5 (female) has 15000 fans.
+    TierBoundary femaleMeBoundary = femaleBoundaries.get(WrestlerTier.MAIN_EVENTER);
+    assertEquals(15000L, femaleMeBoundary.getMinFans());
 
     verify(wrestlerStateRepository, times(18)).save(wrestlerStateCaptor.capture());
   }
@@ -243,5 +253,59 @@ class TierRecalculationServiceTest {
           femaleBoundaries.get(tier).getMinFans(),
           "Min fans for " + tier + " should be the default value.");
     }
+  }
+
+  @Test
+  void testRecalculateTiersSmallRoster() {
+    // 9 female wrestlers
+    List<WrestlerState> smallRoster = new ArrayList<>();
+    for (int i = 0; i < 9; i++) {
+      Wrestler w = new Wrestler();
+      w.setId((long) i);
+      w.setName("Female Wrestler " + i);
+      w.setGender(Gender.FEMALE);
+
+      WrestlerState s =
+          WrestlerState.builder()
+              .wrestler(w)
+              .universe(universe)
+              .fans(100L * (10 - i)) // 1000, 900, ..., 200
+              .tier(WrestlerTier.ROOKIE)
+              .build();
+      smallRoster.add(s);
+    }
+
+    tierRecalculationService.recalculateRanking(new ArrayList<>(smallRoster));
+
+    Map<WrestlerTier, TierBoundary> femaleBoundaries = inMemoryTierBoundaries.get(Gender.FEMALE);
+
+    // With 9 wrestlers, 5% is 0.45, but our new logic ensures at least 1.
+    TierBoundary femaleIconBoundary = femaleBoundaries.get(WrestlerTier.ICON);
+    assertEquals(1000L, femaleIconBoundary.getMinFans());
+
+    // 15% of 9 is 1.35, which rounds to 1.
+    TierBoundary femaleMeBoundary = femaleBoundaries.get(WrestlerTier.MAIN_EVENTER);
+    assertEquals(900L, femaleMeBoundary.getMinFans());
+  }
+
+  @Test
+  void testRecalculateSingleWrestlerTier() {
+    // Setup boundaries
+    TierBoundary boundary = new TierBoundary();
+    boundary.setTier(WrestlerTier.ICON);
+    boundary.setGender(Gender.MALE);
+    boundary.setMinFans(50000L);
+    boundary.setMaxFans(Long.MAX_VALUE);
+    inMemoryTierBoundaries.get(Gender.MALE).put(WrestlerTier.ICON, boundary);
+
+    Wrestler w = new Wrestler();
+    w.setGender(Gender.MALE);
+
+    WrestlerState wrestler =
+        WrestlerState.builder().wrestler(w).fans(60000L).tier(WrestlerTier.ROOKIE).build();
+
+    tierRecalculationService.recalculateTier(wrestler);
+
+    assertEquals(WrestlerTier.ICON, wrestler.getTier());
   }
 }

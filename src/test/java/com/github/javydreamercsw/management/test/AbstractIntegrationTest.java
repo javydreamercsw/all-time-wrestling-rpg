@@ -132,9 +132,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 public abstract class AbstractIntegrationTest {
 
   static {
-    // Enable InheritableThreadLocal to ensure background threads
-    // inherit the security context from the parent UI thread.
-    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+    // Use GLOBAL strategy for tests to ensure the security context is reliably
+    // shared across all threads and transactions, preventing context loss.
+    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_GLOBAL);
 
     // Mark as test environment to stabilize security context
     System.setProperty("is.test", "true");

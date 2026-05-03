@@ -26,12 +26,14 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,6 +119,18 @@ public class TierRecalculationService implements RankingService {
             minFans = 0; // Rookies start at 0
           } else {
             numWrestlersInTier = (int) Math.round(totalWrestlers * tierDistribution.get(tier));
+
+            // Ensure at least one ICON if possible
+            if (tier == WrestlerTier.ICON && numWrestlersInTier == 0) {
+              numWrestlersInTier = 1;
+            }
+            // Ensure at least one MAIN_EVENTER if possible and we have enough wrestlers
+            if (tier == WrestlerTier.MAIN_EVENTER
+                && numWrestlersInTier == 0
+                && (totalWrestlers - currentWrestlerIndex) > 0) {
+              numWrestlersInTier = 1;
+            }
+
             if (currentWrestlerIndex + numWrestlersInTier > totalWrestlers) {
               numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
             }
@@ -126,13 +140,10 @@ public class TierRecalculationService implements RankingService {
               if (boundaryIndex >= totalWrestlers) {
                 boundaryIndex = totalWrestlers - 1;
               }
-              if (tier == WrestlerTier.ICON) {
-                minFans = genderWrestlers.get(boundaryIndex).getFans();
-              } else {
-                minFans = genderWrestlers.get(boundaryIndex).getFans() + 1;
-              }
+              minFans = genderWrestlers.get(boundaryIndex).getFans();
             } else {
-              minFans = maxFansForNextLowerTier > 0 ? maxFansForNextLowerTier + 1 : 0;
+              // Fix overflow and handle empty tiers
+              minFans = maxFansForNextLowerTier;
             }
           }
 
@@ -146,15 +157,14 @@ public class TierRecalculationService implements RankingService {
           boundary.setContenderEntryFee(Math.max(0, minFans / 200));
           tierBoundaryService.save(boundary);
 
-          maxFansForNextLowerTier = minFans - 1;
+          maxFansForNextLowerTier = Math.max(0, minFans - 1);
           currentWrestlerIndex += numWrestlersInTier;
         }
       }
 
       // Update wrestler tiers based on new boundaries
       for (WrestlerData wrestlerData : genderWrestlers) {
-        WrestlerTier newTier =
-            tierBoundaryService.findTierForFans(wrestlerData.getFans(), wrestlerData.getGender());
+        WrestlerTier newTier = calculateTier(wrestlerData.getFans(), wrestlerData.getGender());
         if (newTier != null) {
           if (wrestlerData.getTier() != newTier) {
             log.info(
@@ -167,7 +177,7 @@ public class TierRecalculationService implements RankingService {
               wrestlerStateRepository.save(state);
             }
           }
-        } else { // This 'else' belongs to 'if (newTier != null)'
+        } else {
           log.warn(
               "Wrestler {} with {} fans does not match any tier!",
               wrestlerData.getName(),
@@ -185,6 +195,7 @@ public class TierRecalculationService implements RankingService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateTier(WrestlerData wrestlerData) {
     Long fans = wrestlerData.getFans() != null ? wrestlerData.getFans() : 0L;
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
@@ -202,7 +213,11 @@ public class TierRecalculationService implements RankingService {
   }
 
   private WrestlerTier calculateTier(long fans, Gender gender) {
-    return tierBoundaryService.findAllByGender(gender).stream()
+    List<TierBoundary> boundaries = new ArrayList<>(tierBoundaryService.findAllByGender(gender));
+    // Sort by prestige (ICON first)
+    boundaries.sort(Comparator.comparingInt(b -> b.getTier().ordinal()));
+
+    return boundaries.stream()
         .filter(boundary -> fans >= boundary.getMinFans() && fans <= boundary.getMaxFans())
         .map(TierBoundary::getTier)
         .findFirst()

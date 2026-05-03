@@ -101,7 +101,8 @@ public class TitleFormDialog extends Dialog {
     Checkbox includeInRankings = new Checkbox("Include in Rankings");
     includeInRankings.setReadOnly(!securityUtils.canEdit());
     champion = new MultiSelectComboBox<>("Champion(s)");
-    champion.setItemLabelGenerator(Wrestler::getName);
+    champion.setItemLabelGenerator(
+        w -> String.format("%s (%s)", w.getName(), w.getTier().getDisplayName()));
     champion.setReadOnly(!securityUtils.canEdit());
 
     imageUrl = new TextField("Image URL");
@@ -152,7 +153,9 @@ public class TitleFormDialog extends Dialog {
             List<Wrestler> eligible =
                 wrestlerRepository.findAll().stream()
                     .peek(tierRecalculationService::recalculateTier)
-                    .filter(w -> titleService.isWrestlerEligible(w, tempTitle))
+                    .filter(
+                        w ->
+                            tempTitle.getGender() == null || w.getGender() == tempTitle.getGender())
                     .sorted(Comparator.comparing(Wrestler::getName))
                     .collect(Collectors.toList());
             champion.setItems(eligible);

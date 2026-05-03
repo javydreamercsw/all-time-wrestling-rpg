@@ -187,14 +187,30 @@ public class SegmentSyncService extends BaseSyncService {
         syncServiceDependencies
             .getNotionPageDataExtractor()
             .extractNameFromNotionPage(segmentPage));
-    dto.setNarration(
-        syncServiceDependencies
-            .getNotionPageDataExtractor()
-            .extractDescriptionFromNotionPage(segmentPage));
+
+    // Get full narration content from page blocks
+    try {
+      dto.setNarration(
+          syncServiceDependencies.getNotionHandler().getPageContentPlainText(segmentPage.getId()));
+    } catch (Exception e) {
+      log.warn(
+          "Could not load narration content for segment {}: {}",
+          segmentPage.getId(),
+          e.getMessage());
+      dto.setNarration(
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractDescriptionFromNotionPage(segmentPage));
+    }
 
     Object summaryObj = rawProperties.get("Summary");
     if (summaryObj instanceof String) {
       dto.setSummary((String) summaryObj);
+    }
+
+    Object notesObj = rawProperties.get("Notes");
+    if (notesObj instanceof String) {
+      dto.setNotes((String) notesObj);
     }
 
     Object orderObj = rawProperties.get("Order");
@@ -265,10 +281,6 @@ public class SegmentSyncService extends BaseSyncService {
         segment = segmentRepository.findByExternalId(dto.getExternalId()).orElse(null);
       }
 
-      // 2. Fallback to name/show matching if external ID didn't work (hard for segments as names
-      // repeat)
-      // For segments, we really rely on external ID or manual creation.
-
       // 3. Create new segment if no segment found
       if (segment == null) {
         segment = new Segment();
@@ -294,6 +306,10 @@ public class SegmentSyncService extends BaseSyncService {
       }
       if (!Objects.equals(segment.getSummary(), dto.getSummary())) {
         segment.setSummary(dto.getSummary());
+        changed = true;
+      }
+      if (!Objects.equals(segment.getNotes(), dto.getNotes())) {
+        segment.setNotes(dto.getNotes());
         changed = true;
       }
       if (dto.getSegmentOrder() != null
@@ -439,6 +455,7 @@ public class SegmentSyncService extends BaseSyncService {
     private String name;
     private String narration;
     private String summary;
+    private String notes;
     private String externalId;
     private Integer segmentOrder;
     private Boolean mainEvent;

@@ -108,6 +108,10 @@ public class Segment extends AbstractSyncableEntity<Long> {
   private String narration;
 
   @Lob
+  @Column(name = "notes")
+  private String notes;
+
+  @Lob
   @Column(name = "summary")
   private String summary;
 

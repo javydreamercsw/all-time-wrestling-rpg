@@ -120,6 +120,21 @@ class SegmentServiceTest {
   }
 
   @Test
+  @DisplayName("Should update segment notes successfully")
+  void shouldUpdateSegmentNotesSuccessfully() {
+    // Given
+    testSegment.setNotes("These are segment notes.");
+    when(matchRepository.save(testSegment)).thenReturn(testSegment);
+
+    // When
+    Segment result = segmentService.updateSegment(testSegment);
+
+    // Then
+    assertThat(result.getNotes()).isEqualTo("These are segment notes.");
+    verify(matchRepository).save(testSegment);
+  }
+
+  @Test
   @DisplayName("Should find segment by ID")
   void shouldFindSegmentById() {
     // Given

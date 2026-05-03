@@ -75,6 +75,10 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
           "Narration", NotionPropertyBuilder.createRichTextProperty(entity.getNarration()));
     }
 
+    if (entity.getNotes() != null) {
+      properties.put("Notes", NotionPropertyBuilder.createRichTextProperty(entity.getNotes()));
+    }
+
     if (entity.getSummary() != null) {
       properties.put("Summary", NotionPropertyBuilder.createRichTextProperty(entity.getSummary()));
     }

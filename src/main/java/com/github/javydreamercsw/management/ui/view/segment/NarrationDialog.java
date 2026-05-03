@@ -155,6 +155,7 @@ public class NarrationDialog extends Dialog {
     feedbackArea = new TextArea("Feedback");
     feedbackArea.setWidthFull();
     feedbackArea.setPlaceholder("Provide feedback to the AI to improve the narration...");
+    feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
 
     regenerateButton = new Button("Regenerate with Feedback");
     regenerateButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -702,6 +703,7 @@ public class NarrationDialog extends Dialog {
   private void saveNarration() {
     try {
       segment.setNarration(narrationDisplay.getText());
+      segment.setNotes(feedbackArea.getValue());
       if (refereeField.getValue() != null) {
         segment.setReferee(refereeField.getValue());
       }

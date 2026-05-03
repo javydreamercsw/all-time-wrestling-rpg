@@ -38,6 +38,7 @@ public class SegmentDTO {
   private String segmentTypeName;
   private Instant segmentDate;
   private String narration;
+  private String notes;
   private List<Long> titleIds; // Added for title association
   private int segmentOrder;
   private boolean isMainEvent;
