@@ -567,6 +567,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             ? "Provide bullet points or a general idea of the promo content..."
             : "Provide specific details about the match (key spots, ringside actions, etc.) to"
                 + " guide the AI...");
+    feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
     feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();
@@ -895,6 +896,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         segment.getId(),
         winners.stream().map(Wrestler::getName).toList());
     segment.setWinners(winners);
+    segment.setNotes(feedbackArea.getValue());
     try {
       segmentService.updateSegment(segment);
 
@@ -973,6 +975,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private void saveNarration() {
     segment.setNarration(narrationArea.getValue());
+    segment.setNotes(feedbackArea.getValue());
     segmentService.updateSegment(segment);
     updateCommentaryDisplay();
     Notification.show("Narration saved!");
