@@ -60,10 +60,12 @@
   - [ ] Write unit tests for trigger condition evaluation at the end of a match.
   - [ ] Update Match resolution logic to call `WrestlerStatusService` to evaluate triggers.
 - [ ] Task: Update Campaign Chapter Configuration schema to support defining Status Card rewards/penalties on branches.
-  - [ ] Write unit tests.
-  - [ ] Implement schema updates and parsing logic.
-- [ ] Task: Implement Procedural Assignment hooks (framework for non-campaign assignments).
-  - [ ] Write unit tests.
+    - [ ] Write unit tests.
+    - [ ] Implement schema updates and parsing logic.
+- [ ] Task: Document Status Card mechanics and scripting in `docs/`.
+    - [ ] Update `docs/GAME_MECHANICS.md` with double-sided card details and keys.
+    - [ ] Update `docs/CAMPAIGN_SCRIPTING.md` with instructions on referencing status keys in campaign branches.
+- [ ] Task: Implement Procedural Assignment hooks (framework for non-campaign assignments).  - [ ] Write unit tests.
   - [ ] Implement event listeners or scheduled tasks for procedural assignment.
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Match, Campaign, and Procedural Integration' (Protocol in workflow.md)
 
