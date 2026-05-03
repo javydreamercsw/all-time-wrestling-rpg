@@ -7,9 +7,9 @@
     - [x] Implement `StatusCard` entity.- [x] Task: Create `WrestlerStatus` entity to map a `Wrestler` to a `StatusCard` and track the current level.
   - [x] Write unit tests for `WrestlerStatus` entity.
   - [x] Implement `WrestlerStatus` entity.
-- [x] Task: Create `WrestlerStatusHistory` entity to log all status changes (gains, flips, losses).
-  - [x] Write unit tests for `WrestlerStatusHistory` entity.
-  - [x] Implement `WrestlerStatusHistory` entity.
+- [x] Task: Create `WrestlerStatusHistory` entity to log all status changes (gains, flips, losses). [bcfdb42]
+    - [x] Write unit tests for `WrestlerStatusHistory` entity.
+    - [x] Implement `WrestlerStatusHistory` entity.
 - [x] Task: Create Spring Data JPA repositories for the new entities.
   - [x] Write integration tests for repositories.
   - [x] Implement repositories.
