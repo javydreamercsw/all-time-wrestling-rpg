@@ -45,5 +45,6 @@ public class CampaignEncounterResponseDTO {
     private String matchType; // e.g., "One on One", "Triple Threat"
     private List<String> segmentRules; // e.g., ["No DQ", "Cage Match"]
     private String nextPhase; // e.g., "MATCH", "POST_MATCH", "BACKSTAGE"
+    private List<String> statusCardKeys; // Keys of Status Cards to grant/flip
   }
 }

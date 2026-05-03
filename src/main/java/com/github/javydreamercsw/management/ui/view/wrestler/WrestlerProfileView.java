@@ -51,9 +51,11 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.DataProvider;
@@ -114,6 +116,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private final Accordion secondaryInfoAccordion = new Accordion();
   private final VerticalLayout statsLayout = new VerticalLayout();
+  private final VerticalLayout statusesLayout = new VerticalLayout();
   private final VerticalLayout titleHistoryLayout = new VerticalLayout();
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
@@ -205,6 +208,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     // Accordion Setup
     secondaryInfoAccordion.setWidthFull();
     secondaryInfoAccordion.add("Stats", statsLayout);
+    secondaryInfoAccordion.add("Status Cards", statusesLayout);
     secondaryInfoAccordion.add("Championships", titleHistoryLayout);
     secondaryInfoAccordion.add("Medical Record", injuriesLayout);
 
@@ -342,6 +346,52 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         }
       } else {
         statsLayout.add(new Paragraph("Stats not available."));
+      }
+
+      // Status Cards
+      statusesLayout.removeAll();
+      statusesLayout.add(new H3("Active Status Cards"));
+      if (wrestler.getStatuses().isEmpty()) {
+        statusesLayout.add(new Paragraph("No active status cards."));
+      } else {
+        wrestler
+            .getStatuses()
+            .forEach(
+                status -> {
+                  VerticalLayout card = new VerticalLayout();
+                  card.setSpacing(false);
+                  card.setPadding(true);
+                  card.addClassNames(
+                      LumoUtility.Background.CONTRAST_5,
+                      LumoUtility.BorderRadius.MEDIUM,
+                      LumoUtility.Margin.Bottom.SMALL);
+
+                  String nameText =
+                      status.getLevel() == 1
+                          ? status.getStatusCard().getLevel1Name()
+                          : status.getStatusCard().getLevel2Name();
+                  H4 cardName = new H4(nameText + " (Level " + status.getLevel() + ")");
+                  cardName.addClassNames(
+                      LumoUtility.Margin.NONE,
+                      status.getStatusCard().isPositive()
+                          ? LumoUtility.TextColor.SUCCESS
+                          : LumoUtility.TextColor.ERROR);
+
+                  Paragraph desc = new Paragraph(status.getStatusCard().getDescription());
+                  desc.addClassNames(
+                      LumoUtility.FontSize.SMALL, LumoUtility.Margin.Vertical.XSMALL);
+
+                  String effect =
+                      status.getLevel() == 1
+                          ? status.getStatusCard().getLevel1Effect()
+                          : status.getStatusCard().getLevel2Effect();
+                  Span effectSpan = new Span("Effect: " + (effect != null ? effect : "None"));
+                  effectSpan.addClassNames(
+                      LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.BOLD);
+
+                  card.add(cardName, desc, effectSpan);
+                  statusesLayout.add(card);
+                });
       }
 
       // Populate biography

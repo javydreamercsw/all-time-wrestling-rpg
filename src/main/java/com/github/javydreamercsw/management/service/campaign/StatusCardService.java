@@ -80,4 +80,8 @@ public class StatusCardService {
         .orElseThrow(
             () -> new EntityNotFoundException("StatusCard with key " + key + " not found"));
   }
+
+  public java.util.List<StatusCard> findAll() {
+    return statusCardRepository.findAll();
+  }
 }

@@ -43,5 +43,6 @@ public class StorylineArcDTO {
     // For simplicity in AI generation, we might use indices to link milestones
     private Integer nextOnSuccessIndex;
     private Integer nextOnFailureIndex;
+    private List<String> statusCardRewards;
   }
 }

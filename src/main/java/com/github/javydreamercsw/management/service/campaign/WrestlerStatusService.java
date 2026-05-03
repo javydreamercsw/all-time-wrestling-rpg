@@ -56,6 +56,10 @@ public class WrestlerStatusService {
         && expansionService.isExpansionEnabled(STATUS_CARDS_EXPANSION_CODE);
   }
 
+  public java.util.List<StatusCard> getAllStatusCards() {
+    return statusCardService.findAll();
+  }
+
   public void assignStatus(Long wrestlerId, String statusKey) {
     if (!isStatusMechanicEnabled()) {
       log.debug("Status Cards mechanic is disabled. Ignoring assignment: {}", statusKey);

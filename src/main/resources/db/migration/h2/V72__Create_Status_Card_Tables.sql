@@ -37,5 +37,12 @@ CREATE TABLE wrestler_status_history (
     FOREIGN KEY (status_card_id) REFERENCES status_card(id)
 );
 
+CREATE TABLE milestone_status_rewards (
+    milestone_id BIGINT NOT NULL,
+    status_key VARCHAR(255) NOT NULL,
+    PRIMARY KEY (milestone_id, status_key),
+    FOREIGN KEY (milestone_id) REFERENCES storyline_milestone(id)
+);
+
 CREATE INDEX idx_wrestler_status_wrestler ON wrestler_status(wrestler_id);
 CREATE INDEX idx_wrestler_status_history_wrestler ON wrestler_status_history(wrestler_id);

@@ -44,6 +44,7 @@ public class StorylineDirectorService {
   private final CampaignStateRepository stateRepository;
   private final CampaignChapterService chapterService;
   private final CampaignService campaignService;
+  private final WrestlerStatusService wrestlerStatusService;
   private final ObjectMapper objectMapper;
 
   public StorylineDirectorService(
@@ -53,6 +54,7 @@ public class StorylineDirectorService {
       CampaignStateRepository stateRepository,
       CampaignChapterService chapterService,
       @org.springframework.context.annotation.Lazy CampaignService campaignService,
+      WrestlerStatusService wrestlerStatusService,
       ObjectMapper objectMapper) {
     this.aiFactory = aiFactory;
     this.storylineRepository = storylineRepository;
@@ -60,6 +62,7 @@ public class StorylineDirectorService {
     this.stateRepository = stateRepository;
     this.chapterService = chapterService;
     this.campaignService = campaignService;
+    this.wrestlerStatusService = wrestlerStatusService;
     this.objectMapper = objectMapper;
   }
 
@@ -140,6 +143,10 @@ public class StorylineDirectorService {
                 .narrativeGoal(mDto.getNarrativeGoal())
                 .order(mDto.getOrder())
                 .status(StorylineMilestone.MilestoneStatus.PENDING)
+                .statusCardRewards(
+                    mDto.getStatusCardRewards() != null
+                        ? mDto.getStatusCardRewards()
+                        : new ArrayList<>())
                 .build();
         milestones.add(milestoneRepository.save(milestone));
       }
@@ -197,6 +204,12 @@ public class StorylineDirectorService {
         storyline.getTitle(),
         current.getTitle(),
         success);
+
+    if (success && current.getStatusCardRewards() != null) {
+      current
+          .getStatusCardRewards()
+          .forEach(key -> wrestlerStatusService.assignStatus(campaign.getWrestler().getId(), key));
+    }
 
     current.setStatus(
         success

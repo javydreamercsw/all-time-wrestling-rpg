@@ -174,10 +174,17 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               Span stam =
                   new Span("⚡ Effective Stamina: " + wrestler.getEffectiveStartingStamina());
 
+              Span mom =
+                  new Span("🚀 Effective Momentum: " + wrestler.getEffectiveStartingMomentum());
+
+              Span hand = new Span("🃏 Effective Hand Size: " + wrestler.getEffectiveHandSize());
+
               hp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
               stam.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              mom.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              hand.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
 
-              mods.add(hp, stam);
+              mods.add(hp, stam, mom, hand);
 
               // Campaign Attributes (Only show if they have them set, defaults are 1)
               HorizontalLayout attrs = new HorizontalLayout();
@@ -220,6 +227,37 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                             cardsLayout.add(c);
                           });
                   mods.add(cardsLayout);
+                }
+
+                if (!wrestler.getStatuses().isEmpty()) {
+                  mods.add(new Span("Statuses:"));
+                  HorizontalLayout statusLayout = new HorizontalLayout();
+                  statusLayout.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
+                  wrestler
+                      .getStatuses()
+                      .forEach(
+                          status -> {
+                            Span s =
+                                new Span(
+                                    status.getLevel() == 1
+                                        ? status.getStatusCard().getLevel1Name()
+                                        : status.getStatusCard().getLevel2Name());
+                            s.addClassNames(
+                                FontSize.XSMALL,
+                                status.getStatusCard().isPositive()
+                                    ? Background.SUCCESS_10
+                                    : Background.ERROR_10,
+                                status.getStatusCard().isPositive()
+                                    ? TextColor.SUCCESS
+                                    : TextColor.ERROR,
+                                Padding.Horizontal.XSMALL,
+                                BorderRadius.SMALL,
+                                FontWeight.BOLD);
+                            Tooltip.forComponent(s)
+                                .setText(status.getStatusCard().getDescription());
+                            statusLayout.add(s);
+                          });
+                  mods.add(statusLayout);
                 }
               }
               getContent().add(mods);
