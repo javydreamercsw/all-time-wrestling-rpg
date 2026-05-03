@@ -10,9 +10,9 @@
 - [x] Task: Create `WrestlerStatusHistory` entity to log all status changes (gains, flips, losses). [bcfdb42]
     - [x] Write unit tests for `WrestlerStatusHistory` entity.
     - [x] Implement `WrestlerStatusHistory` entity.
-- [x] Task: Create Spring Data JPA repositories for the new entities.
-  - [x] Write integration tests for repositories.
-  - [x] Implement repositories.
+- [x] Task: Create Spring Data JPA repositories for the new entities. [452fec5]
+    - [x] Write integration tests for repositories.
+    - [x] Implement repositories.
 - [x] Task: Create Flyway migration script for the new tables.
 - [~] Task: Conductor - User Manual Verification 'Phase 1: Database Entities and Repositories' (Protocol in workflow.md)
 
