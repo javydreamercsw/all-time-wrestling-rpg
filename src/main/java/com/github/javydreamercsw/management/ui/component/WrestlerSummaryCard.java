@@ -88,18 +88,19 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
     getContent().add(statsRow);
 
     wrestlerService
-        .findByIdWithInjuries(wrestler.getId())
+        .findByIdWithDetails(wrestler.getId())
         .ifPresent(
-            wrestlerWithInjuries -> {
-              Span bumps = new Span("Bumps: " + wrestlerWithInjuries.getBumps());
+            wrestlerWithDetails -> {
+              Span bumps = new Span("Bumps: " + wrestlerWithDetails.getBumps());
               bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
 
               Span condition =
-                  new Span("💪 Physical Condition: " + wrestler.getPhysicalCondition() + "%");
+                  new Span(
+                      "💪 Physical Condition: " + wrestlerWithDetails.getPhysicalCondition() + "%");
               condition.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
-              if (wrestler.getPhysicalCondition() < 50) {
+              if (wrestlerWithDetails.getPhysicalCondition() < 50) {
                 condition.addClassNames(TextColor.ERROR);
-              } else if (wrestler.getPhysicalCondition() < 80) {
+              } else if (wrestlerWithDetails.getPhysicalCondition() < 80) {
                 condition.addClassNames(TextColor.WARNING);
               } else {
                 condition.addClassNames(TextColor.SUCCESS);
@@ -111,12 +112,12 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               // Always show effective HP if we have penalties or bonuses, even if not the player's
               // card directly (e.g. opponent)
               boolean hasCampaign =
-                  wrestler.getAlignment() != null
-                      && wrestler.getAlignment().getCampaign() != null
-                      && wrestler.getAlignment().getCampaign().getState() != null;
+                  wrestlerWithDetails.getAlignment() != null
+                      && wrestlerWithDetails.getAlignment().getCampaign() != null
+                      && wrestlerWithDetails.getAlignment().getCampaign().getState() != null;
 
               int effectiveHp =
-                  Math.max(1, wrestler.getEffectiveStartingHealth() - additionalPenalty);
+                  Math.max(1, wrestlerWithDetails.getEffectiveStartingHealth() - additionalPenalty);
 
               VerticalLayout mods = new VerticalLayout();
               mods.setPadding(false);
@@ -124,17 +125,19 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               mods.addClassNames(Margin.Top.SMALL, Padding.Top.SMALL, Border.TOP);
 
               StringBuilder hpTooltip = new StringBuilder();
-              hpTooltip.append("Base Health: ").append(wrestler.getStartingHealth());
+              hpTooltip.append("Base Health: ").append(wrestlerWithDetails.getStartingHealth());
 
               int campaignBonus = 0;
               int campaignPenalty = 0;
-              if (wrestler.getAlignment() != null
-                  && wrestler.getAlignment().getCampaign() != null
-                  && wrestler.getAlignment().getCampaign().getState() != null) {
+              if (hasCampaign) {
                 campaignBonus =
-                    wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
+                    wrestlerWithDetails
+                        .getAlignment()
+                        .getCampaign()
+                        .getState()
+                        .getCampaignHealthBonus();
                 campaignPenalty =
-                    wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
+                    wrestlerWithDetails.getAlignment().getCampaign().getState().getHealthPenalty();
                 if (campaignBonus > 0) {
                   hpTooltip.append("\nCampaign Bonus: +").append(campaignBonus);
                 }
@@ -143,16 +146,17 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 }
               }
 
-              if (wrestlerWithInjuries.getBumps() > 0) {
-                hpTooltip.append("\nBump Penalty: -").append(wrestlerWithInjuries.getBumps());
+              if (wrestlerWithDetails.getBumps() > 0) {
+                hpTooltip.append("\nBump Penalty: -").append(wrestlerWithDetails.getBumps());
               }
 
-              int conditionPenalty = Math.min(5, (100 - wrestler.getPhysicalCondition()) / 5);
+              int conditionPenalty =
+                  Math.min(5, (100 - wrestlerWithDetails.getPhysicalCondition()) / 5);
               if (conditionPenalty > 0) {
                 hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }
 
-              int injuryPenalty = wrestler.getTotalInjuryPenalty();
+              int injuryPenalty = wrestlerWithDetails.getTotalInjuryPenalty();
               if (injuryPenalty > 0) {
                 hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
               }
@@ -163,21 +167,25 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
               String hpText = "❤️ Effective HP: " + effectiveHp;
               Span hp = new Span(hpText);
-              if (wrestlerWithInjuries.getBumps() > 0) {
+              if (wrestlerWithDetails.getBumps() > 0) {
                 Span bumpIndicator =
-                    new Span(" (📉 -" + wrestlerWithInjuries.getBumps() + " bumps)");
+                    new Span(" (📉 -" + wrestlerWithDetails.getBumps() + " bumps)");
                 bumpIndicator.addClassNames(TextColor.ERROR, FontSize.XSMALL, Margin.Left.XSMALL);
                 hp.add(bumpIndicator);
               }
               Tooltip.forComponent(hp).setText(hpTooltip.toString());
 
               Span stam =
-                  new Span("⚡ Effective Stamina: " + wrestler.getEffectiveStartingStamina());
+                  new Span(
+                      "⚡ Effective Stamina: " + wrestlerWithDetails.getEffectiveStartingStamina());
 
               Span mom =
-                  new Span("🚀 Effective Momentum: " + wrestler.getEffectiveStartingMomentum());
+                  new Span(
+                      "🚀 Effective Momentum: "
+                          + wrestlerWithDetails.getEffectiveStartingMomentum());
 
-              Span hand = new Span("🃏 Effective Hand Size: " + wrestler.getEffectiveHandSize());
+              Span hand =
+                  new Span("🃏 Effective Hand Size: " + wrestlerWithDetails.getEffectiveHandSize());
 
               hp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
               stam.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
@@ -190,14 +198,14 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               HorizontalLayout attrs = new HorizontalLayout();
               attrs.setSpacing(true);
               attrs.addClassNames(FontSize.XSMALL, Margin.Vertical.XSMALL);
-              attrs.add(new Span("DRV: " + wrestler.getDrive()));
-              attrs.add(new Span("RES: " + wrestler.getResilience()));
-              attrs.add(new Span("CHA: " + wrestler.getCharisma()));
-              attrs.add(new Span("BRL: " + wrestler.getBrawl()));
+              attrs.add(new Span("DRV: " + wrestlerWithDetails.getDrive()));
+              attrs.add(new Span("RES: " + wrestlerWithDetails.getResilience()));
+              attrs.add(new Span("CHA: " + wrestlerWithDetails.getCharisma()));
+              attrs.add(new Span("BRL: " + wrestlerWithDetails.getBrawl()));
               mods.add(attrs);
 
               if (hasCampaign) {
-                CampaignState state = wrestler.getAlignment().getCampaign().getState();
+                CampaignState state = wrestlerWithDetails.getAlignment().getCampaign().getState();
                 if (!state.getUpgrades().isEmpty()) {
                   state
                       .getUpgrades()
@@ -229,11 +237,11 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                   mods.add(cardsLayout);
                 }
 
-                if (!wrestler.getStatuses().isEmpty()) {
+                if (!wrestlerWithDetails.getStatuses().isEmpty()) {
                   mods.add(new Span("Statuses:"));
                   HorizontalLayout statusLayout = new HorizontalLayout();
                   statusLayout.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
-                  wrestler
+                  wrestlerWithDetails
                       .getStatuses()
                       .forEach(
                           status -> {
@@ -262,7 +270,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               }
               getContent().add(mods);
 
-              if (!wrestlerWithInjuries.getInjuries().isEmpty()) {
+              if (!wrestlerWithDetails.getInjuries().isEmpty()) {
                 VerticalLayout activeInjuries = new VerticalLayout();
                 activeInjuries.setPadding(false);
                 activeInjuries.setSpacing(false);
@@ -271,7 +279,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 healedInjuries.setPadding(false);
                 healedInjuries.setSpacing(false);
 
-                wrestlerWithInjuries
+                wrestlerWithDetails
                     .getInjuries()
                     .forEach(
                         injury -> {
