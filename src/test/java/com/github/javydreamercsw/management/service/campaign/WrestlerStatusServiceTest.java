@@ -26,7 +26,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
-import com.github.javydreamercsw.management.domain.campaign.StatusCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusAction;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistory;
@@ -47,7 +46,7 @@ class WrestlerStatusServiceTest {
 
   @Mock private WrestlerStatusRepository wrestlerStatusRepository;
   @Mock private WrestlerStatusHistoryRepository wrestlerStatusHistoryRepository;
-  @Mock private StatusCardRepository statusCardRepository;
+  @Mock private StatusCardService statusCardService;
   @Mock private WrestlerService wrestlerService;
   @Mock private CampaignScriptService campaignScriptService;
 
@@ -62,7 +61,7 @@ class WrestlerStatusServiceTest {
     card.setKey("status_draw");
 
     when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(statusCardRepository.findByKey("status_draw")).thenReturn(Optional.of(card));
+    when(statusCardService.findByKey("status_draw")).thenReturn(card);
     when(wrestlerStatusRepository.findByWrestlerAndStatusCard(wrestler, card))
         .thenReturn(Optional.empty());
 
@@ -90,7 +89,7 @@ class WrestlerStatusServiceTest {
         WrestlerStatus.builder().wrestler(wrestler).statusCard(card).level(1).build();
 
     when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(statusCardRepository.findByKey("status_draw")).thenReturn(Optional.of(card));
+    when(statusCardService.findByKey("status_draw")).thenReturn(card);
     when(wrestlerStatusRepository.findByWrestlerAndStatusCard(wrestler, card))
         .thenReturn(Optional.of(existingStatus));
 
@@ -118,7 +117,7 @@ class WrestlerStatusServiceTest {
         WrestlerStatus.builder().wrestler(wrestler).statusCard(card).level(2).build();
 
     when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(statusCardRepository.findByKey("status_draw")).thenReturn(Optional.of(card));
+    when(statusCardService.findByKey("status_draw")).thenReturn(card);
     when(wrestlerStatusRepository.findByWrestlerAndStatusCard(wrestler, card))
         .thenReturn(Optional.of(existingStatus));
 
@@ -139,7 +138,7 @@ class WrestlerStatusServiceTest {
         WrestlerStatus.builder().wrestler(wrestler).statusCard(card).level(1).build();
 
     when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(statusCardRepository.findByKey("status_draw")).thenReturn(Optional.of(card));
+    when(statusCardService.findByKey("status_draw")).thenReturn(card);
     when(wrestlerStatusRepository.findByWrestlerAndStatusCard(wrestler, card))
         .thenReturn(Optional.of(existingStatus));
 

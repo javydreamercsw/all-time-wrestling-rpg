@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
-import com.github.javydreamercsw.management.domain.campaign.StatusCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusAction;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistory;
@@ -25,6 +24,7 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusHistor
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -41,21 +41,17 @@ public class WrestlerStatusService {
 
   private final WrestlerStatusRepository wrestlerStatusRepository;
   private final WrestlerStatusHistoryRepository wrestlerStatusHistoryRepository;
-  private final StatusCardRepository statusCardRepository;
+  private final StatusCardService statusCardService;
   private final WrestlerService wrestlerService;
   private final CampaignScriptService campaignScriptService;
 
   public void assignStatus(Long wrestlerId, String statusKey) {
-    Optional<Wrestler> wrestlerOpt = wrestlerService.findById(wrestlerId);
-    Optional<StatusCard> cardOpt = statusCardRepository.findByKey(statusKey);
-
-    if (wrestlerOpt.isEmpty() || cardOpt.isEmpty()) {
-      log.error("Wrestler ({}) or StatusCard ({}) not found", wrestlerId, statusKey);
-      return;
-    }
-
-    Wrestler wrestler = wrestlerOpt.get();
-    StatusCard card = cardOpt.get();
+    Wrestler wrestler =
+        wrestlerService
+            .findById(wrestlerId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Wrestler with id " + wrestlerId + " not found"));
+    StatusCard card = statusCardService.findByKey(statusKey);
 
     Optional<WrestlerStatus> existingStatusOpt =
         wrestlerStatusRepository.findByWrestlerAndStatusCard(wrestler, card);
@@ -83,16 +79,12 @@ public class WrestlerStatusService {
   }
 
   public void removeStatus(Long wrestlerId, String statusKey) {
-    Optional<Wrestler> wrestlerOpt = wrestlerService.findById(wrestlerId);
-    Optional<StatusCard> cardOpt = statusCardRepository.findByKey(statusKey);
-
-    if (wrestlerOpt.isEmpty() || cardOpt.isEmpty()) {
-      log.error("Wrestler ({}) or StatusCard ({}) not found", wrestlerId, statusKey);
-      return;
-    }
-
-    Wrestler wrestler = wrestlerOpt.get();
-    StatusCard card = cardOpt.get();
+    Wrestler wrestler =
+        wrestlerService
+            .findById(wrestlerId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Wrestler with id " + wrestlerId + " not found"));
+    StatusCard card = statusCardService.findByKey(statusKey);
 
     wrestlerStatusRepository
         .findByWrestlerAndStatusCard(wrestler, card)
@@ -147,10 +139,8 @@ public class WrestlerStatusService {
     if (condition == null || condition.isBlank()) {
       return false;
     }
-    // Simple preprocessing for common syntax like "loss: true" to "loss == true"
-    String script = condition.replace(":", " == ");
     try {
-      Object result = campaignScriptService.evaluateSnippet(script, variables);
+      Object result = campaignScriptService.evaluateSnippet(condition, variables);
       return result instanceof Boolean && (Boolean) result;
     } catch (Exception e) {
       log.warn("Failed to evaluate status condition: {}", condition, e);

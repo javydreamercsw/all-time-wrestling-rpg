@@ -6,9 +6,9 @@
   "positive": true,
   "level1Effect": "momentum: +4",
   "level2Effect": "momentum: +4, mainEvent: true",
-  "flipUpCondition": "momentum >= 5 or prompt: draw",
+  "flipUpCondition": "momentum >= 5",
   "flipDownCondition": "momentum < 3",
-  "discardCondition": "prompt: remove"
+  "discardCondition": "false"
 }, {
   "key": "status_lost_confidence",
   "level1Name": "Lost Confidence",
@@ -17,9 +17,9 @@
   "positive": false,
   "level1Effect": "handSize: -2",
   "level2Effect": "momentum: -7, loseFocusOnLowMomentum: true",
-  "flipUpCondition": "loss: true or prompt: lostConfidence",
+  "flipUpCondition": "loss == true",
   "flipDownCondition": "momentum >= 5",
-  "discardCondition": "prompt: remove"
+  "discardCondition": "false"
 }, {
   "key": "status_superstar",
   "level1Name": "Superstar",
@@ -28,9 +28,9 @@
   "positive": true,
   "level1Effect": "vpBonus: 1",
   "level2Effect": "vpBonus: 2, goat: true",
-  "flipUpCondition": "prompt: superstar",
+  "flipUpCondition": "false",
   "flipDownCondition": null,
-  "discardCondition": "prompt: remove"
+  "discardCondition": "false"
 }, {
   "key": "status_respected",
   "level1Name": "Respected",
@@ -39,7 +39,7 @@
   "positive": true,
   "level1Effect": "opponentTargetNumber: +1",
   "level2Effect": "opponentTargetNumber: +2",
-  "flipUpCondition": "prompt: respected",
+  "flipUpCondition": "false",
   "flipDownCondition": null,
-  "discardCondition": "prompt: remove"
+  "discardCondition": "false"
 } ]

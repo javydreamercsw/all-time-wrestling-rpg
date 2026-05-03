@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.campaign.StatusCardRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,5 +72,12 @@ public class StatusCardService {
     card.setDiscardCondition(discardCondition);
 
     return statusCardRepository.save(card);
+  }
+
+  public StatusCard findByKey(String key) {
+    return statusCardRepository
+        .findByKey(key)
+        .orElseThrow(
+            () -> new EntityNotFoundException("StatusCard with key " + key + " not found"));
   }
 }
