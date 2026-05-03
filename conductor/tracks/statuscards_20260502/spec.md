@@ -40,9 +40,9 @@ The Status Cards mechanic introduces a system to represent a wrestler's mental o
 ### 4.1 Backend Storage (Entity-Based)
 
 * Similar to the Alignment abilities, new entities will be created:
-  * `StatusCard`: Defines the status with an internal `key` (e.g., "status_draw"), level-specific names (`level1Name`, `level2Name`), description, modifiers, and flip conditions.
+  * `StatusCard`: Defines the status, its levels, modifiers, and flip conditions.
   * `WrestlerStatus`: Maps a `Wrestler` to a `StatusCard` and tracks the current level (I or II).
-* `WrestlerStatusHistory`: Logs all changes (gains, flips, losses) for auditing and campaign tracking.
+  * `WrestlerStatusHistory`: Logs all changes (gains, flips, losses) for auditing and campaign tracking.
 
 ### 4.2 UI Integration
 

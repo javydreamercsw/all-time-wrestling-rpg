@@ -25,7 +25,6 @@
 
 ---
 
-### [x] Track: Implement Status Cards mechanic for the Women's Edition campaign
+- [ ] **Track: Implement Status Cards mechanic for the Women's Edition campaign**
+  *Link: [./tracks/statuscards_20260502/](./tracks/statuscards_20260502/)*
 
-*Link: [./tracks/statuscards_20260502/](./tracks/statuscards_20260502/)*
-*Status: Completed (2026-05-03)*
