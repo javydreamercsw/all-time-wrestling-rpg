@@ -221,14 +221,14 @@ public abstract class AbstractIntegrationTest {
   protected CacheManager cacheManager;
 
   @AfterEach
-  public void tearDown() throws Exception {
+  public void tearDown() {
     log.debug("AbstractIntegrationTest.tearDown() called");
     clearSecurityContext();
     clearCache();
   }
 
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     log.debug("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
     // 1. Capture original authentication
@@ -265,23 +265,17 @@ public abstract class AbstractIntegrationTest {
 
   protected void clearAllRepositories() {
     log.debug("AbstractIntegrationTest.clearAllRepositories() called");
-
-    // 1. Reset sequences (H2 specific) for tables that ARE cleared
-    try {
-      transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      transactionTemplate.execute(
-          status -> {
-            entityManager
-                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-                .executeUpdate();
-            entityManager
-                .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
-                .executeUpdate();
-            return null;
-          });
-    } catch (Exception e) {
-      log.trace("Could not reset sequences (might not be H2): {}", e.getMessage());
-    }
+    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transactionTemplate.execute(
+        status -> {
+          entityManager
+              .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+              .executeUpdate();
+          entityManager
+              .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
+              .executeUpdate();
+          return null;
+        });
 
     // 2. Perform cleanup and init in a new transaction to avoid conflicts
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -425,16 +419,14 @@ public abstract class AbstractIntegrationTest {
         finalAuthorities.add(new SimpleGrantedAuthority(role.getName().name()));
         finalAuthorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
       }
+    } else if ("anonymousUser".equals(principalName)) {
+      finalPrincipal = principalName;
+      finalAuthorities.add(new SimpleGrantedAuthority("ROLE_ANONYMOUS"));
     } else {
-      if ("anonymousUser".equals(principalName)) {
-        finalPrincipal = principalName;
-        finalAuthorities.add(new SimpleGrantedAuthority("ROLE_ANONYMOUS"));
-      } else {
-        // Build a mock account for missing users (standard @WithMockUser users)
-        Account mockAccount = new Account(principalName, "password", principalName + "@test.com");
-        mockAccount.setId(-1L);
-        finalPrincipal = new CustomUserDetails(mockAccount, null);
-      }
+      // Build a mock account for missing users (standard @WithMockUser users)
+      Account mockAccount = new Account(principalName, "password", principalName + "@test.com");
+      mockAccount.setId(-1L);
+      finalPrincipal = new CustomUserDetails(mockAccount, null);
     }
 
     // Add explicit authorities if provided

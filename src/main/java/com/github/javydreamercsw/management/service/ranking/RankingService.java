@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
-import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -341,20 +340,6 @@ public class RankingService {
         .id(team.getId())
         .name(team.getName())
         .fans(s1.getFans() + s2.getFans())
-        .rank(rank)
-        .build();
-  }
-
-  private RankedTeamDTO toRankedTeamDTO(
-      @NonNull Faction faction, int rank, @NonNull Long universeId) {
-    return RankedTeamDTO.builder()
-        .id(faction.getId())
-        .name(faction.getName())
-        .fans(
-            faction.getMembers().stream()
-                .map(w -> wrestlerService.getOrCreateState(w.getId(), universeId))
-                .mapToLong(WrestlerState::getFans)
-                .sum())
         .rank(rank)
         .build();
   }

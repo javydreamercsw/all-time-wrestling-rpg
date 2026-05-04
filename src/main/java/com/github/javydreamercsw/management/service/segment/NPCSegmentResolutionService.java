@@ -326,44 +326,6 @@ public class NPCSegmentResolutionService {
     }
   }
 
-  /** Calculate individual wrestler weight for multi-person segments in a specific universe. */
-  private WrestlerWeight calculateWrestlerWeight(
-      @NonNull Wrestler wrestler, @NonNull Long universeId) {
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler.getId(), universeId);
-
-    int fanWeight = Math.toIntExact(state.getFans() / 5);
-    int tierBonus = getTierBonus(state.getTier());
-    int healthPenalty = getHealthPenalty(wrestler, universeId);
-
-    // Individual bonus if they have a manager from the same faction
-    int synergyBonus = 0;
-    if (state.getManager() != null && state.getFaction() != null) {
-      synergyBonus = state.getFaction().getAffinity() / 20; // Max +5 at 100 affinity
-    }
-
-    int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty + synergyBonus);
-
-    return new WrestlerWeight(wrestler, totalWeight, fanWeight, tierBonus, healthPenalty);
-  }
-
-  /** Determine winner in multi-person segment using weighted random selection. */
-  private Wrestler determineMultiPersonWinner(@NonNull List<WrestlerWeight> wrestlerWeights) {
-    int totalWeight = wrestlerWeights.stream().mapToInt(WrestlerWeight::totalWeight).sum();
-    int randomValue = random.nextInt(totalWeight);
-
-    int currentWeight = 0;
-    for (WrestlerWeight wrestlerWeight : wrestlerWeights) {
-      currentWeight += wrestlerWeight.totalWeight();
-      if (randomValue < currentWeight) {
-        return wrestlerWeight.wrestler();
-      }
-    }
-
-    // Fallback (should never happen)
-    return wrestlerWeights.get(0).wrestler();
-  }
-
   /** Data class for wrestler weight calculations. */
   public record WrestlerWeight(
       @NonNull Wrestler wrestler,

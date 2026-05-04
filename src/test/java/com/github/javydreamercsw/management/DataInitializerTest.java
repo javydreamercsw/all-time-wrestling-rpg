@@ -248,7 +248,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncWrestlersFromFile_NewWrestler() throws IOException {
+  void testSyncWrestlersFromFile_NewWrestler() {
     WrestlerImportDTO dto = new WrestlerImportDTO();
     dto.setName("New Wrestler");
     dto.setFans(1000L);

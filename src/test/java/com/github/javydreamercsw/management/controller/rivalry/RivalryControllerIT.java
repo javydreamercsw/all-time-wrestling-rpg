@@ -61,7 +61,7 @@ class RivalryControllerIT extends AbstractRestControllerIT {
       universeRepository;
 
   @BeforeEach
-  public void setUp() throws Exception {
+  public void setUp() {
     // Manually build MockMvc to bypass Vaadin servlet issues
     mockMvc =
         MockMvcBuilders.standaloneSetup(new RivalryController(rivalryService, rivalryMapper))

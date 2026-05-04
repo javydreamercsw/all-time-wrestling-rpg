@@ -53,7 +53,9 @@ public class TestSecurityContextConfig {
             inv -> {
               String role = inv.getArgument(0);
               Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth == null) return false;
+              if (auth == null) {
+                return false;
+              }
               return auth.getAuthorities().stream()
                   .anyMatch(
                       a ->

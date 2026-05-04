@@ -111,8 +111,6 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
         expectedTitle = "Quarter-Finals";
       }
 
-      final String currentTitle = expectedTitle;
-
       // Wait for the bracket to update
       new WebDriverWait(driver, Duration.ofSeconds(30))
           .until(

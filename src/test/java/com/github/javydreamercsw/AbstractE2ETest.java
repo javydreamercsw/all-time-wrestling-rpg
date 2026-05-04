@@ -88,7 +88,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             inv -> {
               String role = inv.getArgument(0);
               Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth == null) return false;
+              if (auth == null) {
+                return false;
+              }
               return auth.getAuthorities().stream()
                   .anyMatch(
                       a ->
@@ -237,7 +239,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
         WebElement loginFormHost;
         try {
           loginFormHost =

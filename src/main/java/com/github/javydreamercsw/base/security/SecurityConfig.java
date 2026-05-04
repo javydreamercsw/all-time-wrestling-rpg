@@ -44,7 +44,7 @@ public class SecurityConfig {
 
   @Bean
   @Profile("!test & !e2e")
-  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) {
     // Public access to static resources and specific API endpoints
     http.authorizeHttpRequests(
         auth ->
@@ -114,7 +114,7 @@ public class SecurityConfig {
   @Bean
   @Profile("test")
   @Order(0)
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
     http.csrf(csrf -> csrf.disable())
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());

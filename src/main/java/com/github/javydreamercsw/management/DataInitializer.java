@@ -503,13 +503,6 @@ public class DataInitializer implements Initializable {
     }
   }
 
-  private boolean isSettingEnabled(@NonNull String key) {
-    return gameSettingService
-        .findById(key)
-        .map(gs -> Boolean.parseBoolean(gs.getValue()))
-        .orElse(false);
-  }
-
   private void syncCampaignAbilityCardsFromFile() {
     if (skipIfNotEmpty && campaignAbilityCardService.count() > 0) {
       return;
@@ -1115,7 +1108,7 @@ public class DataInitializer implements Initializable {
 
           List<Deck> byWrestler = deckService.findByWrestler(wrestler);
           Deck deck =
-              !byWrestler.isEmpty() ? byWrestler.getFirst() : deckService.createDeck(wrestler);
+              byWrestler.isEmpty() ? deckService.createDeck(wrestler) : byWrestler.getFirst();
 
           // Normalize existing DeckCard.set references to the canonical managed instances
           deck.getCards()

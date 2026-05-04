@@ -28,8 +28,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,20 +51,6 @@ class SecurityUtilsTest {
   @AfterEach
   void tearDown() {
     SecurityContextHolder.setContext(originalContext);
-  }
-
-  private void setMockUser(String username, String role) {
-    CustomUserDetails user = mock(CustomUserDetails.class);
-    when(user.getUsername()).thenReturn(username);
-    when(user.getAuthorities())
-        .thenAnswer(invocation -> Collections.singletonList(new SimpleGrantedAuthority(role)));
-    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user));
-
-    Authentication auth =
-        new UsernamePasswordAuthenticationToken(user, "password", user.getAuthorities());
-    SecurityContext context = SecurityContextHolder.createEmptyContext();
-    context.setAuthentication(auth);
-    SecurityContextHolder.setContext(context);
   }
 
   @Test
