@@ -29,9 +29,10 @@ import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Automatically discovers and clears all JPA repositories in the correct dependency order. Uses
@@ -45,13 +46,18 @@ public class DatabaseCleaner implements DatabaseCleanup {
   @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
   @Autowired private EntityManager entityManager;
   @Autowired private AccountInitializer accountInitializer;
+  @Autowired private TransactionTemplate transactionTemplate;
+  @Autowired private Environment environment;
+
+  private Map<String, JpaRepository<?, ?>> cachedRepositories;
+  private List<String> cachedSyncOrder;
+  private Set<Class<?>> cachedEntityClasses;
 
   /**
    * Clears all repositories in the correct dependency order. Automatically discovers all
    * JpaRepository beans and deletes their data in reverse dependency order (children before
    * parents).
    */
-  @Transactional
   @Override
   public void clearRepositories() {
     log.debug("🧹 Starting database cleanup...");
@@ -59,29 +65,31 @@ public class DatabaseCleaner implements DatabaseCleanup {
     // Detach all managed entities to prevent dirty state from interfering with cleanup.
     entityManager.clear();
 
-    // Manually break known circular dependencies before doing anything else.
+    // Break circular dependencies first
     breakCircularDependencies();
 
-    // Clear join tables first to handle Many-to-Many relationships without dedicated repositories
+    // Clear join tables
     clearJoinTables();
 
-    // Discover all repositories
-    Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
-    log.debug("📦 Discovered {} repositories", repositories.size());
+    // Discover all repositories (with caching)
+    if (cachedRepositories == null) {
+      cachedRepositories = discoverRepositories();
+      log.debug("📦 Discovered and cached {} repositories", cachedRepositories.size());
+    }
 
-    // Get entity classes and determine deletion order
-    Set<Class<?>> entityClasses = getEntityClasses();
-    List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(entityClasses);
-
-    // Reverse the order for deletion (delete children before parents)
-    Collections.reverse(syncOrder);
-
-    log.debug("🔄 Deletion order: {}", syncOrder);
+    // Get entity classes and determine deletion order (with caching)
+    if (cachedSyncOrder == null) {
+      cachedEntityClasses = getEntityClasses();
+      cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
+      // Reverse the order for deletion (delete children before parents)
+      List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
+      Collections.reverse(reverseOrder);
+      cachedSyncOrder = reverseOrder;
+      log.debug("🔄 Calculated and cached deletion order: {}", cachedSyncOrder);
+    }
 
     // Entities that should NOT be cleared as they contain static configuration data
-
     // loaded by DataInitializer and needed by many views.
-
     Set<String> protectedEntities =
         new HashSet<>(
             Arrays.asList(
@@ -93,38 +101,103 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "campaignabilitycard",
                 "campaignupgrade",
                 "holiday",
-                "injurytype"));
+                "injurytype",
+                "location",
+                "arena",
+                "npc",
+                "faction",
+                "title",
+                "achievement",
+                "ringsideaction",
+                "ringsideactiontype",
+                "commentator",
+                "commentaryteam"));
+
+    // Determine if we should use surgical cleanup (optimized for E2E)
+    // or full cleanup (safer for Integration Tests)
+    boolean isE2E = Arrays.asList(environment.getActiveProfiles()).contains("e2e");
+    log.debug("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
 
     // Delete data in the correct order
     int deletedCount = 0;
-    for (String entityName : syncOrder) {
+    for (String entityName : cachedSyncOrder) {
       if (protectedEntities.contains(entityName.toLowerCase())) {
         log.debug("🛡️ Skipping protected entity: {}", entityName);
         continue;
       }
-      JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
-      if (repository != null) {
-        if (repository.count() > 0) {
-          repository.deleteAllInBatch();
+
+      // Special handling for Entities that might have both master data and test data:
+      // we want to keep the master data (with externalId) but remove test data (without
+      // externalId).
+      // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
+      if (isE2E
+          && ("wrestler".equalsIgnoreCase(entityName)
+              || "team".equalsIgnoreCase(entityName)
+              || "faction".equalsIgnoreCase(entityName)
+              || "npc".equalsIgnoreCase(entityName)
+              || "arena".equalsIgnoreCase(entityName)
+              || "location".equalsIgnoreCase(entityName))) {
+        log.debug("🧹 Surgical cleanup for {}...", entityName);
+        int deleted =
+            executeNativeUpdate(
+                "DELETE FROM "
+                    + entityName.toLowerCase()
+                    + " WHERE external_id IS NULL OR external_id = ''");
+        if (deleted >= 0) {
+          log.debug("✅ Deleted {} test {}", deleted, entityName);
           deletedCount++;
+          continue; // Skip the full repository deletion below
+        }
+      }
+
+      JpaRepository<?, ?> repository = cachedRepositories.get(entityName.toLowerCase());
+      if (repository != null) {
+        try {
+          if (repository.count() > 0) {
+            repository.deleteAllInBatch();
+            deletedCount++;
+          }
+        } catch (Exception e) {
+          log.warn("Failed to clear repository for {}: {}", entityName, e.getMessage());
         }
       }
     }
 
     // Clean up any remaining repositories not in the entity list
-    for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
-      if (!syncOrder.contains(entry.getKey()) && !protectedEntities.contains(entry.getKey())) {
-        if (entry.getValue().count() > 0) {
-          entry.getValue().deleteAllInBatch();
-          deletedCount++;
+    for (Map.Entry<String, JpaRepository<?, ?>> entry : cachedRepositories.entrySet()) {
+      if (!cachedSyncOrder.contains(entry.getKey())
+          && !protectedEntities.contains(entry.getKey())) {
+        try {
+          if (entry.getValue().count() > 0) {
+            entry.getValue().deleteAllInBatch();
+            deletedCount++;
+          }
+        } catch (Exception e) {
+          log.warn("Failed to clear remaining repository {}: {}", entry.getKey(), e.getMessage());
         }
       }
     }
 
     accountInitializer.init();
-    entityManager.flush();
-    entityManager.clear();
     log.debug("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+  }
+
+  protected int executeNativeUpdate(String sql) {
+    try {
+      return transactionTemplate.execute(
+          status -> {
+            try {
+              return entityManager.createNativeQuery(sql).executeUpdate();
+            } catch (Exception e) {
+              log.warn("Native update execution failed: {} - {}", sql, e.getMessage());
+              status.setRollbackOnly();
+              return -1;
+            }
+          });
+    } catch (Exception e) {
+      log.warn("Transaction failed for native update: {} - {}", sql, e.getMessage());
+      return -1;
+    }
   }
 
   /**
@@ -133,75 +206,19 @@ public class DatabaseCleaner implements DatabaseCleanup {
    */
   private void breakCircularDependencies() {
     log.debug("💔 Breaking circular dependencies...");
-    try {
-      entityManager.createNativeQuery("DELETE FROM heat_event").executeUpdate();
-      entityManager.createNativeQuery("UPDATE wrestler SET faction_id = NULL").executeUpdate();
-      log.debug("✅ Nullified wrestler.faction_id");
-    } catch (Exception e) {
-      // This might fail if the table doesn't exist yet on first run, which is fine.
-      log.warn("Could not nullify wrestler.faction_id: {}", e.getMessage());
-    }
-    try {
-      entityManager.createNativeQuery("UPDATE faction SET leader_id = NULL").executeUpdate();
-      log.debug("✅ Nullified faction.leader_id");
-    } catch (Exception e) {
-      // This might fail if the table doesn't exist yet on first run, which is fine.
-      log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
-    }
-    try {
-      entityManager.createNativeQuery("UPDATE wrestler SET account_id = NULL").executeUpdate();
-      log.debug("✅ Nullified wrestler.account_id");
-    } catch (Exception e) {
-      // This might fail if the table doesn't exist yet on first run, which is fine.
-      log.warn("Could not nullify wrestler.account_id: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery("UPDATE campaign_storyline SET current_milestone_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified campaign_storyline.current_milestone_id");
-    } catch (Exception e) {
-      log.warn("Could not nullify campaign_storyline.current_milestone_id: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery(
-              "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified storyline_milestone self-references");
-    } catch (Exception e) {
-      log.warn("Could not nullify storyline_milestone self-references: {}", e.getMessage());
-    }
-    try {
-      entityManager
-          .createNativeQuery("UPDATE campaign_state SET active_storyline_id = NULL")
-          .executeUpdate();
-      log.debug("✅ Nullified campaign_state.active_storyline_id");
-    } catch (Exception e) {
-      log.warn("Could not nullify campaign_state.active_storyline_id: {}", e.getMessage());
-    }
+    executeNativeUpdate("DELETE FROM heat_event");
+    executeNativeUpdate("UPDATE wrestler SET faction_id = NULL");
+    executeNativeUpdate("UPDATE faction SET leader_id = NULL");
+    executeNativeUpdate("UPDATE wrestler SET account_id = NULL");
+    executeNativeUpdate("UPDATE campaign_storyline SET current_milestone_id = NULL");
+    executeNativeUpdate(
+        "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL");
+    executeNativeUpdate("UPDATE campaign_state SET active_storyline_id = NULL");
+    executeNativeUpdate("UPDATE account SET failed_login_attempts = 0, locked_until = NULL");
 
-    try {
-      entityManager
-          .createNativeQuery("UPDATE account SET failed_login_attempts = 0, locked_until = NULL")
-          .executeUpdate();
-      log.debug("✅ Reset account lockout states");
-    } catch (Exception e) {
-      log.warn("Could not reset account lockout states: {}", e.getMessage());
-    }
-
-    try {
-      entityManager.createNativeQuery("DELETE FROM storyline_milestone").executeUpdate();
-      log.debug("✅ Explicitly cleared storyline_milestone");
-    } catch (Exception e) {
-      log.warn("Could not explicitly clear storyline_milestone: {}", e.getMessage());
-    }
-    try {
-      entityManager.createNativeQuery("DELETE FROM campaign_storyline").executeUpdate();
-      log.debug("✅ Explicitly cleared campaign_storyline");
-    } catch (Exception e) {
-      log.warn("Could not explicitly clear campaign_storyline: {}", e.getMessage());
-    }
+    // Clear storyline and milestone explicitly as they often cause issues
+    executeNativeUpdate("DELETE FROM storyline_milestone");
+    executeNativeUpdate("DELETE FROM campaign_storyline");
   }
 
   /**
@@ -233,16 +250,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
     if (!joinTableNames.isEmpty()) {
       log.debug("🧹 Clearing {} join tables...", joinTableNames.size());
       for (String tableName : joinTableNames) {
-        try {
-          log.debug("Deleting all records from join table {}", tableName);
-          // Use uppercase to match database schema and no quotes to avoid case-sensitivity issues
-          entityManager
-              .createNativeQuery("DELETE FROM " + tableName.toUpperCase(Locale.ROOT))
-              .executeUpdate();
-          log.debug("✅ Deleted all records from join table {}", tableName);
-        } catch (Exception e) {
-          log.error("❌ Failed to delete from join table {}: {}", tableName, e.getMessage());
-        }
+        executeNativeUpdate("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
       }
     }
   }

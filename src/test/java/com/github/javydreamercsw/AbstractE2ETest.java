@@ -74,7 +74,9 @@ import org.springframework.test.context.ActiveProfiles;
 @WithCustomMockUser(roles = {"ADMIN"})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
-  protected WebDriver driver;
+  protected static WebDriver driver;
+  private static boolean appReady = false;
+  private static String lastLoggedInUser = null;
   @LocalServerPort protected int serverPort;
 
   @Value("${server.servlet.context-path}")
@@ -87,7 +89,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   private static final AtomicInteger docOrder = new AtomicInteger(0);
 
   static {
-    // Shutdown hook to write documentation manifest
+    // Shutdown hook to write documentation manifest and clean up WebDriver
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
@@ -100,6 +102,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                       DocumentationManifest.write(manifestPath);
                     } catch (IOException e) {
                       log.error("Failed to write documentation manifest", e);
+                    }
+                  }
+                  if (driver != null) {
+                    log.info("Closing shared WebDriver...");
+                    try {
+                      driver.quit();
+                    } catch (Exception e) {
+                      log.warn("Error closing WebDriver in shutdown hook: {}", e.getMessage());
                     }
                   }
                 }));
@@ -120,12 +130,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
+    // Only clean up leagues in the base class if we want it for every test.
+    // Given the performance issues, we might want to be more selective,
+    // but for now, let's keep it consistent with previous behavior but faster if possible.
     cleanupLeagues();
 
-    WebDriverManager.chromedriver().setup();
-    log.info("Waiting for application to be ready on port {}", serverPort);
-    waitForAppToBeReady();
-    log.info("Application is ready on port {}", serverPort);
+    if (!appReady) {
+      WebDriverManager.chromedriver().setup();
+      log.info("Waiting for application to be ready on port {}", serverPort);
+      waitForAppToBeReady();
+      log.info("Application is ready on port {}", serverPort);
+      appReady = true;
+    }
 
     // Create artifact directory
     screenshotCounter = 0;
@@ -145,34 +161,60 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       testArtifactsDir = null; // So we don't try to use it
     }
 
-    ChromeOptions options = new ChromeOptions();
-    if (isHeadless()) {
-      options.addArguments("--headless=new");
-    }
-    options.addArguments("--disable-gpu");
-    if (Boolean.getBoolean("generate.docs")) {
-      // Consistent size for documentation screenshots
+    if (driver == null) {
+      ChromeOptions options = new ChromeOptions();
+      if (isHeadless()) {
+        options.addArguments("--headless=new");
+      }
+      options.addArguments("--disable-gpu");
       options.addArguments("--window-size=1920,1080");
-    } else {
-      options.addArguments("--window-size=1920,1080");
+      options.addArguments("--no-sandbox");
+      options.addArguments("--disable-dev-shm-usage");
+      options.addArguments("--reduce-security-for-testing");
+      options.addArguments("--disable-notifications");
+      options.addArguments("--disable-save-password-bubble");
+      options.addArguments("--disable-infobars");
+      options.addArguments("--disable-extensions");
+
+      Map<String, Object> prefs = new HashMap<>();
+      prefs.put("credentials_enable_service", false);
+      prefs.put("profile.password_manager_enabled", false);
+      prefs.put("profile.password_manager_leak_detection", false);
+      options.setExperimentalOption("prefs", prefs);
+      options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
+
+      driver = new ChromeDriver(options);
     }
-    options.addArguments("--no-sandbox");
-    options.addArguments("--disable-dev-shm-usage");
-    options.addArguments("--reduce-security-for-testing");
-    options.addArguments("--disable-notifications");
-    options.addArguments("--disable-save-password-bubble");
-    options.addArguments("--disable-infobars");
-    options.addArguments("--disable-extensions");
 
-    Map<String, Object> prefs = new HashMap<>();
-    prefs.put("credentials_enable_service", false);
-    prefs.put("profile.password_manager_enabled", false);
-    prefs.put("profile.password_manager_leak_detection", false);
-    options.setExperimentalOption("prefs", prefs);
-    options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
+    // Only login if needed
+    String currentUser = getUsername();
+    boolean needsLogin = !Objects.equals(lastLoggedInUser, currentUser);
 
-    driver = new ChromeDriver(options);
-    login();
+    if (!needsLogin) {
+      // Even if the user matches, verify we are actually still logged in
+      try {
+        driver.findElement(By.id("logout-button"));
+        log.debug("User {} is already logged in, skipping login flow.", currentUser);
+      } catch (Exception e) {
+        log.info("Logout button not found for user {}, forcing re-login.", currentUser);
+        needsLogin = true;
+      }
+    }
+
+    if (needsLogin) {
+      // Clear cookies to ensure a fresh session if re-logging in
+      if (driver != null) {
+        try {
+          driver.manage().deleteAllCookies();
+        } catch (Exception e) {
+          log.warn("Failed to clear cookies: {}", e.getMessage());
+        }
+      }
+      login();
+    } else // Ensure we are not on the login page
+    if (Objects.requireNonNull(driver.getCurrentUrl()).endsWith("/login")) {
+      driver.get("http://localhost:" + serverPort + getContextPath());
+    }
   }
 
   protected void documentFeature(
@@ -224,7 +266,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     takeSequencedScreenshot("on-login-page");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
 
@@ -254,8 +296,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       WebDriverWait loginWait = new WebDriverWait(driver, Duration.ofSeconds(30));
       loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
       log.info("Login successful for user: {}", username);
+      lastLoggedInUser = username;
       takeSequencedScreenshot("after-successful-login");
     } catch (Exception e) {
+      lastLoggedInUser = null;
       log.error("Login failed for user: {}", username);
       log.error("Current URL: {}", driver.getCurrentUrl());
       takeSequencedScreenshot("on-login-failure");
@@ -273,9 +317,30 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @AfterEach
   public void teardown() {
+    // We no longer quit the driver here to allow reuse.
+    // Instead, we navigate to a blank page and clear the state to ensure isolation.
     if (driver != null) {
-      driver.quit();
+      try {
+        // Navigate to about:blank to stop any pending requests/scripts
+        driver.get("about:blank");
+        // Ensure no leftover dialogs are open
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "const overlays = document.querySelectorAll('vaadin-dialog-overlay,"
+                    + " vaadin-context-menu-overlay, vaadin-select-overlay,"
+                    + " vaadin-combo-box-overlay');overlays.forEach(o => { try { o.opened = false;"
+                    + " o.remove(); } catch(e){} });");
+      } catch (Exception e) {
+        log.warn("Error during browser reset in teardown: {}", e.getMessage());
+        // If the driver is in a really bad state, force it to be recreated next time
+        try {
+          driver.quit();
+        } catch (Exception ignored) {
+        }
+        driver = null;
+      }
     }
+
     // Clear the system property after each test to ensure isolation
     System.clearProperty("simulateFailure");
   }
@@ -334,7 +399,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
@@ -484,7 +549,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   /** Waits for the Vaadin client-side application to fully load and become idle. */
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -555,12 +620,19 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     // Ensure the drawer is closed if it might intercept clicks
     try {
-      ((JavascriptExecutor) driver)
-          .executeScript(
-              "const layout = document.querySelector('vaadin-app-layout');"
-                  + "if (layout && layout.drawerOpened) { layout.drawerOpened = false; }");
-      // Give drawer time to close
-      Thread.sleep(300);
+      Boolean drawerWasOpened =
+          (Boolean)
+              ((JavascriptExecutor) driver)
+                  .executeScript(
+                      "const layout = document.querySelector('vaadin-app-layout');"
+                          + "if (layout && layout.drawerOpened) { "
+                          + "  layout.drawerOpened = false; "
+                          + "  return true; "
+                          + "} return false;");
+      if (Boolean.TRUE.equals(drawerWasOpened)) {
+        // Give drawer time to close only if it was actually opened
+        Thread.sleep(300);
+      }
     } catch (Exception e) {
       log.warn("Could not ensure drawer was closed", e);
     }
@@ -809,7 +881,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void takeSequencedScreenshot(@NonNull String context) {
-    if (driver != null && testArtifactsDir != null) {
+    if (Boolean.getBoolean("enable.screenshots") && driver != null && testArtifactsDir != null) {
       screenshotCounter++;
       String screenshotName = String.format("%03d-%s.png", screenshotCounter, context);
       Path destFile = testArtifactsDir.resolve(screenshotName);
@@ -999,7 +1071,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForPageSourceToContain(@NonNull String text) {
-    new WebDriverWait(driver, java.time.Duration.ofMinutes(1))
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }
