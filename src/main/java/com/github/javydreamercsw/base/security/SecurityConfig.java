@@ -18,7 +18,6 @@ package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -37,15 +36,16 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
-@RequiredArgsConstructor
 public class SecurityConfig {
-
-  private final UserDetailsService userDetailsService;
 
   @Bean
   @Profile("!test & !e2e")
-  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) {
-    // Public access to static resources and specific API endpoints
+  public SecurityFilterChain vaadinSecurityFilterChain(
+      HttpSecurity http, UserDetailsService userDetailsService) throws Exception {
+    // 1. Apply Vaadin security configurer first
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+
+    // 2. Public access to static resources and specific API endpoints
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(
@@ -61,11 +61,9 @@ public class SecurityConfig {
                     "/api/system/health")
                 .permitAll()
                 .requestMatchers("/api/admin/**")
-                .hasRole(RoleName.ADMIN_ROLE)
-                .anyRequest()
-                .authenticated());
+                .hasRole(RoleName.ADMIN_ROLE));
 
-    // Use cookie-based CSRF tokens so JavaScript/REST clients can read XSRF-TOKEN and submit it.
+    // 3. Use cookie-based CSRF tokens so JavaScript/REST clients can read XSRF-TOKEN and submit it.
     // The deferred handler avoids the Spring Security 6 double-read issue with Vaadin.
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
     requestHandler.setCsrfRequestAttributeName(null);
@@ -77,9 +75,6 @@ public class SecurityConfig {
 
     // Allow framing for H2 console
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
-
-    // Apply Vaadin security configurer and set the login view
-    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
 
     // Configure remember-me functionality
     http.rememberMe(
