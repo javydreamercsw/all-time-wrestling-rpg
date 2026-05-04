@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -76,8 +75,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   private int screenshotCounter = 0;
   protected Path testArtifactsDir;
-
-  private static final AtomicInteger docOrder = new AtomicInteger(0);
 
   static {
     // Register shutdown hook to close the shared driver
@@ -285,14 +282,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void login(@NonNull String username, @NonNull String password) {
     int maxRetries = 3;
     int attempt = 0;
-    while (attempt < maxRetries) {
+    while (attempt++ < maxRetries) {
       try {
-        log.info("Login attempt {} for user: {}", attempt + 1, username);
+        log.info("Login attempt {} for user: {}", attempt, username);
         driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
         WebElement loginFormHost;
         try {
           loginFormHost =

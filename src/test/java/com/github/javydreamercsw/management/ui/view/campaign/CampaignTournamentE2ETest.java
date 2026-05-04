@@ -101,15 +101,6 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     int expectedRounds = 4;
 
     for (int round = 1; round < expectedRounds + 1; round++) {
-      // Determine expected title
-      String expectedTitle = "Round " + round;
-      if (round == expectedRounds) {
-        expectedTitle = "Finals";
-      } else if (round == expectedRounds - 1) {
-        expectedTitle = "Semi-Finals";
-      } else if (round == expectedRounds - 2) {
-        expectedTitle = "Quarter-Finals";
-      }
 
       // Wait for the bracket to update
       new WebDriverWait(driver, Duration.ofSeconds(30))
