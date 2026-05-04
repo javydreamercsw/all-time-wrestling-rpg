@@ -29,6 +29,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 
 /** A utility class for general security-related operations. */
 @Slf4j
@@ -44,7 +45,7 @@ public final class GeneralSecurityUtils {
    * @param task The task to run.
    */
   public static void runAsAdmin(@NonNull Runnable task) {
-    runAs(task, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM");
+    runAs(task, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
   }
 
   /**
@@ -55,7 +56,7 @@ public final class GeneralSecurityUtils {
    * @return The result of the task.
    */
   public static <T> T runAsAdmin(@NonNull Supplier<T> supplier) {
-    return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM");
+    return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
   }
 
   /**
@@ -73,8 +74,9 @@ public final class GeneralSecurityUtils {
       @NonNull String username,
       @NonNull String password,
       @NonNull String... roles) {
-    SecurityContext context = SecurityContextHolder.getContext();
-    Authentication originalAuth = context.getAuthentication();
+    SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
+    SecurityContext originalContext = strategy.getContext();
+    Authentication originalAuth = originalContext.getAuthentication();
 
     // Re-entrancy check: if already authenticated as the requested user, just run the supplier.
     if (originalAuth != null
@@ -84,9 +86,11 @@ public final class GeneralSecurityUtils {
     }
 
     try {
+      SecurityContext newContext = strategy.createEmptyContext();
+
       // Create a mock account and roles for the principal
       Account account = new Account(username, password, username + "@example.com");
-      account.setId(-1L); // Use a non-null ID for mock accounts
+      account.setId(-1L);
 
       Set<Role> accountRoles = new HashSet<>();
       Set<SimpleGrantedAuthority> authorities = new HashSet<>();
@@ -106,25 +110,27 @@ public final class GeneralSecurityUtils {
       account.setRoles(accountRoles);
 
       CustomUserDetails principal = new CustomUserDetails(account, null);
-
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(principal, password, authorities);
 
-      // Update existing context in-place to avoid breaking strategy propagation
-      context.setAuthentication(authentication);
-      setTestSecurityContext(context);
+      newContext.setAuthentication(authentication);
+
+      // Establish the new context globally/thread-locally
+      strategy.setContext(newContext);
+      setTestSecurityContext(newContext);
+
+      log.debug(
+          "Establishing system authority for user '{}' with authorities: {}",
+          username,
+          authorities);
 
       return supplier.get();
     } finally {
-      // Restore original authentication state to the existing context
-      context.setAuthentication(originalAuth);
-      setTestSecurityContext(context);
+      // Restore the original context
+      strategy.setContext(originalContext);
+      setTestSecurityContext(originalContext);
 
-      // If it was null, AND we are not in a test, clear it
-      if (originalAuth == null && !Boolean.getBoolean("is.test")) {
-        SecurityContextHolder.clearContext();
-        clearTestSecurityContext();
-      }
+      log.trace("Restored original SecurityContext");
     }
   }
 
@@ -160,13 +166,14 @@ public final class GeneralSecurityUtils {
    * @return The result.
    */
   public static <T> T runWithContext(SecurityContext context, Supplier<T> supplier) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+    SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
+    SecurityContext originalContext = strategy.getContext();
     try {
-      SecurityContextHolder.setContext(context);
+      strategy.setContext(context);
       setTestSecurityContext(context);
       return supplier.get();
     } finally {
-      SecurityContextHolder.setContext(originalContext);
+      strategy.setContext(originalContext);
       setTestSecurityContext(originalContext);
     }
   }
@@ -188,23 +195,6 @@ public final class GeneralSecurityUtils {
       // Not on classpath, normal for production
     } catch (Exception e) {
       log.warn("Failed to set TestSecurityContextHolder via reflection", e);
-    }
-  }
-
-  /**
-   * Use reflection to clear TestSecurityContextHolder if it's available on the classpath (i.e.,
-   * during tests).
-   */
-  private static void clearTestSecurityContext() {
-    try {
-      Class<?> testHolderClass =
-          Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
-      java.lang.reflect.Method clearContextMethod = testHolderClass.getMethod("clearContext");
-      clearContextMethod.invoke(null);
-    } catch (ClassNotFoundException e) {
-      // Not on classpath, normal for production
-    } catch (Exception e) {
-      log.warn("Failed to clear TestSecurityContextHolder via reflection", e);
     }
   }
 }

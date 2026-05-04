@@ -36,14 +36,9 @@ import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("h2")
-@Transactional
-class EntityImageResolutionIntegrationTest {
+class EntityImageResolutionIntegrationTest
+    extends com.github.javydreamercsw.management.test.AbstractIntegrationTest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private NpcService npcService;

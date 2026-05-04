@@ -339,7 +339,9 @@ public class SegmentNarrationController {
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
 
-    List<Arena> allArenas = arenaService.findAll();
+    List<Arena> allArenas =
+        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+            arenaService::findAll);
     if (!allArenas.isEmpty()) {
       Arena selectedArena = allArenas.get(new java.util.Random().nextInt(allArenas.size()));
 
@@ -360,7 +362,9 @@ public class SegmentNarrationController {
       context.setVenue(venue);
     } else {
       // Fallback: try to at least get a random location if no arenas exist
-      List<Location> allLocations = locationService.findAll();
+      List<Location> allLocations =
+          com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+              locationService::findAll);
 
       VenueContext venue = new VenueContext();
       if (!allLocations.isEmpty()) {

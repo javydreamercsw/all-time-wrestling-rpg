@@ -34,6 +34,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.mockito.Mockito;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
@@ -48,6 +49,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
@@ -71,6 +74,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     cleanupLeagues();
+
+    // Configure authenticationContext mock to proxy to SecurityContextHolder.
+    // This ensures that SecurityUtils.hasRole() and other methods work correctly.
+    Mockito.when(authenticationContext.isAuthenticated())
+        .thenAnswer(inv -> SecurityContextHolder.getContext().getAuthentication() != null);
+    Mockito.when(authenticationContext.hasRole(Mockito.anyString()))
+        .thenAnswer(
+            inv -> {
+              String role = inv.getArgument(0);
+              Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+              if (auth == null) return false;
+              return auth.getAuthorities().stream()
+                  .anyMatch(
+                      a ->
+                          a.getAuthority().equals(role) || a.getAuthority().equals("ROLE_" + role));
+            });
+    Mockito.when(authenticationContext.getAuthenticatedUser(Mockito.any()))
+        .thenAnswer(
+            inv -> {
+              Class<?> type = inv.getArgument(0);
+              Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+              if (auth != null && type.isInstance(auth.getPrincipal())) {
+                return java.util.Optional.of(type.cast(auth.getPrincipal()));
+              }
+              return java.util.Optional.empty();
+            });
 
     // Create artifact directory
     screenshotCounter = 0;

@@ -10,7 +10,10 @@ To ensure a fast feedback loop and efficient context usage, always follow this h
 	-   When a failure is identified, apply the fix.
 	-   **Immediately** run ONLY the specific test class or method that failed.
 	-   **Goal:** Confirm the fix works for the reported issue without waiting for the entire suite.
-	-   **Command Example:** `./mvnw test -Dtest=ClassName#methodName`
+	-   **Command Examples:**
+		-   **Unit Tests:** `./mvnw test -Dtest=ClassName#methodName`
+		-   **Integration Tests:** `./mvnw verify -Pintegration-test -Dit.test=ClassName#methodName`
+		-   **E2E Tests:** `./mvnw verify -Pe2e -Dit.test=ClassName#methodName`
 	-   **Short-Circuit Rule:** If the change is **strictly limited to test code** (e.g., updating an assertion, fixing a mock, or adjusting local test data) and does not modify any application source code (`src/main`) or shared test infrastructure (e.g., `AbstractIntegrationTest`, `DatabaseCleaner`), you may skip Progressive Validation after the targeted test passes.
 
 2.  **Progressive Validation:**

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
@@ -108,7 +109,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -132,6 +132,8 @@ public class DataInitializer implements Initializable {
   private final TitleService titleService;
   private final DeckService deckService;
   private final GameSettingService gameSettingService;
+  private final com.github.javydreamercsw.management.domain.GameSettingRepository
+      gameSettingRepository;
   private final NpcService npcService;
   private final FactionService factionService;
   private final TeamService teamService;
@@ -167,6 +169,7 @@ public class DataInitializer implements Initializable {
       TitleService titleService,
       DeckService deckService,
       GameSettingService gameSettingService,
+      com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository,
       NpcService npcService,
       FactionService factionService,
       TeamService teamService,
@@ -200,6 +203,7 @@ public class DataInitializer implements Initializable {
     this.titleService = titleService;
     this.deckService = deckService;
     this.gameSettingService = gameSettingService;
+    this.gameSettingRepository = gameSettingRepository;
     this.npcService = npcService;
     this.factionService = factionService;
     this.teamService = teamService;
@@ -221,21 +225,7 @@ public class DataInitializer implements Initializable {
   public void init() {
     log.debug("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
-      Authentication auth =
-          org.springframework.security.core.context.SecurityContextHolder.getContext()
-              .getAuthentication();
-
-      // If already authenticated as 'system', just run
-      if (auth != null && auth.isAuthenticated() && "system".equals(auth.getName())) {
-        performInit();
-      } else {
-        // Otherwise, run as admin to ensure we have enough power for all service calls
-        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-            () -> {
-              performInit();
-              return null;
-            });
-      }
+      GeneralSecurityUtils.runAsAdmin(this::performInit);
     }
   }
 
@@ -505,8 +495,13 @@ public class DataInitializer implements Initializable {
   }
 
   private void saveIfMissing(@NonNull String key, @NonNull String value) {
-    if (gameSettingService.findById(key).isEmpty()) {
-      gameSettingService.save(key, value);
+    if (gameSettingRepository.findById(key).isEmpty()) {
+      com.github.javydreamercsw.management.domain.GameSetting setting =
+          new com.github.javydreamercsw.management.domain.GameSetting();
+      setting.setId(key);
+      setting.setValue(value);
+      gameSettingRepository.save(setting);
+      log.info("Initialized missing setting: {} = {}", key, maskIfSecret(key, value));
     }
   }
 
@@ -1216,9 +1211,13 @@ public class DataInitializer implements Initializable {
   }
 
   private void initializeGameDate() {
-    if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
+    if (gameSettingRepository.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
       log.debug("In-game date not set. Initializing to current date.");
-      gameSettingService.saveCurrentGameDate(LocalDate.now());
+      com.github.javydreamercsw.management.domain.GameSetting setting =
+          new com.github.javydreamercsw.management.domain.GameSetting();
+      setting.setId(GameSettingService.CURRENT_GAME_DATE_KEY);
+      setting.setValue(LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE));
+      gameSettingRepository.save(setting);
     }
   }
 

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.config.TestSecurityContextConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -99,6 +100,7 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -126,24 +128,21 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest(classes = Application.class)
 @Slf4j
 @ActiveProfiles("test")
-@Import({TestAIConfiguration.class, TestNotionConfiguration.class})
+@Import({TestAIConfiguration.class, TestNotionConfiguration.class, TestSecurityContextConfig.class})
 @WithMockUser(
     username = "admin",
-    roles = {"ADMIN", "SYSTEM"})
+    roles = {"ADMIN", "SYSTEM", "BOOKER", "PLAYER", "VIEWER"})
 public abstract class AbstractIntegrationTest {
 
   static {
-    // Use GLOBAL strategy for tests to ensure the security context is reliably
-    // shared across all threads and transactions, preventing context loss.
-    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_GLOBAL);
-
     // Mark as test environment to stabilize security context
     System.setProperty("is.test", "true");
   }
 
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
-  @MockitoBean protected AuthenticationContext authenticationContext;
+
+  @Autowired protected AuthenticationContext authenticationContext;
 
   @Autowired protected ApplicationContext applicationContext;
   @Autowired protected InboxRepository inboxRepository;
@@ -221,9 +220,10 @@ public abstract class AbstractIntegrationTest {
   @Autowired(required = false)
   protected CacheManager cacheManager;
 
-  @org.junit.jupiter.api.AfterEach
+  @AfterEach
   public void tearDown() throws Exception {
     log.debug("AbstractIntegrationTest.tearDown() called");
+    clearSecurityContext();
     clearCache();
   }
 
@@ -235,33 +235,27 @@ public abstract class AbstractIntegrationTest {
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
 
     try {
-      // 2. Perform all setup operations as 'system' (admin).
-      // This ensures all nested service calls and transaction blocks have authority.
-      GeneralSecurityUtils.runAsAdmin(
-          () -> {
-            // 3. Pre-initialize defaultUniverse from DB if it exists
-            universeRepository
-                .findByName("Default Universe")
-                .ifPresent(
-                    u -> {
-                      this.defaultUniverse = u;
-                      TestUtils.setDefaultUniverse(u);
-                      universeContextService.setCurrentUniverse(u);
-                    });
+      // 2. Pre-initialize defaultUniverse from DB if it exists
+      universeRepository
+          .findByName("Default Universe")
+          .ifPresent(
+              u -> {
+                this.defaultUniverse = u;
+                TestUtils.setDefaultUniverse(u);
+                universeContextService.setCurrentUniverse(u);
+              });
 
-            // 4. Cleanup and Init
-            clearAllRepositories();
+      // 3. Cleanup and Init
+      clearAllRepositories();
 
-            // 5. Final verification of universe
-            if (this.defaultUniverse == null) {
-              ensureDefaultUniverseExists();
-            }
-          });
+      // 4. Final verification of universe
+      if (this.defaultUniverse == null) {
+        ensureDefaultUniverseExists();
+      }
     } finally {
-      // 6. Restore original context if it was present, otherwise default back to admin.
+      // 5. Ensure original context is restored/maintained
       if (originalAuth != null) {
-        log.info("Restoring original security context for user: {}", originalAuth.getName());
-        login(originalAuth.getPrincipal(), originalAuth.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(originalAuth);
       } else {
         log.info("Establishing default admin context for test execution...");
         loginAs("admin");
@@ -272,35 +266,27 @@ public abstract class AbstractIntegrationTest {
   protected void clearAllRepositories() {
     log.debug("AbstractIntegrationTest.clearAllRepositories() called");
 
-    // Capture the CURRENT context to propagate it into the REQUIRES_NEW transaction
-    final SecurityContext setupContext = SecurityContextHolder.getContext();
-
-    // 1. Reset sequence (H2 specific) - Try directly first
+    // 1. Reset sequences (H2 specific) for tables that ARE cleared
     try {
       transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
       transactionTemplate.execute(
           status -> {
-            // Explicitly establish authority inside the transaction thread
-            SecurityContextHolder.setContext(setupContext);
-            TestSecurityContextHolder.setContext(setupContext);
-
             entityManager
                 .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                .executeUpdate();
+            entityManager
+                .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
                 .executeUpdate();
             return null;
           });
     } catch (Exception e) {
-      log.trace("Could not reset sequence (might not be H2): {}", e.getMessage());
+      log.trace("Could not reset sequences (might not be H2): {}", e.getMessage());
     }
 
     // 2. Perform cleanup and init in a new transaction to avoid conflicts
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          // Explicitly restore setup authority inside the transaction thread
-          SecurityContextHolder.setContext(setupContext);
-          TestSecurityContextHolder.setContext(setupContext);
-
           log.info("Cleaning up database using DatabaseCleanup...");
           databaseCleanup.clearRepositories();
 
@@ -324,7 +310,15 @@ public abstract class AbstractIntegrationTest {
 
   protected void clearCache() {
     if (cacheManager != null) {
-      cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+      cacheManager
+          .getCacheNames()
+          .forEach(
+              name -> {
+                var cache = cacheManager.getCache(name);
+                if (cache != null) {
+                  cache.clear();
+                }
+              });
     }
   }
 
@@ -480,6 +474,30 @@ public abstract class AbstractIntegrationTest {
     }
 
     if (currentAuth != null) {
+      Object principal = currentAuth.getPrincipal();
+      String principalName = null;
+      if (principal instanceof CustomUserDetails ud) {
+        principalName = ud.getUsername();
+      } else if (principal instanceof UserDetails ud) {
+        principalName = ud.getUsername();
+      } else if (principal instanceof String s) {
+        principalName = s;
+      }
+
+      if (principalName != null) {
+        // Re-create the account if missing (e.g. after wipe)
+        final String finalName = principalName;
+        accountRepository
+            .findByUsername(finalName)
+            .orElseGet(
+                () -> {
+                  log.info("Re-creating missing account '{}' after database wipe...", finalName);
+                  Account a = new Account(finalName, "password", finalName + "@test.com");
+                  // Give it some default roles based on authorities if possible, or just ROLE_USER
+                  return accountRepository.saveAndFlush(a);
+                });
+      }
+
       login(currentAuth.getPrincipal(), currentAuth.getAuthorities());
     }
   }
@@ -497,34 +515,30 @@ public abstract class AbstractIntegrationTest {
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          GeneralSecurityUtils.runAsAdmin(
-              () -> {
-                log.debug("Cleaning up database using DatabaseCleanup...");
-                databaseCleanup.clearRepositories();
+          log.debug("Cleaning up database using DatabaseCleanup...");
+          databaseCleanup.clearRepositories();
 
-                if (cacheManager != null) {
-                  log.debug("Clearing all caches...");
-                  cacheManager
-                      .getCacheNames()
-                      .forEach(
-                          cacheName -> {
-                            var cache = cacheManager.getCache(cacheName);
-                            if (cache != null) {
-                              cache.clear();
-                            }
-                          });
-                }
+          if (cacheManager != null) {
+            log.debug("Clearing all caches...");
+            cacheManager
+                .getCacheNames()
+                .forEach(
+                    name -> {
+                      var cache = cacheManager.getCache(name);
+                      if (cache != null) {
+                        cache.clear();
+                      }
+                    });
+          }
 
-                // Always ensure at least one universe exists for tests
-                ensureDefaultUniverseExists();
+          // Always ensure at least one universe exists for tests
+          ensureDefaultUniverseExists();
 
-                if (dataInitializerEnabled) {
-                  log.debug("Re-initializing data using DataInitializer...");
-                  dataInitializer.init();
-                }
-                log.debug("Database reset complete.");
-                return null;
-              });
+          if (dataInitializerEnabled) {
+            log.debug("Re-initializing data using DataInitializer...");
+            dataInitializer.init();
+          }
+          log.debug("Database reset complete.");
           return null;
         });
   }

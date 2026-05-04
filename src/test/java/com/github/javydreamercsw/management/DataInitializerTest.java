@@ -118,6 +118,10 @@ class DataInitializerTest {
   @Mock private CardService cardService;
   @Mock private TitleService titleService;
   @Mock private GameSettingService gameSettingService;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository;
+
   @Mock private NpcService npcService;
   @Mock private FactionService factionService;
   @Mock private TeamService teamService;
@@ -156,6 +160,7 @@ class DataInitializerTest {
             titleService,
             deckService,
             gameSettingService,
+            gameSettingRepository,
             npcService,
             factionService,
             teamService,
@@ -220,6 +225,7 @@ class DataInitializerTest {
             titleService,
             deckService,
             gameSettingService,
+            gameSettingRepository,
             npcService,
             factionService,
             teamService,
