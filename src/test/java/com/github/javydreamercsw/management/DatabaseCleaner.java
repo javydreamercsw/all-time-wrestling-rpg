@@ -29,6 +29,7 @@ import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -46,6 +47,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
   @Autowired private EntityManager entityManager;
   @Autowired private AccountInitializer accountInitializer;
   @Autowired private TransactionTemplate transactionTemplate;
+  @Autowired private Environment environment;
 
   private Map<String, JpaRepository<?, ?>> cachedRepositories;
   private List<String> cachedSyncOrder;
@@ -111,6 +113,11 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "commentator",
                 "commentaryteam"));
 
+    // Determine if we should use surgical cleanup (optimized for E2E)
+    // or full cleanup (safer for Integration Tests)
+    boolean isE2E = Arrays.asList(environment.getActiveProfiles()).contains("e2e");
+    log.debug("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
+
     // Delete data in the correct order
     int deletedCount = 0;
     for (String entityName : cachedSyncOrder) {
@@ -122,12 +129,14 @@ public class DatabaseCleaner implements DatabaseCleanup {
       // Special handling for Entities that might have both master data and test data:
       // we want to keep the master data (with externalId) but remove test data (without
       // externalId).
-      if ("wrestler".equalsIgnoreCase(entityName)
-          || "team".equalsIgnoreCase(entityName)
-          || "faction".equalsIgnoreCase(entityName)
-          || "npc".equalsIgnoreCase(entityName)
-          || "arena".equalsIgnoreCase(entityName)
-          || "location".equalsIgnoreCase(entityName)) {
+      // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
+      if (isE2E
+          && ("wrestler".equalsIgnoreCase(entityName)
+              || "team".equalsIgnoreCase(entityName)
+              || "faction".equalsIgnoreCase(entityName)
+              || "npc".equalsIgnoreCase(entityName)
+              || "arena".equalsIgnoreCase(entityName)
+              || "location".equalsIgnoreCase(entityName))) {
         log.debug("🧹 Surgical cleanup for {}...", entityName);
         int deleted =
             executeNativeUpdate(
