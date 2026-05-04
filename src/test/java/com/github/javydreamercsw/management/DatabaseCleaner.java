@@ -26,7 +26,9 @@ import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Member;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,9 +38,11 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Implementation of DatabaseCleanup using Spring's ApplicationContext to find all repositories and
@@ -53,8 +57,14 @@ public class DatabaseCleaner implements DatabaseCleanup {
   private final AccountInitializer accountInitializer;
   private final EntityDependencyAnalyzer dependencyAnalyzer;
   private final JdbcTemplate jdbcTemplate;
+  private final TransactionTemplate transactionTemplate;
+  private final Environment environment;
 
   @PersistenceContext private EntityManager entityManager;
+
+  private Map<String, JpaRepository<?, ?>> cachedRepositories;
+  private List<String> cachedSyncOrder;
+  private Set<Class<?>> cachedEntityClasses;
 
   @Override
   public void clearRepositories() {
@@ -70,13 +80,22 @@ public class DatabaseCleaner implements DatabaseCleanup {
           // 2. Clear join tables (defined via @JoinTable)
           clearJoinTables();
 
-          // 3. Discover all JPA repositories
-          Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
-          log.debug("📦 Discovered {} repositories", repositories.size());
+          // 3. Discover all JPA repositories (with caching)
+          if (cachedRepositories == null) {
+            cachedRepositories = discoverRepositories();
+            log.debug("📦 Discovered and cached {} repositories", cachedRepositories.size());
+          }
 
-          // 4. Get the correct synchronization/deletion order
-          List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(getEntityClasses());
-          log.debug("🔄 Deletion order: {}", syncOrder);
+          // 4. Get the correct synchronization/deletion order (with caching)
+          if (cachedSyncOrder == null) {
+            cachedEntityClasses = getEntityClasses();
+            cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
+            // Reverse the order for deletion (delete children before parents)
+            List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
+            Collections.reverse(reverseOrder);
+            cachedSyncOrder = reverseOrder;
+            log.debug("🔄 Calculated and cached deletion order: {}", cachedSyncOrder);
+          }
 
           // Entities that should not be cleared (static config, core roles, etc.)
           Set<String> protectedEntities =
@@ -91,18 +110,56 @@ public class DatabaseCleaner implements DatabaseCleanup {
                       "campaignupgrade",
                       "holiday",
                       "injurytype",
+                      "location",
+                      "arena",
+                      "npc",
+                      "faction",
+                      "title",
+                      "achievement",
+                      "ringsideaction",
+                      "ringsideactiontype",
+                      "commentator",
+                      "commentaryteam",
                       "role"));
 
-          // Delete data in the correct order (reverse of sync order)
+          // Determine if we should use surgical cleanup (optimized for E2E)
+          // or full cleanup (safer for Integration Tests)
+          boolean isE2E = Arrays.asList(environment.getActiveProfiles()).contains("e2e");
+          log.debug("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
+
+          // Delete data in the correct order
           int deletedCount = 0;
-          for (int i = syncOrder.size() - 1; i >= 0; i--) {
-            String entityName = syncOrder.get(i);
+          for (String entityName : cachedSyncOrder) {
             if (protectedEntities.contains(entityName.toLowerCase())) {
               log.debug("🛡️ Skipping protected entity: {}", entityName);
               continue;
             }
 
-            JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
+            // Special handling for Entities that might have both master data and test data:
+            // we want to keep the master data (with externalId) but remove test data (without
+            // externalId).
+            // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
+            if (isE2E
+                && ("wrestler".equalsIgnoreCase(entityName)
+                    || "team".equalsIgnoreCase(entityName)
+                    || "faction".equalsIgnoreCase(entityName)
+                    || "npc".equalsIgnoreCase(entityName)
+                    || "arena".equalsIgnoreCase(entityName)
+                    || "location".equalsIgnoreCase(entityName))) {
+              log.debug("🧹 Surgical cleanup for {}...", entityName);
+              int deleted =
+                  executeNativeUpdate(
+                      "DELETE FROM "
+                          + entityName.toLowerCase()
+                          + " WHERE external_id IS NULL OR external_id = ''");
+              if (deleted >= 0) {
+                log.debug("✅ Deleted {} test {}", deleted, entityName);
+                deletedCount++;
+                continue; // Skip the full repository deletion below
+              }
+            }
+
+            JpaRepository<?, ?> repository = cachedRepositories.get(entityName.toLowerCase());
             if (repository != null) {
               try {
                 if (repository.count() > 0) {
@@ -125,8 +182,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
           }
 
           // Clean up any remaining repositories not in the entity list
-          for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
-            if (!syncOrder.contains(entry.getKey())
+          for (Map.Entry<String, JpaRepository<?, ?>> entry : cachedRepositories.entrySet()) {
+            if (!cachedSyncOrder.contains(entry.getKey())
                 && !protectedEntities.contains(entry.getKey().toLowerCase())) {
               try {
                 if (entry.getValue().count() > 0) {
@@ -147,6 +204,23 @@ public class DatabaseCleaner implements DatabaseCleanup {
           entityManager.clear();
           log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
         });
+  }
+
+  protected int executeNativeUpdate(String sql) {
+    try {
+      return transactionTemplate.execute(
+          status -> {
+            try {
+              return entityManager.createNativeQuery(sql).executeUpdate();
+            } catch (Exception e) {
+              log.warn("Native update failed: {} - {}", sql, e.getMessage());
+              return -1;
+            }
+          });
+    } catch (Exception e) {
+      log.warn("Transaction for native update failed: {} - {}", sql, e.getMessage());
+      return -1;
+    }
   }
 
   /**

@@ -29,8 +29,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -65,11 +68,33 @@ import org.springframework.test.context.ActiveProfiles;
 @Slf4j
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
+  protected static WebDriver driver;
+  private static boolean appReady = false;
+  private static String lastLoggedInUser = null;
+
   @LocalServerPort protected int serverPort;
 
-  protected WebDriver driver;
   private int screenshotCounter = 0;
-  private Path testArtifactsDir;
+  protected Path testArtifactsDir;
+
+  private static final AtomicInteger docOrder = new AtomicInteger(0);
+
+  static {
+    // Register shutdown hook to close the shared driver
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  if (driver != null) {
+                    log.info("Closing shared WebDriver...");
+                    try {
+                      driver.quit();
+                    } catch (Exception e) {
+                      log.warn("Error closing WebDriver in shutdown hook: {}", e.getMessage());
+                    }
+                  }
+                }));
+  }
 
   @BeforeEach
   public void setup(TestInfo testInfo) throws Exception {
@@ -77,6 +102,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
+    // Only clean up leagues in the base class if we want it for every test.
     cleanupLeagues();
 
     // Configure authenticationContext mock to proxy to SecurityContextHolder.
@@ -107,6 +133,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
               return java.util.Optional.empty();
             });
 
+    if (!appReady) {
+      WebDriverManager.chromedriver().setup();
+      log.info("Waiting for application to be ready on port {}", serverPort);
+      waitForAppToBeReady();
+      log.info("Application is ready on port {}", serverPort);
+      appReady = true;
+    }
+
     // Create artifact directory
     screenshotCounter = 0;
     try {
@@ -125,42 +159,61 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       testArtifactsDir = null; // So we don't try to use it
     }
 
-    log.info("Waiting for server to be ready on port {}...", serverPort);
-    // waitForServerToBeReady();
-    log.info("Server is ready.");
-
-    WebDriverManager.chromedriver().setup();
-
-    ChromeOptions options = new ChromeOptions();
-    if (isHeadless()) {
-      options.addArguments("--headless=new");
-    }
-    options.addArguments("--disable-gpu");
-    if (Boolean.getBoolean("generate.docs")) {
-      // Consistent size for documentation screenshots
+    if (driver == null) {
+      ChromeOptions options = new ChromeOptions();
+      if (isHeadless()) {
+        options.addArguments("--headless=new");
+      }
+      options.addArguments("--disable-gpu");
       options.addArguments("--window-size=1920,1080");
-    } else {
-      options.addArguments("--window-size=1920,1080");
+      options.addArguments("--no-sandbox");
+      options.addArguments("--disable-dev-shm-usage");
+      options.addArguments("--reduce-security-for-testing");
+      options.addArguments("--disable-notifications");
+      options.addArguments("--disable-save-password-bubble");
+      options.addArguments("--disable-infobars");
+      options.addArguments("--disable-extensions");
+
+      Map<String, Object> prefs = new HashMap<>();
+      prefs.put("credentials_enable_service", false);
+      prefs.put("profile.password_manager_enabled", false);
+      prefs.put("profile.password_manager_leak_detection", false);
+      options.setExperimentalOption("prefs", prefs);
+      options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
+
+      driver = new ChromeDriver(options);
+      driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
     }
 
-    // Set non-interactive flags for Vaadin
-    options.addArguments("--disable-dev-shm-usage");
-    options.addArguments("--no-sandbox");
+    // Only login if needed
+    String currentUser = getUsername();
+    boolean needsLogin = !Objects.equals(lastLoggedInUser, currentUser);
 
-    if (driver != null) {
+    if (!needsLogin) {
+      // Even if the user matches, verify we are actually still logged in
       try {
-        driver.quit();
-      } catch (Exception ignored) {
-      } finally {
-        driver = null;
+        driver.findElement(By.id("logout-button"));
+        log.debug("User {} is already logged in, skipping login flow.", currentUser);
+      } catch (Exception e) {
+        log.info("Logout button not found for user {}, forcing re-login.", currentUser);
+        needsLogin = true;
       }
     }
 
-    driver = new ChromeDriver(options);
-    driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-
-    loginAs(getUsername());
-    login();
+    if (needsLogin) {
+      // Clear cookies to ensure a fresh session if re-logging in
+      if (driver != null) {
+        try {
+          driver.manage().deleteAllCookies();
+        } catch (Exception e) {
+          log.warn("Failed to clear cookies: {}", e.getMessage());
+        }
+      }
+      login();
+    } else // Ensure we are not on the login page
+    if (Objects.requireNonNull(driver.getCurrentUrl()).endsWith("/login")) {
+      driver.get("http://localhost:" + serverPort + getContextPath());
+    }
   }
 
   /** Waits for the server to respond with 200 OK on the root URL. */
@@ -239,7 +292,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
         WebElement loginFormHost;
         try {
           loginFormHost =
@@ -278,6 +331,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
         takeSequencedScreenshot("after-successful-login");
         log.info("Login successful for user: {}", username);
+        lastLoggedInUser = username;
         return; // Success!
       } catch (Exception e) {
         attempt++;
@@ -293,15 +347,30 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @AfterEach
   public void teardown() {
+    // We no longer quit the driver here to allow reuse.
+    // Instead, we navigate to a blank page and clear the state to ensure isolation.
     if (driver != null) {
       try {
-        driver.quit();
+        // Navigate to about:blank to stop any pending requests/scripts
+        driver.get("about:blank");
+        // Ensure no leftover dialogs are open
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "const overlays = document.querySelectorAll('vaadin-dialog-overlay,"
+                    + " vaadin-context-menu-overlay, vaadin-select-overlay,"
+                    + " vaadin-combo-box-overlay');overlays.forEach(o => { try { o.opened = false;"
+                    + " o.remove(); } catch(e){} });");
       } catch (Exception e) {
-        log.warn("Error during driver teardown: {}", e.getMessage());
-      } finally {
+        log.warn("Error during browser reset in teardown: {}", e.getMessage());
+        // If the driver is in a really bad state, force it to be recreated next time
+        try {
+          driver.quit();
+        } catch (Exception ignored) {
+        }
         driver = null;
       }
     }
+
     System.clearProperty("simulateFailure");
   }
 
@@ -357,7 +426,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
@@ -386,7 +455,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -454,12 +523,62 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(element);
   }
 
+  /**
+   * Scrolls the given WebElement into view and clicks it using JavaScript.
+   *
+   * @param element the WebElement to scroll into view and click
+   */
   protected void clickElement(@NonNull WebElement element) {
+    scrollIntoView(element);
+    waitForVaadinClientToLoad();
+    takeSequencedScreenshot("before-click");
+    // First, wait for the element to be visible.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    wait.until(ExpectedConditions.visibilityOf(element));
+    wait.until(ExpectedConditions.elementToBeClickable(element));
+
+    // Ensure the drawer is closed if it might intercept clicks
     try {
+      Boolean drawerWasOpened =
+          (Boolean)
+              ((JavascriptExecutor) driver)
+                  .executeScript(
+                      "const layout = document.querySelector('vaadin-app-layout');"
+                          + "if (layout && layout.drawerOpened) { "
+                          + "  layout.drawerOpened = false; "
+                          + "  return true; "
+                          + "} return false;");
+      if (Boolean.TRUE.equals(drawerWasOpened)) {
+        // Give drawer time to close only if it was actually opened
+        Thread.sleep(300);
+      }
+    } catch (Exception e) {
+      log.warn("Could not ensure drawer was closed", e);
+    }
+
+    try {
+      // Attempt native Selenium click first
       element.click();
     } catch (Exception e) {
-      ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+      log.warn("Native click failed, falling back to JS click: {}", e.getMessage());
+      // Use a simple JavaScript click as it's more reliable
+      try {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+        Thread.sleep(200); // Give time for the click to register
+      } catch (Exception jsError) {
+        log.error("JavaScript click also failed, using event dispatch", jsError);
+        // Last resort: dispatch events
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "const el = arguments[0];"
+                    + "const opts = {view: window, bubbles: true, cancelable: true};"
+                    + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
+                    + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
+                    + "el.dispatchEvent(new MouseEvent('click', opts));",
+                element);
+      }
     }
+    takeSequencedScreenshot("after-click");
   }
 
   protected void clickElement(@NonNull By locator) {
@@ -596,7 +715,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void takeSequencedScreenshot(@NonNull String context) {
-    if (driver != null && testArtifactsDir != null) {
+    if (Boolean.getBoolean("enable.screenshots") && driver != null && testArtifactsDir != null) {
       screenshotCounter++;
       String screenshotName = String.format("%03d-%s.png", screenshotCounter, context);
       Path destFile = testArtifactsDir.resolve(screenshotName);
@@ -687,7 +806,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForPageSourceToContain(@NonNull String text) {
-    new WebDriverWait(driver, java.time.Duration.ofMinutes(1))
+    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }
