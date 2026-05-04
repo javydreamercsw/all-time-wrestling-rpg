@@ -76,7 +76,7 @@ class TournamentServiceTest {
     // Next power of 2 is 8.
     // Rounds = log2(8) = 3.
     // Matches = 4 + 2 + 1 = 7.
-    for (long i = 2; i <= 5; i++) {
+    for (long i = 2; i < 5 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
@@ -161,7 +161,7 @@ class TournamentServiceTest {
   @Test
   void testInitializeTournamentLargeRoster() {
     List<Wrestler> roster = new ArrayList<>();
-    for (long i = 2; i <= 20; i++) {
+    for (long i = 2; i < 20 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
@@ -205,7 +205,7 @@ class TournamentServiceTest {
   void testAdvanceTournamentWithShow() {
     List<Wrestler> roster = new ArrayList<>();
     // Add 3 opponents + Player = 4 participants. Perfect power of 2.
-    for (long i = 2; i <= 4; i++) {
+    for (long i = 2; i < 4 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
@@ -215,7 +215,7 @@ class TournamentServiceTest {
     when(wrestlerRepository.findAll()).thenReturn(roster);
     // Mock finds for all 4 participants - use lenient() as random matching might skip some in a
     // single run
-    for (long i = 1; i <= 4; i++) {
+    for (long i = 1; i < 4 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);

@@ -95,7 +95,7 @@ class SmartPromoServiceTest {
   }
 
   @Test
-  void testGeneratePromoContext() throws Exception {
+  void testGeneratePromoContext() {
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setState(new CampaignState());
@@ -143,7 +143,7 @@ class SmartPromoServiceTest {
   }
 
   @Test
-  void testGeneratePromoContextWithRivalry() throws Exception {
+  void testGeneratePromoContextWithRivalry() {
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setState(new CampaignState());
@@ -193,7 +193,7 @@ class SmartPromoServiceTest {
   }
 
   @Test
-  void testProcessPromoHook() throws Exception {
+  void testProcessPromoHook() {
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setState(new CampaignState());

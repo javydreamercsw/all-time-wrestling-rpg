@@ -252,9 +252,9 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JsonIgnore
   public Integer getEffectiveStartingStamina() {
     int bonus =
-        (alignment != null
+        alignment != null
                 && alignment.getCampaign() != null
-                && alignment.getCampaign().getState() != null)
+                && alignment.getCampaign().getState() != null
             ? alignment.getCampaign().getState().getCampaignStaminaBonus()
             : 0;
     return startingStamina + bonus;

@@ -23,3 +23,8 @@
 *Link: [./tracks/gm_mode_refinement_20260409/index.md](./tracks/gm_mode_refinement_20260409/index.md)*
 *Status: In Progress (2026-04-09)*
 
+---
+
+- [ ] **Track: Implement Status Cards mechanic for the Women's Edition campaign**
+  *Link: [./tracks/statuscards_20260502/](./tracks/statuscards_20260502/)*
+

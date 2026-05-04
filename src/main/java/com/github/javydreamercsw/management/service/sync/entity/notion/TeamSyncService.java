@@ -345,7 +345,7 @@ public class TeamSyncService extends BaseSyncService {
       }
 
       Team team = existingTeam;
-      boolean isNew = (team == null);
+      boolean isNew = team == null;
 
       if (isNew) {
         if (wrestler1 == null || wrestler2 == null) {

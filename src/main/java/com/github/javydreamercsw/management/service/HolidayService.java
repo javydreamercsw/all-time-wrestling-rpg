@@ -56,7 +56,7 @@ public class HolidayService {
 
     for (Holiday holiday : findAll()) {
       for (int yearOffset = -1;
-          yearOffset <= 1;
+          yearOffset < 1 + 1;
           yearOffset++) { // Check current, previous, and next year
         int targetYear = localDate.getYear() + yearOffset;
         LocalDate holidayDate = null;
@@ -66,21 +66,20 @@ public class HolidayService {
             holidayDate =
                 MonthDay.of(holiday.getHolidayMonth(), holiday.getDayOfMonth()).atYear(targetYear);
           }
-        } else { // FLOATING
-          if (holiday.getWeekOfMonth() != null
-              && holiday.getDayOfWeek() != null
-              && holiday.getHolidayMonth() != null) {
-            if (holiday.getWeekOfMonth() > 0) {
-              holidayDate =
-                  LocalDate.of(targetYear, holiday.getHolidayMonth(), 1)
-                      .with(
-                          TemporalAdjusters.dayOfWeekInMonth(
-                              holiday.getWeekOfMonth(), holiday.getDayOfWeek()));
-            } else if (holiday.getWeekOfMonth() == -1) {
-              holidayDate =
-                  LocalDate.of(targetYear, holiday.getHolidayMonth(), 1)
-                      .with(TemporalAdjusters.lastInMonth(holiday.getDayOfWeek()));
-            }
+        } else // FLOATING
+        if (holiday.getWeekOfMonth() != null
+            && holiday.getDayOfWeek() != null
+            && holiday.getHolidayMonth() != null) {
+          if (holiday.getWeekOfMonth() > 0) {
+            holidayDate =
+                LocalDate.of(targetYear, holiday.getHolidayMonth(), 1)
+                    .with(
+                        TemporalAdjusters.dayOfWeekInMonth(
+                            holiday.getWeekOfMonth(), holiday.getDayOfWeek()));
+          } else if (holiday.getWeekOfMonth() == -1) {
+            holidayDate =
+                LocalDate.of(targetYear, holiday.getHolidayMonth(), 1)
+                    .with(TemporalAdjusters.lastInMonth(holiday.getDayOfWeek()));
           }
         }
 

@@ -46,7 +46,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
   void testCaptureShowPlanningView() {
     // 1. Setup wrestlers for the roster
     if (wrestlerRepository.count() < 5) {
-      for (int i = 1; i <= 5; i++) {
+      for (int i = 1; i < 5 + 1; i++) {
         Account wrestlerAccount = new Account();
         String uniqueId = i + "_" + System.currentTimeMillis();
         wrestlerAccount.setUsername("wrestler" + uniqueId);

@@ -167,7 +167,7 @@ public class ShowSchedulerService {
 
       case ANNUAL:
         if (template.getMonth() != null) {
-          for (int year = seasonStart.getYear(); year <= seasonEnd.getYear(); year++) {
+          for (int year = seasonStart.getYear(); year < seasonEnd.getYear() + 1; year++) {
             LocalDate target = calculateDateInMonth(template, year, template.getMonth().getValue());
             if (target != null && !target.isBefore(seasonStart) && !target.isAfter(seasonEnd)) {
               dates.add(target);

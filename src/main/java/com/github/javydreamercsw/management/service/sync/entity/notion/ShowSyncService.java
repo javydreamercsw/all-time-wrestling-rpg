@@ -158,7 +158,7 @@ public class ShowSyncService extends BaseSyncService {
                         .getRetryService()
                         .executeWithRetry(
                             "shows",
-                            (attemptNumber) -> {
+                            attemptNumber -> {
                               log.debug("🔄 Shows sync attempt {} starting", attemptNumber);
                               syncServiceDependencies
                                   .getProgressTracker()
@@ -233,7 +233,7 @@ public class ShowSyncService extends BaseSyncService {
       List<ShowPage> showPages =
           processWithControlledParallelism(
               newShowIds,
-              (id) -> {
+              id -> {
                 try {
                   return syncServiceDependencies.getNotionHandler().loadShowById(id).orElse(null);
                 } catch (Exception e) {

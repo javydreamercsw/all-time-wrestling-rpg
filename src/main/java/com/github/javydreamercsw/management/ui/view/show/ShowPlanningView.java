@@ -220,7 +220,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
               e -> {
                 Show selectedShow = showComboBox.getValue();
                 com.github.javydreamercsw.base.domain.wrestler.Gender constraint =
-                    (selectedShow != null && selectedShow.getTemplate() != null)
+                    selectedShow != null && selectedShow.getTemplate() != null
                         ? selectedShow.getTemplate().getGenderConstraint()
                         : null;
 

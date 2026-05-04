@@ -25,7 +25,6 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +55,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
   private Account admin;
 
   @BeforeEach
-  public void setUp() throws IOException {
+  public void setUp() {
     // Clear any existing inbox items to ensure a clean state for each test
     inboxRepository.deleteAll();
     w1 = createTestWrestler("Test Wrestler 1");

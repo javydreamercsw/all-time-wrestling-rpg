@@ -181,7 +181,7 @@ public class DramaEvent extends AbstractEntity<Long> {
       summary.append("rivalry ended");
     }
 
-    return !summary.isEmpty() ? summary.toString() : "no impact";
+    return summary.isEmpty() ? "no impact" : summary.toString();
   }
 
   /** Get emoji representation of the event severity. */

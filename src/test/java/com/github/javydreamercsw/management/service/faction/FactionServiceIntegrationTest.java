@@ -50,7 +50,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   private Wrestler testWrestler2;
 
   @BeforeEach
-  public void setUp() throws Exception {
+  public void setUp() {
     // Default mock behavior
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));

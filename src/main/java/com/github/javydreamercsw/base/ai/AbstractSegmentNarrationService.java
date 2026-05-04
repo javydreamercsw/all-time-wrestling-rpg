@@ -309,7 +309,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     Exception lastException = null;
     Duration currentDelay = policy.getBaseDelay();
 
-    for (int attempt = 0; attempt <= policy.getMaxRetries(); attempt++) {
+    for (int attempt = 0; attempt < policy.getMaxRetries() + 1; attempt++) {
       try {
         return callAIProvider(prompt);
       } catch (Exception e) {

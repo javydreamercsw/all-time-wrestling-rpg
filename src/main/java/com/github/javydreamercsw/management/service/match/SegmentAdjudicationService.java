@@ -277,7 +277,7 @@ public class SegmentAdjudicationService {
     factionParticipants.forEach(
         (factionId, count) -> {
           if (count > 1) {
-            int affinityGain = (count - 1); // Base participation gain
+            int affinityGain = count - 1; // Base participation gain
 
             // Victory bonus: +2 if multiple members from the same faction won
             if (factionWinners.getOrDefault(factionId, 0) > 1) {

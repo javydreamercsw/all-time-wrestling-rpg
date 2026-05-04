@@ -159,7 +159,7 @@ public class FactionService {
     }
 
     int start = (int) pageable.getOffset();
-    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+    int end = Math.min(start + pageable.getPageSize(), allFiltered.size());
 
     List<Faction> pageContent = new java.util.ArrayList<>();
     if (start < allFiltered.size()) {

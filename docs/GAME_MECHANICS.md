@@ -54,3 +54,24 @@ Factions are more than just groups; they provide mechanical benefits when member
 - Factions gain **Affinity** through shared matches and victories.
 - High Affinity unlocks synergy buffs that can influence match outcomes and narrative progression.
 
+## Fan Growth & Tiers
+
+Gaining fans is the primary way to advance through tiers and unlock title eligibility. However, as a wrestler becomes more famous, maintaining that growth becomes increasingly difficult.
+
+### Fan Gain Efficiency (The "Fan Tax")
+
+The number of fans gained from matches and events is subject to diminishing returns based on the wrestler's current tier:
+
+| Tier               | Gain Efficiency | Description                                                                     |
+|:-------------------|:----------------|:--------------------------------------------------------------------------------|
+| **Rookie / Riser** | 100%            | Full gains. Every new fan counts.                                               |
+| **Contender**      | 97%             | Minor friction in growth.                                                       |
+| **Midcarder**      | 95%             | Growth begins to stabilize.                                                     |
+| **Main Eventer**   | 93%             | Significant effort required to reach the top.                                   |
+| **Icon**           | 90%             | The "Legend Tax." Only the most impactful moments grow an already massive base. |
+
+### Rounding & Deductions
+
+- **Rounding:** After efficiency is applied, positive fan gains are rounded to the nearest **1,000**.
+- **Deductions:** When a wrestler *loses* fans or *spends* them (e.g., for injury treatment), no tax or rounding is applied. Losses are always exact.
+
