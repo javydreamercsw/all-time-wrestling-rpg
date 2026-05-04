@@ -55,7 +55,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   @Override
-  public void setup(org.junit.jupiter.api.TestInfo testInfo) {
+  public void setup(org.junit.jupiter.api.TestInfo testInfo) throws Exception {
     super.setup(testInfo);
 
     // Initialize campaign for the admin user if it doesn't exist
