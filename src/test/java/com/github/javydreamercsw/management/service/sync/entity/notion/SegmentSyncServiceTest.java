@@ -28,13 +28,15 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.dto.SegmentDTO;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
@@ -52,8 +54,9 @@ import org.springframework.transaction.annotation.Transactional;
 class SegmentSyncServiceTest {
 
   @Mock private SegmentRepository segmentRepository;
-  @Mock private ShowRepository showRepository;
-  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private SegmentService segmentService;
+  @Mock private ShowService showService;
+  @Mock private SegmentTypeService segmentTypeService;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private TitleRepository titleRepository;
@@ -81,8 +84,9 @@ class SegmentSyncServiceTest {
             syncServiceDependencies,
             notionApiExecutor,
             segmentRepository,
-            showRepository,
-            segmentTypeRepository,
+            segmentService,
+            showService,
+            segmentTypeService,
             segmentRuleRepository,
             wrestlerService,
             titleRepository);
@@ -90,11 +94,13 @@ class SegmentSyncServiceTest {
 
   @Test
   void testProcessSingleSegment() {
-    SegmentSyncService.SegmentSyncDTO dto = new SegmentSyncService.SegmentSyncDTO();
+    SegmentDTO dto = new SegmentDTO();
     dto.setExternalId("segment-1");
     dto.setName("Test Segment");
     dto.setShowExternalId("show-1");
-    dto.setSegmentTypeExternalId("type-1");
+    dto.setSegmentTypeName("Match");
+    dto.setParticipantNames(new java.util.ArrayList<>());
+    dto.setWinnerNames(new java.util.ArrayList<>());
 
     Segment segment = new Segment();
     segment.setExternalId("segment-1");
@@ -103,15 +109,14 @@ class SegmentSyncServiceTest {
     show.setExternalId("show-1");
 
     SegmentType segmentType = new SegmentType();
-    segmentType.setExternalId("type-1");
+    segmentType.setName("Match");
 
-    when(segmentRepository.findByExternalId("segment-1")).thenReturn(Optional.of(segment));
-    when(showRepository.findByExternalId("show-1")).thenReturn(Optional.of(show));
-    when(segmentTypeRepository.findByExternalId("type-1")).thenReturn(Optional.of(segmentType));
-    when(segmentRepository.saveAndFlush(any(Segment.class))).thenReturn(segment);
+    when(segmentService.findByExternalId("segment-1")).thenReturn(Optional.of(segment));
+    when(showService.findByExternalId("show-1")).thenReturn(Optional.of(show));
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(segmentType));
 
     boolean result = segmentSyncService.processSingleSegment(dto);
     assertTrue(result);
-    verify(segmentRepository).saveAndFlush(any(Segment.class));
+    verify(segmentService).updateSegment(any(Segment.class));
   }
 }

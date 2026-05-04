@@ -70,10 +70,10 @@ public class SecurityConfig {
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
     requestHandler.setCsrfRequestAttributeName(null);
     http.csrf(
-            csrf ->
-                csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .csrfTokenRequestHandler(requestHandler)
-                    .ignoringRequestMatchers("/api/**", "/h2-console/**"));
+        csrf ->
+            csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(requestHandler)
+                .ignoringRequestMatchers("/api/**", "/h2-console/**"));
 
     // Allow framing for H2 console
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));

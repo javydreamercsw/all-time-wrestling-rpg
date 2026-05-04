@@ -181,7 +181,7 @@ public class WrestlerService {
    */
   @Transactional
   @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
@@ -207,7 +207,9 @@ public class WrestlerService {
               wrestler.addFans(tempFans);
               tierRecalculationService.recalculateTier(wrestler);
               Wrestler savedWrestler = wrestlerRepository.save(wrestler);
-              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
+              eventPublisher.publishEvent(
+                  new FanAwardedEvent(
+                      this, savedWrestler.getDefaultState().orElse(null), tempFans));
 
               if (savedWrestler.getAccount() != null) {
                 legacyService.updateLegacyScore(savedWrestler.getAccount());

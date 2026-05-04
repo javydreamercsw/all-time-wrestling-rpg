@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.DatabaseCleaner;
 import com.github.javydreamercsw.management.controller.AbstractRestControllerIT;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -53,6 +54,8 @@ class RivalryControllerIT extends AbstractRestControllerIT {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
+  @Autowired private DatabaseCleaner databaseCleaner;
+
   @Autowired
   private com.github.javydreamercsw.management.domain.universe.UniverseRepository
       universeRepository;
@@ -68,8 +71,9 @@ class RivalryControllerIT extends AbstractRestControllerIT {
     rivalryRepository.deleteAll();
     deckRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    databaseCleaner.clearDatabase();
+    databaseCleaner.clearRepositories();
   }
+
   @Test
   @DisplayName("Should create new rivalry successfully")
   void shouldCreateNewRivalrySuccessfully() throws Exception {

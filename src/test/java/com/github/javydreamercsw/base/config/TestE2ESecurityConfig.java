@@ -77,7 +77,8 @@ public class TestE2ESecurityConfig {
                     "/frontend/**")
                 .permitAll()
                 .anyRequest()
-                .permitAll()); // For E2E tests, we want to allow everything so the Selenium driver can interact with the UI
+                .permitAll()); // For E2E tests, we want to allow everything so the Selenium driver
+    // can interact with the UI
 
     http.csrf(csrf -> csrf.disable());
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));

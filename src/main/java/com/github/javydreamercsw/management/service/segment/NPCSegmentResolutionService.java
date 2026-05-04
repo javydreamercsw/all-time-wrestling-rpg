@@ -363,6 +363,7 @@ public class NPCSegmentResolutionService {
     // Fallback (should never happen)
     return wrestlerWeights.get(0).wrestler();
   }
+
   /** Data class for wrestler weight calculations. */
   public record WrestlerWeight(
       @NonNull Wrestler wrestler,

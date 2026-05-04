@@ -31,9 +31,9 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.segment.SegmentService;
-import com.github.javydreamercsw.management.service.show.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -316,7 +315,7 @@ public class SegmentSyncService extends BaseSyncService {
     segmentDTO.setMainEvent(Boolean.TRUE.equals(mainEventObj));
 
     Object isTitleSegmentObj = rawProperties.get("Is Title Segment");
-    segmentDTO.setIsTitleSegment(Boolean.TRUE.equals(isTitleSegmentObj));
+    segmentDTO.setTitleSegment(Boolean.TRUE.equals(isTitleSegmentObj));
 
     Object statusObj = rawProperties.get("Status");
     if (statusObj instanceof String) {

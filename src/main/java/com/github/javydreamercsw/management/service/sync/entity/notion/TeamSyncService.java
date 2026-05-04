@@ -289,7 +289,7 @@ public class TeamSyncService extends BaseSyncService {
         team = teamRepository.findByName(dto.getName()).orElse(null);
       }
 
-      // 3. Create new team if no segment found
+      // 3. Create new team if no team found
       if (team == null) {
         team = new Team();
         isNewTeam = true;
@@ -349,37 +349,23 @@ public class TeamSyncService extends BaseSyncService {
         wrestler2 = wrestlerService.findByName(dto.getWrestler2Name()).orElse(null);
       }
 
-      // Try to find existing team
-      Team existingTeam = null;
-      if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-        existingTeam = teamService.getTeamByExternalId(dto.getExternalId()).orElse(null);
-      }
-      if (existingTeam == null) {
-        existingTeam = teamService.getTeamByName(dto.getName()).orElse(null);
-      }
-
-      Team team = existingTeam;
-      boolean isNew = team == null;
-
-      if (isNew) {
+      if (isNewTeam) {
         if (wrestler1 == null || wrestler2 == null) {
           log.warn("Skipping new team '{}' due to missing wrestlers", dto.getName());
-          return null;
+          return false;
         }
-        team = new Team();
-        team.setName(dto.getName());
         team.setWrestler1(wrestler1);
         team.setWrestler2(wrestler2);
         changed = true;
-      }
-
-      if (wrestler1 != null && !Objects.equals(wrestler1, team.getWrestler1())) {
-        team.setWrestler1(wrestler1);
-        changed = true;
-      }
-      if (wrestler2 != null && !Objects.equals(wrestler2, team.getWrestler2())) {
-        team.setWrestler2(wrestler2);
-        changed = true;
+      } else {
+        if (wrestler1 != null && !Objects.equals(wrestler1, team.getWrestler1())) {
+          team.setWrestler1(wrestler1);
+          changed = true;
+        }
+        if (wrestler2 != null && !Objects.equals(wrestler2, team.getWrestler2())) {
+          team.setWrestler2(wrestler2);
+          changed = true;
+        }
       }
 
       // Update basic fields
