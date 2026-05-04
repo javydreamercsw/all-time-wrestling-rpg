@@ -22,7 +22,6 @@ import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,10 +45,7 @@ public class StatusCardService {
       String flipDownCondition,
       String discardCondition) {
 
-    StatusCard probe = new StatusCard();
-    probe.setKey(key);
-
-    Optional<StatusCard> existingOpt = statusCardRepository.findOne(Example.of(probe));
+    Optional<StatusCard> existingOpt = statusCardRepository.findByKey(key);
 
     StatusCard card;
     if (existingOpt.isPresent()) {

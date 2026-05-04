@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,7 +31,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Example;
 
 @ExtendWith(MockitoExtension.class)
 class StatusCardServiceTest {
@@ -42,7 +41,7 @@ class StatusCardServiceTest {
 
   @Test
   void testCreateOrUpdateCard_New() {
-    when(statusCardRepository.findOne(any(Example.class))).thenReturn(Optional.empty());
+    when(statusCardRepository.findByKey(anyString())).thenReturn(Optional.empty());
 
     statusCardService.createOrUpdateCard(
         "status_draw",
@@ -80,7 +79,7 @@ class StatusCardServiceTest {
     existing.setLevel1Name("Old L1 Name");
     existing.setDescription("Old Description");
 
-    when(statusCardRepository.findOne(any(Example.class))).thenReturn(Optional.of(existing));
+    when(statusCardRepository.findByKey(anyString())).thenReturn(Optional.of(existing));
 
     statusCardService.createOrUpdateCard(
         "status_existing",
