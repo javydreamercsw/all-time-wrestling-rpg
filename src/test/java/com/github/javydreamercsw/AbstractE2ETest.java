@@ -103,7 +103,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     // Only clean up leagues in the base class if we want it for every test.
-    cleanupLeagues();
+    // cleanupLeagues();
 
     // Configure authenticationContext mock to proxy to SecurityContextHolder.
     // This ensures that SecurityUtils.hasRole() and other methods work correctly.

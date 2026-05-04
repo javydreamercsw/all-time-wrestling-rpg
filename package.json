@@ -118,9 +118,7 @@
     "@vaadin/vaadin-development-mode-detector": "2.0.7",
     "@vaadin/vaadin-usage-statistics": "2.1.3",
     "lit": "$lit",
-    "apexcharts": "$apexcharts",
     "@fullcalendar/core": "$@fullcalendar/core",
-    "onecolor": "$onecolor",
     "@fullcalendar/list": "$@fullcalendar/list",
     "@fullcalendar/moment-timezone": "$@fullcalendar/moment-timezone",
     "@fullcalendar/interaction": "$@fullcalendar/interaction",
@@ -128,7 +126,6 @@
     "@fullcalendar/timegrid": "$@fullcalendar/timegrid",
     "moment": "$moment",
     "@fullcalendar/daygrid": "$@fullcalendar/daygrid",
-    "@webcomponents/shadycss": "$@webcomponents/shadycss",
     "moment-timezone": "$moment-timezone",
     "@fullcalendar/multimonth": "$@fullcalendar/multimonth",
     "@fullcalendar/moment": "$@fullcalendar/moment",
@@ -203,7 +200,10 @@
     "@vaadin/react-components": "25.1.0",
     "serialize-javascript": "7.0.5",
     "brace-expansion": "2.0.3",
-    "dompurify": "$dompurify"
+    "dompurify": "$dompurify",
+    "apexcharts": "$apexcharts",
+    "onecolor": "$onecolor",
+    "@webcomponents/shadycss": "$@webcomponents/shadycss"
   },
   "vaadin": {
     "dependencies": {
