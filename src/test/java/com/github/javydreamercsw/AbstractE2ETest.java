@@ -18,6 +18,7 @@ package com.github.javydreamercsw;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -29,11 +30,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -272,6 +274,70 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       @NonNull String screenshotName) {
     if (Boolean.getBoolean("generate.docs")) {
       takeDocScreenshot(screenshotName);
+      updateManifest(category, title, description, screenshotName);
+    }
+  }
+
+  /**
+   * Updates the documentation manifest with feature metadata.
+   *
+   * @param category Feature category
+   * @param title Feature title
+   * @param description Feature description
+   * @param screenshotName Screenshot name (without path or extension)
+   */
+  @SuppressWarnings("unchecked")
+  protected synchronized void updateManifest(
+      String category, String title, String description, String screenshotName) {
+    try {
+      // Use relative path from the project root
+      Path manifestPath = Paths.get("docs", "manifest.json");
+      if (!Files.exists(manifestPath)) {
+        log.warn("Manifest file not found at: {}", manifestPath.toAbsolutePath());
+        return;
+      }
+
+      Map<String, Object> manifest =
+          objectMapper.readValue(
+              manifestPath.toFile(), new TypeReference<Map<String, Object>>() {});
+      List<Map<String, Object>> features = (List<Map<String, Object>>) manifest.get("features");
+      if (features == null) {
+        features = new ArrayList<>();
+        manifest.put("features", features);
+      }
+
+      String fileName = screenshotName.endsWith(".png") ? screenshotName : screenshotName + ".png";
+      String imagePath = "screenshots/" + fileName;
+      String id = category.toLowerCase().replace(" ", "-") + "-" + fileName.replace(".png", "");
+
+      boolean found = false;
+      for (Map<String, Object> feature : features) {
+        if (id.equals(feature.get("id")) || imagePath.equals(feature.get("imagePath"))) {
+          feature.put("category", category);
+          feature.put("title", title);
+          feature.put("description", description);
+          feature.put("imagePath", imagePath);
+          found = true;
+          log.debug("Updated existing feature in manifest: {}", id);
+          break;
+        }
+      }
+
+      if (!found) {
+        Map<String, Object> newFeature = new LinkedHashMap<>();
+        newFeature.put("id", id);
+        newFeature.put("category", category);
+        newFeature.put("title", title);
+        newFeature.put("description", description);
+        newFeature.put("imagePath", imagePath);
+        newFeature.put("order", 0);
+        features.add(newFeature);
+        log.info("Added new feature to manifest: {}", id);
+      }
+
+      objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
+    } catch (IOException e) {
+      log.error("Failed to update documentation manifest", e);
     }
   }
 
