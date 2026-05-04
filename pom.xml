@@ -1556,6 +1556,27 @@
       </build>
     </profile>
     <profile>
+      <id>integration-test</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>**/*E2ETest.java</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*IT.java</include>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>notion-it</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
