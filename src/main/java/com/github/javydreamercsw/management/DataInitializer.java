@@ -227,6 +227,7 @@ public class DataInitializer implements Initializable {
       syncCommentaryTeamsFromFile();
       loadAchievements();
       syncRingsideActions();
+      log.info("Data initialization complete.");
     }
   }
 
