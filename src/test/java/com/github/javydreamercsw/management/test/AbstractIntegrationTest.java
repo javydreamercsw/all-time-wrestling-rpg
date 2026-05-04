@@ -221,14 +221,14 @@ public abstract class AbstractIntegrationTest {
   protected CacheManager cacheManager;
 
   @AfterEach
-  public void tearDown() {
+  public void tearDown() throws Exception {
     log.debug("AbstractIntegrationTest.tearDown() called");
     clearSecurityContext();
     clearCache();
   }
 
   @BeforeEach
-  public void baseSetUp() {
+  public void baseSetUp() throws Exception {
     log.debug("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
 
     // 1. Capture original authentication
