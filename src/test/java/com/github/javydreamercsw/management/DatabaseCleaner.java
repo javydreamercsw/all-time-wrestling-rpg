@@ -182,6 +182,15 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
 
     try {
+      entityManager
+          .createNativeQuery("UPDATE account SET failed_login_attempts = 0, locked_until = NULL")
+          .executeUpdate();
+      log.debug("✅ Reset account lockout states");
+    } catch (Exception e) {
+      log.warn("Could not reset account lockout states: {}", e.getMessage());
+    }
+
+    try {
       entityManager.createNativeQuery("DELETE FROM storyline_milestone").executeUpdate();
       log.debug("✅ Explicitly cleared storyline_milestone");
     } catch (Exception e) {
