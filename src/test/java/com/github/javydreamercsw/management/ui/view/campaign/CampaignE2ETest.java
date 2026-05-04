@@ -119,7 +119,9 @@ class CampaignE2ETest extends AbstractE2ETest {
       } catch (org.openqa.selenium.StaleElementReferenceException e) {
         log.warn("Stale element during navigation, retrying... (attempt {})", retryCount + 1);
         retryCount++;
-        if (retryCount == 3) throw e;
+        if (retryCount == 3) {
+          throw e;
+        }
         try {
           Thread.sleep(500);
         } catch (InterruptedException ignored) {
