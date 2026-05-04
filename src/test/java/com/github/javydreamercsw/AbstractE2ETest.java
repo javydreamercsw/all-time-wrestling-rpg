@@ -211,11 +211,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         }
       }
       login();
-    } else {
-      // Ensure we are not on the login page
-      if (driver.getCurrentUrl().endsWith("/login")) {
-        driver.get("http://localhost:" + serverPort + getContextPath());
-      }
+    } else // Ensure we are not on the login page
+    if (Objects.requireNonNull(driver.getCurrentUrl()).endsWith("/login")) {
+      driver.get("http://localhost:" + serverPort + getContextPath());
     }
   }
 
