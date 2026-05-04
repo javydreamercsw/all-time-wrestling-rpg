@@ -321,6 +321,7 @@ public class FactionService {
     }
 
     faction.removeMember(wrestler);
+    wrestlerRepository.saveAndFlush(wrestler);
 
     // If removing the leader, clear the leader
     if (wrestler.equals(faction.getLeader())) {
@@ -390,7 +391,9 @@ public class FactionService {
       return Optional.of(faction);
     }
 
+    List<Wrestler> members = new java.util.ArrayList<>(faction.getMembers());
     faction.disband(reason);
+    wrestlerRepository.saveAllAndFlush(members);
     Faction savedFaction = factionRepository.saveAndFlush(faction);
 
     log.info("Disbanded faction: {} (reason: {})", faction.getName(), reason);
