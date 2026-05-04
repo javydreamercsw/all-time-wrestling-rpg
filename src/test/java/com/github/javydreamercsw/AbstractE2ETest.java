@@ -229,42 +229,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
 
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-
-    WebElement usernameInput =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript("return arguments[0].querySelector('input');", usernameField);
-
-    if (usernameInput == null) {
-      usernameInput = usernameField;
-    }
-
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
-                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
-                + " bubbles: true }));",
-            usernameInput,
-            username);
-
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
 
-    WebElement passwordInput =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript("return arguments[0].querySelector('input');", passwordField);
+    // Determine the correct modifier key for the current OS
+    String os = System.getProperty("os.name").toLowerCase();
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
 
-    if (passwordInput == null) {
-      passwordInput = passwordField;
-    }
+    // Use sendKeys which is more reliable for Vaadin components than setting .value via JS
+    usernameField.click();
+    usernameField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
+    usernameField.sendKeys(username);
 
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new CustomEvent('input',"
-                + " { bubbles: true })); arguments[0].dispatchEvent(new CustomEvent('change', {"
-                + " bubbles: true }));",
-            passwordInput,
-            password);
+    passwordField.click();
+    passwordField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
+    passwordField.sendKeys(password);
 
     takeSequencedScreenshot("after-filling-credentials");
     WebElement signInButton =
@@ -272,8 +250,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(signInButton);
     waitForAppToBeReady();
     try {
-      // Use a more robust check for successful login - presence of logout button or main layout
-      wait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
+      // Reduced timeout from 2 minutes to 30 seconds to fail fast and prevent pipeline stalls
+      WebDriverWait loginWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+      loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
       log.info("Login successful for user: {}", username);
       takeSequencedScreenshot("after-successful-login");
     } catch (Exception e) {
