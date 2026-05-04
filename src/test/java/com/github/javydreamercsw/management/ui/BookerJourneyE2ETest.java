@@ -351,7 +351,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       }
 
       log.info("Waiting for save button to disappear");
-      wait.withTimeout(Duration.ofSeconds(60));
+      wait.withTimeout(Duration.ofMinutes(1));
       wait.until(
           ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
       wait.withTimeout(Duration.ofSeconds(20));

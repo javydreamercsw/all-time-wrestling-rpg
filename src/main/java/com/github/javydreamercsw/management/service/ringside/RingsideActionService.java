@@ -111,11 +111,7 @@ public class RingsideActionService {
             .filter(t -> t.getUniverse() != null && t.getUniverse().getId().equals(universeId))
             .anyMatch(
                 t -> !attachedSegment.getWrestlers().contains(t.getPartner(attachedWrestler)));
-    if (otherTeamMembersExist) {
-      return true;
-    }
-
-    return false;
+    return otherTeamMembersExist;
   }
 
   @Transactional(readOnly = true)

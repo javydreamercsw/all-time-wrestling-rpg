@@ -47,10 +47,37 @@ import org.springframework.security.web.SecurityFilterChain;
 public class TestE2ESecurityConfig {
 
   @Bean
+  @ConditionalOnMissingBean
+  public ObjectMapper objectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.findAndRegisterModules();
+    return mapper;
+  }
+
+  @Bean
+  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
+    return new WithCustomMockUserSecurityContextFactory();
+  }
+
+  @Bean
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    // For E2E tests, we want to allow everything so the Selenium driver can interact with the UI
-    // We avoid VaadinSecurityConfigurer to prevent "Vaadin servlet url mapping is required" errors
-    http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+    // Configure public access to static resources FIRST
+    http.authorizeHttpRequests(
+        auth ->
+            auth.requestMatchers(
+                    "/login",
+                    "/login/**",
+                    "/images/**",
+                    "/icons/**",
+                    "/public/**",
+                    "/api/**",
+                    "/docs/**",
+                    "/VAADIN/**",
+                    "/line-awesome/**",
+                    "/frontend/**")
+                .permitAll()
+                .anyRequest()
+                .permitAll()); // For E2E tests, we want to allow everything so the Selenium driver can interact with the UI
 
     http.csrf(csrf -> csrf.disable());
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
@@ -79,12 +106,6 @@ public class TestE2ESecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(10);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public ObjectMapper objectMapper() {
-    return new ObjectMapper();
   }
 
   @Bean

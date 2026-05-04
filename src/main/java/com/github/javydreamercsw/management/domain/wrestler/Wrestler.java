@@ -266,9 +266,9 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   public Integer getEffectiveStartingStamina() {
     WrestlerAlignment alignment = getAlignment();
     int bonus =
-        (alignment != null
+        alignment != null
                 && alignment.getCampaign() != null
-                && alignment.getCampaign().getState() != null)
+                && alignment.getCampaign().getState() != null
             ? alignment.getCampaign().getState().getCampaignStaminaBonus()
             : 0;
     return startingStamina + bonus;

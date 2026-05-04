@@ -56,7 +56,7 @@ class RetryServiceTest {
         retryService.executeWithRetry(
             "test",
             (RetryService.AttemptCallable<String>)
-                (attemptNumber) -> {
+                attemptNumber -> {
                   assertThat(attemptNumber).isEqualTo(1);
                   return expectedResult;
                 });
@@ -76,7 +76,7 @@ class RetryServiceTest {
         retryService.executeWithRetry(
             "test",
             (RetryService.AttemptCallable<String>)
-                (attemptNumber) -> {
+                attemptNumber -> {
                   int currentAttempt = attemptCount.incrementAndGet();
                   if (currentAttempt < 3) {
                     throw new SocketTimeoutException("Connection timeout");
@@ -100,7 +100,7 @@ class RetryServiceTest {
                 retryService.executeWithRetry(
                     "test",
                     (RetryService.AttemptCallable<String>)
-                        (attemptNumber) -> {
+                        attemptNumber -> {
                           attemptCount.incrementAndGet();
                           throw new SocketTimeoutException("Connection timeout");
                         }))
@@ -121,7 +121,7 @@ class RetryServiceTest {
                 retryService.executeWithRetry(
                     "test",
                     (RetryService.AttemptCallable<String>)
-                        (attemptNumber) -> {
+                        attemptNumber -> {
                           attemptCount.incrementAndGet();
                           throw new IllegalArgumentException("Bad request - 400");
                         }))
@@ -143,7 +143,7 @@ class RetryServiceTest {
         retryService.executeWithRetry(
             "shows",
             (RetryService.AttemptCallable<String>)
-                (attemptNumber) -> {
+                attemptNumber -> {
                   int currentAttempt = attemptCount.incrementAndGet();
                   if (currentAttempt < 5) {
                     throw new SocketTimeoutException("Connection timeout");

@@ -70,13 +70,11 @@ public class DramaEventScheduler {
     // but in game time.
     if (daysPassed >= 7) {
       generateRandomDramaEvents();
-    } else {
-      // If less than a week passed, we still have a chance proportional to the time passed
-      // e.g. 1 day = 1/7 chance
-      if (random.nextDouble() < (double) daysPassed / 7.0) {
-        log.debug("Small time jump triggered random drama event check");
-        generateRandomDramaEvents();
-      }
+    } else // If less than a week passed, we still have a chance proportional to the time passed
+    // e.g. 1 day = 1/7 chance
+    if (random.nextDouble() < (double) daysPassed / 7.0) {
+      log.debug("Small time jump triggered random drama event check");
+      generateRandomDramaEvents();
     }
   }
 

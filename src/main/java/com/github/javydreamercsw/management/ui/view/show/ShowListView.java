@@ -142,7 +142,8 @@ public class ShowListView extends Main {
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
-    this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
+    this.clock =
+        clock != null ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
 
     name = new TextField();
     name.setPlaceholder("What do you want the show name to be?");
@@ -518,7 +519,7 @@ public class ShowListView extends Main {
         };
 
     java.util.function.Consumer<String> imageSaver =
-        (imageUrl) -> {
+        imageUrl -> {
           template.setImageUrl(imageUrl);
           showTemplateService.save(template);
           refreshGrid();

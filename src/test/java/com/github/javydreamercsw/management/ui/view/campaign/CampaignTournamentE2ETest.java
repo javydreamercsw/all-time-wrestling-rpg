@@ -70,6 +70,16 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     campaign.setState(state);
     campaignRepository.saveAndFlush(campaign);
 
+    // Create opponents (5 opponents -> 6 total -> Bracket size 8)
+    for (int i = 1; i < 5 + 1; i++) {
+      wrestlerRepository.save(
+          Wrestler.builder()
+              .name("Opponent " + i)
+              .startingHealth(100)
+              .startingStamina(100)
+              .build());
+    }
+
     // Chapter 1: The Tournament (Using Chapter 4 from All or Nothing)
     campaignChapterService.loadChapters();
     campaignService.advanceChapter(campaign); // Advance to Chapter 4
@@ -90,7 +100,7 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     // Verify Initial State: Round 1
     int expectedRounds = 4;
 
-    for (int round = 1; round <= expectedRounds; round++) {
+    for (int round = 1; round < expectedRounds + 1; round++) {
       // Determine expected title
       String expectedTitle = "Round " + round;
       if (round == expectedRounds) {

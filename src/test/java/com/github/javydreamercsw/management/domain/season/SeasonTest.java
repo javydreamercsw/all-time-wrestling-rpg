@@ -88,7 +88,7 @@ class SeasonTest {
     assertThat(season.getExpectedPpvCount()).isEqualTo(0);
 
     // Add 4 shows (not enough for PPV)
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i < 4 + 1; i++) {
       season.addShow(createShow("Show " + i, "regular"));
     }
     assertThat(season.getExpectedPpvCount()).isEqualTo(0);
@@ -98,7 +98,7 @@ class SeasonTest {
     assertThat(season.getExpectedPpvCount()).isEqualTo(1);
 
     // Add 10 shows total
-    for (int i = 6; i <= 10; i++) {
+    for (int i = 6; i < 10 + 1; i++) {
       season.addShow(createShow("Show " + i, "regular"));
     }
     assertThat(season.getExpectedPpvCount()).isEqualTo(2);
@@ -111,7 +111,7 @@ class SeasonTest {
     assertThat(season.isTimeForPpv()).isFalse();
 
     // Add 4 regular shows - not time yet
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i < 4 + 1; i++) {
       season.addShow(createShow("Show " + i, "regular"));
     }
     assertThat(season.isTimeForPpv()).isFalse();
@@ -125,7 +125,7 @@ class SeasonTest {
     assertThat(season.isTimeForPpv()).isFalse();
 
     // Add 5 more regular shows - time for next PPV
-    for (int i = 6; i <= 10; i++) {
+    for (int i = 6; i < 10 + 1; i++) {
       season.addShow(createShow("Show " + i, "regular"));
     }
     assertThat(season.isTimeForPpv()).isTrue();

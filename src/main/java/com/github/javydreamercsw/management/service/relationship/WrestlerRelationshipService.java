@@ -165,7 +165,6 @@ public class WrestlerRelationshipService {
     }
 
     double totalBonus = 0.0;
-    int pairs = 0;
 
     for (int i = 0; i < wrestlers.size(); i++) {
       for (int j = i + 1; j < wrestlers.size(); j++) {
@@ -175,7 +174,6 @@ public class WrestlerRelationshipService {
         for (WrestlerRelationship rel : relationships) {
           totalBonus += calculatePairBonus(rel);
         }
-        pairs++;
       }
     }
 

@@ -163,7 +163,7 @@ public class ShowPlanningService {
     List<Title> activeTitles = titleService.getActiveTitles();
 
     Gender genderConstraint =
-        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+        show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
     log.info(
         "Found {} active titles, filtering by gender: {}", activeTitles.size(), genderConstraint);

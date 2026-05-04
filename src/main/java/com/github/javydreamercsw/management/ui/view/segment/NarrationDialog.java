@@ -680,17 +680,15 @@ public class NarrationDialog extends Dialog {
           log.error("Error parsing error response", ex);
           showError("Failed to generate narration: " + response.toString());
         }
-      } else {
-        if (response.getBody() != null) {
-          try {
-            handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
-          } catch (JsonProcessingException e) {
-            log.error("Error processing response", e);
-            showError("Failed to process narration response.");
-          }
-        } else {
-          log.warn("Got an empty response from provider!");
+      } else if (response.getBody() != null) {
+        try {
+          handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
+        } catch (JsonProcessingException e) {
+          log.error("Error processing response", e);
+          showError("Failed to process narration response.");
         }
+      } else {
+        log.warn("Got an empty response from provider!");
       }
     } catch (Exception e) {
       log.error("Error retrying with provider: {}", provider, e);

@@ -104,6 +104,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         + " delivers an impressive performance, showcasing their skills to the crowd";
   }
 
+<<<<<<< HEAD
   /** Determines outcome for a two-wrestler match using weighted probability. */
   private String determineTwoWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
     return determineTwoWrestlerOutcome(wrestlers, null, 1L);
@@ -146,6 +147,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         "%s defeats %s with %s", winnerContext.getName(), loserContext.getName(), finishingMove);
   }
 
+<<<<<<< HEAD
   /** Determines outcome for a multi-wrestler match. */
   private String determineMultiWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
     return determineMultiWrestlerOutcome(wrestlers, null, 1L);
@@ -188,6 +190,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         winnerContext.getName(), wrestlers.size(), finishingMove);
   }
 
+<<<<<<< HEAD
   /** Calculates wrestler weight for match outcome determination. */
   private int calculateWrestlerWeight(Wrestler dbWrestler, WrestlerContext contextWrestler) {
     return calculateWrestlerWeight(dbWrestler, contextWrestler, null, 1L);

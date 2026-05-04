@@ -69,7 +69,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   private ShowType weeklyShowType;
 
   @BeforeEach
-  public void setUp() throws Exception {
+  public void setUp() {
     testSeason =
         seasonService.createOrUpdateSeason(
             "Test Season",

@@ -248,7 +248,7 @@ class SeasonServiceTest {
     activeSeason.setShowsPerPpv(3);
 
     // Add 3 regular shows
-    for (int i = 1; i <= 3; i++) {
+    for (int i = 1; i < 3 + 1; i++) {
       Show show = createShow("Show " + i, weeklyShowType); // Use the initialized show type
       activeSeason.addShow(show);
     }

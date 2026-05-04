@@ -89,7 +89,7 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
         int updated = 0;
         int errors = 0;
         List<T> entities =
-            (ids == null || ids.isEmpty()) ? repository.findAll() : repository.findAllById(ids);
+            ids == null || ids.isEmpty() ? repository.findAll() : repository.findAllById(ids);
 
         syncServiceDependencies
             .getProgressTracker()

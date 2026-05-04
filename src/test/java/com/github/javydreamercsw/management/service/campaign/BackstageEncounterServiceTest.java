@@ -88,7 +88,7 @@ class BackstageEncounterServiceTest {
   }
 
   @Test
-  void testShouldTriggerEncounter_FalseWhenAlreadyTriggeredToday() throws Exception {
+  void testShouldTriggerEncounter_FalseWhenAlreadyTriggeredToday() {
     state.setActionsTaken(0);
     state.setFeatureData("{\"lastBackstageEncounterDate\":\"2026-02-24\"}");
     assertThat(backstageEncounterService.shouldTriggerEncounter(campaign)).isFalse();

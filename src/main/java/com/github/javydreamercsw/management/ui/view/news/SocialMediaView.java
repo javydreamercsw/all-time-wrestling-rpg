@@ -124,7 +124,7 @@ public class SocialMediaView extends VerticalLayout {
               Anchor downloadAnchor =
                   new Anchor(
                       DownloadHandler.fromInputStream(
-                          (event) -> {
+                          event -> {
                             try {
                               String json =
                                   objectMapper

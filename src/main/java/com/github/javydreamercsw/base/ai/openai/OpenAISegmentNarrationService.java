@@ -77,8 +77,8 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     return "OpenAI "
         + (getModel() == null
             ? "Unknown"
-            : (openAIConfigProperties.getPremiumModel() != null
-                    && getModel().contains(openAIConfigProperties.getPremiumModel()))
+            : openAIConfigProperties.getPremiumModel() != null
+                    && getModel().contains(openAIConfigProperties.getPremiumModel())
                 ? "GPT-4"
                 : "GPT-3.5"); // Use configured premium model
   }
@@ -104,7 +104,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     // Allow model configuration via environment variable
     String configuredModel = aiSettingsService.getOpenAIPremiumModel();
     // Use configured default model
-    return (configuredModel != null && !configuredModel.trim().isEmpty())
+    return configuredModel != null && !configuredModel.trim().isEmpty()
         ? configuredModel.trim()
         : openAIConfigProperties.getDefaultModel();
   }

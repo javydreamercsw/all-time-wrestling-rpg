@@ -63,8 +63,13 @@ class RivalryControllerIT extends AbstractRestControllerIT {
     mockMvc =
         MockMvcBuilders.standaloneSetup(new RivalryController(rivalryService, rivalryMapper))
             .build();
-  }
 
+    // Delete in correct order to avoid foreign key constraint violations
+    rivalryRepository.deleteAll();
+    deckRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    databaseCleaner.clearDatabase();
+  }
   @Test
   @DisplayName("Should create new rivalry successfully")
   void shouldCreateNewRivalrySuccessfully() throws Exception {

@@ -57,7 +57,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   private Long universeId;
 
   @BeforeEach
-  public void setUp() throws Exception {
+  public void setUp() {
     // Default mock behavior
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));

@@ -89,7 +89,7 @@ public class NPCSegmentResolutionService {
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
-        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
+        stipulation != null && !stipulation.trim().isEmpty() ? stipulation : "Standard Match";
 
     log.info(
         "Resolving team segment: {} vs {} on show {} ({}) in universe {}",
@@ -162,7 +162,7 @@ public class NPCSegmentResolutionService {
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
-        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
+        stipulation != null && !stipulation.trim().isEmpty() ? stipulation : "Standard Match";
 
     log.info(
         "Resolving {}-team segment on show {} ({}): {} in universe {}",
@@ -363,7 +363,6 @@ public class NPCSegmentResolutionService {
     // Fallback (should never happen)
     return wrestlerWeights.get(0).wrestler();
   }
-
   /** Data class for wrestler weight calculations. */
   public record WrestlerWeight(
       @NonNull Wrestler wrestler,

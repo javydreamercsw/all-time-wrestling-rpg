@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
-import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -214,7 +213,7 @@ public class RankingService {
       // Fallback: if no contenders meet the tier requirement, show all active wrestlers of this
       // gender
       final List<Wrestler> contenders =
-          (filteredContenders.isEmpty() && !initialContenders.isEmpty())
+          filteredContenders.isEmpty() && !initialContenders.isEmpty()
               ? initialContenders.stream()
                   .filter(wrestler -> Boolean.TRUE.equals(wrestler.getActive()))
                   .collect(Collectors.toList())
@@ -358,7 +357,6 @@ public class RankingService {
         .rank(rank)
         .build();
   }
-
   private TitleReignDTO toTitleReignDTO(@NonNull TitleReign reign) {
     return TitleReignDTO.builder()
         .id(reign.getId())

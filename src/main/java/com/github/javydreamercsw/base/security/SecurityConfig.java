@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,8 +43,28 @@ public class SecurityConfig {
   private final UserDetailsService userDetailsService;
 
   @Bean
-  @Profile("!test")
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  @Profile("!test & !e2e")
+  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
+    // Public access to static resources and specific API endpoints
+    http.authorizeHttpRequests(
+        auth ->
+            auth.requestMatchers(
+                    "/images/**",
+                    "/icons/**",
+                    "/public/**",
+                    "/api/**",
+                    "/docs/**",
+                    "/api/auth/**",
+                    "/login",
+                    "/register",
+                    "/health",
+                    "/api/system/health")
+                .permitAll()
+                .requestMatchers("/api/admin/**")
+                .hasRole(RoleName.ADMIN_ROLE)
+                .anyRequest()
+                .authenticated());
+
     // Use cookie-based CSRF tokens so JavaScript/REST clients can read XSRF-TOKEN and submit it.
     // The deferred handler avoids the Spring Security 6 double-read issue with Vaadin.
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
@@ -50,22 +72,41 @@ public class SecurityConfig {
     http.csrf(
             csrf ->
                 csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .csrfTokenRequestHandler(requestHandler))
-        .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(
-                        "/api/auth/**",
-                        "/login",
-                        "/register",
-                        "/public/**",
-                        "/health",
-                        "/api/system/health")
-                    .permitAll()
-                    .requestMatchers("/api/admin/**")
-                    .hasRole(RoleName.ADMIN_ROLE)
-                    .anyRequest()
-                    .authenticated());
+                    .csrfTokenRequestHandler(requestHandler)
+                    .ignoringRequestMatchers("/api/**", "/h2-console/**"));
+
+    // Allow framing for H2 console
+    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+
+    // Apply Vaadin security configurer and set the login view
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+
+    // Configure remember-me functionality
+    http.rememberMe(
+        rememberMe ->
+            rememberMe
+                .key("atwrpg-remember-me-key") // Should be externalized to properties
+                .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 days
+                .userDetailsService(userDetailsService));
+
+    // Configure logout
+    http.logout(
+        logout ->
+            logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID", "remember-me")
+                .permitAll());
+
+    // Configure form login
+    http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
+
+    // Add security headers
+    http.headers(
+        headers ->
+            headers.httpStrictTransportSecurity(
+                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)));
 
     return http.build();
   }

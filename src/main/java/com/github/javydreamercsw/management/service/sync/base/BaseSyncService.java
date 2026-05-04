@@ -89,15 +89,6 @@ public abstract class BaseSyncService {
     syncServiceDependencies.getBackupService().createBackup(fileName);
   }
 
-  /**
-   * Removes old backup files, keeping only the configured maximum number.
-   *
-   * @param fileName The base file name to clean up backups for
-   */
-  private void cleanupOldBackups(@NonNull String fileName) {
-    // Logic now handled within BackupService.createBackup
-  }
-
   /** Extracts name from any NotionPage type using raw properties. */
   protected String extractNameFromNotionPage(@NonNull NotionPage page) {
     return syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(page);

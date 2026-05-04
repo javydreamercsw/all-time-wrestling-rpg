@@ -166,7 +166,7 @@ public class WrestlerDialog extends Dialog {
 
     Checkbox isPlayerField = new Checkbox("Is Player");
     isPlayerField.setId("wrestler-dialog-is-player-field");
-    isPlayerField.setReadOnly(!(securityUtils.isAdmin() || securityUtils.isBooker()));
+    isPlayerField.setReadOnly(!securityUtils.isAdmin() && !securityUtils.isBooker());
 
     Checkbox activeField = new Checkbox("Active");
     activeField.setId("wrestler-dialog-active-field");
@@ -179,7 +179,7 @@ public class WrestlerDialog extends Dialog {
     accountComboBox.setItems(accountService.findAll());
     accountComboBox.setVisible(
         isPlayerField.getValue() && (securityUtils.isAdmin() || securityUtils.isBooker()));
-    accountComboBox.setReadOnly(!(securityUtils.isAdmin() || securityUtils.isBooker()));
+    accountComboBox.setReadOnly(!securityUtils.isAdmin() && !securityUtils.isBooker());
 
     if (wrestler.getAccount() != null) {
       accountComboBox.setValue(wrestler.getAccount());
@@ -254,12 +254,11 @@ public class WrestlerDialog extends Dialog {
                     // Use the ID from the savedWrestler
                     this.wrestlerService.setAccountForWrestler(
                         this.wrestler.getId(), selectedAccount.getId());
-                  } else {
-                    // If isPlayer is false, and there was a previously assigned account, unassign
-                    // it
-                    if (this.wrestler.getAccount() != null) {
-                      this.wrestlerService.setAccountForWrestler(this.wrestler.getId(), null);
-                    }
+                  } else // If isPlayer is false, and there was a previously assigned account,
+                  // unassign
+                  // it
+                  if (this.wrestler.getAccount() != null) {
+                    this.wrestlerService.setAccountForWrestler(this.wrestler.getId(), null);
                   }
 
                   onSave.run();

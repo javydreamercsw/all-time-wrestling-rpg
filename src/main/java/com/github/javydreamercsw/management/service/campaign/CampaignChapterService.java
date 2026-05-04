@@ -88,9 +88,9 @@ public class CampaignChapterService {
         // This prevents re-entering the tutorial chapter after progression.
         .filter(
             c ->
-                !("beginning".equals(c.getId())
-                    && state.getCompletedChapterIds().stream()
-                        .anyMatch(id -> !id.equals("beginning"))))
+                !"beginning".equals(c.getId())
+                    || !state.getCompletedChapterIds().stream()
+                        .anyMatch(id -> !id.equals("beginning")))
         .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
         .toList();
   }

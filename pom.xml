@@ -662,6 +662,30 @@
             <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
             <recipe>org.openrewrite.java.migrate.lombok.UseLombokGetter</recipe>
             <recipe>org.openrewrite.java.migrate.lombok.UseLombokSetter</recipe>
+            <recipe>org.openrewrite.staticanalysis.RemoveUnusedLabels</recipe>
+            <recipe>org.openrewrite.staticanalysis.RemoveUnusedLocalVariables</recipe>
+            <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateFields</recipe>
+            <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods</recipe>
+            <recipe>org.openrewrite.xml.style.AutodetectDebug</recipe>
+            <recipe>org.openrewrite.staticanalysis.UnnecessaryThrows</recipe>
+            <recipe>org.openrewrite.staticanalysis.UnnecessaryCatch</recipe>
+            <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
+            <recipe>org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments</recipe>
+            <recipe>org.openrewrite.staticanalysis.UnnecessaryParentheses</recipe>
+            <recipe>org.openrewrite.staticanalysis.SillyEqualsCheck</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyArraysAsList</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpression</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanReturn</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyCompoundStatement</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyConsecutiveAssignments</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyDurationCreationUnits</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyElseBranch</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyForLoopBoundaryComparison</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryFalseTrueRecipe</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryTrueFalseRecipe</recipe>
           </activeRecipes>
         </configuration>
         <dependencies>

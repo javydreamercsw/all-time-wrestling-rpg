@@ -106,7 +106,7 @@ class CampaignEncounterServiceTest {
   }
 
   @Test
-  void testGenerateEncounter() throws Exception {
+  void testGenerateEncounter() {
     when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
     when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
         .thenReturn(new ArrayList<>());

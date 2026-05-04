@@ -149,7 +149,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     seasonRepository.save(season1);
 
     // Matches for Season 1: 3 wins, 1 loss
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i < 4 + 1; i++) {
       Show show = new Show();
       show.setName("Show S1-" + i);
       show.setDescription("Show in Season 1");
@@ -186,7 +186,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     seasonRepository.save(season2);
 
     // Matches for Season 2: 2 wins
-    for (int i = 1; i <= 2; i++) {
+    for (int i = 1; i < 2 + 1; i++) {
       Show show = new Show();
       show.setName("Show S2-" + i);
       show.setDescription("Show in Season 2");

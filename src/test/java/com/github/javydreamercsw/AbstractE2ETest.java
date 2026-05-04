@@ -23,11 +23,14 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -39,6 +42,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -246,60 +250,30 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         }
 
         WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-        WebElement usernameInput =
-            (WebElement)
-                ((JavascriptExecutor) driver)
-                    .executeScript("return arguments[0].querySelector('input');", usernameField);
-        if (usernameInput == null) {
-          usernameInput = usernameField;
-        }
-
         WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-        WebElement passwordInput =
-            (WebElement)
-                ((JavascriptExecutor) driver)
-                    .executeScript("return arguments[0].querySelector('input');", passwordField);
-        if (passwordInput == null) {
-          passwordInput = passwordField;
-        }
 
-        // Use JS to set values to ensure reliability in CI
-        ((JavascriptExecutor) driver)
-            .executeScript(
-                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new"
-                    + " CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new"
-                    + " CustomEvent('change', { bubbles: true }));",
-                usernameInput,
-                username);
-        ((JavascriptExecutor) driver)
-            .executeScript(
-                "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new"
-                    + " CustomEvent('input', { bubbles: true })); arguments[0].dispatchEvent(new"
-                    + " CustomEvent('change', { bubbles: true }));",
-                passwordInput,
-                password);
+        // Determine the correct modifier key for the current OS
+        String os = System.getProperty("os.name").toLowerCase();
+        Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
 
-        try {
-          Thread.sleep(500); // Small wait for events to process
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+        // Use sendKeys which is more reliable for Vaadin components
+        usernameField.click();
+        usernameField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
+        usernameField.sendKeys(username);
+
+        passwordField.click();
+        passwordField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
+        passwordField.sendKeys(password);
 
         takeSequencedScreenshot("after-filling-credentials");
         WebElement signInButton =
             loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
         clickElement(signInButton);
 
-        // Wait for successful login (logout button appears or URL changes)
-        wait.until(
-            d -> {
-              try {
-                return d.findElements(By.id("logout-button")).size() > 0
-                    || !d.getCurrentUrl().endsWith("/login");
-              } catch (Exception e) {
-                return false;
-              }
-            });
+        // Wait for successful login (logout button appears)
+        WebDriverWait loginWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
+
         takeSequencedScreenshot("after-successful-login");
         log.info("Login successful for user: {}", username);
         return; // Success!
@@ -343,30 +317,104 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForAppToBeReady() {
-    log.info("Waiting for Vaadin application to be ready...");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+    int maxAttempts = 300; // Increased from 60 to handle slow production builds
+    int attempt = 0;
+    while (attempt < maxAttempts) {
+      try {
+        URL url = new URL("http://localhost:" + serverPort + getContextPath());
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(1000);
+        connection.setReadTimeout(1000);
+        int responseCode = connection.getResponseCode();
+        if (responseCode == 200) {
+          return;
+        }
+      } catch (Exception e) {
+        // Ignore and retry
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException ignored) {
+      }
+      attempt++;
+    }
+    throw new RuntimeException(
+        "Application did not start within timeout. "
+            + "Please check if the server is running on port "
+            + serverPort);
+  }
+
+  /**
+   * Waits for the Vaadin components to load and become idle.
+   *
+   * @param driver the WebDriver instance
+   */
+  protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
+    waitForVaadinClientToLoad();
+  }
+
+  protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+    return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
+  }
+
+  protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+    waitForVaadinClientToLoad();
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
+  }
+
+  protected void waitForGridToPopulate(@NonNull String gridId) {
+    // Delegate to the more robust 'settled' wait.
+    waitForGridToSettle(gridId, Duration.ofSeconds(30));
+
+    // Keep the previous semantics: we expect at least one row.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {
           try {
-            Object result =
-                ((JavascriptExecutor) d)
-                    .executeScript(
-                        "return window.Vaadin && window.Vaadin.Flow && window.Vaadin.Flow.clients"
-                            + " && Object.keys(window.Vaadin.Flow.clients).length > 0;");
-            return Boolean.TRUE.equals(result);
+            WebElement grid = d.findElement(By.id(gridId));
+            List<WebElement> rows = grid.findElements(By.tagName("vaadin-grid-cell-content"));
+            return !rows.isEmpty();
           } catch (Exception e) {
             return false;
           }
         });
-    log.info("Vaadin application is ready.");
-  }
-
-  protected void waitForVaadinToLoad(WebDriver driver) {
-    waitForAppToBeReady();
   }
 
   protected void waitForVaadinClientToLoad() {
-    waitForAppToBeReady();
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+
+    // Wait for document.readyState to be 'complete'
+    wait.until(
+        webDriver ->
+            Objects.equals(
+                ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
+                "complete"));
+
+    // Wait for Vaadin to be present and idle
+    wait.until(
+        webDriver -> {
+          try {
+            return (Boolean)
+                ((JavascriptExecutor) webDriver)
+                    .executeScript(
+                        "return !!(window.Vaadin && window.Vaadin.Flow &&"
+                            + " window.Vaadin.Flow.clients &&"
+                            + " Object.values(window.Vaadin.Flow.clients).every(client =>"
+                            + " !client.isActive()));");
+          } catch (Exception e) {
+            return false;
+          }
+        });
+
+    // Wait for the main Vaadin app layout element to be present (best effort)
+    try {
+      wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
+    } catch (Exception ignored) {
+      // Not all pages might have vaadin-app-layout
+    }
   }
 
   protected void waitForVaadin(@NonNull Duration timeout) {
@@ -384,16 +432,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected String getPassword() {
     return "admin123";
-  }
-
-  protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By locator) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    return wait.until(ExpectedConditions.presenceOfElementLocated(locator));
-  }
-
-  protected WebElement waitForVaadinElementVisible(@NonNull By locator) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
   }
 
   protected void click(@NonNull String tagName, @NonNull String text) {
@@ -486,16 +524,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(checkbox);
   }
 
-  protected void waitForGridToPopulate(@NonNull String gridId) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(
-        d -> {
-          WebElement grid = d.findElement(By.id(gridId));
-          List<WebElement> rows = grid.findElements(By.tagName("vaadin-grid-cell-content"));
-          return !rows.isEmpty();
-        });
-  }
-
   protected void assertGridContains(@NonNull String gridId, @NonNull String text) {
     WebElement grid = driver.findElement(By.id(gridId));
     assertTrue(grid.getText().contains(text), "Grid " + gridId + " should contain text: " + text);
@@ -559,11 +587,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     wait.until(
         ExpectedConditions.presenceOfElementLocated(
             By.xpath("//vaadin-notification-card[contains(text(), '" + text + "')]")));
-  }
-
-  protected void waitForPageSourceToContain(@NonNull String text) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(d -> d.getPageSource().contains(text));
   }
 
   protected void scrollIntoView(@NonNull WebElement element) {
@@ -632,5 +655,37 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     field.sendKeys(selectAll);
     field.sendKeys(Keys.BACK_SPACE);
     takeSequencedScreenshot("after-clear");
+  }
+
+  protected String getVaadinTextFieldErrorMessage(@NonNull String textFieldId) {
+    WebElement textFieldElement = driver.findElement(By.id(textFieldId));
+
+    // Check if the field is invalid
+    Boolean isInvalid =
+        (Boolean)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].hasAttribute('invalid');", textFieldElement);
+
+    if (Boolean.TRUE.equals(isInvalid)) {
+      // Access the shadow root of the vaadin-text-field
+      SearchContext shadowRoot = textFieldElement.getShadowRoot();
+
+      // Find the error message element within the shadow root
+      List<WebElement> errorMessageElements =
+          shadowRoot.findElements(By.cssSelector("[part='error-message']"));
+
+      if (!errorMessageElements.isEmpty()) {
+        WebElement errorMessageElement = errorMessageElements.getFirst();
+        if (errorMessageElement.isDisplayed()) {
+          return errorMessageElement.getText();
+        }
+      }
+    }
+    return null; // Or throw an exception if the field is not invalid
+  }
+
+  protected void waitForPageSourceToContain(@NonNull String text) {
+    new WebDriverWait(driver, java.time.Duration.ofMinutes(1))
+        .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 }

@@ -113,7 +113,7 @@ public class NpcService {
     }
 
     int start = (int) pageable.getOffset();
-    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+    int end = Math.min(start + pageable.getPageSize(), allFiltered.size());
 
     List<Npc> pageContent = new java.util.ArrayList<>();
     if (start < allFiltered.size()) {

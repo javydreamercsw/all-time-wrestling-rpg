@@ -463,7 +463,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncRelationshipsFromFile() throws IOException {
+  void testSyncRelationshipsFromFile() {
     // Given
     Wrestler w1 = new Wrestler();
     w1.setId(1L);
@@ -532,7 +532,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncNpcsFromFile() throws IOException {
+  void testSyncNpcsFromFile() {
     // Given
     Npc npc = new Npc();
     npc.setName("Mock NPC");

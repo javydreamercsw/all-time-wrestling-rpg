@@ -52,7 +52,7 @@ class ImageCleanupServiceTest {
   @TempDir Path tempDir;
 
   @BeforeEach
-  void setUp() throws IOException {
+  void setUp() {
     when(storageProperties.getResolvedImageDir()).thenReturn(tempDir);
     imageCleanupService =
         new ImageCleanupService(

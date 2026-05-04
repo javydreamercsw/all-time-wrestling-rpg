@@ -50,7 +50,7 @@ public class RetryService {
     long delay = config.getInitialDelayMs(entityType);
     double backoff = config.getBackoffMultiplier();
     Exception lastException = null;
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+    for (int attempt = 1; attempt < maxAttempts + 1; attempt++) {
       try {
         return callable.call(attempt);
       } catch (SocketTimeoutException e) {
