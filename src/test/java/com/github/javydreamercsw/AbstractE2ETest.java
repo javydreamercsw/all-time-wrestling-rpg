@@ -19,6 +19,7 @@ package com.github.javydreamercsw;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -69,6 +70,8 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestE2ESecurityConfig.class)
 @Slf4j
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
+
+  @org.springframework.beans.factory.annotation.Autowired protected ObjectMapper objectMapper;
 
   protected static WebDriver driver;
   private static boolean appReady = false;

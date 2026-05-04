@@ -264,37 +264,50 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearAllRepositories() {
-    log.debug("AbstractIntegrationTest.clearAllRepositories() called");
+    log.info("Starting comprehensive database cleanup...");
+
+    // 1. Clear ID sequences and basic links in a separate transaction
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          entityManager
-              .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-              .executeUpdate();
-          entityManager
-              .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
-              .executeUpdate();
+          try {
+            entityManager
+                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+                .executeUpdate();
+            entityManager
+                .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
+                .executeUpdate();
+          } catch (Exception e) {
+            log.trace("Could not reset basic sequences: {}", e.getMessage());
+          }
           return null;
         });
 
-    // 2. Perform cleanup and init in a new transaction to avoid conflicts
+    // 2. Perform deep repository cleanup in its own transaction
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          log.info("Cleaning up database using DatabaseCleanup...");
+          log.info("Running DatabaseCleanup.clearRepositories()...");
           databaseCleanup.clearRepositories();
+          return null;
+        });
 
+    // 3. Re-initialize data and universe in a FINAL transaction
+    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    transactionTemplate.execute(
+        status -> {
+          log.info("Ensuring default universe and re-initializing data...");
           clearCache();
-
-          // Always ensure at least one universe exists for tests
           ensureDefaultUniverseExists();
-
-          // 3. Re-initialize data
           if (dataInitializerEnabled) {
             dataInitializer.init();
           }
           return null;
         });
+
+    // Final cache clear to be safe
+    clearCache();
+    log.info("✨ Database cleanup and re-initialization complete.");
 
     // Clear the entity manager
     if (entityManager != null) {

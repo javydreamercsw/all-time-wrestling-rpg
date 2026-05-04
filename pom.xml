@@ -1496,8 +1496,8 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <!-- Ensure E2E is not skipped in this profile. -->
               <skipITs>false</skipITs>
@@ -1521,6 +1521,17 @@
                 <goals>
                   <goal>integration-test</goal>
                   <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>repackage</goal>
                 </goals>
               </execution>
             </executions>

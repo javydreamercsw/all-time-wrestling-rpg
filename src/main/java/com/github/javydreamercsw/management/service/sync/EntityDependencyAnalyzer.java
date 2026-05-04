@@ -101,10 +101,7 @@ public class EntityDependencyAnalyzer {
     // Also scan domain packages directly
     entityClasses.addAll(scanDomainPackages());
 
-    log.debug(
-        "🔍 Discovered {} entity classes: {}",
-        entityClasses.size(),
-        entityClasses.stream().map(Class::getSimpleName).collect(Collectors.toList()));
+    log.info("🔍 Discovered {} entity classes for dependency analysis", entityClasses.size());
 
     return entityClasses;
   }
@@ -117,7 +114,9 @@ public class EntityDependencyAnalyzer {
     scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
 
     // List of known domain packages to scan
-    String[] domainPackages = {"com.github.javydreamercsw.management.domain"};
+    String[] domainPackages = {
+      "com.github.javydreamercsw.base.domain", "com.github.javydreamercsw.management.domain"
+    };
 
     for (String packageName : domainPackages) {
       for (BeanDefinition bd : scanner.findCandidateComponents(packageName)) {

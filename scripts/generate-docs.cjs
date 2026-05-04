@@ -71,7 +71,26 @@ Object.entries(categories).forEach(([category, catFeatures]) => {
   console.log(`Generated: ${filePath}`);
 });
 
-// 4. Build VitePress Site
+// 4. Generate Sidebar for VitePress
+console.log('Generating dynamic sidebar...');
+const sidebar = [];
+Object.entries(categories).forEach(([category, catFeatures]) => {
+  const categoryLink = '/guide/' + category.toLowerCase().replace(/ /g, '-');
+  sidebar.push({
+    text: category,
+    collapsed: false,
+    items: [
+      { text: 'Overview', link: categoryLink }
+    ]
+  });
+});
+
+fs.writeFileSync(
+  path.join(rootDir, 'docs', 'site', '.vitepress', 'sidebar.json'),
+  JSON.stringify(sidebar, null, 2)
+);
+
+// 5. Build VitePress Site
 console.log('Building VitePress site...');
 try {
   // Use BASE_URL from environment if provided, otherwise calculate from application.properties
