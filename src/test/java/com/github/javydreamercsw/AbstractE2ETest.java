@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -298,8 +299,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
 
       Map<String, Object> manifest =
-          objectMapper.readValue(
-              manifestPath.toFile(), new TypeReference<Map<String, Object>>() {});
+          objectMapper.readValue(manifestPath.toFile(), new TypeReference<>() {});
       List<Map<String, Object>> features = (List<Map<String, Object>>) manifest.get("features");
       if (features == null) {
         features = new ArrayList<>();
