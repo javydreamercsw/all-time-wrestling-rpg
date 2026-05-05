@@ -41,11 +41,10 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
         driver, By.xpath("//vaadin-grid-cell-content[contains(., 'ATW Extreme Expansion')]"));
 
     // 2. Find the checkbox for 'Extreme Pack' and disable it
-    WebElement extremeCheckbox = waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
-
-    // Use Javascript to click to be more robust with Vaadin Grid rendering
     ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", extremeCheckbox);
+        .executeScript(
+            "arguments[0].click();",
+            waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME")));
 
     // Wait for notification
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'disabled')]"));
@@ -70,10 +69,10 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
-    extremeCheckbox = waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
-
     ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", extremeCheckbox);
+        .executeScript(
+            "arguments[0].click();",
+            waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME")));
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
 
