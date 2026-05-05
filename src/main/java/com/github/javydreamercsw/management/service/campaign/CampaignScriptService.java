@@ -25,7 +25,9 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.codehaus.groovy.control.CompilerConfiguration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,12 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class CampaignScriptService {
+
+  // Compiled script classes cached by snippet text to avoid per-call classloader creation.
+  private final Map<String, Class<?>> compiledSnippetCache = new ConcurrentHashMap<>();
+  private final groovy.lang.GroovyClassLoader groovyClassLoader =
+      new groovy.lang.GroovyClassLoader(
+          Thread.currentThread().getContextClassLoader(), new CompilerConfiguration());
 
   /**
    * Executes an effect script (e.g. from an ability card) within the context of a campaign.
@@ -77,9 +85,13 @@ public class CampaignScriptService {
       return null;
     }
     try {
+      Class<?> scriptClass =
+          compiledSnippetCache.computeIfAbsent(
+              snippet, s -> groovyClassLoader.parseClass(s));
       Binding binding = new Binding(variables);
-      GroovyShell shell = new GroovyShell(binding);
-      return shell.evaluate(snippet);
+      groovy.lang.Script script =
+          groovy.lang.InvokerHelper.createScript(scriptClass, binding);
+      return script.run();
     } catch (Exception e) {
       log.error("Error evaluating Groovy snippet: {}", snippet, e);
       throw new RuntimeException("Failed to evaluate Groovy snippet", e);
@@ -87,21 +99,13 @@ public class CampaignScriptService {
   }
 
   private groovy.lang.Script getScript(String scriptPath, Binding binding) throws IOException {
-    // For now, we recreate the script object with the new binding.
-    // In a more advanced implementation, we might cache the Script class and re-instantiate it.
-    // However, GroovyShell.parse returns a Script object which is bound to a specific Binding.
-    // To reuse compiled classes, we would need to use GroovyClassLoader.
-
-    // Simple caching of raw script content or pre-parsed script logic would be better.
-    // Let's use GroovyShell to parse and run for simplicity in Phase 2.
-
     Resource resource = new ClassPathResource("scripts/campaign/" + scriptPath);
     if (!resource.exists()) {
       throw new IOException("Script not found: " + scriptPath);
     }
 
     try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
-      GroovyShell shell = new GroovyShell(binding);
+      GroovyShell shell = new GroovyShell(groovyClassLoader, binding);
       return shell.parse(reader);
     }
   }

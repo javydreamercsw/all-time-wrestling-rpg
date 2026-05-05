@@ -506,6 +506,12 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         List<StatusCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
+        // Skip loading if the count already matches — avoids N×M DB round-trips in tests
+        // where DataInitializer.init() runs on every @BeforeEach reset.
+        if (statusCardService.findAll().size() == cardsFromFile.size()) {
+          log.debug("Status cards already loaded ({} cards), skipping sync.", cardsFromFile.size());
+          return;
+        }
         for (StatusCardDTO dto : cardsFromFile) {
           statusCardService.createOrUpdateCard(
               dto.getKey(),
