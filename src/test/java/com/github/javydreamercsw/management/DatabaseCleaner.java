@@ -281,26 +281,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
         log.trace("Could not manually clear table {}: {}", table, e.getMessage());
       }
     }
-
-    try {
-      executeNativeUpdate("UPDATE account SET failed_login_attempts = 0, locked_until = NULL");
-      log.info("✅ Reset account lockout states");
-    } catch (Exception e) {
-      log.warn("Could not reset account lockout states: {}", e.getMessage());
-    }
-
-    try {
-      executeNativeUpdate("DELETE FROM storyline_milestone");
-      log.info("✅ Explicitly cleared storyline_milestone");
-    } catch (Exception e) {
-      log.warn("Could not explicitly clear storyline_milestone: {}", e.getMessage());
-    }
-    try {
-      executeNativeUpdate("DELETE FROM campaign_storyline");
-      log.info("✅ Explicitly cleared campaign_storyline");
-    } catch (Exception e) {
-      log.warn("Could not explicitly clear campaign_storyline: {}", e.getMessage());
-    }
   }
 
   /**
