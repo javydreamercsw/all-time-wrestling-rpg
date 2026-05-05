@@ -1024,6 +1024,7 @@
               <exclude>**/package.json</exclude>
               <exclude>**/package-lock.json</exclude>
               <exclude>**/generated/**</exclude>
+              <exclude>.claude/**</exclude>
             </excludes>
             <jackson/>
           </json>
