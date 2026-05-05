@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.runtime.InvokerHelper;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -86,11 +87,9 @@ public class CampaignScriptService {
     }
     try {
       Class<?> scriptClass =
-          compiledSnippetCache.computeIfAbsent(
-              snippet, s -> groovyClassLoader.parseClass(s));
+          compiledSnippetCache.computeIfAbsent(snippet, s -> groovyClassLoader.parseClass(s));
       Binding binding = new Binding(variables);
-      groovy.lang.Script script =
-          groovy.lang.InvokerHelper.createScript(scriptClass, binding);
+      groovy.lang.Script script = InvokerHelper.createScript(scriptClass, binding);
       return script.run();
     } catch (Exception e) {
       log.error("Error evaluating Groovy snippet: {}", snippet, e);
