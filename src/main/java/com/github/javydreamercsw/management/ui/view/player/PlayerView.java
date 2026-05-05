@@ -528,17 +528,24 @@ public class PlayerView extends VerticalLayout {
         new StringBuilder("Base Health: ").append(playerWrestler.getStartingHealth());
     if (hasCampaign) {
       CampaignState state = playerWrestler.getAlignment().getCampaign().getState();
-      if (state.getCampaignHealthBonus() > 0)
+      if (state.getCampaignHealthBonus() > 0) {
         hpTooltip.append("\nCampaign Bonus: +").append(state.getCampaignHealthBonus());
-      if (state.getHealthPenalty() > 0)
+      }
+      if (state.getHealthPenalty() > 0) {
         hpTooltip.append("\nCampaign Penalty: -").append(state.getHealthPenalty());
+      }
     }
-    if (playerWrestler.getBumps() > 0)
+    if (playerWrestler.getBumps() > 0) {
       hpTooltip.append("\nBump Penalty: -").append(playerWrestler.getBumps());
+    }
     int conditionPenalty = Math.min(5, (100 - playerWrestler.getPhysicalCondition()) / 5);
-    if (conditionPenalty > 0) hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
+    if (conditionPenalty > 0) {
+      hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
+    }
     int injuryPenalty = playerWrestler.getTotalInjuryPenalty();
-    if (injuryPenalty > 0) hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
+    if (injuryPenalty > 0) {
+      hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
+    }
 
     Span hp = new Span("❤️ HP: " + effectiveHp);
     Tooltip.forComponent(hp).setText(hpTooltip.toString());
@@ -550,7 +557,9 @@ public class PlayerView extends VerticalLayout {
     if (hasCampaign) {
       int stamBonus =
           playerWrestler.getAlignment().getCampaign().getState().getCampaignStaminaBonus();
-      if (stamBonus > 0) stamTooltip.append("\nCampaign Bonus: +").append(stamBonus);
+      if (stamBonus > 0) {
+        stamTooltip.append("\nCampaign Bonus: +").append(stamBonus);
+      }
     }
     Span stam = new Span("⚡ Stamina: " + effectiveStamina);
     Tooltip.forComponent(stam).setText(stamTooltip.toString());
@@ -560,7 +569,9 @@ public class PlayerView extends VerticalLayout {
     StringBuilder momTooltip = new StringBuilder("Base Momentum: 0");
     if (hasCampaign) {
       int momBonus = playerWrestler.getAlignment().getCampaign().getState().getMomentumBonus();
-      if (momBonus != 0) momTooltip.append("\nCampaign Bonus: +").append(momBonus);
+      if (momBonus != 0) {
+        momTooltip.append("\nCampaign Bonus: +").append(momBonus);
+      }
     }
     playerWrestler
         .getStatuses()
@@ -589,11 +600,14 @@ public class PlayerView extends VerticalLayout {
     StringBuilder handTooltip = new StringBuilder("Base Hand Size: 5");
     if (hasCampaign) {
       int handPenalty = playerWrestler.getAlignment().getCampaign().getState().getHandSizePenalty();
-      if (handPenalty > 0) handTooltip.append("\nCampaign Penalty: -").append(handPenalty);
+      if (handPenalty > 0) {
+        handTooltip.append("\nCampaign Penalty: -").append(handPenalty);
+      }
     }
     int totalHandInjuryPenalty = playerWrestler.getTotalHandSizePenalty();
-    if (totalHandInjuryPenalty > 0)
+    if (totalHandInjuryPenalty > 0) {
       handTooltip.append("\nInjury Penalty: -").append(totalHandInjuryPenalty);
+    }
     playerWrestler
         .getStatuses()
         .forEach(
