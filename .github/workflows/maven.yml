@@ -220,37 +220,34 @@ jobs:
       with:
         name: jacoco-exec
         path: target/
-        if-no-files-found: ignore
 
     - name: Download integration test coverage data
       uses: actions/download-artifact@v4
       with:
         name: jacoco-it-exec
         path: target/
-        if-no-files-found: ignore
 
     - name: Download E2E test coverage data
       uses: actions/download-artifact@v4
       with:
         name: jacoco-e2e-exec
         path: target/
-        if-no-files-found: ignore
 
     - name: Download Notion integration test coverage data
       if: needs.check-paths.outputs.notion_changed == 'true'
+      continue-on-error: true
       uses: actions/download-artifact@v4
       with:
         name: jacoco-notion-it-exec
         path: target/
-        if-no-files-found: ignore
 
     - name: Download Notion E2E test coverage data
       if: needs.check-paths.outputs.notion_changed == 'true'
+      continue-on-error: true
       uses: actions/download-artifact@v4
       with:
         name: jacoco-notion-e2e-exec
         path: target/
-        if-no-files-found: ignore
 
     - name: Ensure classes are compiled
       run: mvn -B compile -Pcoverage

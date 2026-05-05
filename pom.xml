@@ -30,6 +30,7 @@
     <headless>true</headless>
     <!-- JaCoCo Coverage Properties -->
     <jacoco.coverage.minimum>0.90</jacoco.coverage.minimum>
+    <jacoco.e2e.destFile>${project.build.directory}/jacoco-it.exec</jacoco.e2e.destFile>
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.it.destFile>${project.build.directory}/jacoco-it.exec</jacoco.it.destFile>
     <jacoco.notion.e2e.destFile>${project.build.directory}/jacoco-notion-e2e.exec</jacoco.notion.e2e.destFile>
@@ -1537,9 +1538,26 @@
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <jacoco.e2e.destFile>${project.build.directory}/jacoco-e2e.exec</jacoco.e2e.destFile>
       </properties>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <destFile>${jacoco.e2e.destFile}</destFile>
+                  <propertyName>failsafeArgLine</propertyName>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
