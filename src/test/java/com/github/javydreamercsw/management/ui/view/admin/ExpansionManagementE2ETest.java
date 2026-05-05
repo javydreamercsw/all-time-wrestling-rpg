@@ -40,11 +40,12 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     waitForVaadinElement(
         driver, By.xpath("//vaadin-grid-cell-content[contains(., 'ATW Extreme Expansion')]"));
 
-    // 2. Find the checkbox for 'Extreme Pack' and disable it
+    // 2. Find the checkbox for 'Extreme Pack' and disable it.
+    // Look up and click entirely inside JS to avoid StaleElementReferenceException — no WebElement
+    // reference crosses the JVM→ChromeDriver boundary while Vaadin is re-rendering.
+    waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
     ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].click();",
-            waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME")));
+        .executeScript("document.getElementById('expansion-toggle-EXTREME').click();");
 
     // Wait for notification
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'disabled')]"));
@@ -69,10 +70,9 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
+    waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
     ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].click();",
-            waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME")));
+        .executeScript("document.getElementById('expansion-toggle-EXTREME').click();");
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
 
