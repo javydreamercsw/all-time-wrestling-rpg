@@ -1574,6 +1574,10 @@
                 <include>**/*IT.java</include>
                 <include>**/*IntegrationTest.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*DockerIT.java</exclude>
+                <exclude>**/Docker*IT.java</exclude>
+              </excludes>
             </configuration>
           </plugin>
         </plugins>
