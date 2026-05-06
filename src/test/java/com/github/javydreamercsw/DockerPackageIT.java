@@ -18,7 +18,9 @@ package com.github.javydreamercsw;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -27,7 +29,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * This is an integration test that packages the application into a Docker image and runs it. It
@@ -38,23 +40,26 @@ class DockerPackageIT {
 
   @Test
   void testDockerPackage() throws Exception {
-    // Build the image from the Dockerfile
-    File dockerfile = new File("./Dockerfile").getAbsoluteFile();
-    File targetDir = new File(dockerfile.getParentFile(), "target");
-    File warFile = new File(targetDir, "all-time-wrestling-rpg.war");
-    File serverXml =
-        new File(dockerfile.getParentFile(), "src/main/resources/docker/tomcat/server.xml");
-
-    ImageFromDockerfile image =
-        new ImageFromDockerfile()
-            .withFileFromPath("src/main/resources/docker/tomcat/server.xml", serverXml.toPath())
-            .withFileFromPath("target/all-time-wrestling-rpg.war", warFile.toPath())
-            .withDockerfile(dockerfile.toPath());
+    File projectDir = new File(".").getAbsoluteFile().getCanonicalFile();
     final int port = Integer.parseInt(System.getProperty("server.port", "9090"));
     final String contextPath = System.getProperty("server.servlet.context-path", "/atw-rpg");
 
+    // Build image via docker CLI with --pull=never so it uses the local base image without
+    // hitting Docker Hub. This avoids the Testcontainers pre-pull hang on ImageFromDockerfile.
+    String imageTag = "atw-rpg-it:latest";
+    Process build =
+        new ProcessBuilder("docker", "build", "-t", imageTag, projectDir.getAbsolutePath())
+            .directory(projectDir)
+            .redirectErrorStream(true)
+            .start();
+    try (BufferedReader reader =
+        new BufferedReader(new InputStreamReader(build.getInputStream()))) {
+      reader.lines().forEach(line -> System.out.println("[docker build] " + line));
+    }
+    assertEquals(0, build.waitFor(), "docker build failed");
+
     try (GenericContainer<?> container =
-        new GenericContainer<>(image)
+        new GenericContainer<>(DockerImageName.parse(imageTag))
             .withExposedPorts(port)
             .withEnv("notion.sync.enabled", "false")
             .withEnv("notion.sync.scheduler.enabled", "false")
