@@ -1,1 +1,0 @@
-ALTER TABLE segment ADD COLUMN notes LONGTEXT;
