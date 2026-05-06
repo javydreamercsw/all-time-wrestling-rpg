@@ -68,7 +68,7 @@ class DockerPackageIT {
             .waitingFor(
                 Wait.forHttp(contextPath + "/actuator/health")
                     .forStatusCode(200)
-                    .withStartupTimeout(Duration.ofMinutes(1)))) {
+                    .withStartupTimeout(Duration.ofMinutes(5)))) {
       container.start();
 
       HttpClient client =

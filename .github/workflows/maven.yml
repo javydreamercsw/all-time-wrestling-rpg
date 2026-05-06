@@ -324,6 +324,6 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build WAR for Docker image
-      run: mvn -B package -Pwar -DskipTests
+      run: mvn -B package -Pwar,production -DskipTests
     - name: Run Docker Integration Tests
       run: mvn -B verify -Pdocker-it -Dsurefire.skip=true
