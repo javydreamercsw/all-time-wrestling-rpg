@@ -37,9 +37,15 @@ public interface ShowCardFormatter {
    * @param segments the segments of the show
    * @param includeSummary whether to include segment summaries
    * @param includeResults whether to include match results
+   * @param includeNarration whether to include segment narration
    * @return formatted text
    */
-  String format(Show show, List<Segment> segments, boolean includeSummary, boolean includeResults);
+  String format(
+      Show show,
+      List<Segment> segments,
+      boolean includeSummary,
+      boolean includeResults,
+      boolean includeNarration);
 
   /**
    * Get the priority for sorting in the UI. Lower values come first.

@@ -29,7 +29,11 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
 
   @Override
   public String format(
-      Show show, List<Segment> segments, boolean includeSummary, boolean includeResults) {
+      Show show,
+      List<Segment> segments,
+      boolean includeSummary,
+      boolean includeResults,
+      boolean includeNarration) {
     StringBuilder sb = new StringBuilder();
     sb.append("📺 ").append(show.getName());
     if (show.getShowDate() != null) {
@@ -80,6 +84,12 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
           && segment.getSummary() != null
           && !segment.getSummary().trim().isEmpty()) {
         sb.append("📝 ").append(segment.getSummary().trim()).append("\n");
+      }
+
+      if (includeNarration
+          && segment.getNarration() != null
+          && !segment.getNarration().trim().isEmpty()) {
+        sb.append("💬 ").append(segment.getNarration().trim()).append("\n");
       }
       sb.append("\n");
     }
