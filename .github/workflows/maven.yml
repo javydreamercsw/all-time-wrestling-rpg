@@ -323,6 +323,27 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - name: Cache Docker base image
+      id: docker-cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/docker-images
+        key: docker-tomcat-11-jdk25-${{ hashFiles('Dockerfile') }}
+        restore-keys: docker-tomcat-11-jdk25-
+    - name: Load or pull Docker base image
+      run: |
+        if [ -f /tmp/docker-images/tomcat-11-jdk25.tar ]; then
+          docker load < /tmp/docker-images/tomcat-11-jdk25.tar
+        else
+          docker pull tomcat:11-jdk25
+          mkdir -p /tmp/docker-images
+          docker save tomcat:11-jdk25 > /tmp/docker-images/tomcat-11-jdk25.tar
+        fi
     - name: Build WAR for Docker image
       run: mvn -B package -Pwar,production -DskipTests
     - name: Run Docker Integration Tests
