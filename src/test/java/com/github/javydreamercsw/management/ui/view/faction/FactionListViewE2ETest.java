@@ -257,7 +257,17 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.invisibilityOfElementWithText(
             By.id("members-grid"), wrestler.getName()));
 
-    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
+    // Poll the DB until the removal is reflected — the UI update can slightly lead the commit
+    long wrestlerId = wrestler.getId();
+    long factionId = faction.getId();
+    wait.until(
+        d -> {
+          Optional<Faction> f = factionService.getFactionByIdWithMembers(factionId);
+          return f.isPresent()
+              && f.get().getMembers().stream().noneMatch(m -> wrestlerId == m.getId());
+        });
+
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(factionId);
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()

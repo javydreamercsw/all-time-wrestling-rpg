@@ -1,0 +1,45 @@
+[ {
+  "key": "status_draw",
+  "level1Name": "Draw",
+  "level2Name": "Main Eventer",
+  "description": "Represents the wrestler's ability to draw a crowd.",
+  "positive": true,
+  "level1Effect": "momentum: +4",
+  "level2Effect": "momentum: +4, mainEvent: true",
+  "flipUpCondition": "momentum >= 5",
+  "flipDownCondition": "momentum < 3",
+  "discardCondition": "false"
+}, {
+  "key": "status_lost_confidence",
+  "level1Name": "Lost Confidence",
+  "level2Name": "Humiliated",
+  "description": "Represents a temporary loss of self-assurance.",
+  "positive": false,
+  "level1Effect": "handSize: -2",
+  "level2Effect": "momentum: -7, loseFocusOnLowMomentum: true",
+  "flipUpCondition": "loss == true",
+  "flipDownCondition": "momentum >= 5",
+  "discardCondition": "false"
+}, {
+  "key": "status_superstar",
+  "level1Name": "Superstar",
+  "level2Name": "GOAT",
+  "description": "Social status gained through campaign success.",
+  "positive": true,
+  "level1Effect": "vpBonus: 1",
+  "level2Effect": "vpBonus: 2, goat: true",
+  "flipUpCondition": "false",
+  "flipDownCondition": null,
+  "discardCondition": "false"
+}, {
+  "key": "status_respected",
+  "level1Name": "Respected",
+  "level2Name": null,
+  "description": "A status indicating high peer and crowd respect.",
+  "positive": true,
+  "level1Effect": "opponentTargetNumber: +1",
+  "level2Effect": "opponentTargetNumber: +2",
+  "flipUpCondition": "false",
+  "flipDownCondition": null,
+  "discardCondition": "false"
+} ]

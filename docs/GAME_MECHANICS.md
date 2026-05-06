@@ -75,3 +75,33 @@ The number of fans gained from matches and events is subject to diminishing retu
 - **Rounding:** After efficiency is applied, positive fan gains are rounded to the nearest **1,000**.
 - **Deductions:** When a wrestler *loses* fans or *spends* them (e.g., for injury treatment), no tax or rounding is applied. Losses are always exact.
 
+## Status Cards
+
+Status Cards represent a wrestler's mental or social state, providing modifiers that impact matches and backstage actions. These are primarily introduced in the "ATW vs. WOW" expansion.
+
+### Double-Sided Mechanics
+
+Every Status Card is **double-sided**, representing **Level I** and **Level II**.
+
+- **Positive Statuses:** Level II provides enhanced benefits. Players aim to "upgrade" these cards.
+- **Negative Statuses:** Level II is more punishing. Players aim to "downgrade" these cards back to Level I or discard them entirely.
+
+### Gaining and Flipping
+
+- **Initial Gain:** When instructed to draw a status you don't possess, you gain it at **Level I**.
+- **Flipping Up:** If you are prompted to draw a status you already have at Level I, the card **flips to Level II**.
+- **Conditions:** Each card has specific **Trigger Conditions** evaluated at the end of every match:
+  - **Flip Up Condition:** Triggers the upgrade from Level I to Level II.
+  - **Flip Down Condition:** Triggers the downgrade from Level II back to Level I.
+  - **Discard Condition:** Removes the status card entirely.
+
+### Mechanical Modifiers
+
+Status Cards can influence various wrestler attributes:
+- **Momentum:** Starting momentum for the next match.
+- **Hand Size:** The number of attack cards drawn at the start of a match.
+- **Victory Points:** Bonuses or penalties to VP gains.
+- **Custom Scripts:** Unique effects like the "Respected" card's defensive bonus.
+
+Wrestlers can hold an unlimited number of **different** Status Cards, but never more than one of the same type.
+

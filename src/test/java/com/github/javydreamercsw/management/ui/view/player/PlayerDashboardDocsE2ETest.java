@@ -23,6 +23,17 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.StatusCard;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -40,6 +51,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.time.Instant;
@@ -67,10 +79,19 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private SegmentService segmentService;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired private StatusCardService statusCardService;
+  @Autowired private WrestlerStatusRepository wrestlerStatusRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private CampaignRepository campaignRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
 
   @BeforeEach
   public void setupData() {
     // Clear data to ensure a clean state for documentation
+    wrestlerStatusRepository.deleteAllInBatch();
+    wrestlerAlignmentRepository.deleteAllInBatch();
+    campaignStateRepository.deleteAllInBatch();
+    campaignRepository.deleteAllInBatch();
     segmentRepository.deleteAll();
     showRepository.deleteAll();
     seasonRepository.deleteAll();
@@ -245,6 +266,68 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
                   + " data, allowing you to track your wrestler's career trajectory and milestones"
                   + " over time.",
               "player-season-history");
+        });
+  }
+
+  @Test
+  void testCaptureEffectiveStatsWithCampaignAndStatus() {
+    // Find the wrestler created in setupData and give them a campaign + status card
+    Wrestler wrestler = wrestlerRepository.findByName("Documentation Legend").orElseThrow();
+
+    // Campaign with momentum bonus (direct field on CampaignState)
+    CampaignState state = CampaignState.builder().momentumBonus(3).build();
+    Campaign campaign =
+        Campaign.builder().wrestler(wrestler).state(state).status(CampaignStatus.ACTIVE).build();
+    state.setCampaign(campaign);
+    campaignRepository.save(campaign);
+    WrestlerAlignment alignment =
+        WrestlerAlignment.builder()
+            .wrestler(wrestler)
+            .alignmentType(AlignmentType.FACE)
+            .level(1)
+            .campaign(campaign)
+            .build();
+    wrestlerAlignmentRepository.save(alignment);
+    wrestler.setAlignment(alignment);
+    wrestlerRepository.save(wrestler);
+
+    // Assign a Draw status card
+    StatusCard drawCard =
+        statusCardService.createOrUpdateCard(
+            "status_draw_docs",
+            "Draw",
+            "Main Eventer",
+            "Represents the wrestler's ability to draw a crowd.",
+            true,
+            "momentum: +4",
+            "momentum: +4",
+            "false",
+            "false",
+            "false");
+    WrestlerStatus status =
+        WrestlerStatus.builder().wrestler(wrestler).statusCard(drawCard).level(1).build();
+    wrestlerStatusRepository.save(status);
+
+    login("player", "player123");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    waitForVaadinToLoad(driver);
+
+    assertDoesNotThrow(
+        () -> {
+          waitForVaadinElement(driver, By.id("effective-stats-section"));
+
+          // Status badge visible
+          waitForVaadinElement(driver, By.xpath("//span[text()='Draw']"));
+
+          documentFeature(
+              "Player Dashboard",
+              "Effective Stats and Status Cards",
+              "The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size"
+                  + " after applying all active modifiers — campaign bonuses/penalties, injuries,"
+                  + " bumps, and Status Cards. Hover over any stat for a full breakdown. Active"
+                  + " Status Cards appear as colour-coded badges: green for positive, red for"
+                  + " negative.",
+              "player-effective-stats");
         });
   }
 }

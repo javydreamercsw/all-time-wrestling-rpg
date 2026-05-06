@@ -324,7 +324,7 @@ public class FactionService {
     wrestlerRepository.saveAndFlush(wrestler);
 
     // If removing the leader, clear the leader
-    if (wrestler.equals(faction.getLeader())) {
+    if (faction.getLeader() != null && wrestler.getId().equals(faction.getLeader().getId())) {
       faction.setLeader(null);
     }
 

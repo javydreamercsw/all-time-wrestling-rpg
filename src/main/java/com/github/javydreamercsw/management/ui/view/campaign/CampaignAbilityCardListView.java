@@ -172,6 +172,10 @@ public class CampaignAbilityCardListView extends Main {
     add(cardGrid);
   }
 
+  public void refresh() {
+    cardGrid.getDataProvider().refreshAll();
+  }
+
   private void createCard() {
     if (name.getValue().isEmpty()) {
       return;

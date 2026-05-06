@@ -38,13 +38,15 @@ class SocialMediaShowCardFormatterTest {
   private Show show;
   private List<Segment> segments;
 
+  private Segment segment;
+
   @BeforeEach
   void setUp() {
     show = mock(Show.class);
     when(show.getName()).thenReturn("Friday Night Heat");
     when(show.getShowDate()).thenReturn(LocalDate.of(2026, 4, 29));
 
-    Segment segment = mock(Segment.class);
+    segment = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
     when(type.getName()).thenReturn("Main Event");
     when(segment.getSegmentType()).thenReturn(type);
@@ -60,6 +62,7 @@ class SocialMediaShowCardFormatterTest {
     when(segment.isMainEvent()).thenReturn(true);
     when(segment.hasSegmentRules()).thenReturn(true);
     when(segment.getSegmentRulesAsString()).thenReturn("No DQ");
+    when(segment.getWinners()).thenReturn(Collections.emptyList());
 
     Title title = mock(Title.class);
     when(title.getName()).thenReturn("ATW World Title");
@@ -105,5 +108,15 @@ class SocialMediaShowCardFormatterTest {
     assertTrue(result.contains("Stone Cold vs. The Rock"));
     assertTrue(result.contains("#ATW"));
     assertTrue(result.length() <= 300);
+  }
+
+  @Test
+  void testNarrationIncluded() {
+    when(segment.getNarration()).thenReturn("The crowd went wild as both men traded blows.");
+
+    FacebookShowCardFormatter formatter = new FacebookShowCardFormatter();
+    String result = formatter.format(show, segments, false, false, true);
+
+    assertTrue(result.contains("💬 The crowd went wild as both men traded blows."));
   }
 }

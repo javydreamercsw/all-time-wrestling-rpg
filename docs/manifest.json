@@ -1,5 +1,12 @@
 {
   "features": [ {
+    "id": "player-dashboard-player-effective-stats",
+    "category": "Player Dashboard",
+    "title": "Effective Stats and Status Cards",
+    "description": "The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size after applying all active modifiers — campaign bonuses/penalties, injuries, bumps, and Status Cards. Hover over any stat for a full breakdown. Active Status Cards appear as colour-coded badges: green for positive, red for negative.",
+    "imagePath": "screenshots/player-effective-stats.png",
+    "order": 0
+  }, {
     "id": "community-community-show-export",
     "category": "Community",
     "title": "Social Media Export",

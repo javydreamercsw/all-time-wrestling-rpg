@@ -71,4 +71,38 @@ class MarkdownShowCardFormatterTest {
     assertTrue(result.contains("*Rules: No DQ*"));
     assertTrue(result.contains("**CHAMPIONSHIP MATCH**"));
   }
+
+  @Test
+  void testFormatWithMainEventAndNarration() {
+    MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Main Event Show");
+    when(show.getShowDate()).thenReturn(LocalDate.of(2026, 5, 1));
+    when(show.getArena()).thenReturn(null);
+
+    Segment segment = mock(Segment.class);
+    SegmentType type = mock(SegmentType.class);
+    when(type.getName()).thenReturn("Main Event Match");
+    when(segment.getSegmentType()).thenReturn(type);
+    when(segment.isMainEvent()).thenReturn(true);
+    when(segment.getIsTitleSegment()).thenReturn(false);
+    when(segment.hasSegmentRules()).thenReturn(false);
+    when(segment.getNarration()).thenReturn("An intense battle unfolded.");
+    when(segment.getSummary()).thenReturn(null);
+
+    Wrestler w1 = mock(Wrestler.class);
+    when(w1.getName()).thenReturn("Undertaker");
+    Wrestler w2 = mock(Wrestler.class);
+    when(w2.getName()).thenReturn("Mankind");
+    when(segment.getWrestlers()).thenReturn(Arrays.asList(w1, w2));
+    when(segment.getWinners()).thenReturn(Collections.emptyList());
+
+    List<Segment> segments = Collections.singletonList(segment);
+
+    String result = formatter.format(show, segments, true, true, true);
+
+    assertTrue(result.contains("**⭐ MAIN EVENT ⭐**"));
+    assertTrue(result.contains("*Narration:* An intense battle unfolded."));
+  }
 }

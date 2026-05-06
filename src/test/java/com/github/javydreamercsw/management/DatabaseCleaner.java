@@ -111,7 +111,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
                 "ringsideaction",
                 "ringsideactiontype",
                 "commentator",
-                "commentaryteam"));
+                "commentaryteam",
+                "statuscard"));
 
     // Determine if we should use surgical cleanup (optimized for E2E)
     // or full cleanup (safer for Integration Tests)

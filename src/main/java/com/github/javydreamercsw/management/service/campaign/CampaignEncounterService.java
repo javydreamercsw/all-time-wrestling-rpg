@@ -51,6 +51,7 @@ public class CampaignEncounterService {
   private final CampaignChapterService chapterService;
   private final CampaignService campaignService;
   private final StorylineDirectorService storylineDirectorService;
+  private final WrestlerStatusService wrestlerStatusService;
   private final WrestlerRepository wrestlerRepository;
   private final TeamRepository teamRepository;
   private final FactionRepository factionRepository;
@@ -64,6 +65,7 @@ public class CampaignEncounterService {
       CampaignChapterService chapterService,
       @org.springframework.context.annotation.Lazy CampaignService campaignService,
       StorylineDirectorService storylineDirectorService,
+      WrestlerStatusService wrestlerStatusService,
       WrestlerRepository wrestlerRepository,
       TeamRepository teamRepository,
       FactionRepository factionRepository,
@@ -75,6 +77,7 @@ public class CampaignEncounterService {
     this.chapterService = chapterService;
     this.campaignService = campaignService;
     this.storylineDirectorService = storylineDirectorService;
+    this.wrestlerStatusService = wrestlerStatusService;
     this.wrestlerRepository = wrestlerRepository;
     this.teamRepository = teamRepository;
     this.factionRepository = factionRepository;
@@ -394,9 +397,21 @@ public class CampaignEncounterService {
         "    { \"text\": \"Full choice description\", \"label\": \"Short button label\","
             + " \"alignmentShift\": 1, \"vpReward\": 5, \"nextPhase\": \"MATCH\","
             + " \"forcedOpponentName\": null, \"matchType\": \"One on One\", \"segmentRules\":"
-            + " [\"No DQ\"] }\n");
+            + " [\"No DQ\"], \"statusCardKeys\": [\"status_draw\"] }\n");
     sb.append("  ]\n");
     sb.append("}\n");
+
+    sb.append("\nAVAILABLE STATUS CARDS (keys):\n");
+    wrestlerStatusService
+        .getAllStatusCards()
+        .forEach(
+            card -> {
+              sb.append("- ")
+                  .append(card.getKey())
+                  .append(": ")
+                  .append(card.getDescription())
+                  .append("\n");
+            });
 
     return sb.toString();
   }
@@ -420,6 +435,13 @@ public class CampaignEncounterService {
 
     // Apply consequences
     campaignService.shiftAlignment(campaign, choice.getAlignmentShift());
+
+    // Apply Status Card rewards
+    if (choice.getStatusCardKeys() != null) {
+      choice
+          .getStatusCardKeys()
+          .forEach(key -> wrestlerStatusService.assignStatus(campaign.getWrestler().getId(), key));
+    }
 
     // Evaluate storyline progress
     // If it's a POST_MATCH encounter, we already evaluated the match.

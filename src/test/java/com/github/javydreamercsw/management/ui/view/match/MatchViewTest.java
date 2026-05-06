@@ -161,8 +161,8 @@ class MatchViewTest extends AbstractViewTest {
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
-    when(wrestlerService.findByIdWithInjuries(1L)).thenReturn(Optional.of(wrestler1));
-    when(wrestlerService.findByIdWithInjuries(2L)).thenReturn(Optional.of(wrestler2));
+    when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(wrestler1));
+    when(wrestlerService.findByIdWithDetails(2L)).thenReturn(Optional.of(wrestler2));
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));

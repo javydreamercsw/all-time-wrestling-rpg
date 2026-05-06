@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -163,7 +164,7 @@ public class PlayerView extends VerticalLayout {
             add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account)));
 
             if (active != null) {
-              playerWrestler = wrestlerService.findByIdWithInjuries(active.getId()).get();
+              playerWrestler = wrestlerService.findByIdWithDetails(active.getId()).get();
               buildDashboard();
             } else {
               add(new H2("No wrestler assigned to your account."));
@@ -290,6 +291,7 @@ public class PlayerView extends VerticalLayout {
     campaignButton.setId("view-campaign-dashboard-link");
 
     Div injuries = createInjuriesSummary();
+    Component effectiveStats = createEffectiveStatsSection();
 
     // Career Legacy Info
     HorizontalLayout legacyLayout = new HorizontalLayout();
@@ -331,6 +333,7 @@ public class PlayerView extends VerticalLayout {
             badgesLayout,
             statsLayout,
             injuries,
+            effectiveStats,
             profileButton,
             campaignButton);
     infoLayout.setPadding(false);
@@ -504,6 +507,204 @@ public class PlayerView extends VerticalLayout {
     grid.setItems(achievementRepository.findAll());
     grid.setSizeFull();
     return grid;
+  }
+
+  private Component createEffectiveStatsSection() {
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(false);
+    section.setSpacing(false);
+    section.addClassNames(
+        LumoUtility.Margin.Top.SMALL, LumoUtility.Padding.Top.SMALL, LumoUtility.Border.TOP);
+    section.setId("effective-stats-section");
+
+    boolean hasCampaign =
+        playerWrestler.getAlignment() != null
+            && playerWrestler.getAlignment().getCampaign() != null
+            && playerWrestler.getAlignment().getCampaign().getState() != null;
+
+    // Effective HP with breakdown tooltip
+    int effectiveHp = playerWrestler.getEffectiveStartingHealth();
+    StringBuilder hpTooltip =
+        new StringBuilder("Base Health: ").append(playerWrestler.getStartingHealth());
+    if (hasCampaign) {
+      CampaignState state = playerWrestler.getAlignment().getCampaign().getState();
+      if (state.getCampaignHealthBonus() > 0) {
+        hpTooltip.append("\nCampaign Bonus: +").append(state.getCampaignHealthBonus());
+      }
+      if (state.getHealthPenalty() > 0) {
+        hpTooltip.append("\nCampaign Penalty: -").append(state.getHealthPenalty());
+      }
+    }
+    if (playerWrestler.getBumps() > 0) {
+      hpTooltip.append("\nBump Penalty: -").append(playerWrestler.getBumps());
+    }
+    int conditionPenalty = Math.min(5, (100 - playerWrestler.getPhysicalCondition()) / 5);
+    if (conditionPenalty > 0) {
+      hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
+    }
+    int injuryPenalty = playerWrestler.getTotalInjuryPenalty();
+    if (injuryPenalty > 0) {
+      hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
+    }
+
+    Span hp = new Span("❤️ HP: " + effectiveHp);
+    Tooltip.forComponent(hp).setText(hpTooltip.toString());
+
+    // Effective Stamina with breakdown tooltip
+    int effectiveStamina = playerWrestler.getEffectiveStartingStamina();
+    StringBuilder stamTooltip =
+        new StringBuilder("Base Stamina: ").append(playerWrestler.getStartingStamina());
+    if (hasCampaign) {
+      int stamBonus =
+          playerWrestler.getAlignment().getCampaign().getState().getCampaignStaminaBonus();
+      if (stamBonus > 0) {
+        stamTooltip.append("\nCampaign Bonus: +").append(stamBonus);
+      }
+    }
+    Span stam = new Span("⚡ Stamina: " + effectiveStamina);
+    Tooltip.forComponent(stam).setText(stamTooltip.toString());
+
+    // Effective Momentum with breakdown tooltip
+    int effectiveMomentum = playerWrestler.getEffectiveStartingMomentum();
+    StringBuilder momTooltip = new StringBuilder("Base Momentum: 0");
+    if (hasCampaign) {
+      int momBonus = playerWrestler.getAlignment().getCampaign().getState().getMomentumBonus();
+      if (momBonus != 0) {
+        momTooltip.append("\nCampaign Bonus: +").append(momBonus);
+      }
+    }
+    playerWrestler
+        .getStatuses()
+        .forEach(
+            status -> {
+              String effect =
+                  status.getLevel() == 1
+                      ? status.getStatusCard().getLevel1Effect()
+                      : status.getStatusCard().getLevel2Effect();
+              if (effect != null && effect.contains("momentum:")) {
+                momTooltip
+                    .append("\n")
+                    .append(
+                        status.getLevel() == 1
+                            ? status.getStatusCard().getLevel1Name()
+                            : status.getStatusCard().getLevel2Name())
+                    .append(": ")
+                    .append(effect.replaceAll(".*momentum:\\s*", "").split(",")[0].trim());
+              }
+            });
+    Span mom = new Span("🚀 Momentum: " + effectiveMomentum);
+    Tooltip.forComponent(mom).setText(momTooltip.toString());
+
+    // Effective Hand Size with breakdown tooltip
+    int effectiveHandSize = playerWrestler.getEffectiveHandSize();
+    StringBuilder handTooltip = new StringBuilder("Base Hand Size: 5");
+    if (hasCampaign) {
+      int handPenalty = playerWrestler.getAlignment().getCampaign().getState().getHandSizePenalty();
+      if (handPenalty > 0) {
+        handTooltip.append("\nCampaign Penalty: -").append(handPenalty);
+      }
+    }
+    int totalHandInjuryPenalty = playerWrestler.getTotalHandSizePenalty();
+    if (totalHandInjuryPenalty > 0) {
+      handTooltip.append("\nInjury Penalty: -").append(totalHandInjuryPenalty);
+    }
+    playerWrestler
+        .getStatuses()
+        .forEach(
+            status -> {
+              String effect =
+                  status.getLevel() == 1
+                      ? status.getStatusCard().getLevel1Effect()
+                      : status.getStatusCard().getLevel2Effect();
+              if (effect != null && effect.contains("handSize:")) {
+                handTooltip
+                    .append("\n")
+                    .append(
+                        status.getLevel() == 1
+                            ? status.getStatusCard().getLevel1Name()
+                            : status.getStatusCard().getLevel2Name())
+                    .append(": ")
+                    .append(effect.replaceAll(".*handSize:\\s*", "").split(",")[0].trim());
+              }
+            });
+    Span hand = new Span("🃏 Hand: " + effectiveHandSize);
+    Tooltip.forComponent(hand).setText(handTooltip.toString());
+
+    for (Span s : new Span[] {hp, stam, mom, hand}) {
+      s.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.BOLD);
+    }
+
+    HorizontalLayout statsRow = new HorizontalLayout(hp, stam, mom, hand);
+    statsRow.setSpacing(true);
+    section.add(statsRow);
+
+    // Campaign upgrades
+    if (hasCampaign) {
+      CampaignState state = playerWrestler.getAlignment().getCampaign().getState();
+      state
+          .getUpgrades()
+          .forEach(
+              upgrade -> {
+                Span u = new Span("✨ " + upgrade.getName());
+                u.addClassNames(
+                    LumoUtility.FontSize.XSMALL,
+                    LumoUtility.TextColor.SUCCESS,
+                    LumoUtility.FontWeight.BOLD);
+                section.add(u);
+              });
+
+      // Ability cards
+      if (!state.getActiveCards().isEmpty()) {
+        HorizontalLayout cardsRow = new HorizontalLayout();
+        cardsRow.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.XSMALL);
+        state
+            .getActiveCards()
+            .forEach(
+                card -> {
+                  Span c = new Span(card.getName());
+                  c.addClassNames(
+                      LumoUtility.FontSize.XSMALL,
+                      LumoUtility.Background.CONTRAST_10,
+                      LumoUtility.Padding.Horizontal.XSMALL,
+                      LumoUtility.BorderRadius.SMALL);
+                  Tooltip.forComponent(c).setText(card.getDescription());
+                  cardsRow.add(c);
+                });
+        section.add(cardsRow);
+      }
+    }
+
+    // Status cards (shown even without a campaign)
+    if (!playerWrestler.getStatuses().isEmpty()) {
+      HorizontalLayout statusRow = new HorizontalLayout();
+      statusRow.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.XSMALL);
+      playerWrestler
+          .getStatuses()
+          .forEach(
+              status -> {
+                String label =
+                    status.getLevel() == 1
+                        ? status.getStatusCard().getLevel1Name()
+                        : status.getStatusCard().getLevel2Name();
+                Span s = new Span(label);
+                s.addClassNames(
+                    LumoUtility.FontSize.XSMALL,
+                    LumoUtility.FontWeight.BOLD,
+                    LumoUtility.Padding.Horizontal.XSMALL,
+                    LumoUtility.BorderRadius.SMALL,
+                    status.getStatusCard().isPositive()
+                        ? LumoUtility.Background.SUCCESS_10
+                        : LumoUtility.Background.ERROR_10,
+                    status.getStatusCard().isPositive()
+                        ? LumoUtility.TextColor.SUCCESS
+                        : LumoUtility.TextColor.ERROR);
+                Tooltip.forComponent(s).setText(status.getStatusCard().getDescription());
+                statusRow.add(s);
+              });
+      section.add(statusRow);
+    }
+
+    return section;
   }
 
   private Div createInjuriesSummary() {
