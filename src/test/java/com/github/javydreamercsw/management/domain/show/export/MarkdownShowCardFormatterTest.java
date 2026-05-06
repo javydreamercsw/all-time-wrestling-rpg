@@ -62,7 +62,7 @@ class MarkdownShowCardFormatterTest {
 
     List<Segment> segments = Collections.singletonList(segment);
 
-    String result = formatter.format(show, segments, true, true);
+    String result = formatter.format(show, segments, true, true, false);
 
     assertTrue(result.contains("# Test Show"));
     assertTrue(result.contains("**Date:** 2026-04-29"));
