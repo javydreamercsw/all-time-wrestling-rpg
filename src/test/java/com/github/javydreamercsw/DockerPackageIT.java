@@ -58,6 +58,7 @@ class DockerPackageIT {
             .withExposedPorts(port)
             .withEnv("notion.sync.enabled", "false")
             .withEnv("notion.sync.scheduler.enabled", "false")
+            .withEnv("DATA_INITIALIZER_ENABLED", "false")
             .withEnv("VAADIN_SERVLET_PARAMETER_PRODUCTION_MODE", "true")
             .withEnv("vaadin.devmode.enable", "false")
             .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:testdb")
