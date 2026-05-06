@@ -209,7 +209,7 @@ jobs:
   coverage-and-analysis:
     runs-on: ubuntu-latest
     needs: [check-paths, build-and-unit-test, integration-tests, e2e-tests, notion-integration-tests, notion-e2e-tests]
-    if: needs.check-paths.outputs.code_changed == 'true'
+    if: always() && needs.check-paths.outputs.code_changed == 'true' && needs.build-and-unit-test.result == 'success' && needs.integration-tests.result == 'success' && needs.e2e-tests.result == 'success'
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 25
