@@ -82,6 +82,10 @@ class SegmentAdjudicationVenueTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerRelationshipService relationshipService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+
   private SegmentAdjudicationService adjudicationService;
 
   @BeforeEach
@@ -102,6 +106,7 @@ class SegmentAdjudicationVenueTest {
             retirementService,
             gameSettingService,
             relationshipService,
+            wrestlerStatusService,
             random);
 
     when(segment.getShow()).thenReturn(show);

@@ -77,6 +77,8 @@ public class SegmentAdjudicationService {
   private final com.github.javydreamercsw.management.service.relationship
           .WrestlerRelationshipService
       relationshipService;
+  private final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   private com.github.javydreamercsw.management.service.show.ShowService showService;
@@ -104,7 +106,9 @@ public class SegmentAdjudicationService {
       RetirementService retirementService,
       GameSettingService gameSettingService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService) {
+          relationshipService,
+      com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+          wrestlerStatusService) {
     this(
         rivalryService,
         wrestlerService,
@@ -120,6 +124,7 @@ public class SegmentAdjudicationService {
         retirementService,
         gameSettingService,
         relationshipService,
+        wrestlerStatusService,
         new Random());
   }
 
@@ -139,6 +144,8 @@ public class SegmentAdjudicationService {
       GameSettingService gameSettingService,
       com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
+      com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+          wrestlerStatusService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -154,6 +161,7 @@ public class SegmentAdjudicationService {
     this.retirementService = retirementService;
     this.gameSettingService = gameSettingService;
     this.relationshipService = relationshipService;
+    this.wrestlerStatusService = wrestlerStatusService;
     this.random = random;
   }
 
@@ -418,6 +426,20 @@ public class SegmentAdjudicationService {
 
     if (showService != null) {
       showService.finalizeShowIfComplete(segment.getShow());
+    }
+
+    // Evaluate Status Card triggers
+    if (wrestlerStatusService.isStatusMechanicEnabled()) {
+      for (Wrestler participant : participants) {
+        boolean lost = !winners.contains(participant);
+        // Use effective starting momentum as a proxy for final momentum for now.
+        // In the future, we could parse the narration or track it in the match engine.
+        int momentum = participant.getEffectiveStartingMomentum();
+        participant
+            .getStatuses()
+            .forEach(
+                status -> wrestlerStatusService.evaluateTriggerConditions(status, momentum, lost));
+      }
     }
   }
 

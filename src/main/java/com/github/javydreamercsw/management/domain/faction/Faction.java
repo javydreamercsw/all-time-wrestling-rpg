@@ -149,7 +149,7 @@ public class Faction extends AbstractEntity<Long> {
 
   /** Add a member to the faction. */
   public void addMember(Wrestler wrestler) {
-    if (wrestler != null && !members.contains(wrestler)) {
+    if (wrestler != null && !hasMember(wrestler)) {
       members.add(wrestler);
       wrestler.setFaction(this);
     }
@@ -157,15 +157,20 @@ public class Faction extends AbstractEntity<Long> {
 
   /** Remove a member from the faction. */
   public void removeMember(Wrestler wrestler) {
-    if (wrestler != null && members.contains(wrestler)) {
-      members.remove(wrestler);
-      wrestler.setFaction(null);
+    if (wrestler != null && wrestler.getId() != null) {
+      members.removeIf(m -> wrestler.getId().equals(m.getId()));
+      if (wrestler.getFaction() != null && wrestler.getFaction().equals(this)) {
+        wrestler.setFaction(null);
+      }
     }
   }
 
   /** Check if a wrestler is a member of this faction. */
   public boolean hasMember(Wrestler wrestler) {
-    return members.contains(wrestler);
+    if (wrestler == null || wrestler.getId() == null) {
+      return false;
+    }
+    return members.stream().anyMatch(m -> wrestler.getId().equals(m.getId()));
   }
 
   /** Get the number of active members. */

@@ -43,6 +43,7 @@ public class ShowExportDialog extends Dialog {
   private final ComboBox<String> formatSelector = new ComboBox<>("Export Format");
   private final Checkbox includeResults = new Checkbox("Include Match Results", true);
   private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
+  private final Checkbox includeNarration = new Checkbox("Include Narration", false);
   private final TextArea previewArea = new TextArea("Preview");
   private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
 
@@ -68,8 +69,10 @@ public class ShowExportDialog extends Dialog {
 
     includeResults.addValueChangeListener(event -> updatePreview());
     includeSummary.addValueChangeListener(event -> updatePreview());
+    includeNarration.addValueChangeListener(event -> updatePreview());
 
-    HorizontalLayout optionsLayout = new HorizontalLayout(includeResults, includeSummary);
+    HorizontalLayout optionsLayout =
+        new HorizontalLayout(includeResults, includeSummary, includeNarration);
     optionsLayout.setSpacing(true);
 
     previewArea.setWidthFull();
@@ -119,13 +122,21 @@ public class ShowExportDialog extends Dialog {
     return includeSummary;
   }
 
+  public Checkbox getIncludeNarration() {
+    return includeNarration;
+  }
+
   private void updatePreview() {
     String format = formatSelector.getValue();
     if (format != null) {
       try {
         String content =
             exportService.export(
-                show, format, includeSummary.getValue(), includeResults.getValue());
+                show,
+                format,
+                includeSummary.getValue(),
+                includeResults.getValue(),
+                includeNarration.getValue());
         previewArea.setValue(content);
         copyButton.setEnabled(true);
       } catch (Exception e) {

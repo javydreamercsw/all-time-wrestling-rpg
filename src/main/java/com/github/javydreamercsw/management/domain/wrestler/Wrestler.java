@@ -81,6 +81,12 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private Integer deckSize = 0;
 
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  private List<com.github.javydreamercsw.management.domain.campaign.WrestlerStatus> statuses =
+      new ArrayList<>();
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
@@ -258,6 +264,72 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
             ? alignment.getCampaign().getState().getCampaignStaminaBonus()
             : 0;
     return startingStamina + bonus;
+  }
+
+  @JsonIgnore
+  public Integer getEffectiveStartingMomentum() {
+    int momentum = 0;
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      momentum += alignment.getCampaign().getState().getMomentumBonus();
+    }
+
+    for (var status : statuses) {
+      String effect =
+          status.getLevel() == 1
+              ? status.getStatusCard().getLevel1Effect()
+              : status.getStatusCard().getLevel2Effect();
+      if (effect != null && effect.contains("momentum:")) {
+        momentum += parseEffectValue(effect, "momentum:");
+      }
+    }
+    return momentum;
+  }
+
+  @JsonIgnore
+  public Integer getEffectiveHandSize() {
+    int handSize = 5; // Default base hand size
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      handSize -= alignment.getCampaign().getState().getHandSizePenalty();
+    }
+
+    handSize -= getTotalHandSizePenalty();
+
+    for (var status : statuses) {
+      String effect =
+          status.getLevel() == 1
+              ? status.getStatusCard().getLevel1Effect()
+              : status.getStatusCard().getLevel2Effect();
+      if (effect != null && effect.contains("handSize:")) {
+        handSize += parseEffectValue(effect, "handSize:");
+      }
+    }
+    return Math.max(1, handSize);
+  }
+
+  private int parseEffectValue(String effect, String key) {
+    try {
+      String[] parts = effect.split(",");
+      for (String part : parts) {
+        if (part.trim().startsWith(key)) {
+          String val = part.split(":")[1].trim().replace("+", "");
+          return Integer.parseInt(val);
+        }
+      }
+    } catch (Exception e) {
+      // Ignore parsing errors
+    }
+    return 0;
+  }
+
+  @JsonIgnore
+  public Integer getTotalHandSizePenalty() {
+    return injuries.stream()
+        .mapToInt(com.github.javydreamercsw.management.domain.injury.Injury::getHandSizePenalty)
+        .sum();
   }
 
   public void addFans(long fanGain) {

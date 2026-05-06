@@ -24,6 +24,12 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.StatusCard;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -38,6 +44,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -80,13 +87,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   private com.github.javydreamercsw.management.domain.title.TitleReignRepository
       titleReignRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
-      campaignRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
+  @Autowired private CampaignRepository campaignRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private WrestlerStatusRepository wrestlerStatusRepository;
+  @Autowired private StatusCardService statusCardService;
 
   @Autowired
   private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
@@ -96,14 +101,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
       campaignEncounterRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
-
   @BeforeEach
   public void setupTest() {
     cleanupLeagues();
     // It's better to delete in order to avoid constraint violations.
+    wrestlerStatusRepository.deleteAllInBatch();
     wrestlerAlignmentRepository.deleteAllInBatch();
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();
@@ -313,6 +315,86 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertEquals(
               segment.getSegmentType().getName(),
               waitForVaadinElement(driver, By.id("match-type")).getText());
+        });
+  }
+
+  @Test
+  public void testEffectiveStatsSectionVisible() {
+    Account playerAccount = accountService.findByUsername("player").get();
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Stats Wrestler")
+            .isPlayer(true)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.MIDCARDER)
+            .account(playerAccount)
+            .startingHealth(15)
+            .startingStamina(15)
+            .build();
+    wrestlerService.save(wrestler);
+
+    login("player", "player123");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    waitForVaadinToLoad(driver);
+
+    assertDoesNotThrow(
+        () -> {
+          WebElement statsSection = waitForVaadinElement(driver, By.id("effective-stats-section"));
+          assertNotNull(statsSection);
+
+          // Base values: HP=15, Stamina=15, Momentum=0, Hand=5
+          waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'HP: 15')]"));
+          waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Stamina: 15')]"));
+          waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Momentum: 0')]"));
+          waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Hand: 5')]"));
+        });
+  }
+
+  @Test
+  public void testStatusCardBadgeVisibleOnDashboard() {
+    Account playerAccount = accountService.findByUsername("player").get();
+
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Status Wrestler")
+            .isPlayer(true)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.MIDCARDER)
+            .account(playerAccount)
+            .startingHealth(15)
+            .startingStamina(15)
+            .build();
+    wrestlerService.save(wrestler);
+
+    StatusCard drawCard =
+        statusCardService.createOrUpdateCard(
+            "status_draw_e2e",
+            "Draw",
+            "Main Eventer",
+            "Represents the wrestler's draw ability.",
+            true,
+            "momentum: +4",
+            "momentum: +4",
+            "false",
+            "false",
+            "false");
+
+    WrestlerStatus status =
+        WrestlerStatus.builder().wrestler(wrestler).statusCard(drawCard).level(1).build();
+    wrestlerStatusRepository.save(status);
+
+    login("player", "player123");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    waitForVaadinToLoad(driver);
+
+    assertDoesNotThrow(
+        () -> {
+          // Status badge must appear
+          waitForVaadinElement(driver, By.xpath("//span[text()='Draw']"));
+
+          // Momentum boosted by +4 from the status card
+          waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Momentum: 4')]"));
         });
   }
 

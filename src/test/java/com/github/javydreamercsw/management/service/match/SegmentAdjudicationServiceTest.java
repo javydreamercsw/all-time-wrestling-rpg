@@ -86,6 +86,10 @@ class SegmentAdjudicationServiceTest {
   @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
@@ -107,6 +111,7 @@ class SegmentAdjudicationServiceTest {
             retirementService,
             gameSettingService,
             relationshipService,
+            wrestlerStatusService,
             random);
     org.springframework.test.util.ReflectionTestUtils.setField(
         segmentAdjudicationService, "eventPublisher", eventPublisher);

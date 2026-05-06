@@ -70,7 +70,7 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
     wrestler.setAlignment(alignment);
 
     when(wrestlerService.getWrestlerStats(1L)).thenReturn(Optional.of(new WrestlerStats(10, 5, 1)));
-    when(wrestlerService.findByIdWithInjuries(1L)).thenReturn(Optional.of(wrestler));
+    when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(wrestler));
   }
 
   @Test

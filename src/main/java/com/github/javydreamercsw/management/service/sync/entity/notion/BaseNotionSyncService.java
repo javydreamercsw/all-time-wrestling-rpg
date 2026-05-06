@@ -29,6 +29,7 @@ import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
+import notion.api.v1.exception.NotionAPIError;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -263,6 +264,42 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                     operationId,
                     "✅ Successfully synced " + getEntityName() + ": " + entityDisplayName,
                     "SUCCESS");
+          } catch (NotionAPIError ex) {
+            if (ex.getError().getStatus() == 404) {
+              // Notion page was deleted — clear stale ID so next sync recreates it
+              log.warn(
+                  "Notion page not found for {} '{}' (ID: {}), clearing stale ID for re-creation",
+                  getEntityName(),
+                  getEntityDisplayName(entity),
+                  entity.getExternalId());
+              entity.setExternalId(null);
+              repository.saveAndFlush(entity);
+              syncServiceDependencies
+                  .getProgressTracker()
+                  .addLogMessage(
+                      operationId,
+                      "⚠️ Notion page not found for "
+                          + getEntityName()
+                          + ": "
+                          + getEntityDisplayName(entity)
+                          + " — stale ID cleared, will recreate on next sync",
+                      "WARN");
+            } else {
+              errors++;
+              log.error("Error syncing " + getEntityName(), ex);
+              syncServiceDependencies
+                  .getProgressTracker()
+                  .addLogMessage(
+                      operationId,
+                      "❌ Error syncing "
+                          + getEntityName()
+                          + ": "
+                          + getEntityDisplayName(entity)
+                          + " - "
+                          + ex.getMessage(),
+                      "ERROR");
+            }
+            processedCount++;
           } catch (Exception ex) {
             errors++;
             processedCount++;

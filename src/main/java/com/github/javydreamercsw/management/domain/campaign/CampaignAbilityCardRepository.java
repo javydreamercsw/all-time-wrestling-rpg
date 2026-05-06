@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.campaign;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -26,4 +27,7 @@ public interface CampaignAbilityCardRepository extends JpaRepository<CampaignAbi
   List<CampaignAbilityCard> findByAlignmentTypeAndLevel(AlignmentType alignmentType, int level);
 
   List<CampaignAbilityCard> findByAlignmentType(AlignmentType alignmentType);
+
+  Optional<CampaignAbilityCard> findByNameAndAlignmentTypeAndLevel(
+      String name, AlignmentType alignmentType, int level);
 }

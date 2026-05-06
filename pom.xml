@@ -30,6 +30,7 @@
     <headless>true</headless>
     <!-- JaCoCo Coverage Properties -->
     <jacoco.coverage.minimum>0.90</jacoco.coverage.minimum>
+    <jacoco.e2e.destFile>${project.build.directory}/jacoco-it.exec</jacoco.e2e.destFile>
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.it.destFile>${project.build.directory}/jacoco-it.exec</jacoco.it.destFile>
     <jacoco.notion.e2e.destFile>${project.build.directory}/jacoco-notion-e2e.exec</jacoco.notion.e2e.destFile>
@@ -243,7 +244,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>7.0.0</version>
+      <version>7.0.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -685,7 +686,7 @@
       <plugin>
         <groupId>org.openrewrite.maven</groupId>
         <artifactId>rewrite-maven-plugin</artifactId>
-        <version>6.37.0</version>
+        <version>6.38.0</version>
         <configuration>
           <failOnDryRunResults>true</failOnDryRunResults>
           <activeRecipes>
@@ -1024,6 +1025,7 @@
               <exclude>**/package.json</exclude>
               <exclude>**/package-lock.json</exclude>
               <exclude>**/generated/**</exclude>
+              <exclude>.claude/**</exclude>
             </excludes>
             <jackson/>
           </json>
@@ -1240,7 +1242,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.0</version>
             <executions>
               <execution>
                 <id>local-deploy</id>
@@ -1321,7 +1323,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.6.1</version>
             <executions>
               <execution>
                 <id>sanitize-version</id>
@@ -1384,7 +1386,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.0</version>
             <executions>
               <execution>
                 <id>prepare-jpackage-input</id>
@@ -1467,7 +1469,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-war-plugin</artifactId>
-            <version>3.4.0</version>
+            <version>3.5.1</version>
             <executions>
               <execution>
                 <id>build-war</id>
@@ -1535,7 +1537,150 @@
       <id>e2e</id>
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <jacoco.e2e.destFile>${project.build.directory}/jacoco-e2e.exec</jacoco.e2e.destFile>
       </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <destFile>${jacoco.e2e.destFile}</destFile>
+                  <propertyName>failsafeArgLine</propertyName>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*E2ETest.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>coverage</id>
+      <properties>
+        <!-- This profile is used to signal that coverage should be collected. -->
+        <!-- The jacoco-maven-plugin is already configured to run. -->
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <directory>${project.build.directory}</directory>
+                  <includes>
+                    <include>*.exec</include>
+                  </includes>
+                </fileSet>
+              </fileSets>
+              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>integration-test</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>**/*E2ETest.java</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*IT.java</include>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*DockerIT.java</exclude>
+                <exclude>**/Docker*IT.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>notion-it</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*Notion*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>notion-e2e</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*Notion*E2ETest.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>docker-it</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*DockerIT.java</include>
+                <include>**/Docker*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

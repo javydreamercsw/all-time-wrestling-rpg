@@ -88,6 +88,10 @@ class AchievementSystemTest {
 
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+
   @BeforeEach
   void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
@@ -114,6 +118,7 @@ class AchievementSystemTest {
             retirementService,
             gameSettingService,
             relationshipService,
+            wrestlerStatusService,
             new Random());
 
     account = new Account();

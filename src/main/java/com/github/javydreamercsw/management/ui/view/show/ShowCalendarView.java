@@ -48,6 +48,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
+import org.vaadin.stefan.fullcalendar.DisplayMode;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.FullCalendar;
 import org.vaadin.stefan.fullcalendar.FullCalendarBuilder;
@@ -293,6 +294,16 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
 
     // Clear existing entries
     calendar.getEntryProvider().asInMemory().removeAllEntries();
+
+    // Highlight the current game day with a background entry
+    LocalDate currentGameDate = gameSettingService.getCurrentGameDate();
+    Entry todayHighlight = new Entry();
+    todayHighlight.setStart(currentGameDate.atStartOfDay());
+    todayHighlight.setEnd(currentGameDate.atTime(23, 59, 59));
+    todayHighlight.setAllDay(true);
+    todayHighlight.setColor("#fbbf24"); // Amber highlight
+    todayHighlight.setDisplayMode(DisplayMode.BACKGROUND);
+    calendar.getEntryProvider().asInMemory().addEntries(todayHighlight);
 
     // Add shows as calendar entries
     for (Show show : allShows) {

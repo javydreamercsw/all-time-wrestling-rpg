@@ -72,10 +72,12 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
-    checkbox = waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
+    // Re-find the checkbox — the grid re-rendered after navigation so the old reference is stale
+    WebElement reenableCheckbox =
+        waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
     ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", checkbox);
+        .executeScript("arguments[0].click();", reenableCheckbox);
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
 

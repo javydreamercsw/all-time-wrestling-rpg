@@ -113,6 +113,7 @@ public class CampaignService {
   private final NewsGenerationService newsGenerationService;
   private final StorylineDirectorService storylineDirectorService;
   private final StorylineExportService storylineExportService;
+  private final WrestlerStatusService wrestlerStatusService;
   private final ObjectMapper objectMapper;
 
   private final Random random = new Random();
@@ -525,6 +526,14 @@ public class CampaignService {
       newsGenerationService.generateNewsForSegment(match);
     }
 
+    // Evaluate Status Card Triggers
+    int momentum = wrestler.getEffectiveStartingMomentum(); // Use effective starting momentum
+    // Note: We might need to track momentum changes during match if scripts use it.
+    // For now, evaluate triggers based on match outcome.
+    wrestler
+        .getStatuses()
+        .forEach(status -> wrestlerStatusService.evaluateTriggerConditions(status, momentum, !won));
+
     state.setMatchesPlayed(state.getMatchesPlayed() + 1);
     int previousVP = state.getVictoryPoints();
     if (won) {
@@ -804,6 +813,25 @@ public class CampaignService {
 
     if (oldId != null) {
       state.getCompletedChapterIds().add(oldId);
+      // Grant rewards from the exit point of the old chapter
+      chapterService
+          .getChapter(oldId)
+          .ifPresent(
+              oldChapter -> {
+                chapterService
+                    .getActivePoint(oldChapter.getExitPoints(), state)
+                    .ifPresent(
+                        point -> {
+                          if (point.getStatusCardRewards() != null) {
+                            point
+                                .getStatusCardRewards()
+                                .forEach(
+                                    key ->
+                                        wrestlerStatusService.assignStatus(
+                                            campaign.getWrestler().getId(), key));
+                          }
+                        });
+              });
     }
 
     List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
@@ -815,6 +843,21 @@ public class CampaignService {
       state.setMatchesPlayed(0); // Reset chapter-specific counters
       state.setWins(0);
       state.setLosses(0);
+
+      // Grant rewards from the entry point of the new chapter
+      chapterService
+          .getActivePoint(nextChapter.getEntryPoints(), state)
+          .ifPresent(
+              point -> {
+                if (point.getStatusCardRewards() != null) {
+                  point
+                      .getStatusCardRewards()
+                      .forEach(
+                          key ->
+                              wrestlerStatusService.assignStatus(
+                                  campaign.getWrestler().getId(), key));
+                }
+              });
 
       // Initialize Tournament Opponents if entering a tournament chapter
       if (nextChapter.isTournament()) {

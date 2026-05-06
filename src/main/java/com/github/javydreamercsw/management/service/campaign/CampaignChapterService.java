@@ -110,6 +110,11 @@ public class CampaignChapterService {
         .orElse(false);
   }
 
+  public Optional<ChapterPointDTO> getActivePoint(
+      @NonNull List<ChapterPointDTO> points, @NonNull CampaignState state) {
+    return points.stream().filter(p -> areAllCriteriaMet(p.getCriteria(), state)).findFirst();
+  }
+
   private boolean isAnyPointActive(
       @NonNull List<ChapterPointDTO> points, @NonNull CampaignState state) {
     if (points.isEmpty()) {

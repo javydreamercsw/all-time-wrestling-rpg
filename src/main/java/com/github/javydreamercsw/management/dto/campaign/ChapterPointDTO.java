@@ -32,4 +32,5 @@ import lombok.NoArgsConstructor;
 public class ChapterPointDTO {
   private String name; // Label for the point (e.g. "Hero's Path", "Success Exit")
   private List<ChapterCriteriaDTO> criteria;
+  private List<String> statusCardRewards; // Statuses granted when meeting this point
 }

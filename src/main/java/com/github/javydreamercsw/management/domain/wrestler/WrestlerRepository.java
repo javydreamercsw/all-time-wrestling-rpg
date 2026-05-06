@@ -48,6 +48,9 @@ public interface WrestlerRepository
   @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.injuries WHERE w.id = :id")
   Optional<Wrestler> findByIdWithInjuries(@Param("id") Long id);
 
+  @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.statuses WHERE w.id = :id")
+  Optional<Wrestler> findByIdWithStatuses(@Param("id") Long id);
+
   Optional<Wrestler> findByExternalId(String externalId);
 
   List<Wrestler> findByFansBetween(long minFans, long maxFans);

@@ -74,6 +74,11 @@ class WearAndTearAdjudicationTest {
   @Mock private RingsideAiService ringsideAiService;
   @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
   @Mock private WrestlerRelationshipService relationshipService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+
   @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
   @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
@@ -97,6 +102,7 @@ class WearAndTearAdjudicationTest {
             retirementService,
             gameSettingService,
             relationshipService,
+            wrestlerStatusService,
             random);
 
     when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -52,11 +51,8 @@ public class CampaignAbilityCardService {
 
   public Optional<CampaignAbilityCard> findByNameAndAlignmentAndLevel(
       String name, AlignmentType alignmentType, int level) {
-    CampaignAbilityCard probe = new CampaignAbilityCard();
-    probe.setName(name);
-    probe.setAlignmentType(alignmentType);
-    probe.setLevel(level);
-    return campaignAbilityCardRepository.findOne(Example.of(probe));
+    return campaignAbilityCardRepository.findByNameAndAlignmentTypeAndLevel(
+        name, alignmentType, level);
   }
 
   public CampaignAbilityCard createOrUpdateCard(
