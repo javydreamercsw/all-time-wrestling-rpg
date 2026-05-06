@@ -80,8 +80,8 @@
   - [x] Write E2E/UI tests.
   - [x] Update Match Setup views.
 - [x] Task: Implement Admin controls for manual status assignment/overrides. [8a82c3c]
-    - [x] Write E2E/UI tests.
-    - [x] Add controls to the Admin/GM dashboards.
+  - [x] Write E2E/UI tests.
+  - [x] Add controls to the Admin/GM dashboards.
 - [x] Task: Conductor - User Manual Verification 'Phase 6: UI Integration' (Protocol in workflow.md)
 
 ## Summary of Implementation
