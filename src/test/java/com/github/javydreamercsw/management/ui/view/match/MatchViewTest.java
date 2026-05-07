@@ -180,7 +180,10 @@ class MatchViewTest extends AbstractViewTest {
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
     lenient().when(wrestlerService.findById(2L)).thenReturn(Optional.of(wrestler2));
-    when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+    when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(wrestler1));
+    when(wrestlerService.findByIdWithDetails(2L)).thenReturn(Optional.of(wrestler2));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
         .thenAnswer(
             invocation -> {
               Long wrestlerId = invocation.getArgument(0);

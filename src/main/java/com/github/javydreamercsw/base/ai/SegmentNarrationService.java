@@ -154,6 +154,9 @@ public interface SegmentNarrationService {
     private Map<String, Object> attributes;
     private int health;
     private int stamina;
+    private int momentum;
+    private int handSize;
+    private List<String> activeStatuses;
   }
 
   /** Wrestler's move set including finishers and trademarks. */

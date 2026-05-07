@@ -200,20 +200,20 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     List<Entry> entries = showCalendarView.getCalendar().getEntryProvider().fetch(query).toList();
 
     Entry pleEntry =
-        entries.stream().filter(e -> e.getTitle().equals("My PLE Show")).findFirst().orElse(null);
+        entries.stream().filter(e -> "My PLE Show".equals(e.getTitle())).findFirst().orElse(null);
     assertNotNull(pleEntry);
     assertEquals("#dc2626", pleEntry.getColor());
 
     Entry weeklyEntry =
         entries.stream()
-            .filter(e -> e.getTitle().equals("My Weekly Show"))
+            .filter(e -> "My Weekly Show".equals(e.getTitle()))
             .findFirst()
             .orElse(null);
     assertNotNull(weeklyEntry);
     assertEquals("#2563eb", weeklyEntry.getColor());
 
     Entry otherEntry =
-        entries.stream().filter(e -> e.getTitle().equals("My Other Show")).findFirst().orElse(null);
+        entries.stream().filter(e -> "My Other Show".equals(e.getTitle())).findFirst().orElse(null);
     assertNotNull(otherEntry);
     assertEquals("#8A2BE2", otherEntry.getColor());
   }

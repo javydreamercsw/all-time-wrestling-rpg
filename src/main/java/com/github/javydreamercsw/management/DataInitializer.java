@@ -64,6 +64,7 @@ import com.github.javydreamercsw.management.dto.RingsideActionTypeDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.StatusCardDTO;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
@@ -72,6 +73,7 @@ import com.github.javydreamercsw.management.dto.commentator.CommentatorImportDTO
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
@@ -142,6 +144,7 @@ public class DataInitializer implements Initializable {
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final CommentaryService commentaryService;
   private final CampaignUpgradeService campaignUpgradeService;
+  private final StatusCardService statusCardService;
   private final LocationRepository locationRepository;
   private final ArenaRepository arenaRepository;
   private final WrestlerRelationshipService relationshipService;
@@ -178,6 +181,7 @@ public class DataInitializer implements Initializable {
       CampaignAbilityCardService campaignAbilityCardService,
       CommentaryService commentaryService,
       CampaignUpgradeService campaignUpgradeService,
+      StatusCardService statusCardService,
       Environment env,
       AchievementRepository achievementRepository,
       RingsideActionDataService ringsideActionDataService,
@@ -212,6 +216,7 @@ public class DataInitializer implements Initializable {
     this.campaignAbilityCardService = campaignAbilityCardService;
     this.commentaryService = commentaryService;
     this.campaignUpgradeService = campaignUpgradeService;
+    this.statusCardService = statusCardService;
     this.env = env;
     this.achievementRepository = achievementRepository;
     this.ringsideActionDataService = ringsideActionDataService;
@@ -248,11 +253,13 @@ public class DataInitializer implements Initializable {
     syncFactionsFromFile();
     syncTeamsFromFile();
     syncCampaignAbilityCardsFromFile();
+    syncStatusCardsFromFile();
     campaignUpgradeService.loadUpgrades();
     syncCommentatorsFromFile();
     syncCommentaryTeamsFromFile();
     loadAchievements();
     syncRingsideActions();
+    log.info("Data initialization complete.");
   }
 
   private void syncRingsideActions() {
@@ -534,6 +541,42 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Campaign ability cards file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncStatusCardsFromFile() {
+    ClassPathResource resource = new ClassPathResource("status_cards.json");
+    if (resource.exists()) {
+      log.debug("Loading status cards from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        List<StatusCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
+        // Skip loading if the count already matches — avoids N×M DB round-trips in tests
+        // where DataInitializer.init() runs on every @BeforeEach reset.
+        if (statusCardService.findAll().size() == cardsFromFile.size()) {
+          log.debug("Status cards already loaded ({} cards), skipping sync.", cardsFromFile.size());
+          return;
+        }
+        for (StatusCardDTO dto : cardsFromFile) {
+          statusCardService.createOrUpdateCard(
+              dto.getKey(),
+              dto.getLevel1Name(),
+              dto.getLevel2Name(),
+              dto.getDescription(),
+              dto.isPositive(),
+              dto.getLevel1Effect(),
+              dto.getLevel2Effect(),
+              dto.getFlipUpCondition(),
+              dto.getFlipDownCondition(),
+              dto.getDiscardCondition());
+          log.debug("Loaded status card: {}", dto.getKey());
+        }
+        log.debug("Status card loading completed - {} cards loaded", cardsFromFile.size());
+      } catch (IOException e) {
+        log.error("Error loading status cards from file", e);
+      }
+    } else {
+      log.warn("Status cards file not found: {}", resource.getPath());
     }
   }
 

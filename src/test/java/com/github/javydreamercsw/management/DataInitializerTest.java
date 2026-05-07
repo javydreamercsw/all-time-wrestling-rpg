@@ -59,12 +59,14 @@ import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.StatusCardDTO;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
@@ -130,6 +132,7 @@ class DataInitializerTest {
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
   @Mock private CommentaryService commentaryService;
   @Mock private CampaignUpgradeService campaignUpgradeService;
+  @Mock private StatusCardService statusCardService;
   @Mock private Environment env;
   @Mock private AchievementRepository achievementRepository;
   @Mock private RingsideActionDataService ringsideActionDataService;
@@ -169,6 +172,7 @@ class DataInitializerTest {
             campaignAbilityCardService,
             commentaryService,
             campaignUpgradeService,
+            statusCardService,
             env,
             achievementRepository,
             ringsideActionDataService,
@@ -399,6 +403,17 @@ class DataInitializerTest {
               .readValue(
                   new ClassPathResource("campaign_ability_cards.json").getInputStream(),
                   new TypeReference<List<CampaignAbilityCardDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateStatusCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("status_cards.json").getInputStream(),
+                  new TypeReference<List<StatusCardDTO>>() {});
         });
   }
 

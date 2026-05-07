@@ -176,3 +176,43 @@ Chapters influence the AI Director via:
 - `aiSystemPrompt`: Tailors the AI's persona and goals for the chapter.
 - **Phase Context:** The system uses the `CampaignPhase` (BACKSTAGE, MATCH, POST_MATCH) to determine which prompt instructions to send to the AI.
 - **Match Result Context:** During the `POST_MATCH` phase, the AI receives details about the last match (won/lost, opponent, type) to generate immediate reactions.
+
+## Status Card Logic
+
+Status Cards use strictly **Groovy** syntax for their trigger conditions.
+
+### Available Variables
+
+The following variables are available in the condition evaluation context:
+- `momentum`: The wrestler's momentum at the end of the match.
+- `loss`: A boolean indicating if the wrestler lost the match (`true`) or won (`false`).
+
+### Common Condition Examples
+
+- `momentum >= 5`: Flips up or down based on reaching high momentum.
+- `loss == true`: Discards or flips based on match failure.
+- `false`: A static condition that never triggers (useful for statuses that can only be removed by specific narrative prompts).
+
+### Reward Scripting
+
+Campaign chapters and milestones can grant statuses using their internal keys.
+
+**Example `status_cards.json`:**
+
+```json
+{
+  "key": "status_draw",
+  "level1Name": "Draw",
+  "level2Name": "Main Eventer",
+  "flipUpCondition": "momentum >= 5"
+}
+```
+
+**Referencing in Campaign Data:**
+
+```json
+{
+  "statusCardRewards": ["status_draw"]
+}
+```
+

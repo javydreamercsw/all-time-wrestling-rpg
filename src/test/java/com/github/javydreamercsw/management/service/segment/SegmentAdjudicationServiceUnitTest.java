@@ -78,6 +78,10 @@ class SegmentAdjudicationServiceUnitTest {
   private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
       relationshipService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+
   @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
   @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
 
@@ -108,6 +112,7 @@ class SegmentAdjudicationServiceUnitTest {
             retirementService,
             gameSettingService,
             relationshipService,
+            wrestlerStatusService,
             random);
 
     wrestler1 = Wrestler.builder().build();

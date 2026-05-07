@@ -752,8 +752,23 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     wc.setName(w.getName());
                     wc.setDescription(w.getDescription());
                     wc.setHailingFrom(w.getHeritageTag());
-                    wc.setHealth(w.getStartingHealth());
-                    wc.setStamina(w.getStartingStamina());
+                    wc.setHealth(
+                        w.getEffectiveStartingHealth(
+                            universeContextService.getCurrentUniverseId()));
+                    wc.setStamina(w.getEffectiveStartingStamina());
+                    wc.setMomentum(w.getEffectiveStartingMomentum());
+                    wc.setHandSize(w.getEffectiveHandSize());
+                    wc.setActiveStatuses(
+                        w.getStatuses().stream()
+                            .map(
+                                status ->
+                                    (status.getLevel() == 1
+                                            ? status.getStatusCard().getLevel1Name()
+                                            : status.getStatusCard().getLevel2Name())
+                                        + " (Level "
+                                        + status.getLevel()
+                                        + ")")
+                            .toList());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }

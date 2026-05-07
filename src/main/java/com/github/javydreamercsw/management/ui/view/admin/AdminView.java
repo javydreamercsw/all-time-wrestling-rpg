@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
 import com.github.javydreamercsw.management.ui.view.account.AccountListView;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
+import com.github.javydreamercsw.management.ui.view.campaign.StatusCardListView;
 import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
 import com.github.javydreamercsw.management.ui.view.season.SeasonSettingsView;
 import com.vaadin.flow.component.Component;
@@ -44,6 +45,7 @@ import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Map;
@@ -107,37 +109,94 @@ public class AdminView extends VerticalLayout {
         new Tab("Holidays"),
         new Tab("Season Settings"),
         new Tab("Campaign Cards"),
+        new Tab("Status Cards"),
+        new Tab("Expansion Management"),
+        new Tab("Wrestler Relationships"),
         new Tab("Manage Accounts"));
   }
 
   private Div createPages(Tabs tabs) {
-    Div pages = new Div();
+    Instantiator instantiator = VaadinService.getCurrent().getInstantiator();
+    VerticalLayout adminToolsPage = createAdminToolsPage();
+    adminToolsPage.setSizeFull();
+
+    AiSettingsView aiSettingsView = instantiator.getOrCreate(AiSettingsView.class);
+    GameSettingsView gameSettingsView = instantiator.getOrCreate(GameSettingsView.class);
+    HolidayListView holidayListView = instantiator.getOrCreate(HolidayListView.class);
+    SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
+    CampaignAbilityCardListView campaignAbilityCardListView =
+        instantiator.getOrCreate(CampaignAbilityCardListView.class);
+    StatusCardListView statusCardListView = instantiator.getOrCreate(StatusCardListView.class);
+    ExpansionManagementView expansionManagementView =
+        instantiator.getOrCreate(ExpansionManagementView.class);
+    WrestlerRelationshipManagementView relationshipManagementView =
+        instantiator.getOrCreate(WrestlerRelationshipManagementView.class);
+    Div manageAccountsPage = new Div();
+
+    Div pages =
+        new Div(
+            adminToolsPage,
+            aiSettingsView,
+            gameSettingsView,
+            holidayListView,
+            seasonSettingsView,
+            campaignAbilityCardListView,
+            statusCardListView,
+            expansionManagementView,
+            relationshipManagementView,
+            manageAccountsPage);
     pages.setSizeFull();
 
-    Map<Integer, Component> tabToPage =
+    Map<Tab, Component> tabsToPages =
         Map.of(
-            0, createAdminToolsPage(),
-            1, Instantiator.get(UI.getCurrent()).getOrCreate(AiSettingsView.class),
-            2, Instantiator.get(UI.getCurrent()).getOrCreate(GameSettingsView.class),
-            3, Instantiator.get(UI.getCurrent()).getOrCreate(HolidayListView.class),
-            4, Instantiator.get(UI.getCurrent()).getOrCreate(SeasonSettingsView.class),
-            5, Instantiator.get(UI.getCurrent()).getOrCreate(CampaignAbilityCardListView.class),
-            6, createManageAccountsPage());
+            tabs.getTabAt(0), adminToolsPage,
+            tabs.getTabAt(1), aiSettingsView,
+            tabs.getTabAt(2), gameSettingsView,
+            tabs.getTabAt(3), holidayListView,
+            tabs.getTabAt(4), seasonSettingsView,
+            tabs.getTabAt(5), campaignAbilityCardListView,
+            tabs.getTabAt(6), statusCardListView,
+            tabs.getTabAt(7), expansionManagementView,
+            tabs.getTabAt(8), relationshipManagementView);
 
-    tabToPage.values().forEach(p -> p.setVisible(false));
-    tabToPage.get(0).setVisible(true);
+    // Handle the 10th tab (index 9) separately due to Map.of limit of 10
+    Tab manageAccountsTab = tabs.getTabAt(9);
+
+    tabsToPages.values().forEach(p -> p.setVisible(false));
+    manageAccountsPage.setVisible(false);
+    adminToolsPage.setVisible(true);
 
     tabs.addSelectedChangeListener(
         event -> {
-          tabToPage.values().forEach(p -> p.setVisible(false));
-          tabToPage.get(tabs.getSelectedIndex()).setVisible(true);
+          tabsToPages.values().forEach(page -> page.setVisible(false));
+          manageAccountsPage.setVisible(false);
+          Tab selectedTab = tabs.getSelectedTab();
+          if (selectedTab.equals(manageAccountsTab)) {
+            manageAccountsPage.setVisible(true);
+          } else {
+            Component selectedPage = tabsToPages.get(selectedTab);
+            if (selectedPage != null) {
+              selectedPage.setVisible(true);
+              if (selectedPage instanceof ExpansionManagementView emv) {
+                emv.refresh();
+              }
+              if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
+                rmv.refresh();
+              }
+              if (selectedPage instanceof StatusCardListView sclv) {
+                sclv.refresh();
+              }
+              if (selectedPage instanceof CampaignAbilityCardListView caclv) {
+                caclv.refresh();
+              }
+            }
+          }
         });
 
-    tabToPage.values().forEach(pages::add);
     return pages;
   }
 
-  private Component createAdminToolsPage() {
+  private VerticalLayout createAdminToolsPage() {
     VerticalLayout content = new VerticalLayout();
     content.setPadding(true);
     content.setSpacing(true);
@@ -194,9 +253,5 @@ public class AdminView extends VerticalLayout {
     content.add(
         recalculateTiersButton, manageAccountsButton, cleanupImagesButton, resetConditionButton);
     return content;
-  }
-
-  private Component createManageAccountsPage() {
-    return new Div(); // Placeholder
   }
 }

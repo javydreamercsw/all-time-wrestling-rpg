@@ -30,7 +30,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
-import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -103,180 +102,233 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
     }
     getContent().add(statsRow);
 
-    Span bumps = new Span("Bumps: " + state.getBumps());
-    bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
+    wrestlerService
+        .findByIdWithDetails(wrestler.getId())
+        .ifPresent(
+            wrestlerWithDetails -> {
+              Span bumps = new Span("Bumps: " + wrestlerWithDetails.getBumps());
+              bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
 
-    Span condition = new Span("💪 Physical Condition: " + state.getPhysicalCondition() + "%");
-    condition.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
-    if (state.getPhysicalCondition() < 50) {
-      condition.addClassNames(TextColor.ERROR);
-    } else if (state.getPhysicalCondition() < 80) {
-      condition.addClassNames(TextColor.WARNING);
-    } else {
-      condition.addClassNames(TextColor.SUCCESS);
-    }
+              Span condition =
+                  new Span(
+                      "💪 Physical Condition: " + wrestlerWithDetails.getPhysicalCondition() + "%");
+              condition.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
+              if (wrestlerWithDetails.getPhysicalCondition() < 50) {
+                condition.addClassNames(TextColor.ERROR);
+              } else if (wrestlerWithDetails.getPhysicalCondition() < 80) {
+                condition.addClassNames(TextColor.WARNING);
+              } else {
+                condition.addClassNames(TextColor.SUCCESS);
+              }
 
-    getContent().add(bumps, condition);
+              getContent().add(bumps, condition);
 
-    // Campaign Modifiers
-    boolean hasCampaign =
-        wrestler.getAlignment() != null
-            && wrestler.getAlignment().getCampaign() != null
-            && wrestler.getAlignment().getCampaign().getState() != null;
+              // Campaign Modifiers
+              // Always show effective HP if we have penalties or bonuses, even if not the player's
+              // card directly (e.g. opponent)
+              boolean hasCampaign =
+                  wrestlerWithDetails.getAlignment() != null
+                      && wrestlerWithDetails.getAlignment().getCampaign() != null
+                      && wrestlerWithDetails.getAlignment().getCampaign().getState() != null;
 
-    // Calculate effective health manually
-    int bonus = 0;
-    int penalty = 0;
-    if (hasCampaign) {
-      bonus = wrestler.getAlignment().getCampaign().getState().getCampaignHealthBonus();
-      penalty = wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
-    }
+              int effectiveHp =
+                  Math.max(
+                      1,
+                      wrestlerWithDetails.getEffectiveStartingHealth(universeId)
+                          - additionalPenalty);
 
-    int totalHealthPenalty =
-        injuryService.getTotalHealthPenaltyForWrestler(wrestler.getId(), universeId);
-    int conditionPenalty = Math.min(5, (100 - state.getPhysicalCondition()) / 5);
-    int effectiveHp =
-        wrestler.getStartingHealth()
-            + bonus
-            - penalty
-            - state.getBumps()
-            - totalHealthPenalty
-            - conditionPenalty
-            - additionalPenalty;
-    effectiveHp = Math.max(1, effectiveHp);
+              VerticalLayout mods = new VerticalLayout();
+              mods.setPadding(false);
+              mods.setSpacing(false);
+              mods.addClassNames(Margin.Top.SMALL, Padding.Top.SMALL, Border.TOP);
 
-    VerticalLayout mods = new VerticalLayout();
-    mods.setPadding(false);
-    mods.setSpacing(false);
-    mods.addClassNames(Margin.Top.SMALL, Padding.Top.SMALL, Border.TOP);
+              StringBuilder hpTooltip = new StringBuilder();
+              hpTooltip.append("Base Health: ").append(wrestlerWithDetails.getStartingHealth());
 
-    StringBuilder hpTooltip = new StringBuilder();
-    hpTooltip.append("Base Health: ").append(wrestler.getStartingHealth());
+              int campaignBonus = 0;
+              int campaignPenalty = 0;
+              if (hasCampaign) {
+                campaignBonus =
+                    wrestlerWithDetails
+                        .getAlignment()
+                        .getCampaign()
+                        .getState()
+                        .getCampaignHealthBonus();
+                campaignPenalty =
+                    wrestlerWithDetails.getAlignment().getCampaign().getState().getHealthPenalty();
+                if (campaignBonus > 0) {
+                  hpTooltip.append("\nCampaign Bonus: +").append(campaignBonus);
+                }
+                if (campaignPenalty > 0) {
+                  hpTooltip.append("\nCampaign Penalty: -").append(campaignPenalty);
+                }
+              }
 
-    if (bonus > 0) {
-      hpTooltip.append("\nCampaign Bonus: +").append(bonus);
-    }
-    if (penalty > 0) {
-      hpTooltip.append("\nCampaign Penalty: -").append(penalty);
-    }
+              if (wrestlerWithDetails.getBumps() > 0) {
+                hpTooltip.append("\nBump Penalty: -").append(wrestlerWithDetails.getBumps());
+              }
 
-    if (state.getBumps() > 0) {
-      hpTooltip.append("\nBump Penalty: -").append(state.getBumps());
-    }
+              int conditionPenalty =
+                  Math.min(5, (100 - wrestlerWithDetails.getPhysicalCondition()) / 5);
+              if (conditionPenalty > 0) {
+                hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
+              }
 
-    if (conditionPenalty > 0) {
-      hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
-    }
+              int injuryPenalty = wrestlerWithDetails.getTotalInjuryPenalty();
+              if (injuryPenalty > 0) {
+                hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
+              }
 
-    if (totalHealthPenalty > 0) {
-      hpTooltip.append("\nInjury Penalty: -").append(totalHealthPenalty);
-    }
+              if (additionalPenalty > 0) {
+                hpTooltip.append("\nOpponent Penalty: -").append(additionalPenalty);
+              }
 
-    if (additionalPenalty > 0) {
-      hpTooltip.append("\nOpponent Penalty: -").append(additionalPenalty);
-    }
+              String hpText = "❤️ Effective HP: " + effectiveHp;
+              Span hp = new Span(hpText);
+              if (wrestlerWithDetails.getBumps() > 0) {
+                Span bumpIndicator =
+                    new Span(" (📉 -" + wrestlerWithDetails.getBumps() + " bumps)");
+                bumpIndicator.addClassNames(TextColor.ERROR, FontSize.XSMALL, Margin.Left.XSMALL);
+                hp.add(bumpIndicator);
+              }
+              Tooltip.forComponent(hp).setText(hpTooltip.toString());
 
-    String hpText = "❤️ Effective HP: " + effectiveHp;
-    Span hp = new Span(hpText);
-    if (state.getBumps() > 0) {
-      Span bumpIndicator = new Span(" (📉 -" + state.getBumps() + " bumps)");
-      bumpIndicator.addClassNames(TextColor.ERROR, FontSize.XSMALL, Margin.Left.XSMALL);
-      hp.add(bumpIndicator);
-    }
-    Tooltip.forComponent(hp).setText(hpTooltip.toString());
+              Span stam =
+                  new Span(
+                      "⚡ Effective Stamina: " + wrestlerWithDetails.getEffectiveStartingStamina());
 
-    int effectiveStamina = Math.max(1, wrestler.getStartingStamina() - state.getBumps());
-    Span stam = new Span("⚡ Effective Stamina: " + effectiveStamina);
+              Span mom =
+                  new Span(
+                      "🚀 Effective Momentum: "
+                          + wrestlerWithDetails.getEffectiveStartingMomentum());
 
-    hp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
-    stam.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              Span hand =
+                  new Span("🃏 Effective Hand Size: " + wrestlerWithDetails.getEffectiveHandSize());
 
-    mods.add(hp, stam);
+              hp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              stam.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              mom.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              hand.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
 
-    // Campaign Attributes (Only show if they have them set, defaults are 1)
-    HorizontalLayout attrs = new HorizontalLayout();
-    attrs.setSpacing(true);
-    attrs.addClassNames(FontSize.XSMALL, Margin.Vertical.XSMALL);
-    attrs.add(new Span("DRV: " + wrestler.getDrive()));
-    attrs.add(new Span("RES: " + wrestler.getResilience()));
-    attrs.add(new Span("CHA: " + wrestler.getCharisma()));
-    attrs.add(new Span("BRL: " + wrestler.getBrawl()));
-    mods.add(attrs);
+              mods.add(hp, stam, mom, hand);
 
-    if (hasCampaign) {
-      CampaignState campaignState = wrestler.getAlignment().getCampaign().getState();
-      if (!campaignState.getUpgrades().isEmpty()) {
-        campaignState
-            .getUpgrades()
-            .forEach(
-                upgrade -> {
-                  Span p = new Span("✨ " + upgrade.getName());
-                  p.addClassNames(FontSize.XSMALL, TextColor.SUCCESS, FontWeight.BOLD);
-                  mods.add(p);
-                });
-      }
+              // Campaign Attributes (Only show if they have them set, defaults are 1)
+              HorizontalLayout attrs = new HorizontalLayout();
+              attrs.setSpacing(true);
+              attrs.addClassNames(FontSize.XSMALL, Margin.Vertical.XSMALL);
+              attrs.add(new Span("DRV: " + wrestlerWithDetails.getDrive()));
+              attrs.add(new Span("RES: " + wrestlerWithDetails.getResilience()));
+              attrs.add(new Span("CHA: " + wrestlerWithDetails.getCharisma()));
+              attrs.add(new Span("BRL: " + wrestlerWithDetails.getBrawl()));
+              mods.add(attrs);
 
-      if (!campaignState.getActiveCards().isEmpty()) {
-        mods.add(new Span("Cards:"));
-        HorizontalLayout cardsLayout = new HorizontalLayout();
-        cardsLayout.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
-        campaignState
-            .getActiveCards()
-            .forEach(
-                card -> {
-                  Span c = new Span(card.getName());
-                  c.addClassNames(
-                      FontSize.XSMALL,
-                      Background.CONTRAST_10,
-                      Padding.Horizontal.XSMALL,
-                      BorderRadius.SMALL);
-                  Tooltip.forComponent(c).setText(card.getDescription());
-                  cardsLayout.add(c);
-                });
-        mods.add(cardsLayout);
-      }
-    }
-    getContent().add(mods);
+              if (hasCampaign) {
+                CampaignState campaignState =
+                    wrestlerWithDetails.getAlignment().getCampaign().getState();
+                if (!campaignState.getUpgrades().isEmpty()) {
+                  campaignState
+                      .getUpgrades()
+                      .forEach(
+                          upgrade -> {
+                            Span p = new Span("✨ " + upgrade.getName());
+                            p.addClassNames(FontSize.XSMALL, TextColor.SUCCESS, FontWeight.BOLD);
+                            mods.add(p);
+                          });
+                }
 
-    List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
-        injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
+                if (!campaignState.getActiveCards().isEmpty()) {
+                  mods.add(new Span("Cards:"));
+                  HorizontalLayout cardsLayout = new HorizontalLayout();
+                  cardsLayout.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
+                  campaignState
+                      .getActiveCards()
+                      .forEach(
+                          card -> {
+                            Span c = new Span(card.getName());
+                            c.addClassNames(
+                                FontSize.XSMALL,
+                                Background.CONTRAST_10,
+                                Padding.Horizontal.XSMALL,
+                                BorderRadius.SMALL);
+                            Tooltip.forComponent(c).setText(card.getDescription());
+                            cardsLayout.add(c);
+                          });
+                  mods.add(cardsLayout);
+                }
 
-    if (!injuries.isEmpty()) {
-      VerticalLayout activeInjuriesLayout = new VerticalLayout();
-      activeInjuriesLayout.setPadding(false);
-      activeInjuriesLayout.setSpacing(false);
+                if (!wrestlerWithDetails.getStatuses().isEmpty()) {
+                  mods.add(new Span("Statuses:"));
+                  HorizontalLayout statusLayout = new HorizontalLayout();
+                  statusLayout.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
+                  wrestlerWithDetails
+                      .getStatuses()
+                      .forEach(
+                          status -> {
+                            Span s =
+                                new Span(
+                                    status.getLevel() == 1
+                                        ? status.getStatusCard().getLevel1Name()
+                                        : status.getStatusCard().getLevel2Name());
+                            s.addClassNames(
+                                FontSize.XSMALL,
+                                status.getStatusCard().isPositive()
+                                    ? Background.SUCCESS_10
+                                    : Background.ERROR_10,
+                                status.getStatusCard().isPositive()
+                                    ? TextColor.SUCCESS
+                                    : TextColor.ERROR,
+                                Padding.Horizontal.XSMALL,
+                                BorderRadius.SMALL,
+                                FontWeight.BOLD);
+                            Tooltip.forComponent(s)
+                                .setText(status.getStatusCard().getDescription());
+                            statusLayout.add(s);
+                          });
+                  mods.add(statusLayout);
+                }
+              }
+              getContent().add(mods);
 
-      VerticalLayout healedInjuriesLayout = new VerticalLayout();
-      healedInjuriesLayout.setPadding(false);
-      healedInjuriesLayout.setSpacing(false);
+              if (!wrestlerWithDetails.getInjuries().isEmpty()) {
+                VerticalLayout activeInjuries = new VerticalLayout();
+                activeInjuries.setPadding(false);
+                activeInjuries.setSpacing(false);
 
-      injuries.forEach(
-          injury -> {
-            Span i = new Span("🩹 " + injury.getDisplayString());
-            i.addClassNames(FontSize.XSMALL);
-            if (injury.isCurrentlyActive()) {
-              i.addClassNames(TextColor.ERROR);
-              activeInjuriesLayout.add(i);
-            } else {
-              i.addClassNames(TextColor.SECONDARY);
-              healedInjuriesLayout.add(i);
-            }
-          });
+                VerticalLayout healedInjuries = new VerticalLayout();
+                healedInjuries.setPadding(false);
+                healedInjuries.setSpacing(false);
 
-      if (activeInjuriesLayout.getComponentCount() > 0) {
-        getContent().add(activeInjuriesLayout);
-      }
+                wrestlerWithDetails
+                    .getInjuries()
+                    .forEach(
+                        injury -> {
+                          Span i = new Span("🩹 " + injury.getDisplayString());
+                          i.addClassNames(FontSize.XSMALL);
+                          if (injury.isCurrentlyActive()) {
+                            i.addClassNames(TextColor.ERROR);
+                            activeInjuries.add(i);
+                          } else {
+                            i.addClassNames(TextColor.SECONDARY);
+                            healedInjuries.add(i);
+                          }
+                        });
 
-      if (healedInjuriesLayout.getComponentCount() > 0) {
-        com.vaadin.flow.component.details.Details healedDetails =
-            new com.vaadin.flow.component.details.Details("Healed Injuries", healedInjuriesLayout);
-        healedDetails.addThemeVariants(
-            com.vaadin.flow.component.details.DetailsVariant.LUMO_REVERSE,
-            com.vaadin.flow.component.details.DetailsVariant.LUMO_SMALL);
-        healedDetails.setOpened(false);
-        healedDetails.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
-        getContent().add(healedDetails);
-      }
-    }
+                if (activeInjuries.getComponentCount() > 0) {
+                  getContent().add(activeInjuries);
+                }
+
+                if (healedInjuries.getComponentCount() > 0) {
+                  com.vaadin.flow.component.details.Details healedDetails =
+                      new com.vaadin.flow.component.details.Details(
+                          "Healed Injuries", healedInjuries);
+                  healedDetails.addThemeVariants(
+                      com.vaadin.flow.component.details.DetailsVariant.LUMO_REVERSE,
+                      com.vaadin.flow.component.details.DetailsVariant.LUMO_SMALL);
+                  healedDetails.setOpened(false);
+                  healedDetails.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
+                  getContent().add(healedDetails);
+                }
+              }
+            });
   }
 }

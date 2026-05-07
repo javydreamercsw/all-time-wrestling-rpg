@@ -40,6 +40,7 @@ public class GameSettingService {
   public static final String NEWS_RUMOR_CHANCE_KEY = "news_rumor_chance";
   public static final String NEWS_STRATEGY_KEY = "news_strategy"; // "SEGMENT" or "SHOW"
   public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
+  public static final String STATUS_CARDS_ENABLED_KEY = "status_cards_enabled";
   public static final String NOTION_TOKEN_KEY = "notion_token";
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
@@ -68,6 +69,21 @@ public class GameSettingService {
   @Transactional
   public void setWearAndTearEnabled(boolean enabled) {
     save(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("permitAll()")
+  public boolean isStatusCardsEnabled() {
+    return repository
+        .findById(STATUS_CARDS_ENABLED_KEY)
+        .map(GameSetting::getValue)
+        .map(Boolean::parseBoolean)
+        .orElse(true); // Enabled by default
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @Transactional
+  public void setStatusCardsEnabled(boolean enabled) {
+    save(STATUS_CARDS_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")

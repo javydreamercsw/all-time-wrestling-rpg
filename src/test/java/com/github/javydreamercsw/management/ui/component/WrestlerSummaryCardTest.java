@@ -75,6 +75,7 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
     when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(state);
     when(wrestlerService.getWrestlerStats(eq(1L), anyLong()))
         .thenReturn(Optional.of(new WrestlerStats(10, 5, 1)));
+    when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(wrestler));
   }
 
   @Test

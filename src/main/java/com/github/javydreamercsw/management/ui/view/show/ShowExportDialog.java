@@ -31,7 +31,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.List;
-import lombok.Getter;
 import lombok.NonNull;
 
 /** Dialog for exporting a show card. */
@@ -41,12 +40,11 @@ public class ShowExportDialog extends Dialog {
   private final NotificationService notificationService;
   private final Show show;
 
-  @Getter private final ComboBox<String> formatSelector = new ComboBox<>("Export Format");
-  @Getter private final Checkbox includeResults = new Checkbox("Include Match Results", true);
-  @Getter private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
-  @Getter private final TextArea previewArea = new TextArea("Preview");
-
-  @Getter
+  private final ComboBox<String> formatSelector = new ComboBox<>("Export Format");
+  private final Checkbox includeResults = new Checkbox("Include Match Results", true);
+  private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
+  private final Checkbox includeNarration = new Checkbox("Include Narration", false);
+  private final TextArea previewArea = new TextArea("Preview");
   private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
 
   public ShowExportDialog(
@@ -71,8 +69,10 @@ public class ShowExportDialog extends Dialog {
 
     includeResults.addValueChangeListener(event -> updatePreview());
     includeSummary.addValueChangeListener(event -> updatePreview());
+    includeNarration.addValueChangeListener(event -> updatePreview());
 
-    HorizontalLayout optionsLayout = new HorizontalLayout(includeResults, includeSummary);
+    HorizontalLayout optionsLayout =
+        new HorizontalLayout(includeResults, includeSummary, includeNarration);
     optionsLayout.setSpacing(true);
 
     previewArea.setWidthFull();
@@ -102,13 +102,41 @@ public class ShowExportDialog extends Dialog {
     }
   }
 
+  public ComboBox<String> getFormatSelector() {
+    return formatSelector;
+  }
+
+  public TextArea getPreviewArea() {
+    return previewArea;
+  }
+
+  public Button getCopyButton() {
+    return copyButton;
+  }
+
+  public Checkbox getIncludeResults() {
+    return includeResults;
+  }
+
+  public Checkbox getIncludeSummary() {
+    return includeSummary;
+  }
+
+  public Checkbox getIncludeNarration() {
+    return includeNarration;
+  }
+
   private void updatePreview() {
     String format = formatSelector.getValue();
     if (format != null) {
       try {
         String content =
             exportService.export(
-                show, format, includeSummary.getValue(), includeResults.getValue());
+                show,
+                format,
+                includeSummary.getValue(),
+                includeResults.getValue(),
+                includeNarration.getValue());
         previewArea.setValue(content);
         copyButton.setEnabled(true);
       } catch (Exception e) {

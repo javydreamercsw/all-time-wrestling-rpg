@@ -87,6 +87,10 @@ class SegmentAdjudicationVenueTest {
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private Universe universe;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      wrestlerStatusService;
+
   private SegmentAdjudicationService adjudicationService;
 
   @BeforeEach
@@ -108,6 +112,7 @@ class SegmentAdjudicationVenueTest {
             retirementService,
             gameSettingService,
             relationshipService,
+            wrestlerStatusService,
             random);
 
     when(universe.getId()).thenReturn(1L);

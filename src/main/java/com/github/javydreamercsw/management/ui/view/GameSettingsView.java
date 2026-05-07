@@ -127,6 +127,15 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
+    Checkbox statusCardsEnabled = new Checkbox("Enable Status Cards Mechanic");
+    statusCardsEnabled.setValue(gameSettingService.isStatusCardsEnabled());
+    statusCardsEnabled.addValueChangeListener(
+        event -> {
+          gameSettingService.setStatusCardsEnabled(event.getValue());
+          Notification.show("Status Cards Mechanic " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
     IntegerField rumorChance = new IntegerField("Daily Rumor Chance (%)");
 
     rumorChance.setMin(0);

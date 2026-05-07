@@ -45,9 +45,10 @@ class ShowExportDialogTest {
 
     List<String> formats = Arrays.asList("Markdown", "Facebook");
     when(exportService.getAvailableFormats()).thenReturn(formats);
-    when(exportService.export(show, "Markdown", true, true)).thenReturn("Markdown Content");
-    when(exportService.export(show, "Facebook", true, true)).thenReturn("Facebook Content");
-    when(exportService.export(show, "Markdown", false, false)).thenReturn("Minimal Content");
+    when(exportService.export(show, "Markdown", true, true, false)).thenReturn("Markdown Content");
+    when(exportService.export(show, "Facebook", true, true, false)).thenReturn("Facebook Content");
+    when(exportService.export(show, "Markdown", false, false, false)).thenReturn("Minimal Content");
+    when(exportService.export(show, "Markdown", true, true, true)).thenReturn("Narration Content");
   }
 
   @Test
@@ -60,6 +61,7 @@ class ShowExportDialogTest {
     assertTrue(dialog.getIncludeResults().getValue());
     assertTrue(dialog.getIncludeSummary().getValue());
     assertTrue(dialog.getCopyButton().isEnabled());
+    assertNotNull(dialog.getIncludeNarration());
   }
 
   @Test
@@ -78,5 +80,14 @@ class ShowExportDialogTest {
     dialog.getIncludeSummary().setValue(false);
 
     assertEquals("Minimal Content", dialog.getPreviewArea().getValue());
+  }
+
+  @Test
+  void testNarrationToggle() {
+    ShowExportDialog dialog = new ShowExportDialog(exportService, notificationService, show);
+
+    dialog.getIncludeNarration().setValue(true);
+
+    assertEquals("Narration Content", dialog.getPreviewArea().getValue());
   }
 }

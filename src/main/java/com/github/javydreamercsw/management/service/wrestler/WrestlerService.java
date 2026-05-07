@@ -139,6 +139,21 @@ public class WrestlerService {
     return wrestlerRepository.findById(id);
   }
 
+  /** Find wrestler by ID and fetch injuries and status cards. */
+  @PreAuthorize("isAuthenticated()")
+  @Transactional(readOnly = true)
+  public Optional<Wrestler> findByIdWithDetails(Long id) {
+    Optional<Wrestler> wrestler = wrestlerRepository.findByIdWithStatuses(id);
+    wrestler.ifPresent(w -> w.getStatuses().size());
+    return wrestler;
+  }
+
+  /** Get all wrestlers (alias for findAll for UI compatibility). */
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> getAllWrestlers() {
+    return findAll();
+  }
+
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByName(@NonNull String name) {

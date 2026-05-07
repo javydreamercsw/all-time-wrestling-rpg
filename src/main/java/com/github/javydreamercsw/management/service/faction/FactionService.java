@@ -299,7 +299,9 @@ public class FactionService {
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
 
     faction.removeMember(state);
-    if (wrestler.equals(faction.getLeader())) {
+
+    // If removing the leader, clear the leader
+    if (faction.getLeader() != null && wrestler.getId().equals(faction.getLeader().getId())) {
       faction.setLeader(null);
     }
 
@@ -335,8 +337,18 @@ public class FactionService {
     }
 
     Faction faction = factionOpt.get();
+
+    if (!faction.isActive()) {
+      log.warn("Faction {} is already disbanded", faction.getName());
+      return Optional.of(faction);
+    }
+
     faction.disband(reason);
-    return Optional.of(factionRepository.saveAndFlush(faction));
+    Faction savedFaction = factionRepository.saveAndFlush(faction);
+
+    log.info("Disbanded faction: {} (reason: {})", faction.getName(), reason);
+
+    return Optional.of(savedFaction);
   }
 
   /** Get faction for a wrestler. */

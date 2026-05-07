@@ -48,6 +48,9 @@ public interface WrestlerRepository
           + " WHERE w.name = :name")
   Optional<Wrestler> findByName(@Param("name") String name);
 
+  @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.statuses WHERE w.id = :id")
+  Optional<Wrestler> findByIdWithStatuses(@Param("id") Long id);
+
   Optional<Wrestler> findByExternalId(String externalId);
 
   @Query(

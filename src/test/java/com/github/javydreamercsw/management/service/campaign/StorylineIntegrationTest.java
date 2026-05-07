@@ -86,6 +86,7 @@ class StorylineIntegrationTest {
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
+  @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private AlignmentService alignmentService;
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -122,6 +123,7 @@ class StorylineIntegrationTest {
             newsGenerationService,
             storylineDirectorService,
             storylineExportService,
+            wrestlerStatusService,
             objectMapper);
   }
 

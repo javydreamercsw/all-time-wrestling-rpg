@@ -160,15 +160,21 @@ public class Faction extends AbstractSyncableEntity<Long> {
   /** Remove a member from the faction. */
   public void removeMember(
       com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
-    if (state != null && members.contains(state)) {
+    if (state != null) {
       members.remove(state);
-      state.setFaction(null);
+      if (state.getFaction() != null && state.getFaction().equals(this)) {
+        state.setFaction(null);
+      }
     }
   }
 
   /** Check if a wrestler is a member of this faction. */
   public boolean hasMember(Wrestler wrestler) {
-    return members.stream().anyMatch(m -> m.getWrestler().equals(wrestler));
+    if (wrestler == null || wrestler.getId() == null) {
+      return false;
+    }
+    return members.stream()
+        .anyMatch(m -> m.getWrestler() != null && wrestler.getId().equals(m.getWrestler().getId()));
   }
 
   /** Get the number of active members. */
