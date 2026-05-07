@@ -38,7 +38,8 @@ import org.jspecify.annotations.Nullable;
 @Setter
 public class TitleReign extends AbstractSyncableEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "title_reign_id")
   private Long id;
 

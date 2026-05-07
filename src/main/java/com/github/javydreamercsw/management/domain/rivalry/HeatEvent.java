@@ -36,7 +36,8 @@ import org.jspecify.annotations.Nullable;
 @Setter
 public class HeatEvent extends AbstractEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "heat_event_id")
   private Long id;
 

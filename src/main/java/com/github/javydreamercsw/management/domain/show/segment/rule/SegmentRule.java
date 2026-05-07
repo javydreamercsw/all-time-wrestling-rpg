@@ -48,7 +48,8 @@ import org.jspecify.annotations.Nullable;
 @Setter
 public class SegmentRule extends AbstractSyncableEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "segment_rule_id")
   private Long id;
 

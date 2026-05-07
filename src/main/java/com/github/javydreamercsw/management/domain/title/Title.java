@@ -44,7 +44,8 @@ import org.jspecify.annotations.Nullable;
 @Setter
 public class Title extends AbstractSyncableEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "title_id")
   private Long id;
 

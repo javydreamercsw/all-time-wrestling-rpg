@@ -46,7 +46,9 @@ public class ShowExportDialog extends Dialog {
   @Getter private final Checkbox includeSummary = new Checkbox("Include Segment Summary", true);
   @Getter private final Checkbox includeNarration = new Checkbox("Include Narration", false);
   @Getter private final TextArea previewArea = new TextArea("Preview");
-  @Getter private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
+
+  @Getter
+  private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
 
   public ShowExportDialog(
       @NonNull ShowExportService exportService,
