@@ -26,7 +26,6 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a wrestler's participation in a multi-wrestler feud. Tracks their role, when they
@@ -39,7 +38,6 @@ import org.jspecify.annotations.Nullable;
 public class FeudParticipant extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "feud_participant_id")
   private Long id;
 

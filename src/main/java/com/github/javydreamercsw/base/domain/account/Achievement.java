@@ -23,7 +23,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -36,7 +35,6 @@ public class Achievement extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "achievement_id")
   private Long id;
 

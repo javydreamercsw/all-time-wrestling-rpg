@@ -55,8 +55,7 @@ import org.jspecify.annotations.Nullable;
 @AllArgsConstructor
 public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerData {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
   @Column(name = "wrestler_id")
   private Long id;
 
@@ -94,8 +93,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   // ==================== ATW RPG FIELDS ====================
 
-  @Enumerated(EnumType.STRING)
-  @Getter(onMethod_ = {@NonNull})
+  @Enumerated(EnumType.STRING) @Getter(onMethod_ = {@NonNull})
   @Column(nullable = false)
   @Builder.Default
   private Gender gender = Gender.MALE;

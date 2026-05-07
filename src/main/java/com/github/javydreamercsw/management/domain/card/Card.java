@@ -33,8 +33,7 @@ import org.jspecify.annotations.Nullable;
 public class Card extends AbstractSyncableEntity<Long> {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
   @Column(name = "card_id")
   private Long id;
 

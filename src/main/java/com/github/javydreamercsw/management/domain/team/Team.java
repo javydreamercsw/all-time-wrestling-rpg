@@ -42,7 +42,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a tag team (2 wrestlers) in the ATW RPG system. Teams are specifically for tag team
@@ -58,7 +57,6 @@ import org.jspecify.annotations.Nullable;
 public class Team extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "team_id")
   private Long id;
 

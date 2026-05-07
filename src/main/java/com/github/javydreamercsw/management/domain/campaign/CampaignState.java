@@ -38,7 +38,9 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "campaign_state")
@@ -55,6 +57,8 @@ public class CampaignState {
   @OneToOne
   @JoinColumn(name = "campaign_id", nullable = false)
   @com.fasterxml.jackson.annotation.JsonIgnore
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private Campaign campaign;
 
   @Column(name = "current_chapter_id")

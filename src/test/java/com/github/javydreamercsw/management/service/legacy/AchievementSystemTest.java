@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -36,6 +37,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -61,9 +63,7 @@ import org.springframework.context.ApplicationEventPublisher;
 @ExtendWith(MockitoExtension.class)
 class AchievementSystemTest {
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository;
-
+  @Mock private LeagueRepository leagueRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
@@ -88,14 +88,9 @@ class AchievementSystemTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
   @Mock private WrestlerRelationshipService relationshipService;
-
   @Mock private RetirementService retirementService;
-
   @Mock private GameSettingService gameSettingService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
+  @Mock private WrestlerStatusService wrestlerStatusService;
 
   @BeforeEach
   public void setUp() {

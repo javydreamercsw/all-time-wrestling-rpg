@@ -24,6 +24,8 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.Clock;
 import java.util.List;
@@ -49,8 +51,7 @@ public class FactionService {
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
   private final UniverseRepository universeRepository;
-  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-      wrestlerStateRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final ExpansionService expansionService;
   private final Clock clock;
   private final DefaultImageService imageService;
@@ -60,8 +61,7 @@ public class FactionService {
       FactionRepository factionRepository,
       WrestlerRepository wrestlerRepository,
       UniverseRepository universeRepository,
-      com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-          wrestlerStateRepository,
+      WrestlerStateRepository wrestlerStateRepository,
       ExpansionService expansionService,
       Clock clock,
       DefaultImageService imageService) {
@@ -343,7 +343,9 @@ public class FactionService {
       return Optional.of(faction);
     }
 
+    List<WrestlerState> members = new java.util.ArrayList<>(faction.getMembers());
     faction.disband(reason);
+    wrestlerStateRepository.saveAllAndFlush(members);
     Faction savedFaction = factionRepository.saveAndFlush(faction);
 
     log.info("Disbanded faction: {} (reason: {})", faction.getName(), reason);

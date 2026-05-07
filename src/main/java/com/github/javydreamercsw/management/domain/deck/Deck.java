@@ -37,7 +37,6 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "deck")
@@ -46,7 +45,6 @@ import org.jspecify.annotations.Nullable;
 public class Deck extends AbstractSyncableEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "deck_id")
   private Long id;
 

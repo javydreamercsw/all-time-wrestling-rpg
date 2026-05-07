@@ -47,8 +47,7 @@ import org.jspecify.annotations.Nullable;
 @AllArgsConstructor
 public class WrestlerContract extends AbstractEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
   @Column(name = "contract_id")
   private Long id;
 

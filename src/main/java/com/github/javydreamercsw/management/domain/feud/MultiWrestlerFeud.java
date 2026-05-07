@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a multi-wrestler feud in the ATW RPG system. Unlike regular rivalries (2 wrestlers) or
@@ -43,7 +42,6 @@ import org.jspecify.annotations.Nullable;
 public class MultiWrestlerFeud extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "multi_wrestler_feud_id")
   private Long id;
 

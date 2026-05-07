@@ -238,6 +238,7 @@ class DataInitializerTest {
             campaignAbilityCardService,
             commentaryService,
             campaignUpgradeService,
+            statusCardService,
             env,
             achievementRepository,
             ringsideActionDataService,

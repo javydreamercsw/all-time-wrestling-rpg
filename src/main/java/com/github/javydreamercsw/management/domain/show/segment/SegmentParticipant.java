@@ -45,8 +45,7 @@ import org.jspecify.annotations.Nullable;
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class SegmentParticipant extends AbstractSyncableEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
   @Column(name = "segment_participant_id")
   private Long id;
 

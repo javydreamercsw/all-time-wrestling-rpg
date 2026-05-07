@@ -51,8 +51,7 @@ import org.jspecify.annotations.Nullable;
 @AllArgsConstructor
 public class Arena extends AbstractSyncableEntity<Long> {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
   @Column(name = "arena_id")
   private Long id;
 

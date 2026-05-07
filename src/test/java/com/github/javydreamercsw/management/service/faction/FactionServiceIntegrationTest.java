@@ -45,9 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private FactionService factionService;
-
   @Autowired private WrestlerService wrestlerService;
-
   @Autowired private UniverseRepository universeRepository;
 
   @MockitoSpyBean private ExpansionService expansionService;

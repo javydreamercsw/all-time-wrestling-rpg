@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a wrestling season in the ATW RPG system. A season is composed of shows and
@@ -44,7 +43,6 @@ import org.jspecify.annotations.Nullable;
 public class Season extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "season_id")
   private Long id;
 

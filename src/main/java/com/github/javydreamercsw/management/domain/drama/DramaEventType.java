@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.domain.drama;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -72,7 +71,6 @@ public enum DramaEventType {
   RELATIONSHIP_MILESTONE(
       "Relationship Milestone", "Key moments in wrestler's personal relationships");
 
-  @Getter(onMethod_ = {@JsonValue})
   private final String displayName;
 
   private final String description;

@@ -25,8 +25,11 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,23 +40,35 @@ import org.junit.jupiter.api.Test;
  */
 public class PlayerViewTest {
 
+  private Universe universe;
   private Wrestler wrestler;
 
   @BeforeEach
   public void setUp() {
+    universe = Universe.builder().id(1L).name("Test Universe").build();
+
     wrestler =
         Wrestler.builder()
             .name("Dashboard Wrestler")
-            .tier(WrestlerTier.MIDCARDER)
             .startingHealth(15)
             .startingStamina(15)
-            .bumps(0)
             .build();
+
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(universe)
+            .tier(WrestlerTier.MIDCARDER)
+            .bumps(0)
+            .currentHealth(15)
+            .build();
+
+    wrestler.setWrestlerStates(Set.of(state));
   }
 
   @Test
   public void testBaseEffectiveStats() {
-    assertEquals(15, wrestler.getEffectiveStartingHealth());
+    assertEquals(15, wrestler.getEffectiveStartingHealth(universe.getId()));
     assertEquals(15, wrestler.getEffectiveStartingStamina());
     assertEquals(0, wrestler.getEffectiveStartingMomentum());
     assertEquals(5, wrestler.getEffectiveHandSize());

@@ -37,7 +37,9 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "campaign")
@@ -71,6 +73,8 @@ public class Campaign {
 
   @OneToOne(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
   @com.fasterxml.jackson.annotation.JsonIgnore
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private CampaignState state;
 
   @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)

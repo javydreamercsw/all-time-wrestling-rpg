@@ -349,12 +349,15 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Stats Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
             .startingHealth(15)
             .startingStamina(15)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state);
 
     login("player", "player123");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
@@ -382,12 +385,15 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Status Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
             .startingHealth(15)
             .startingStamina(15)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state);
 
     StatusCard drawCard =
         statusCardService.createOrUpdateCard(

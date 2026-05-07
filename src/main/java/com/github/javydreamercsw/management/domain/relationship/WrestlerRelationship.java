@@ -42,7 +42,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /** Represents a social relationship between two wrestlers. */
 @Entity
@@ -58,7 +57,6 @@ import org.jspecify.annotations.Nullable;
 public class WrestlerRelationship extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "relationship_id")
   private Long id;
 

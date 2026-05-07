@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.domain.drama;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -40,7 +39,6 @@ public enum DramaEventSeverity {
    */
   MAJOR("Major", "Significant events with lasting consequences", "🚨");
 
-  @Getter(onMethod_ = {@JsonValue})
   private final String displayName;
 
   private final String description;

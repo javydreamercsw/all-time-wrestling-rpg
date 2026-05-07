@@ -36,7 +36,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "news_item")
@@ -48,7 +47,6 @@ import org.jspecify.annotations.Nullable;
 public class NewsItem extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "news_item_id")
   private Long id;
 

@@ -40,7 +40,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a drama event in the ATW RPG system. Drama events are random occurrences that can
@@ -56,7 +55,6 @@ import org.jspecify.annotations.Nullable;
 public class DramaEvent extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
   @Column(name = "drama_event_id")
   private Long id;
 

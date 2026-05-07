@@ -44,8 +44,7 @@ import org.jspecify.annotations.Nullable;
 public class Universe extends AbstractEntity<Long> {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Getter(onMethod_ = {@Nullable})
+  @GeneratedValue(strategy = GenerationType.IDENTITY) @Getter(onMethod_ = {@Nullable})
   private Long id;
 
   @Column(name = "name", nullable = false, unique = true)

@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -86,10 +87,7 @@ class SegmentAdjudicationVenueTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private Universe universe;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
+  @Mock private WrestlerStatusService wrestlerStatusService;
 
   private SegmentAdjudicationService adjudicationService;
 
