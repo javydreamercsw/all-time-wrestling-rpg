@@ -239,9 +239,26 @@ public class NarrationDialog extends Dialog {
     if (segment.getReferee() != null) {
       refereeField.setValue(segment.getReferee());
     }
-    wrestlerService
-        .findAllBySegment(segment, universeContextService.getCurrentUniverseId())
-        .forEach(this::addTeamSelector);
+    java.util.Map<
+            Integer, java.util.List<com.github.javydreamercsw.management.domain.wrestler.Wrestler>>
+        byTeam = this.segment.getWrestlersByTeam();
+    if (byTeam.isEmpty()) {
+      // Fallback for legacy data: one row per wrestler, each in their own team
+      wrestlerService.findAllBySegment(this.segment).forEach(this::addTeamSelector);
+    } else {
+      byTeam.forEach(
+          (teamNumber, wrestlers) -> {
+            List<WrestlerDTO> dtos =
+                wrestlers.stream()
+                    .map(
+                        w ->
+                            wrestlerService
+                                .findByIdAsDTO(w.getId())
+                                .orElseGet(() -> new WrestlerDTO(w)))
+                    .collect(java.util.stream.Collectors.toList());
+            addTeamSelector(dtos);
+          });
+    }
 
     VerticalLayout layout =
         new VerticalLayout(
@@ -260,6 +277,10 @@ public class NarrationDialog extends Dialog {
   }
 
   private void addTeamSelector(@NonNull WrestlerDTO wrestler) {
+    addTeamSelector(List.of(wrestler));
+  }
+
+  private void addTeamSelector(@NonNull List<WrestlerDTO> wrestlers) {
     int teamNumber = teamsLayout.getComponentCount() + 1;
     MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
         new MultiSelectComboBox<>("Team " + teamNumber);
@@ -269,7 +290,7 @@ public class NarrationDialog extends Dialog {
         wrestlerService.findAllAsDTO(universeContextService.getCurrentUniverseId()).stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
-    wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
+    wrestlersCombo.setValue(new HashSet<>(wrestlers));
 
     Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
     removeTeamButton.addThemeVariants(ButtonVariant.LUMO_ERROR);

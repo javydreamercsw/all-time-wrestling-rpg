@@ -105,5 +105,5 @@
   "description": "A team vs. Team match. No tags allowed. The first team to eliminate all members of the opposing team wins.",
   "requiresHighHeat": true,
   "noDq": false,
-  "bumpAddition": "NONE"
+  "bumpAddition": "ALL"
 } ]

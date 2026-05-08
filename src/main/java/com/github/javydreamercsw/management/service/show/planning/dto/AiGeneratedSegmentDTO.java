@@ -28,5 +28,6 @@ public class AiGeneratedSegmentDTO {
   private String type; // e.g., "match", "promo", "interview", "angle"
   private String description;
   private String outcome;
+  private String notes;
   private java.util.List<String> participants;
 }

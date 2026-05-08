@@ -869,47 +869,103 @@ public class ShowDetailView extends Main
     genderFilter.setValue(defaultGender);
     genderFilter.setId("add-gender-filter-combo-box");
 
-    // Wrestlers selection (multi-select)
-    MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
-    wrestlersCombo.setWidthFull();
-    wrestlersCombo.setRequired(true);
-    wrestlersCombo.setId("wrestlers-combo-box");
-
-    // Filter logic helper
-
-    java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
-        selected -> {
-          AlignmentType alignment = alignmentFilter.getValue();
-
-          Gender gender = genderFilter.getValue();
-
-          wrestlersCombo.setItems(
-              wrestlerService.findAllFiltered(
-                  alignment, gender, universeContextService.getCurrentUniverseId(), selected));
-        };
-
-    refreshWrestlers.accept(new HashSet<>());
-
-    alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
-    genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
-
-    // Winner selection (will be populated based on selected wrestlers)
-    ComboBox<Wrestler> winnerCombo = new ComboBox<>("Winner (Optional)");
+    // Winner combo (defined first so team lambdas can capture it)
+    MultiSelectComboBox<Wrestler> winnerCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnerCombo.setItemLabelGenerator(Wrestler::getName);
     winnerCombo.setWidthFull();
     winnerCombo.setClearButtonVisible(true);
     winnerCombo.setId("winner-combo-box");
 
-    // Update winner options when wrestlers change
-    wrestlersCombo.addValueChangeListener(
-        e -> {
+    // Teams layout — one row per team
+    List<MultiSelectComboBox<Wrestler>> addTeamCombos = new ArrayList<>();
+    VerticalLayout addTeamsLayout = new VerticalLayout();
+    addTeamsLayout.setSpacing(true);
+    addTeamsLayout.setPadding(false);
+
+    Runnable refreshAddWinners =
+        () -> {
+          Set<Wrestler> allSelected =
+              addTeamCombos.stream()
+                  .flatMap(c -> c.getValue().stream())
+                  .collect(Collectors.toSet());
+          Set<Wrestler> currentWinners = new HashSet<>(winnerCombo.getValue());
           winnerCombo.setItems(
-              e.getValue().stream()
+              allSelected.stream()
                   .sorted(Comparator.comparing(Wrestler::getName))
                   .collect(Collectors.toList()));
-          winnerCombo.clear();
+          winnerCombo.setValue(
+              currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
+        };
+
+    java.util.function.Consumer<Set<Wrestler>> addAddTeamRow =
+        initialWrestlers -> {
+          int teamNumber = addTeamCombos.size() + 1;
+          MultiSelectComboBox<Wrestler> teamCombo = new MultiSelectComboBox<>("Team " + teamNumber);
+          teamCombo.setItemLabelGenerator(Wrestler::getName);
+          teamCombo.setWidthFull();
+          teamCombo.setId("add-team-combo-" + teamNumber);
+          teamCombo.setItems(
+              wrestlerService.findAllFiltered(
+                  alignmentFilter.getValue(), genderFilter.getValue(), initialWrestlers));
+          if (!initialWrestlers.isEmpty()) {
+            teamCombo.setValue(initialWrestlers);
+          }
+          teamCombo.addValueChangeListener(e -> refreshAddWinners.run());
+          addTeamCombos.add(teamCombo);
+
+          Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
+          removeTeamButton.addThemeVariants(
+              ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
+          removeTeamButton.setTooltipText("Remove Team");
+          HorizontalLayout teamRow = new HorizontalLayout(teamCombo, removeTeamButton);
+          teamRow.setFlexGrow(1, teamCombo);
+          teamRow.setAlignItems(HorizontalLayout.Alignment.END);
+          teamRow.setWidthFull();
+          removeTeamButton.addClickListener(
+              e -> {
+                addTeamsLayout.remove(teamRow);
+                addTeamCombos.remove(teamCombo);
+                for (int i = 0; i < addTeamCombos.size(); i++) {
+                  addTeamCombos.get(i).setLabel("Team " + (i + 1));
+                }
+                refreshAddWinners.run();
+              });
+          addTeamsLayout.add(teamRow);
+          refreshAddWinners.run();
+        };
+
+    // Start with two empty teams
+    addAddTeamRow.accept(new HashSet<>());
+    addAddTeamRow.accept(new HashSet<>());
+
+    alignmentFilter.addValueChangeListener(
+        e -> {
+          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(
+                wrestlerService.findAllFiltered(e.getValue(), genderFilter.getValue(), current));
+            combo.setValue(current);
+          }
         });
+    genderFilter.addValueChangeListener(
+        e -> {
+          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(
+                wrestlerService.findAllFiltered(alignmentFilter.getValue(), e.getValue(), current));
+            combo.setValue(current);
+          }
+        });
+
+    Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
+    addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    addTeamButton.setId("add-add-team-button");
+    addTeamButton.addClickListener(e -> addAddTeamRow.accept(new HashSet<>()));
+
+    VerticalLayout addTeamsSection = new VerticalLayout(addTeamsLayout, addTeamButton);
+    addTeamsSection.setSpacing(false);
+    addTeamsSection.setPadding(false);
+    formLayout.setColspan(addTeamsSection, 2);
 
     // Add title selection for new segments
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
@@ -957,7 +1013,7 @@ public class ShowDetailView extends Main
         refereeCombo,
         alignmentFilter,
         genderFilter,
-        wrestlersCombo,
+        addTeamsSection,
         winnerCombo,
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
@@ -970,10 +1026,11 @@ public class ShowDetailView extends Main
         new Button(
             "Add Segment",
             e -> {
-              Set<Wrestler> winners = new HashSet<>();
-              if (winnerCombo.getValue() != null) {
-                winners.add(winnerCombo.getValue());
+              java.util.Map<Integer, List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
+              for (int i = 0; i < addTeamCombos.size(); i++) {
+                teamMap.put(i + 1, new ArrayList<>(addTeamCombos.get(i).getValue()));
               }
+              Set<Wrestler> winners = winnerCombo.getValue();
               // Create a new segment object to pass to validation
               Segment newSegment = new Segment();
               newSegment.setNarration(narrationArea.getValue());
@@ -986,7 +1043,7 @@ public class ShowDetailView extends Main
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
               newSegment.setIsTitleSegment(isTitleSegment);
               newSegment.setIsNpcGenerated(false);
-              newSegment.syncParticipants(new ArrayList<>(wrestlersCombo.getValue()));
+              newSegment.syncParticipants(teamMap);
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
               newSegment.setSegmentType(segmentTypeCombo.getValue());
               newSegment.setWinners(new ArrayList<>(winners));
@@ -1000,7 +1057,7 @@ public class ShowDetailView extends Main
               if (validateAndSaveSegment(
                   show,
                   segmentTypeCombo.getValue(),
-                  wrestlersCombo.getValue(),
+                  teamMap,
                   winners,
                   rulesCombo.getValue(),
                   newSegment)) {
@@ -1094,50 +1151,105 @@ public class ShowDetailView extends Main
     genderFilter.setValue(defaultGender);
     genderFilter.setId("edit-gender-filter-combo-box");
 
-    // Wrestlers selection (multi-select)
-    MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
-    wrestlersCombo.setWidthFull();
-    wrestlersCombo.setRequired(true);
-    wrestlersCombo.setId("edit-wrestlers-combo-box");
-
-    // Winner selection (multi-select)
+    // Winners combo (defined first so team lambdas can capture it)
     MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
     winnersCombo.setWidthFull();
     winnersCombo.setId("edit-winners-combo-box");
 
-    wrestlersCombo.addValueChangeListener(
-        e -> {
+    // Teams layout — one row per team, matching the NarrationDialog pattern
+    List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
+    VerticalLayout teamsLayout = new VerticalLayout();
+    teamsLayout.setSpacing(true);
+    teamsLayout.setPadding(false);
+
+    Runnable refreshWinners =
+        () -> {
+          Set<Wrestler> allSelected =
+              teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
+          Set<Wrestler> currentWinners = new HashSet<>(winnersCombo.getValue());
           winnersCombo.setItems(
-              e.getValue().stream()
+              allSelected.stream()
                   .sorted(Comparator.comparing(Wrestler::getName))
                   .collect(Collectors.toList()));
-          // Clear winners if selected participants no longer include them
           winnersCombo.setValue(
-              winnersCombo.getValue().stream()
-                  .filter(e.getValue()::contains)
-                  .collect(Collectors.toSet()));
-        });
-
-    // Filter logic helper
-    java.util.function.Consumer<Set<Wrestler>> refreshWrestlers =
-        selected -> {
-          AlignmentType alignment = alignmentFilter.getValue();
-
-          Gender gender = genderFilter.getValue();
-
-          wrestlersCombo.setItems(
-              wrestlerService.findAllFiltered(
-                  alignment, gender, universeContextService.getCurrentUniverseId(), selected));
+              currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
         };
 
-    // Initial population: set items FIRST, then value
-    refreshWrestlers.accept(new HashSet<>(segment.getWrestlers()));
-    wrestlersCombo.setValue(new HashSet<>(segment.getWrestlers()));
+    java.util.function.Consumer<Set<Wrestler>> addTeamRow =
+        initialWrestlers -> {
+          MultiSelectComboBox<Wrestler> teamCombo =
+              new MultiSelectComboBox<>("Team " + (teamCombos.size() + 1));
+          teamCombo.setItemLabelGenerator(Wrestler::getName);
+          teamCombo.setWidthFull();
+          teamCombo.setItems(
+              wrestlerService.findAllFiltered(
+                  alignmentFilter.getValue(), genderFilter.getValue(), initialWrestlers));
+          if (!initialWrestlers.isEmpty()) {
+            teamCombo.setValue(initialWrestlers);
+          }
+          teamCombo.addValueChangeListener(e -> refreshWinners.run());
+          teamCombos.add(teamCombo);
 
-    alignmentFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
-    genderFilter.addValueChangeListener(e -> refreshWrestlers.accept(wrestlersCombo.getValue()));
+          Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
+          removeTeamButton.addThemeVariants(
+              ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
+          removeTeamButton.setTooltipText("Remove Team");
+          HorizontalLayout teamRow = new HorizontalLayout(teamCombo, removeTeamButton);
+          teamRow.setFlexGrow(1, teamCombo);
+          teamRow.setAlignItems(HorizontalLayout.Alignment.END);
+          teamRow.setWidthFull();
+          removeTeamButton.addClickListener(
+              e -> {
+                teamsLayout.remove(teamRow);
+                teamCombos.remove(teamCombo);
+                for (int i = 0; i < teamCombos.size(); i++) {
+                  teamCombos.get(i).setLabel("Team " + (i + 1));
+                }
+                refreshWinners.run();
+              });
+          teamsLayout.add(teamRow);
+          refreshWinners.run();
+        };
+
+    // One team per existing wrestler; fall back to two empty teams for a new segment
+    for (Wrestler w : segment.getWrestlers()) {
+      addTeamRow.accept(new HashSet<>(Set.of(w)));
+    }
+    if (teamCombos.isEmpty()) {
+      addTeamRow.accept(new HashSet<>());
+      addTeamRow.accept(new HashSet<>());
+    }
+
+    // Keep team combo items in sync with alignment/gender filters
+    alignmentFilter.addValueChangeListener(
+        e -> {
+          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(
+                wrestlerService.findAllFiltered(e.getValue(), genderFilter.getValue(), current));
+            combo.setValue(current);
+          }
+        });
+    genderFilter.addValueChangeListener(
+        e -> {
+          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(
+                wrestlerService.findAllFiltered(alignmentFilter.getValue(), e.getValue(), current));
+            combo.setValue(current);
+          }
+        });
+
+    Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
+    addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    addTeamButton.setId("edit-add-team-button");
+    addTeamButton.addClickListener(e -> addTeamRow.accept(new HashSet<>()));
+
+    VerticalLayout teamsSection = new VerticalLayout(teamsLayout, addTeamButton);
+    teamsSection.setSpacing(false);
+    teamsSection.setPadding(false);
+    formLayout.setColspan(teamsSection, 2);
 
     winnersCombo.setValue(new HashSet<>(segment.getWinners()));
 
@@ -1192,7 +1304,7 @@ public class ShowDetailView extends Main
         refereeCombo,
         alignmentFilter,
         genderFilter,
-        wrestlersCombo,
+        teamsSection,
         winnersCombo,
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
@@ -1216,10 +1328,14 @@ public class ShowDetailView extends Main
               if (isTitleSegment) {
                 segment.setTitles(titleMultiSelectComboBox.getValue());
               }
+              java.util.Map<Integer, List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
+              for (int i = 0; i < teamCombos.size(); i++) {
+                teamMap.put(i + 1, new ArrayList<>(teamCombos.get(i).getValue()));
+              }
               if (validateAndSaveSegment(
                   segment.getShow(),
                   segmentTypeCombo.getValue(),
-                  wrestlersCombo.getValue(),
+                  teamMap,
                   winnersCombo.getValue(),
                   rulesCombo.getValue(),
                   segment)) {
@@ -1276,10 +1392,12 @@ public class ShowDetailView extends Main
   private boolean validateAndSaveSegment(
       @NonNull Show show,
       SegmentType segmentType,
-      Set<Wrestler> wrestlers,
+      java.util.Map<Integer, List<Wrestler>> teamWrestlers,
       Set<Wrestler> winners,
       Set<SegmentRule> rules,
       Segment segmentToUpdate) {
+    Set<Wrestler> wrestlers =
+        teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
     log.info("Validating and saving segment: {}", segmentToUpdate);
     // Validation
     if (segmentType == null) {
@@ -1289,7 +1407,7 @@ public class ShowDetailView extends Main
     }
 
     if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
-      if (wrestlers == null || wrestlers.isEmpty()) {
+      if (wrestlers.isEmpty()) {
         log.warn("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");
         return false;
@@ -1316,7 +1434,7 @@ public class ShowDetailView extends Main
       Segment segment;
       if (segmentToUpdate != null && segmentToUpdate.getId() != null) {
         segment = segmentToUpdate;
-        segment.syncParticipants(new ArrayList<>(wrestlers));
+        segment.syncParticipants(teamWrestlers);
         segment.syncSegmentRules(new ArrayList<>(rules));
         segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
         log.info("Updating existing segment: {}", segment.getId());
@@ -1337,7 +1455,7 @@ public class ShowDetailView extends Main
           segment.setIsNpcGenerated(false);
         }
 
-        segment.syncParticipants(new ArrayList<>(wrestlers));
+        segment.syncParticipants(teamWrestlers);
         segment.syncSegmentRules(new ArrayList<>(rules));
         log.info("Creating new segment for show: {}", show.getName());
       }

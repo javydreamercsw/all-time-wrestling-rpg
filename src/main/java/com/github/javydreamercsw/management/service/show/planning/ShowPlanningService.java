@@ -279,6 +279,7 @@ public class ShowPlanningService {
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getNarration());
       segment.setSummary(proposedSegment.getSummary());
+      segment.setNotes(proposedSegment.getNotes());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {

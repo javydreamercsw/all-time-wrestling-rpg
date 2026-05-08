@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.match;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.CampaignContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.CommentatorContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
@@ -26,6 +27,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
@@ -887,6 +889,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
       }
 
+      if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+        instructions +=
+            "\n\nExisting Description/Story Beats (MUST be expanded and followed):\n"
+                + segment.getNarration();
+      }
+
       if (segment.getReferee() != null) {
         instructions +=
             "\n\nThe assigned referee for this match is: " + segment.getReferee().getName() + ".";
@@ -897,6 +905,42 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       // Apply Title Effects
       if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
         titleScriptService.applyTitleEffects(context, segment.getTitles());
+      }
+
+      // Campaign Context
+      Wrestler playerWrestler =
+          securityUtils.getAuthenticatedUser().map(CustomUserDetails::getWrestler).orElse(null);
+      if (playerWrestler != null) {
+        campaignRepository
+            .findActiveByWrestler(playerWrestler)
+            .ifPresent(
+                campaign -> {
+                  CampaignState state = campaign.getState();
+                  if (state != null) {
+                    CampaignContext cc = new CampaignContext();
+                    try {
+                      cc.setChapter(Integer.parseInt(state.getCurrentChapterId()));
+                    } catch (NumberFormatException e) {
+                      cc.setChapter(0);
+                    }
+                    cc.setAlignmentType(
+                        playerWrestler.getAlignment() != null
+                            ? playerWrestler.getAlignment().getAlignmentType().name()
+                            : "NEUTRAL");
+                    cc.setAlignmentLevel(
+                        playerWrestler.getAlignment() != null
+                            ? playerWrestler.getAlignment().getLevel()
+                            : 0);
+                    cc.setCurrentRival(
+                        state.getRival() != null ? state.getRival().getName() : null);
+                    cc.setActiveInjuries(
+                        playerWrestler.getActiveInjuries().stream()
+                            .map(com.github.javydreamercsw.management.domain.injury.Injury::getName)
+                            .toList());
+
+                    context.setCampaignContext(cc);
+                  }
+                });
       }
 
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);

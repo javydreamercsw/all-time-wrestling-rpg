@@ -117,6 +117,20 @@ class SegmentSyncServiceTest {
 
     boolean result = segmentSyncService.processSingleSegment(dto);
     assertTrue(result);
-    verify(segmentService).updateSegment(any(Segment.class));
+    verify(existingSegment, times(1)).syncParticipants(any(java.util.List.class));
+    verify(segmentService, times(1)).updateSegment(existingSegment);
+
+    // Verify participants were updated correctly
+    List<String> participantNames = new ArrayList<>();
+    existingSegment.getParticipants().forEach(p -> participantNames.add(p.getWrestler().getName()));
+    assertTrue(participantNames.contains("Wrestler A"));
+    assertTrue(participantNames.contains("Wrestler C"));
+    assertTrue(participantNames.size() == 2);
+
+    // Verify winners were updated correctly
+    List<String> winnerNames = new ArrayList<>();
+    existingSegment.getWinners().forEach(w -> winnerNames.add(w.getName()));
+    assertTrue(winnerNames.contains("Wrestler C"));
+    assertTrue(winnerNames.size() == 1);
   }
 }

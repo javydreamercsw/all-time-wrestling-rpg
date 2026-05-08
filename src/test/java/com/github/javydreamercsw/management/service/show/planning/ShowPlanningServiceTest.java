@@ -96,6 +96,69 @@ class ShowPlanningServiceTest {
     show.setName("Test Show");
     show.setShowDate(today);
 
+    ProposedSegment proposedSegment = new ProposedSegment();
+    proposedSegment.setType("Singles Match");
+    proposedSegment.setNarration("A great match");
+    proposedSegment.setSummary("A summary of the match");
+    proposedSegment.setNotes("AI should focus on technical wrestling");
+    proposedSegment.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    proposedSegment.setWinners(List.of("Wrestler A"));
+    proposedSegment.setIsTitleSegment(true);
+    Title title = new Title();
+    title.setId(1L);
+    title.setName("World Championship");
+    proposedSegment.setTitles(Set.of(title));
+    proposedSegment.setRules(List.of("Rule 1"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Singles Match");
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.of(segmentType));
+
+    Wrestler wrestlerA = new Wrestler();
+    wrestlerA.setId(1L);
+    wrestlerA.setName("Wrestler A");
+    when(wrestlerRepository.findByName("Wrestler A")).thenReturn(Optional.of(wrestlerA));
+
+    Wrestler wrestlerB = new Wrestler();
+    wrestlerB.setId(2L);
+    wrestlerB.setName("Wrestler B");
+    when(wrestlerRepository.findByName("Wrestler B")).thenReturn(Optional.of(wrestlerB));
+
+    SegmentRule rule1 = new SegmentRule();
+    rule1.setId(1L);
+    rule1.setName("Rule 1");
+    when(segmentRuleRepository.findByName("Rule 1")).thenReturn(Optional.of(rule1));
+
+    // Execute
+    showPlanningService.approveSegments(show, List.of(proposedSegment));
+
+    // Verify
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> capturedSegments = segmentsCaptor.getValue();
+    assertEquals(1, capturedSegments.size());
+    Segment capturedSegment = capturedSegments.get(0);
+
+    assertEquals("A great match", capturedSegment.getNarration());
+    assertEquals("A summary of the match", capturedSegment.getSummary());
+    assertEquals("AI should focus on technical wrestling", capturedSegment.getNotes());
+    assertTrue(capturedSegment.getIsTitleSegment());
+    assertEquals(1, capturedSegment.getTitles().size());
+    assertEquals("World Championship", capturedSegment.getTitles().iterator().next().getName());
+    assertEquals(1, capturedSegment.getSegmentRules().size());
+    assertEquals("Rule 1", capturedSegment.getSegmentRules().iterator().next().getName());
+    assertEquals(2, capturedSegment.getParticipants().size());
+    assertEquals(1, capturedSegment.getWinners().size());
+    assertEquals("Wrestler A", capturedSegment.getWinners().iterator().next().getName());
+  }
+
+  @Test
+  void testGetShowPlanningContext_FiltersInactiveWrestlers() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
     ShowType showType = new ShowType();
     showType.setName("TV");
     show.setType(showType);

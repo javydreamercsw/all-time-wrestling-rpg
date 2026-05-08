@@ -145,9 +145,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     WebElement segmentTypeComboBox = dialog.findElement(By.id("segment-type-combo-box"));
     selectFromVaadinComboBox(segmentTypeComboBox, "One on One");
 
-    WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "André the Giant");
-    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Brian Pillman");
+    WebElement team1ComboBox = dialog.findElement(By.id("add-team-combo-1"));
+    selectFromVaadinMultiSelectComboBox(team1ComboBox, "André the Giant");
+
+    WebElement team2ComboBox = dialog.findElement(By.id("add-team-combo-2"));
+    selectFromVaadinMultiSelectComboBox(team2ComboBox, "Brian Pillman");
 
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));

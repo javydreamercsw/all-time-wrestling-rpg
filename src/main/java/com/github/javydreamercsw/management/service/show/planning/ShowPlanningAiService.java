@@ -91,6 +91,7 @@ public class ShowPlanningAiService {
                     segment.setType(dto.getType());
                     segment.setNarration(dto.getDescription());
                     segment.setSummary(dto.getOutcome());
+                    segment.setNotes(dto.getNotes());
                     segment.setParticipants(dto.getParticipants());
                     return segment;
                   })
@@ -362,6 +363,8 @@ public class ShowPlanningAiService {
     }
     prompt.append("  \"description\": \"string\",\n");
     prompt.append("  \"outcome\": \"string\",\n");
+    prompt.append(
+        "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
     prompt.append("  \"participants\": [\"string\"]\n");
     prompt.append("}\n");
     prompt.append("```\n\n");
