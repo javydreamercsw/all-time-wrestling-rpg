@@ -1,12 +1,26 @@
 # Changelog
 
-## [v1.7.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.3) (2026-05-01)
+## [v1.8.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.0) (2026-05-08)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.3...v1.7.3)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.3...v1.8.0)
 
 **Implemented enhancements:**
 
+- feat: implement double-sided Status Cards mechanic for Women's Edition expansion [\#274](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/274) ([javydreamercsw](https://github.com/javydreamercsw))
 - Feature: arena home field and attendance [\#272](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/272) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Fixed bugs:**
+
+- fix\(ai\): ensure AI respects match feedback and story beats \(\#280\) [\#281](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/281) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-war-plugin from 3.4.0 to 3.5.1 [\#279](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/279) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump com.github.oshi:oshi-core from 7.0.0 to 7.0.1 [\#278](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/278) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.codehaus.mojo:build-helper-maven-plugin from 3.5.0 to 3.6.1 [\#277](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/277) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-antrun-plugin from 3.1.0 to 3.2.0 [\#276](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/276) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.openrewrite.maven:rewrite-maven-plugin from 6.37.0 to 6.38.0 [\#275](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/275) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump the npm\_and\_yarn group across 2 directories with 2 updates [\#273](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/273) ([dependabot[bot]](https://github.com/apps/dependabot))
 
 ## [v1.7.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.3) (2026-04-30)
 

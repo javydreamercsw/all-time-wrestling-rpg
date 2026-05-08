@@ -10,7 +10,3 @@ View detailed information about any wrestler, including their core stats (Drive,
 
 ---
 
-## Fan Mechanics
-
-A wrestler's popularity is measured in **Fans**. As you climb the tiers (from Rookie to Icon), gaining new fans becomes progressively harder due to diminishing returns. High-tier wrestlers (Contenders and above) receive a slight reduction in raw fan gains, which are then rounded to the nearest 1,000 to reflect their status as major stars.
-
