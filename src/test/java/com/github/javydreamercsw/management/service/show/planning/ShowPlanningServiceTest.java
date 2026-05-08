@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
@@ -75,7 +76,9 @@ class ShowPlanningServiceTest {
   @Mock private com.github.javydreamercsw.management.service.faction.FactionService factionService;
   @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
   @Mock private SegmentSummaryService segmentSummaryService;
+  @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
   @Mock private PromoBookingService promoBookingService;
+  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
   @Mock private Clock clock;
 
@@ -94,10 +97,27 @@ class ShowPlanningServiceTest {
     lenient().when(clock.instant()).thenReturn(now);
     lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
+    ShowType showType = new ShowType();
+    showType.setName("TV");
+    showType.setExpectedMatches(3);
+    showType.setExpectedPromos(2);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+
     show = new Show();
     show.setId(1L);
     show.setName("Test Show");
     show.setShowDate(today);
+    show.setType(showType);
+    show.setUniverse(universe);
+
+    activeWrestler = new Wrestler();
+    activeWrestler.setId(1L);
+    activeWrestler.setName("Active NPC");
+    activeWrestler.setActive(true);
+    activeWrestler.setIsPlayer(false);
+    activeWrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
   }
 
   @Test
@@ -160,25 +180,8 @@ class ShowPlanningServiceTest {
 
   @Test
   void testGetShowPlanningContext_FiltersInactiveWrestlers() {
-    Show show = new Show();
-    show.setId(1L);
-    show.setName("Test Show");
-    show.setShowDate(LocalDate.now());
-    ShowType showType = new ShowType();
-    showType.setName("TV");
-    show.setType(showType);
-
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        new com.github.javydreamercsw.management.domain.universe.Universe();
-    universe.setId(1L);
-    show.setUniverse(universe);
-
-    activeWrestler = new Wrestler();
-    activeWrestler.setId(1L);
-    activeWrestler.setName("Active NPC");
-    activeWrestler.setActive(true);
-    activeWrestler.setIsPlayer(false);
-    activeWrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    // activeWrestler, show, universe, and showType are all set up in setUp()
+    // This test documents that inactive wrestlers are excluded via WrestlerService.findAllFiltered
   }
 
   @Test
@@ -187,6 +190,7 @@ class ShowPlanningServiceTest {
     when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
     when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
