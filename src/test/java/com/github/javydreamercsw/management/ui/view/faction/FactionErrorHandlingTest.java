@@ -250,7 +250,6 @@ class FactionErrorHandlingTest {
             factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
 
     Long nonExistentFactionId = 999L;
-    Long wrestlerId = 1L;
 
     when(factionService.getFactionById(nonExistentFactionId)).thenReturn(Optional.empty());
 

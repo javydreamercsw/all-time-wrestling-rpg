@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
+import com.github.javydreamercsw.management.ui.view.campaign.StatusCardListView;
 import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
 import com.github.javydreamercsw.management.ui.view.season.SeasonSettingsView;
 import com.vaadin.flow.component.Component;
@@ -98,6 +99,7 @@ public class AdminView extends VerticalLayout {
         new Tab("Holidays"),
         new Tab("Season Settings"),
         new Tab("Campaign Cards"),
+        new Tab("Status Cards"),
         new Tab("Expansion Management"),
         new Tab("Wrestler Relationships"));
   }
@@ -113,6 +115,7 @@ public class AdminView extends VerticalLayout {
     SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
     CampaignAbilityCardListView campaignAbilityCardListView =
         instantiator.getOrCreate(CampaignAbilityCardListView.class);
+    StatusCardListView statusCardListView = instantiator.getOrCreate(StatusCardListView.class);
     ExpansionManagementView expansionManagementView =
         instantiator.getOrCreate(ExpansionManagementView.class);
     WrestlerRelationshipManagementView relationshipManagementView =
@@ -126,6 +129,7 @@ public class AdminView extends VerticalLayout {
             holidayListView,
             seasonSettingsView,
             campaignAbilityCardListView,
+            statusCardListView,
             expansionManagementView,
             relationshipManagementView);
     pages.setSizeFull();
@@ -138,8 +142,9 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(3), holidayListView,
             tabs.getTabAt(4), seasonSettingsView,
             tabs.getTabAt(5), campaignAbilityCardListView,
-            tabs.getTabAt(6), expansionManagementView,
-            tabs.getTabAt(7), relationshipManagementView);
+            tabs.getTabAt(6), statusCardListView,
+            tabs.getTabAt(7), expansionManagementView,
+            tabs.getTabAt(8), relationshipManagementView);
 
     tabs.addSelectedChangeListener(
         event -> {
@@ -151,6 +156,12 @@ public class AdminView extends VerticalLayout {
           }
           if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
             rmv.refresh();
+          }
+          if (selectedPage instanceof StatusCardListView sclv) {
+            sclv.refresh();
+          }
+          if (selectedPage instanceof CampaignAbilityCardListView caclv) {
+            caclv.refresh();
           }
         });
 

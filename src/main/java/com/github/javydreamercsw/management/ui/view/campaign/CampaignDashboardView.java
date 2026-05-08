@@ -817,7 +817,7 @@ public class CampaignDashboardView extends VerticalLayout {
       Anchor downloadAnchor =
           new Anchor(
               DownloadHandler.fromInputStream(
-                  (event) -> {
+                  event -> {
                     try {
                       String json = storylineExportService.exportStorylineAsChapter(storyline);
                       byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);

@@ -56,11 +56,16 @@ public class ShowExportService {
    * @param formatName the name of the format to use
    * @param includeSummary whether to include segment summaries
    * @param includeResults whether to include match results
+   * @param includeNarration whether to include segment narration
    * @return formatted show card text
    * @throws IllegalArgumentException if format is not found
    */
   public String export(
-      Show show, String formatName, boolean includeSummary, boolean includeResults) {
+      Show show,
+      String formatName,
+      boolean includeSummary,
+      boolean includeResults,
+      boolean includeNarration) {
     ShowCardFormatter formatter =
         formatters.stream()
             .filter(f -> f.getFormatName().equalsIgnoreCase(formatName))
@@ -69,6 +74,6 @@ public class ShowExportService {
                 () -> new IllegalArgumentException("Unknown export format: " + formatName));
 
     List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
-    return formatter.format(show, segments, includeSummary, includeResults);
+    return formatter.format(show, segments, includeSummary, includeResults, includeNarration);
   }
 }

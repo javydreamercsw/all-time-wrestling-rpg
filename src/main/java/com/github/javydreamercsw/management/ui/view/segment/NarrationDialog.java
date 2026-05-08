@@ -152,6 +152,7 @@ public class NarrationDialog extends Dialog {
     feedbackArea = new TextArea("Feedback");
     feedbackArea.setWidthFull();
     feedbackArea.setPlaceholder("Provide feedback to the AI to improve the narration...");
+    feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
 
     regenerateButton = new Button("Regenerate with Feedback");
     regenerateButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -238,7 +239,26 @@ public class NarrationDialog extends Dialog {
     if (segment.getReferee() != null) {
       refereeField.setValue(segment.getReferee());
     }
-    wrestlerService.findAllBySegment(segment).forEach(this::addTeamSelector);
+    java.util.Map<
+            Integer, java.util.List<com.github.javydreamercsw.management.domain.wrestler.Wrestler>>
+        byTeam = this.segment.getWrestlersByTeam();
+    if (byTeam.isEmpty()) {
+      // Fallback for legacy data: one row per wrestler, each in their own team
+      wrestlerService.findAllBySegment(this.segment).forEach(this::addTeamSelector);
+    } else {
+      byTeam.forEach(
+          (teamNumber, wrestlers) -> {
+            List<WrestlerDTO> dtos =
+                wrestlers.stream()
+                    .map(
+                        w ->
+                            wrestlerService
+                                .findByIdAsDTO(w.getId())
+                                .orElseGet(() -> new WrestlerDTO(w)))
+                    .collect(java.util.stream.Collectors.toList());
+            addTeamSelector(dtos);
+          });
+    }
 
     VerticalLayout layout =
         new VerticalLayout(
@@ -257,6 +277,10 @@ public class NarrationDialog extends Dialog {
   }
 
   private void addTeamSelector(@NonNull WrestlerDTO wrestler) {
+    addTeamSelector(List.of(wrestler));
+  }
+
+  private void addTeamSelector(@NonNull List<WrestlerDTO> wrestlers) {
     int teamNumber = teamsLayout.getComponentCount() + 1;
     MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
         new MultiSelectComboBox<>("Team " + teamNumber);
@@ -266,7 +290,7 @@ public class NarrationDialog extends Dialog {
         wrestlerService.findAllAsDTO().stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
-    wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
+    wrestlersCombo.setValue(new HashSet<>(wrestlers));
 
     Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
     removeTeamButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
@@ -675,17 +699,15 @@ public class NarrationDialog extends Dialog {
           log.error("Error parsing error response", ex);
           showError("Failed to generate narration: " + response.toString());
         }
-      } else {
-        if (response.getBody() != null) {
-          try {
-            handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
-          } catch (JsonProcessingException e) {
-            log.error("Error processing response", e);
-            showError("Failed to process narration response.");
-          }
-        } else {
-          log.warn("Got an empty response from provider!");
+      } else if (response.getBody() != null) {
+        try {
+          handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
+        } catch (JsonProcessingException e) {
+          log.error("Error processing response", e);
+          showError("Failed to process narration response.");
         }
+      } else {
+        log.warn("Got an empty response from provider!");
       }
     } catch (Exception e) {
       log.error("Error retrying with provider: {}", provider, e);
@@ -698,6 +720,7 @@ public class NarrationDialog extends Dialog {
   private void saveNarration() {
     try {
       segment.setNarration(narrationDisplay.getText());
+      segment.setNotes(feedbackArea.getValue());
       if (refereeField.getValue() != null) {
         segment.setReferee(refereeField.getValue());
       }

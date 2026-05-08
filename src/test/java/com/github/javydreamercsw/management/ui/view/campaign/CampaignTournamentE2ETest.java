@@ -136,7 +136,7 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
     player = wrestlerRepository.save(player);
 
     // Create opponents (5 opponents -> 6 total -> Bracket size 8)
-    for (int i = 1; i <= 5; i++) {
+    for (int i = 1; i < 5 + 1; i++) {
       wrestlerRepository.save(
           Wrestler.builder()
               .name("Opponent " + i)
@@ -185,7 +185,7 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
     // 3 Rounds (R1: 4 matches, R2: 2 matches, R3: 1 match).
     int expectedRounds = 3;
 
-    for (int round = 1; round <= expectedRounds; round++) {
+    for (int round = 1; round < expectedRounds + 1; round++) {
       // Determine expected title
       String expectedTitle = "Round " + round;
 

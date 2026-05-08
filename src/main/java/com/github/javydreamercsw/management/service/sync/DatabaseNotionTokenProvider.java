@@ -48,7 +48,7 @@ public class DatabaseNotionTokenProvider implements NotionTokenProvider {
             log.debug(
                 "DatabaseNotionTokenProvider: Token not found or empty in GameSettingService.");
           }
-          return (token != null && !token.trim().isEmpty()) ? Optional.of(token) : Optional.empty();
+          return token != null && !token.trim().isEmpty() ? Optional.of(token) : Optional.empty();
         });
   }
 }

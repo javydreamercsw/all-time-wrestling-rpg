@@ -51,6 +51,7 @@ class StorylineDirectorServiceTest {
   private CampaignStateRepository stateRepository;
   private CampaignChapterService chapterService;
   private CampaignService campaignService;
+  private WrestlerStatusService wrestlerStatusService;
   private ObjectMapper objectMapper;
 
   @BeforeEach
@@ -65,6 +66,7 @@ class StorylineDirectorServiceTest {
     stateRepository = mock(CampaignStateRepository.class);
     chapterService = mock(CampaignChapterService.class);
     campaignService = mock(CampaignService.class);
+    wrestlerStatusService = mock(WrestlerStatusService.class);
     objectMapper = new ObjectMapper();
 
     storylineDirectorService =
@@ -75,11 +77,12 @@ class StorylineDirectorServiceTest {
             stateRepository,
             chapterService,
             campaignService,
+            wrestlerStatusService,
             objectMapper);
   }
 
   @Test
-  void testInitializeStoryline() throws Exception {
+  void testInitializeStoryline() {
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     CampaignState state = new CampaignState();

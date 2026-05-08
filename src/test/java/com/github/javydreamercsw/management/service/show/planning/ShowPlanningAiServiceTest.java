@@ -122,7 +122,8 @@ class ShowPlanningAiServiceTest {
             "segmentId": "seg1",
             "type": "One on One",
             "description": "Main Event: John Cena vs Randy Orton",
-            "outcome": "John Cena wins"
+            "outcome": "John Cena wins",
+            "notes": "End with a dramatic finisher"
           },
           {
             "segmentId": "seg2",
@@ -145,6 +146,7 @@ class ShowPlanningAiServiceTest {
     ProposedSegment segment1 = proposedShow.getSegments().get(0);
     assertEquals("One on One", segment1.getType());
     assertEquals("Main Event: John Cena vs Randy Orton", segment1.getNarration());
+    assertEquals("End with a dramatic finisher", segment1.getNotes());
 
     ProposedSegment segment2 = proposedShow.getSegments().get(1);
     assertEquals("Promo", segment2.getType());
@@ -155,6 +157,7 @@ class ShowPlanningAiServiceTest {
     verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
 
     String capturedPrompt = promptCaptor.getValue();
+    assertTrue(capturedPrompt.contains("\"notes\": \"string\""));
     assertTrue(
         capturedPrompt.contains(
             "Available Segment Types: One on One (A standard wrestling match between two"

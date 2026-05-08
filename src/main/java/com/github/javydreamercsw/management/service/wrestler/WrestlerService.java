@@ -292,6 +292,15 @@ public class WrestlerService {
     return wrestlerRepository.findByIdWithInjuries(id);
   }
 
+  /** Find wrestler by ID and fetch injuries and status cards. */
+  @PreAuthorize("isAuthenticated()")
+  @Transactional(readOnly = true)
+  public Optional<Wrestler> findByIdWithDetails(Long id) {
+    Optional<Wrestler> wrestler = wrestlerRepository.findByIdWithInjuries(id);
+    wrestler.ifPresent(w -> w.getStatuses().size());
+    return wrestler;
+  }
+
   /** Get all wrestlers (alias for findAll for UI compatibility). */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getAllWrestlers() {
@@ -320,6 +329,26 @@ public class WrestlerService {
 
   // ==================== ATW RPG METHODS ====================
 
+  /**
+   * Awards fans to a wrestler with diminishing returns and rounding.
+   *
+   * <p>Positive gains are subject to a "Fan Tax" based on the wrestler's current tier to simulate
+   * the difficulty of gaining new fans at high fame levels:
+   *
+   * <ul>
+   *   <li>ICON: 10% reduction (90% efficiency)
+   *   <li>MAIN_EVENTER: 7% reduction (93% efficiency)
+   *   <li>MIDCARDER: 5% reduction (95% efficiency)
+   *   <li>CONTENDER: 3% reduction (97% efficiency)
+   * </ul>
+   *
+   * <p>After the tax, positive gains are rounded to the nearest 1,000. Negative values
+   * (losses/spending) are applied exactly as provided.
+   *
+   * @param wrestlerId The ID of the wrestler
+   * @param fans The raw amount of fans to add (positive) or remove (negative)
+   * @return The updated wrestler, or empty if not found or cannot afford loss
+   */
   @Transactional
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},

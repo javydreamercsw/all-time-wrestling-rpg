@@ -43,7 +43,7 @@ public class NpcImageGenerationDialog extends GenericImageGenerationDialog {
           sb.append(" High quality, photorealistic, 8k resolution, dramatic lighting.");
           return sb.toString();
         },
-        (imageUrl) -> {
+        imageUrl -> {
           npc.setImageUrl(imageUrl);
           npcService.save(npc);
         },

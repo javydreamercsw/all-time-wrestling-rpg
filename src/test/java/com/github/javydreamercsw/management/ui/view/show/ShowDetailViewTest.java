@@ -175,12 +175,15 @@ class ShowDetailViewTest {
               relationshipService,
               notificationService,
               exportService);
+      java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
+      teamMap.put(1, List.of(wrestler1));
+      teamMap.put(2, List.of(wrestler2));
       ReflectionTestUtils.invokeMethod(
           showDetailView,
           "validateAndSaveSegment",
           show,
           segmentType,
-          wrestlers,
+          teamMap,
           Collections.emptySet(),
           Collections.emptySet(),
           segment);

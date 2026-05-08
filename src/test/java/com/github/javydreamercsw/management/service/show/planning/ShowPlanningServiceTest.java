@@ -105,6 +105,7 @@ class ShowPlanningServiceTest {
     proposedSegment.setType("Singles Match");
     proposedSegment.setNarration("A great match");
     proposedSegment.setSummary("A summary of the match");
+    proposedSegment.setNotes("AI should focus on technical wrestling");
     proposedSegment.setParticipants(List.of("Wrestler A", "Wrestler B"));
     proposedSegment.setWinners(List.of("Wrestler A"));
     proposedSegment.setIsTitleSegment(true);
@@ -146,6 +147,7 @@ class ShowPlanningServiceTest {
 
     assertEquals("A great match", capturedSegment.getNarration());
     assertEquals("A summary of the match", capturedSegment.getSummary());
+    assertEquals("AI should focus on technical wrestling", capturedSegment.getNotes());
     assertTrue(capturedSegment.getIsTitleSegment());
     assertEquals(1, capturedSegment.getTitles().size());
     assertEquals("World Championship", capturedSegment.getTitles().iterator().next().getName());

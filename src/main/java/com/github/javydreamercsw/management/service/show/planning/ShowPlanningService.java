@@ -159,7 +159,7 @@ public class ShowPlanningService {
     List<Title> activeTitles = titleService.getActiveTitles();
 
     Gender genderConstraint =
-        (show.getTemplate() != null) ? show.getTemplate().getGenderConstraint() : null;
+        show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
     log.info(
         "Found {} active titles, filtering by gender: {}", activeTitles.size(), genderConstraint);
@@ -273,6 +273,7 @@ public class ShowPlanningService {
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getNarration());
       segment.setSummary(proposedSegment.getSummary());
+      segment.setNotes(proposedSegment.getNotes());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {

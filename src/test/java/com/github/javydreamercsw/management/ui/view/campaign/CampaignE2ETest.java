@@ -30,13 +30,16 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Slf4j
 class CampaignE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -48,60 +51,44 @@ class CampaignE2ETest extends AbstractE2ETest {
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
+  private Wrestler player;
+
   @BeforeEach
-  void setupCampaign() {
-    wrestlerAlignmentRepository.deleteAllInBatch();
-    campaignStateRepository.deleteAllInBatch();
-    backstageActionHistoryRepository.deleteAllInBatch();
-    campaignEncounterRepository.deleteAllInBatch();
-    campaignRepository.deleteAllInBatch();
+  @Override
+  public void setup(org.junit.jupiter.api.TestInfo testInfo) {
+    super.setup(testInfo);
 
-    // Manually setup a wrestler for the admin account to avoid brittle UI steps
+    // Initialize campaign for the admin user if it doesn't exist
     Account admin = accountRepository.findByUsername("admin").get();
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
+    if (wrestlers.isEmpty()) {
+      log.info("Creating a test wrestler for admin user");
+      // Check for name conflict too
+      wrestlerRepository.findByName("Admin Wrestler").ifPresent(w -> wrestlerRepository.delete(w));
 
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    Wrestler player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
-
-    if (player == null) {
-      Wrestler w =
-          Wrestler.builder()
-              .name("Test E2E Wrestler")
-              .startingHealth(100)
-              .startingStamina(100)
-              .account(admin)
-              .isPlayer(true)
-              .active(true)
-              .build();
-      player = wrestlerRepository.save(w);
+      player = Wrestler.builder().name("Admin Wrestler").account(admin).build();
+      player.setExternalId("ADMIN_WRESTLER");
+      player = wrestlerRepository.saveAndFlush(player);
+    } else {
+      player = wrestlers.getFirst();
     }
 
-    if (!campaignService.hasActiveCampaign(player)) {
+    if (campaignRepository.findActiveByWrestler(player).isEmpty()) {
       campaignService.startCampaign(player);
     }
-
-    // Ensure the campaign state is clean of any upgrades for this test
-    campaignRepository
-        .findActiveByWrestler(player)
-        .ifPresent(
-            campaign -> {
-              campaign.getState().getUpgrades().clear();
-              campaignRepository.save(campaign);
-            });
   }
 
   @Test
   void testCampaignFlow() {
-    // 1. Navigate directly to Campaign Dashboard
+    // 1. Navigate to Campaign Dashboard
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
     waitForVaadinClientToLoad();
 
-    // Verify dashboard loaded before taking screenshots
-    waitForText("Campaign: All or Nothing");
+    // Verify key elements
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Chapter"));
     assertTrue(driver.getPageSource().contains("Victory Points"));
 
     takeSequencedScreenshot("campaign-dashboard-initial");
-    takeDocScreenshot("campaign-dashboard");
 
     // 2. Navigate to Backstage Actions
     WebElement actionsButton =
@@ -109,7 +96,6 @@ class CampaignE2ETest extends AbstractE2ETest {
     clickElement(actionsButton);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("backstage-actions-view");
-    takeDocScreenshot("backstage-actions");
 
     // Verify we are on the backstage actions view
     waitForText("Backstage Actions");
@@ -122,9 +108,26 @@ class CampaignE2ETest extends AbstractE2ETest {
     takeSequencedScreenshot("after-training-action");
 
     // 4. Navigate back
-    WebElement backButton =
-        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Back to Dashboard']"));
-    clickElement(backButton);
+    // Wrap in retry to handle StaleElementReferenceException if page re-renders during navigation
+    int retryCount = 0;
+    while (retryCount < 3) {
+      try {
+        WebElement backButton =
+            waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Back to Dashboard']"));
+        clickElement(backButton);
+        break;
+      } catch (org.openqa.selenium.StaleElementReferenceException e) {
+        log.warn("Stale element during navigation, retrying... (attempt {})", retryCount + 1);
+        retryCount++;
+        if (retryCount == 3) {
+          throw e;
+        }
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
+      }
+    }
     waitForVaadinClientToLoad();
 
     waitForText("Campaign: All or Nothing");
@@ -133,8 +136,6 @@ class CampaignE2ETest extends AbstractE2ETest {
   @Test
   void testCampaignUpgrades() {
     // 1. Grant tokens directly in DB before starting test
-    Account admin = accountRepository.findByUsername("admin").get();
-    Wrestler player = wrestlerRepository.findByAccount(admin).getFirst();
     Campaign campaign = campaignRepository.findActiveByWrestler(player).get();
     campaign.getState().setSkillTokens(8);
     campaignRepository.save(campaign);

@@ -26,6 +26,7 @@ public class ProposedSegment {
   private String type; // "segment" or "promo"
   private String narration;
   private String summary;
+  private String notes;
   private List<String> participants;
   private List<String> winners;
   private Boolean isTitleSegment = false;

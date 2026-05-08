@@ -159,7 +159,7 @@ public class FactionService {
     }
 
     int start = (int) pageable.getOffset();
-    int end = Math.min((start + pageable.getPageSize()), allFiltered.size());
+    int end = Math.min(start + pageable.getPageSize(), allFiltered.size());
 
     List<Faction> pageContent = new java.util.ArrayList<>();
     if (start < allFiltered.size()) {
@@ -321,9 +321,10 @@ public class FactionService {
     }
 
     faction.removeMember(wrestler);
+    wrestlerRepository.saveAndFlush(wrestler);
 
     // If removing the leader, clear the leader
-    if (wrestler.equals(faction.getLeader())) {
+    if (faction.getLeader() != null && wrestler.getId().equals(faction.getLeader().getId())) {
       faction.setLeader(null);
     }
 
@@ -390,7 +391,9 @@ public class FactionService {
       return Optional.of(faction);
     }
 
+    List<Wrestler> members = new java.util.ArrayList<>(faction.getMembers());
     faction.disband(reason);
+    wrestlerRepository.saveAllAndFlush(members);
     Faction savedFaction = factionRepository.saveAndFlush(faction);
 
     log.info("Disbanded faction: {} (reason: {})", faction.getName(), reason);

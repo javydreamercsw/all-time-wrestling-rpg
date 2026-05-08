@@ -123,7 +123,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   }
 
   @Test
-  void testUpgradeRestriction() throws Exception {
+  void testUpgradeRestriction() {
     // 1. Start Campaign
     campaignService.startCampaign(testWrestler);
     Campaign campaign = campaignRepository.findActiveByWrestler(testWrestler).get();

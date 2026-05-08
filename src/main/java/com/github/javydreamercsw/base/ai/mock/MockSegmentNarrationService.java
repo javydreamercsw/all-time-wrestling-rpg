@@ -709,19 +709,6 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     return String.format(finish, winner, winner, loser, winner, winner, loser, winner);
   }
 
-  /** Extracts wrestler names from the JSON node. */
-  private List<String> extractWrestlerNames(JsonNode rootNode) {
-    List<String> names = new ArrayList<>();
-    if (rootNode.has("wrestlers")) {
-      for (JsonNode wrestlerNode : rootNode.get("wrestlers")) {
-        if (wrestlerNode.has("name")) {
-          names.add(wrestlerNode.get("name").asText());
-        }
-      }
-    }
-    return names;
-  }
-
   /** Extracts venue information from the JSON-like text in the prompt. */
   private String extractVenue(String prompt) {
     String searchString = "\"name\" : \"";
@@ -737,13 +724,5 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       }
     }
     return "the arena";
-  }
-
-  /** Extracts segment type from the JSON node. */
-  private String extractSegmentType(JsonNode rootNode) {
-    if (rootNode.has("segmentType") && rootNode.get("segmentType").has("segmentType")) {
-      return rootNode.get("segmentType").get("segmentType").asText("wrestling segment");
-    }
-    return "wrestling segment";
   }
 }

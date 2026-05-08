@@ -172,22 +172,9 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
     click("vaadin-tab", "Season Settings");
     waitForVaadinElement(driver, By.id("generate-schedule-button"));
 
-    documentFeature(
-        "Admin",
-        "Season Settings - Before Schedule Generation",
-        "The Season Settings tab showing the 'Generate Season Schedule' button, before execution.",
-        "admin-season-settings-before-generation");
-
     // Click the generate button
     WebElement generateButton = waitForVaadinElement(driver, By.id("generate-schedule-button"));
     clickElement(generateButton);
-
-    documentFeature(
-        "Admin",
-        "Season Settings - Schedule Generation Confirmation",
-        "The Season Settings tab showing the 'Generate Season Confirmation' button, before"
-            + " execution.",
-        "admin-season-settings-confirmation");
 
     // Confirm the dialog
     WebElement confirmButton =
@@ -196,12 +183,6 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
 
     // Wait for success notification
     waitForNotification("Season schedule generated successfully.");
-
-    documentFeature(
-        "Admin",
-        "Season Settings - After Schedule Generation",
-        "The Season Settings tab after successfully generating the season schedule.",
-        "admin-season-settings-after-generation");
 
     // Verify shows were created
     List<com.github.javydreamercsw.management.domain.show.Show> allShows = showService.findAll();

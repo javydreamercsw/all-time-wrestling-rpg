@@ -18,7 +18,9 @@ package com.github.javydreamercsw;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -27,7 +29,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * This is an integration test that packages the application into a Docker image and runs it. It
@@ -38,18 +40,30 @@ class DockerPackageIT {
 
   @Test
   void testDockerPackage() throws Exception {
-    // Build the image from the Dockerfile
-    ImageFromDockerfile image =
-        new ImageFromDockerfile()
-            .withDockerfile(new File("./Dockerfile").getAbsoluteFile().toPath());
+    File projectDir = new File(".").getAbsoluteFile().getCanonicalFile();
     final int port = Integer.parseInt(System.getProperty("server.port", "9090"));
     final String contextPath = System.getProperty("server.servlet.context-path", "/atw-rpg");
 
+    // Build image via docker CLI with --pull=never so it uses the local base image without
+    // hitting Docker Hub. This avoids the Testcontainers pre-pull hang on ImageFromDockerfile.
+    String imageTag = "atw-rpg-it:latest";
+    Process build =
+        new ProcessBuilder("docker", "build", "-t", imageTag, projectDir.getAbsolutePath())
+            .directory(projectDir)
+            .redirectErrorStream(true)
+            .start();
+    try (BufferedReader reader =
+        new BufferedReader(new InputStreamReader(build.getInputStream()))) {
+      reader.lines().forEach(line -> System.out.println("[docker build] " + line));
+    }
+    assertEquals(0, build.waitFor(), "docker build failed");
+
     try (GenericContainer<?> container =
-        new GenericContainer<>(image)
+        new GenericContainer<>(DockerImageName.parse(imageTag))
             .withExposedPorts(port)
             .withEnv("notion.sync.enabled", "false")
             .withEnv("notion.sync.scheduler.enabled", "false")
+            .withEnv("DATA_INITIALIZER_ENABLED", "false")
             .withEnv("VAADIN_SERVLET_PARAMETER_PRODUCTION_MODE", "true")
             .withEnv("vaadin.devmode.enable", "false")
             .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:testdb")
@@ -60,7 +74,7 @@ class DockerPackageIT {
             .waitingFor(
                 Wait.forHttp(contextPath + "/actuator/health")
                     .forStatusCode(200)
-                    .withStartupTimeout(Duration.ofMinutes(1)))) {
+                    .withStartupTimeout(Duration.ofMinutes(5)))) {
       container.start();
 
       HttpClient client =

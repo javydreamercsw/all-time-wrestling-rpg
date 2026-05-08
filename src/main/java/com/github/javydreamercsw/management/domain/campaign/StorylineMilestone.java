@@ -73,6 +73,14 @@ public class StorylineMilestone {
   @JoinColumn(name = "next_on_failure_id")
   private StorylineMilestone nextMilestoneOnFailure;
 
+  @jakarta.persistence.ElementCollection(fetch = FetchType.EAGER)
+  @jakarta.persistence.CollectionTable(
+      name = "milestone_status_rewards",
+      joinColumns = @JoinColumn(name = "milestone_id"))
+  @Column(name = "status_key")
+  @Builder.Default
+  private java.util.List<String> statusCardRewards = new java.util.ArrayList<>();
+
   public enum MilestoneStatus {
     PENDING,
     ACTIVE,

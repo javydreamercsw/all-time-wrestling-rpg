@@ -154,6 +154,12 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append("Here is the JSON context:\n\n");
     prompt.append(jsonContext);
 
+    prompt.append(
+        "\n\nIMPORTANT - EXISTING STORY BEATS: If instructions contain 'Existing Description/Story"
+            + " Beats', you MUST treat them as mandatory plot points that must occur in your"
+            + " narration. Expand upon them with dialogue and action, but DO NOT contradict or"
+            + " ignore them. They represent the established plan for this segment.\n\n");
+
     log.debug("Generated AI Prompt: {}", prompt);
     return prompt.toString();
   }
@@ -309,7 +315,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     Exception lastException = null;
     Duration currentDelay = policy.getBaseDelay();
 
-    for (int attempt = 0; attempt <= policy.getMaxRetries(); attempt++) {
+    for (int attempt = 0; attempt < policy.getMaxRetries() + 1; attempt++) {
       try {
         return callAIProvider(prompt);
       } catch (Exception e) {

@@ -61,12 +61,14 @@ import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.StatusCardDTO;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
@@ -133,6 +135,7 @@ class DataInitializerTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private Environment env;
   @Mock private CampaignUpgradeService campaignUpgradeService;
+  @Mock private StatusCardService statusCardService;
   @Mock private AchievementRepository achievementRepository;
   @Mock private AccountRepository accountRepository;
   @Mock private LocationRepository locationRepository;
@@ -166,6 +169,7 @@ class DataInitializerTest {
             campaignAbilityCardService,
             commentaryService,
             campaignUpgradeService,
+            statusCardService,
             env,
             achievementRepository,
             ringsideActionDataService,
@@ -454,6 +458,17 @@ class DataInitializerTest {
   }
 
   @Test
+  void validateStatusCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("status_cards.json").getInputStream(),
+                  new TypeReference<List<StatusCardDTO>>() {});
+        });
+  }
+
+  @Test
   void testSyncWrestlersFromFile_existingWrestler() throws IOException {
     // Given
     Wrestler existingWrestler = new Wrestler();
@@ -518,7 +533,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncRelationshipsFromFile() throws IOException {
+  void testSyncRelationshipsFromFile() {
     // Given
     Wrestler w1 = new Wrestler();
     w1.setId(1L);
@@ -593,7 +608,7 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncNpcsFromFile() throws IOException {
+  void testSyncNpcsFromFile() {
     // Given
     Npc npc = new Npc();
     npc.setName("Mock NPC");

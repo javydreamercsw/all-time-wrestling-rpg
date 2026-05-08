@@ -718,7 +718,7 @@ public class ShowService {
 
     int projected = (int) (baseAttendance * showMultiplier * traitMultiplier);
     int finalAttendance =
-        (show.getArena() != null && show.getArena().getCapacity() != null)
+        show.getArena() != null && show.getArena().getCapacity() != null
             ? Math.min(projected, show.getArena().getCapacity())
             : projected;
 

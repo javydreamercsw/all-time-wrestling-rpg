@@ -55,10 +55,8 @@ public class AccountInitializer implements Initializable {
 
       for (RoleName roleName : RoleName.values()) {
         if (!roles.containsKey(roleName)) {
-          Role role = new Role(roleName, roleName.name() + " role");
-          roleRepository.save(role);
-          roles.put(roleName, role);
-          log.debug("Created role: {}", roleName);
+          log.debug("Creating role: {}", roleName);
+          roles.put(roleName, roleRepository.save(new Role(roleName, roleName.name())));
         }
       }
 

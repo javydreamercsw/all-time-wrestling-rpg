@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.match;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.CampaignContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.CommentatorContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
@@ -26,6 +27,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
@@ -567,6 +569,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             ? "Provide bullet points or a general idea of the promo content..."
             : "Provide specific details about the match (key spots, ringside actions, etc.) to"
                 + " guide the AI...");
+    feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
     feedbackArea.setId("feedback-area");
 
     HorizontalLayout narrationButtons = new HorizontalLayout();
@@ -734,8 +737,21 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     wc.setName(w.getName());
                     wc.setDescription(w.getDescription());
                     wc.setHailingFrom(w.getHeritageTag());
-                    wc.setHealth(w.getStartingHealth());
-                    wc.setStamina(w.getStartingStamina());
+                    wc.setHealth(w.getEffectiveStartingHealth());
+                    wc.setStamina(w.getEffectiveStartingStamina());
+                    wc.setMomentum(w.getEffectiveStartingMomentum());
+                    wc.setHandSize(w.getEffectiveHandSize());
+                    wc.setActiveStatuses(
+                        w.getStatuses().stream()
+                            .map(
+                                status ->
+                                    (status.getLevel() == 1
+                                            ? status.getStatusCard().getLevel1Name()
+                                            : status.getStatusCard().getLevel2Name())
+                                        + " (Level "
+                                        + status.getLevel()
+                                        + ")")
+                            .toList());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
@@ -854,6 +870,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
       }
 
+      if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+        instructions +=
+            "\n\nExisting Description/Story Beats (MUST be expanded and followed):\n"
+                + segment.getNarration();
+      }
+
       if (segment.getReferee() != null) {
         instructions +=
             "\n\nThe assigned referee for this match is: " + segment.getReferee().getName() + ".";
@@ -864,6 +886,42 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       // Apply Title Effects
       if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
         titleScriptService.applyTitleEffects(context, segment.getTitles());
+      }
+
+      // Campaign Context
+      Wrestler playerWrestler =
+          securityUtils.getAuthenticatedUser().map(CustomUserDetails::getWrestler).orElse(null);
+      if (playerWrestler != null) {
+        campaignRepository
+            .findActiveByWrestler(playerWrestler)
+            .ifPresent(
+                campaign -> {
+                  CampaignState state = campaign.getState();
+                  if (state != null) {
+                    CampaignContext cc = new CampaignContext();
+                    try {
+                      cc.setChapter(Integer.parseInt(state.getCurrentChapterId()));
+                    } catch (NumberFormatException e) {
+                      cc.setChapter(0);
+                    }
+                    cc.setAlignmentType(
+                        playerWrestler.getAlignment() != null
+                            ? playerWrestler.getAlignment().getAlignmentType().name()
+                            : "NEUTRAL");
+                    cc.setAlignmentLevel(
+                        playerWrestler.getAlignment() != null
+                            ? playerWrestler.getAlignment().getLevel()
+                            : 0);
+                    cc.setCurrentRival(
+                        state.getRival() != null ? state.getRival().getName() : null);
+                    cc.setActiveInjuries(
+                        playerWrestler.getActiveInjuries().stream()
+                            .map(com.github.javydreamercsw.management.domain.injury.Injury::getName)
+                            .toList());
+
+                    context.setCampaignContext(cc);
+                  }
+                });
       }
 
       String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
@@ -895,6 +953,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         segment.getId(),
         winners.stream().map(Wrestler::getName).toList());
     segment.setWinners(winners);
+    segment.setNotes(feedbackArea.getValue());
     try {
       segmentService.updateSegment(segment);
 
@@ -947,21 +1006,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         Notification n = Notification.show("Match adjudicated & Campaign Progress Updated!");
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         UI.getCurrent().navigate("campaign");
+      } else if (securityUtils.isBooker() || securityUtils.isAdmin()) {
+        // For standard matches, perform full adjudication (Booker/Admin only)
+        segmentAdjudicationService.adjudicateMatch(segment);
+        segment.setAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+        segmentService.updateSegment(segment);
+        Notification.show("Match adjudicated successfully!")
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        UI.getCurrent().navigate("show-list");
       } else {
-        if (securityUtils.isBooker() || securityUtils.isAdmin()) {
-          // For standard matches, perform full adjudication (Booker/Admin only)
-          segmentAdjudicationService.adjudicateMatch(segment);
-          segment.setAdjudicationStatus(
-              com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
-          segmentService.updateSegment(segment);
-          Notification.show("Match adjudicated successfully!")
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          UI.getCurrent().navigate("show-list");
-        } else {
-          // For players editing a match (e.g. proposed result), just save.
-          Notification.show("Match results saved.")
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        }
+        // For players editing a match (e.g. proposed result), just save.
+        Notification.show("Match results saved.")
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
 
     } catch (Exception e) {
@@ -973,6 +1030,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private void saveNarration() {
     segment.setNarration(narrationArea.getValue());
+    segment.setNotes(feedbackArea.getValue());
     segmentService.updateSegment(segment);
     updateCommentaryDisplay();
     Notification.show("Narration saved!");

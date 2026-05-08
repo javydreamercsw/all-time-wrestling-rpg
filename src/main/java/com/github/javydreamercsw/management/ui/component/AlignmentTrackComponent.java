@@ -74,7 +74,7 @@ public class AlignmentTrackComponent extends Div {
     trackContainer.add(createSpot(AlignmentType.NEUTRAL, 0, type, currentLevel));
 
     // Face Side (1 to 5)
-    for (int i = 1; i <= 5; i++) {
+    for (int i = 1; i < 5 + 1; i++) {
       trackContainer.add(createSpot(AlignmentType.FACE, i, type, currentLevel));
     }
 
@@ -159,17 +159,15 @@ public class AlignmentTrackComponent extends Div {
       spot.getStyle().set("transform", "scale(1.4)");
       spot.getStyle().set("box-shadow", "0 0 15px rgba(0,0,0,0.3)");
       spot.getStyle().set("z-index", "1");
+    } else if (spotType == AlignmentType.HEEL) {
+      spot.getStyle().set("background-color", "#ffcdd2");
+      spot.getStyle().set("color", "rgba(0,0,0,0.3)");
+    } else if (spotType == AlignmentType.FACE) {
+      spot.getStyle().set("background-color", "#c8e6c9");
+      spot.getStyle().set("color", "rgba(0,0,0,0.3)");
     } else {
-      if (spotType == AlignmentType.HEEL) {
-        spot.getStyle().set("background-color", "#ffcdd2");
-        spot.getStyle().set("color", "rgba(0,0,0,0.3)");
-      } else if (spotType == AlignmentType.FACE) {
-        spot.getStyle().set("background-color", "#c8e6c9");
-        spot.getStyle().set("color", "rgba(0,0,0,0.3)");
-      } else {
-        spot.getStyle().set("background-color", "white");
-        spot.getStyle().set("color", "#9e9e9e");
-      }
+      spot.getStyle().set("background-color", "white");
+      spot.getStyle().set("color", "#9e9e9e");
     }
 
     // Milestone Markers

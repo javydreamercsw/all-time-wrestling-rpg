@@ -100,11 +100,6 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         + " delivers an impressive performance, showcasing their skills to the crowd";
   }
 
-  /** Determines outcome for a two-wrestler match using weighted probability. */
-  private String determineTwoWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
-    return determineTwoWrestlerOutcome(wrestlers, null);
-  }
-
   private String determineTwoWrestlerOutcome(
       @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
     WrestlerContext wrestler1 = wrestlers.get(0);
@@ -140,11 +135,6 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         "%s defeats %s with %s", winnerContext.getName(), loserContext.getName(), finishingMove);
   }
 
-  /** Determines outcome for a multi-wrestler match. */
-  private String determineMultiWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
-    return determineMultiWrestlerOutcome(wrestlers, null);
-  }
-
   private String determineMultiWrestlerOutcome(
       @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
     List<WrestlerWeight> wrestlerWeights =
@@ -177,11 +167,6 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     return String.format(
         "%s emerges victorious from the %d-way match with %s",
         winnerContext.getName(), wrestlers.size(), finishingMove);
-  }
-
-  /** Calculates wrestler weight for match outcome determination. */
-  private int calculateWrestlerWeight(Wrestler dbWrestler, WrestlerContext contextWrestler) {
-    return calculateWrestlerWeight(dbWrestler, contextWrestler, null);
   }
 
   private int calculateWrestlerWeight(
