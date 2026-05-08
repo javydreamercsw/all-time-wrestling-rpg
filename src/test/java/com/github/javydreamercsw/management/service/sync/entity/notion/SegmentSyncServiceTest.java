@@ -131,7 +131,7 @@ class SegmentSyncServiceTest {
 
     // Then
     assertTrue(result);
-    verify(existingSegment, times(1)).syncParticipants(any());
+    verify(existingSegment, times(1)).syncParticipants(any(java.util.List.class));
     verify(segmentService, times(1)).updateSegment(existingSegment);
 
     // Verify participants were updated correctly

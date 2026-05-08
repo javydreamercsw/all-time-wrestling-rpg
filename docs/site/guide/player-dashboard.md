@@ -2,6 +2,14 @@
 
 Welcome to the Player Dashboard guide. This documentation is automatically generated from the latest game features.
 
+## Effective Stats and Status Cards
+
+The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size after applying all active modifiers — campaign bonuses/penalties, injuries, bumps, and Status Cards. Hover over any stat for a full breakdown. Active Status Cards appear as colour-coded badges: green for positive, red for negative.
+
+![Effective Stats and Status Cards](/screenshots/player-effective-stats.png)
+
+---
+
 ## Season Summary
 
 The Season Summary component provides a snapshot of your wrestler's performance during the currently active season, including their win-loss record, fan growth progress, and any championships or accolades earned.
