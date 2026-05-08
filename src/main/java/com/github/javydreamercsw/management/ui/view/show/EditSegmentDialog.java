@@ -52,6 +52,7 @@ public class EditSegmentDialog extends Dialog {
   private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
+  @Getter private final TextArea notesArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
 
   private final ComboBox<com.github.javydreamercsw.management.domain.npc.Npc> refereeCombo;
@@ -226,6 +227,13 @@ public class EditSegmentDialog extends Dialog {
     narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
+    notesArea = new TextArea("Match Feedback / Notes");
+    notesArea.setWidthFull();
+    notesArea.setValue(segment.getNotes() != null ? segment.getNotes() : "");
+    notesArea.setId("edit-notes-text-area");
+    notesArea.setPlaceholder("Provide specific instructions for the AI narration...");
+    formLayout.setColspan(notesArea, 2);
+
     titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
     titleMultiSelectComboBox.setItems(titleService.findAll());
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
@@ -259,6 +267,7 @@ public class EditSegmentDialog extends Dialog {
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
+        notesArea,
         narrationArea);
 
     saveButton = new Button("Save", e -> save());
@@ -309,6 +318,7 @@ public class EditSegmentDialog extends Dialog {
     segment.setType(segmentTypeCombo.getValue().getName());
     segment.setNarration(narrationArea.getValue());
     segment.setSummary(summaryArea.getValue());
+    segment.setNotes(notesArea.getValue());
     segment.setParticipants(
         participantsCombo.getValue().stream().map(Wrestler::getName).collect(Collectors.toList()));
     segment.setWinners(

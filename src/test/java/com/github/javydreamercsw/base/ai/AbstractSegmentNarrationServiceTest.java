@@ -86,5 +86,8 @@ class AbstractSegmentNarrationServiceTest {
     assertTrue(
         prompt.contains("\"culturalTags\" : [ \"Underground\" ]"),
         "Prompt should contain culturalTags");
+    assertTrue(
+        prompt.contains("IMPORTANT - EXISTING STORY BEATS"),
+        "Prompt should contain instructions for existing story beats");
   }
 }
