@@ -186,10 +186,16 @@ public class Segment extends AbstractEntity<Long> {
 
   /** Add a participant to the segment. */
   public void addParticipant(@NonNull Wrestler wrestler) {
+    addParticipant(wrestler, 1);
+  }
+
+  /** Add a participant to the segment with an explicit team number. */
+  public void addParticipant(@NonNull Wrestler wrestler, int teamNumber) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(this);
     participant.setWrestler(wrestler);
-    participant.setIsWinner(false); // Winner is set separately
+    participant.setIsWinner(false);
+    participant.setTeamNumber(teamNumber);
     participants.add(participant);
   }
 
@@ -269,6 +275,47 @@ public class Segment extends AbstractEntity<Long> {
         addParticipant(newWrestler);
       }
     }
+  }
+
+  /**
+   * Sync participants with explicit team assignments. teamWrestlers maps teamNumber → wrestlers.
+   */
+  public void syncParticipants(java.util.Map<Integer, List<Wrestler>> teamWrestlers) {
+    List<Wrestler> allWrestlers =
+        teamWrestlers.values().stream()
+            .flatMap(List::stream)
+            .collect(java.util.stream.Collectors.toList());
+
+    // Remove participants no longer in any team
+    participants.removeIf(p -> !allWrestlers.contains(p.getWrestler()));
+
+    // Update team numbers for existing participants and add new ones
+    for (java.util.Map.Entry<Integer, List<Wrestler>> entry : teamWrestlers.entrySet()) {
+      int teamNumber = entry.getKey();
+      for (Wrestler wrestler : entry.getValue()) {
+        java.util.Optional<SegmentParticipant> existing =
+            participants.stream().filter(p -> p.getWrestler().equals(wrestler)).findFirst();
+        if (existing.isPresent()) {
+          existing.get().setTeamNumber(teamNumber);
+        } else {
+          addParticipant(wrestler, teamNumber);
+        }
+      }
+    }
+  }
+
+  /** Returns wrestlers grouped by team number, ordered by team number. */
+  public java.util.Map<Integer, List<Wrestler>> getWrestlersByTeam() {
+    if (participants == null) {
+      return new java.util.LinkedHashMap<>();
+    }
+    return participants.stream()
+        .collect(
+            java.util.stream.Collectors.groupingBy(
+                SegmentParticipant::getTeamNumber,
+                java.util.TreeMap::new,
+                java.util.stream.Collectors.mapping(
+                    SegmentParticipant::getWrestler, java.util.stream.Collectors.toList())));
   }
 
   /** Add a segment rule to this segment. */

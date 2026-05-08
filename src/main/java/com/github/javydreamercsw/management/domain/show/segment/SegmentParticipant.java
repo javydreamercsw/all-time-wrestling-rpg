@@ -62,6 +62,9 @@ public class SegmentParticipant extends AbstractEntity<Long> {
   @Column(name = "is_winner", nullable = false)
   private Boolean isWinner = false;
 
+  @Column(name = "team_number", nullable = false)
+  private int teamNumber = 1;
+
   @Override
   public @Nullable Long getId() {
     return id;
