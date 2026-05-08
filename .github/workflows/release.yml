@@ -354,5 +354,5 @@ jobs:
         run: |
           echo "Syncing changes back to source branch: ${{ github.ref_name }}"
           git checkout ${{ github.ref_name }}
-          git merge origin/main --ff-only
+          git merge origin/main --no-ff -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}"
           git push origin ${{ github.ref_name }}
