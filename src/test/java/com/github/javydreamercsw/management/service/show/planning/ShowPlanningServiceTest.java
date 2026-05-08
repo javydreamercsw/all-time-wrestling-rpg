@@ -29,8 +29,10 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
@@ -45,6 +47,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -95,7 +98,10 @@ class ShowPlanningServiceTest {
     show.setId(1L);
     show.setName("Test Show");
     show.setShowDate(today);
+  }
 
+  @Test
+  void testApproveSegmentsWithTitleAndRules() {
     ProposedSegment proposedSegment = new ProposedSegment();
     proposedSegment.setType("Singles Match");
     proposedSegment.setNarration("A great match");
@@ -131,10 +137,9 @@ class ShowPlanningServiceTest {
     rule1.setName("Rule 1");
     when(segmentRuleRepository.findByName("Rule 1")).thenReturn(Optional.of(rule1));
 
-    // Execute
     showPlanningService.approveSegments(show, List.of(proposedSegment));
 
-    // Verify
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
     verify(segmentRepository).saveAll(segmentsCaptor.capture());
     List<Segment> capturedSegments = segmentsCaptor.getValue();
     assertEquals(1, capturedSegments.size());

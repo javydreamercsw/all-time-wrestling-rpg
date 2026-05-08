@@ -906,7 +906,10 @@ public class ShowDetailView extends Main
           teamCombo.setId("add-team-combo-" + teamNumber);
           teamCombo.setItems(
               wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(), genderFilter.getValue(), initialWrestlers));
+                  alignmentFilter.getValue(),
+                  genderFilter.getValue(),
+                  universeContextService.getCurrentUniverseId(),
+                  initialWrestlers));
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
@@ -943,7 +946,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(e.getValue(), genderFilter.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    e.getValue(),
+                    genderFilter.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -952,7 +959,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(alignmentFilter.getValue(), e.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    alignmentFilter.getValue(),
+                    e.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -1184,7 +1195,10 @@ public class ShowDetailView extends Main
           teamCombo.setWidthFull();
           teamCombo.setItems(
               wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(), genderFilter.getValue(), initialWrestlers));
+                  alignmentFilter.getValue(),
+                  genderFilter.getValue(),
+                  universeContextService.getCurrentUniverseId(),
+                  initialWrestlers));
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
@@ -1227,7 +1241,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(e.getValue(), genderFilter.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    e.getValue(),
+                    genderFilter.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -1236,7 +1254,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(alignmentFilter.getValue(), e.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    alignmentFilter.getValue(),
+                    e.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });

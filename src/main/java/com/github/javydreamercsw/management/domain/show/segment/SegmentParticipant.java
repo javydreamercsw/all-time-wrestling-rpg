@@ -65,9 +65,4 @@ public class SegmentParticipant extends AbstractSyncableEntity<Long> {
 
   @Column(name = "team_number", nullable = false)
   private int teamNumber = 1;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

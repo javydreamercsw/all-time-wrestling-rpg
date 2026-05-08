@@ -244,7 +244,9 @@ public class NarrationDialog extends Dialog {
         byTeam = this.segment.getWrestlersByTeam();
     if (byTeam.isEmpty()) {
       // Fallback for legacy data: one row per wrestler, each in their own team
-      wrestlerService.findAllBySegment(this.segment).forEach(this::addTeamSelector);
+      wrestlerService
+          .findAllBySegment(this.segment, universeContextService.getCurrentUniverseId())
+          .forEach(this::addTeamSelector);
     } else {
       byTeam.forEach(
           (teamNumber, wrestlers) -> {
@@ -253,7 +255,8 @@ public class NarrationDialog extends Dialog {
                     .map(
                         w ->
                             wrestlerService
-                                .findByIdAsDTO(w.getId())
+                                .findByIdAsDTO(
+                                    w.getId(), universeContextService.getCurrentUniverseId())
                                 .orElseGet(() -> new WrestlerDTO(w)))
                     .collect(java.util.stream.Collectors.toList());
             addTeamSelector(dtos);
