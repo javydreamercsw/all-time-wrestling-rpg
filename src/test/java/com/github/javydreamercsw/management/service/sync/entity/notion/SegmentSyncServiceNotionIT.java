@@ -64,7 +64,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
         new com.github.javydreamercsw.management.domain.show.type.ShowType();
     showType.setName("Test Show Type");
     showType.setDescription("Test Show Type Description");
-    showType = showTypeRepository.save(showType);
+    showType = showTypeRepository.saveAndFlush(showType);
 
     // Create a Show that segments can be linked to (show_id is NOT NULL in the schema)
     testShow = new Show();
@@ -72,7 +72,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     testShow.setDescription("Test Show Description");
     testShow.setExternalId("test-show-ext-id");
     testShow.setType(showType);
-    testShow = showRepository.save(testShow);
+    testShow = showRepository.saveAndFlush(testShow);
   }
 
   @Test
@@ -99,7 +99,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
         new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
     segmentType.setName("Default Segment Type");
     segmentType.setExternalId("test-segtype-id");
-    segmentTypeRepository.save(segmentType);
+    segmentTypeRepository.saveAndFlush(segmentType);
     when(notionPageDataExtractor.extractRelationId(segmentPage, "Segment Type"))
         .thenReturn(segmentType.getExternalId());
 

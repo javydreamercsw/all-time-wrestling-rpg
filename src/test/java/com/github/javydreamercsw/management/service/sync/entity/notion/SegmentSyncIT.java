@@ -112,14 +112,14 @@ class SegmentSyncIT extends ManagementIntegrationTest {
     ShowType showType = new ShowType();
     showType.setName("Test Show Type");
     showType.setDescription("A test show type");
-    showTypeRepository.save(showType);
+    showTypeRepository.saveAndFlush(showType);
     show.setType(showType);
-    showRepository.save(show);
+    showRepository.saveAndFlush(show);
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Test Segment Type");
     segmentType.setExternalId("test-segtype-id");
-    segmentTypeRepository.save(segmentType);
+    segmentTypeRepository.saveAndFlush(segmentType);
 
     String segmentId = UUID.randomUUID().toString();
     when(segmentPage.getId()).thenReturn(segmentId);

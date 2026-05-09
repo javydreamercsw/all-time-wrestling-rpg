@@ -300,7 +300,7 @@ public abstract class AbstractIntegrationTest {
           clearCache();
           ensureDefaultUniverseExists();
           if (dataInitializerEnabled) {
-            dataInitializer.init();
+            GeneralSecurityUtils.runAsAdmin(() -> dataInitializer.init());
           }
           return null;
         });

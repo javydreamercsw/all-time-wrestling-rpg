@@ -76,6 +76,7 @@ class ShowTemplateSyncIT extends ManagementIntegrationTest {
   @BeforeEach
   public void setUp() {
     clearAllRepositories();
+    showTemplateRepository.deleteAll();
   }
 
   @Test
