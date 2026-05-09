@@ -42,7 +42,7 @@ public class TestSecurityContextConfig {
             inv -> {
               Class<?> type = inv.getArgument(0);
               Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth != null && type.isInstance(auth.getPrincipal())) {
+              if (auth != null && type !=null && type.isInstance(auth.getPrincipal())) {
                 return Optional.of(type.cast(auth.getPrincipal()));
               }
               return Optional.empty();
