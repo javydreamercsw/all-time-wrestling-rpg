@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("!test | account-lockout-test | e2e")
+@Profile("!test | account-lockout-test")
 public class CustomUserDetailsService implements UserDetailsService {
 
   private final AccountRepository accountRepository;

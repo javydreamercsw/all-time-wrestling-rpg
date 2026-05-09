@@ -19,10 +19,7 @@ package com.github.javydreamercsw.base.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
-import com.vaadin.flow.spring.security.AuthenticationContext;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -31,20 +28,18 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Security configuration for E2E tests. Provides a simplified security setup that allows the tests
- * to interact with the UI without complex authentication logic.
+ * Security configuration for E2E tests. Uses Vaadin's SpringSecurityAutoConfiguration to wire
+ * VaadinAwareSecurityContextHolderStrategy, but provides a simplified filter chain.
  */
 @TestConfiguration
 @EnableWebSecurity
 @Profile("e2e")
-@Import({WithCustomMockUserSecurityContextFactory.class, InboxEventTypeConfig.class})
+@Import({InboxEventTypeConfig.class})
 @Slf4j
 public class TestE2ESecurityConfig {
 
@@ -57,8 +52,12 @@ public class TestE2ESecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
-    // Configure public access to static resources FIRST
+  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
+    return new WithCustomMockUserSecurityContextFactory();
+  }
+
+  @Bean
+  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(
@@ -74,25 +73,22 @@ public class TestE2ESecurityConfig {
                     "/frontend/**")
                 .permitAll()
                 .anyRequest()
-                .permitAll()); // For E2E tests, we want to allow everything so the Selenium driver
-    // can interact with the UI
+                .permitAll());
 
     http.csrf(csrf -> csrf.disable());
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
-    // Basic form login for the "login" action used in LoginView
     http.formLogin(
         form ->
             form.loginPage("/login")
                 .loginProcessingUrl("/login")
-                .defaultSuccessUrl("/?continue", true)
                 .successHandler(
                     (req, res, auth) -> {
                       log.info(
                           "[E2E] Login SUCCESS: user={}, authorities={}",
                           auth.getName(),
                           auth.getAuthorities());
-                      res.sendRedirect("/?continue");
+                      res.sendRedirect("/atw-rpg/");
                     })
                 .failureHandler(
                     (req, res, ex) -> {
@@ -100,11 +96,10 @@ public class TestE2ESecurityConfig {
                           "[E2E] Login FAILED: user={}, reason={}",
                           req.getParameter("username"),
                           ex.getMessage());
-                      res.sendRedirect("/login?error");
+                      res.sendRedirect("/atw-rpg/login?error");
                     })
                 .permitAll());
 
-    // Ensure logout redirects to login page
     http.logout(
         logout ->
             logout
@@ -120,38 +115,5 @@ public class TestE2ESecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(10);
-  }
-
-  @Bean
-  public AuthenticationContext authenticationContext() {
-    // Return a mocked AuthenticationContext for E2E tests to avoid dependency issues
-    // and NullPointerExceptions during logout
-    AuthenticationContext mock = Mockito.mock(AuthenticationContext.class);
-
-    // Mock common behavior used in SecurityUtils
-    Mockito.when(mock.isAuthenticated())
-        .thenAnswer(inv -> SecurityContextHolder.getContext().getAuthentication() != null);
-
-    Mockito.when(mock.getAuthenticatedUser(Mockito.any()))
-        .thenAnswer(
-            inv -> {
-              Class<?> type = inv.getArgument(0);
-              Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth != null && type.isInstance(auth.getPrincipal())) {
-                return Optional.of(type.cast(auth.getPrincipal()));
-              }
-              return Optional.empty();
-            });
-
-    // Handle logout safely
-    Mockito.doAnswer(
-            inv -> {
-              SecurityContextHolder.clearContext();
-              return null;
-            })
-        .when(mock)
-        .logout();
-
-    return mock;
   }
 }

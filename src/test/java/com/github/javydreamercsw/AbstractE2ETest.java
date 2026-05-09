@@ -44,7 +44,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
-import org.mockito.Mockito;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
@@ -61,8 +60,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
@@ -107,37 +104,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
-
-    // Only clean up leagues in the base class if we want it for every test.
-    // cleanupLeagues();
-
-    // Configure authenticationContext mock to proxy to SecurityContextHolder.
-    // This ensures that SecurityUtils.hasRole() and other methods work correctly.
-    Mockito.when(authenticationContext.isAuthenticated())
-        .thenAnswer(inv -> SecurityContextHolder.getContext().getAuthentication() != null);
-    Mockito.when(authenticationContext.hasRole(Mockito.anyString()))
-        .thenAnswer(
-            inv -> {
-              String role = inv.getArgument(0);
-              Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth == null) {
-                return false;
-              }
-              return auth.getAuthorities().stream()
-                  .anyMatch(
-                      a ->
-                          a.getAuthority().equals(role) || a.getAuthority().equals("ROLE_" + role));
-            });
-    Mockito.when(authenticationContext.getAuthenticatedUser(Mockito.any()))
-        .thenAnswer(
-            inv -> {
-              Class<?> type = inv.getArgument(0);
-              Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth != null && type.isInstance(auth.getPrincipal())) {
-                return java.util.Optional.of(type.cast(auth.getPrincipal()));
-              }
-              return java.util.Optional.empty();
-            });
 
     if (!appReady) {
       WebDriverManager.chromedriver().setup();
@@ -667,7 +633,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     // Open the dropdown via JS (shadow DOM prevents normal click from opening it)
     ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
 
-    waitForVaadinElement(driver, By.tagName("vaadin-combo-box-overlay"));
+    // Wait for the overlay to appear in the DOM (may be attached to document body)
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "var el = arguments[0]; return el.opened === true"
+                                + " && !!el._overlayElement;",
+                            comboBox));
+
     WebElement item =
         waitForVaadinElement(
             driver, By.xpath("//vaadin-combo-box-item[contains(text(), '" + itemText + "')]"));

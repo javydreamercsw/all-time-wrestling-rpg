@@ -22,11 +22,13 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /** Configuration for security context in tests. */
 @TestConfiguration
+@Profile("!e2e")
 public class TestSecurityContextConfig {
 
   @Bean
@@ -42,7 +44,7 @@ public class TestSecurityContextConfig {
             inv -> {
               Class<?> type = inv.getArgument(0);
               Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-              if (auth != null && type !=null && type.isInstance(auth.getPrincipal())) {
+              if (auth != null && type != null && type.isInstance(auth.getPrincipal())) {
                 return Optional.of(type.cast(auth.getPrincipal()));
               }
               return Optional.empty();

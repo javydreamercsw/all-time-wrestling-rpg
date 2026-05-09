@@ -159,10 +159,10 @@ public class DatabaseCleaner implements DatabaseCleanup {
               // would compete for row locks held by breakCircularDependencies() above.
               try {
                 int deleted =
-                        jdbcTemplate.update(
-                                "DELETE FROM "
-                                        + entityName.toLowerCase()
-                                        + " WHERE external_id IS NULL OR external_id = ''");
+                    jdbcTemplate.update(
+                        "DELETE FROM "
+                            + entityName.toLowerCase()
+                            + " WHERE external_id IS NULL OR external_id = ''");
                 log.info("✅ Deleted {} test records from {}", deleted, entityName);
                 deletedCount++;
                 continue; // Skip the full repository deletion below
