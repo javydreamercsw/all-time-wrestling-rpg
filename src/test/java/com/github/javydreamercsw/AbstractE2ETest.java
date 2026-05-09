@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
@@ -56,6 +57,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
@@ -66,12 +68,14 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(
     classes = Application.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"e2e", "test"})
+@ActiveProfiles(value = "e2e", inheritProfiles = false)
 @Import(TestE2ESecurityConfig.class)
 @Slf4j
+@WithCustomMockUser(roles = {"ADMIN"})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
-  @org.springframework.beans.factory.annotation.Autowired protected ObjectMapper objectMapper;
+  @Autowired
+  protected ObjectMapper objectMapper;
 
   protected static WebDriver driver;
   private static boolean appReady = false;
@@ -349,7 +353,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void login(@NonNull String username, @NonNull String password) {
-    int maxRetries = 3;
+    int maxRetries = 1;
     int attempt = 0;
     while (attempt++ < maxRetries) {
       try {

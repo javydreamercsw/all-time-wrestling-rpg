@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContext
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -44,6 +45,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @Profile("e2e")
 @Import({WithCustomMockUserSecurityContextFactory.class, InboxEventTypeConfig.class})
+@Slf4j
 public class TestE2ESecurityConfig {
 
   @Bean
@@ -52,11 +54,6 @@ public class TestE2ESecurityConfig {
     ObjectMapper mapper = new ObjectMapper();
     mapper.findAndRegisterModules();
     return mapper;
-  }
-
-  @Bean
-  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
-    return new WithCustomMockUserSecurityContextFactory();
   }
 
   @Bean
@@ -89,6 +86,22 @@ public class TestE2ESecurityConfig {
             form.loginPage("/login")
                 .loginProcessingUrl("/login")
                 .defaultSuccessUrl("/?continue", true)
+                .successHandler(
+                    (req, res, auth) -> {
+                      log.info(
+                          "[E2E] Login SUCCESS: user={}, authorities={}",
+                          auth.getName(),
+                          auth.getAuthorities());
+                      res.sendRedirect("/?continue");
+                    })
+                .failureHandler(
+                    (req, res, ex) -> {
+                      log.error(
+                          "[E2E] Login FAILED: user={}, reason={}",
+                          req.getParameter("username"),
+                          ex.getMessage());
+                      res.sendRedirect("/login?error");
+                    })
                 .permitAll());
 
     // Ensure logout redirects to login page

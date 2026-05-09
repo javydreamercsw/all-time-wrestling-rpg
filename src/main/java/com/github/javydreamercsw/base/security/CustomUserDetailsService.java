@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("!test | account-lockout-test")
+@Profile("!test | account-lockout-test | e2e")
 public class CustomUserDetailsService implements UserDetailsService {
 
   private final AccountRepository accountRepository;
@@ -48,6 +48,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   @Override
   @Transactional
   public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
+    log.info("[E2E] loadUserByUsername called for: {}", username);
     Account account =
         accountRepository
             .findByUsername(username)
