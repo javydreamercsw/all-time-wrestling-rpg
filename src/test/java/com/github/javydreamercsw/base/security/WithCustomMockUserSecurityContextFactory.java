@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2025 Software Consulting Dreams LLC
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <www.gnu.org>.
- */
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
@@ -40,9 +40,9 @@ import org.springframework.security.test.context.support.WithSecurityContextFact
  * Factory for creating a security context for @WithCustomMockUser. This factory is designed to
  * create transient mock accounts and wrestlers for testing purposes.
  *
- * <p>NOTE: Do NOT add @Component annotation. This class must be registered as a bean explicitly
- * in test configuration classes to ensure Spring's @WithSecurityContext annotation processing can
- * find it at test class load time.
+ * <p>NOTE: Do NOT add @Component annotation. This class must be registered as a bean explicitly in
+ * test configuration classes to ensure Spring's @WithSecurityContext annotation processing can find
+ * it at test class load time.
  */
 @Slf4j
 public class WithCustomMockUserSecurityContextFactory
@@ -57,9 +57,7 @@ public class WithCustomMockUserSecurityContextFactory
     String[] roles = customUser.roles();
 
     log.debug(
-        "Creating security context for user: {} with roles: {}",
-        username,
-        Arrays.toString(roles));
+        "Creating security context for user: {} with roles: {}", username, Arrays.toString(roles));
 
     // Create transient account (don't save to DB)
     Account account = new Account();
@@ -115,9 +113,7 @@ public class WithCustomMockUserSecurityContextFactory
     context.setAuthentication(authentication);
 
     log.debug(
-        "Security context created for user: {} with {} authorities",
-        username,
-        authorities.size());
+        "Security context created for user: {} with {} authorities", username, authorities.size());
     return context;
   }
 }

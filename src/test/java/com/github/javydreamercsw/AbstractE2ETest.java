@@ -18,6 +18,7 @@ package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.util.docs.DocEntry;
 import com.github.javydreamercsw.management.util.docs.DocumentationManifest;
@@ -67,10 +68,7 @@ import org.springframework.test.context.ActiveProfiles;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
-@Import({
-  TestE2ESecurityConfig.class,
-  com.github.javydreamercsw.management.config.TestNotionConfiguration.class
-})
+@Import({TestE2ESecurityConfig.class, TestNotionConfiguration.class})
 @WithCustomMockUser(roles = {"ADMIN"})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
