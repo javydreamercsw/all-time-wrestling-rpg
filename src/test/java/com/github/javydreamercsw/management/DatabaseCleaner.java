@@ -154,15 +154,20 @@ public class DatabaseCleaner implements DatabaseCleanup {
                     || "npc".equalsIgnoreCase(entityName)
                     || "arena".equalsIgnoreCase(entityName)
                     || "location".equalsIgnoreCase(entityName))) {
-              int deleted =
-                  executeNativeUpdate(
-                      "DELETE FROM "
-                          + entityName.toLowerCase()
-                          + " WHERE external_id IS NULL OR external_id = ''");
-              if (deleted >= 0) {
+              // Use jdbcTemplate directly (same transaction) to avoid deadlock with the
+              // PROPAGATION_REQUIRES_NEW connection that executeNativeUpdate creates, which
+              // would compete for row locks held by breakCircularDependencies() above.
+              try {
+                int deleted =
+                        jdbcTemplate.update(
+                                "DELETE FROM "
+                                        + entityName.toLowerCase()
+                                        + " WHERE external_id IS NULL OR external_id = ''");
                 log.info("✅ Deleted {} test records from {}", deleted, entityName);
                 deletedCount++;
                 continue; // Skip the full repository deletion below
+              } catch (Exception e) {
+                log.warn("Surgical delete failed for {}: {}", entityName, e.getMessage());
               }
             }
 
