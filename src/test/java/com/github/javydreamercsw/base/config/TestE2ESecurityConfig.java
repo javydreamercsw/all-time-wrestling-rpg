@@ -51,6 +51,10 @@ public class TestE2ESecurityConfig {
     return mapper;
   }
 
+  /**
+   * Register the factory bean explicitly so @WithCustomMockUser can find it during test class
+   * loading. This ensures Spring's @WithSecurityContext annotation processing succeeds.
+   */
   @Bean
   public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
     return new WithCustomMockUserSecurityContextFactory();
