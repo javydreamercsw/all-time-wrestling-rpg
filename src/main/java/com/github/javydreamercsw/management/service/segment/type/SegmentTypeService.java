@@ -42,6 +42,11 @@ public class SegmentTypeService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  public Optional<SegmentType> findByExternalId(@NonNull String externalId) {
+    return segmentTypeRepository.findByExternalId(externalId);
+  }
+
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentType> findAll() {
     return segmentTypeRepository.findAll();
   }

@@ -88,7 +88,11 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
                 "Name", "Test Segment",
                 "Status", "BOOKED",
                 "Adjudication Status", "PENDING"));
-    when(notionHandler.loadAllSegments()).thenReturn(List.of(segmentPage));
+
+    // Service calls getDatabasePageIds then loadSegmentById for each new ID
+    when(notionHandler.getDatabasePageIds("Segments")).thenReturn(List.of(segmentId));
+    when(notionHandler.loadSegmentById(segmentId)).thenReturn(java.util.Optional.of(segmentPage));
+    when(notionHandler.getPageContentPlainText(segmentId)).thenReturn("");
 
     // Create and save required segment type and mock extractor
     com.github.javydreamercsw.management.domain.show.segment.type.SegmentType segmentType =
@@ -99,9 +103,16 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     when(notionPageDataExtractor.extractRelationId(segmentPage, "Segment Type"))
         .thenReturn(segmentType.getExternalId());
 
-    // Link the segment to the test show
+    // Link the segment to the test show via relation ID
     when(notionPageDataExtractor.extractRelationId(segmentPage, "Shows"))
         .thenReturn(testShow.getExternalId());
+
+    // Mock name extraction
+    when(notionPageDataExtractor.extractNameFromNotionPage(segmentPage)).thenReturn("Test Segment");
+
+    // No relation IDs for Rules/Titles
+    when(notionPageDataExtractor.extractRelationIds(segmentPage, "Rules")).thenReturn(List.of());
+    when(notionPageDataExtractor.extractRelationIds(segmentPage, "Titles")).thenReturn(List.of());
 
     // When
     BaseSyncService.SyncResult result = segmentSyncService.syncSegments("test-op-1");

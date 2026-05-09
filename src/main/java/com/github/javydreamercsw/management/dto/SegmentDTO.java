@@ -36,6 +36,7 @@ public class SegmentDTO {
   private List<String> participantNames;
   private List<String> winnerNames;
   private String segmentTypeName;
+  private String segmentTypeExternalId;
   private Instant segmentDate;
   private String narration;
   private String summary;

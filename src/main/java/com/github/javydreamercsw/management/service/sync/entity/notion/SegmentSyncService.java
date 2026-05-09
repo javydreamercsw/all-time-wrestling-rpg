@@ -221,10 +221,12 @@ public class SegmentSyncService extends BaseSyncService {
 
     Map<String, Object> rawProperties = segmentPage.getRawProperties();
 
-    if (segmentPage.getProperties().getShows() != null
-        && !segmentPage.getProperties().getShows().getRelation().isEmpty()) {
-      segmentDTO.setShowExternalId(
-          segmentPage.getProperties().getShows().getRelation().get(0).getId());
+    String showExternalId =
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRelationId(segmentPage, "Shows");
+    if (showExternalId != null && !showExternalId.isEmpty()) {
+      segmentDTO.setShowExternalId(showExternalId);
     }
 
     Object participantsProperty = rawProperties.get("Participants");
@@ -247,14 +249,15 @@ public class SegmentSyncService extends BaseSyncService {
       segmentDTO.setWinnerNames(new ArrayList<>());
     }
 
-    Object segmentTypeProperty = rawProperties.get("Segment Type");
-    if (segmentTypeProperty instanceof String && !((String) segmentTypeProperty).isEmpty()) {
-      segmentDTO.setSegmentTypeName((String) segmentTypeProperty);
+    String segmentTypeExternalId =
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRelationId(segmentPage, "Segment Type");
+    if (segmentTypeExternalId != null && !segmentTypeExternalId.isEmpty()) {
+      segmentDTO.setSegmentTypeExternalId(segmentTypeExternalId);
     } else {
       String msg =
-          String.format(
-              "Segment type property for segment %s is not a string or is empty.",
-              segmentPage.getId());
+          String.format("Segment type relation not found for segment %s.", segmentPage.getId());
       log.warn(msg);
       messageConsumer.accept(msg);
     }
@@ -402,12 +405,15 @@ public class SegmentSyncService extends BaseSyncService {
     }
     segment.setShow(showOpt.get());
 
-    // Resolve Segment Type
-    String segmentTypeName = segmentDTO.getSegmentTypeName();
-    if (segmentTypeName != null && !segmentTypeName.trim().isEmpty()) {
-      Optional<SegmentType> segmentTypeOpt = segmentTypeService.findByName(segmentTypeName);
+    // Resolve Segment Type by external ID
+    String segmentTypeExternalId = segmentDTO.getSegmentTypeExternalId();
+    if (segmentTypeExternalId != null && !segmentTypeExternalId.trim().isEmpty()) {
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeService.findByExternalId(segmentTypeExternalId);
       if (segmentTypeOpt.isEmpty()) {
-        log.warn("Segment type '{}' not found in local database.", segmentTypeName);
+        log.warn(
+            "Segment type with external ID '{}' not found in local database.",
+            segmentTypeExternalId);
       } else {
         segment.setSegmentType(segmentTypeOpt.get());
       }
