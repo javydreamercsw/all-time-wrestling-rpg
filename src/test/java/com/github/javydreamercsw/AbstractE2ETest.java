@@ -74,8 +74,7 @@ import org.springframework.test.context.ActiveProfiles;
 @WithCustomMockUser(roles = {"ADMIN"})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
-  @Autowired
-  protected ObjectMapper objectMapper;
+  @Autowired protected ObjectMapper objectMapper;
 
   protected static WebDriver driver;
   private static boolean appReady = false;
@@ -662,8 +661,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
-    clickElement(comboBox);
-    WebElement overlay = waitForVaadinElement(driver, By.tagName("vaadin-combo-box-overlay"));
+    scrollIntoView(comboBox);
+    waitForVaadinClientToLoad();
+
+    // Open the dropdown via JS (shadow DOM prevents normal click from opening it)
+    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+
+    waitForVaadinElement(driver, By.tagName("vaadin-combo-box-overlay"));
     WebElement item =
         waitForVaadinElement(
             driver, By.xpath("//vaadin-combo-box-item[contains(text(), '" + itemText + "')]"));
