@@ -99,7 +99,7 @@ class SegmentSyncServiceTest {
     dto.setExternalId("segment-1");
     dto.setName("Test Segment");
     dto.setShowExternalId("show-1");
-    dto.setSegmentTypeName("Match");
+    dto.setSegmentTypeExternalId("match-ext-id");
     dto.setParticipantNames(new java.util.ArrayList<>());
     dto.setWinnerNames(new java.util.ArrayList<>());
 
@@ -114,7 +114,7 @@ class SegmentSyncServiceTest {
 
     when(segmentService.findByExternalId("segment-1")).thenReturn(Optional.of(segment));
     when(showService.findByExternalId("show-1")).thenReturn(Optional.of(show));
-    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(segmentType));
+    when(segmentTypeService.findByExternalId("match-ext-id")).thenReturn(Optional.of(segmentType));
 
     boolean result = segmentSyncService.processSingleSegment(dto);
     assertTrue(result);
