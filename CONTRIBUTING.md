@@ -5,11 +5,13 @@ Thank you for your interest in contributing to the All Time Wrestling RPG projec
 ## Development Setup
 
 ### Prerequisites
+
 - Java 25 or higher
 - Maven 3.8+
 - Git
 
 ### Getting Started
+
 1. Fork the repository
 2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/all-time-wrestling-rpg.git`
 3. Navigate to the project: `cd all-time-wrestling-rpg`
@@ -18,9 +20,11 @@ Thank you for your interest in contributing to the All Time Wrestling RPG projec
 ## Code Quality Standards
 
 ### Code Coverage
+
 This project maintains a **90% code coverage goal** using JaCoCo. All contributions must maintain or improve coverage.
 
 #### Running Coverage Analysis
+
 **Important**: This project requires Java 25. If you have multiple Java versions installed, set JAVA_HOME:
 
 ```bash
@@ -41,22 +45,27 @@ open target/site/jacoco/index.html
 ```
 
 **Alternative**: Run with Java 25 inline:
+
 ```bash
 JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-25.jdk/Contents/Home mvn clean verify
 ```
 
 #### Coverage Thresholds
+
 - **Overall Coverage**: 90% minimum (instruction and branch coverage)
 - **Class Coverage**: 80% minimum per class
 - **Integration Tests**: 80% minimum coverage
 
 #### Coverage Reports
+
 - **HTML Report**: `target/site/jacoco/index.html` (interactive, open in browser)
 - **XML Report**: `target/site/jacoco/jacoco.xml` (for CI/CD integration)
 - **CSV Report**: `target/site/jacoco/jacoco.csv` (for analysis)
 
 ### Code Formatting
+
 The project uses Spotless for code formatting:
+
 ```bash
 # Apply code formatting
 mvn spotless:apply
@@ -66,7 +75,9 @@ mvn spotless:check
 ```
 
 ### Static Analysis
+
 PMD is used for static code analysis:
+
 ```bash
 # Run PMD analysis
 mvn pmd:check
@@ -78,16 +89,19 @@ mvn pmd:pmd
 ## Testing Guidelines
 
 ### Test Types
+
 1. **Unit Tests**: Test individual classes and methods
 2. **Integration Tests**: Test component interactions and database operations
 3. **End-to-End Tests**: Test complete user workflows
 
 ### Test Naming Conventions
+
 - Unit tests: `*Test.java`
 - Integration tests: `*IT.java` or `*IntegrationTest.java`
 - Test methods: `should[ExpectedBehavior]When[StateUnderTest]`
 
 ### Writing Tests
+
 ```bash
 # Run all tests
 mvn test
@@ -103,6 +117,7 @@ mvn test -Dtest="WrestlerServiceTest"
 ```
 
 ### Test Coverage Best Practices
+
 1. **Focus on business logic**: Prioritize testing service classes and domain logic
 2. **Test edge cases**: Include boundary conditions and error scenarios
 3. **Use integration tests**: Test API endpoints and database interactions
@@ -112,6 +127,7 @@ mvn test -Dtest="WrestlerServiceTest"
 ## Build and Verification
 
 ### Full Build Process
+
 ```bash
 # Complete build with all checks
 mvn clean verify -Pcoverage
@@ -121,6 +137,7 @@ mvn clean package -Pproduction
 ```
 
 ### Pre-commit Checklist
+
 Before submitting a pull request, ensure:
 - [ ] Code is formatted: `mvn spotless:apply`
 - [ ] All tests pass: `mvn test`
@@ -131,6 +148,7 @@ Before submitting a pull request, ensure:
 ## Pull Request Guidelines
 
 ### Before Submitting
+
 1. **Create a feature branch**: `git checkout -b feature/your-feature-name`
 2. **Write tests first**: Follow TDD practices when possible
 3. **Maintain coverage**: Ensure your changes don't reduce overall coverage
@@ -138,6 +156,7 @@ Before submitting a pull request, ensure:
 5. **Run full verification**: `mvn clean verify -Pcoverage`
 
 ### PR Requirements
+
 - [ ] All tests pass
 - [ ] Code coverage ≥90%
 - [ ] Code is properly formatted
@@ -146,6 +165,7 @@ Before submitting a pull request, ensure:
 - [ ] Commit messages are descriptive
 
 ### Automated Checks
+
 Pull requests automatically run:
 - Unit and integration tests
 - Code coverage analysis
@@ -156,13 +176,16 @@ Pull requests automatically run:
 ## Development Workflow
 
 ### Branch Naming
+
 - Features: `feature/description`
 - Bug fixes: `fix/description`
 - Documentation: `docs/description`
 - Refactoring: `refactor/description`
 
 ### Commit Messages
+
 Use conventional commit format:
+
 ```
 type(scope): description
 
@@ -176,6 +199,7 @@ docs(coverage): update JaCoCo configuration guide
 ## Code Architecture
 
 ### Package Structure
+
 - `domain/`: Entity classes and repositories
 - `service/`: Business logic and services
 - `controller/`: REST API endpoints
@@ -183,6 +207,7 @@ docs(coverage): update JaCoCo configuration guide
 - `config/`: Configuration classes
 
 ### Testing Structure
+
 - `src/test/java/`: Unit tests
 - Integration tests are mixed with unit tests but use `*IT.java` naming
 - Test utilities in `src/test/java/com/github/javydreamercsw/testutil/`
