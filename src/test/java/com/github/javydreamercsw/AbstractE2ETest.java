@@ -751,7 +751,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                   ((JavascriptExecutor) d)
                       .executeScript(
                           "return !!(arguments[0].loading || arguments[0].pending);", grid);
-              return result == null || !((Boolean) result);
+              return result == null || !(Boolean) result;
             });
   }
 
