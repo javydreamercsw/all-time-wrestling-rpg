@@ -216,7 +216,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
           // Re-initialize accounts to ensure admin, booker, etc. are available
           log.info("👤 Re-initializing accounts...");
           accountInitializer.init();
-          entityManager.flush();
+          // No flush — clearRepositories() runs without an outer transaction
+          // (PROPAGATION_NOT_SUPPORTED),
+          // so flushing would throw TransactionRequiredException. Clear the first-level cache only.
           entityManager.clear();
           log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
         });

@@ -7,24 +7,29 @@ This file defines foundational mandates for AI agents working in this repository
 To ensure a fast feedback loop and efficient context usage, always follow this hierarchical testing strategy when fixing bugs or implementing features:
 
 1. **Surgical Fix & Targeted Verification:**
+
 - When a failure is identified, apply the fix.
 - **Immediately** run ONLY the specific test class or method that failed.
 - **Goal:** Confirm the fix works for the reported issue without waiting for the entire suite.
 - **Command Examples:**
-	- **Unit Tests:** `./mvnw test -Dtest=ClassName#methodName`
-	- **Integration Tests:** `./mvnw verify -Pintegration-test -Dit.test=ClassName#methodName`
-	- **E2E Tests:** `./mvnw verify -Pe2e -Dit.test=ClassName#methodName`
+- **Unit Tests:** `./mvnw test -Dtest=ClassName#methodName`
+- **Integration Tests:** `./mvnw verify -Pintegration-test -Dit.test=ClassName#methodName`
+- **E2E Tests:** `./mvnw verify -Pe2e -Dit.test=ClassName#methodName`
 - **Short-Circuit Rule:** If the change is **strictly limited to test code** (e.g., updating an assertion, fixing a mock, or adjusting local test data) and does not modify any application source code (`src/main`) or shared test infrastructure (e.g., `AbstractIntegrationTest`, `DatabaseCleaner`), you may skip Progressive Validation after the targeted test passes.
+
 2. **Progressive Validation:**
+
 - **Mandatory** if any changes were made to application source code (`src/main`) or shared test infrastructure.
 - **ONLY** after the targeted test passes, proceed to wider validation in this order:
 - **Level 1: Basic Unit Tests:** Run all unit tests to ensure no core regressions.
-	- Command: `./mvnw test`
+- Command: `./mvnw test`
 - **Level 2: Integration Tests:** Run the integration suite.
-	- Command: `./mvnw verify -Pintegration-test`
+- Command: `./mvnw verify -Pintegration-test`
 - **Level 3: End-to-End (E2E) Tests:** Run the full E2E suite.
-	- Command: `./mvnw verify -Pe2e`
+- Command: `./mvnw verify -Pe2e`
+
 3. **Concurrency Safety:**
+
 - Do not start Level 2 or Level 3 tests until all previous levels have passed.
 - If a failure occurs at any level, restart the loop from Step 1 for that new failure.
 

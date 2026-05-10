@@ -289,8 +289,12 @@ public abstract class AbstractIntegrationTest {
           return null;
         });
 
-    // 2. Perform deep repository cleanup in its own transaction
-    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    // 2. Perform deep repository cleanup without an outer transaction. Running with
+    //    PROPAGATION_NOT_SUPPORTED ensures that JPA failures in individual deleteAllInBatch()
+    //    calls (FK violations caught by the cleaner) cannot mark a shared outer transaction as
+    //    rollback-only — which previously triggered UnexpectedRollbackException and rolled back
+    //    all cleanup work, causing cascading failures in subsequent tests.
+    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
     transactionTemplate.execute(
         status -> {
           log.info("Running DatabaseCleanup.clearRepositories()...");
