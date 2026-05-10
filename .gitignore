@@ -64,3 +64,4 @@ src/main/bundles/
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
 node/
+/.claude/worktrees/
