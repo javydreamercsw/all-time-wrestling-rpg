@@ -21,7 +21,6 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -60,11 +59,8 @@ public class WrestlerListView extends Main {
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
   private final NpcService npcService;
-  private final ExpansionService expansionService;
-  private final WrestlerRepository wrestlerRepository;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
-  private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
   private Set<Long> injuredWrestlerIds;
@@ -75,7 +71,6 @@ public class WrestlerListView extends Main {
       @NonNull InjuryService injuryService,
       @NonNull NpcService npcService,
       @NonNull ExpansionService expansionService,
-      @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils,
       @NonNull CampaignService campaignService,
@@ -84,11 +79,8 @@ public class WrestlerListView extends Main {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
-    this.expansionService = expansionService;
-    this.wrestlerRepository = wrestlerRepository;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
-    this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
     this.universeContextService = universeContextService;
     wrestlerGrid = new Grid<>();
