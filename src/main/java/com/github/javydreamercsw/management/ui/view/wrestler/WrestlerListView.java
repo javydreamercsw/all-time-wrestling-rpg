@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -166,7 +167,11 @@ public class WrestlerListView extends Main {
               WrestlerState state =
                   wrestlerService.getOrCreateState(
                       wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return state.getManager() != null ? state.getManager().getName() : "";
+              if (state.getManager() == null) {
+                return "";
+              }
+              Npc manager = npcService.findById(state.getManager().getId());
+              return manager != null ? manager.getName() : "";
             })
         .setHeader("Manager")
         .setSortable(true);
