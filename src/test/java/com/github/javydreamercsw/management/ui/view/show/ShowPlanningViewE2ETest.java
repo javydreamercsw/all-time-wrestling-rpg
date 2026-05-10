@@ -19,21 +19,56 @@ package com.github.javydreamercsw.management.ui.view.show;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Duration;
+import java.time.LocalDate;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ShowPlanningViewE2ETest extends AbstractE2ETest {
 
+  @Autowired private ShowRepository showRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
+
+  private Show testShow;
+
+  @BeforeEach
+  public void setupTestData() {
+    ShowType showType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType st = new ShowType();
+                  st.setName("Weekly");
+                  st.setDescription("Weekly Show");
+                  st.setExpectedMatches(3);
+                  st.setExpectedPromos(2);
+                  return showTypeRepository.saveAndFlush(st);
+                });
+
+    testShow = new Show();
+    testShow.setName("Test Show for Planning View");
+    testShow.setType(showType);
+    testShow.setShowDate(LocalDate.now().plusDays(7));
+    testShow.setDescription("Test Description");
+    showRepository.save(testShow);
+  }
+
   @Test
   public void testNavigateToShowPlanningView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-planning");
+    driver.get(
+        "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + testShow.getId());
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Check that the "Select Show" ComboBox is present
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("select-show-combo-box")));
 
     WebElement comboBox = driver.findElement(By.id("select-show-combo-box"));

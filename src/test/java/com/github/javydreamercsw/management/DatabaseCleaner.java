@@ -318,14 +318,15 @@ public class DatabaseCleaner implements DatabaseCleanup {
     if (!joinTableNames.isEmpty()) {
       log.info("🧹 Clearing {} join tables...", joinTableNames.size());
       for (String tableName : joinTableNames) {
-        log.info("Deleting all records from join table {}", tableName);
-        // Use executeNativeUpdate (PROPAGATION_REQUIRES_NEW) so a SQL failure in one table
-        // doesn't mark the outer transaction as rollback-only via JPA's exception handling.
-        int deleted = executeNativeUpdate("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
-        if (deleted >= 0) {
+        try {
+          log.info("Deleting all records from join table {}", tableName);
+          // Use jdbcTemplate (same connection as outer transaction) to avoid creating a competing
+          // PROPAGATION_REQUIRES_NEW transaction that would deadlock on table locks held by the
+          // outer tx. JDBC exceptions caught here do not mark the JPA transaction rollback-only.
+          jdbcTemplate.update("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
           log.info("✅ Deleted all records from join table {}", tableName);
-        } else {
-          log.warn("⚠️ Could not clear join table {}", tableName);
+        } catch (Exception e) {
+          log.warn("⚠️ Could not clear join table {}: {}", tableName, e.getMessage());
         }
       }
     }
