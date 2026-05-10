@@ -250,8 +250,17 @@ public class AdminView extends VerticalLayout {
           }
         });
 
+    Button observabilityButton = new Button("System Observability Dashboard");
+    observabilityButton.setId("observability-dashboard");
+    observabilityButton.addClickListener(
+        event -> UI.getCurrent().navigate(SystemObservabilityView.class));
+
     content.add(
-        recalculateTiersButton, manageAccountsButton, cleanupImagesButton, resetConditionButton);
+        recalculateTiersButton,
+        manageAccountsButton,
+        cleanupImagesButton,
+        resetConditionButton,
+        observabilityButton);
     return content;
   }
 }
