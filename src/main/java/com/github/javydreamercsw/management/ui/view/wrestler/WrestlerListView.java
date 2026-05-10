@@ -20,11 +20,11 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -60,6 +60,7 @@ public class WrestlerListView extends Main {
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
   private final NpcService npcService;
+  private final ExpansionService expansionService;
   private final WrestlerRepository wrestlerRepository;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
@@ -73,6 +74,7 @@ public class WrestlerListView extends Main {
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
       @NonNull NpcService npcService,
+      @NonNull ExpansionService expansionService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils,
@@ -82,6 +84,7 @@ public class WrestlerListView extends Main {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
+    this.expansionService = expansionService;
     this.wrestlerRepository = wrestlerRepository;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
@@ -170,8 +173,11 @@ public class WrestlerListView extends Main {
               if (state.getManager() == null) {
                 return "";
               }
-              Npc manager = npcService.findById(state.getManager().getId());
-              return manager != null ? manager.getName() : "";
+              String expansionCode = state.getManager().getExpansionCode();
+              if (!expansionService.getEnabledExpansionCodes().contains(expansionCode)) {
+                return "";
+              }
+              return state.getManager().getName();
             })
         .setHeader("Manager")
         .setSortable(true);
