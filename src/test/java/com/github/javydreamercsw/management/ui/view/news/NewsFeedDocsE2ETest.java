@@ -18,16 +18,8 @@ package com.github.javydreamercsw.management.ui.view.news;
 
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 class NewsFeedDocsE2ETest extends AbstractDocsE2ETest {
-
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
-
-  @org.junit.jupiter.api.BeforeEach
-  void setup() {
-    dataInitializer.init();
-  }
 
   @Test
   void testCaptureNewsAndSocialFeed() {

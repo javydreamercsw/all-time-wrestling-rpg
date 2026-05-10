@@ -747,9 +747,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         .until(
             d -> {
               WebElement grid = d.findElement(By.id(gridId));
-              return !(Boolean)
+              Object result =
                   ((JavascriptExecutor) d)
-                      .executeScript("return arguments[0].loading || arguments[0].pending;", grid);
+                      .executeScript(
+                          "return !!(arguments[0].loading || arguments[0].pending);", grid);
+              return result == null || !((Boolean) result);
             });
   }
 

@@ -318,15 +318,14 @@ public class DatabaseCleaner implements DatabaseCleanup {
     if (!joinTableNames.isEmpty()) {
       log.info("🧹 Clearing {} join tables...", joinTableNames.size());
       for (String tableName : joinTableNames) {
-        try {
-          log.info("Deleting all records from join table {}", tableName);
-          // Use uppercase to match database schema and no quotes to avoid case-sensitivity issues
-          entityManager
-              .createNativeQuery("DELETE FROM " + tableName.toUpperCase(Locale.ROOT))
-              .executeUpdate();
+        log.info("Deleting all records from join table {}", tableName);
+        // Use executeNativeUpdate (PROPAGATION_REQUIRES_NEW) so a SQL failure in one table
+        // doesn't mark the outer transaction as rollback-only via JPA's exception handling.
+        int deleted = executeNativeUpdate("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
+        if (deleted >= 0) {
           log.info("✅ Deleted all records from join table {}", tableName);
-        } catch (Exception e) {
-          log.error("❌ Failed to delete from join table {}: {}", tableName, e.getMessage());
+        } else {
+          log.warn("⚠️ Could not clear join table {}", tableName);
         }
       }
     }

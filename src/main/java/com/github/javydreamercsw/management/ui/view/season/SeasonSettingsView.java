@@ -170,17 +170,39 @@ public class SeasonSettingsView extends VerticalLayout {
 
     Button scheduleShowButton =
         new Button(
-            "Schedule Next Show",
+            "Generate Season Schedule",
             click -> {
-              Optional<Season> currentSeason = seasonService.getActiveSeason();
-              if (currentSeason.isPresent()) {
-                showSchedulerService.generateShowsForSeason(currentSeason.get());
-                notificationService.showSuccess("Next show scheduled successfully.");
-              } else {
-                notificationService.showError("No active season found to schedule shows for.");
-              }
+              Dialog dialog = new Dialog();
+              dialog.setHeaderTitle("Confirm Schedule Generation");
+              dialog.add(
+                  new Paragraph(
+                      "This will generate shows for the entire active season based on configured"
+                          + " templates. Are you sure?"));
+
+              Button confirmButton =
+                  new Button(
+                      "Generate",
+                      event -> {
+                        Optional<Season> currentSeason = seasonService.getActiveSeason();
+                        if (currentSeason.isPresent()) {
+                          showSchedulerService.generateShowsForSeason(currentSeason.get());
+                          notificationService.showSuccess(
+                              "Season schedule generated successfully.");
+                        } else {
+                          notificationService.showError(
+                              "No active season found to schedule shows for.");
+                        }
+                        dialog.close();
+                      });
+              confirmButton.setId("confirm-generate-schedule-button");
+
+              Button cancelButton = new Button("Cancel", event -> dialog.close());
+              cancelButton.setId("cancel-generate-schedule-button");
+
+              dialog.getFooter().add(cancelButton, confirmButton);
+              dialog.open();
             });
-    scheduleShowButton.setId("schedule-show-button");
+    scheduleShowButton.setId("generate-schedule-button");
 
     add(resetBoundariesButton, recalibrateFansButton, resetFansButton, scheduleShowButton);
   }

@@ -138,6 +138,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
 
     showComboBox = new ComboBox<>("Select Show");
+    showComboBox.setId("select-show-combo-box");
     showComboBox.setItems(showService.getUpcomingShows(10));
     showComboBox.setItemLabelGenerator(
         s ->
