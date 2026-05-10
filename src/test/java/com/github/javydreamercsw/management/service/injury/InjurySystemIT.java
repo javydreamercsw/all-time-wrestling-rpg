@@ -32,12 +32,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration tests for the complete injury system including bump conversion, segment integration,
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
+@TestPropertySource(properties = "data.initializer.enabled=false")
 @WithCustomMockUser(
     username = "admin",
     roles = {"ADMIN", "BOOKER"})

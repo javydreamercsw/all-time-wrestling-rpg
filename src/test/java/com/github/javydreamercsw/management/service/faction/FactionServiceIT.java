@@ -42,7 +42,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class FactionServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FactionService factionService;

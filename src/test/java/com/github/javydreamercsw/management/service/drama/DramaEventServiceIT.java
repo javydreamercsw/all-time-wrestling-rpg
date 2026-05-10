@@ -41,8 +41,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 
 @DirtiesContext
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DramaEventService dramaEventService;

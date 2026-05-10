@@ -25,7 +25,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class FeudResolutionServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FeudResolutionService feudResolutionService;

@@ -32,10 +32,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 @DirtiesContext
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class DeckServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DeckService deckService;

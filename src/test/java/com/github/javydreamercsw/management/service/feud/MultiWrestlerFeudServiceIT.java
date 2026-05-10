@@ -40,7 +40,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
   @Autowired private MultiWrestlerFeudRepository feudRepository;

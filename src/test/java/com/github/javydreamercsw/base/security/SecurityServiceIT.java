@@ -41,9 +41,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class SecurityServiceIT extends ManagementIntegrationTest {
 
   @Autowired private AccountService accountService;

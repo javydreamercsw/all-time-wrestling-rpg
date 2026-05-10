@@ -245,10 +245,16 @@ public abstract class AbstractIntegrationTest {
                 universeContextService.setCurrentUniverse(u);
               });
 
-      // 3. Cleanup and Init
+      // 3. Elevate to admin before cleanup so DataInitializer can create protected entities
+      //    (test method annotations like @WithCustomMockUser may restrict the context).
+      //    loginAs() uses TestSecurityContextHolder directly, which is more reliable than
+      //    runAsAdmin()'s reflection-based approach in the integration-test suite ordering.
+      loginAs("admin");
+
+      // 4. Cleanup and Init
       clearAllRepositories();
 
-      // 4. Final verification of universe
+      // 5. Final verification of universe
       if (this.defaultUniverse == null) {
         ensureDefaultUniverseExists();
       }
@@ -292,18 +298,26 @@ public abstract class AbstractIntegrationTest {
           return null;
         });
 
-    // 3. Re-initialize data and universe in a FINAL transaction
+    // 3. Ensure universe in a transaction
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          log.info("Ensuring default universe and re-initializing data...");
+          log.info("Ensuring default universe...");
           clearCache();
           ensureDefaultUniverseExists();
-          if (dataInitializerEnabled) {
-            GeneralSecurityUtils.runAsAdmin(() -> dataInitializer.init());
-          }
           return null;
         });
+
+    // 4. Re-initialize data. Wrap in runAsAdmin() so that DataInitializer's own internal
+    //    runAsAdmin() sees "system" is already active (re-entrancy shortcut) and skips the
+    //    context switch — using the outer system+ROLE_ADMIN context for @PreAuthorize checks.
+    if (dataInitializerEnabled) {
+      com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+          () -> {
+            dataInitializer.init();
+            return null;
+          });
+    }
 
     // Final cache clear to be safe
     clearCache();
@@ -541,7 +555,11 @@ public abstract class AbstractIntegrationTest {
 
           if (dataInitializerEnabled) {
             log.debug("Re-initializing data using DataInitializer...");
-            dataInitializer.init();
+            com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+                () -> {
+                  dataInitializer.init();
+                  return null;
+                });
           }
           log.debug("Database reset complete.");
           return null;
