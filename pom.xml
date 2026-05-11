@@ -653,20 +653,38 @@
         <version>6.38.0</version>
         <configuration>
           <failOnDryRunResults>true</failOnDryRunResults>
+          <exclusions>
+            <exclusion>**/target/**</exclusion>
+          </exclusions>
           <activeRecipes>
+            <!-- Braces &amp; structure -->
             <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
+
+            <!-- Lombok -->
             <recipe>org.openrewrite.java.migrate.lombok.UseLombokGetter</recipe>
             <recipe>org.openrewrite.java.migrate.lombok.UseLombokSetter</recipe>
+            <recipe>org.openrewrite.java.migrate.lombok.UseNoArgsConstructor</recipe>
+
+            <!-- Remove unused code -->
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLabels</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLocalVariables</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateFields</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods</recipe>
+
+            <!-- XML -->
             <recipe>org.openrewrite.xml.style.AutodetectDebug</recipe>
+
+            <!-- Unnecessary constructs -->
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCatch</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryParentheses</recipe>
+
+            <!-- Equality -->
             <recipe>org.openrewrite.staticanalysis.SillyEqualsCheck</recipe>
+            <recipe>org.openrewrite.staticanalysis.EqualsAvoidsNull</recipe>
+
+            <!-- Simplifications -->
             <recipe>org.openrewrite.staticanalysis.SimplifyArraysAsList</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpression</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan</recipe>
@@ -680,19 +698,41 @@
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryFalseTrueRecipe</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryTrueFalseRecipe</recipe>
+
+            <!-- Collections -->
+            <recipe>org.openrewrite.staticanalysis.IsEmptyCallOnCollections</recipe>
+
+            <!-- Modern Java (Java 25) -->
+            <recipe>org.openrewrite.java.migrate.lang.UseTextBlocks</recipe>
+            <recipe>org.openrewrite.java.migrate.lang.StringFormatted</recipe>
+            <recipe>org.openrewrite.staticanalysis.ReplaceStringBuilderWithString</recipe>
+
+            <!-- Finalize locals and parameters -->
+            <recipe>org.openrewrite.staticanalysis.FinalizeMethodArguments</recipe>
+
+            <!-- Spring (style / best practices — already on Boot 4 / Security 7) -->
+            <recipe>org.openrewrite.java.spring.NoRequestMappingAnnotation</recipe>
+            <recipe>org.openrewrite.java.spring.ImplicitWebAnnotationNames</recipe>
           </activeRecipes>
         </configuration>
         <dependencies>
           <dependency>
             <groupId>org.openrewrite.recipe</groupId>
             <artifactId>rewrite-static-analysis</artifactId>
-            <version>2.33.1</version>
+            <version>2.34.0</version>
             <scope>runtime</scope>
           </dependency>
           <dependency>
             <groupId>org.openrewrite.recipe</groupId>
             <artifactId>rewrite-migrate-java</artifactId>
             <version>3.34.0</version>
+            <scope>runtime</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-spring</artifactId>
+            <version>6.9.0</version>
+            <scope>runtime</scope>
           </dependency>
         </dependencies>
       </plugin>

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,7 +33,6 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -75,7 +75,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Click the "Create Wrestler" button
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-wrestler-button")));
-    Assertions.assertNotNull(createButton);
+    assertNotNull(createButton);
     clickElement(createButton);
 
     // Wait for the dialog to appear
@@ -87,27 +87,21 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
 
     // Enter a new wrestler name
-    Assertions.assertNotNull(nameField);
+    assertNotNull(nameField);
     nameField.sendKeys("Test Wrestler", Keys.TAB);
 
     // Click the save button
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
-    Assertions.assertNotNull(saveButton);
+    assertNotNull(saveButton);
     clickElement(saveButton);
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
-    // Verify that the new wrestler appears in the grid
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Test Wrestler"));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    // Wait for the grid to finish re-rendering after the save callback, then verify the
+    // count increased. The row may be off-screen in the virtual list so we don't check
+    // cell text directly.
+    waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
 
     assertEquals(initialSize + 1, wrestlerRepository.count());
   }
@@ -117,10 +111,14 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     wrestlerStateRepository.deleteAll();
     wrestlerRepository.deleteAll();
     Wrestler w1 = wrestlerService.save(TestUtils.createWrestler("Zack"));
+    assertNotNull(w1.getId());
+    assertNotNull(defaultUniverse.getId());
     wrestlerService.getOrCreateState(w1.getId(), defaultUniverse.getId());
     Wrestler w2 = wrestlerService.save(TestUtils.createWrestler("Adam"));
+    assertNotNull(w2.getId());
     wrestlerService.getOrCreateState(w2.getId(), defaultUniverse.getId());
     Wrestler w3 = wrestlerService.save(TestUtils.createWrestler("Ben"));
+    assertNotNull(w3.getId());
     wrestlerService.getOrCreateState(w3.getId(), defaultUniverse.getId());
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
@@ -145,62 +143,50 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testEditWrestler() {
-
     // Create a wrestler to edit
-
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Edit"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
-
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Find the menu for the wrestler
-
     WebElement menuBar =
         wait.until(
             ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    Assertions.assertNotNull(menuBar);
+    assertNotNull(menuBar);
 
     // Select "Edit" from the menu
-
     selectFromVaadinMenuBar(menuBar, "Edit");
 
     // Wait for the dialog to appear
-
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Find the editor's name field and change the value
-
     WebElement nameEditor =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
 
-    Assertions.assertNotNull(nameEditor);
+    assertNotNull(nameEditor);
 
     nameEditor.sendKeys(" Updated", Keys.TAB);
 
     // Find the "Save" button and click it
-
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
 
-    Assertions.assertNotNull(saveButton);
-
+    assertNotNull(saveButton);
     clickElement(saveButton);
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Verify that the grid is updated
-
     wait.until(
         d -> {
           try {
-
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Edit Updated"));
-
           } catch (Exception e) {
 
             return false;
@@ -215,7 +201,6 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   void testDeleteWrestler() {
 
     // Create a wrestler to delete
-
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Delete"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
@@ -226,26 +211,21 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     long initialSize = wrestlerRepository.count();
 
     // Find the menu for the wrestler
-
     WebElement menuBar =
         wait.until(
             ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    Assertions.assertNotNull(menuBar);
+    assertNotNull(menuBar);
 
     // Select "Delete" from the menu
-
     selectFromVaadinMenuBar(menuBar, "Delete");
 
     // Verify that the wrestler is removed from the grid
-
     wait.until(
         d -> {
           try {
-
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .noneMatch(it -> it.getText().equals("Delete"));
-
           } catch (Exception e) {
 
             return false;
@@ -258,8 +238,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testAddBump() {
 
-    // Create a wrestler
-
+    // Create a wrestle
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Bump"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
@@ -268,25 +247,20 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Find the menu for the wrestler
-
     WebElement menuBar =
         wait.until(
             ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    Assertions.assertNotNull(menuBar);
+    assertNotNull(menuBar);
 
     // Select "Add Bump" from the menu
-
     selectFromVaadinMenuBar(menuBar, "Add Bump");
 
     // Verify that the bump count is updated
-
     wait.until(
         d -> {
           try {
-
-            Assertions.assertNotNull(wrestler.getId());
-
+            assertNotNull(wrestler.getId());
             return wrestlerService
                     .getOrCreateState(wrestler.getId(), defaultUniverse.getId())
                     .getBumps()
@@ -298,7 +272,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
           }
         });
 
-    Assertions.assertNotNull(wrestler.getId());
+    assertNotNull(wrestler.getId());
 
     assertEquals(
         1, wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId()).getBumps());
@@ -308,7 +282,6 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   void testHealBump() {
 
     // Create a wrestler with a bump
-
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Heal Bump"));
     WrestlerState state =
         wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
@@ -320,37 +293,30 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Find the menu for the wrestler
-
     WebElement menuBar =
         wait.until(
             ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    Assertions.assertNotNull(menuBar);
+    assertNotNull(menuBar);
 
     // Select "Heal Bump" from the menu
-
     selectFromVaadinMenuBar(menuBar, "Heal Bump");
 
     // Verify that the bump count is updated
-
     wait.until(
         d -> {
           try {
-
-            Assertions.assertNotNull(wrestler.getId());
-
+            assertNotNull(wrestler.getId());
             return wrestlerService
                     .getOrCreateState(wrestler.getId(), defaultUniverse.getId())
                     .getBumps()
                 == 0;
-
           } catch (Exception e) {
-
             return false;
           }
         });
 
-    Assertions.assertNotNull(wrestler.getId());
+    assertNotNull(wrestler.getId());
 
     assertEquals(
         0, wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId()).getBumps());
@@ -358,14 +324,11 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testManageInjuries() {
-
     // Create a wrestler
-
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Injuries"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
     // Create a couple of injuries for the wrestler
-
     injuryService.createInjury(
         wrestler.getId(),
         defaultUniverse.getId(),
@@ -390,37 +353,28 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Find the menu for the wrestler
-
     WebElement menuBar =
         wait.until(
             ExpectedConditions.presenceOfElementLocated(By.id("action-menu-" + wrestler.getId())));
 
-    Assertions.assertNotNull(menuBar);
+    assertNotNull(menuBar);
 
     // Select "Manage Injuries" from the menu
-
     selectFromVaadinMenuBar(menuBar, "Manage Injuries");
 
     // Verify that the InjuryDialog appears
-
     WebElement dialog =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
-
-    Assertions.assertNotNull(dialog);
-
+    assertNotNull(dialog);
     assertTrue(dialog.isDisplayed());
 
     // Verify the injuries are in the grid
-
     wait.until(
         d -> {
           try {
-
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Bruised Ribs"));
-
           } catch (Exception e) {
-
             return false;
           }
         });
@@ -428,24 +382,19 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     wait.until(
         d -> {
           try {
-
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Twisted Ankle"));
-
           } catch (Exception e) {
-
             return false;
           }
         });
 
     // Heal an injury
-
     WebElement healButton =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("heal-injury-" + injuryToHeal.getId())));
 
-    Assertions.assertNotNull(healButton);
-
+    assertNotNull(healButton);
     clickElement(healButton);
 
     // Create a new injury
@@ -453,20 +402,17 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-button")));
 
-    Assertions.assertNotNull(createButton);
-
+    assertNotNull(createButton);
     clickElement(createButton);
 
     // Wait for the dialog to appear
-
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Fill the form
-
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-name")));
 
-    Assertions.assertNotNull(nameField);
+    assertNotNull(nameField);
 
     nameField.sendKeys("Broken Leg");
 
@@ -474,14 +420,14 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-description")));
 
-    Assertions.assertNotNull(descriptionField);
+    assertNotNull(descriptionField);
 
     descriptionField.sendKeys("A very broken leg.");
 
     WebElement severitySelector =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-severity")));
 
-    Assertions.assertNotNull(severitySelector);
+    assertNotNull(severitySelector);
 
     clickElement(severitySelector);
 
@@ -490,21 +436,17 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));
 
-    Assertions.assertNotNull(saveButton);
+    assertNotNull(saveButton);
 
     clickElement(saveButton);
 
     // Verify the new injury is in the grid
-
     wait.until(
         d -> {
           try {
-
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Broken Leg"));
-
           } catch (Exception e) {
-
             return false;
           }
         });

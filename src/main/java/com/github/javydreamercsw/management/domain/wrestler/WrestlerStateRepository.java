@@ -20,13 +20,19 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Long> {
   Optional<WrestlerState> findByWrestlerAndUniverse(Wrestler wrestler, Universe universe);
 
-  Optional<WrestlerState> findByWrestlerIdAndUniverseId(Long wrestlerId, Long universeId);
+  @Query(
+      "SELECT s FROM WrestlerState s LEFT JOIN FETCH s.manager"
+          + " WHERE s.wrestler.id = :wrestlerId AND s.universe.id = :universeId")
+  Optional<WrestlerState> findByWrestlerIdAndUniverseId(
+      @Param("wrestlerId") Long wrestlerId, @Param("universeId") Long universeId);
 
   List<WrestlerState> findByWrestlerIsPlayerTrueAndUniverseId(Long universeId);
 

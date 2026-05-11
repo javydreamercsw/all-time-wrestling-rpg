@@ -45,7 +45,6 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -398,10 +397,7 @@ public class WrestlerService {
     Optional<WrestlerState> existing =
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId);
     if (existing.isPresent()) {
-      WrestlerState state = existing.get();
-      // Initialize lazy associations that callers may access outside this transaction
-      Hibernate.initialize(state.getManager());
-      return state;
+      return existing.get();
     }
 
     // Fallback for missing entities during tests/sync

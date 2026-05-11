@@ -653,41 +653,67 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void selectFromVaadinMultiSelectComboBox(
       @NonNull WebElement comboBox, @NonNull String itemText) {
     log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
+    JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    // 1. Target the internal input element for typing to filter
-    WebElement input =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript(
-                    "return arguments[0].querySelector('input') ||"
-                        + " arguments[0].shadowRoot.querySelector('input');",
-                    comboBox);
+    // Open the dropdown via JS property
+    js.executeScript("arguments[0].opened = true;", comboBox);
 
-    if (input != null) {
-      input.click();
-      input.sendKeys(itemText);
-    } else {
-      // Fallback: just open it
-      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
-    }
-
-    // 2. Wait for the item to appear and click it via JS
+    // Wait for an item that is both present AND visible (non-zero bounding box).
+    // Checking visibility avoids matching items in previously-closed overlays
+    // that are still in the DOM but hidden.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement item =
-        waitForVaadinElement(
-            driver,
-            By.xpath("//vaadin-multi-select-combo-box-item[contains(text(), '" + itemText + "')]"));
-    clickElement(item);
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      "const items=Array.from(document.querySelectorAll("
+                          + "'vaadin-multi-select-combo-box-item'));"
+                          + "return items.find(el=>{"
+                          + "const r=el.getBoundingClientRect();"
+                          + "return r.width>0&&r.height>0"
+                          + "&&(el.innerText||el.textContent).trim().includes(arguments[0]);"
+                          + "})||null;",
+                      itemText);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
 
-    // Click outside to close
-    ((JavascriptExecutor) driver).executeScript("document.body.click();");
+    // Use native Selenium click so Vaadin's event handlers fire properly
+    scrollIntoView(item);
+    item.click();
+
+    // Close the overlay
+    js.executeScript("arguments[0].opened = false;", comboBox);
   }
 
   protected void selectFromVaadinMenuBar(@NonNull WebElement menuBar, @NonNull String itemText) {
-    clickElement(menuBar);
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    // In Vaadin 25, vaadin-menu-bar has vaadin-menu-bar-button in its light DOM.
+    // Click the first one (the "Actions" trigger) to open the submenu.
+    js.executeScript(
+        "const bar=arguments[0];"
+            + "const btn=bar.querySelector('vaadin-menu-bar-button')||bar;"
+            + "btn.click();",
+        menuBar);
+
+    // After click, the open vaadin-menu-bar-submenu contains a DIV with a
+    // vaadin-menu-bar-list-box whose children are the clickable menu items.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement item =
-        waitForVaadinElement(
-            driver, By.xpath("//vaadin-context-menu-item[contains(text(), '" + itemText + "')]"));
-    clickElement(item);
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      "const"
+                          + " openSub=Array.from(document.querySelectorAll('vaadin-menu-bar-submenu')).find(s=>s.opened);if(!openSub)return"
+                          + " null;const"
+                          + " listBox=openSub.querySelector('vaadin-menu-bar-list-box');if(!listBox)return"
+                          + " null;return"
+                          + " Array.from(listBox.children).find(el=>el.textContent.trim().includes(arguments[0]))||null;",
+                      itemText);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
+    js.executeScript("arguments[0].click();", item);
   }
 
   protected void toggleVaadinCheckbox(@NonNull By locator) {
@@ -718,14 +744,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return (List<String>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const grid = arguments[0];"
-                    + "const colIndex = arguments[1];"
-                    + "return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))"
-                    + "  .filter(cell => {"
-                    + "    const row = cell.assignedSlot.parentElement.parentElement;"
-                    + "    return !row.hasAttribute('header');"
-                    + "  })"
-                    + "  .map(cell => cell.innerText);",
+                "const grid=arguments[0];const colIndex=arguments[1];const"
+                    + " allCells=Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));const"
+                    + " rowCellMap=new Map();for(const cell of allCells){const"
+                    + " slot=cell.assignedSlot;if(!slot)continue;const"
+                    + " gridCell=slot.parentElement;if(!gridCell)continue;const"
+                    + " part=gridCell.getAttribute('part')||'';"
+                    + "if(!part.includes('body-cell'))continue;const"
+                    + " row=gridCell.parentElement;if(!row)continue;const"
+                    + " ci=Array.from(row.children).indexOf(gridCell);"
+                    + "if(!rowCellMap.has(row))rowCellMap.set(row,{});"
+                    + "rowCellMap.get(row)[ci]=cell.innerText.trim();}const"
+                    + " result=[];for(const[row,cells]of rowCellMap){const"
+                    + " hasContent=Object.values(cells).some(v=>v!=='');if(hasContent&&colIndex in"
+                    + " cells)result.push(cells[colIndex]);}return result;",
                 grid,
                 colIndex);
   }
