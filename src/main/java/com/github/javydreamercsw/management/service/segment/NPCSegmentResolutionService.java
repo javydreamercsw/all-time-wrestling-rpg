@@ -81,11 +81,11 @@ public class NPCSegmentResolutionService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment resolveTeamSegment(
-      @NonNull SegmentTeam team1,
-      @NonNull SegmentTeam team2,
-      @NonNull SegmentType segmentType,
-      @NonNull Show show,
-      String stipulation) {
+      @NonNull final SegmentTeam team1,
+      @NonNull final SegmentTeam team2,
+      @NonNull final SegmentType segmentType,
+      @NonNull final Show show,
+      final String stipulation) {
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
@@ -151,10 +151,10 @@ public class NPCSegmentResolutionService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment resolveMultiTeamSegment(
-      @NonNull List<SegmentTeam> teams,
-      @NonNull SegmentType segmentType,
-      @NonNull Show show,
-      String stipulation) {
+      @NonNull final List<SegmentTeam> teams,
+      @NonNull final SegmentType segmentType,
+      @NonNull final Show show,
+      final String stipulation) {
 
     if (teams.size() < 3) {
       throw new IllegalArgumentException("Multi-team segment requires at least 3 teams");
@@ -205,7 +205,7 @@ public class NPCSegmentResolutionService {
   }
 
   /** Get tier bonus for segment calculations. */
-  private int getTierBonus(@NonNull WrestlerTier tier) {
+  private int getTierBonus(@NonNull final WrestlerTier tier) {
     return switch (tier) {
       case ROOKIE -> 0;
       case RISER -> 4;
@@ -217,7 +217,7 @@ public class NPCSegmentResolutionService {
   }
 
   /** Get health penalty based on bumps and injuries in a specific universe. */
-  private int getHealthPenalty(@NonNull Wrestler wrestler, @NonNull Long universeId) {
+  private int getHealthPenalty(@NonNull final Wrestler wrestler, @NonNull final Long universeId) {
     int penalty = 0;
 
     com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
@@ -235,7 +235,7 @@ public class NPCSegmentResolutionService {
   }
 
   /** Add all team members as participants in the segment. */
-  private void addTeamParticipants(@NonNull Segment result, @NonNull SegmentTeam team) {
+  private void addTeamParticipants(@NonNull final Segment result, @NonNull final SegmentTeam team) {
     for (Wrestler wrestler : team.getMembers()) {
       wrestlerRepository.findById(wrestler.getId()).ifPresent(result::addParticipant);
     }
@@ -243,7 +243,7 @@ public class NPCSegmentResolutionService {
 
   /** Calculate team segment probabilities based on combined team statistics. */
   private TeamSegmentProbabilities calculateTeamSegmentProbabilities(
-      @NonNull SegmentTeam team1, @NonNull SegmentTeam team2) {
+      @NonNull final SegmentTeam team1, @NonNull final SegmentTeam team2) {
     int team1TotalWeight = team1.getTotalWeight();
     int team2TotalWeight = team2.getTotalWeight();
     log.debug("Team1 Total Weight: {}", team1TotalWeight);
@@ -255,17 +255,19 @@ public class NPCSegmentResolutionService {
     double team2Probability = (double) team2TotalWeight / totalWeight * 100;
 
     log.debug(
-        "Team segment probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},"
-            + " ATB:{}, THP:{})",
+        """
+        Team segment probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},\
+         ATB:{}, THP:{})\
+        """,
         team1.getTeamName(),
-        String.format("%.1f", team1Probability),
+        "%.1f".formatted(team1Probability),
         team1TotalWeight,
-        String.format("%.1f", team1.getAverageTierBonus()),
+        "%.1f".formatted(team1.getAverageTierBonus()),
         team1.getTotalHealthPenalty(),
         team2.getTeamName(),
-        String.format("%.1f", team2Probability),
+        "%.1f".formatted(team2Probability),
         team2TotalWeight,
-        String.format("%.1f", team2.getAverageTierBonus()),
+        "%.1f".formatted(team2.getAverageTierBonus()),
         team2.getTotalHealthPenalty());
 
     return new TeamSegmentProbabilities(
@@ -274,9 +276,9 @@ public class NPCSegmentResolutionService {
 
   /** Determine winning team using weighted random selection. */
   private SegmentTeam determineWinningTeam(
-      @NonNull SegmentTeam team1,
-      @NonNull SegmentTeam team2,
-      @NonNull TeamSegmentProbabilities probabilities) {
+      @NonNull final SegmentTeam team1,
+      @NonNull final SegmentTeam team2,
+      @NonNull final TeamSegmentProbabilities probabilities) {
     int totalWeight = probabilities.team1TotalWeight() + probabilities.team2TotalWeight();
     int randomValue = random.nextInt(totalWeight);
 
@@ -288,7 +290,7 @@ public class NPCSegmentResolutionService {
   }
 
   /** Determine winning team from multiple teams using weighted random selection. */
-  private SegmentTeam determineMultiTeamWinner(@NonNull List<SegmentTeam> teams) {
+  private SegmentTeam determineMultiTeamWinner(@NonNull final List<SegmentTeam> teams) {
     // Calculate total weight across all teams
     int totalWeight = teams.stream().mapToInt(SegmentTeam::getTotalWeight).sum();
 
@@ -309,7 +311,7 @@ public class NPCSegmentResolutionService {
   }
 
   /** Apply segment rules to a segment based on rule string. */
-  private void applySegmentRules(@NonNull Segment result, String stipulation) {
+  private void applySegmentRules(@NonNull final Segment result, final String stipulation) {
     if (stipulation == null
         || stipulation.trim().isEmpty()
         || "Standard Match".equals(stipulation)) {
@@ -355,14 +357,14 @@ public class NPCSegmentResolutionService {
       this.universeId = 1L;
     }
 
-    public TeamStatsCalculator(Show show) {
+    public TeamStatsCalculator(final Show show) {
       this.show = show;
       this.universeId =
           show != null && show.getUniverse() != null ? show.getUniverse().getId() : 1L;
     }
 
     /** Calculate total team weight based on individual wrestler stats. */
-    public int calculateTeamWeight(@NonNull SegmentTeam team) {
+    public int calculateTeamWeight(@NonNull final SegmentTeam team) {
       int baseWeight =
           team.getMembers().stream()
               .mapToInt(
@@ -436,8 +438,10 @@ public class NPCSegmentResolutionService {
               if (random.nextDouble() < 0.70) {
                 ringsideBonus += action.getImpact();
                 log.debug(
-                    "Manager {} successfully performed action ({}) for {}: +{} weight in universe"
-                        + " {}",
+                    """
+                    Manager {} successfully performed action ({}) for {}: +{} weight in universe\
+                     {}\
+                    """,
                     state.getManager().getName(),
                     action.getName(),
                     w.getName(),
@@ -453,7 +457,7 @@ public class NPCSegmentResolutionService {
     }
 
     /** Calculate average tier bonus for the team in the given universe. */
-    public double calculateAverageTierBonus(@NonNull SegmentTeam team) {
+    public double calculateAverageTierBonus(@NonNull final SegmentTeam team) {
       return team.getMembers().stream()
           .mapToInt(
               wrestler -> {
@@ -466,11 +470,11 @@ public class NPCSegmentResolutionService {
     }
 
     /** Calculate total health penalty for the team in the given universe. */
-    public int calculateTeamHealthPenalty(@NonNull SegmentTeam team) {
+    public int calculateTeamHealthPenalty(@NonNull final SegmentTeam team) {
       return team.getMembers().stream().mapToInt(w -> getHealthPenalty(w, universeId)).sum();
     }
 
-    private boolean isHomeTerritory(@NonNull Wrestler wrestler) {
+    private boolean isHomeTerritory(@NonNull final Wrestler wrestler) {
       if (show == null
           || show.getArena() == null
           || show.getArena().getLocation() == null

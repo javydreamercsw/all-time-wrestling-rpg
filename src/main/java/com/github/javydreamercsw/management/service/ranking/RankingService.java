@@ -66,13 +66,13 @@ public class RankingService {
 
   @org.springframework.beans.factory.annotation.Autowired
   public RankingService(
-      TitleRepository titleRepository,
-      WrestlerRepository wrestlerRepository,
-      FactionRepository factionRepository,
-      TeamRepository teamRepository,
-      DefaultImageService imageService,
-      WrestlerService wrestlerService,
-      WrestlerStateRepository wrestlerStateRepository) {
+      final TitleRepository titleRepository,
+      final WrestlerRepository wrestlerRepository,
+      final FactionRepository factionRepository,
+      final TeamRepository teamRepository,
+      final DefaultImageService imageService,
+      final WrestlerService wrestlerService,
+      final WrestlerStateRepository wrestlerStateRepository) {
     this.titleRepository = titleRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.factionRepository = factionRepository;
@@ -93,7 +93,7 @@ public class RankingService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<TitleReignDTO> getTitleReignHistory(@NonNull Long championshipId) {
+  public List<TitleReignDTO> getTitleReignHistory(@NonNull final Long championshipId) {
     return titleRepository
         .findById(championshipId)
         .map(
@@ -107,7 +107,7 @@ public class RankingService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<TitleReignDTO> getWrestlerTitleHistory(@NonNull Long wrestlerId) {
+  public List<TitleReignDTO> getWrestlerTitleHistory(@NonNull final Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -121,7 +121,7 @@ public class RankingService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<?> getRankedContenders(@NonNull Long championshipId) {
+  public List<?> getRankedContenders(@NonNull final Long championshipId) {
     Optional<Title> titleOpt = titleRepository.findById(championshipId);
     if (titleOpt.isEmpty()) {
       return List.of();
@@ -198,8 +198,10 @@ public class RankingService {
                         wrestlerService.getOrCreateState(wrestler.getId(), universeId);
                     boolean passesFilter = state.getTier().ordinal() >= tier.ordinal();
                     log.debug(
-                        "Wrestler {} (Tier: {}, Ordinal: {}) vs Title Tier {} (Ordinal: {})."
-                            + " Passes: {}",
+                        """
+                        Wrestler {} (Tier: {}, Ordinal: {}) vs Title Tier {} (Ordinal: {}).\
+                         Passes: {}\
+                        """,
                         wrestler.getName(),
                         state.getTier(),
                         state.getTier().ordinal(),
@@ -277,7 +279,7 @@ public class RankingService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<ChampionDTO> getCurrentChampions(@NonNull Long championshipId) {
+  public List<ChampionDTO> getCurrentChampions(@NonNull final Long championshipId) {
     Optional<Title> titleOpt = titleRepository.findById(championshipId);
     if (titleOpt.isEmpty()) {
       return Collections.emptyList();
@@ -305,7 +307,7 @@ public class RankingService {
         .orElse(Collections.emptyList());
   }
 
-  private ChampionshipDTO toChampionshipDTO(@NonNull Title title) {
+  private ChampionshipDTO toChampionshipDTO(@NonNull final Title title) {
     return ChampionshipDTO.builder()
         .id(title.getId())
         .name(title.getName())
@@ -314,7 +316,7 @@ public class RankingService {
         .build();
   }
 
-  private String resolveTitleImage(Title title) {
+  private String resolveTitleImage(final Title title) {
     if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
       return title.getImageUrl();
     }
@@ -322,7 +324,7 @@ public class RankingService {
   }
 
   private RankedWrestlerDTO toRankedWrestlerDTO(
-      @NonNull Wrestler wrestler, int rank, @NonNull Long universeId) {
+      @NonNull final Wrestler wrestler, final int rank, @NonNull final Long universeId) {
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
     return RankedWrestlerDTO.builder()
         .id(wrestler.getId())
@@ -333,7 +335,8 @@ public class RankingService {
         .build();
   }
 
-  private RankedTeamDTO toRankedTeamDTO(@NonNull Team team, int rank, @NonNull Long universeId) {
+  private RankedTeamDTO toRankedTeamDTO(
+      @NonNull final Team team, final int rank, @NonNull final Long universeId) {
     WrestlerState s1 = wrestlerService.getOrCreateState(team.getWrestler1().getId(), universeId);
     WrestlerState s2 = wrestlerService.getOrCreateState(team.getWrestler2().getId(), universeId);
     return RankedTeamDTO.builder()
@@ -344,7 +347,7 @@ public class RankingService {
         .build();
   }
 
-  private TitleReignDTO toTitleReignDTO(@NonNull TitleReign reign) {
+  private TitleReignDTO toTitleReignDTO(@NonNull final TitleReign reign) {
     return TitleReignDTO.builder()
         .id(reign.getId())
         .championNames(

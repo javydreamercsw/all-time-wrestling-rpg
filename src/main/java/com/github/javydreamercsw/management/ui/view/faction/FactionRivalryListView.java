@@ -60,10 +60,10 @@ public class FactionRivalryListView extends Main {
   final Grid<FactionRivalry> factionRivalryGrid;
 
   public FactionRivalryListView(
-      @NonNull FactionRivalryService factionRivalryService,
-      @NonNull FactionRivalryRepository factionRivalryRepository,
-      @NonNull FactionService factionService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final FactionRivalryService factionRivalryService,
+      @NonNull final FactionRivalryRepository factionRivalryRepository,
+      @NonNull final FactionService factionService,
+      @NonNull final SecurityUtils securityUtils) {
     this.factionRivalryService = factionRivalryService;
     this.factionRivalryRepository = factionRivalryRepository;
 

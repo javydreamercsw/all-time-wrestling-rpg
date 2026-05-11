@@ -59,7 +59,8 @@ public class CampaignAbilityCardListView extends Main {
   final Grid<CampaignAbilityCard> cardGrid;
 
   public CampaignAbilityCardListView(
-      @NonNull CampaignAbilityCardService cardService, @NonNull SecurityUtils securityUtils) {
+      @NonNull final CampaignAbilityCardService cardService,
+      @NonNull final SecurityUtils securityUtils) {
     this.cardService = cardService;
 
     name = new TextField();
@@ -190,7 +191,7 @@ public class CampaignAbilityCardListView extends Main {
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void deleteCard(@NonNull CampaignAbilityCard card) {
+  private void deleteCard(@NonNull final CampaignAbilityCard card) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Delete Card?");
     dialog.setText("Are you sure you want to delete this card?");

@@ -54,12 +54,12 @@ public class SeasonSettingsView extends VerticalLayout {
 
   @Autowired
   public SeasonSettingsView(
-      WrestlerService wrestlerService,
-      TierBoundaryService tierBoundaryService,
-      ShowSchedulerService showSchedulerService,
-      SeasonService seasonService,
-      UniverseContextService universeContextService,
-      NotificationService notificationService) {
+      final WrestlerService wrestlerService,
+      final TierBoundaryService tierBoundaryService,
+      final ShowSchedulerService showSchedulerService,
+      final SeasonService seasonService,
+      final UniverseContextService universeContextService,
+      final NotificationService notificationService) {
     this.wrestlerService = wrestlerService;
     this.tierBoundaryService = tierBoundaryService;
     this.showSchedulerService = showSchedulerService;
@@ -77,8 +77,10 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.setHeaderTitle("Confirm Reset");
               dialog.add(
                   new Paragraph(
-                      "Are you sure you want to reset all tier boundaries to their default values?"
-                          + " This might affect wrestler's tiers."));
+                      """
+                      Are you sure you want to reset all tier boundaries to their default values?\
+                       This might affect wrestler's tiers.\
+                      """));
 
               Button confirmButton =
                   new Button(
@@ -106,8 +108,10 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.setHeaderTitle("Confirm Fan Count Recalibration");
               dialog.add(
                   new Paragraph(
-                      "'Recalibration' means wrestler fan counts will be reset to the minimum of"
-                          + " their current tier. This cannot be undone. Are you sure?"));
+                      """
+                      'Recalibration' means wrestler fan counts will be reset to the minimum of\
+                       their current tier. This cannot be undone. Are you sure?\
+                      """));
 
               Button confirmButton =
                   new Button(
@@ -141,8 +145,10 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.setHeaderTitle("Confirm Reset All Fan Counts");
               dialog.add(
                   new Paragraph(
-                      "This will reset ALL wrestlers in this universe to 0 fans and ROOKIE tier."
-                          + " THIS CANNOT BE UNDONE."));
+                      """
+                      This will reset ALL wrestlers in this universe to 0 fans and ROOKIE tier.\
+                       THIS CANNOT BE UNDONE.\
+                      """));
 
               Button confirmButton =
                   new Button(
@@ -176,8 +182,10 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.setHeaderTitle("Confirm Schedule Generation");
               dialog.add(
                   new Paragraph(
-                      "This will generate shows for the entire active season based on configured"
-                          + " templates. Are you sure?"));
+                      """
+                      This will generate shows for the entire active season based on configured\
+                       templates. Are you sure?\
+                      """));
 
               Button confirmButton =
                   new Button(

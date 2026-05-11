@@ -57,11 +57,11 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
   @Autowired @Lazy private ShowTemplateSyncService self;
 
   public ShowTemplateSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      ShowTemplateService showTemplateService,
-      ShowTypeRepository showTypeRepository,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final ShowTemplateService showTemplateService,
+      final ShowTypeRepository showTypeRepository,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.showTemplateService = showTemplateService;
     this.showTypeRepository = showTypeRepository;
@@ -70,14 +70,14 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
 
   @Override
   @Transactional
-  public SyncResult syncToNotion(@NonNull String operationId) {
+  public SyncResult syncToNotion(@NonNull final String operationId) {
     log.warn("syncToNotion not implemented for ShowTemplateSyncService");
     return SyncResult.success("Show Templates", 0, 0, 0);
   }
 
   @Override
   @Transactional
-  public SyncResult syncToNotion(@NonNull String operationId, Collection<Long> ids) {
+  public SyncResult syncToNotion(@NonNull final String operationId, final Collection<Long> ids) {
     return syncToNotion(operationId);
   }
 
@@ -87,7 +87,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
    * @param operationId The unique ID for this sync operation
    * @return SyncResult containing the synchronization metrics
    */
-  public SyncResult syncShowTemplates(String operationId) {
+  public SyncResult syncShowTemplates(final String operationId) {
     SyncSessionManager sessionManager = syncServiceDependencies.getSyncSessionManager();
 
     if (sessionManager.isAlreadySyncedInSession("Show Templates")) {
@@ -103,7 +103,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
     }
   }
 
-  private SyncResult performShowTemplatesSync(String operationId) {
+  private SyncResult performShowTemplatesSync(final String operationId) {
     long startTime = System.currentTimeMillis();
     log.info("🎭 Starting show templates synchronization from Notion...");
 
@@ -149,7 +149,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
           .updateProgress(
               operationId,
               2,
-              String.format("Converting %d show templates to DTOs...", templatePages.size()));
+              "Converting %d show templates to DTOs...".formatted(templatePages.size()));
       log.info("🔄 Converting show templates to DTOs...");
       long convertStart = System.currentTimeMillis();
       List<ShowTemplateDTO> templateDTOs =
@@ -171,7 +171,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
           .updateProgress(
               operationId,
               3,
-              String.format("Saving %d show templates to database...", filteredDTOs.size()));
+              "Saving %d show templates to database...".formatted(filteredDTOs.size()));
       log.info("💾 Saving show templates to database...");
       long dbStart = System.currentTimeMillis();
       int successCount = saveShowTemplatesToDatabase(filteredDTOs);
@@ -188,7 +188,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
           .completeOperation(
               operationId,
               true,
-              String.format("Successfully synced %d show templates", successCount),
+              "Successfully synced %d show templates".formatted(successCount),
               successCount);
 
       // Record success in health monitor
@@ -214,7 +214,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
   }
 
   private List<ShowTemplateDTO> convertShowTemplatePagesToDTOs(
-      @NonNull List<ShowTemplatePage> templatePages, String operationId) {
+      @NonNull final List<ShowTemplatePage> templatePages, final String operationId) {
     return processWithControlledParallelism(
         templatePages,
         this::convertShowTemplatePageToDTO,
@@ -225,7 +225,8 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
   }
 
   /** Converts a single ShowTemplatePage to ShowTemplateDTO. */
-  private ShowTemplateDTO convertShowTemplatePageToDTO(@NonNull ShowTemplatePage templatePage) {
+  private ShowTemplateDTO convertShowTemplatePageToDTO(
+      @NonNull final ShowTemplatePage templatePage) {
     ShowTemplateDTO dto = new ShowTemplateDTO();
     dto.setName(
         syncServiceDependencies
@@ -272,7 +273,7 @@ public class ShowTemplateSyncService extends BaseSyncService implements NotionEn
     return dto;
   }
 
-  private int saveShowTemplatesToDatabase(@NonNull List<ShowTemplateDTO> templateDTOs) {
+  private int saveShowTemplatesToDatabase(@NonNull final List<ShowTemplateDTO> templateDTOs) {
     int savedCount = 0;
     int updatedCount = 0;
     int skippedCount = 0;

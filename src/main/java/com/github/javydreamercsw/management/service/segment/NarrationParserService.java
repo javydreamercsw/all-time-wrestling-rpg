@@ -37,7 +37,7 @@ public class NarrationParserService {
    * @param rawNarration The raw text from the AI.
    * @return A list of structured dialogue lines.
    */
-  public List<NarrationLineDTO> parse(String rawNarration) {
+  public List<NarrationLineDTO> parse(final String rawNarration) {
     List<NarrationLineDTO> lines = new ArrayList<>();
     if (rawNarration == null || rawNarration.trim().isEmpty()) {
       return lines;

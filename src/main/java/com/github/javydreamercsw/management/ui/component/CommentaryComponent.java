@@ -42,14 +42,15 @@ public class CommentaryComponent extends VerticalLayout {
         LumoUtility.Padding.MEDIUM);
   }
 
-  public void setCommentary(@NonNull List<NarrationLineDTO> lines, Map<String, String> alignments) {
+  public void setCommentary(
+      @NonNull final List<NarrationLineDTO> lines, final Map<String, String> alignments) {
     if (alignments != null) {
       this.commentatorAlignments = alignments;
     }
     setCommentary(lines);
   }
 
-  public void setCommentary(@NonNull List<NarrationLineDTO> lines) {
+  public void setCommentary(@NonNull final List<NarrationLineDTO> lines) {
     removeAll();
     if (lines.isEmpty()) {
       Span emptyMessage = new Span("No commentary available.");
@@ -63,7 +64,7 @@ public class CommentaryComponent extends VerticalLayout {
     }
   }
 
-  private Div createLineComponent(NarrationLineDTO line) {
+  private Div createLineComponent(final NarrationLineDTO line) {
     Div container = new Div();
     container.setWidthFull();
     container.addClassNames(

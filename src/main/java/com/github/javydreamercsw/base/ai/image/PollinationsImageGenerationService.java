@@ -42,7 +42,7 @@ public class PollinationsImageGenerationService implements ImageGenerationServic
   private final AiSettingsService aiSettings;
 
   @Override
-  public String generateImage(@NonNull ImageRequest request) {
+  public String generateImage(@NonNull final ImageRequest request) {
     log.info("Generating image with Pollinations. Prompt: {}", request.getPrompt());
 
     String encodedPrompt = URLEncoder.encode(request.getPrompt(), StandardCharsets.UTF_8);
@@ -86,8 +86,10 @@ public class PollinationsImageGenerationService implements ImageGenerationServic
                 .header("Authorization", "Bearer " + apiKey)
                 .header(
                     "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like"
-                        + " Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                    """
+                    Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like\
+                     Gecko) Chrome/91.0.4472.124 Safari/537.36\
+                    """)
                 .header(
                     "Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
                 .header("Accept-Language", "en-US,en;q=0.9")

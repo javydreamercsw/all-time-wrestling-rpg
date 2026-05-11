@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 public class MockImageGenerationService implements ImageGenerationService {
 
   @Override
-  public String generateImage(@NonNull ImageRequest request) {
+  public String generateImage(@NonNull final ImageRequest request) {
     log.info("Mock AI generating image for prompt: {}", request.getPrompt());
     // Return a sample base64 placeholder or a dummy URL
     if ("b64_json".equalsIgnoreCase(request.getResponseFormat())) {

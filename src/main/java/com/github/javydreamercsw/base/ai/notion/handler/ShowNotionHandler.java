@@ -32,7 +32,7 @@ public class ShowNotionHandler implements NotionEntityHandler<ShowPage> {
 
   private final NotionHandler notionHandler;
 
-  public ShowNotionHandler(NotionHandler notionHandler) {
+  public ShowNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -42,13 +42,13 @@ public class ShowNotionHandler implements NotionEntityHandler<ShowPage> {
   }
 
   @Override
-  public Optional<ShowPage> loadById(@NonNull String id) {
+  public Optional<ShowPage> loadById(@NonNull final String id) {
     log.debug("Loading show with ID: '{}'", id);
     return notionHandler.loadPage(id).map(page -> mapPageToShowPage(page, ""));
   }
 
   @Override
-  public Optional<ShowPage> loadByName(@NonNull String name) {
+  public Optional<ShowPage> loadByName(@NonNull final String name) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -58,7 +58,7 @@ public class ShowNotionHandler implements NotionEntityHandler<ShowPage> {
   }
 
   @Override
-  public List<ShowPage> loadAll(boolean syncMode) {
+  public List<ShowPage> loadAll(final boolean syncMode) {
     log.debug("Loading all shows for sync operation (optimized)");
 
     // Check if NOTION_TOKEN is available first
@@ -86,7 +86,7 @@ public class ShowNotionHandler implements NotionEntityHandler<ShowPage> {
   }
 
   /** Maps a Notion page to a ShowPage object with full relationship resolution. */
-  private ShowPage mapPageToShowPage(@NonNull Page pageData, @NonNull String showName) {
+  private ShowPage mapPageToShowPage(@NonNull final Page pageData, @NonNull final String showName) {
     ShowPage showPage =
         notionHandler.mapPageToGenericEntity(
             pageData,
@@ -100,7 +100,8 @@ public class ShowNotionHandler implements NotionEntityHandler<ShowPage> {
   }
 
   /** Maps a Notion page to a ShowPage object with minimal relationship resolution for sync. */
-  private ShowPage mapPageToShowPageForSync(@NonNull Page pageData, @NonNull String showName) {
+  private ShowPage mapPageToShowPageForSync(
+      @NonNull final Page pageData, @NonNull final String showName) {
     ShowPage showPage =
         notionHandler.mapPageToGenericEntity(
             pageData,

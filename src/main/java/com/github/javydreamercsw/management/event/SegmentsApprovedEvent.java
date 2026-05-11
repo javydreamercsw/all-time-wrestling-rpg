@@ -23,7 +23,7 @@ import org.springframework.context.ApplicationEvent;
 public class SegmentsApprovedEvent extends ApplicationEvent {
   @Getter private final Show show;
 
-  public SegmentsApprovedEvent(Object source, Show show) {
+  public SegmentsApprovedEvent(final Object source, final Show show) {
     super(source);
     this.show = show;
   }

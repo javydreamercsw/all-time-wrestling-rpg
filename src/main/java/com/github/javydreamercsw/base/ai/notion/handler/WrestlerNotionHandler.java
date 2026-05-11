@@ -37,7 +37,7 @@ public class WrestlerNotionHandler implements NotionEntityHandler<WrestlerPage> 
 
   private final NotionHandler notionHandler;
 
-  public WrestlerNotionHandler(NotionHandler notionHandler) {
+  public WrestlerNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -47,12 +47,12 @@ public class WrestlerNotionHandler implements NotionEntityHandler<WrestlerPage> 
   }
 
   @Override
-  public Optional<WrestlerPage> loadById(@NonNull String id) {
+  public Optional<WrestlerPage> loadById(@NonNull final String id) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public Optional<WrestlerPage> loadByName(@NonNull String name) {
+  public Optional<WrestlerPage> loadByName(@NonNull final String name) {
     log.debug("Loading wrestler: '{}'", name);
 
     // First, find the wrestlers database
@@ -79,7 +79,7 @@ public class WrestlerNotionHandler implements NotionEntityHandler<WrestlerPage> 
   }
 
   @Override
-  public List<WrestlerPage> loadAll(boolean syncMode) {
+  public List<WrestlerPage> loadAll(final boolean syncMode) {
     log.debug("Loading all wrestlers from Wrestlers database (syncMode: {})", syncMode);
 
     String wrestlerDbId = notionHandler.getDatabaseId(getDatabaseName());
@@ -107,7 +107,9 @@ public class WrestlerNotionHandler implements NotionEntityHandler<WrestlerPage> 
 
   /** Internal method to load a wrestler from a specific database. */
   private Optional<WrestlerPage> loadWrestlerFromDatabase(
-      @NonNull NotionClient client, @NonNull String databaseId, @NonNull String wrestlerName) {
+      @NonNull final NotionClient client,
+      @NonNull final String databaseId,
+      @NonNull final String wrestlerName) {
     try {
       log.debug("Searching for wrestler '{}' in database {}", wrestlerName, databaseId);
 
@@ -150,7 +152,8 @@ public class WrestlerNotionHandler implements NotionEntityHandler<WrestlerPage> 
   }
 
   /** Maps a Notion page to a WrestlerPage object. */
-  private WrestlerPage mapPageToWrestlerPage(@NonNull Page pageData, @NonNull String wrestlerName) {
+  private WrestlerPage mapPageToWrestlerPage(
+      @NonNull final Page pageData, @NonNull final String wrestlerName) {
     log.debug("Mapping Notion page to WrestlerPage object for: {}", wrestlerName);
 
     WrestlerPage wrestlerPage = new WrestlerPage();
@@ -210,7 +213,7 @@ public class WrestlerNotionHandler implements NotionEntityHandler<WrestlerPage> 
 
   /** Maps a Notion page to a WrestlerPage object in sync mode (minimal processing). */
   private WrestlerPage mapPageToWrestlerPageSyncMode(
-      @NonNull Page pageData, @NonNull String wrestlerName) {
+      @NonNull final Page pageData, @NonNull final String wrestlerName) {
     log.debug("Mapping Notion page to WrestlerPage object in sync mode for: {}", wrestlerName);
 
     WrestlerPage wrestlerPage = new WrestlerPage();

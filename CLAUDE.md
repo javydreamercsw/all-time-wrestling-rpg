@@ -116,4 +116,3 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 - **ArchUnit:** architecture rules are enforced by tests in `*ArchTests.java`; violations fail the build.
 - **Flyway:** add new migrations as versioned SQL files in both `h2/` and `mysql/` directories when changing the schema.
 - **Notion sync:** entities that sync from Notion extend `AbstractSyncableEntity`. See `docs/SYNC_TROUBLESHOOTING.md` for debugging.
-

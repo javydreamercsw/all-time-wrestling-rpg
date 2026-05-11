@@ -28,7 +28,9 @@ public class GameDateChangedEvent extends ApplicationEvent {
   private final LocalDate newDate;
 
   public GameDateChangedEvent(
-      @NonNull Object source, @NonNull LocalDate oldDate, @NonNull LocalDate newDate) {
+      @NonNull final Object source,
+      @NonNull final LocalDate oldDate,
+      @NonNull final LocalDate newDate) {
     super(source);
     this.oldDate = oldDate;
     this.newDate = newDate;

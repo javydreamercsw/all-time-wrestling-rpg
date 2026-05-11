@@ -53,7 +53,8 @@ public class PerformanceMonitoringAspect {
   /** Monitors performance of methods annotated with @MonitorPerformance. */
   @Around("@annotation(monitorPerformance)")
   public Object monitorMethodPerformance(
-      ProceedingJoinPoint joinPoint, MonitorPerformance monitorPerformance) throws Throwable {
+      final ProceedingJoinPoint joinPoint, final MonitorPerformance monitorPerformance)
+      throws Throwable {
     String operationName = getOperationName(joinPoint, monitorPerformance);
 
     performanceMonitoringService.startOperation(operationName);
@@ -74,9 +75,11 @@ public class PerformanceMonitoringAspect {
    * PerformanceMonitoringService to avoid circular dependencies.
    */
   @Around(
-      "execution(* com.github.javydreamercsw.management.service..*(..)) && !execution(*"
-          + " com.github.javydreamercsw.management.service.performance..*(..))")
-  public Object monitorServiceMethods(ProceedingJoinPoint joinPoint) throws Throwable {
+      """
+      execution(* com.github.javydreamercsw.management.service..*(..)) && !execution(*\
+       com.github.javydreamercsw.management.service.performance..*(..))\
+      """)
+  public Object monitorServiceMethods(final ProceedingJoinPoint joinPoint) throws Throwable {
     String className = joinPoint.getTarget().getClass().getSimpleName();
     String methodName = joinPoint.getSignature().getName();
     String operationName = className + "." + methodName;
@@ -107,7 +110,7 @@ public class PerformanceMonitoringAspect {
 
   /** Monitors performance of repository methods (database operations). */
   @Around("execution(* com.github.javydreamercsw.management.domain..*Repository.*(..))")
-  public Object monitorRepositoryMethods(ProceedingJoinPoint joinPoint) throws Throwable {
+  public Object monitorRepositoryMethods(final ProceedingJoinPoint joinPoint) throws Throwable {
     String className = joinPoint.getTarget().getClass().getSimpleName();
     String methodName = joinPoint.getSignature().getName();
     String operationName = className + "." + methodName;
@@ -142,9 +145,11 @@ public class PerformanceMonitoringAspect {
    * controllers to avoid circular dependencies.
    */
   @Around(
-      "execution(* com.github.javydreamercsw.management.controller..*(..)) && !execution(*"
-          + " com.github.javydreamercsw.management.controller.system.PerformanceController.*(..))")
-  public Object monitorControllerMethods(ProceedingJoinPoint joinPoint) throws Throwable {
+      """
+      execution(* com.github.javydreamercsw.management.controller..*(..)) && !execution(*\
+       com.github.javydreamercsw.management.controller.system.PerformanceController.*(..))\
+      """)
+  public Object monitorControllerMethods(final ProceedingJoinPoint joinPoint) throws Throwable {
     String className = joinPoint.getTarget().getClass().getSimpleName();
     String methodName = joinPoint.getSignature().getName();
     String operationName = className + "." + methodName;
@@ -176,7 +181,7 @@ public class PerformanceMonitoringAspect {
 
   /** Monitors Notion sync operations specifically. */
   @Around("execution(* com.github.javydreamercsw.management.service.sync..*(..))")
-  public Object monitorSyncMethods(ProceedingJoinPoint joinPoint) throws Throwable {
+  public Object monitorSyncMethods(final ProceedingJoinPoint joinPoint) throws Throwable {
     String className = joinPoint.getTarget().getClass().getSimpleName();
     String methodName = joinPoint.getSignature().getName();
     String operationName = "sync." + className + "." + methodName;
@@ -208,7 +213,7 @@ public class PerformanceMonitoringAspect {
 
   /** Gets the operation name from the join point and annotation. */
   private String getOperationName(
-      ProceedingJoinPoint joinPoint, MonitorPerformance monitorPerformance) {
+      final ProceedingJoinPoint joinPoint, final MonitorPerformance monitorPerformance) {
     if (!monitorPerformance.value().isEmpty()) {
       return monitorPerformance.value();
     }

@@ -267,18 +267,20 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     for (String table : manualTables) {
       try {
-        if (table.equals("campaign_state")) {
+        if ("campaign_state".equals(table)) {
           jdbcTemplate.execute(
               "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
-        } else if (table.equals("campaign_storyline")) {
+        } else if ("campaign_storyline".equals(table)) {
           jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
-        } else if (table.equals("storyline_milestone")) {
+        } else if ("storyline_milestone".equals(table)) {
           jdbcTemplate.execute(
-              "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL,"
-                  + " storyline_id = NULL");
-        } else if (table.equals("faction")) {
+              """
+              UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL,\
+               storyline_id = NULL\
+              """);
+        } else if ("faction".equals(table)) {
           jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
-        } else if (table.equals("account")) {
+        } else if ("account".equals(table)) {
           // Break link from wrestler back to account
           jdbcTemplate.execute("UPDATE wrestler SET account_id = NULL");
         }
@@ -334,12 +336,12 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
   }
 
-  private void resetSequence(String tableName) {
+  private void resetSequence(final String tableName) {
     try {
       String sql = "ALTER TABLE " + tableName + " ALTER COLUMN id RESTART WITH 1";
-      if (tableName.equalsIgnoreCase("wrestler")) {
+      if ("wrestler".equalsIgnoreCase(tableName)) {
         sql = "ALTER TABLE wrestler ALTER COLUMN wrestler_id RESTART WITH 1";
-      } else if (tableName.equalsIgnoreCase("show")) {
+      } else if ("show".equalsIgnoreCase(tableName)) {
         sql = "ALTER TABLE show ALTER COLUMN show_id RESTART WITH 1";
       }
 
@@ -372,7 +374,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     for (String beanName : beanNames) {
       // Skip role repository to avoid deleting core roles
-      if (beanName.equals("roleRepository")) {
+      if ("roleRepository".equals(beanName)) {
         continue;
       }
       try {
@@ -396,7 +398,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
    * repository interface generics.
    */
-  private String extractEntityName(JpaRepository<?, ?> repository, String beanName) {
+  private String extractEntityName(final JpaRepository<?, ?> repository, final String beanName) {
     // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
     if (beanName.endsWith("Repository")) {
       return beanName.substring(0, beanName.length() - "Repository".length());

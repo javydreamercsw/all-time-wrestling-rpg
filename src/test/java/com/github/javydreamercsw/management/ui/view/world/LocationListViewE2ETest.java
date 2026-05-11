@@ -94,7 +94,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("E2E Test City"));
+                .anyMatch(it -> "E2E Test City".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -138,7 +138,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Edit Me City Updated"));
+                .anyMatch(it -> "Edit Me City Updated".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -146,7 +146,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
 
     assertTrue(
         locationRepository.findAll().stream()
-            .anyMatch(l -> l.getName().equals("Edit Me City Updated")));
+            .anyMatch(l -> "Edit Me City Updated".equals(l.getName())));
   }
 
   @Test
@@ -181,7 +181,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> it.getText().equals("Delete Me City"));
+                .noneMatch(it -> "Delete Me City".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }

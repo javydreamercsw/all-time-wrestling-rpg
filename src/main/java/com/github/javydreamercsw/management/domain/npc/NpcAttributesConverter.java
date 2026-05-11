@@ -32,7 +32,7 @@ public class NpcAttributesConverter implements AttributeConverter<Map<String, Ob
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  public String convertToDatabaseColumn(Map<String, Object> attribute) {
+  public String convertToDatabaseColumn(final Map<String, Object> attribute) {
     if (attribute == null || attribute.isEmpty()) {
       return "{}";
     }
@@ -45,7 +45,7 @@ public class NpcAttributesConverter implements AttributeConverter<Map<String, Ob
   }
 
   @Override
-  public Map<String, Object> convertToEntityAttribute(String dbData) {
+  public Map<String, Object> convertToEntityAttribute(final String dbData) {
     if (dbData == null || dbData.isEmpty() || "null".equals(dbData)) {
       return new HashMap<>();
     }

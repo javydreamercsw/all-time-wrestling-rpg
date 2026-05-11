@@ -25,7 +25,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility.*;
 
 public final class ViewToolbar extends Composite<Header> {
 
-  public ViewToolbar(String viewTitle, Component... components) {
+  public ViewToolbar(final String viewTitle, final Component... components) {
     addClassNames(
         Display.FLEX,
         FlexDirection.COLUMN,
@@ -55,7 +55,7 @@ public final class ViewToolbar extends Composite<Header> {
     }
   }
 
-  public static Component group(Component... components) {
+  public static Component group(final Component... components) {
     var group = new Div(components);
     group.addClassNames(
         Display.FLEX,

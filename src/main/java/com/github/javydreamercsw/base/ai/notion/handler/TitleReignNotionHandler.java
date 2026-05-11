@@ -29,7 +29,7 @@ public class TitleReignNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public TitleReignNotionHandler(NotionHandler notionHandler) {
+  public TitleReignNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -69,7 +69,7 @@ public class TitleReignNotionHandler {
 
   /** Maps a Notion page to a TitleReignPage object. */
   private TitleReignPage mapPageToTitleReignPage(
-      @NonNull Page pageData, @NonNull String entityName) {
+      @NonNull final Page pageData, @NonNull final String entityName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, entityName, "Title Reign", TitleReignPage::new, TitleReignPage.NotionParent::new);
   }

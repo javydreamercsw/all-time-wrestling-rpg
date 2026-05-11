@@ -144,7 +144,7 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
     Assertions.assertTrue(imageSrc.contains(updated.getImageUrl()));
   }
 
-  protected void waitForGridToPopulate(@NonNull String gridId) {
+  protected void waitForGridToPopulate(@NonNull final String gridId) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {

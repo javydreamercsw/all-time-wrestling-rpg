@@ -85,12 +85,12 @@ public class TeamFormDialog extends Dialog {
 
   @Autowired
   public TeamFormDialog(
-      TeamService teamService,
-      WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      FactionService factionService,
-      NpcService npcService,
-      SecurityUtils securityUtils) {
+      final TeamService teamService,
+      final WrestlerService wrestlerService,
+      final WrestlerRepository wrestlerRepository,
+      final FactionService factionService,
+      final NpcService npcService,
+      final SecurityUtils securityUtils) {
     this.teamService = teamService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -300,7 +300,7 @@ public class TeamFormDialog extends Dialog {
             .collect(Collectors.toList()));
   }
 
-  public void setTeam(TeamDTO team) {
+  public void setTeam(final TeamDTO team) {
     this.currentTeam = team;
 
     // Load combo box data
@@ -392,12 +392,12 @@ public class TeamFormDialog extends Dialog {
     }
   }
 
-  private void showSuccessNotification(String message) {
+  private void showSuccessNotification(final String message) {
     Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
     notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void showErrorNotification(String message) {
+  private void showErrorNotification(final String message) {
     Notification notification = Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
   }

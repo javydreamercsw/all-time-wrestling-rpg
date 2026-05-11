@@ -57,11 +57,11 @@ public class NotionSyncService extends BaseSyncService {
 
   @Autowired
   public NotionSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionSyncServicesManager servicesManager,
-      NotionApiExecutor notionApiExecutor,
-      ParallelSyncOrchestrator parallelSyncOrchestrator) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionSyncServicesManager servicesManager,
+      final NotionApiExecutor notionApiExecutor,
+      final ParallelSyncOrchestrator parallelSyncOrchestrator) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.servicesManager = servicesManager;
     this.parallelSyncOrchestrator = parallelSyncOrchestrator;
@@ -106,73 +106,85 @@ public class NotionSyncService extends BaseSyncService {
     }
   }
 
-  public SyncResult syncWrestlers(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncWrestlers(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     WrestlerSyncService service = servicesManager.getWrestlerSyncService();
     return service.syncWrestlers(operationId);
   }
 
-  public SyncResult syncFactions(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncFactions(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     FactionSyncService service = servicesManager.getFactionSyncService();
     return service.syncFactions(operationId);
   }
 
-  public SyncResult syncTeams(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncTeams(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     TeamSyncService service = servicesManager.getTeamSyncService();
     return service.syncTeams(operationId);
   }
 
-  public SyncResult syncTitles(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncTitles(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     TitleSyncService service = servicesManager.getTitleSyncService();
     return service.syncTitles(operationId);
   }
 
-  public SyncResult syncTitleReigns(@NonNull String operationId) {
+  public SyncResult syncTitleReigns(@NonNull final String operationId) {
     TitleReignSyncService service = servicesManager.getTitleReignSyncService();
     return service.syncTitleReigns(operationId);
   }
 
-  public SyncResult syncShowTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncShowTypes(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     ShowTypeSyncService service = servicesManager.getShowTypeSyncService();
     return service.syncShowTypes(operationId);
   }
 
-  public SyncResult syncSeasons(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncSeasons(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     SeasonSyncService service = servicesManager.getSeasonSyncService();
     return service.syncSeasons(operationId);
   }
 
-  public SyncResult syncShows(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncShows(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     ShowSyncService service = servicesManager.getShowSyncService();
     return service.syncShows(operationId);
   }
 
-  public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncSegments(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     SegmentSyncService service = servicesManager.getSegmentSyncService();
     return service.syncSegments(operationId);
   }
 
-  public SyncResult syncInjuryTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncInjuryTypes(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     InjuryTypeSyncService service = servicesManager.getInjuryTypeSyncService();
     return service.syncInjuryTypes(operationId);
   }
 
-  public SyncResult syncInjuries(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncInjuries(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     InjurySyncService service = servicesManager.getInjurySyncService();
     return service.syncInjuries(operationId);
   }
 
-  public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncNpcs(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     NpcSyncService service = servicesManager.getNpcSyncService();
     return service.syncNpcs(operationId, direction);
   }
 
-  public SyncResult syncRivalries(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncRivalries(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     RivalrySyncService service = servicesManager.getRivalrySyncService();
     return service.syncRivalries(operationId);
   }
 
   public SyncResult syncFactionRivalries(
-      @NonNull String operationId, @NonNull SyncDirection direction) {
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     FactionRivalrySyncService service = servicesManager.getFactionRivalrySyncService();
     if (direction == SyncDirection.INBOUND) {
       return service.syncFactionRivalries(operationId);
@@ -182,7 +194,7 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   public SyncResult syncShowTemplates(
-      @NonNull String operationId, @NonNull SyncDirection direction) {
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     if (direction == SyncDirection.INBOUND) {
       return servicesManager.getShowTemplateSyncService().syncShowTemplates(operationId);
     } else {

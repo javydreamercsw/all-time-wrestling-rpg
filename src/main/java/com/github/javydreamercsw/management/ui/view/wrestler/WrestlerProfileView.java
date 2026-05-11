@@ -141,25 +141,26 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   @Autowired
   public WrestlerProfileView(
-      WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      TitleService titleService,
-      RankingService rankingService,
-      SegmentService segmentService,
-      MultiWrestlerFeudService multiWrestlerFeudService,
-      RivalryService rivalryService,
-      SeasonService seasonService,
-      InjuryService injuryService,
-      NpcService npcService,
-      @Qualifier("baseAccountService") AccountService accountService,
-      CampaignService campaignService,
-      ImageStorageService imageStorageService,
-      UniverseContextService universeContextService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      final WrestlerService wrestlerService,
+      final WrestlerRepository wrestlerRepository,
+      final TitleService titleService,
+      final RankingService rankingService,
+      final SegmentService segmentService,
+      final MultiWrestlerFeudService multiWrestlerFeudService,
+      final RivalryService rivalryService,
+      final SeasonService seasonService,
+      final InjuryService injuryService,
+      final NpcService npcService,
+      @Qualifier("baseAccountService") final AccountService accountService,
+      final CampaignService campaignService,
+      final ImageStorageService imageStorageService,
+      final UniverseContextService universeContextService,
+      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
           wrestlerStatusService,
-      com.github.javydreamercsw.management.service.campaign.StatusCardService statusCardService) {
+      final com.github.javydreamercsw.management.service.campaign.StatusCardService
+          statusCardService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -292,7 +293,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   @Override
   @Transactional
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     RouteParameters parameters = event.getRouteParameters();
     if (parameters.get("wrestlerId").isPresent()) {
       Long wrestlerId = Long.valueOf(parameters.get("wrestlerId").get());
@@ -334,9 +335,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               imageStorageService,
               universeContextService));
       wrestlerName.setText(wrestler.getName());
-      String details = String.format("Gender: %s, Fans: %d", wrestler.getGender(), state.getFans());
+      String details = "Gender: %s, Fans: %d".formatted(wrestler.getGender(), state.getFans());
       if (wrestler.getHeritageTag() != null && !wrestler.getHeritageTag().isEmpty()) {
-        details += String.format(", Heritage: %s", wrestler.getHeritageTag());
+        details += ", Heritage: %s".formatted(wrestler.getHeritageTag());
       }
       wrestlerDetails.setText(details);
 
@@ -368,7 +369,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         double totalMatches = wrestlerStats.getWins() + wrestlerStats.getLosses();
         if (totalMatches > 0) {
           double winPercentage = (wrestlerStats.getWins() / totalMatches) * 100;
-          statsLayout.add(new Paragraph(String.format("Win Percentage: %.2f%%", winPercentage)));
+          statsLayout.add(new Paragraph("Win Percentage: %.2f%%".formatted(winPercentage)));
         }
       } else {
         statsLayout.add(new Paragraph("Stats not available."));
@@ -458,12 +459,12 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
             rel -> {
               Wrestler partner = rel.getPartner(wrestler);
               String text =
-                  String.format(
-                      "%s: %s (Level: %d%s)",
-                      rel.getType().getDisplayName(),
-                      partner.getName(),
-                      rel.getLevel(),
-                      rel.getIsStoryline() ? ", Storyline" : "");
+                  "%s: %s (Level: %d%s)"
+                      .formatted(
+                          rel.getType().getDisplayName(),
+                          partner.getName(),
+                          rel.getLevel(),
+                          rel.getIsStoryline() ? ", Storyline" : "");
               relationshipsContainer.add(new Paragraph(text));
             });
       }
@@ -657,7 +658,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       feudHistoryItems.forEach(
           item ->
               feudHistoryLayout.add(
-                  new Paragraph(String.format("%s (Heat: %d)", item.name(), item.heat()))));
+                  new Paragraph("%s (Heat: %d)".formatted(item.name(), item.heat()))));
     }
   }
 }

@@ -46,9 +46,11 @@ public class HallOfFameDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Dashboards",
         "Hall of Fame",
-        "The Hall of Fame tracks the top players across the entire ATW RPG ecosystem."
-            + " Ranking is primarily based on the Legacy Score, which combines cumulative fans"
-            + " earned across all managed wrestlers and points from unlocked achievements.",
+        """
+        The Hall of Fame tracks the top players across the entire ATW RPG ecosystem.\
+         Ranking is primarily based on the Legacy Score, which combines cumulative fans\
+         earned across all managed wrestlers and points from unlocked achievements.\
+        """,
         "hall-of-fame");
   }
 
@@ -76,9 +78,11 @@ public class HallOfFameDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Player Dashboard",
         "Career Legacy",
-        "Your persistent career progress is tracked at the account level. View your current Legacy"
-            + " Score, Prestige XP, and earned achievement badges directly from your dashboard."
-            + " These stats persist across seasons and different wrestlers.",
+        """
+        Your persistent career progress is tracked at the account level. View your current Legacy\
+         Score, Prestige XP, and earned achievement badges directly from your dashboard.\
+         These stats persist across seasons and different wrestlers.\
+        """,
         "player-career-legacy");
 
     // Navigate to Achievements tab
@@ -89,13 +93,15 @@ public class HallOfFameDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Player Dashboard",
         "Medals & Achievements",
-        "Track your progress toward various career milestones in the Achievements tab. Each"
-            + " achievement awards permanent Prestige XP and a unique medal displayed on your"
-            + " profile.",
+        """
+        Track your progress toward various career milestones in the Achievements tab. Each\
+         achievement awards permanent Prestige XP and a unique medal displayed on your\
+         profile.\
+        """,
         "player-achievements");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

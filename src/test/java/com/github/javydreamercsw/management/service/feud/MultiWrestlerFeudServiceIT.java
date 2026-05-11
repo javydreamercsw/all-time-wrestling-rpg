@@ -74,10 +74,10 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   private Wrestler createWrestler(
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull WrestlerTier tier,
-      Account account) {
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final WrestlerTier tier,
+      final Account account) {
     Universe defaultUniverse =
         universeRepository.findAll().stream()
             .findFirst()

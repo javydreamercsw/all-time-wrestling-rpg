@@ -44,7 +44,8 @@ public class AccountFormDialog extends Dialog {
   private final BeanValidationBinder<Account> binder = new BeanValidationBinder<>(Account.class);
 
   public AccountFormDialog(
-      @Qualifier("managementAccountService") AccountService accountService, Account account) {
+      @Qualifier("managementAccountService") final AccountService accountService,
+      final Account account) {
     this.accountService = accountService;
     this.account = account;
     binder.setBean(account);

@@ -24,7 +24,7 @@ public abstract class BaseTest {
    * Helper method to set private fields via reflection for testing. This is needed because we
    * switched from constructor injection to field injection.
    */
-  protected void setField(Object target, String fieldName, Object value) {
+  protected void setField(final Object target, final String fieldName, final Object value) {
     try {
       Field field = findField(target.getClass(), fieldName);
       field.setAccessible(true);
@@ -35,7 +35,8 @@ public abstract class BaseTest {
   }
 
   /** Recursively searches for a field in the class hierarchy. */
-  private Field findField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+  private Field findField(final Class<?> clazz, final String fieldName)
+      throws NoSuchFieldException {
     try {
       return clazz.getDeclaredField(fieldName);
     } catch (NoSuchFieldException e) {

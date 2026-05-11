@@ -163,7 +163,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains("Corporate Power Trip"));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

@@ -73,8 +73,10 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "Show Templates",
-        "Manage templates for your shows. You can define default match and promo counts, and now"
-            + " generate custom AI art for each template.",
+        """
+        Manage templates for your shows. You can define default match and promo counts, and now\
+         generate custom AI art for each template.\
+        """,
         "admin-show-templates");
   }
 
@@ -96,8 +98,10 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "Generate Template Art",
-        "Create unique branding for your show templates using AI. This art will be used in the"
-            + " booking interface and calendar.",
+        """
+        Create unique branding for your show templates using AI. This art will be used in the\
+         booking interface and calendar.\
+        """,
         "admin-show-template-art-generation");
   }
 }

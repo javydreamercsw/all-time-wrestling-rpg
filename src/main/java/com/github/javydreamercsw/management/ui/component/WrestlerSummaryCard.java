@@ -39,21 +39,21 @@ import lombok.extern.slf4j.Slf4j;
 public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
   public WrestlerSummaryCard(
-      @NonNull Wrestler wrestler,
-      @NonNull Long universeId,
-      @NonNull WrestlerService wrestlerService,
-      @NonNull InjuryService injuryService,
-      boolean isPlayer) {
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      final boolean isPlayer) {
     this(wrestler, universeId, wrestlerService, injuryService, isPlayer, 0);
   }
 
   public WrestlerSummaryCard(
-      @NonNull Wrestler wrestler,
-      @NonNull Long universeId,
-      @NonNull WrestlerService wrestlerService,
-      @NonNull InjuryService injuryService,
-      boolean isPlayer,
-      int additionalPenalty) {
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      final boolean isPlayer,
+      final int additionalPenalty) {
     getContent().setPadding(true);
     getContent().setSpacing(false);
 

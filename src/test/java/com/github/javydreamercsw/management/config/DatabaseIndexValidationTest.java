@@ -73,8 +73,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
       // Check if table exists
       if (!tableColumns.containsKey(index.tableName.toLowerCase())) {
         errors.add(
-            String.format(
-                "Index '%s' references non-existent table '%s'", index.indexName, index.tableName));
+            "Index '%s' references non-existent table '%s'".formatted(index.indexName, index.tableName));
         continue;
       }
 
@@ -85,9 +84,9 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
         String cleanColumn = cleanColumnName(column);
         if (!availableColumns.contains(cleanColumn.toLowerCase())) {
           errors.add(
-              String.format(
-                  "Index '%s' on table '%s' references non-existent column '%s'. Available columns:" 
-                      + " %s",
+              """
+                  Index '%s' on table '%s' references non-existent column '%s'. Available columns:\
+                   %s""".formatted(
                   index.indexName, index.tableName, cleanColumn, availableColumns));
         }
       }
@@ -198,7 +197,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
   // spotless:on
 
   // spotless:off
-  private List<String> parseColumns(String columnsPart) {
+  private List<String> parseColumns(final String columnsPart) {
     List<String> columns = new ArrayList<>();
 
     // Split by comma and clean each column
@@ -217,7 +216,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
   // spotless:on
 
   // spotless:off
-  private String cleanColumnName(String column) {
+  private String cleanColumnName(final String column) {
     return column.trim().replaceAll("\s+DESC\s*$", "").replaceAll("\s+ASC\s*$", "").trim();
   }
   // spotless:on
@@ -228,7 +227,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
     final String tableName;
     final List<String> columns;
 
-    IndexDefinition(String indexName, String tableName, List<String> columns) {
+    IndexDefinition(final String indexName, final String tableName, final List<String> columns) {
       this.indexName = indexName;
       this.tableName = tableName;
       this.columns = columns;
@@ -236,8 +235,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
 
     @Override
     public String toString() {
-      return String.format(
-          "Index{name='%s', table='%s', columns=%s}", indexName, tableName, columns);
+      return "Index{name='%s', table='%s', columns=%s}".formatted(indexName, tableName, columns);
     }
   }
 }

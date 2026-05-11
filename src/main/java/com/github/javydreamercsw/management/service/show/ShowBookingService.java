@@ -92,12 +92,12 @@ public class ShowBookingService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Show> bookShow(
-      @NonNull String showName,
-      @NonNull String showDescription,
-      @NonNull String showTypeName,
-      int segmentCount,
-      String templateName,
-      LocalDate showDate) {
+      @NonNull final String showName,
+      @NonNull final String showDescription,
+      @NonNull final String showTypeName,
+      final int segmentCount,
+      final String templateName,
+      final LocalDate showDate) {
     return bookShowInternal(
         showName, showDescription, showTypeName, segmentCount, templateName, showDate);
   }
@@ -115,21 +115,21 @@ public class ShowBookingService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Show> bookShow(
-      @NonNull String showName,
-      @NonNull String showDescription,
-      @NonNull String showTypeName,
-      int segmentCount) {
+      @NonNull final String showName,
+      @NonNull final String showDescription,
+      @NonNull final String showTypeName,
+      final int segmentCount) {
     return bookShowInternal(showName, showDescription, showTypeName, segmentCount, null, null);
   }
 
   /** Internal method to book a show with all parameters. */
   private Optional<Show> bookShowInternal(
-      @NonNull String showName,
-      @NonNull String showDescription,
-      @NonNull String showTypeName,
-      int segmentCount,
-      String templateName,
-      LocalDate showDate) {
+      @NonNull final String showName,
+      @NonNull final String showDescription,
+      @NonNull final String showTypeName,
+      final int segmentCount,
+      final String templateName,
+      final LocalDate showDate) {
     try {
       // Validate inputs
       if (segmentCount < 3 || segmentCount > 10) {
@@ -212,7 +212,8 @@ public class ShowBookingService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  public Optional<Show> bookPPV(@NonNull String ppvName, @NonNull String ppvDescription) {
+  public Optional<Show> bookPPV(
+      @NonNull final String ppvName, @NonNull final String ppvDescription) {
     try {
       // Get PPV show type
       Optional<ShowType> ppvTypeOpt = showTypeRepository.findByName("PPV");
@@ -260,7 +261,7 @@ public class ShowBookingService {
   }
 
   /** Generate segments for a regular show based on storylines and wrestler availability. */
-  private List<Segment> generateSegmentsForShow(@NonNull Show show, int segmentCount) {
+  private List<Segment> generateSegmentsForShow(@NonNull final Show show, final int segmentCount) {
     List<Segment> segments = new ArrayList<>();
     Long universeId =
         show.getUniverse() != null
@@ -294,7 +295,7 @@ public class ShowBookingService {
   }
 
   /** Generate enhanced segments for PPV shows with focus on major storylines. */
-  private List<Segment> generatePPVSegments(Show show, int segmentCount) {
+  private List<Segment> generatePPVSegments(final Show show, final int segmentCount) {
     List<Segment> segments = new ArrayList<>();
     Long universeId =
         show.getUniverse() != null
@@ -328,7 +329,7 @@ public class ShowBookingService {
 
   /** Book segments based on active rivalries. */
   private List<Segment> bookRivalrySegments(
-      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
 
@@ -365,7 +366,7 @@ public class ShowBookingService {
 
   /** Book high-heat rivalry segments for PPVs. */
   private List<Segment> bookHighHeatRivalrySegments(
-      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
     List<Rivalry> highHeatRivalries =
         rivalryService.getActiveRivalries().stream()
@@ -406,7 +407,7 @@ public class ShowBookingService {
 
   /** Book multi-person segments for variety. */
   private List<Segment> bookMultiPersonSegments(
-      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
 
     for (int i = 0; i < maxSegments && availableWrestlers.size() >= 3; i++) {
@@ -433,7 +434,7 @@ public class ShowBookingService {
 
   /** Book random segments to fill show slots. */
   private List<Segment> bookRandomSegments(
-      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
 
     for (int i = 0; i < maxSegments && availableWrestlers.size() >= 2; i++) {
@@ -452,13 +453,13 @@ public class ShowBookingService {
 
   /** Book quality segments for PPV fill-in slots. */
   private List<Segment> bookQualitySegments(
-      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     // For now, same as random segments but could be enhanced with tier matching
     return bookRandomSegments(show, availableWrestlers, maxSegments);
   }
 
   /** Generate promo segments for a regular show. */
-  private List<Segment> generatePromosForShow(Show show, int segmentCount) {
+  private List<Segment> generatePromosForShow(final Show show, final int segmentCount) {
     Long universeId =
         show.getUniverse() != null
             ? show.getUniverse().getId()
@@ -475,7 +476,7 @@ public class ShowBookingService {
   }
 
   /** Generate enhanced promo segments for PPV shows. */
-  private List<Segment> generatePromosForPPV(Show show, int segmentCount) {
+  private List<Segment> generatePromosForPPV(final Show show, final int segmentCount) {
     Long universeId =
         show.getUniverse() != null
             ? show.getUniverse().getId()
@@ -495,7 +496,10 @@ public class ShowBookingService {
 
   /** Book a singles segment between two wrestlers. */
   private Optional<Segment> bookSinglesSegment(
-      Show show, Wrestler wrestler1, Wrestler wrestler2, String stipulation) {
+      final Show show,
+      final Wrestler wrestler1,
+      final Wrestler wrestler2,
+      final String stipulation) {
     try {
       // Get one-on-one segment type from database
       Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("One on One");
@@ -522,7 +526,8 @@ public class ShowBookingService {
   }
 
   /** Book a multi-person segment. */
-  private Optional<Segment> bookMultiPersonSegment(Show show, List<Wrestler> participants) {
+  private Optional<Segment> bookMultiPersonSegment(
+      final Show show, final List<Wrestler> participants) {
     try {
       if (participants.size() < 3) {
         return Optional.empty();
@@ -560,7 +565,7 @@ public class ShowBookingService {
   }
 
   /** Get appropriate rule for high-heat rivalries using database-driven rule selection. */
-  private String getHighHeatStipulation(int heat) {
+  private String getHighHeatStipulation(final int heat) {
     List<String> availableStipulations = new ArrayList<>();
 
     if (heat >= 30) {
@@ -610,19 +615,19 @@ public class ShowBookingService {
   }
 
   /** Get rule names from database, filtering out non-existent ones. */
-  private List<String> getStipulationsByNames(List<String> requestedNames) {
+  private List<String> getStipulationsByNames(final List<String> requestedNames) {
     return requestedNames.stream().filter(name -> segmentRuleService.existsByName(name)).toList();
   }
 
   /** Get all segments for a specific show. */
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getSegmentsForShow(Long showId) {
+  public List<Segment> getSegmentsForShow(final Long showId) {
     return showRepository.findById(showId).map(segmentRepository::findByShow).orElse(List.of());
   }
 
   /** Get show statistics. */
   @PreAuthorize("isAuthenticated()")
-  public ShowStatistics getShowStatistics(Long showId) {
+  public ShowStatistics getShowStatistics(final Long showId) {
     Optional<Show> showOpt = showRepository.findById(showId);
     if (showOpt.isEmpty()) {
       return new ShowStatistics(0, 0, 0, 0, 0);
@@ -663,7 +668,7 @@ public class ShowBookingService {
   }
 
   /** Check if a segment involves wrestlers with an active rivalry. */
-  private boolean isRivalrySegment(Segment segment) {
+  private boolean isRivalrySegment(final Segment segment) {
     List<Wrestler> wrestlers = segment.getWrestlers();
     if (wrestlers.size() != 2) {
       return false;

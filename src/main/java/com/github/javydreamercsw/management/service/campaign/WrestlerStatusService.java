@@ -60,7 +60,7 @@ public class WrestlerStatusService {
     return statusCardService.findAll();
   }
 
-  public void assignStatus(Long wrestlerId, String statusKey) {
+  public void assignStatus(final Long wrestlerId, final String statusKey) {
     if (!isStatusMechanicEnabled()) {
       log.debug("Status Cards mechanic is disabled. Ignoring assignment: {}", statusKey);
       return;
@@ -98,7 +98,7 @@ public class WrestlerStatusService {
     }
   }
 
-  public void removeStatus(Long wrestlerId, String statusKey) {
+  public void removeStatus(final Long wrestlerId, final String statusKey) {
     if (!isStatusMechanicEnabled()) {
       log.debug("Status Cards mechanic is disabled. Ignoring removal: {}", statusKey);
       return;
@@ -128,7 +128,8 @@ public class WrestlerStatusService {
    * @param finalMomentum The momentum at the end of the match.
    * @param isLoss Whether the wrestler lost the match.
    */
-  public void evaluateTriggerConditions(WrestlerStatus status, int finalMomentum, boolean isLoss) {
+  public void evaluateTriggerConditions(
+      final WrestlerStatus status, final int finalMomentum, final boolean isLoss) {
     if (!isStatusMechanicEnabled()) {
       log.debug("Status Cards mechanic is disabled. Skipping evaluation.");
       return;
@@ -165,7 +166,7 @@ public class WrestlerStatusService {
     }
   }
 
-  private boolean evaluateCondition(String condition, Map<String, Object> variables) {
+  private boolean evaluateCondition(final String condition, final Map<String, Object> variables) {
     if (condition == null || condition.isBlank()) {
       return false;
     }
@@ -179,11 +180,11 @@ public class WrestlerStatusService {
   }
 
   private void logHistory(
-      Wrestler wrestler,
-      StatusCard card,
-      WrestlerStatusAction action,
-      Integer oldLevel,
-      Integer newLevel) {
+      final Wrestler wrestler,
+      final StatusCard card,
+      final WrestlerStatusAction action,
+      final Integer oldLevel,
+      final Integer newLevel) {
     WrestlerStatusHistory history =
         WrestlerStatusHistory.builder()
             .wrestler(wrestler)

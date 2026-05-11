@@ -32,7 +32,7 @@ public class DatabaseNotionTokenProvider implements NotionTokenProvider {
   private final GameSettingService gameSettingService;
 
   @Autowired
-  public DatabaseNotionTokenProvider(GameSettingService gameSettingService) {
+  public DatabaseNotionTokenProvider(final GameSettingService gameSettingService) {
     this.gameSettingService = gameSettingService;
   }
 

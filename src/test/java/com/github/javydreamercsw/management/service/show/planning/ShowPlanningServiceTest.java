@@ -248,10 +248,10 @@ class ShowPlanningServiceTest {
     assertEquals(2, savedSegment.getParticipants().size());
     assertTrue(
         savedSegment.getParticipants().stream()
-            .anyMatch(p -> p.getWrestler().getName().equals("Active NPC")));
+            .anyMatch(p -> "Active NPC".equals(p.getWrestler().getName())));
     assertTrue(
         savedSegment.getParticipants().stream()
-            .anyMatch(p -> p.getWrestler().getName().equals("Another Wrestler")));
+            .anyMatch(p -> "Another Wrestler".equals(p.getWrestler().getName())));
 
     // Verify winner was set
     assertEquals(1, savedSegment.getWinners().size());

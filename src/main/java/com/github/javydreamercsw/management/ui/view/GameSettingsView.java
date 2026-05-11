@@ -54,9 +54,9 @@ public class GameSettingsView extends VerticalLayout {
 
   @Autowired
   public GameSettingsView(
-      GameSettingService gameSettingService,
-      ThemeService themeService,
-      Optional<NotionHandler> notionHandler) {
+      final GameSettingService gameSettingService,
+      final ThemeService themeService,
+      final Optional<NotionHandler> notionHandler) {
     this.gameSettingService = gameSettingService;
     this.themeService = themeService;
     this.notionHandler = notionHandler.orElse(null);

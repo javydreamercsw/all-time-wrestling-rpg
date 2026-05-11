@@ -259,7 +259,7 @@ class RivalryControllerIT extends AbstractRestControllerIT {
     mockMvc.perform(get("/api/rivalries/{id}", 999L)).andExpect(status().isNotFound());
   }
 
-  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
+  public Wrestler createTestWrestler(@NonNull final String name, @NonNull final Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setStartingHealth(15);
@@ -289,7 +289,7 @@ class RivalryControllerIT extends AbstractRestControllerIT {
   }
 
   private Rivalry createTestRivalry(
-      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2, int heat) {
+      @NonNull final Wrestler wrestler1, @NonNull final Wrestler wrestler2, final int heat) {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);

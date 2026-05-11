@@ -37,7 +37,7 @@ public class SyncLockService {
    * @param operationId The operation ID requesting the lock
    * @return true if lock was acquired, false if another sync is in progress
    */
-  public synchronized boolean acquireLock(String operationId) {
+  public synchronized boolean acquireLock(final String operationId) {
     if (syncInProgress.compareAndSet(false, true)) {
       currentOperationId = operationId;
       log.info("🔒 Sync lock acquired for operation: {}", operationId);
@@ -55,7 +55,7 @@ public class SyncLockService {
    *
    * @param operationId The operation ID releasing the lock
    */
-  public synchronized void releaseLock(String operationId) {
+  public synchronized void releaseLock(final String operationId) {
     if (operationId.equals(currentOperationId)) {
       syncInProgress.set(false);
       currentOperationId = null;

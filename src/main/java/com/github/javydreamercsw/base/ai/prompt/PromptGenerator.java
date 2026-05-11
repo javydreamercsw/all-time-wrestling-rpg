@@ -39,7 +39,8 @@ public class PromptGenerator {
    * @param segmentContext The context of the segment to narrate.
    * @return The generated prompt.
    */
-  public String generateMatchNarrationPrompt(@NonNull SegmentNarrationContext segmentContext) {
+  public String generateMatchNarrationPrompt(
+      @NonNull final SegmentNarrationContext segmentContext) {
     StringBuilder prompt = new StringBuilder();
     prompt.append(
         "Narrate the following wrestling segment based on the provided JSON context.\n\n");
@@ -61,8 +62,10 @@ public class PromptGenerator {
               .collect(Collectors.toList());
       prompt
           .append(
-              "1. PARTICIPANTS: The following wrestlers are participating in this match and MUST"
-                  + " ALL be mentioned and involved in the action: ")
+              """
+              1. PARTICIPANTS: The following wrestlers are participating in this match and MUST\
+               ALL be mentioned and involved in the action:\
+              """)
           .append(String.join(", ", participantNames))
           .append(".\n");
     }
@@ -106,11 +109,15 @@ public class PromptGenerator {
     }
 
     prompt.append(
-        "Generate a compelling wrestling narration as a DIALOGUE between the commentators provided"
-            + " in the JSON.\n");
+        """
+        Generate a compelling wrestling narration as a DIALOGUE between the commentators provided\
+         in the JSON.
+        """);
     prompt.append(
-        "Each line of dialogue MUST start with a tag identifying the speaker in the following"
-            + " format: '[SPEAKER:Commentator Name]'.\n");
+        """
+        Each line of dialogue MUST start with a tag identifying the speaker in the following\
+         format: '[SPEAKER:Commentator Name]'.
+        """);
     prompt.append("Follow the tag immediately with a colon and the commentator's dialogue.\n");
     prompt.append("DO NOT include any text that is not part of a tagged dialogue line.\n\n");
 
@@ -133,7 +140,8 @@ public class PromptGenerator {
    * @param segmentContext The context of the segment to narrate.
    * @return The generated prompt.
    */
-  public String generateSimplifiedMatchNarrationPrompt(SegmentNarrationContext segmentContext) {
+  public String generateSimplifiedMatchNarrationPrompt(
+      final SegmentNarrationContext segmentContext) {
     StringBuilder prompt = new StringBuilder();
     prompt.append("Narrate a wrestling match based on these details:\n\n");
 
@@ -220,10 +228,12 @@ public class PromptGenerator {
     }
 
     prompt.append(
-        "\n"
-            + "INSTRUCTIONS: Write a commentary for this match as a dialogue between the"
-            + " commentators. Each line MUST start with '[SPEAKER:Commentator Name]:'. Include all"
-            + " participants. Mention the referee and commentators. Follow the outcome exactly.");
+        """
+
+        INSTRUCTIONS: Write a commentary for this match as a dialogue between the\
+         commentators. Each line MUST start with '[SPEAKER:Commentator Name]:'. Include all\
+         participants. Mention the referee and commentators. Follow the outcome exactly.\
+        """);
 
     return prompt.toString();
   }
@@ -234,7 +244,7 @@ public class PromptGenerator {
    * @param narration The narration to summarize.
    * @return The generated prompt.
    */
-  public String generateSummaryPrompt(String narration) {
+  public String generateSummaryPrompt(final String narration) {
     return "Summarize the following wrestling narration in 2-3 sentences, focusing on the key"
         + " moments and the outcome:\n\n"
         + narration;

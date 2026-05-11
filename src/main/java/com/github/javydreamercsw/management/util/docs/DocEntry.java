@@ -18,8 +18,10 @@ package com.github.javydreamercsw.management.util.docs;
 
 import java.io.Serializable;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@NoArgsConstructor
 public class DocEntry implements Serializable {
   private static final long serialVersionUID = 1L;
 
@@ -30,10 +32,13 @@ public class DocEntry implements Serializable {
   @Getter @Setter private String imagePath;
   @Getter @Setter private int order;
 
-  public DocEntry() {}
-
   public DocEntry(
-      String id, String category, String title, String description, String imagePath, int order) {
+      final String id,
+      final String category,
+      final String title,
+      final String description,
+      final String imagePath,
+      final int order) {
     this.id = id;
     this.category = category;
     this.title = title;

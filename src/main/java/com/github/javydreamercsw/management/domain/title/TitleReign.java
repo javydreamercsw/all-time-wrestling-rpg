@@ -82,18 +82,18 @@ public class TitleReign extends AbstractSyncableEntity<Long> {
   }
 
   /** End this title reign. */
-  public void endReign(Instant endDate) {
+  public void endReign(final Instant endDate) {
     this.endDate = endDate;
   }
 
   /** Get the length of this reign in days. */
-  public long getReignLengthDays(Instant now) {
+  public long getReignLengthDays(final Instant now) {
     Instant end = endDate != null ? endDate : now;
     return java.time.Duration.between(startDate, end).toDays();
   }
 
   /** Get the length of this reign in a human-readable format. */
-  public String getReignLengthDisplay(Instant now) {
+  public String getReignLengthDisplay(final Instant now) {
     long days = getReignLengthDays(now);
 
     if (days == 0) {
@@ -132,9 +132,8 @@ public class TitleReign extends AbstractSyncableEntity<Long> {
   /** Get display string for this reign. */
   public String getDisplayString() {
     String status = isCurrentReign() ? " (Current)" : "";
-    return String.format(
-        "%s - Reign #%d (%s)%s",
-        getChampionNames(), reignNumber, getReignLengthDisplay(Instant.now()), status);
+    return "%s - Reign #%d (%s)%s"
+        .formatted(getChampionNames(), reignNumber, getReignLengthDisplay(Instant.now()), status);
   }
 
   /**
@@ -148,9 +147,9 @@ public class TitleReign extends AbstractSyncableEntity<Long> {
 
   @Override
   public String getName() {
-    return String.format(
-        "%s - Reign #%d (%s)",
-        title != null ? title.getName() : "Unknown Title", reignNumber, getChampionNames());
+    return "%s - Reign #%d (%s)"
+        .formatted(
+            title != null ? title.getName() : "Unknown Title", reignNumber, getChampionNames());
   }
 
   @PrePersist

@@ -91,7 +91,7 @@ public class Arena extends AbstractSyncableEntity<Long> {
 
     @Getter private final String displayName;
 
-    AlignmentBias(String displayName) {
+    AlignmentBias(final String displayName) {
       this.displayName = displayName;
     }
   }

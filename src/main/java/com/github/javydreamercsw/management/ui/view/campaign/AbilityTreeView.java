@@ -50,7 +50,8 @@ public class AbilityTreeView extends VerticalLayout {
 
   @Autowired
   public AbilityTreeView(
-      CampaignRepository campaignRepository, CampaignStateRepository campaignStateRepository) {
+      final CampaignRepository campaignRepository,
+      final CampaignStateRepository campaignStateRepository) {
     this.campaignRepository = campaignRepository;
     this.campaignStateRepository = campaignStateRepository;
 
@@ -96,7 +97,8 @@ public class AbilityTreeView extends VerticalLayout {
             "Back to Dashboard", e -> UI.getCurrent().navigate(CampaignDashboardView.class)));
   }
 
-  private VerticalLayout createAbilityCard(String name, String description, int cost) {
+  private VerticalLayout createAbilityCard(
+      final String name, final String description, final int cost) {
     VerticalLayout card = new VerticalLayout();
     card.addClassName("ability-card");
     card.setPadding(true);
@@ -115,7 +117,7 @@ public class AbilityTreeView extends VerticalLayout {
     return card;
   }
 
-  private void purchaseAbility(String abilityName, int cost) {
+  private void purchaseAbility(final String abilityName, final int cost) {
     CampaignState state = currentCampaign.getState();
     if (state.getSkillTokens() >= cost) {
       state.setSkillTokens(state.getSkillTokens() - cost);

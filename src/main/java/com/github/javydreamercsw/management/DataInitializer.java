@@ -156,41 +156,42 @@ public class DataInitializer implements Initializable {
 
   @Autowired
   public DataInitializer(
-      @Value("${data.initializer.enabled:true}") boolean enabled,
-      @Value("${data.initializer.skip-if-not-empty:false}") boolean skipIfNotEmpty,
-      ShowTemplateService showTemplateService,
-      WrestlerRepository wrestlerRepository,
-      WrestlerService wrestlerService,
-      com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository,
-      WrestlerStateRepository wrestlerStateRepository,
-      ShowTypeService showTypeService,
-      SegmentRuleService segmentRuleService,
-      SegmentTypeService segmentTypeService,
-      CardSetService cardSetService,
-      CardSetRepository cardSetRepository,
-      CardService cardService,
-      TitleService titleService,
-      DeckService deckService,
-      GameSettingService gameSettingService,
-      com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository,
-      NpcService npcService,
-      FactionService factionService,
-      TeamService teamService,
-      TeamRepository teamRepository,
-      TierRecalculationService tierRecalculationService,
-      CampaignAbilityCardService campaignAbilityCardService,
-      CommentaryService commentaryService,
-      CampaignUpgradeService campaignUpgradeService,
-      StatusCardService statusCardService,
-      Environment env,
-      AchievementRepository achievementRepository,
-      RingsideActionDataService ringsideActionDataService,
-      ResourcePatternResolver resourcePatternResolver,
-      LocationRepository locationRepository,
-      ArenaRepository arenaRepository,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      @Value("${data.initializer.enabled:true}") final boolean enabled,
+      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      final ShowTemplateService showTemplateService,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+          universeRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
+      final ShowTypeService showTypeService,
+      final SegmentRuleService segmentRuleService,
+      final SegmentTypeService segmentTypeService,
+      final CardSetService cardSetService,
+      final CardSetRepository cardSetRepository,
+      final CardService cardService,
+      final TitleService titleService,
+      final DeckService deckService,
+      final GameSettingService gameSettingService,
+      final com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository,
+      final NpcService npcService,
+      final FactionService factionService,
+      final TeamService teamService,
+      final TeamRepository teamRepository,
+      final TierRecalculationService tierRecalculationService,
+      final CampaignAbilityCardService campaignAbilityCardService,
+      final CommentaryService commentaryService,
+      final CampaignUpgradeService campaignUpgradeService,
+      final StatusCardService statusCardService,
+      final Environment env,
+      final AchievementRepository achievementRepository,
+      final RingsideActionDataService ringsideActionDataService,
+      final ResourcePatternResolver resourcePatternResolver,
+      final LocationRepository locationRepository,
+      final ArenaRepository arenaRepository,
+      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper) {
     this.enabled = enabled;
     this.skipIfNotEmpty = skipIfNotEmpty;
     this.showTemplateService = showTemplateService;
@@ -448,7 +449,7 @@ public class DataInitializer implements Initializable {
     log.debug("AI settings synchronization complete.");
   }
 
-  private void syncSetting(@NonNull String key, String defaultValue) {
+  private void syncSetting(@NonNull final String key, final String defaultValue) {
     String envValue = env.getProperty(key);
     boolean forceOverride =
         Boolean.parseBoolean(env.getProperty("data.initializer.aiSettings.forceOverride", "false"));
@@ -492,14 +493,14 @@ public class DataInitializer implements Initializable {
     }
   }
 
-  private String maskIfSecret(String key, String value) {
+  private String maskIfSecret(final String key, final String value) {
     if (key != null && key.toUpperCase().contains("KEY")) {
       return "********";
     }
     return value;
   }
 
-  private void saveIfMissing(@NonNull String key, @NonNull String value) {
+  private void saveIfMissing(@NonNull final String key, @NonNull final String value) {
     if (gameSettingRepository.findById(key).isEmpty()) {
       com.github.javydreamercsw.management.domain.GameSetting setting =
           new com.github.javydreamercsw.management.domain.GameSetting();

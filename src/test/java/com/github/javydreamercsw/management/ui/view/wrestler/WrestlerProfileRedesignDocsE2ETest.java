@@ -47,13 +47,15 @@ class WrestlerProfileRedesignDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Wrestler Profile",
         "Modernized Wrestler Dashboard",
-        "The redesigned wrestler profile features a prominent 'Hero' section with the wrestler's"
-            + " image, biography, and personal relationships always visible. Secondary information"
-            + " is organized into a clean, mobile-friendly accordion layout.",
+        """
+        The redesigned wrestler profile features a prominent 'Hero' section with the wrestler's\
+         image, biography, and personal relationships always visible. Secondary information\
+         is organized into a clean, mobile-friendly accordion layout.\
+        """,
         "wrestler-profile-redesign");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

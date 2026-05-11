@@ -26,7 +26,7 @@ public class GeminiConfigProperties extends AiBaseProperties {
   private final AiSettingsService aiSettingsService;
 
   @Autowired
-  public GeminiConfigProperties(AiSettingsService aiSettingsService) {
+  public GeminiConfigProperties(final AiSettingsService aiSettingsService) {
     super(aiSettingsService);
     this.aiSettingsService = aiSettingsService;
   }

@@ -208,7 +208,7 @@ class MatchNarrationServiceFactoryTest {
     // Check that service info contains expected data
     SegmentNarrationServiceFactory.ServiceInfo geminiInfo =
         services.stream()
-            .filter(info -> info.providerName().equals("Google Gemini"))
+            .filter(info -> "Google Gemini".equals(info.providerName()))
             .findFirst()
             .orElse(null);
 

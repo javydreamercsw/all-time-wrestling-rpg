@@ -86,8 +86,10 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Game Mechanics",
         "Cards",
-        "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple,"
-            + " Aerial, Throw) with specific health and stamina costs and damage effects.",
+        """
+        The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple,\
+         Aerial, Throw) with specific health and stamina costs and damage effects.\
+        """,
         "mechanic-cards");
   }
 
@@ -100,8 +102,10 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Game Mechanics",
         "Decks",
-        "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with"
-            + " efficient setup moves and stamina-recovering taunts.",
+        """
+        Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with\
+         efficient setup moves and stamina-recovering taunts.\
+        """,
         "mechanic-decks");
   }
 
@@ -114,8 +118,10 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Dashboards",
         "Wrestler Rankings",
-        "Track the momentum of every wrestler in the promotion. Rankings determine title"
-            + " eligibility and positioning on show cards.",
+        """
+        Track the momentum of every wrestler in the promotion. Rankings determine title\
+         eligibility and positioning on show cards.\
+        """,
         "dashboard-rankings");
   }
 
@@ -128,8 +134,10 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Dashboards",
         "Show Calendar",
-        "Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium"
-            + " Live Events at a glance.",
+        """
+        Plan ahead with the integrated calendar. View upcoming weekly shows and major Premium\
+         Live Events at a glance.\
+        """,
         "dashboard-calendar");
   }
 
@@ -142,10 +150,12 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Game Mechanics",
         "Faction Synergy",
-        "Factions grow stronger as members work together. Affinity builds through shared matches"
-            + " and victories, unlocking powerful synergy buffs like stamina recovery, finisher"
-            + " damage, and resilience bonuses. High-affinity factions have a mechanical advantage"
-            + " in match outcomes.",
+        """
+        Factions grow stronger as members work together. Affinity builds through shared matches\
+         and victories, unlocking powerful synergy buffs like stamina recovery, finisher\
+         damage, and resilience bonuses. High-affinity factions have a mechanical advantage\
+         in match outcomes.\
+        """,
         "mechanic-faction-synergy");
   }
 
@@ -161,9 +171,11 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
       documentFeature(
           "Game Mechanics",
           "Ringside Actions",
-          "Managers and faction members can swing the match in your favor. Perform ringside actions"
-              + " like coaching, distracting the referee, or sliding in a weapon, but be careful -"
-              + " too much illegal interference will lead to ejections or disqualification!",
+          """
+          Managers and faction members can swing the match in your favor. Perform ringside actions\
+           like coaching, distracting the referee, or sliding in a weapon, but be careful -\
+           too much illegal interference will lead to ejections or disqualification!\
+          """,
           "mechanic-ringside-actions");
     }
   }
@@ -185,10 +197,12 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
       documentFeature(
           "Game Mechanics",
           "Persistent Wear & Tear",
-          "Matches take a toll on a wrestler's body. Physical condition degrades over time based"
-              + " on match intensity (Extreme matches double the wear) and positioning (Main Events"
-              + " are more demanding). Low condition results in health penalties and potential"
-              + " forced retirement.",
+          """
+          Matches take a toll on a wrestler's body. Physical condition degrades over time based\
+           on match intensity (Extreme matches double the wear) and positioning (Main Events\
+           are more demanding). Low condition results in health penalties and potential\
+           forced retirement.\
+          """,
           "mechanic-wear-and-tear");
     }
   }
@@ -212,14 +226,16 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Game Mechanics",
         "Expansion Packs",
-        "The roster is modular. Content is grouped into Expansion Packs that can be enabled or"
-            + " disabled by administrators. This dynamic system automatically filters wrestlers,"
-            + " teams, and factions based on active sets, allowing for themed seasons and"
-            + " customized gameplay experiences.",
+        """
+        The roster is modular. Content is grouped into Expansion Packs that can be enabled or\
+         disabled by administrators. This dynamic system automatically filters wrestlers,\
+         teams, and factions based on active sets, allowing for themed seasons and\
+         customized gameplay experiences.\
+        """,
         "mechanic-expansion-packs");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

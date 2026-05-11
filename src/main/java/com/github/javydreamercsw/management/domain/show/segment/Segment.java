@@ -181,12 +181,12 @@ public class Segment extends AbstractSyncableEntity<Long> {
   }
 
   /** Add a participant to the segment. */
-  public void addParticipant(@NonNull Wrestler wrestler) {
+  public void addParticipant(@NonNull final Wrestler wrestler) {
     addParticipant(wrestler, 1);
   }
 
   /** Add a participant to the segment with an explicit team number. */
-  public void addParticipant(@NonNull Wrestler wrestler, int teamNumber) {
+  public void addParticipant(@NonNull final Wrestler wrestler, final int teamNumber) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(this);
     participant.setWrestler(wrestler);
@@ -239,7 +239,7 @@ public class Segment extends AbstractSyncableEntity<Long> {
     return titles;
   }
 
-  public void setWinners(List<Wrestler> winners) {
+  public void setWinners(final List<Wrestler> winners) {
     if (participants == null) {
       participants = new HashSet<>();
     }
@@ -255,7 +255,7 @@ public class Segment extends AbstractSyncableEntity<Long> {
     this.status = SegmentStatus.COMPLETED;
   }
 
-  public void syncParticipants(List<Wrestler> newParticipantWrestlers) {
+  public void syncParticipants(final List<Wrestler> newParticipantWrestlers) {
     // Remove participants that are no longer in the new list
     participants.removeIf(
         existingParticipant ->
@@ -276,7 +276,7 @@ public class Segment extends AbstractSyncableEntity<Long> {
   /**
    * Sync participants with explicit team assignments. teamWrestlers maps teamNumber → wrestlers.
    */
-  public void syncParticipants(java.util.Map<Integer, List<Wrestler>> teamWrestlers) {
+  public void syncParticipants(final java.util.Map<Integer, List<Wrestler>> teamWrestlers) {
     List<Wrestler> allWrestlers =
         teamWrestlers.values().stream()
             .flatMap(List::stream)
@@ -315,13 +315,13 @@ public class Segment extends AbstractSyncableEntity<Long> {
   }
 
   /** Add a segment rule to this segment. */
-  public void addSegmentRule(@NonNull SegmentRule segmentRule) {
+  public void addSegmentRule(@NonNull final SegmentRule segmentRule) {
     if (!segmentRules.contains(segmentRule)) {
       segmentRules.add(segmentRule);
     }
   }
 
-  public void syncSegmentRules(List<SegmentRule> newSegmentRules) {
+  public void syncSegmentRules(final List<SegmentRule> newSegmentRules) {
     // Remove rules that are no longer in the new list
     segmentRules.removeIf(existingRule -> !newSegmentRules.contains(existingRule));
 

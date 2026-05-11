@@ -63,13 +63,13 @@ public class TitleFormDialog extends Dialog {
   private final Button saveButton;
 
   public TitleFormDialog(
-      @NonNull TitleService titleService,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull TierRecalculationService tierRecalculationService,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull Title title,
-      @NonNull Runnable onSave,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final TitleService titleService,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final TierRecalculationService tierRecalculationService,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final Title title,
+      @NonNull final Runnable onSave,
+      @NonNull final SecurityUtils securityUtils) {
     this.title = title;
     this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
@@ -102,7 +102,7 @@ public class TitleFormDialog extends Dialog {
     includeInRankings.setReadOnly(!securityUtils.canEdit());
     champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(
-        w -> String.format("%s (%s)", w.getName(), w.getTier().getDisplayName()));
+        w -> "%s (%s)".formatted(w.getName(), w.getTier().getDisplayName()));
     champion.setReadOnly(!securityUtils.canEdit());
 
     imageUrl = new TextField("Image URL");
@@ -216,7 +216,7 @@ public class TitleFormDialog extends Dialog {
     updatePreviewImage(titleService.resolveTitleImage(this.title));
   }
 
-  private void updatePreviewImage(String url) {
+  private void updatePreviewImage(final String url) {
     if (url != null && !url.isEmpty()) {
       previewImage.setSrc(url);
       previewImage.setVisible(true);

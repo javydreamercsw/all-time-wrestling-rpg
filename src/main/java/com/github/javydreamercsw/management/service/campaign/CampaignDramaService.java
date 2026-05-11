@@ -53,7 +53,7 @@ public class CampaignDramaService {
    * @param campaign The campaign to check.
    * @return Optional triggered event.
    */
-  public Optional<DramaEvent> checkForStoryEvents(@NonNull Campaign campaign) {
+  public Optional<DramaEvent> checkForStoryEvents(@NonNull final Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
@@ -95,7 +95,7 @@ public class CampaignDramaService {
    * @param campaign The campaign.
    * @return The created DramaEvent.
    */
-  public Optional<DramaEvent> triggerRivalEvent(@NonNull Campaign campaign) {
+  public Optional<DramaEvent> triggerRivalEvent(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
     // Find a suitable rival
@@ -130,7 +130,7 @@ public class CampaignDramaService {
    * @param campaign The campaign.
    * @return The created DramaEvent.
    */
-  public Optional<DramaEvent> triggerOutsiderEvent(@NonNull Campaign campaign) {
+  public Optional<DramaEvent> triggerOutsiderEvent(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
     // Find a suitable outsider (someone not in the same faction, or high tier?)
@@ -159,7 +159,7 @@ public class CampaignDramaService {
         universeId);
   }
 
-  private Wrestler findRival(@NonNull Wrestler player) {
+  private Wrestler findRival(@NonNull final Wrestler player) {
     List<Long> allIds = wrestlerRepository.findAllIds();
     // Filter out player
     List<Long> opponentIds = allIds.stream().filter(id -> !id.equals(player.getId())).toList();

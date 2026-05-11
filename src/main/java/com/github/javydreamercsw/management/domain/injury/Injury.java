@@ -109,8 +109,8 @@ public class Injury extends AbstractSyncableEntity<Long> {
   @JsonIgnore
   public String getDisplayString() {
     String status = isCurrentlyActive() ? " (Active)" : " (Healed)";
-    return String.format(
-        "%s - %s (%d health penalty)%s", name, severity.getDisplayName(), healthPenalty, status);
+    return "%s - %s (%d health penalty)%s"
+        .formatted(name, severity.getDisplayName(), healthPenalty, status);
   }
 
   @JsonIgnore

@@ -61,11 +61,11 @@ public class RivalryListView extends Main {
   final Grid<RivalryDTO> rivalryGrid;
 
   public RivalryListView(
-      @NonNull RivalryService rivalryService,
-      @NonNull RivalryRepository rivalryRepository,
-      @NonNull WrestlerService wrestlerService,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final RivalryService rivalryService,
+      @NonNull final RivalryRepository rivalryRepository,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
     this.rivalryRepository = rivalryRepository;
     this.wrestlerService = wrestlerService;

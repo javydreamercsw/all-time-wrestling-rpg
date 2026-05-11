@@ -88,9 +88,8 @@ public class DataExportController {
 
       long totalTime = System.currentTimeMillis() - startTime;
       String message =
-          String.format(
-              "✅ Successfully exported %d shows to target/exports/shows.json in %dms",
-              shows.size(), totalTime);
+          "✅ Successfully exported %d shows to target/exports/shows.json in %dms"
+              .formatted(shows.size(), totalTime);
       log.info(message);
 
       return ResponseEntity.ok(message);
@@ -112,8 +111,10 @@ public class DataExportController {
   @Operation(
       summary = "Export show templates to JSON",
       description =
-          "Exports all show templates from the database to target/exports/show_templates.json"
-              + " file")
+          """
+          Exports all show templates from the database to target/exports/show_templates.json\
+           file\
+          """)
   @ApiResponse(responseCode = "200", description = "Show templates exported successfully")
   @ApiResponse(responseCode = "500", description = "Export failed")
   @Transactional(readOnly = true)
@@ -135,10 +136,11 @@ public class DataExportController {
 
       long totalTime = System.currentTimeMillis() - startTime;
       String message =
-          String.format(
-              "✅ Successfully exported %d show templates to target/exports/show_templates.json in"
-                  + " %dms",
-              templates.size(), totalTime);
+          """
+          ✅ Successfully exported %d show templates to target/exports/show_templates.json in\
+           %dms\
+          """
+              .formatted(templates.size(), totalTime);
       log.info(message);
 
       return ResponseEntity.ok(message);
@@ -182,8 +184,8 @@ public class DataExportController {
 
       long totalTime = System.currentTimeMillis() - startTime;
       String message =
-          String.format(
-              "✅ Successfully exported all data to target/exports/ directory in %dms", totalTime);
+          "✅ Successfully exported all data to target/exports/ directory in %dms"
+              .formatted(totalTime);
       log.info(message);
 
       return ResponseEntity.ok(message);
@@ -198,7 +200,7 @@ public class DataExportController {
   // ==================== PRIVATE HELPER METHODS ====================
 
   /** Convert Show entity to ShowDTO for JSON serialization. */
-  private ShowDTO convertShowToDTO(Show show) {
+  private ShowDTO convertShowToDTO(final Show show) {
     ShowDTO dto = new ShowDTO();
     dto.setName(show.getName());
     dto.setDescription(show.getDescription());
@@ -211,7 +213,7 @@ public class DataExportController {
   }
 
   /** Convert ShowTemplate entity to ShowTemplateDTO for JSON serialization. */
-  private ShowTemplateDTO convertShowTemplateToDTO(ShowTemplate template) {
+  private ShowTemplateDTO convertShowTemplateToDTO(final ShowTemplate template) {
     ShowTemplateDTO dto = new ShowTemplateDTO();
     dto.setName(template.getName());
     dto.setDescription(template.getDescription());
@@ -222,7 +224,7 @@ public class DataExportController {
   }
 
   /** Write shows to the target/exports/shows.json file. */
-  private void writeShowsToJsonFile(List<ShowDTO> showDTOs) throws IOException {
+  private void writeShowsToJsonFile(final List<ShowDTO> showDTOs) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
@@ -238,7 +240,8 @@ public class DataExportController {
   }
 
   /** Write show templates to the target/exports/show_templates.json file. */
-  private void writeShowTemplatesToJsonFile(List<ShowTemplateDTO> templateDTOs) throws IOException {
+  private void writeShowTemplatesToJsonFile(final List<ShowTemplateDTO> templateDTOs)
+      throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 

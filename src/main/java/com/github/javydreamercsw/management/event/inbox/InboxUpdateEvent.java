@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.event.inbox;
 import org.springframework.context.ApplicationEvent;
 
 public class InboxUpdateEvent extends ApplicationEvent {
-  public InboxUpdateEvent(Object source) {
+  public InboxUpdateEvent(final Object source) {
     super(source);
   }
 }

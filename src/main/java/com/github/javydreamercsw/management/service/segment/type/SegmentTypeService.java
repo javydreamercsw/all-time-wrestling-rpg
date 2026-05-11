@@ -32,17 +32,17 @@ public class SegmentTypeService {
 
   private final SegmentTypeRepository segmentTypeRepository;
 
-  public SegmentTypeService(@NonNull SegmentTypeRepository segmentTypeRepository) {
+  public SegmentTypeService(@NonNull final SegmentTypeRepository segmentTypeRepository) {
     this.segmentTypeRepository = segmentTypeRepository;
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<SegmentType> findByName(@NonNull String name) {
+  public Optional<SegmentType> findByName(@NonNull final String name) {
     return segmentTypeRepository.findByName(name);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<SegmentType> findByExternalId(@NonNull String externalId) {
+  public Optional<SegmentType> findByExternalId(@NonNull final String externalId) {
     return segmentTypeRepository.findByExternalId(externalId);
   }
 
@@ -61,7 +61,7 @@ public class SegmentTypeService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
       allEntries = true)
-  public SegmentType createSegmentType(@NonNull SegmentType segmentType) {
+  public SegmentType createSegmentType(@NonNull final SegmentType segmentType) {
     log.info("Creating new segment type: {}", segmentType.getName());
     return segmentTypeRepository.save(segmentType);
   }
@@ -72,7 +72,8 @@ public class SegmentTypeService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
       allEntries = true)
-  public SegmentType createOrUpdateSegmentType(@NonNull String name, @NonNull String description) {
+  public SegmentType createOrUpdateSegmentType(
+      @NonNull final String name, @NonNull final String description) {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     if (existingOpt.isPresent()) {
       SegmentType st = existingOpt.get();
@@ -97,7 +98,7 @@ public class SegmentTypeService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
       allEntries = true)
-  public void deleteSegmentType(@NonNull Long id) {
+  public void deleteSegmentType(@NonNull final Long id) {
     if (segmentTypeRepository.existsById(id)) {
       segmentTypeRepository.deleteById(id);
       log.debug("Deleted segment type with ID: {}", id);

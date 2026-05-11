@@ -36,22 +36,22 @@ public class PasswordResetService {
 
   private final PasswordEncoder passwordEncoder;
 
-  public String createPasswordResetTokenForUser(Account account) {
+  public String createPasswordResetTokenForUser(final Account account) {
     String token = UUID.randomUUID().toString();
     PasswordResetToken myToken = new PasswordResetToken(token, account);
     tokenRepository.save(myToken);
     return token;
   }
 
-  public boolean validatePasswordResetToken(String token) {
+  public boolean validatePasswordResetToken(final String token) {
     return tokenRepository.findByToken(token).map(t -> !isTokenExpired(t)).orElse(false);
   }
 
-  private boolean isTokenExpired(PasswordResetToken passToken) {
+  private boolean isTokenExpired(final PasswordResetToken passToken) {
     return passToken.getExpiryDate().isBefore(LocalDateTime.now());
   }
 
-  public void resetPassword(String token, String newPassword) {
+  public void resetPassword(final String token, final String newPassword) {
     if (!validatePasswordResetToken(token)) {
       throw new IllegalArgumentException("Invalid or expired password reset token.");
     }

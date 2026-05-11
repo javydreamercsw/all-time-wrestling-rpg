@@ -68,12 +68,12 @@ public class BackstageEncounterView extends VerticalLayout {
 
   @Autowired
   public BackstageEncounterView(
-      BackstageEncounterService backstageEncounterService,
-      CampaignRepository campaignRepository,
-      WrestlerRepository wrestlerRepository,
-      SecurityUtils securityUtils,
-      CampaignService campaignService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final BackstageEncounterService backstageEncounterService,
+      final CampaignRepository campaignRepository,
+      final WrestlerRepository wrestlerRepository,
+      final SecurityUtils securityUtils,
+      final CampaignService campaignService,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.backstageEncounterService = backstageEncounterService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -141,7 +141,7 @@ public class BackstageEncounterView extends VerticalLayout {
   }
 
   @Override
-  protected void onAttach(AttachEvent attachEvent) {
+  protected void onAttach(final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     if (currentCampaign != null && narrativeContainer.getComponentCount() == 0) {
       startSituation();
@@ -170,7 +170,7 @@ public class BackstageEncounterView extends VerticalLayout {
         });
   }
 
-  private void displaySituation(@NonNull CampaignEncounterResponseDTO context) {
+  private void displaySituation(@NonNull final CampaignEncounterResponseDTO context) {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
@@ -188,7 +188,7 @@ public class BackstageEncounterView extends VerticalLayout {
     }
   }
 
-  private void handleChoice(@NonNull CampaignEncounterResponseDTO.Choice choice) {
+  private void handleChoice(@NonNull final CampaignEncounterResponseDTO.Choice choice) {
     log.info("Backstage choice chosen: {}", choice.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
@@ -210,7 +210,7 @@ public class BackstageEncounterView extends VerticalLayout {
         });
   }
 
-  private void displayOutcome(@NonNull CampaignEncounterResponseDTO.Choice choice) {
+  private void displayOutcome(@NonNull final CampaignEncounterResponseDTO.Choice choice) {
     log.info("Displaying backstage situation outcome");
 
     narrativeContainer.removeAll();
@@ -255,7 +255,7 @@ public class BackstageEncounterView extends VerticalLayout {
     log.info("Backstage situation outcome display complete");
   }
 
-  private void showLoading(boolean loading) {
+  private void showLoading(final boolean loading) {
     progressBar.setVisible(loading);
     choicesContainer.setVisible(!loading);
   }

@@ -151,8 +151,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.numberOfElementsToBe(
             By.xpath(
-                "//vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark as Read') or"
-                    + " contains(text(), 'Mark as Unread')]"),
+                """
+                //vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark as Read') or\
+                 contains(text(), 'Mark as Unread')]\
+                """),
             3));
 
     WebElement filterField =
@@ -167,8 +169,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.xpath(
-                    "//vaadin-grid-cell-content[contains(text(), 'Filter Me Item') or"
-                        + " contains(text(), 'Filter Me Too')]")));
+                    """
+                    //vaadin-grid-cell-content[contains(text(), 'Filter Me Item') or\
+                     contains(text(), 'Filter Me Too')]\
+                    """)));
     assert filteredDescriptionCells != null;
     Assertions.assertEquals(2, filteredDescriptionCells.size());
     boolean foundItem1 = false;
@@ -227,8 +231,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.numberOfElementsToBe(
             By.xpath(
-                "//vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark Selected as"
-                    + " Read') or contains(text(), 'Mark Selected as Unread')]"),
+                """
+                //vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark Selected as\
+                 Read') or contains(text(), 'Mark Selected as Unread')]\
+                """),
             0));
   }
 
@@ -251,8 +257,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.numberOfElementsToBe(
             By.xpath(
-                "//vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark as Read') or"
-                    + " contains(text(), 'Mark as Unread')]"),
+                """
+                //vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark as Read') or\
+                 contains(text(), 'Mark as Unread')]\
+                """),
             1));
 
     // Select the first unread item
@@ -260,8 +268,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.presenceOfElementLocated(
                 By.xpath(
-                    "//vaadin-grid-cell-content[contains(text(), 'Unread"
-                        + " Item')]//preceding-sibling::vaadin-grid-cell-content//vaadin-checkbox")));
+                    """
+                    //vaadin-grid-cell-content[contains(text(), 'Unread\
+                     Item')]//preceding-sibling::vaadin-grid-cell-content//vaadin-checkbox\
+                    """)));
     firstRowCheckbox.click();
 
     // Mark as read
@@ -273,8 +283,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.presenceOfElementLocated(
             By.xpath(
-                "//vaadin-grid-cell-content[contains(text(), 'Unread"
-                    + " Item')]//following-sibling::vaadin-grid-cell-content//vaadin-button[text()='Mark"
-                    + " as Unread']")));
+                """
+                //vaadin-grid-cell-content[contains(text(), 'Unread\
+                 Item')]//following-sibling::vaadin-grid-cell-content//vaadin-button[text()='Mark\
+                 as Unread']\
+                """)));
   }
 }

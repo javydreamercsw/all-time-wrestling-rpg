@@ -130,11 +130,11 @@ class InjuryControllerIT extends AbstractRestControllerIT {
         .andExpect(status().isNotFound());
   }
 
-  public Wrestler createTestWrestler(@NonNull String name) {
+  public Wrestler createTestWrestler(@NonNull final String name) {
     return createTestWrestler(name, 0L);
   }
 
-  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
+  public Wrestler createTestWrestler(@NonNull final String name, @NonNull final Long fans) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
     wrestler.setStartingHealth(15);

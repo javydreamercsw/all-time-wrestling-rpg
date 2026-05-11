@@ -55,17 +55,17 @@ public class WrestlerActionMenu extends MenuBar {
   private final AccountService accountService;
 
   public WrestlerActionMenu(
-      @NonNull Wrestler wrestler,
-      @NonNull WrestlerService wrestlerService,
-      @NonNull InjuryService injuryService,
-      @NonNull NpcService npcService,
-      @NonNull CampaignService campaignService,
-      @NonNull Runnable refreshProvider,
-      boolean isProfileView,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull UniverseContextService universeContextService) {
+      @NonNull final Wrestler wrestler,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      @NonNull final NpcService npcService,
+      @NonNull final CampaignService campaignService,
+      @NonNull final Runnable refreshProvider,
+      final boolean isProfileView,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull @Qualifier("baseAccountService") final AccountService accountService,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final UniverseContextService universeContextService) {
     this.accountService = accountService;
 
     Long universeId = universeContextService.getCurrentUniverseId();

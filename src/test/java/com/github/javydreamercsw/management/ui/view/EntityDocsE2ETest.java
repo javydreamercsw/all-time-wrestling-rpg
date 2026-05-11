@@ -52,8 +52,10 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Entities",
         "Factions",
-        "Manage powerful wrestling groups. Factions bring together multiple wrestlers under a"
-            + " single banner, creating complex storylines and alliance-based rivalries.",
+        """
+        Manage powerful wrestling groups. Factions bring together multiple wrestlers under a\
+         single banner, creating complex storylines and alliance-based rivalries.\
+        """,
         "entity-factions");
   }
 
@@ -66,8 +68,10 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Entities",
         "Tag Teams",
-        "Track formal tag team partnerships. Teams often have their own specific finishing moves"
-            + " and shared history in the Tag Team division.",
+        """
+        Track formal tag team partnerships. Teams often have their own specific finishing moves\
+         and shared history in the Tag Team division.\
+        """,
         "entity-teams");
   }
 
@@ -80,8 +84,10 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Entities",
         "Championships",
-        "Manage the various titles across the promotion. From World Championships to regional"
-            + " belts, track current champions and the prestige of each title.",
+        """
+        Manage the various titles across the promotion. From World Championships to regional\
+         belts, track current champions and the prestige of each title.\
+        """,
         "entity-titles");
   }
 
@@ -94,12 +100,14 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Entities",
         "Seasons",
-        "Configure and track game seasons. Seasons group shows together and define the journey"
-            + " toward major year-end events.",
+        """
+        Configure and track game seasons. Seasons group shows together and define the journey\
+         toward major year-end events.\
+        """,
         "entity-seasons");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

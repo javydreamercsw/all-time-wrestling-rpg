@@ -49,7 +49,7 @@ public class TierRecalculationService implements RankingService {
   private final UniverseContextService universeContextService;
 
   @Override
-  public void recalculateRanking(List<WrestlerData> wrestlersData) {
+  public void recalculateRanking(final List<WrestlerData> wrestlersData) {
     log.info("Starting tier recalculation...");
 
     Map<Gender, List<WrestlerData>> wrestlersByGender =
@@ -196,7 +196,7 @@ public class TierRecalculationService implements RankingService {
 
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void recalculateTier(WrestlerData wrestlerData) {
+  public void recalculateTier(final WrestlerData wrestlerData) {
     Long fans = wrestlerData.getFans() != null ? wrestlerData.getFans() : 0L;
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
     if (wrestlerData.getTier() != newTier) {
@@ -212,7 +212,7 @@ public class TierRecalculationService implements RankingService {
     }
   }
 
-  private WrestlerTier calculateTier(long fans, Gender gender) {
+  private WrestlerTier calculateTier(final long fans, final Gender gender) {
     List<TierBoundary> boundaries = new ArrayList<>(tierBoundaryService.findAllByGender(gender));
     // Sort by prestige (ICON first)
     boundaries.sort(Comparator.comparingInt(b -> b.getTier().ordinal()));

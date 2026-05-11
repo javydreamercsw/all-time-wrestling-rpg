@@ -31,8 +31,10 @@ class NewsDocsE2ETest extends AbstractE2ETest {
     // 1. Setup - Ensure some news exists
     newsService.createNewsItem(
         "Breaking: Major Championship Change!",
-        "In a shocking turn of events, the ATW World Championship has changed hands in a surprise"
-            + " match.",
+        """
+        In a shocking turn of events, the ATW World Championship has changed hands in a surprise\
+         match.\
+        """,
         NewsCategory.BREAKING,
         false,
         5);

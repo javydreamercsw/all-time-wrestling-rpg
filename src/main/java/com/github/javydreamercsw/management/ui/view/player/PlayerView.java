@@ -109,19 +109,19 @@ public class PlayerView extends VerticalLayout {
 
   @Autowired
   public PlayerView(
-      WrestlerService wrestlerService,
-      ShowService showService,
-      RivalryService rivalryService,
-      InboxService inboxService,
-      SecurityUtils securityUtils,
-      @Qualifier("managementAccountService") AccountService accountService,
-      SegmentService segmentService,
-      NewsService newsService,
-      TransactionTemplate transactionTemplate,
-      AchievementRepository achievementRepository,
-      SeasonStatsService seasonStatsService,
-      SeasonRepository seasonRepository,
-      UniverseContextService universeContextService) {
+      final WrestlerService wrestlerService,
+      final ShowService showService,
+      final RivalryService rivalryService,
+      final InboxService inboxService,
+      final SecurityUtils securityUtils,
+      @Qualifier("managementAccountService") final AccountService accountService,
+      final SegmentService segmentService,
+      final NewsService newsService,
+      final TransactionTemplate transactionTemplate,
+      final AchievementRepository achievementRepository,
+      final SeasonStatsService seasonStatsService,
+      final SeasonRepository seasonRepository,
+      final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;
@@ -361,7 +361,8 @@ public class PlayerView extends VerticalLayout {
     return card;
   }
 
-  private Component createStat(@NonNull String label, @NonNull String value, @NonNull String id) {
+  private Component createStat(
+      @NonNull final String label, @NonNull final String value, @NonNull final String id) {
     VerticalLayout stat = new VerticalLayout(new H4(label), new Span(value));
     stat.setPadding(false);
     stat.setSpacing(false);
@@ -741,7 +742,7 @@ public class PlayerView extends VerticalLayout {
     return layout;
   }
 
-  private Span createBadge(String text, String... themeNames) {
+  private Span createBadge(final String text, final String... themeNames) {
     Span badge = new Span(text);
     badge.getElement().getThemeList().add("badge");
     for (String theme : themeNames) {

@@ -43,9 +43,9 @@ public class CommentaryService {
 
   @Autowired
   public CommentaryService(
-      CommentatorRepository commentatorRepository,
-      CommentaryTeamRepository commentaryTeamRepository,
-      NpcRepository npcRepository) {
+      final CommentatorRepository commentatorRepository,
+      final CommentaryTeamRepository commentaryTeamRepository,
+      final NpcRepository npcRepository) {
     this.commentatorRepository = commentatorRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.npcRepository = npcRepository;
@@ -53,13 +53,13 @@ public class CommentaryService {
 
   @Transactional
   public Commentator createOrUpdateCommentator(
-      @NonNull String npcName,
-      @NonNull Gender gender,
-      @NonNull AlignmentType alignment,
-      String description,
-      String style,
-      String catchphrase,
-      String personaDescription) {
+      @NonNull final String npcName,
+      @NonNull final Gender gender,
+      @NonNull final AlignmentType alignment,
+      final String description,
+      final String style,
+      final String catchphrase,
+      final String personaDescription) {
     Npc npc = npcRepository.findByName(npcName).orElse(null);
     if (npc == null) {
       log.debug("Creating new NPC for commentator: {}", npcName);
@@ -88,7 +88,7 @@ public class CommentaryService {
 
   @Transactional
   public CommentaryTeam createOrUpdateTeam(
-      @NonNull String teamName, @NonNull List<String> commentatorNames) {
+      @NonNull final String teamName, @NonNull final List<String> commentatorNames) {
     Optional<CommentaryTeam> existing =
         commentaryTeamRepository.findAll().stream()
             .filter(t -> t.getName().equals(teamName))
@@ -121,7 +121,7 @@ public class CommentaryService {
     return commentaryTeamRepository.count();
   }
 
-  public Optional<Commentator> findCommentatorByNpcName(@NonNull String npcName) {
+  public Optional<Commentator> findCommentatorByNpcName(@NonNull final String npcName) {
     return commentatorRepository.findAll().stream()
         .filter(c -> c.getNpc().getName().equals(npcName))
         .findFirst();

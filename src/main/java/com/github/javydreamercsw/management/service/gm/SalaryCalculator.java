@@ -38,7 +38,7 @@ public class SalaryCalculator {
    * + (Fans / 1000) * Multiplier
    */
   public BigDecimal calculateWeeklySalary(
-      @NonNull Wrestler wrestler, @NonNull WrestlerState state) {
+      @NonNull final Wrestler wrestler, @NonNull final WrestlerState state) {
     long fans = state.getFans();
     BigDecimal fanBonus =
         BigDecimal.valueOf(fans)
@@ -62,7 +62,7 @@ public class SalaryCalculator {
 
   /** Calculates the weekly salary for a wrestler using their default universe state. */
   @Deprecated
-  public BigDecimal calculateWeeklySalary(@NonNull Wrestler wrestler) {
+  public BigDecimal calculateWeeklySalary(@NonNull final Wrestler wrestler) {
     return calculateWeeklySalary(wrestler, wrestler.getDefaultState().orElseThrow());
   }
 }

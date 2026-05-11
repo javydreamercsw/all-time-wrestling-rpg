@@ -47,17 +47,17 @@ public class FactionRivalrySyncService extends BaseSyncService {
 
   @Autowired
   public FactionRivalrySyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      FactionRivalryService factionRivalryService,
-      FactionRepository factionRepository,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final FactionRivalryService factionRivalryService,
+      final FactionRepository factionRepository,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.factionRivalryService = factionRivalryService;
     this.factionRepository = factionRepository;
   }
 
-  public SyncResult syncFactionRivalries(@NonNull String operationId) {
+  public SyncResult syncFactionRivalries(@NonNull final String operationId) {
     if (syncServiceDependencies
         .getSyncSessionManager()
         .isAlreadySyncedInSession("faction-rivalries")) {
@@ -85,7 +85,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
   }
 
   @SneakyThrows
-  private SyncResult performFactionRivalriesSync(@NonNull String operationId) {
+  private SyncResult performFactionRivalriesSync(@NonNull final String operationId) {
     if (!isNotionHandlerAvailable()) {
       return SyncResult.failure("Faction Rivalries", "NotionHandler is not available.");
     }
@@ -146,7 +146,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
         SyncEntityType.FACTION_RIVALRIES.getKey(), createdCount.get(), updatedCount.get(), 0);
   }
 
-  private FactionRivalryDTO toDto(FactionRivalryPage page) {
+  private FactionRivalryDTO toDto(final FactionRivalryPage page) {
     FactionRivalryDTO dto = new FactionRivalryDTO();
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
@@ -174,7 +174,9 @@ public class FactionRivalrySyncService extends BaseSyncService {
   }
 
   private void saveFactionRivalriesToDatabase(
-      List<FactionRivalryDTO> dtos, AtomicInteger createdCount, AtomicInteger updatedCount) {
+      final List<FactionRivalryDTO> dtos,
+      final AtomicInteger createdCount,
+      final AtomicInteger updatedCount) {
     for (FactionRivalryDTO dto : dtos) {
       if (dto.getFaction1Name() == null || dto.getFaction2Name() == null) {
         log.warn(
@@ -187,8 +189,10 @@ public class FactionRivalrySyncService extends BaseSyncService {
 
       if (faction1Opt.isEmpty() || faction2Opt.isEmpty()) {
         log.warn(
-            "Skipping faction rivalry for '{}' and '{}' because one or both factions were not"
-                + " found.",
+            """
+            Skipping faction rivalry for '{}' and '{}' because one or both factions were not\
+             found.\
+            """,
             dto.getFaction1Name(),
             dto.getFaction2Name());
         continue;
@@ -246,8 +250,8 @@ public class FactionRivalrySyncService extends BaseSyncService {
 
   /** Extracts a string property from any NotionPage type using raw properties. */
   private String extractStringPropertyFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page,
-      @NonNull String propertyName) {
+      @NonNull final com.github.javydreamercsw.base.ai.notion.NotionPage page,
+      @NonNull final String propertyName) {
     if (page.getRawProperties() != null) {
       Object property = page.getRawProperties().get(propertyName);
       if (property != null) {

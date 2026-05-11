@@ -31,14 +31,14 @@ import org.springframework.stereotype.Service;
 public class InjuryTypeNotionSyncService extends BaseNotionSyncService<InjuryType> {
 
   public InjuryTypeNotionSyncService(
-      InjuryTypeRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final InjuryTypeRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull InjuryType entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final InjuryType entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getInjuryName()));
     properties.put(

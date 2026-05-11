@@ -103,7 +103,7 @@ public class LocationFormDialog extends Dialog {
             });
   }
 
-  private void initUI(ImageStorageService storageService) {
+  private void initUI(final ImageStorageService storageService) {
     setHeaderTitle(location == null ? "Add New Location" : "Edit Location");
     setWidth("800px");
 
@@ -168,7 +168,7 @@ public class LocationFormDialog extends Dialog {
     add(dialogLayout);
   }
 
-  private void updateImagePreview(String url) {
+  private void updateImagePreview(final String url) {
     if (url != null && !url.trim().isEmpty()) {
       locationImage.setSrc(url);
     } else if (location != null) {

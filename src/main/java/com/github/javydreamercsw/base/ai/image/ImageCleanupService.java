@@ -51,10 +51,10 @@ public class ImageCleanupService {
 
   @Autowired
   public ImageCleanupService(
-      WrestlerRepository wrestlerRepository,
-      NpcRepository npcRepository,
-      ShowTemplateRepository showTemplateRepository,
-      StorageProperties storageProperties) {
+      final WrestlerRepository wrestlerRepository,
+      final NpcRepository npcRepository,
+      final ShowTemplateRepository showTemplateRepository,
+      final StorageProperties storageProperties) {
     this.wrestlerRepository = wrestlerRepository;
     this.npcRepository = npcRepository;
     this.showTemplateRepository = showTemplateRepository;

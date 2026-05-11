@@ -77,16 +77,16 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   public SegmentSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor,
-      SegmentRepository segmentRepository,
-      SegmentService segmentService,
-      ShowService showService,
-      SegmentTypeService segmentTypeService,
-      SegmentRuleRepository segmentRuleRepository,
-      WrestlerService wrestlerService,
-      TitleRepository titleRepository) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor,
+      final SegmentRepository segmentRepository,
+      final SegmentService segmentService,
+      final ShowService showService,
+      final SegmentTypeService segmentTypeService,
+      final SegmentRuleRepository segmentRuleRepository,
+      final WrestlerService wrestlerService,
+      final TitleRepository titleRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.segmentRepository = segmentRepository;
     this.segmentService = segmentService;
@@ -98,7 +98,7 @@ public class SegmentSyncService extends BaseSyncService {
     this.self = this;
   }
 
-  public SyncResult syncSegments(@NonNull String operationId) {
+  public SyncResult syncSegments(@NonNull final String operationId) {
     log.info(
         "🎞️ Starting segments synchronization from Notion with operation ID: {}", operationId);
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segments Sync", 4);
@@ -112,7 +112,7 @@ public class SegmentSyncService extends BaseSyncService {
     return performSegmentSyncInternal(operationId);
   }
 
-  private SyncResult performSegmentSyncInternal(@NonNull String operationId) {
+  private SyncResult performSegmentSyncInternal(@NonNull final String operationId) {
     final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
     // 1. Get all local external IDs
     syncServiceDependencies
@@ -199,7 +199,9 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   private List<SegmentDTO> convertSegmentsWithRateLimit(
-      List<SegmentPage> notionSegments, String operationId, Consumer<String> messageConsumer) {
+      final List<SegmentPage> notionSegments,
+      final String operationId,
+      final Consumer<String> messageConsumer) {
     return processWithControlledParallelism(
         notionSegments,
         segmentPage -> convertNotionPageToDTO(segmentPage, messageConsumer),
@@ -211,7 +213,7 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   private SegmentDTO convertNotionPageToDTO(
-      @NonNull SegmentPage segmentPage, Consumer<String> messageConsumer) {
+      @NonNull final SegmentPage segmentPage, final Consumer<String> messageConsumer) {
     SegmentDTO segmentDTO = new SegmentDTO();
     segmentDTO.setExternalId(segmentPage.getId());
     segmentDTO.setName(
@@ -256,8 +258,7 @@ public class SegmentSyncService extends BaseSyncService {
     if (segmentTypeExternalId != null && !segmentTypeExternalId.isEmpty()) {
       segmentDTO.setSegmentTypeExternalId(segmentTypeExternalId);
     } else {
-      String msg =
-          String.format("Segment type relation not found for segment %s.", segmentPage.getId());
+      String msg = "Segment type relation not found for segment %s.".formatted(segmentPage.getId());
       log.warn(msg);
       messageConsumer.accept(msg);
     }
@@ -275,9 +276,8 @@ public class SegmentSyncService extends BaseSyncService {
         segmentDTO.setSegmentDate(localDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
       } catch (java.time.format.DateTimeParseException e) {
         String msg =
-            String.format(
-                "Could not parse date '%s' for segment %s: %s",
-                dateProperty, segmentPage.getId(), e.getMessage());
+            "Could not parse date '%s' for segment %s: %s"
+                .formatted(dateProperty, segmentPage.getId(), e.getMessage());
         log.warn(msg);
         messageConsumer.accept(msg);
         segmentDTO.setSegmentDate(null);
@@ -345,7 +345,7 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   private int saveSegmentsToDatabase(
-      @NonNull List<SegmentDTO> segmentDTOs, Consumer<String> messageConsumer) {
+      @NonNull final List<SegmentDTO> segmentDTOs, final Consumer<String> messageConsumer) {
     int savedCount = 0;
     for (SegmentDTO segmentDTO : segmentDTOs) {
       if (getSelf().processSingleSegment(segmentDTO, messageConsumer)) {
@@ -355,13 +355,13 @@ public class SegmentSyncService extends BaseSyncService {
     return savedCount;
   }
 
-  public boolean processSingleSegment(@NonNull SegmentDTO segmentDTO) {
+  public boolean processSingleSegment(@NonNull final SegmentDTO segmentDTO) {
     return self.processSingleSegment(segmentDTO, msg -> {});
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(
-      @NonNull SegmentDTO segmentDTO, Consumer<String> messageConsumer) {
+      @NonNull final SegmentDTO segmentDTO, final Consumer<String> messageConsumer) {
     Optional<Segment> existingSegmentOpt =
         Optional.ofNullable(segmentDTO.getExternalId()).flatMap(segmentService::findByExternalId);
 
@@ -382,9 +382,8 @@ public class SegmentSyncService extends BaseSyncService {
     Optional<Show> showOpt = showService.findByExternalId(segmentDTO.getShowExternalId());
     if (showOpt.isEmpty()) {
       String msg =
-          String.format(
-              "Show for segment %s was not found locally. Attempting to sync it.",
-              segmentDTO.getName());
+          "Show for segment %s was not found locally. Attempting to sync it."
+              .formatted(segmentDTO.getName());
       log.warn(msg);
       messageConsumer.accept(msg);
       // Attempt to sync the missing show
@@ -396,8 +395,8 @@ public class SegmentSyncService extends BaseSyncService {
 
       if (showOpt.isEmpty()) {
         String errorMsg =
-            String.format(
-                "Skipping segment %s as show could not be found or synced.", segmentDTO.getName());
+            "Skipping segment %s as show could not be found or synced."
+                .formatted(segmentDTO.getName());
         log.warn(errorMsg);
         messageConsumer.accept(errorMsg);
         return false;
@@ -506,7 +505,7 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public SyncResult syncSegment(@NonNull String segmentId) {
+  public SyncResult syncSegment(@NonNull final String segmentId) {
     log.info("🤼 Starting segment synchronization from Notion for ID: {}", segmentId);
     String operationId = "segment-sync-" + segmentId;
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segment Sync", 4);

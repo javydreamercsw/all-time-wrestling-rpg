@@ -29,7 +29,9 @@ public class ThemeInitializer {
 
   @Bean
   public VaadinServiceInitListener themeServiceInitListener(
-      ThemeService themeService, SecurityUtils securityUtils, AccountService accountService) {
+      final ThemeService themeService,
+      final SecurityUtils securityUtils,
+      final AccountService accountService) {
     return event ->
         event
             .getSource()
@@ -55,7 +57,7 @@ public class ThemeInitializer {
                 });
   }
 
-  private void applyTheme(UI ui, String theme) {
+  private void applyTheme(final UI ui, final String theme) {
     if ("light".equals(theme)) {
       ui.getPage().executeJs("document.documentElement.removeAttribute('theme')");
     } else {

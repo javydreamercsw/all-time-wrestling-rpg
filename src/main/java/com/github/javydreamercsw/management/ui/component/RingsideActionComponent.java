@@ -53,11 +53,12 @@ public class RingsideActionComponent extends VerticalLayout {
   private Select<Wrestler> targetWrestlerSelect;
 
   public RingsideActionComponent(
-      RingsideActionService ringsideActionService,
-      RingsideActionDataService ringsideActionDataService,
-      Segment segment,
-      Wrestler playerWrestler,
-      BiConsumer<RingsideAction, RingsideActionService.RingsideActionResult> onActionPerformed) {
+      final RingsideActionService ringsideActionService,
+      final RingsideActionDataService ringsideActionDataService,
+      final Segment segment,
+      final Wrestler playerWrestler,
+      final BiConsumer<RingsideAction, RingsideActionService.RingsideActionResult>
+          onActionPerformed) {
     this.ringsideActionService = ringsideActionService;
     this.ringsideActionDataService = ringsideActionDataService;
     this.segment = segment;
@@ -186,14 +187,14 @@ public class RingsideActionComponent extends VerticalLayout {
     }
   }
 
-  private AlignmentType getWrestlerAlignment(Wrestler wrestler) {
+  private AlignmentType getWrestlerAlignment(final Wrestler wrestler) {
     if (wrestler != null && wrestler.getAlignment() != null) {
       return wrestler.getAlignment().getAlignmentType();
     }
     return AlignmentType.NEUTRAL;
   }
 
-  private void performAction(Wrestler target, RingsideAction action) {
+  private void performAction(final Wrestler target, final RingsideAction action) {
     Object supporter = ringsideActionService.getBestSupporter(segment, target);
     if (supporter == null) {
       Notification.show("No one is currently available at ringside to help " + target.getName())

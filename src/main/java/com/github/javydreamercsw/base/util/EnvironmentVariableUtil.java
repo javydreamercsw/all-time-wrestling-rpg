@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.base.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,12 +34,9 @@ import lombok.extern.slf4j.Slf4j;
  *   <li>Default value (if provided)
  * </ol>
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public final class EnvironmentVariableUtil {
-
-  private EnvironmentVariableUtil() {
-    // Utility class - prevent instantiation
-  }
 
   /**
    * Retrieves a configuration value with fallback from system property to environment variable.
@@ -45,7 +44,7 @@ public final class EnvironmentVariableUtil {
    * @param key the configuration key (e.g., "NOTION_TOKEN")
    * @return the configuration value, or null if not found
    */
-  public static String getValue(@NonNull String key) {
+  public static String getValue(@NonNull final String key) {
     return getValue(key, null);
   }
 
@@ -58,7 +57,7 @@ public final class EnvironmentVariableUtil {
    *     set
    * @return the configuration value, or the default value if not found
    */
-  public static String getValue(@NonNull String key, String defaultValue) {
+  public static String getValue(@NonNull final String key, final String defaultValue) {
     // First try system property
     String value = System.getProperty(key);
     if (value != null && !value.trim().isEmpty()) {
@@ -98,7 +97,7 @@ public final class EnvironmentVariableUtil {
    * @param key the configuration key
    * @return true if a value is available, false otherwise
    */
-  public static boolean isAvailable(String key) {
+  public static boolean isAvailable(final String key) {
     String value = getValue(key);
     return value != null && !value.trim().isEmpty();
   }

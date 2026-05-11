@@ -218,11 +218,13 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
               (Boolean)
                   ((JavascriptExecutor) d)
                       .executeScript(
-                          "const list = document.querySelector('vaadin-message-list');if (!list)"
-                              + " return false;const items = list.items;if (!items ||"
-                              + " items.length < 2) return false;return items.some(it => it &&"
-                              + " it.userName && String(it.userName).includes('The Silent"
-                              + " One'));");
+                          """
+                          const list = document.querySelector('vaadin-message-list');if (!list)\
+                           return false;const items = list.items;if (!items ||\
+                           items.length < 2) return false;return items.some(it => it &&\
+                           it.userName && String(it.userName).includes('The Silent\
+                           One'));\
+                          """);
           return Boolean.TRUE.equals(foundInMessages);
         });
 

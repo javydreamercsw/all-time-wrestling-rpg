@@ -59,7 +59,7 @@ public class RivalryController {
   private final RivalryService rivalryService;
   private final RivalryMapper rivalryMapper;
 
-  public RivalryController(RivalryService rivalryService, RivalryMapper rivalryMapper) {
+  public RivalryController(final RivalryService rivalryService, final RivalryMapper rivalryMapper) {
     this.rivalryService = rivalryService;
     this.rivalryMapper = rivalryMapper;
   }
@@ -76,7 +76,8 @@ public class RivalryController {
       })
   @PostMapping
   @Transactional
-  public ResponseEntity<Object> createRivalry(@Valid @RequestBody CreateRivalryRequest request) {
+  public ResponseEntity<Object> createRivalry(
+      @Valid @RequestBody final CreateRivalryRequest request) {
     Optional<Rivalry> rivalry =
         rivalryService.createRivalry(
             request.wrestler1Id(), request.wrestler2Id(), request.storylineNotes());
@@ -96,11 +97,13 @@ public class RivalryController {
   @GetMapping
   @Transactional(readOnly = true)
   public ResponseEntity<Page<RivalryDTO>> getAllRivalries(
-      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "heat") String sortBy,
+      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0")
+          final int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") final int size,
+      @Parameter(description = "Sort field") @RequestParam(defaultValue = "heat")
+          final String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc")
-          String sortDir) {
+          final String sortDir) {
 
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(page, size, sort);
@@ -111,7 +114,7 @@ public class RivalryController {
   @Operation(summary = "Get rivalry by ID", description = "Retrieves a specific rivalry by its ID")
   @GetMapping("/{id}")
   @Transactional(readOnly = true)
-  public ResponseEntity<RivalryDTO> getRivalryById(@PathVariable Long id) {
+  public ResponseEntity<RivalryDTO> getRivalryById(@PathVariable final Long id) {
     Optional<Rivalry> rivalry = rivalryService.getRivalryById(id);
     return rivalry
         .map(rivalryMapper::toRivalryDTO)
@@ -132,7 +135,8 @@ public class RivalryController {
       description = "Gets all active rivalries for a specific wrestler")
   @GetMapping("/wrestler/{wrestlerId}")
   @Transactional(readOnly = true)
-  public ResponseEntity<List<RivalryDTO>> getRivalriesForWrestler(@PathVariable Long wrestlerId) {
+  public ResponseEntity<List<RivalryDTO>> getRivalriesForWrestler(
+      @PathVariable final Long wrestlerId) {
     List<Rivalry> rivalries = rivalryService.getRivalriesForWrestler(wrestlerId);
     return ResponseEntity.ok(rivalries.stream().map(rivalryMapper::toRivalryDTO).toList());
   }
@@ -141,7 +145,7 @@ public class RivalryController {
   @PostMapping("/{id}/heat")
   @Transactional
   public ResponseEntity<Object> addHeat(
-      @PathVariable Long id, @Valid @RequestBody AddHeatRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final AddHeatRequest request) {
     Optional<Rivalry> rivalry = rivalryService.addHeat(id, request.heatGain(), request.reason());
 
     return rivalry
@@ -159,7 +163,7 @@ public class RivalryController {
   @PostMapping("/heat")
   @Transactional
   public ResponseEntity<Object> addHeatBetweenWrestlers(
-      @Valid @RequestBody AddHeatBetweenWrestlersRequest request) {
+      @Valid @RequestBody final AddHeatBetweenWrestlersRequest request) {
     Optional<Rivalry> rivalry =
         rivalryService.addHeatBetweenWrestlers(
             request.wrestler1Id(), request.wrestler2Id(), request.heatGain(), request.reason());
@@ -179,7 +183,7 @@ public class RivalryController {
   @PostMapping("/{id}/resolve")
   @Transactional
   public ResponseEntity<ResolutionResultDTO> attemptResolution(
-      @PathVariable Long id, @Valid @RequestBody ResolutionAttemptRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final ResolutionAttemptRequest request) {
     ResolutionResult<Rivalry> result =
         rivalryService.attemptResolution(id, request.wrestler1Roll(), request.wrestler2Roll());
 
@@ -191,7 +195,7 @@ public class RivalryController {
   @PostMapping("/{id}/end")
   @Transactional
   public ResponseEntity<Object> endRivalry(
-      @PathVariable Long id, @Valid @RequestBody EndRivalryRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final EndRivalryRequest request) {
     Optional<Rivalry> rivalry = rivalryService.endRivalry(id, request.reason());
 
     return rivalry
@@ -241,7 +245,7 @@ public class RivalryController {
   @GetMapping("/intensity/{intensity}")
   @Transactional(readOnly = true)
   public ResponseEntity<List<RivalryDTO>> getRivalriesByIntensity(
-      @PathVariable RivalryIntensity intensity) {
+      @PathVariable final RivalryIntensity intensity) {
     List<Rivalry> rivalries = rivalryService.getRivalriesByIntensity(intensity);
     return ResponseEntity.ok(rivalries.stream().map(rivalryMapper::toRivalryDTO).toList());
   }
@@ -252,7 +256,7 @@ public class RivalryController {
   public ResponseEntity<List<RivalryDTO>> getHottestRivalries(
       @Parameter(description = "Number of rivalries to return")
           @RequestParam(defaultValue = "10")
-          @Min(1) @Max(50) int limit) {
+          @Min(1) @Max(50) final int limit) {
     List<Rivalry> rivalries = rivalryService.getHottestRivalries(limit);
     return ResponseEntity.ok(rivalries.stream().map(rivalryMapper::toRivalryDTO).toList());
   }
@@ -263,7 +267,7 @@ public class RivalryController {
   @PutMapping("/{id}/storyline")
   @Transactional
   public ResponseEntity<RivalryDTO> updateStorylineNotes(
-      @PathVariable Long id, @Valid @RequestBody UpdateStorylineRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final UpdateStorylineRequest request) {
     Optional<Rivalry> rivalry = rivalryService.updateStorylineNotes(id, request.storylineNotes());
     return rivalry
         .map(rivalryMapper::toRivalryDTO)
@@ -276,7 +280,7 @@ public class RivalryController {
       description = "Retrieves comprehensive statistics for a rivalry")
   @GetMapping("/{id}/stats")
   @Transactional(readOnly = true)
-  public ResponseEntity<RivalryService.RivalryStats> getRivalryStats(@PathVariable Long id) {
+  public ResponseEntity<RivalryService.RivalryStats> getRivalryStats(@PathVariable final Long id) {
     RivalryService.RivalryStats stats = rivalryService.getRivalryStats(id);
     if (stats != null) {
       return ResponseEntity.ok(stats);
@@ -291,7 +295,7 @@ public class RivalryController {
   @GetMapping("/history/{wrestler1Id}/{wrestler2Id}")
   @Transactional(readOnly = true)
   public ResponseEntity<RivalryHistoryResponse> checkRivalryHistory(
-      @PathVariable Long wrestler1Id, @PathVariable Long wrestler2Id) {
+      @PathVariable final Long wrestler1Id, @PathVariable final Long wrestler2Id) {
     boolean hasHistory = rivalryService.hasRivalryHistory(wrestler1Id, wrestler2Id);
     return ResponseEntity.ok(new RivalryHistoryResponse(hasHistory));
   }

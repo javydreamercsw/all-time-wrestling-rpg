@@ -58,7 +58,7 @@ public class BackstageEncounterService {
    * @return true if an encounter should be triggered
    */
   @Transactional
-  public boolean shouldTriggerEncounter(Campaign campaign) {
+  public boolean shouldTriggerEncounter(final Campaign campaign) {
     CampaignState state = campaign.getState();
 
     // Only trigger if no actions have been taken today
@@ -94,7 +94,7 @@ public class BackstageEncounterService {
     return triggered;
   }
 
-  private void updateLastEncounterDate(CampaignState state) {
+  private void updateLastEncounterDate(final CampaignState state) {
     if (state.getCurrentGameDate() == null) {
       log.warn("Cannot update last encounter date: currentGameDate is null");
       return;
@@ -115,7 +115,7 @@ public class BackstageEncounterService {
   }
 
   @Transactional
-  public CampaignEncounterResponseDTO generateBackstageEncounter(Campaign campaign) {
+  public CampaignEncounterResponseDTO generateBackstageEncounter(final Campaign campaign) {
     CampaignState state = campaign.getState();
     CampaignChapterDTO chapter =
         campaignService
@@ -158,7 +158,7 @@ public class BackstageEncounterService {
     }
   }
 
-  private String buildBackstagePrompt(Campaign campaign, CampaignChapterDTO chapter) {
+  private String buildBackstagePrompt(final Campaign campaign, final CampaignChapterDTO chapter) {
     Wrestler player = campaign.getWrestler();
     StringBuilder sb = new StringBuilder();
 
@@ -213,8 +213,10 @@ public class BackstageEncounterService {
     sb.append("   - alignmentShift (e.g., +1 for Face behavior, -1 for Heel behavior).\n");
     sb.append("   - momentumBonus (e.g., +1 or +2 for the next match).\n");
     sb.append(
-        "   - outcomeText (Narrative text explaining what happened immediately after the"
-            + " choice).\n");
+        """
+           - outcomeText (Narrative text explaining what happened immediately after the\
+         choice).
+        """);
     sb.append("4. All choices for these situations should have nextPhase: 'BACKSTAGE'.\n");
     sb.append("5. IMPORTANT: Your response MUST be a valid JSON object.\n\n");
 
@@ -228,8 +230,10 @@ public class BackstageEncounterService {
     sb.append("      \"alignmentShift\": 1,\n");
     sb.append("      \"momentumBonus\": 1,\n");
     sb.append(
-        "      \"outcomeText\": \"The veteran nods in approval, giving you a boost of"
-            + " confidence.\",\n");
+        """
+              "outcomeText": "The veteran nods in approval, giving you a boost of\
+         confidence.",
+        """);
     sb.append("      \"nextPhase\": \"BACKSTAGE\"\n");
     sb.append("    }\n");
     sb.append("  ]\n");
@@ -239,7 +243,8 @@ public class BackstageEncounterService {
   }
 
   @Transactional
-  public void recordBackstageChoice(Campaign campaign, CampaignEncounterResponseDTO.Choice choice) {
+  public void recordBackstageChoice(
+      final Campaign campaign, final CampaignEncounterResponseDTO.Choice choice) {
     List<CampaignEncounter> encounters =
         encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign);
     if (encounters.isEmpty()) {

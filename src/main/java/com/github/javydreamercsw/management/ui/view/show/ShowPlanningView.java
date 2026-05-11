@@ -102,21 +102,21 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   @Autowired
   public ShowPlanningView(
-      ShowService showService,
-      ShowPlanningService showPlanningService,
-      ShowPlanningAiService showPlanningAiService,
-      WrestlerService wrestlerService,
-      ShowTemplateService showTemplateService,
-      WrestlerRepository wrestlerRepository,
-      TitleService titleService,
-      SegmentTypeRepository segmentTypeRepository,
-      SegmentRuleRepository segmentRuleRepository,
-      NpcService npcService,
-      ObjectMapper objectMapper,
-      SegmentNarrationServiceFactory aiFactory,
-      ArenaService arenaService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
-      UniverseContextService universeContextService) {
+      final ShowService showService,
+      final ShowPlanningService showPlanningService,
+      final ShowPlanningAiService showPlanningAiService,
+      final WrestlerService wrestlerService,
+      final ShowTemplateService showTemplateService,
+      final WrestlerRepository wrestlerRepository,
+      final TitleService titleService,
+      final SegmentTypeRepository segmentTypeRepository,
+      final SegmentRuleRepository segmentRuleRepository,
+      final NpcService npcService,
+      final ObjectMapper objectMapper,
+      final SegmentNarrationServiceFactory aiFactory,
+      final ArenaService arenaService,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
+      final UniverseContextService universeContextService) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
@@ -292,7 +292,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
   }
 
-  private void updateTemplateImage(Show show) {
+  private void updateTemplateImage(final Show show) {
     if (show != null && show.getTemplate() != null) {
       templateImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
       templateImage.setVisible(true);
@@ -360,7 +360,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   }
 
   @Override
-  public void setParameter(BeforeEvent event, Long parameter) {
+  public void setParameter(final BeforeEvent event, final Long parameter) {
     if (parameter != null) {
       showService.getShowById(parameter).ifPresent(showComboBox::setValue);
     }

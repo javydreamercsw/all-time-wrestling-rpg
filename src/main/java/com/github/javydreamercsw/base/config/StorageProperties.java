@@ -77,7 +77,7 @@ public class StorageProperties {
     return resolveAndCreate(backupDir);
   }
 
-  private Path resolveAndCreate(String pathStr) {
+  private Path resolveAndCreate(final String pathStr) {
     Path path = Paths.get(pathStr);
     if (!path.isAbsolute()) {
       path = Paths.get(baseDir).resolve(pathStr);

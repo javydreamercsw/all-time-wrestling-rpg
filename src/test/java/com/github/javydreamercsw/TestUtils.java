@@ -38,12 +38,15 @@ public class TestUtils {
    * @param universe Universe to associate with.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name, long fans, Universe universe) {
+  public static Wrestler createWrestler(
+      @NonNull final String name, final long fans, final Universe universe) {
     Universe finalUniverse = universe != null ? universe : defaultUniverse;
     if (finalUniverse == null) {
       throw new IllegalStateException(
-          "No default universe set in TestUtils. Call setDefaultUniverse first or pass a"
-              + " universe.");
+          """
+          No default universe set in TestUtils. Call setDefaultUniverse first or pass a\
+           universe.\
+          """);
     }
     Wrestler wrestler = createWrestler(name, finalUniverse);
     setFans(wrestler, fans, finalUniverse);
@@ -56,7 +59,7 @@ public class TestUtils {
    * @param name Desired wrestler's name.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name, long fans) {
+  public static Wrestler createWrestler(@NonNull final String name, final long fans) {
     Wrestler wrestler = createWrestler(name);
     setFans(wrestler, fans, null);
     return wrestler;
@@ -68,7 +71,7 @@ public class TestUtils {
    * @param name Desired wrestler's name.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name) {
+  public static Wrestler createWrestler(@NonNull final String name) {
     return createWrestler(name, (Universe) null);
   }
 
@@ -79,12 +82,14 @@ public class TestUtils {
    * @param universe Universe to associate with.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name, Universe universe) {
+  public static Wrestler createWrestler(@NonNull final String name, final Universe universe) {
     Universe finalUniverse = universe != null ? universe : defaultUniverse;
     if (finalUniverse == null) {
       throw new IllegalStateException(
-          "No default universe set in TestUtils. Call setDefaultUniverse first or pass a"
-              + " universe.");
+          """
+          No default universe set in TestUtils. Call setDefaultUniverse first or pass a\
+           universe.\
+          """);
     }
     Wrestler wrestler =
         createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
@@ -94,10 +99,10 @@ public class TestUtils {
   }
 
   public static Wrestler createWrestler(
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull WrestlerTier tier,
-      Account account) {
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final WrestlerTier tier,
+      final Account account) {
     Wrestler w = new Wrestler();
     w.setName(name);
     if (account != null) {
@@ -119,7 +124,7 @@ public class TestUtils {
     return w;
   }
 
-  public static void setFans(Wrestler wrestler, long fans, Universe universe) {
+  public static void setFans(final Wrestler wrestler, final long fans, final Universe universe) {
     WrestlerState state =
         wrestler
             .getDefaultState()
@@ -142,7 +147,7 @@ public class TestUtils {
   }
 
   @Deprecated
-  private static void setFans(Wrestler wrestler, long fans) {
+  private static void setFans(final Wrestler wrestler, final long fans) {
     setFans(wrestler, fans, null);
   }
 }

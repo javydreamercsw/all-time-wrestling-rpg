@@ -58,7 +58,7 @@ class GeneralSecurityUtilsTest {
               Assertions.assertNotNull(auth);
               Assertions.assertTrue(
                   auth.getAuthorities().stream()
-                      .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
+                      .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
             });
 
     Assertions.assertNull(SecurityContextHolder.getContext().getAuthentication());

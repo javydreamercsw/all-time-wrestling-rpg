@@ -25,7 +25,7 @@ public final class InboxEventType {
 
   @Getter private final @NonNull String friendlyName;
 
-  public InboxEventType(@NonNull String name, @NonNull String friendlyName) {
+  public InboxEventType(@NonNull final String name, @NonNull final String friendlyName) {
     this.name = name;
     this.friendlyName = friendlyName;
   }
@@ -36,7 +36,7 @@ public final class InboxEventType {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

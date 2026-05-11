@@ -114,9 +114,9 @@ public class TestNotionConfiguration {
   @Bean
   @Primary
   public NotionSyncServiceDependencies testNotionSyncServiceDependencies(
-      NotionHandler notionHandler,
-      NotionRateLimitService notionRateLimitService,
-      NotionSyncProperties notionSyncProperties) {
+      final NotionHandler notionHandler,
+      final NotionRateLimitService notionRateLimitService,
+      final NotionSyncProperties notionSyncProperties) {
     NotionSyncServiceDependencies mockDependencies = mock(NotionSyncServiceDependencies.class);
     when(mockDependencies.getNotionHandler()).thenReturn(notionHandler);
     when(mockDependencies.getNotionRateLimitService()).thenReturn(notionRateLimitService);
@@ -127,10 +127,10 @@ public class TestNotionConfiguration {
   @Bean
   @Primary
   public NotionApiExecutor testNotionApiExecutor(
-      NotionHandler notionHandler,
-      NotionRateLimitService notionRateLimitService,
-      NotionSyncProperties notionSyncProperties,
-      SyncProgressTracker progressTracker) {
+      final NotionHandler notionHandler,
+      final NotionRateLimitService notionRateLimitService,
+      final NotionSyncProperties notionSyncProperties,
+      final SyncProgressTracker progressTracker) {
     return new NotionApiExecutor(
         notionHandler, notionRateLimitService, notionSyncProperties, progressTracker);
   }

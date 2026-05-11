@@ -77,12 +77,12 @@ public class FactionListView extends VerticalLayout {
 
   @Autowired
   public FactionListView(
-      @NonNull FactionService factionService,
-      @NonNull WrestlerService wrestlerService,
-      @NonNull NpcService npcService,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull UniverseContextService universeContextService) {
+      @NonNull final FactionService factionService,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final NpcService npcService,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final UniverseContextService universeContextService) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
     this.npcService = npcService;
@@ -260,7 +260,7 @@ public class FactionListView extends VerticalLayout {
     editDialog.getFooter().add(cancelButton, saveButton);
   }
 
-  private void editFaction(Faction faction) {
+  private void editFaction(final Faction faction) {
     editingFaction = faction;
     binder.setBean(editingFaction);
     editDialog.setHeaderTitle("Edit Faction: " + faction.getName());
@@ -276,7 +276,7 @@ public class FactionListView extends VerticalLayout {
     }
   }
 
-  private void openMembersDialog(Faction faction) {
+  private void openMembersDialog(final Faction faction) {
     Dialog dialog = new Dialog();
     dialog.setWidth("800px");
     dialog.setHeight("600px");
@@ -305,7 +305,7 @@ public class FactionListView extends VerticalLayout {
         .setHeader("Tier")
         .setSortable(true);
     currentMembersGrid
-        .addColumn(s -> String.format("%,d", s.getFans()))
+        .addColumn(s -> "%,d".formatted(s.getFans()))
         .setHeader("Fans")
         .setSortable(true);
     currentMembersGrid.setId("members-grid");

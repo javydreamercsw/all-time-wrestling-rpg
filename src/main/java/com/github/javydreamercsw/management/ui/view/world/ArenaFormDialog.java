@@ -129,7 +129,7 @@ public class ArenaFormDialog extends Dialog {
             });
   }
 
-  private void initUI(ImageStorageService storageService) {
+  private void initUI(final ImageStorageService storageService) {
     setHeaderTitle(arena == null ? "Add New Arena" : "Edit Arena");
     setWidth("800px");
 
@@ -275,7 +275,7 @@ public class ArenaFormDialog extends Dialog {
     }
   }
 
-  private void updateImagePreview(String url) {
+  private void updateImagePreview(final String url) {
     if (url != null && !url.trim().isEmpty()) {
       arenaImage.setSrc(url);
     } else if (arena != null) {

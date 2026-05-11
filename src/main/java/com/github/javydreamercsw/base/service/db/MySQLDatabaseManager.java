@@ -29,7 +29,8 @@ public class MySQLDatabaseManager implements DatabaseManager {
   private final String user;
   private final String password;
 
-  public MySQLDatabaseManager(@NonNull String url, @NonNull String user, @NonNull String password) {
+  public MySQLDatabaseManager(
+      @NonNull final String url, @NonNull final String user, @NonNull final String password) {
     this.url = url;
     this.user = user;
     this.password = password;
@@ -57,7 +58,7 @@ public class MySQLDatabaseManager implements DatabaseManager {
   }
 
   @Override
-  public Connection getConnection(String password) throws SQLException {
+  public Connection getConnection(final String password) throws SQLException {
     return DriverManager.getConnection(url, user, password);
   }
 }

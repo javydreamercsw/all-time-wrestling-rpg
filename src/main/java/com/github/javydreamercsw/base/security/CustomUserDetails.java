@@ -33,12 +33,12 @@ public class CustomUserDetails implements UserDetails, Principal {
   private final Account account;
   @Getter private final Wrestler wrestler; // Added field
 
-  public CustomUserDetails(Account account, Wrestler wrestler) { // Updated constructor
+  public CustomUserDetails(final Account account, final Wrestler wrestler) { // Updated constructor
     this.account = account;
     this.wrestler = wrestler;
   }
 
-  public CustomUserDetails(Account account) {
+  public CustomUserDetails(final Account account) {
     this.account = account;
     this.wrestler = null;
   }

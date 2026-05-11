@@ -42,7 +42,7 @@ public enum ImageCategory {
    * @param name The entity name.
    * @return The formatted name.
    */
-  public String formatName(String name) {
+  public String formatName(final String name) {
     if (name == null) {
       return "";
     }

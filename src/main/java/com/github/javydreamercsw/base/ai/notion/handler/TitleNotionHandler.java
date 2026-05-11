@@ -29,7 +29,7 @@ public class TitleNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public TitleNotionHandler(NotionHandler notionHandler) {
+  public TitleNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -68,7 +68,8 @@ public class TitleNotionHandler {
   }
 
   /** Maps a Notion page to a TitlePage object. */
-  private TitlePage mapPageToTitlePage(@NonNull Page pageData, @NonNull String titleName) {
+  private TitlePage mapPageToTitlePage(
+      @NonNull final Page pageData, @NonNull final String titleName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, titleName, "Title", TitlePage::new, TitlePage.NotionParent::new);
   }

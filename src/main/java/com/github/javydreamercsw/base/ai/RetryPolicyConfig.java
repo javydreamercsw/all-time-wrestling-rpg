@@ -47,20 +47,20 @@ public class RetryPolicyConfig {
 
   /** Creates a simple retry policy with fixed delay. */
   public static RetryPolicyConfig fixedDelay(
-      int maxRetries,
-      Duration delay,
-      @NonNull Predicate<Exception> shouldRetry,
-      @NonNull String description) {
+      final int maxRetries,
+      final Duration delay,
+      @NonNull final Predicate<Exception> shouldRetry,
+      @NonNull final String description) {
     return new RetryPolicyConfig(maxRetries, delay, delay, shouldRetry, description);
   }
 
   /** Creates a retry policy with exponential backoff. */
   public static RetryPolicyConfig exponentialBackoff(
-      int maxRetries,
-      Duration baseDelay,
-      Duration maxDelay,
-      @NonNull Predicate<Exception> shouldRetry,
-      @NonNull String description) {
+      final int maxRetries,
+      final Duration baseDelay,
+      final Duration maxDelay,
+      @NonNull final Predicate<Exception> shouldRetry,
+      @NonNull final String description) {
     return new RetryPolicyConfig(maxRetries, baseDelay, maxDelay, shouldRetry, description);
   }
 }

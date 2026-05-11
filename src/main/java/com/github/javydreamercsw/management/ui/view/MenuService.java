@@ -168,7 +168,7 @@ public class MenuService {
    * Filter menu items based on current user's roles. Removes items the user doesn't have permission
    * to access.
    */
-  private List<MenuItem> filterMenuItems(List<MenuItem> menuItems) {
+  private List<MenuItem> filterMenuItems(final List<MenuItem> menuItems) {
     return menuItems.stream()
         .map(this::filterMenuItem)
         .filter(menuItem -> menuItem != null)
@@ -179,7 +179,7 @@ public class MenuService {
    * Filter a single menu item and its children based on user roles. Returns null if the user
    * doesn't have access and the item has no accessible children.
    */
-  private MenuItem filterMenuItem(MenuItem menuItem) {
+  private MenuItem filterMenuItem(final MenuItem menuItem) {
     // Check if user has required role for this item FIRST
     boolean hasAccess =
         !menuItem.hasRequiredRoles()
@@ -204,7 +204,7 @@ public class MenuService {
     return filtered;
   }
 
-  private void sortSubMenus(MenuItem menuItem) {
+  private void sortSubMenus(final MenuItem menuItem) {
     if (!menuItem.getChildren().isEmpty()) {
       menuItem.getChildren().sort(Comparator.comparing(MenuItem::getTitle));
       menuItem.getChildren().forEach(this::sortSubMenus);

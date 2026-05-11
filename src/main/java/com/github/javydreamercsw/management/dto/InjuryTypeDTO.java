@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.dto;
 
 import java.time.Instant;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 /**
@@ -26,6 +27,7 @@ import lombok.NonNull;
  * individual wrestler injuries.
  */
 @Data
+@NoArgsConstructor
 public class InjuryTypeDTO {
 
   // ==================== CORE PROPERTIES ====================
@@ -64,11 +66,7 @@ public class InjuryTypeDTO {
   /** User who last edited the record in Notion */
   private String lastEditedBy;
 
-  // ==================== CONSTRUCTORS ====================
-
-  public InjuryTypeDTO() {}
-
-  public InjuryTypeDTO(@NonNull String externalId, @NonNull String injuryName) {
+  public InjuryTypeDTO(@NonNull final String externalId, @NonNull final String injuryName) {
     this.externalId = externalId;
     this.injuryName = injuryName;
   }
@@ -93,13 +91,13 @@ public class InjuryTypeDTO {
    * @return Summary of the injury type DTO
    */
   public String getSummary() {
-    return String.format(
-        "InjuryTypeDTO[id=%s, name='%s', health=%d, stamina=%d, card=%d]",
-        externalId,
-        injuryName,
-        healthEffect != null ? healthEffect : 0,
-        staminaEffect != null ? staminaEffect : 0,
-        cardEffect != null ? cardEffect : 0);
+    return "InjuryTypeDTO[id=%s, name='%s', health=%d, stamina=%d, card=%d]"
+        .formatted(
+            externalId,
+            injuryName,
+            healthEffect != null ? healthEffect : 0,
+            staminaEffect != null ? staminaEffect : 0,
+            cardEffect != null ? cardEffect : 0);
   }
 
   /**

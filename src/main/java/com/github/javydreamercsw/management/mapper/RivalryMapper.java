@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class RivalryMapper {
   @Autowired private WrestlerService wrestlerService;
 
-  public RivalryDTO toRivalryDTO(Rivalry rivalry) {
+  public RivalryDTO toRivalryDTO(final Rivalry rivalry) {
     if (rivalry == null) {
       return null;
     }

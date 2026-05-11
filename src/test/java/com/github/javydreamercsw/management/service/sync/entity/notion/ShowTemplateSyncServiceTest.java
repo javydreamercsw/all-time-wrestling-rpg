@@ -533,7 +533,7 @@ class ShowTemplateSyncServiceTest {
     log.info("✅ Mixed sync with undetermined show types handled correctly");
   }
 
-  private ShowTemplatePage createSimpleMockPage(String id, String name) {
+  private ShowTemplatePage createSimpleMockPage(final String id, final String name) {
     ShowTemplatePage page = new ShowTemplatePage();
     page.setId(id);
     java.util.Map<String, Object> props = new java.util.HashMap<>();
@@ -542,7 +542,8 @@ class ShowTemplateSyncServiceTest {
     return page;
   }
 
-  private ShowTemplatePage createMockPageWithShowType(String id, String name, String showType) {
+  private ShowTemplatePage createMockPageWithShowType(
+      final String id, final String name, final String showType) {
     ShowTemplatePage page = new ShowTemplatePage();
     page.setId(id);
     java.util.Map<String, Object> props = new java.util.HashMap<>();

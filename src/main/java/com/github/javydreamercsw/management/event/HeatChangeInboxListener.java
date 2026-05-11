@@ -36,10 +36,10 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public HeatChangeInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("rivalryHeatChange") InboxEventType rivalryHeatChange,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("rivalryHeatChange") final InboxEventType rivalryHeatChange,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.rivalryHeatChange = rivalryHeatChange;
     this.eventPublisher = eventPublisher;
@@ -47,16 +47,16 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
   }
 
   @Override
-  public void onApplicationEvent(@NonNull HeatChangeEvent event) {
+  public void onApplicationEvent(@NonNull final HeatChangeEvent event) {
     String message =
-        String.format(
-            "Rivalry between %s and %s %s %d heat. New total: %d. Reason: %s",
-            event.getWrestlers().get(0).getName(),
-            event.getWrestlers().get(1).getName(),
-            (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
-            Math.abs(event.getNewHeat() - event.getOldHeat()),
-            event.getNewHeat(),
-            event.getReason());
+        "Rivalry between %s and %s %s %d heat. New total: %d. Reason: %s"
+            .formatted(
+                event.getWrestlers().get(0).getName(),
+                event.getWrestlers().get(1).getName(),
+                (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
+                Math.abs(event.getNewHeat() - event.getOldHeat()),
+                event.getNewHeat(),
+                event.getReason());
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
     inboxService.createInboxItem(

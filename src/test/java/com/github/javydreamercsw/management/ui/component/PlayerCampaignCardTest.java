@@ -122,7 +122,7 @@ public class PlayerCampaignCardTest extends AbstractViewTest {
             .flatMap(Component::getChildren) // Icon container
             .filter(c -> c instanceof Icon)
             .map(c -> (Icon) c)
-            .filter(icon -> icon.getElement().getAttribute("icon").equals("vaadin:circle"))
+            .filter(icon -> "vaadin:circle".equals(icon.getElement().getAttribute("icon")))
             .count();
 
     assertThat(bumpIcons).isEqualTo(2);

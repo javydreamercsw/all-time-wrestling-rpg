@@ -68,14 +68,14 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
 
   @Autowired
   public BackstageActionView(
-      BackstageActionService backstageActionService,
-      CampaignRepository campaignRepository,
-      WrestlerRepository wrestlerRepository,
-      WrestlerService wrestlerService,
-      InjuryService injuryService,
-      UniverseContextService universeContextService,
-      SecurityUtils securityUtils,
-      CampaignService campaignService) {
+      final BackstageActionService backstageActionService,
+      final CampaignRepository campaignRepository,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final InjuryService injuryService,
+      final UniverseContextService universeContextService,
+      final SecurityUtils securityUtils,
+      final CampaignService campaignService) {
     this.backstageActionService = backstageActionService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -91,7 +91,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   }
 
   @Override
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     loadCampaign();
     if (currentCampaign != null) {
       if (backstageActionService
@@ -243,8 +243,10 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
         new Paragraph("Every day before continuing your story, you can take two actions."));
     mechContent.add(
         new Span(
-            "• Each action uses one of your primary attributes (Drive, Resilience, Charisma,"
-                + " Brawl)."));
+            """
+            • Each action uses one of your primary attributes (Drive, Resilience, Charisma,\
+             Brawl).\
+            """));
     mechContent.add(
         new Span("• A digital 6-sided die (1d6) is rolled and added to your attribute value."));
     mechContent.add(new Span("• If the total is 4 or higher, the action is successful!"));
@@ -271,7 +273,11 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   }
 
   private HorizontalLayout createActionButton(
-      String label, String description, BackstageActionType type, int attrValue, boolean enabled) {
+      final String label,
+      final String description,
+      final BackstageActionType type,
+      final int attrValue,
+      final boolean enabled) {
     HorizontalLayout row = new HorizontalLayout();
     row.setWidthFull();
     row.setAlignItems(Alignment.CENTER);
@@ -315,7 +321,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     return row;
   }
 
-  private HorizontalLayout createPromoActionGroup(int attrValue, boolean enabled) {
+  private HorizontalLayout createPromoActionGroup(final int attrValue, final boolean enabled) {
     HorizontalLayout row = new HorizontalLayout();
     row.setWidthFull();
     row.setAlignItems(Alignment.CENTER);

@@ -53,13 +53,13 @@ public class BackstageActionService {
   @Getter private final BackstageEncounterService backstageEncounterService;
 
   public BackstageActionService(
-      CampaignStateRepository campaignStateRepository,
-      BackstageActionHistoryRepository actionHistoryRepository,
-      InjuryService injuryService,
-      @Lazy CampaignService campaignService,
-      SegmentRuleRepository segmentRuleRepository,
-      WrestlerService wrestlerService,
-      BackstageEncounterService backstageEncounterService) {
+      final CampaignStateRepository campaignStateRepository,
+      final BackstageActionHistoryRepository actionHistoryRepository,
+      final InjuryService injuryService,
+      @Lazy final CampaignService campaignService,
+      final SegmentRuleRepository segmentRuleRepository,
+      final WrestlerService wrestlerService,
+      final BackstageEncounterService backstageEncounterService) {
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
@@ -78,7 +78,7 @@ public class BackstageActionService {
    * @return The result of the action.
    */
   public ActionOutcome performAction(
-      Campaign campaign, BackstageActionType actionType, int diceSides) {
+      final Campaign campaign, final BackstageActionType actionType, final int diceSides) {
 
     CampaignState state = campaign.getState();
 
@@ -175,8 +175,10 @@ public class BackstageActionService {
             outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
           } else if (!activeInjuries.isEmpty()) {
             outcomeDescription =
-                "Recovery partially successful. Removed 0 injuries (Need 2+ successes). (Successes:"
-                    + " 1)";
+                """
+                Recovery partially successful. Removed 0 injuries (Need 2+ successes). (Successes:\
+                 1)\
+                """;
           } else {
             outcomeDescription = "Recovery successful. Wrestler is fully healthy. (Successes: 1)";
           }
@@ -250,7 +252,7 @@ public class BackstageActionService {
    * @param numberOfDice Number of dice to roll (based on attribute).
    * @return List of roll results.
    */
-  public java.util.List<Integer> rollDice(int numberOfDice) {
+  public java.util.List<Integer> rollDice(final int numberOfDice) {
     if (numberOfDice <= 0) {
       return new ArrayList<>();
     }
@@ -261,7 +263,8 @@ public class BackstageActionService {
     return Arrays.stream(diceBag.getLastRoll()).boxed().collect(Collectors.toList());
   }
 
-  private void createPromoSegment(Campaign campaign, boolean success, String description) {
+  private void createPromoSegment(
+      final Campaign campaign, final boolean success, final String description) {
     try {
       // Use existing service to create a segment but forced to Promo
       var show = campaignService.getOrCreateCampaignShow(campaign);

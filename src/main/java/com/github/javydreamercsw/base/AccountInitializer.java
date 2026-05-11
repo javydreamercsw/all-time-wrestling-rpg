@@ -70,7 +70,9 @@ public class AccountInitializer implements Initializable {
   }
 
   private void createAccount(
-      @NonNull String username, @NonNull String password, @NonNull Set<Role> roles) {
+      @NonNull final String username,
+      @NonNull final String password,
+      @NonNull final Set<Role> roles) {
     if (accountRepository.findByUsername(username).isEmpty()) {
       Account account =
           new Account(username, passwordEncoder.encode(password), username + "@example.com");

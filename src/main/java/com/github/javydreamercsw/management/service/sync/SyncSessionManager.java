@@ -35,7 +35,7 @@ public class SyncSessionManager {
    * @param entityName The name of the entity to check
    * @return true if already synced, false otherwise
    */
-  public boolean isAlreadySyncedInSession(@NonNull String entityName) {
+  public boolean isAlreadySyncedInSession(@NonNull final String entityName) {
     return currentSyncSession.get().contains(entityName.toLowerCase());
   }
 
@@ -44,7 +44,7 @@ public class SyncSessionManager {
    *
    * @param entityName The name of the entity to mark as synced
    */
-  public void markAsSyncedInSession(@NonNull String entityName) {
+  public void markAsSyncedInSession(@NonNull final String entityName) {
     currentSyncSession.get().add(entityName.toLowerCase());
     log.debug("🏷️ Marked '{}' as synced in current session", entityName);
   }
@@ -60,7 +60,7 @@ public class SyncSessionManager {
    *
    * @param entityName The name of the entity to reset
    */
-  public void resetSyncStatus(@NonNull String entityName) {
+  public void resetSyncStatus(@NonNull final String entityName) {
     currentSyncSession.get().remove(entityName.toLowerCase());
     log.debug("🔄 Reset sync status for '{}'", entityName);
   }

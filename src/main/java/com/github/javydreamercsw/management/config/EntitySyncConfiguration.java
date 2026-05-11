@@ -44,7 +44,7 @@ public class EntitySyncConfiguration {
    * @param entityType The entity type (e.g., "wrestlers", "factions")
    * @return Effective configuration for the entity
    */
-  public EntitySyncSettings getEffectiveSettings(String entityType) {
+  public EntitySyncSettings getEffectiveSettings(final String entityType) {
     EntitySyncSettings entitySettings = specific.get(entityType.toLowerCase());
     if (entitySettings == null) {
       return defaults;
@@ -100,7 +100,7 @@ public class EntitySyncConfiguration {
    * @param entityType The entity type to check
    * @return true if the entity is enabled for sync
    */
-  public boolean isEntityEnabled(String entityType) {
+  public boolean isEntityEnabled(final String entityType) {
     return getEffectiveSettings(entityType).getEnabled();
   }
 

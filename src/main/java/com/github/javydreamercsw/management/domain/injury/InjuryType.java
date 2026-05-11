@@ -83,12 +83,12 @@ public class InjuryType extends AbstractSyncableEntity<Long> {
 
   /** Gets a summary of the injury type for display. */
   public String getSummary() {
-    return String.format(
-        "%s (Health: %d, Stamina: %d, Card: %d)",
-        injuryName,
-        getEffectiveHealthEffect(),
-        getEffectiveStaminaEffect(),
-        getEffectiveCardEffect());
+    return "%s (Health: %d, Stamina: %d, Card: %d)"
+        .formatted(
+            injuryName,
+            getEffectiveHealthEffect(),
+            getEffectiveStaminaEffect(),
+            getEffectiveCardEffect());
   }
 
   /** Calculates the total penalty severity of this injury type. */

@@ -127,7 +127,7 @@ class ShowFinalizationTest {
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }
 
-  private Wrestler makeWrestler(long id, long fans) {
+  private Wrestler makeWrestler(final long id, final long fans) {
     Wrestler w = new Wrestler();
     w.setId(id);
     WrestlerState state = new WrestlerState();
@@ -137,7 +137,7 @@ class ShowFinalizationTest {
     return w;
   }
 
-  private Segment adjudicatedSegment(Show show, List<Wrestler> wrestlers) {
+  private Segment adjudicatedSegment(final Show show, final List<Wrestler> wrestlers) {
     Segment s = new Segment();
     s.setShow(show);
     s.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);

@@ -44,7 +44,7 @@ public class RingsideAiService {
    * @return Optional result if an action was attempted.
    */
   public Optional<RingsideActionService.RingsideActionResult> evaluateRingsideAction(
-      Segment segment, Object interferer, Wrestler beneficiary) {
+      final Segment segment, final Object interferer, final Wrestler beneficiary) {
 
     AlignmentType alignment = getAlignment(interferer);
     int awareness = segment.getRefereeAwarenessLevel();
@@ -81,7 +81,7 @@ public class RingsideAiService {
     return Optional.empty();
   }
 
-  private AlignmentType getAlignment(Object interferer) {
+  private AlignmentType getAlignment(final Object interferer) {
     if (interferer instanceof Wrestler w
         && w.getAlignment() != null
         && w.getAlignment().getAlignmentType() != null) {
@@ -93,7 +93,7 @@ public class RingsideAiService {
     return AlignmentType.NEUTRAL;
   }
 
-  private RingsideAction pickAction(AlignmentType alignment, int awareness) {
+  private RingsideAction pickAction(final AlignmentType alignment, final int awareness) {
     List<RingsideAction> allActions = ringsideActionDataService.findAllActions();
     if (allActions.isEmpty()) {
       return null;

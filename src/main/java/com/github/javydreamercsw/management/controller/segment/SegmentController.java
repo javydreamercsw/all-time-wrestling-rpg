@@ -34,7 +34,7 @@ public class SegmentController {
 
   @PutMapping("/{segmentId}/narration")
   public ResponseEntity<Void> updateNarration(
-      @PathVariable Long segmentId, @RequestBody String narration) {
+      @PathVariable final Long segmentId, @RequestBody final String narration) {
     segmentService
         .findById(segmentId)
         .ifPresent(

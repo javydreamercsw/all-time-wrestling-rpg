@@ -39,11 +39,11 @@ import org.springframework.stereotype.Service;
 public class ShowPlanningDtoMapper {
   private final ShowService showService;
 
-  public ShowPlanningDtoMapper(ShowService showService) {
+  public ShowPlanningDtoMapper(final ShowService showService) {
     this.showService = showService;
   }
 
-  public ShowPlanningContextDTO toDto(@NonNull ShowPlanningContext context) {
+  public ShowPlanningContextDTO toDto(@NonNull final ShowPlanningContext context) {
     ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
     dto.setRecentSegments(
         context.getRecentSegments().stream().map(this::toDto).collect(Collectors.toList()));
@@ -77,7 +77,7 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningSegmentDTO toDto(@NonNull Segment segment) {
+  public ShowPlanningSegmentDTO toDto(@NonNull final Segment segment) {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setId(segment.getId());
     dto.setSegmentDate(segment.getSegmentDate());
@@ -120,14 +120,14 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningShowDTO toDto(@NonNull Show show) {
+  public ShowPlanningShowDTO toDto(@NonNull final Show show) {
     ShowPlanningShowDTO dto = new ShowPlanningShowDTO();
     dto.setId(show.getId());
     dto.setName(show.getName());
     return dto;
   }
 
-  public ShowPlanningRivalryDTO toDto(@NonNull Rivalry rivalry) {
+  public ShowPlanningRivalryDTO toDto(@NonNull final Rivalry rivalry) {
     ShowPlanningRivalryDTO dto = new ShowPlanningRivalryDTO();
     dto.setId(rivalry.getId());
     dto.setName(rivalry.getDisplayName());
@@ -138,7 +138,7 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningChampionshipDTO toDto(@NonNull ShowPlanningChampionship championship) {
+  public ShowPlanningChampionshipDTO toDto(@NonNull final ShowPlanningChampionship championship) {
     ShowPlanningChampionshipDTO dto = new ShowPlanningChampionshipDTO();
     dto.setChampionshipName(championship.getTitle().getName());
     if (!championship.getChampions().isEmpty()) {
@@ -158,7 +158,7 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningPleDTO toDto(@NonNull ShowPlanningPle ple) {
+  public ShowPlanningPleDTO toDto(@NonNull final ShowPlanningPle ple) {
     ShowPlanningPleDTO dto = new ShowPlanningPleDTO();
     dto.setPleName(ple.getPle().getName());
     if (ple.getPle().getShowDate() != null) {
@@ -172,7 +172,7 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public FactionDTO toDto(@NonNull Faction faction) {
+  public FactionDTO toDto(@NonNull final Faction faction) {
     FactionDTO dto = new FactionDTO();
     dto.setName(faction.getName());
     dto.setDescription(faction.getDescription());
@@ -195,7 +195,7 @@ public class ShowPlanningDtoMapper {
   }
 
   public ShowPlanningWrestlerHeatDTO toDto(
-      @NonNull com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat
+      @NonNull final com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat
               heat) {
     ShowPlanningWrestlerHeatDTO dto = new ShowPlanningWrestlerHeatDTO();
     dto.setWrestlerName(heat.getWrestlerName());

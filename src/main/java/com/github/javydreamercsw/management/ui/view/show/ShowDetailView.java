@@ -144,30 +144,30 @@ public class ShowDetailView extends Main
 
   @Autowired
   public ShowDetailView(
-      ShowService showService,
-      SegmentService segmentService,
-      SegmentRepository segmentRepository,
-      SegmentTypeRepository segmentTypeRepository,
-      SegmentRuleRepository segmentRuleRepository,
-      NpcService npcService,
-      WrestlerService wrestlerService,
-      TitleService titleService,
-      ShowTypeService showTypeService,
-      SeasonService seasonService,
-      ShowTemplateService showTemplateService,
-      RivalryService rivalryService,
-      SegmentNarrationServiceFactory segmentNarrationServiceFactory,
-      SegmentNarrationController segmentNarrationController,
-      ShowController showController,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      UniverseRepository universeRepository,
-      UniverseContextService universeContextService,
-      CommentaryTeamRepository commentaryTeamRepository,
-      RingsideActionService ringsideActionService,
-      ArenaService arenaService,
-      WrestlerRelationshipService relationshipService,
-      NotificationService notificationService,
-      ShowExportService exportService) {
+      final ShowService showService,
+      final SegmentService segmentService,
+      final SegmentRepository segmentRepository,
+      final SegmentTypeRepository segmentTypeRepository,
+      final SegmentRuleRepository segmentRuleRepository,
+      final NpcService npcService,
+      final WrestlerService wrestlerService,
+      final TitleService titleService,
+      final ShowTypeService showTypeService,
+      final SeasonService seasonService,
+      final ShowTemplateService showTemplateService,
+      final RivalryService rivalryService,
+      final SegmentNarrationServiceFactory segmentNarrationServiceFactory,
+      final SegmentNarrationController segmentNarrationController,
+      final ShowController showController,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final UniverseRepository universeRepository,
+      final UniverseContextService universeContextService,
+      final CommentaryTeamRepository commentaryTeamRepository,
+      final RingsideActionService ringsideActionService,
+      final ArenaService arenaService,
+      final WrestlerRelationshipService relationshipService,
+      final NotificationService notificationService,
+      final ShowExportService exportService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -224,7 +224,7 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void setParameter(BeforeEvent event, Long showId) {
+  public void setParameter(final BeforeEvent event, final Long showId) {
     String referrer =
         event
             .getLocation()
@@ -242,7 +242,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void updateBackButton(@NonNull String referrer) {
+  private void updateBackButton(@NonNull final String referrer) {
     String navigationTarget =
         switch (referrer) {
           case "calendar" -> "show-calendar";
@@ -258,7 +258,7 @@ public class ShowDetailView extends Main
         backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
   }
 
-  private void loadShow(@NonNull Long showId) {
+  private void loadShow(@NonNull final Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
       currentShow = showOpt.get();
@@ -269,7 +269,7 @@ public class ShowDetailView extends Main
     refreshSegmentsGrid();
   }
 
-  private void displayShow(@NonNull Show show) {
+  private void displayShow(@NonNull final Show show) {
     contentLayout.removeAll();
     showTitle.setText(show.getName());
 
@@ -309,7 +309,7 @@ public class ShowDetailView extends Main
     contentLayout.setFlexGrow(1, segmentsCard);
   }
 
-  private Div createHeaderCard(@NonNull Show show) {
+  private Div createHeaderCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -355,7 +355,7 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private Div createDetailsCard(@NonNull Show show) {
+  private Div createDetailsCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -405,15 +405,15 @@ public class ShowDetailView extends Main
 
     // Event Results (only shown once show is finalized)
     if (show.getAttendance() != null && show.getAttendance() > 0) {
-      String attendanceText = String.format("%,d", show.getAttendance());
+      String attendanceText = "%,d".formatted(show.getAttendance());
       if (show.getArena() != null && show.getArena().getCapacity() != null) {
         int fillPct = (int) ((double) show.getAttendance() / show.getArena().getCapacity() * 100);
-        attendanceText += String.format(" / %,d (%d%%)", show.getArena().getCapacity(), fillPct);
+        attendanceText += " / %,d (%d%%)".formatted(show.getArena().getCapacity(), fillPct);
       }
       detailsLayout.add(createDetailRow("Attendance:", attendanceText));
       if (show.getGateRevenue() != null) {
         detailsLayout.add(
-            createDetailRow("Gate Revenue:", "$" + String.format("%,.2f", show.getGateRevenue())));
+            createDetailRow("Gate Revenue:", "$" + "%,.2f".formatted(show.getGateRevenue())));
       }
     }
 
@@ -486,7 +486,8 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private HorizontalLayout createDetailRow(@NonNull String label, @NonNull String value) {
+  private HorizontalLayout createDetailRow(
+      @NonNull final String label, @NonNull final String value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
     Span valueSpan = new Span(value);
@@ -495,7 +496,7 @@ public class ShowDetailView extends Main
     return layout;
   }
 
-  private Div createDescriptionCard(@NonNull Show show) {
+  private Div createDescriptionCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -512,7 +513,7 @@ public class ShowDetailView extends Main
     contentLayout.add(new H3("Show Not Found"));
   }
 
-  private Div createSegmentsCard(@NonNull Show show) {
+  private Div createSegmentsCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -591,7 +592,7 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private Grid<Segment> createSegmentsGrid(@NonNull List<Segment> segments) {
+  private Grid<Segment> createSegmentsGrid(@NonNull final List<Segment> segments) {
     Grid<Segment> grid = new Grid<>(Segment.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
@@ -807,7 +808,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void openAddSegmentDialog(@NonNull Show show) {
+  private void openAddSegmentDialog(@NonNull final Show show) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Add Segment to " + show.getName());
     dialog.setWidth("600px");
@@ -1412,12 +1413,12 @@ public class ShowDetailView extends Main
   }
 
   private boolean validateAndSaveSegment(
-      @NonNull Show show,
-      SegmentType segmentType,
-      java.util.Map<Integer, List<Wrestler>> teamWrestlers,
-      Set<Wrestler> winners,
-      Set<SegmentRule> rules,
-      Segment segmentToUpdate) {
+      @NonNull final Show show,
+      final SegmentType segmentType,
+      final java.util.Map<Integer, List<Wrestler>> teamWrestlers,
+      final Set<Wrestler> winners,
+      final Set<SegmentRule> rules,
+      final Segment segmentToUpdate) {
     Set<Wrestler> wrestlers =
         teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
     log.info("Validating and saving segment: {}", segmentToUpdate);
@@ -1505,7 +1506,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void adjudicateShow(@NonNull Show show) {
+  private void adjudicateShow(@NonNull final Show show) {
     showController.adjudicateShow(show.getId());
     notificationService.showSuccess("Fan adjudication completed!");
     refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
@@ -1535,7 +1536,7 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void onApplicationEvent(@NonNull ApplicationEvent event) {
+  public void onApplicationEvent(@NonNull final ApplicationEvent event) {
     if (event instanceof AdjudicationCompletedEvent e
         && e.getShow().getId().equals(currentShowId)) {
       getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid));

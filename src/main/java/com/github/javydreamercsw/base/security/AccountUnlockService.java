@@ -30,7 +30,7 @@ public class AccountUnlockService {
   private final AccountRepository accountRepository;
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Account unlockAndReloadAccount(String username) { // Changed to take username
+  public Account unlockAndReloadAccount(final String username) { // Changed to take username
     return accountRepository
         .findByUsername(username) // Find by username directly
         .map(

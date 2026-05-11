@@ -145,9 +145,9 @@ public class NotionSyncScheduler {
   @SneakyThrows
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public NotionSyncService.SyncResult syncEntity(
-      @NonNull SyncEntityType entityType,
-      @NonNull String operationId,
-      @NonNull SyncDirection direction) {
+      @NonNull final SyncEntityType entityType,
+      @NonNull final String operationId,
+      @NonNull final SyncDirection direction) {
     log.debug("Syncing entity: {} with operation ID: {}", entityType, operationId);
 
     NotionSyncService.SyncResult result =
@@ -182,7 +182,7 @@ public class NotionSyncScheduler {
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public NotionSyncService.SyncResult syncEntity(
-      @NonNull SyncEntityType entityType, @NonNull SyncDirection direction) {
+      @NonNull final SyncEntityType entityType, @NonNull final SyncDirection direction) {
     log.debug("Syncing entity: {}", entityType);
 
     // Generate operation ID for progress tracking
@@ -199,7 +199,7 @@ public class NotionSyncScheduler {
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public NotionSyncService.SyncResult syncEntity(
-      @NonNull String entityName, @NonNull SyncDirection direction) {
+      @NonNull final String entityName, @NonNull final SyncDirection direction) {
     log.debug("Syncing entity by name: {}", entityName);
 
     return SyncEntityType.fromKey(entityName)
@@ -216,7 +216,7 @@ public class NotionSyncScheduler {
    *
    * @param results List of sync results to summarize
    */
-  private void logSyncSummary(List<NotionSyncService.SyncResult> results) {
+  private void logSyncSummary(final List<NotionSyncService.SyncResult> results) {
     int successCount = 0;
     int failureCount = 0;
     int totalSynced = 0;
@@ -265,7 +265,7 @@ public class NotionSyncScheduler {
    * @return List of sync results for all entities
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-  public List<NotionSyncService.SyncResult> triggerManualSync(@NonNull String operationId) {
+  public List<NotionSyncService.SyncResult> triggerManualSync(@NonNull final String operationId) {
     log.info("=== MANUAL NOTION SYNC TRIGGERED WITH ID: {} ===", operationId);
 
     if (!syncServiceDependencies.getSyncLockService().acquireLock(operationId)) {
@@ -343,7 +343,7 @@ public class NotionSyncScheduler {
    * @return Summary results
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-  public NotionSyncService.SyncResult triggerParallelSync(@NonNull String operationId) {
+  public NotionSyncService.SyncResult triggerParallelSync(@NonNull final String operationId) {
     notionSyncService.fullSync();
     return NotionSyncService.SyncResult.success("All (Full Sync)", 0, 0, 0);
   }
@@ -355,7 +355,7 @@ public class NotionSyncScheduler {
    * @return SyncResult for the specified entity
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-  public NotionSyncService.SyncResult triggerEntitySync(@NonNull String entityName) {
+  public NotionSyncService.SyncResult triggerEntitySync(@NonNull final String entityName) {
     log.info("=== MANUAL {} SYNC TRIGGERED ===", entityName.toUpperCase());
 
     String operationId = "manual-sync-" + entityName + "-" + System.currentTimeMillis();
@@ -431,7 +431,7 @@ public class NotionSyncScheduler {
    * @return The last sync time, or null if it has never been synced.
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-  public LocalDateTime getLastSyncTime(String entityName) {
+  public LocalDateTime getLastSyncTime(final String entityName) {
     return syncProperties.getLastSyncTime(entityName);
   }
 }

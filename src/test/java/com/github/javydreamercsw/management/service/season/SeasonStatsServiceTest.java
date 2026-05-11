@@ -136,7 +136,7 @@ class SeasonStatsServiceTest {
     assertThat(stats.getAccolades()).contains("World Championship");
   }
 
-  private Segment createSegment(Long id, SegmentType type, Boolean isWinner) {
+  private Segment createSegment(final Long id, final SegmentType type, final Boolean isWinner) {
     Segment segment = new Segment();
     segment.setId(id);
     segment.setSegmentType(type);

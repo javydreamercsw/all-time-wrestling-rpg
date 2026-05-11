@@ -142,8 +142,10 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     // Try to click the summary part specifically
     ((org.openqa.selenium.JavascriptExecutor) driver)
         .executeScript(
-            "const summary = arguments[0].shadowRoot.querySelector('[part=\"summary\"]');"
-                + "if (summary) { summary.click(); } else { arguments[0].click(); }",
+            """
+            const summary = arguments[0].shadowRoot.querySelector('[part="summary"]');\
+            if (summary) { summary.click(); } else { arguments[0].click(); }\
+            """,
             healedDetails);
 
     // Wait for the property to change
@@ -167,7 +169,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     assertTrue(Boolean.TRUE.equals(isOpened));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
         .until(d -> d.getPageSource().contains(text));
   }

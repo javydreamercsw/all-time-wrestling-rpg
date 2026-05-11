@@ -356,7 +356,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
   }
 
-  private void expandAccordionPanel(String label) {
+  private void expandAccordionPanel(final String label) {
     waitForVaadinClientToLoad();
     List<WebElement> panels = driver.findElements(By.tagName("vaadin-accordion-panel"));
     for (WebElement panel : panels) {

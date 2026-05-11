@@ -24,13 +24,13 @@ public class DiceBag {
   private Random random;
   private int[] lastRoll; // Store the results of the last roll
 
-  public DiceBag(int... dice) {
+  public DiceBag(final int... dice) {
     this.dice = dice;
     this.random = new Random();
     validateDice(dice);
   }
 
-  public DiceBag(Random random, int[] dice) {
+  public DiceBag(final Random random, final int[] dice) {
     this.dice = dice;
     this.random = random;
     validateDice(dice);
@@ -53,7 +53,7 @@ public class DiceBag {
     return total;
   }
 
-  private void validateDice(int[] dice) {
+  private void validateDice(final int[] dice) {
     if (dice == null || dice.length == 0) {
       throw new IllegalArgumentException("Dice array cannot be null or empty");
     }

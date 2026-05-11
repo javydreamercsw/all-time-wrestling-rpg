@@ -39,7 +39,8 @@ public class PromoService {
    * @param opponent The wrestler responding to the player.
    * @return The AI-generated retort.
    */
-  public String generateRetort(String playerText, Segment segment, Wrestler opponent) {
+  public String generateRetort(
+      final String playerText, final Segment segment, final Wrestler opponent) {
     SegmentNarrationService aiService = aiFactory.getBestAvailableService();
     if (aiService == null || !aiService.isAvailable()) {
       log.warn("No AI service available for promo generation.");
@@ -50,7 +51,8 @@ public class PromoService {
     return aiService.generateText(prompt);
   }
 
-  private String buildPromoPrompt(String playerText, Segment segment, Wrestler opponent) {
+  private String buildPromoPrompt(
+      final String playerText, final Segment segment, final Wrestler opponent) {
     StringBuilder prompt = new StringBuilder();
     prompt
         .append("You are roleplaying as professional wrestler ")

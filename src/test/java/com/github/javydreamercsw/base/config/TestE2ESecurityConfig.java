@@ -61,7 +61,7 @@ public class TestE2ESecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain testSecurityFilterChain(final HttpSecurity http) throws Exception {
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(

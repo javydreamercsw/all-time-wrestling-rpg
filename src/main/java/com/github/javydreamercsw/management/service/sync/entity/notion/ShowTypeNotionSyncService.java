@@ -31,14 +31,14 @@ import org.springframework.stereotype.Service;
 public class ShowTypeNotionSyncService extends BaseNotionSyncService<ShowType> {
 
   public ShowTypeNotionSyncService(
-      ShowTypeRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final ShowTypeRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull ShowType entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final ShowType entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 

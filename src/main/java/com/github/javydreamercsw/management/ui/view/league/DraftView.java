@@ -81,14 +81,14 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
   private final Span turnLabel = new Span();
 
   public DraftView(
-      DraftService draftService,
-      DraftRepository draftRepository,
-      LeagueRepository leagueRepository,
-      DraftPickRepository draftPickRepository,
-      WrestlerRepository wrestlerRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      SecurityUtils securityUtils,
-      DraftBroadcaster draftBroadcaster) {
+      final DraftService draftService,
+      final DraftRepository draftRepository,
+      final LeagueRepository leagueRepository,
+      final DraftPickRepository draftPickRepository,
+      final WrestlerRepository wrestlerRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final SecurityUtils securityUtils,
+      final DraftBroadcaster draftBroadcaster) {
     this.draftService = draftService;
     this.draftRepository = draftRepository;
     this.leagueRepository = leagueRepository;
@@ -110,7 +110,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   @Override
-  public void setParameter(BeforeEvent event, Long parameter) {
+  public void setParameter(final BeforeEvent event, final Long parameter) {
     this.leagueId = parameter;
     refreshData();
     initUI();
@@ -243,7 +243,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
     availableWrestlersGrid.setSizeFull();
   }
 
-  private Component createWrestlerDetails(Wrestler wrestler) {
+  private Component createWrestlerDetails(final Wrestler wrestler) {
     VerticalLayout layout = new VerticalLayout();
     layout.setPadding(true);
     layout.setSpacing(false);
@@ -310,7 +310,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   @Override
-  protected void onAttach(AttachEvent attachEvent) {
+  protected void onAttach(final AttachEvent attachEvent) {
     UI ui = attachEvent.getUI();
     registration =
         draftBroadcaster.register(
@@ -327,7 +327,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   @Override
-  protected void onDetach(DetachEvent detachEvent) {
+  protected void onDetach(final DetachEvent detachEvent) {
     if (registration != null) {
       registration.remove();
     }

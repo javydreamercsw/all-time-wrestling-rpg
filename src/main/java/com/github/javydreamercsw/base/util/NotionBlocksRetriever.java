@@ -41,14 +41,14 @@ public class NotionBlocksRetriever {
   private final ObjectMapper objectMapper;
   private final String notionToken;
 
-  public NotionBlocksRetriever(@NonNull String notionToken) {
+  public NotionBlocksRetriever(@NonNull final String notionToken) {
     this.notionToken = notionToken;
     this.httpClient = HttpClient.newHttpClient();
     this.objectMapper = new ObjectMapper();
   }
 
   /** Retrieve the page content for a given page ID. */
-  public String retrievePageContent(@NonNull String pageId) {
+  public String retrievePageContent(@NonNull final String pageId) {
     try {
       log.debug("Retrieving page content for ID: {}", pageId);
 
@@ -81,7 +81,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Get all blocks for a page, handling pagination. */
-  private List<JsonNode> getAllBlocks(@NonNull String pageId)
+  private List<JsonNode> getAllBlocks(@NonNull final String pageId)
       throws IOException, InterruptedException {
     List<JsonNode> allBlocks = new ArrayList<>();
     String nextCursor = null;
@@ -137,7 +137,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a single block into readable text content. */
-  private String parseBlock(@NonNull JsonNode block) {
+  private String parseBlock(@NonNull final JsonNode block) {
     JsonNode typeNode = block.get("type");
     if (typeNode == null) {
       return null;
@@ -169,7 +169,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a paragraph block. */
-  private String parseParagraph(@NonNull JsonNode block) {
+  private String parseParagraph(@NonNull final JsonNode block) {
     JsonNode paragraph = block.get("paragraph");
     if (paragraph == null) {
       return null;
@@ -180,7 +180,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a heading block. */
-  private String parseHeading(@NonNull JsonNode block, int level) {
+  private String parseHeading(@NonNull final JsonNode block, final int level) {
     String headingKey = "heading_" + level;
     JsonNode heading = block.get(headingKey);
     if (heading == null) {
@@ -200,7 +200,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a bulleted list item. */
-  private String parseBulletedListItem(@NonNull JsonNode block) {
+  private String parseBulletedListItem(@NonNull final JsonNode block) {
     JsonNode listItem = block.get("bulleted_list_item");
     if (listItem == null) {
       return null;
@@ -216,7 +216,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a numbered list item. */
-  private String parseNumberedListItem(@NonNull JsonNode block) {
+  private String parseNumberedListItem(@NonNull final JsonNode block) {
     JsonNode listItem = block.get("numbered_list_item");
     if (listItem == null) {
       return null;
@@ -232,7 +232,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a to-do item. */
-  private String parseToDoItem(@NonNull JsonNode block) {
+  private String parseToDoItem(@NonNull final JsonNode block) {
     JsonNode toDo = block.get("to_do");
     if (toDo == null) {
       return null;
@@ -252,7 +252,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a quote block. */
-  private String parseQuote(@NonNull JsonNode block) {
+  private String parseQuote(@NonNull final JsonNode block) {
     JsonNode quote = block.get("quote");
     if (quote == null) {
       return null;
@@ -268,7 +268,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a callout block. */
-  private String parseCallout(@NonNull JsonNode block) {
+  private String parseCallout(@NonNull final JsonNode block) {
     JsonNode callout = block.get("callout");
     if (callout == null) {
       return null;
@@ -295,7 +295,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse rich text array into plain text with basic formatting. */
-  private String parseRichText(@NonNull JsonNode richTextArray) {
+  private String parseRichText(@NonNull final JsonNode richTextArray) {
     if (!richTextArray.isArray()) {
       return null;
     }

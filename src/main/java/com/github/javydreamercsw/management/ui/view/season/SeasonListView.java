@@ -76,7 +76,7 @@ public class SeasonListView extends Main {
   private Binder<Season> binder;
 
   public SeasonListView(
-      @NonNull SeasonService seasonService, @NonNull SecurityUtils securityUtils) {
+      @NonNull final SeasonService seasonService, @NonNull final SecurityUtils securityUtils) {
     this.seasonService = seasonService;
     this.securityUtils = securityUtils;
     this.grid = new Grid<>(Season.class, false);
@@ -260,7 +260,7 @@ public class SeasonListView extends Main {
         .bind(Season::getEndDate, Season::setEndDate);
   }
 
-  private void openEditDialog(Season season) {
+  private void openEditDialog(final Season season) {
     editingSeason = season;
 
     if (season == null) {
@@ -311,7 +311,7 @@ public class SeasonListView extends Main {
     }
   }
 
-  private void deleteSeason(Season season) {
+  private void deleteSeason(final Season season) {
     try {
       seasonService.deleteSeason(season.getId());
       showSuccessNotification("Season deleted successfully");
@@ -336,12 +336,12 @@ public class SeasonListView extends Main {
     }
   }
 
-  private void showSuccessNotification(String message) {
+  private void showSuccessNotification(final String message) {
     Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
     notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void showErrorNotification(String message) {
+  private void showErrorNotification(final String message) {
     Notification notification = Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
   }

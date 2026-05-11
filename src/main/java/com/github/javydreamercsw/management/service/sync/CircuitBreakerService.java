@@ -37,7 +37,7 @@ public class CircuitBreakerService {
   private final ConcurrentHashMap<String, CircuitBreakerState> circuitStates =
       new ConcurrentHashMap<>();
 
-  public CircuitBreakerService(@NonNull RetryConfig retryConfig) {
+  public CircuitBreakerService(@NonNull final RetryConfig retryConfig) {
     this.retryConfig = retryConfig;
   }
 
@@ -50,7 +50,7 @@ public class CircuitBreakerService {
    * @return Result of the operation
    * @throws CircuitBreakerOpenException if circuit is open
    */
-  public <T> T execute(@NonNull String entityType, @NonNull SyncOperation<T> operation)
+  public <T> T execute(@NonNull final String entityType, @NonNull final SyncOperation<T> operation)
       throws Exception {
     CircuitBreakerState state = getOrCreateState(entityType);
 
@@ -88,7 +88,7 @@ public class CircuitBreakerService {
   }
 
   /** Get the current state of a circuit breaker. */
-  public CircuitBreakerStatus getStatus(@NonNull String entityType) {
+  public CircuitBreakerStatus getStatus(@NonNull final String entityType) {
     CircuitBreakerState state = circuitStates.get(entityType);
     if (state == null) {
       return CircuitBreakerStatus.CLOSED;
@@ -97,7 +97,7 @@ public class CircuitBreakerService {
   }
 
   /** Manually reset a circuit breaker. */
-  public void reset(@NonNull String entityType) {
+  public void reset(@NonNull final String entityType) {
     CircuitBreakerState state = circuitStates.get(entityType);
     if (state != null) {
       state.reset();
@@ -106,7 +106,7 @@ public class CircuitBreakerService {
   }
 
   /** Get or create circuit breaker state for an entity type. */
-  private CircuitBreakerState getOrCreateState(@NonNull String entityType) {
+  private CircuitBreakerState getOrCreateState(@NonNull final String entityType) {
     return circuitStates.computeIfAbsent(
         entityType, k -> new CircuitBreakerState(retryConfig.getCircuitBreaker()));
   }
@@ -126,7 +126,7 @@ public class CircuitBreakerService {
 
   /** Exception thrown when circuit breaker is open. */
   public static class CircuitBreakerOpenException extends RuntimeException {
-    public CircuitBreakerOpenException(@NonNull String message) {
+    public CircuitBreakerOpenException(@NonNull final String message) {
       super(message);
     }
   }
@@ -140,7 +140,7 @@ public class CircuitBreakerService {
     private final AtomicLong lastFailureTime = new AtomicLong(0);
     private final AtomicInteger callCount = new AtomicInteger(0);
 
-    public CircuitBreakerState(RetryConfig.CircuitBreakerConfig config) {
+    public CircuitBreakerState(final RetryConfig.CircuitBreakerConfig config) {
       this.config = config;
     }
 

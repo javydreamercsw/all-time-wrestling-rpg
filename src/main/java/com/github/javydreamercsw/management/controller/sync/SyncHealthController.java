@@ -160,7 +160,7 @@ public class SyncHealthController {
   }
 
   /** Generate health recommendations based on current metrics. */
-  private List<String> generateRecommendations(SyncHealthSummary summary) {
+  private List<String> generateRecommendations(final SyncHealthSummary summary) {
     List<String> recommendations = new java.util.ArrayList<>();
 
     // Check success rate
@@ -177,8 +177,10 @@ public class SyncHealthController {
     // Check average sync time
     if (summary.averageSyncTime() > 30000) { // 30 seconds
       recommendations.add(
-          "Average sync time is high. Consider optimizing sync operations or checking network"
-              + " performance.");
+          """
+          Average sync time is high. Consider optimizing sync operations or checking network\
+           performance.\
+          """);
     }
 
     // Check stale syncs

@@ -36,7 +36,7 @@ public class ImageGenerationServiceFactory {
    * @param request The image generation parameters.
    * @return The image data (URL or base64).
    */
-  public String generateImage(@NonNull ImageGenerationService.ImageRequest request) {
+  public String generateImage(@NonNull final ImageGenerationService.ImageRequest request) {
     List<ImageGenerationService> services = getAvailableServicesInPriorityOrder();
     Exception lastException = null;
 

@@ -51,7 +51,7 @@ public class SeasonService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
   public Season createOrUpdateSeason(
-      @NonNull String name, @NonNull Instant startDate, boolean isActive) {
+      @NonNull final String name, @NonNull final Instant startDate, final boolean isActive) {
     Optional<Season> existingSeason = seasonRepository.findByName(name);
     Season season = existingSeason.orElseGet(Season::new);
     season.setName(name);
@@ -66,7 +66,7 @@ public class SeasonService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
   public Season createSeason(
-      @NonNull String name, @NonNull String description, Integer showsPerPpv) {
+      @NonNull final String name, @NonNull final String description, final Integer showsPerPpv) {
     // End any currently active season
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     activeSeason.ifPresent(this::endSeason);
@@ -108,7 +108,7 @@ public class SeasonService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       key = "#seasonId")
-  public Optional<Season> getSeasonById(@NonNull Long seasonId) {
+  public Optional<Season> getSeasonById(@NonNull final Long seasonId) {
     return seasonRepository.findById(seasonId);
   }
 
@@ -118,14 +118,14 @@ public class SeasonService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       key = "#name")
-  public Season findByName(@NonNull String name) {
+  public Season findByName(@NonNull final String name) {
     return seasonRepository.findByName(name).orElse(null);
   }
 
   /** Find season by external ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Season> findByExternalId(@NonNull String externalId) {
+  public Optional<Season> findByExternalId(@NonNull final String externalId) {
     return seasonRepository.findByExternalId(externalId);
   }
 
@@ -134,14 +134,14 @@ public class SeasonService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
-  public Season save(@NonNull Season season) {
+  public Season save(@NonNull final Season season) {
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Get all seasons with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Season> getAllSeasons(@NonNull Pageable pageable) {
+  public Page<Season> getAllSeasons(@NonNull final Pageable pageable) {
     return seasonRepository.findAllBy(pageable);
   }
 
@@ -161,7 +161,7 @@ public class SeasonService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
-  public Season endSeason(@NonNull Season season) {
+  public Season endSeason(@NonNull final Season season) {
     season.endSeason();
     return seasonRepository.saveAndFlush(season);
   }
@@ -171,7 +171,7 @@ public class SeasonService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
-  public Optional<Season> addShowToActiveSeason(@NonNull Show show) {
+  public Optional<Season> addShowToActiveSeason(@NonNull final Show show) {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     if (activeSeason.isPresent()) {
       Season season = activeSeason.get();
@@ -205,10 +205,10 @@ public class SeasonService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
   public Optional<Season> updateSeason(
-      @NonNull Long seasonId,
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull Integer showsPerPpv) {
+      @NonNull final Long seasonId,
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final Integer showsPerPpv) {
     return seasonRepository
         .findById(seasonId)
         .map(
@@ -225,14 +225,15 @@ public class SeasonService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
-  public Season updateSeason(@NonNull Season season) {
+  public Season updateSeason(@NonNull final Season season) {
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Search seasons by name or description. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Season> searchSeasons(@NonNull String searchTerm, @NonNull Pageable pageable) {
+  public Page<Season> searchSeasons(
+      @NonNull final String searchTerm, @NonNull final Pageable pageable) {
     return seasonRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
         searchTerm, pageable);
   }
@@ -242,7 +243,7 @@ public class SeasonService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
       allEntries = true)
-  public boolean deleteSeason(@NonNull Long seasonId) {
+  public boolean deleteSeason(@NonNull final Long seasonId) {
     return seasonRepository
         .findById(seasonId)
         .filter(season -> !season.getIsActive() && season.getShows().isEmpty())
@@ -257,7 +258,7 @@ public class SeasonService {
   /** Get season statistics. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public SeasonStats getSeasonStats(@NonNull Long seasonId) {
+  public SeasonStats getSeasonStats(@NonNull final Long seasonId) {
     return seasonRepository
         .findById(seasonId)
         .map(

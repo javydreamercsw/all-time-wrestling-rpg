@@ -45,8 +45,8 @@ public class AccountListView extends Main {
   private final Grid<Account> grid = new Grid<>(Account.class, false);
 
   public AccountListView(
-      @Qualifier("managementAccountService") AccountService accountService,
-      SecurityUtils securityUtils) {
+      @Qualifier("managementAccountService") final AccountService accountService,
+      final SecurityUtils securityUtils) {
     this.accountService = accountService;
     this.securityUtils = securityUtils;
 
@@ -108,8 +108,10 @@ public class AccountListView extends Main {
 
     LitRenderer<Account> enabledRenderer =
         LitRenderer.<Account>of(
-                "<vaadin-icon icon='vaadin:${item.icon}' style='color:"
-                    + " ${item.color}'></vaadin-icon>")
+                """
+                <vaadin-icon icon='vaadin:${item.icon}' style='color:\
+                 ${item.color}'></vaadin-icon>\
+                """)
             .withProperty("icon", account -> account.isEnabled() ? "check" : "close")
             .withProperty("color", account -> account.isEnabled() ? "green" : "red");
 

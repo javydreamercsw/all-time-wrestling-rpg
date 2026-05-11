@@ -44,9 +44,9 @@ public class ParallelSyncOrchestrator {
 
   @Autowired
   public ParallelSyncOrchestrator(
-      NotionSyncServicesManager notionSyncServicesManager,
-      EntitySyncConfiguration entityConfig,
-      SyncServiceDependencies syncServiceDependencies) {
+      final NotionSyncServicesManager notionSyncServicesManager,
+      final EntitySyncConfiguration entityConfig,
+      final SyncServiceDependencies syncServiceDependencies) {
     this.notionSyncServicesManager = notionSyncServicesManager;
     this.entityConfig = entityConfig;
     this.syncServiceDependencies = syncServiceDependencies;
@@ -81,7 +81,7 @@ public class ParallelSyncOrchestrator {
         com.github.javydreamercsw.management.config.CacheConfig.NOTION_QUERIES_CACHE
       },
       allEntries = true)
-  public ParallelSyncResult executeParallelSync(String baseOperationId) {
+  public ParallelSyncResult executeParallelSync(final String baseOperationId) {
     String operationId = baseOperationId != null ? baseOperationId : UUID.randomUUID().toString();
     log.info("🚀 Starting parallel entity synchronization with operation ID: {}", operationId);
 
@@ -131,7 +131,7 @@ public class ParallelSyncOrchestrator {
 
   /** Submits sync tasks for all enabled entity types. */
   private List<Future<EntitySyncResult>> submitSyncTasks(
-      ExecutorService executor, String baseOperationId) {
+      final ExecutorService executor, final String baseOperationId) {
     List<Future<EntitySyncResult>> futures = new ArrayList<>();
 
     // Submit tasks for each entity type if enabled
@@ -286,7 +286,8 @@ public class ParallelSyncOrchestrator {
   }
 
   /** Wraps entity sync execution with error handling and timing. */
-  private EntitySyncResult syncEntity(String entityType, Callable<SyncResult> syncTask) {
+  private EntitySyncResult syncEntity(
+      final String entityType, final Callable<SyncResult> syncTask) {
     long startTime = System.currentTimeMillis();
     try {
       log.debug("Starting sync for entity: {}", entityType);
@@ -304,7 +305,7 @@ public class ParallelSyncOrchestrator {
   }
 
   /** Collects results from all futures with timeout handling. */
-  private List<EntitySyncResult> collectResults(List<Future<EntitySyncResult>> futures) {
+  private List<EntitySyncResult> collectResults(final List<Future<EntitySyncResult>> futures) {
     List<EntitySyncResult> results = new ArrayList<>();
 
     for (Future<EntitySyncResult> future : futures) {
@@ -341,7 +342,7 @@ public class ParallelSyncOrchestrator {
   }
 
   /** Safely shuts down the executor service. */
-  private void shutdownExecutor(ExecutorService executor) {
+  private void shutdownExecutor(final ExecutorService executor) {
     executor.shutdown();
     try {
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
@@ -365,10 +366,10 @@ public class ParallelSyncOrchestrator {
     private final String errorMessage;
 
     public ParallelSyncResult(
-        List<EntitySyncResult> entityResults,
-        long totalDurationMs,
-        boolean success,
-        String errorMessage) {
+        final List<EntitySyncResult> entityResults,
+        final long totalDurationMs,
+        final boolean success,
+        final String errorMessage) {
       this.entityResults = entityResults;
       this.totalDurationMs = totalDurationMs;
       this.success = success;
@@ -400,7 +401,10 @@ public class ParallelSyncOrchestrator {
     private final String errorMessage;
 
     public EntitySyncResult(
-        String entityType, SyncResult syncResult, long durationMs, String errorMessage) {
+        final String entityType,
+        final SyncResult syncResult,
+        final long durationMs,
+        final String errorMessage) {
       this.entityType = entityType;
       this.syncResult = syncResult;
       this.durationMs = durationMs;

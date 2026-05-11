@@ -61,8 +61,10 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     LoginI18n.ErrorMessage i18nError = i18n.getErrorMessage();
     i18nError.setTitle("Login Failed");
     i18nError.setMessage(
-        "Invalid username or password. After 5 failed attempts, your account will be locked for 15"
-            + " minutes.");
+        """
+        Invalid username or password. After 5 failed attempts, your account will be locked for 15\
+         minutes.\
+        """);
     i18nError.setUsername("Username is required");
     i18nError.setPassword("Password is required");
 
@@ -119,7 +121,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   @Override
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     // Show error message if login failed
     if (event.getLocation().getQueryParameters().getParameters().containsKey("error")) {
       loginForm.setError(true);

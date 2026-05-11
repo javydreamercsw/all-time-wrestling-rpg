@@ -147,7 +147,7 @@ class InjuryServiceTest {
   })
   @DisplayName("Should create injury from bumps with correct severity based on tier and roll")
   void testCreateInjuryFromBumpsSeverity(
-      WrestlerTier tier, int roll, InjurySeverity expectedSeverity) {
+      final WrestlerTier tier, final int roll, final InjurySeverity expectedSeverity) {
     // Given
     Universe universe = Universe.builder().name("Test Universe").build();
     universe.setId(1L);
@@ -474,7 +474,8 @@ class InjuryServiceTest {
     return wrestler;
   }
 
-  private Injury createInjury(@NonNull Wrestler wrestler, @NonNull InjurySeverity severity) {
+  private Injury createInjury(
+      @NonNull final Wrestler wrestler, @NonNull final InjurySeverity severity) {
     Universe universe = Universe.builder().name("Test Universe").build();
     universe.setId(1L);
 

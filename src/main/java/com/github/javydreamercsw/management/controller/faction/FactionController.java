@@ -40,14 +40,14 @@ public class FactionController {
 
   @Operation(summary = "Get all factions", description = "Retrieve all factions with pagination")
   @GetMapping
-  public ResponseEntity<Page<Faction>> getAllFactions(Pageable pageable) {
+  public ResponseEntity<Page<Faction>> getAllFactions(final Pageable pageable) {
     Page<Faction> factions = factionService.getAllFactions(pageable);
     return ResponseEntity.ok(factions);
   }
 
   @Operation(summary = "Get faction by ID", description = "Retrieve a specific faction by its ID")
   @GetMapping("/{id}")
-  public ResponseEntity<Faction> getFactionById(@PathVariable Long id) {
+  public ResponseEntity<Faction> getFactionById(@PathVariable final Long id) {
     Optional<Faction> faction = factionService.getFactionById(id);
     return faction.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -56,7 +56,7 @@ public class FactionController {
       summary = "Get faction by name",
       description = "Retrieve a specific faction by its name")
   @GetMapping("/name/{name}")
-  public ResponseEntity<Faction> getFactionByName(@PathVariable String name) {
+  public ResponseEntity<Faction> getFactionByName(@PathVariable final String name) {
     Optional<Faction> faction = factionService.getFactionByName(name);
     return faction.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -72,7 +72,7 @@ public class FactionController {
       summary = "Get factions by type",
       description = "Retrieve factions by type (singles, tag, stable)")
   @GetMapping("/type/{type}")
-  public ResponseEntity<List<Faction>> getFactionsByType(@PathVariable String type) {
+  public ResponseEntity<List<Faction>> getFactionsByType(@PathVariable final String type) {
     List<Faction> factions = factionService.getFactionsByType(type);
     return ResponseEntity.ok(factions);
   }
@@ -82,7 +82,7 @@ public class FactionController {
       description = "Retrieve the largest factions by member count")
   @GetMapping("/largest")
   public ResponseEntity<List<Faction>> getLargestFactions(
-      @RequestParam(defaultValue = "10") int limit) {
+      @RequestParam(defaultValue = "10") final int limit) {
     List<Faction> factions = factionService.getLargestFactions(limit);
     return ResponseEntity.ok(factions);
   }
@@ -100,14 +100,15 @@ public class FactionController {
       summary = "Get faction for wrestler",
       description = "Retrieve the faction a wrestler belongs to")
   @GetMapping("/wrestler/{wrestlerId}")
-  public ResponseEntity<Faction> getFactionForWrestler(@PathVariable Long wrestlerId) {
+  public ResponseEntity<Faction> getFactionForWrestler(@PathVariable final Long wrestlerId) {
     Optional<Faction> faction = factionService.getFactionForWrestler(wrestlerId);
     return faction.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 
   @Operation(summary = "Create faction", description = "Create a new faction")
   @PostMapping
-  public ResponseEntity<Object> createFaction(@Valid @RequestBody CreateFactionRequest request) {
+  public ResponseEntity<Object> createFaction(
+      @Valid @RequestBody final CreateFactionRequest request) {
     Optional<Faction> faction =
         factionService.createFaction(
             request.name(),
@@ -128,7 +129,7 @@ public class FactionController {
   @Operation(summary = "Add member to faction", description = "Add a wrestler to a faction")
   @PostMapping("/{id}/members")
   public ResponseEntity<Object> addMember(
-      @PathVariable Long id, @Valid @RequestBody AddMemberRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final AddMemberRequest request) {
     Optional<Faction> faction = factionService.addMemberToFaction(id, request.wrestlerId());
 
     if (faction.isPresent()) {
@@ -137,8 +138,10 @@ public class FactionController {
       return ResponseEntity.badRequest()
           .body(
               new ErrorResponse(
-                  "Cannot add member - faction or wrestler not found, or wrestler already in"
-                      + " another faction"));
+                  """
+                  Cannot add member - faction or wrestler not found, or wrestler already in\
+                   another faction\
+                  """));
     }
   }
 
@@ -147,9 +150,9 @@ public class FactionController {
       description = "Remove a wrestler from a faction")
   @DeleteMapping("/{id}/members/{wrestlerId}")
   public ResponseEntity<Object> removeMember(
-      @PathVariable Long id,
-      @PathVariable Long wrestlerId,
-      @RequestParam(defaultValue = "Removed from faction") String reason) {
+      @PathVariable final Long id,
+      @PathVariable final Long wrestlerId,
+      @RequestParam(defaultValue = "Removed from faction") final String reason) {
     Optional<Faction> faction = factionService.removeMemberFromFaction(id, wrestlerId, reason);
 
     if (faction.isPresent()) {
@@ -158,15 +161,17 @@ public class FactionController {
       return ResponseEntity.badRequest()
           .body(
               new ErrorResponse(
-                  "Cannot remove member - faction or wrestler not found, or wrestler not in"
-                      + " faction"));
+                  """
+                  Cannot remove member - faction or wrestler not found, or wrestler not in\
+                   faction\
+                  """));
     }
   }
 
   @Operation(summary = "Change faction leader", description = "Change the leader of a faction")
   @PutMapping("/{id}/leader")
   public ResponseEntity<Object> changeLeader(
-      @PathVariable Long id, @Valid @RequestBody ChangeLeaderRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final ChangeLeaderRequest request) {
     Optional<Faction> faction = factionService.changeFactionLeader(id, request.newLeaderId());
 
     if (faction.isPresent()) {
@@ -175,15 +180,18 @@ public class FactionController {
       return ResponseEntity.badRequest()
           .body(
               new ErrorResponse(
-                  "Cannot change leader - faction or wrestler not found, or wrestler not in"
-                      + " faction"));
+                  """
+                  Cannot change leader - faction or wrestler not found, or wrestler not in\
+                   faction\
+                  """));
     }
   }
 
   @Operation(summary = "Disband faction", description = "Disband a faction")
   @DeleteMapping("/{id}")
   public ResponseEntity<Object> disbandFaction(
-      @PathVariable Long id, @RequestParam(defaultValue = "Faction disbanded") String reason) {
+      @PathVariable final Long id,
+      @RequestParam(defaultValue = "Faction disbanded") final String reason) {
     Optional<Faction> faction = factionService.disbandFaction(id, reason);
 
     if (faction.isPresent()) {

@@ -126,7 +126,7 @@ public class CampaignService {
   private static final String KEY_TOURNAMENT_STATE = "tournamentState";
   private static final String KEY_RECRUITING_PARTNER = "recruitingPartner";
 
-  private Map<String, Object> getFeatureData(CampaignState state) {
+  private Map<String, Object> getFeatureData(final CampaignState state) {
     if (state.getFeatureData() == null) {
       return new HashMap<>();
     }
@@ -139,7 +139,7 @@ public class CampaignService {
     }
   }
 
-  private void saveFeatureData(CampaignState state, Map<String, Object> data) {
+  private void saveFeatureData(final CampaignState state, final Map<String, Object> data) {
     try {
       state.setFeatureData(objectMapper.writeValueAsString(data));
     } catch (JsonProcessingException e) {
@@ -147,7 +147,8 @@ public class CampaignService {
     }
   }
 
-  private <T> T getFeatureValue(CampaignState state, String key, Class<T> type, T defaultValue) {
+  private <T> T getFeatureValue(
+      final CampaignState state, final String key, final Class<T> type, final T defaultValue) {
     Map<String, Object> data = getFeatureData(state);
     Object value = data.get(key);
     if (value == null) {
@@ -156,13 +157,13 @@ public class CampaignService {
     return objectMapper.convertValue(value, type);
   }
 
-  public void setFeatureValue(CampaignState state, String key, Object value) {
+  public void setFeatureValue(final CampaignState state, final String key, final Object value) {
     Map<String, Object> data = getFeatureData(state);
     data.put(key, value);
     saveFeatureData(state, data);
   }
 
-  public Campaign startCampaign(@NonNull Wrestler wrestlerParam) {
+  public Campaign startCampaign(@NonNull final Wrestler wrestlerParam) {
     // Re-fetch to ensure attached and initialize lazy collections
     Wrestler wrestler =
         wrestlerRepository
@@ -378,7 +379,7 @@ public class CampaignService {
     return segment;
   }
 
-  private void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
+  private void addParticipant(@NonNull final Segment segment, @NonNull final Wrestler wrestler) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(segment);
     participant.setWrestler(wrestler);
@@ -437,7 +438,7 @@ public class CampaignService {
    * @param wrestler The wrestler.
    * @return Optional campaign.
    */
-  public Optional<Campaign> getCampaignForWrestler(@NonNull Wrestler wrestler) {
+  public Optional<Campaign> getCampaignForWrestler(@NonNull final Wrestler wrestler) {
     return campaignRepository
         .findActiveByWrestler(wrestler)
         .map(
@@ -459,11 +460,11 @@ public class CampaignService {
    * @param wrestler The wrestler.
    * @return true if an active campaign exists.
    */
-  public boolean hasActiveCampaign(@NonNull Wrestler wrestler) {
+  public boolean hasActiveCampaign(@NonNull final Wrestler wrestler) {
     return campaignRepository.findActiveByWrestler(wrestler).isPresent();
   }
 
-  public void processMatchResult(@NonNull Campaign campaignParam, boolean won) {
+  public void processMatchResult(@NonNull final Campaign campaignParam, final boolean won) {
     // Reload campaign to ensure it's attached and we can fetch lazy collections
     Campaign campaign =
         campaignRepository
@@ -677,7 +678,7 @@ public class CampaignService {
    *
    * @param campaignParam The campaign to transition.
    */
-  public void completePostMatch(@NonNull Campaign campaignParam) {
+  public void completePostMatch(@NonNull final Campaign campaignParam) {
     // Reload campaign to ensure attached entity and fresh state
     Campaign campaign =
         campaignRepository
@@ -791,11 +792,11 @@ public class CampaignService {
                         }));
   }
 
-  public void saveSegment(@NonNull Segment segment) {
+  public void saveSegment(@NonNull final Segment segment) {
     segmentRepository.save(segment);
   }
 
-  public Optional<String> advanceChapter(@NonNull Campaign campaignParam) {
+  public Optional<String> advanceChapter(@NonNull final Campaign campaignParam) {
     // Reload to ensure attached entity and initialize lazy collections
     Campaign campaign =
         campaignRepository
@@ -929,7 +930,7 @@ public class CampaignService {
   }
 
   @Transactional(readOnly = true)
-  public boolean isChapterComplete(@NonNull Campaign campaignParam) {
+  public boolean isChapterComplete(@NonNull final Campaign campaignParam) {
     // Reload to ensure attached entity and initialize lazy collections
     Campaign campaign =
         campaignRepository
@@ -978,7 +979,7 @@ public class CampaignService {
   }
 
   private void recalculatePendingPicks(
-      @NonNull CampaignState state, @NonNull WrestlerAlignment alignment) {
+      @NonNull final CampaignState state, @NonNull final WrestlerAlignment alignment) {
     int level = alignment.getLevel();
     AlignmentType type = alignment.getAlignmentType();
 
@@ -1071,7 +1072,8 @@ public class CampaignService {
     campaignStateRepository.save(state);
   }
 
-  private void removeOneCardOfLevel(@NonNull List<CampaignAbilityCard> cards, int level) {
+  private void removeOneCardOfLevel(
+      @NonNull final List<CampaignAbilityCard> cards, final int level) {
     cards.stream()
         .filter(c -> c.getLevel() == level)
         .findFirst()
@@ -1116,7 +1118,8 @@ public class CampaignService {
     return pickable;
   }
 
-  private List<CampaignAbilityCard> getAvailableCards(@NonNull AlignmentType type, int level) {
+  private List<CampaignAbilityCard> getAvailableCards(
+      @NonNull final AlignmentType type, final int level) {
     return campaignAbilityCardRepository.findByAlignmentTypeAndLevel(type, level);
   }
 
@@ -1160,7 +1163,7 @@ public class CampaignService {
     }
   }
 
-  private void awardTitleToWinner(Long winnerId) {
+  private void awardTitleToWinner(final Long winnerId) {
     Wrestler winner =
         wrestlerRepository
             .findById(winnerId)

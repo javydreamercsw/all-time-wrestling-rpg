@@ -228,10 +228,10 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler.getWrestlerStates().add(state);
 
     var activeWrestlers = wrestlerRepository.findAllByActiveTrue();
-    assertThat(activeWrestlers).anyMatch(w -> w.getName().equals("Active Faction Wrestler"));
+    assertThat(activeWrestlers).anyMatch(w -> "Active Faction Wrestler".equals(w.getName()));
     Wrestler found =
         activeWrestlers.stream()
-            .filter(w -> w.getName().equals("Active Faction Wrestler"))
+            .filter(w -> "Active Faction Wrestler".equals(w.getName()))
             .findFirst()
             .orElseThrow();
 
@@ -273,7 +273,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     var page = wrestlerRepository.findAllBy(PageRequest.of(0, 100));
     Wrestler pagedWrestler =
         page.getContent().stream()
-            .filter(w -> w.getName().equals("Paged Wrestler"))
+            .filter(w -> "Paged Wrestler".equals(w.getName()))
             .findFirst()
             .orElseThrow();
 

@@ -68,11 +68,11 @@ public class WrestlerRankingsView extends Main {
   private ComboBox<Gender> genderComboBox;
 
   public WrestlerRankingsView(
-      WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      TitleService titleService,
-      TierBoundaryService tierBoundaryService,
-      UniverseContextService universeContextService) {
+      final WrestlerService wrestlerService,
+      final WrestlerRepository wrestlerRepository,
+      final TitleService titleService,
+      final TierBoundaryService tierBoundaryService,
+      final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -120,13 +120,11 @@ public class WrestlerRankingsView extends Main {
     Grid<TierBoundary> tierGrid = new Grid<>(TierBoundary.class, false);
     tierGrid.addColumn(tb -> tb.getTier().getDisplayWithEmoji()).setHeader("Tier");
     tierGrid
-        .addColumn(tb -> String.format("%,d - %,d", tb.getMinFans(), tb.getMaxFans()))
+        .addColumn(tb -> "%,d - %,d".formatted(tb.getMinFans(), tb.getMaxFans()))
         .setHeader("Fan Range");
+    tierGrid.addColumn(tb -> "%,d".formatted(tb.getChallengeCost())).setHeader("Challenge Cost");
     tierGrid
-        .addColumn(tb -> String.format("%,d", tb.getChallengeCost()))
-        .setHeader("Challenge Cost");
-    tierGrid
-        .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
+        .addColumn(tb -> "%,d".formatted(tb.getContenderEntryFee()))
         .setHeader("Contender Entry Fee");
 
     ComboBox<Gender> genderDialogComboBox = new ComboBox<>("Gender");
@@ -200,7 +198,7 @@ public class WrestlerRankingsView extends Main {
               WrestlerState state =
                   wrestlerService.getOrCreateState(
                       wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return String.format("%,d", state.getFans());
+              return "%,d".formatted(state.getFans());
             })
         .setHeader("Fans")
         .setSortable(true);

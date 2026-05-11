@@ -56,10 +56,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Autowired
   public OpenAISegmentNarrationService(
-      OpenAIConfigProperties openAIConfigProperties,
-      Environment environment,
-      SegmentNarrationConfig segmentNarrationConfig,
-      AiSettingsService aiSettingsService) {
+      final OpenAIConfigProperties openAIConfigProperties,
+      final Environment environment,
+      final SegmentNarrationConfig segmentNarrationConfig,
+      final AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
     this.objectMapper = new ObjectMapper();
     this.environment = environment;
@@ -68,7 +68,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   @Override
-  protected String callAIProvider(@NonNull String prompt) {
+  protected String callAIProvider(@NonNull final String prompt) {
     return callOpenAI(prompt);
   }
 
@@ -96,7 +96,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   @Override
-  public String generateText(@NonNull String prompt) {
+  public String generateText(@NonNull final String prompt) {
     return callOpenAI(prompt);
   }
 
@@ -110,7 +110,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   /** Makes a call to the OpenAI API with the given prompt. */
-  private String callOpenAI(@NonNull String prompt) {
+  private String callOpenAI(@NonNull final String prompt) {
     if (!isAvailable()) {
       throw new com.github.javydreamercsw.base.ai.AIServiceException(
           400,
@@ -180,7 +180,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   /** Extracts the content from OpenAI API response. */
-  private String extractContentFromResponse(@NonNull String responseBody) {
+  private String extractContentFromResponse(@NonNull final String responseBody) {
     try {
       log.debug("Full OpenAI Response Body: {}", responseBody);
       @SuppressWarnings("unchecked")

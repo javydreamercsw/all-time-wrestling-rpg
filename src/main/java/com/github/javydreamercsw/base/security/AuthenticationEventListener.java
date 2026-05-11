@@ -34,7 +34,7 @@ public class AuthenticationEventListener
   private final ObjectProvider<CustomUserDetailsService> userDetailsService;
 
   @Override
-  public void onApplicationEvent(AbstractAuthenticationEvent event) {
+  public void onApplicationEvent(final AbstractAuthenticationEvent event) {
     if (event instanceof AuthenticationSuccessEvent) {
       handleSuccessfulAuthentication((AuthenticationSuccessEvent) event);
     } else if (event instanceof AuthenticationFailureBadCredentialsEvent) {
@@ -43,7 +43,7 @@ public class AuthenticationEventListener
     // Other failure events can be handled here if needed (e.g., locked, disabled, etc.)
   }
 
-  private void handleSuccessfulAuthentication(AuthenticationSuccessEvent event) {
+  private void handleSuccessfulAuthentication(final AuthenticationSuccessEvent event) {
     if (event.getAuthentication().getPrincipal() instanceof CustomUserDetails userDetails) {
       String username = userDetails.getUsername();
       userDetailsService.ifAvailable(service -> service.recordSuccessfulLogin(username));
@@ -51,7 +51,7 @@ public class AuthenticationEventListener
     }
   }
 
-  private void handleFailedAuthentication(AuthenticationFailureBadCredentialsEvent event) {
+  private void handleFailedAuthentication(final AuthenticationFailureBadCredentialsEvent event) {
     String username = (String) event.getAuthentication().getPrincipal();
     log.warn("Failed login attempt for user: {}", username);
   }

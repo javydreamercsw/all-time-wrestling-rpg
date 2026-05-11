@@ -173,8 +173,10 @@ class MockMatchNarrationServiceTest {
   @DisplayName("Should generate retort for interactive promo")
   void shouldGenerateRetort() {
     String prompt =
-        "The player just said: \"I am the best!\"\n"
-            + "Respond directly to them with a short, impactful retort (2-3 sentences).";
+        """
+        The player just said: "I am the best!"
+        Respond directly to them with a short, impactful retort (2-3 sentences).\
+        """;
     String result = mockService.generateText(prompt);
 
     assertThat(result).isNotNull().isNotEmpty();

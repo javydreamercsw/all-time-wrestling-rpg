@@ -29,7 +29,7 @@ public class NpcNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public NpcNotionHandler(NotionHandler notionHandler) {
+  public NpcNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -67,7 +67,7 @@ public class NpcNotionHandler {
   }
 
   /** Maps a Notion page to a NpcPage object. */
-  private NpcPage mapPageToNpcPage(@NonNull Page pageData, @NonNull String npcName) {
+  private NpcPage mapPageToNpcPage(@NonNull final Page pageData, @NonNull final String npcName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, npcName, "NPC", NpcPage::new, NpcPage.NotionParent::new);
   }

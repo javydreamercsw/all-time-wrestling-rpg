@@ -104,9 +104,11 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
     ((JavascriptExecutor) driver)
         .executeScript(
-            "arguments[0].value = 2; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:"
-                + " true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true"
-                + " }));",
+            """
+            arguments[0].value = 2; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:\
+             true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true\
+             }));\
+            """,
             maxPicksField);
     maxPicksField.sendKeys(Keys.TAB);
 
@@ -134,10 +136,10 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Verify player1 is a member (Debug check)
     List<LeagueMembership> members = leagueMembershipRepository.findByLeague(league);
     boolean player1Joined =
-        members.stream().anyMatch(m -> m.getMember().getUsername().equals("player1"));
+        members.stream().anyMatch(m -> "player1".equals(m.getMember().getUsername()));
     assertTrue(player1Joined, "Player1 did not join the league! Members: " + members.size());
     boolean adminJoined =
-        members.stream().anyMatch(m -> m.getMember().getUsername().equals("admin"));
+        members.stream().anyMatch(m -> "admin".equals(m.getMember().getUsername()));
     assertTrue(
         adminJoined, "Admin did not join the league as a player! Members: " + members.size());
 
@@ -353,7 +355,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains(showName));
   }
 
-  private void navigateTo(String route) {
+  private void navigateTo(final String route) {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
     waitForVaadinClientToLoad();
   }
@@ -417,7 +419,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     }
   }
 
-  private String getPlayer1WrestlerName(League league) {
+  private String getPlayer1WrestlerName(final League league) {
     Account p1 = accountRepository.findByUsername("player1").orElseThrow();
     return leagueRosterRepository.findByLeague(league).stream()
         .filter(r -> r.getOwner().equals(p1))
@@ -426,7 +428,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
         .orElseThrow(() -> new IllegalStateException("Player 1 has no wrestler in this league"));
   }
 
-  private String getAdminWrestlerName(League league) {
+  private String getAdminWrestlerName(final League league) {
     Account admin = accountRepository.findByUsername("admin").orElseThrow();
     return leagueRosterRepository.findByLeague(league).stream()
         .filter(r -> r.getOwner().equals(admin))

@@ -54,7 +54,7 @@ public class LegacyService {
    * @param account The account to update
    */
   @Transactional
-  public void updateLegacyScore(@NonNull Account account) {
+  public void updateLegacyScore(@NonNull final Account account) {
     Account managedAccount =
         accountRepository
             .findById(account.getId())
@@ -79,7 +79,8 @@ public class LegacyService {
     checkAchievements(managedAccount, wrestlers, totalFans, currentTitlesHeld);
   }
 
-  private long calculateScore(Account account, long totalFans, long currentTitlesHeld) {
+  private long calculateScore(
+      final Account account, final long totalFans, final long currentTitlesHeld) {
     long score = totalFans / 1000;
     // Add 50 points per title currently held
     score += currentTitlesHeld * 50;
@@ -90,10 +91,10 @@ public class LegacyService {
   }
 
   private void checkAchievements(
-      @NonNull Account account,
-      @NonNull List<Wrestler> wrestlers,
-      long totalFans,
-      long currentTitlesHeld) {
+      @NonNull final Account account,
+      @NonNull final List<Wrestler> wrestlers,
+      final long totalFans,
+      final long currentTitlesHeld) {
     if (!wrestlers.isEmpty()) {
       unlockAchievement(account, "FIRST_WRESTLER");
     }
@@ -135,7 +136,7 @@ public class LegacyService {
   }
 
   @Transactional
-  public void incrementShowsBooked(@NonNull Account account) {
+  public void incrementShowsBooked(@NonNull final Account account) {
     Account managedAccount =
         accountRepository
             .findById(account.getId())
@@ -156,7 +157,7 @@ public class LegacyService {
   }
 
   @Transactional
-  public void unlockAchievement(@NonNull Account account, @NonNull String key) {
+  public void unlockAchievement(@NonNull final Account account, @NonNull final String key) {
     Account managedAccount =
         accountRepository
             .findById(account.getId())

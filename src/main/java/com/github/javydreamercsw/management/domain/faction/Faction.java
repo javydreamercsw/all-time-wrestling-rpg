@@ -150,7 +150,8 @@ public class Faction extends AbstractSyncableEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add a member to the faction. */
-  public void addMember(com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+  public void addMember(
+      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
     if (state != null && !members.contains(state)) {
       members.add(state);
       state.setFaction(this);
@@ -159,7 +160,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
 
   /** Remove a member from the faction. */
   public void removeMember(
-      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
     if (state != null) {
       members.remove(state);
       if (state.getFaction() != null && state.getFaction().equals(this)) {
@@ -169,7 +170,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   /** Check if a wrestler is a member of this faction. */
-  public boolean hasMember(Wrestler wrestler) {
+  public boolean hasMember(final Wrestler wrestler) {
     if (wrestler == null || wrestler.getId() == null) {
       return false;
     }
@@ -198,7 +199,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   /** Disband the faction. */
-  public void disband(String reason) {
+  public void disband(final String reason) {
     this.isActive = false;
     this.disbandedDate = Instant.now();
 
@@ -217,7 +218,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   /** Get the opposing faction in a rivalry. */
-  public Faction getOpposingFaction(FactionRivalry rivalry) {
+  public Faction getOpposingFaction(final FactionRivalry rivalry) {
     if (rivalry.getFaction1().equals(this)) {
       return rivalry.getFaction2();
     } else if (rivalry.getFaction2().equals(this)) {
@@ -227,7 +228,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   /** Check if this faction has a rivalry with another faction. */
-  public boolean hasRivalryWith(Faction otherFaction) {
+  public boolean hasRivalryWith(final Faction otherFaction) {
     return getActiveRivalries().stream()
         .anyMatch(
             rivalry ->
@@ -255,7 +256,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

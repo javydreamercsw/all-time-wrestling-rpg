@@ -121,8 +121,8 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        String.format(
-            "%s - Reign #%d (%s)", title.getName(), reign.getReignNumber(), wrestler.getName()),
+        "%s - Reign #%d (%s)"
+            .formatted(title.getName(), reign.getReignNumber(), wrestler.getName()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         title.getExternalId(),

@@ -50,7 +50,7 @@ public class ShowSchedulerService {
    *
    * @param season The season to generate shows for.
    */
-  public void generateShowsForSeason(@NonNull Season season) {
+  public void generateShowsForSeason(@NonNull final Season season) {
     if (season.getStartDate() == null) {
       log.warn("Season {} has missing start date. Skipping show generation.", season.getName());
       return;
@@ -84,8 +84,10 @@ public class ShowSchedulerService {
       Set<LocalDate> targetDates = calculateTargetDates(template, seasonStart, seasonEnd);
       if (targetDates.isEmpty()) {
         log.warn(
-            "No target dates calculated for template '{}' (Recurrence: {}, DayOfWeek: {},"
-                + " DayOfMonth: {}, WeekOfMonth: {}, Month: {}). Missing configuration?",
+            """
+            No target dates calculated for template '{}' (Recurrence: {}, DayOfWeek: {},\
+             DayOfMonth: {}, WeekOfMonth: {}, Month: {}). Missing configuration?\
+            """,
             template.getName(),
             template.getRecurrenceType(),
             template.getDayOfWeek(),

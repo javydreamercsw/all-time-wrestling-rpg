@@ -121,7 +121,7 @@ class WrestlerServiceTest {
     initWrestlers(universe);
   }
 
-  private void initWrestlers(Universe universe) {
+  private void initWrestlers(final Universe universe) {
     wrestlers = new ArrayList<>();
     wrestlerStates = new ArrayList<>();
 
@@ -201,15 +201,15 @@ class WrestlerServiceTest {
   }
 
   private void createAndAddWrestler(
-      Long id,
-      String name,
-      boolean active,
-      boolean isPlayer,
-      WrestlerTier tier,
-      long fans,
-      Gender gender,
-      Universe universe,
-      AlignmentType alignment) {
+      final Long id,
+      final String name,
+      final boolean active,
+      final boolean isPlayer,
+      final WrestlerTier tier,
+      final long fans,
+      final Gender gender,
+      final Universe universe,
+      final AlignmentType alignment) {
     Wrestler w =
         Wrestler.builder()
             .id(id)

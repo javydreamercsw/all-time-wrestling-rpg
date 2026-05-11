@@ -94,7 +94,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add a wrestler to the feud. */
-  public void addParticipant(Wrestler wrestler, FeudRole role) {
+  public void addParticipant(final Wrestler wrestler, final FeudRole role) {
     if (wrestler != null && !hasParticipant(wrestler)) {
       FeudParticipant participant = new FeudParticipant();
       participant.setFeud(this);
@@ -106,7 +106,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   }
 
   /** Remove a wrestler from the feud. */
-  public void removeParticipant(Wrestler wrestler, String reason) {
+  public void removeParticipant(final Wrestler wrestler, final String reason) {
     participants.stream()
         .filter(p -> p.getWrestler().equals(wrestler))
         .findFirst()
@@ -119,7 +119,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   }
 
   /** Check if a wrestler is participating in this feud. */
-  public boolean hasParticipant(Wrestler wrestler) {
+  public boolean hasParticipant(final Wrestler wrestler) {
     return participants.stream().anyMatch(p -> p.getWrestler().equals(wrestler) && p.getIsActive());
   }
 
@@ -139,7 +139,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   }
 
   /** Add heat to the feud. */
-  public void addHeat(int heatGain, String reason) {
+  public void addHeat(final int heatGain, final String reason) {
     this.heat += heatGain;
 
     // Create heat event for tracking
@@ -168,7 +168,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   }
 
   /** End the feud. */
-  public void endFeud(String reason) {
+  public void endFeud(final String reason) {
     this.isActive = false;
     this.endedDate = Instant.now();
 
@@ -215,8 +215,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
 
   /** Get feud summary with heat and intensity. */
   public String getFeudSummary() {
-    return String.format(
-        "%s (%d heat - %s)", getDisplayName(), heat, getIntensity().getDisplayName());
+    return "%s (%d heat - %s)".formatted(getDisplayName(), heat, getIntensity().getDisplayName());
   }
 
   /** Check if this is a valid multi-wrestler feud (3+ participants). */
@@ -225,7 +224,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   }
 
   /** Get participants by role. */
-  public List<FeudParticipant> getParticipantsByRole(FeudRole role) {
+  public List<FeudParticipant> getParticipantsByRole(final FeudRole role) {
     return getActiveParticipants().stream().filter(p -> p.getRole() == role).toList();
   }
 

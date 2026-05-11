@@ -40,7 +40,7 @@ public class EditShowNameDialog extends Dialog {
 
   private final TextField nameField = new TextField("Show Name");
 
-  public EditShowNameDialog(@NonNull ShowService showService, @NonNull Show show) {
+  public EditShowNameDialog(@NonNull final ShowService showService, @NonNull final Show show) {
     this.showService = showService;
     this.show = show;
 

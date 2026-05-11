@@ -52,7 +52,7 @@ public class Application extends SpringBootServletInitializer {
   }
 
   @Override
-  protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+  protected SpringApplicationBuilder configure(final SpringApplicationBuilder application) {
     return application.sources(Application.class);
   }
 
@@ -69,7 +69,7 @@ public class Application extends SpringBootServletInitializer {
   @Bean
   @Profile("!test")
   public CommandLineRunner initData(
-      AccountInitializer accountInitializer, DataInitializer dataInitializer) {
+      final AccountInitializer accountInitializer, final DataInitializer dataInitializer) {
     return args -> {
       log.info("Initializing data on startup...");
       // Create a system authentication context
@@ -95,7 +95,7 @@ public class Application extends SpringBootServletInitializer {
   @Bean
   @Profile("test & !e2e")
   public CommandLineRunner recalculateRanking(
-      RankingService rankingService, WrestlerRepository wrestlerRepository) {
+      final RankingService rankingService, final WrestlerRepository wrestlerRepository) {
     return args -> {
       log.info("Recalculating tiers on startup...");
       if (SecurityContextHolder.getContext().getAuthentication() == null
@@ -109,7 +109,7 @@ public class Application extends SpringBootServletInitializer {
     };
   }
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     SpringApplication.run(Application.class, args);
   }
 }

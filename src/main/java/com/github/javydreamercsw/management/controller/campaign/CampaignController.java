@@ -46,7 +46,7 @@ public class CampaignController {
   private final CampaignUpgradeService upgradeService;
 
   @GetMapping("/{wrestlerId}/state")
-  public ResponseEntity<CampaignState> getCampaignState(@PathVariable Long wrestlerId) {
+  public ResponseEntity<CampaignState> getCampaignState(@PathVariable final Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
     if (wrestler.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -65,7 +65,7 @@ public class CampaignController {
 
   @PostMapping("/{wrestlerId}/upgrades/purchase")
   public ResponseEntity<Void> purchaseUpgrade(
-      @PathVariable Long wrestlerId, @RequestParam Long upgradeId) {
+      @PathVariable final Long wrestlerId, @RequestParam final Long upgradeId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
     if (wrestler.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -82,7 +82,7 @@ public class CampaignController {
 
   @PostMapping("/{wrestlerId}/test/process-match")
   public ResponseEntity<Void> processMatchResult(
-      @PathVariable Long wrestlerId, @RequestParam boolean won) {
+      @PathVariable final Long wrestlerId, @RequestParam final boolean won) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
     if (wrestler.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -98,7 +98,7 @@ public class CampaignController {
   }
 
   @PostMapping("/{wrestlerId}/test/advance-chapter")
-  public ResponseEntity<Void> advanceChapter(@PathVariable Long wrestlerId) {
+  public ResponseEntity<Void> advanceChapter(@PathVariable final Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
     if (wrestler.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -114,7 +114,7 @@ public class CampaignController {
   }
 
   @PostMapping("/{wrestlerId}/test/skip-to-show")
-  public ResponseEntity<Void> skipToShow(@PathVariable Long wrestlerId) {
+  public ResponseEntity<Void> skipToShow(@PathVariable final Long wrestlerId) {
     Optional<Wrestler> wrestler = wrestlerRepository.findById(wrestlerId);
     if (wrestler.isEmpty()) {
       return ResponseEntity.notFound().build();

@@ -27,7 +27,8 @@ public class WrestlerInjuryEvent extends ApplicationEvent {
   private final WrestlerState wrestlerState;
   private final Injury injury;
 
-  public WrestlerInjuryEvent(Object source, WrestlerState wrestlerState, Injury injury) {
+  public WrestlerInjuryEvent(
+      final Object source, final WrestlerState wrestlerState, final Injury injury) {
     super(source);
     this.wrestlerState = wrestlerState;
     this.injury = injury;

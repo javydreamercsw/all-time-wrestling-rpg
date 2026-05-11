@@ -185,7 +185,7 @@ class AbstractMatchNarrationServiceTest {
   private static class TestableMatchNarrationService extends AbstractSegmentNarrationService {
 
     @Override
-    protected String callAIProvider(@NonNull String prompt) {
+    protected String callAIProvider(@NonNull final String prompt) {
       return "Test narration response";
     }
 
@@ -200,12 +200,12 @@ class AbstractMatchNarrationServiceTest {
     }
 
     @Override
-    public String generateText(@NonNull String prompt) {
+    public String generateText(@NonNull final String prompt) {
       return callAIProvider(prompt);
     }
 
     // Expose the protected method for testing
-    public String buildTestPrompt(SegmentNarrationContext context) {
+    public String buildTestPrompt(final SegmentNarrationContext context) {
       return buildSegmentNarrationPrompt(context);
     }
   }

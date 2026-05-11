@@ -45,18 +45,18 @@ public class TitleSyncService extends BaseSyncService {
 
   @Autowired
   public TitleSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      TitleService titleService,
-      TitleNotionSyncService titleNotionSyncService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final TitleService titleService,
+      final TitleNotionSyncService titleNotionSyncService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.titleService = titleService;
     this.titleNotionSyncService = titleNotionSyncService;
   }
 
   @Transactional
-  public SyncResult syncTitles(@NonNull String operationId) {
+  public SyncResult syncTitles(@NonNull final String operationId) {
     if (syncServiceDependencies
         .getSyncSessionManager()
         .isAlreadySyncedInSession(SyncEntityType.TITLES.getKey())) {
@@ -80,7 +80,7 @@ public class TitleSyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performTitlesSync(@NonNull String operationId, long startTime) {
+  private SyncResult performTitlesSync(@NonNull final String operationId, final long startTime) {
     if (!syncServiceDependencies
         .getNotionSyncProperties()
         .isEntityEnabled(SyncEntityType.TITLES.getKey())) {
@@ -210,7 +210,7 @@ public class TitleSyncService extends BaseSyncService {
     }
   }
 
-  void updateTitleFromNotion(Title title, TitlePage titlePage) {
+  void updateTitleFromNotion(final Title title, final TitlePage titlePage) {
     log.debug("Updating title relationships: {}", title.getName());
 
     // Sync Champions
@@ -280,7 +280,7 @@ public class TitleSyncService extends BaseSyncService {
     }
   }
 
-  public SyncResult syncToNotion(@NonNull String operationId) {
+  public SyncResult syncToNotion(@NonNull final String operationId) {
     return titleNotionSyncService.syncToNotion(operationId);
   }
 }

@@ -39,10 +39,10 @@ public class ShowTypeSyncService extends BaseSyncService {
   private final ShowTypeService showTypeService;
 
   public ShowTypeSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      ShowTypeService showTypeService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final ShowTypeService showTypeService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.showTypeService = showTypeService;
   }
@@ -53,7 +53,7 @@ public class ShowTypeSyncService extends BaseSyncService {
    * @param operationId Operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncShowTypes(@NonNull String operationId) {
+  public SyncResult syncShowTypes(@NonNull final String operationId) {
     // Check if already synced in current session
     if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("show-types")) {
       log.info("⏭️ Show types already synced in current session, skipping");
@@ -69,7 +69,7 @@ public class ShowTypeSyncService extends BaseSyncService {
     return result;
   }
 
-  private SyncResult performShowTypesSync(@NonNull String operationId, long startTime) {
+  private SyncResult performShowTypesSync(@NonNull final String operationId, final long startTime) {
     int createdCount = 0;
     int updatedCount = 0;
     // Initialize progress tracking for show types sync
@@ -144,9 +144,8 @@ public class ShowTypeSyncService extends BaseSyncService {
         .completeOperation(
             operationId,
             true,
-            String.format(
-                "Successfully synced %d show types (%d created, %d updated)",
-                createdCount + updatedCount, createdCount, updatedCount),
+            "Successfully synced %d show types (%d created, %d updated)"
+                .formatted(createdCount + updatedCount, createdCount, updatedCount),
             createdCount + updatedCount);
 
     return SyncResult.success("Show Types", createdCount, updatedCount, 0);
@@ -181,7 +180,7 @@ public class ShowTypeSyncService extends BaseSyncService {
   }
 
   /** Generates a description for a show type based on its name. */
-  private String generateShowTypeDescription(String showTypeName) {
+  private String generateShowTypeDescription(final String showTypeName) {
     if (showTypeName == null) {
       return "Show type";
     }

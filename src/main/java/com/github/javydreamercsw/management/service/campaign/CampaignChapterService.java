@@ -45,7 +45,7 @@ public class CampaignChapterService {
   private List<CampaignChapterDTO> chapters = Collections.emptyList();
 
   @Autowired
-  public CampaignChapterService(@NonNull ObjectMapper objectMapper) {
+  public CampaignChapterService(@NonNull final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
@@ -71,7 +71,7 @@ public class CampaignChapterService {
     return Collections.unmodifiableList(chapters);
   }
 
-  public Optional<CampaignChapterDTO> getChapter(@NonNull String id) {
+  public Optional<CampaignChapterDTO> getChapter(@NonNull final String id) {
     return chapters.stream().filter(c -> c.getId().equals(id)).findFirst();
   }
 
@@ -81,7 +81,7 @@ public class CampaignChapterService {
    * @param state The current campaign state.
    * @return List of eligible chapters.
    */
-  public List<CampaignChapterDTO> findAvailableChapters(@NonNull CampaignState state) {
+  public List<CampaignChapterDTO> findAvailableChapters(@NonNull final CampaignState state) {
     return chapters.stream()
         .filter(c -> !state.getCompletedChapterIds().contains(c.getId())) // Not already completed
         // Exclude "beginning" chapter if any other chapter has been completed.
@@ -90,7 +90,7 @@ public class CampaignChapterService {
             c ->
                 !"beginning".equals(c.getId())
                     || !state.getCompletedChapterIds().stream()
-                        .anyMatch(id -> !id.equals("beginning")))
+                        .anyMatch(id -> !"beginning".equals(id)))
         .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
         .toList();
   }
@@ -101,7 +101,7 @@ public class CampaignChapterService {
    * @param state The current campaign state.
    * @return true if any exit point is active.
    */
-  public boolean isChapterComplete(@NonNull CampaignState state) {
+  public boolean isChapterComplete(@NonNull final CampaignState state) {
     if (state.getCurrentChapterId() == null) {
       return false;
     }
@@ -112,12 +112,12 @@ public class CampaignChapterService {
   }
 
   public Optional<ChapterPointDTO> getActivePoint(
-      @NonNull List<ChapterPointDTO> points, @NonNull CampaignState state) {
+      @NonNull final List<ChapterPointDTO> points, @NonNull final CampaignState state) {
     return points.stream().filter(p -> areAllCriteriaMet(p.getCriteria(), state)).findFirst();
   }
 
   private boolean isAnyPointActive(
-      @NonNull List<ChapterPointDTO> points, @NonNull CampaignState state) {
+      @NonNull final List<ChapterPointDTO> points, @NonNull final CampaignState state) {
     if (points.isEmpty()) {
       // If no points are defined, we might want a default behavior.
       // For entry: maybe only the first chapter?
@@ -128,7 +128,7 @@ public class CampaignChapterService {
   }
 
   private boolean areAllCriteriaMet(
-      @NonNull List<ChapterCriteriaDTO> criteriaList, @NonNull CampaignState state) {
+      @NonNull final List<ChapterCriteriaDTO> criteriaList, @NonNull final CampaignState state) {
     if (criteriaList.isEmpty()) {
       return true;
     }
@@ -137,7 +137,7 @@ public class CampaignChapterService {
   }
 
   private boolean isCriteriaMet(
-      @NonNull ChapterCriteriaDTO criteria, @NonNull CampaignState state) {
+      @NonNull final ChapterCriteriaDTO criteria, @NonNull final CampaignState state) {
     // Check Victory Points
     if (criteria.getMinVictoryPoints() != null
         && state.getVictoryPoints() < criteria.getMinVictoryPoints()) {

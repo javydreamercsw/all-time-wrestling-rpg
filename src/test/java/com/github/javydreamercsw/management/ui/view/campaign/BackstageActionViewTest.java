@@ -85,7 +85,7 @@ class BackstageActionViewTest {
 
     assertThat(
             view.getChildren()
-                .anyMatch(c -> c instanceof H2 && ((H2) c).getText().equals("Backstage Actions")))
+                .anyMatch(c -> c instanceof H2 && "Backstage Actions".equals(((H2) c).getText())))
         .isTrue();
   }
 

@@ -31,7 +31,7 @@ public class DefaultImageService {
   private final List<ImageSource> sources;
 
   @Autowired
-  public DefaultImageService(List<ImageSource> sources) {
+  public DefaultImageService(final List<ImageSource> sources) {
     this.sources =
         sources.stream().sorted(Comparator.comparingInt(ImageSource::getPriority)).toList();
     log.debug("Initialized DefaultImageService with {} sources", sources.size());
@@ -44,7 +44,7 @@ public class DefaultImageService {
    * @param category The category of the image.
    * @return The resolution result (specific image or fallback).
    */
-  public ImageResolution resolveImage(String name, ImageCategory category) {
+  public ImageResolution resolveImage(final String name, final ImageCategory category) {
     for (ImageSource source : sources) {
       Optional<String> path = source.resolveImage(name, category);
       if (path.isPresent()) {

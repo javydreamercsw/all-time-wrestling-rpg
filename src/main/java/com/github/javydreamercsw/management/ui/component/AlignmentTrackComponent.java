@@ -26,7 +26,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 /** Visual representation of the Face/Heel progress track. */
 public class AlignmentTrackComponent extends Div {
 
-  public AlignmentTrackComponent(WrestlerAlignment alignment) {
+  public AlignmentTrackComponent(final WrestlerAlignment alignment) {
     addClassNames(
         LumoUtility.Display.FLEX,
         LumoUtility.FlexDirection.COLUMN,
@@ -102,7 +102,7 @@ public class AlignmentTrackComponent extends Div {
     add(legendContainer);
   }
 
-  private void heelHelegendStyle(Div div) {
+  private void heelHelegendStyle(final Div div) {
     div.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);
     div.setWidth("50%");
@@ -110,7 +110,7 @@ public class AlignmentTrackComponent extends Div {
     div.getStyle().set("padding-left", "10px");
   }
 
-  private void faceLegendStyle(Div div) {
+  private void faceLegendStyle(final Div div) {
     div.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);
     div.setWidth("50%");
@@ -119,7 +119,10 @@ public class AlignmentTrackComponent extends Div {
   }
 
   private Div createSpot(
-      AlignmentType spotType, int level, AlignmentType currentType, int currentLevel) {
+      final AlignmentType spotType,
+      final int level,
+      final AlignmentType currentType,
+      final int currentLevel) {
     Div spot = new Div();
     spot.setWidth("32px");
     spot.setHeight("32px");
@@ -178,7 +181,7 @@ public class AlignmentTrackComponent extends Div {
     return spot;
   }
 
-  private String getTooltipForMilestone(AlignmentType type, int level) {
+  private String getTooltipForMilestone(final AlignmentType type, final int level) {
     if (level == 0) {
       return "Starting Point: Neutral";
     }
@@ -203,7 +206,7 @@ public class AlignmentTrackComponent extends Div {
     return "";
   }
 
-  private void addMilestoneText(Div container, String level, String text) {
+  private void addMilestoneText(final Div container, final String level, final String text) {
     Paragraph p = new Paragraph();
     p.addClassNames(
         LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.NONE);

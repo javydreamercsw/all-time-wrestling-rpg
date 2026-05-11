@@ -29,11 +29,11 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
 
   @Override
   public String format(
-      Show show,
-      List<Segment> segments,
-      boolean includeSummary,
-      boolean includeResults,
-      boolean includeNarration) {
+      final Show show,
+      final List<Segment> segments,
+      final boolean includeSummary,
+      final boolean includeResults,
+      final boolean includeNarration) {
     StringBuilder sb = new StringBuilder();
     sb.append("📺 ").append(show.getName());
     if (show.getShowDate() != null) {

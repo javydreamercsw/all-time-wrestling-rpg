@@ -47,7 +47,7 @@ public class ShowPlanningAiService {
   private final HolidayService holidayService;
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
+  public ProposedShow planShow(@NonNull final ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
       return new ProposedShow();
@@ -112,11 +112,14 @@ public class ShowPlanningAiService {
     }
   }
 
-  private String buildShowPlanningPrompt(@NonNull ShowPlanningContextDTO context) {
+  private String buildShowPlanningPrompt(@NonNull final ShowPlanningContextDTO context) {
     StringBuilder prompt = new StringBuilder();
     prompt.append(
-        "You are a professional wrestling show planner. Your task is to create a compelling and"
-            + " coherent show by generating a list of segments in JSON format.\n\n");
+        """
+        You are a professional wrestling show planner. Your task is to create a compelling and\
+         coherent show by generating a list of segments in JSON format.
+
+        """);
     prompt.append("Here is the context for the show:\n");
 
     if (context.getShowTemplate() != null) {
@@ -146,10 +149,12 @@ public class ShowPlanningAiService {
                   .append("\nHoliday Theme: ")
                   .append(theme)
                   .append(
-                      ". Please incorporate this theme into the show's segments where"
-                          + " appropriate. Including, but not limited to, commentators mentioning"
-                          + " them, wrestlers, referencing them in promos and having matches with"
-                          + " the themes.\n"));
+                      """
+                      . Please incorporate this theme into the show's segments where\
+                       appropriate. Including, but not limited to, commentators mentioning\
+                       them, wrestlers, referencing them in promos and having matches with\
+                       the themes.
+                      """));
     }
 
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
@@ -213,7 +218,7 @@ public class ShowPlanningAiService {
       List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
       List<String> highHeatRuleDescriptions =
           highHeatRules.stream()
-              .map(rule -> String.format("%s (%s)", rule.getName(), rule.getDescription()))
+              .map(rule -> "%s (%s)".formatted(rule.getName(), rule.getDescription()))
               .collect(Collectors.toList());
       prompt
           .append("Available Stipulation Matches: ")
@@ -314,30 +319,42 @@ public class ShowPlanningAiService {
 
     prompt.append("\n**Booking Rules & Participation Goal:**\n");
     prompt.append(
-        "- Goal: Every healthy (non-injured) wrestler MUST participate in at least one segment"
-            + " per week.\n");
+        """
+        - Goal: Every healthy (non-injured) wrestler MUST participate in at least one segment\
+         per week.
+        """);
     prompt.append(
-        "- Prioritize active feuds (especially high priority ones) and title defenses if the days"
-            + " since last defense exceeds the frequency.\n");
+        """
+        - Prioritize active feuds (especially high priority ones) and title defenses if the days\
+         since last defense exceeds the frequency.
+        """);
     prompt.append(
-        "- To ensure 100% participation, use multi-man matches (Triple Threat, Fatal Four-Way,"
-            + " Battle Royale) or Faction-based tag matches to consolidate many wrestlers into few"
-            + " segments.\n");
+        """
+        - To ensure 100% participation, use multi-man matches (Triple Threat, Fatal Four-Way,\
+         Battle Royale) or Faction-based tag matches to consolidate many wrestlers into few\
+         segments.
+        """);
     prompt.append(
-        "- If healthy wrestlers remain after booking matches, assign them to Promos or Backstage"
-            + " segments.\n");
+        """
+        - If healthy wrestlers remain after booking matches, assign them to Promos or Backstage\
+         segments.
+        """);
     prompt.append(
-        "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
-            + " participate in promos and any other capacity as long as it doesn't involve"
-            + " officially participating in the match.\n");
+        """
+        - Within the same calendar day, avoid having a wrestler in more than one match. They can\
+         participate in promos and any other capacity as long as it doesn't involve\
+         officially participating in the match.
+        """);
     prompt.append(
-        "- Within the same calendar week, avoid having a wrestler in more than one match. The"
-            + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
+        """
+        - Within the same calendar week, avoid having a wrestler in more than one match. The\
+         exception is for Premium Live Event (PLE) where this is not avoidable.
+        """);
 
     List<SegmentType> segmentTypes = segmentTypeService.findAll();
     List<String> segmentTypeDescriptions =
         segmentTypes.stream()
-            .map(type -> String.format("%s (%s)", type.getName(), type.getDescription()))
+            .map(type -> "%s (%s)".formatted(type.getName(), type.getDescription()))
             .collect(Collectors.toList());
     prompt
         .append("\nAvailable Segment Types: ")
@@ -345,9 +362,13 @@ public class ShowPlanningAiService {
         .append("\n");
 
     prompt.append(
-        "\nIMPORTANT: Use the provided context to generate a compelling and coherent show. "
-            + "The segments should build on existing rivalries and championships. "
-            + "If a `Next PLE` is provided, the show should build towards it.\n\n");
+        """
+
+        IMPORTANT: Use the provided context to generate a compelling and coherent show. \
+        The segments should build on existing rivalries and championships. \
+        If a `Next PLE` is provided, the show should build towards it.
+
+        """);
 
     prompt.append("\nHere is the JSON schema for a single segment:\n");
     prompt.append("```json\n");
@@ -377,11 +398,16 @@ public class ShowPlanningAiService {
         .append(
             " should adhere to the provided schema. Ensure the segments flow logically and build")
         .append(
-            " towards a compelling narrative. **Be concise with descriptions and outcomes to"
-                + " ensure the entire JSON array fits in the response.**\n\n")
+            """
+             towards a compelling narrative. **Be concise with descriptions and outcomes to\
+             ensure the entire JSON array fits in the response.**
+
+            """)
         .append(
-            "IMPORTANT: **Be extremely concise with your internal thoughts/reasoning to save"
-                + " output tokens for the JSON.** The 'participants' field MUST be")
+            """
+            IMPORTANT: **Be extremely concise with your internal thoughts/reasoning to save\
+             output tokens for the JSON.** The 'participants' field MUST be\
+            """)
         .append(
             " populated with relevant wrestler names from the provided context. The response MUST")
         .append(
@@ -398,7 +424,7 @@ public class ShowPlanningAiService {
    * @param input The string potentially containing a JSON array.
    * @return The extracted JSON array string, or null if not found.
    */
-  private String extractJsonArray(String input) {
+  private String extractJsonArray(final String input) {
     if (input == null || input.trim().isEmpty()) {
       return null;
     }

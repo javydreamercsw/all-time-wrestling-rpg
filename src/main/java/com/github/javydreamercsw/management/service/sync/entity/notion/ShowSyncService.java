@@ -61,13 +61,13 @@ public class ShowSyncService extends BaseSyncService {
   @Autowired @Lazy private ShowSyncService self;
 
   public ShowSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      ShowService showService,
-      ShowTypeService showTypeService,
-      SeasonService seasonService,
-      ShowTemplateService showTemplateService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final ShowService showService,
+      final ShowTypeService showTypeService,
+      final SeasonService seasonService,
+      final ShowTemplateService showTemplateService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -92,7 +92,7 @@ public class ShowSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncShows(@NonNull String operationId) {
+  public SyncResult syncShows(@NonNull final String operationId) {
     if (isNotionHandlerAvailable()) {
       // Check if already synced in current session
       if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("shows")) {
@@ -115,7 +115,7 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   /** Internal method to perform the actual shows sync logic. */
-  private SyncResult performShowsSync(@NonNull String operationId) {
+  private SyncResult performShowsSync(@NonNull final String operationId) {
     if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("shows")) {
       log.info("Shows sync is disabled in configuration");
       return SyncResult.success("shows", 0, 0, 0);
@@ -193,7 +193,8 @@ public class ShowSyncService extends BaseSyncService {
 
   /** Performs the actual shows sync operation with enhanced error handling. */
   @SneakyThrows
-  private SyncResult performShowsSyncInternal(@NonNull String operationId, long startTime) {
+  private SyncResult performShowsSyncInternal(
+      @NonNull final String operationId, final long startTime) {
     try {
       // Step 1: Get all local external IDs
       syncServiceDependencies
@@ -287,7 +288,7 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   private List<ShowDTO> convertShowPagesToDTO(
-      @NonNull List<ShowPage> showPages, String operationId) {
+      @NonNull final List<ShowPage> showPages, final String operationId) {
     return processWithControlledParallelism(
         showPages,
         this::convertShowPageToDTO,
@@ -298,7 +299,7 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   /** Converts a single ShowPage to ShowDTO. */
-  private ShowDTO convertShowPageToDTO(@NonNull ShowPage showPage) {
+  private ShowDTO convertShowPageToDTO(@NonNull final ShowPage showPage) {
     try {
       ShowDTO dto = new ShowDTO();
       String showName =
@@ -333,12 +334,13 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   /** Saves the list of ShowDTO objects to the database. */
-  private int saveShowsToDatabase(@NonNull List<ShowDTO> showDTOs) {
+  private int saveShowsToDatabase(@NonNull final List<ShowDTO> showDTOs) {
     return saveShowsToDatabaseWithBatching(showDTOs, 50);
   }
 
   /** Enhanced method to save shows to database with batch processing. */
-  private int saveShowsToDatabaseWithBatching(@NonNull List<ShowDTO> showDTOs, int batchSize) {
+  private int saveShowsToDatabaseWithBatching(
+      @NonNull final List<ShowDTO> showDTOs, final int batchSize) {
     log.info(
         "Starting database persistence for {} shows with batch size {}",
         showDTOs.size(),
@@ -531,7 +533,7 @@ public class ShowSyncService extends BaseSyncService {
 
   // Property extraction methods
 
-  private String extractShowDate(@NonNull ShowPage showPage) {
+  private String extractShowDate(@NonNull final ShowPage showPage) {
     String dateStr =
         syncServiceDependencies
             .getNotionPageDataExtractor()
@@ -553,7 +555,7 @@ public class ShowSyncService extends BaseSyncService {
     return null;
   }
 
-  private String extractSeasonName(@NonNull ShowPage showPage) {
+  private String extractSeasonName(@NonNull final ShowPage showPage) {
     if (showPage.getRawProperties() != null) {
       Object season = showPage.getRawProperties().get("Season");
       if (season != null) {
@@ -577,7 +579,7 @@ public class ShowSyncService extends BaseSyncService {
     return syncServiceDependencies.getNotionHandler().getDatabasePageIds("Shows");
   }
 
-  public SyncResult syncShow(@NonNull String showId) {
+  public SyncResult syncShow(@NonNull final String showId) {
     log.info("Starting show synchronization from Notion for ID: {}", showId);
     String operationId = "show-sync-" + showId;
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Show Sync", 4);

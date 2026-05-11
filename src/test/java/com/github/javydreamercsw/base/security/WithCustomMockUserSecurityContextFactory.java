@@ -50,7 +50,7 @@ public class WithCustomMockUserSecurityContextFactory
   private WrestlerRepository wrestlerRepository;
 
   @Override
-  public SecurityContext createSecurityContext(WithCustomMockUser customUser) {
+  public SecurityContext createSecurityContext(final WithCustomMockUser customUser) {
     String username = customUser.username();
     String[] roles = customUser.roles();
 

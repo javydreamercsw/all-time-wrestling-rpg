@@ -35,14 +35,15 @@ import notion.api.v1.model.users.User;
 @UtilityClass
 public class NotionUtil {
   public String getValue(
-      @NonNull NotionClient client, @org.jspecify.annotations.Nullable PageProperty value) {
+      @NonNull final NotionClient client,
+      @org.jspecify.annotations.Nullable final PageProperty value) {
     return getValue(client, value, true);
   }
 
   public String getValue(
-      @NonNull NotionClient client,
-      @org.jspecify.annotations.Nullable PageProperty value,
-      boolean resolveRelationships) {
+      @NonNull final NotionClient client,
+      @org.jspecify.annotations.Nullable final PageProperty value,
+      final boolean resolveRelationships) {
     if (value == null) {
       return "N/A";
     }
@@ -225,7 +226,7 @@ public class NotionUtil {
    * Infers the property type from populated fields when the type field is null. This is a fallback
    * mechanism for cases where the Notion API doesn't properly set the type.
    */
-  public String inferPropertyType(@NonNull PageProperty value) {
+  public String inferPropertyType(@NonNull final PageProperty value) {
     // Check each possible property type by looking at which field is populated
     if (value.getTitle() != null && !value.getTitle().isEmpty()) {
       return "title";
@@ -290,7 +291,7 @@ public class NotionUtil {
   }
 
   /** Helper method to extract values from formula properties based on their result type. */
-  public String getFormulaValue(@NonNull PageProperty.Formula formula) {
+  public String getFormulaValue(@NonNull final PageProperty.Formula formula) {
 
     // Check the formula result type and extract accordingly
     if (formula.getString() != null) {
@@ -316,7 +317,7 @@ public class NotionUtil {
     }
   }
 
-  public <T> T executeWithRetry(Supplier<T> action) {
+  public <T> T executeWithRetry(final Supplier<T> action) {
     RetryPolicy<T> rateLimitPolicy =
         RetryPolicy.<T>builder()
             .handleIf(

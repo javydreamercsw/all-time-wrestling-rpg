@@ -44,10 +44,12 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
 
   /** Find all injury types ordered by total penalty (most severe first). */
   @Query(
-      "SELECT it FROM InjuryType it ORDER BY "
-          + "(ABS(COALESCE(it.healthEffect, 0)) + "
-          + " ABS(COALESCE(it.staminaEffect, 0)) + "
-          + " ABS(COALESCE(it.cardEffect, 0))) DESC")
+      """
+      SELECT it FROM InjuryType it ORDER BY \
+      (ABS(COALESCE(it.healthEffect, 0)) + \
+       ABS(COALESCE(it.staminaEffect, 0)) + \
+       ABS(COALESCE(it.cardEffect, 0))) DESC\
+      """)
   List<InjuryType> findAllOrderedBySeverity();
 
   /** Find injury types with health effects. */
@@ -65,8 +67,10 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
 
   /** Find injury types with special effects. */
   @Query(
-      "SELECT it FROM InjuryType it WHERE it.specialEffects IS NOT NULL AND it.specialEffects <>"
-          + " ''")
+      """
+      SELECT it FROM InjuryType it WHERE it.specialEffects IS NOT NULL AND it.specialEffects <>\
+       ''\
+      """)
   List<InjuryType> findWithSpecialEffects();
 
   /** Find injury types by minimum health effect penalty. */
@@ -75,13 +79,17 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
 
   /** Get count of injury types by effect type. */
   @Query(
-      "SELECT COUNT(it) FROM InjuryType it WHERE it.healthEffect IS NOT NULL AND it.healthEffect <>"
-          + " 0")
+      """
+      SELECT COUNT(it) FROM InjuryType it WHERE it.healthEffect IS NOT NULL AND it.healthEffect <>\
+       0\
+      """)
   Long countWithHealthEffects();
 
   @Query(
-      "SELECT COUNT(it) FROM InjuryType it WHERE it.staminaEffect IS NOT NULL AND it.staminaEffect"
-          + " <> 0")
+      """
+      SELECT COUNT(it) FROM InjuryType it WHERE it.staminaEffect IS NOT NULL AND it.staminaEffect\
+       <> 0\
+      """)
   Long countWithStaminaEffects();
 
   @Query(
@@ -89,7 +97,9 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
   Long countWithCardEffects();
 
   @Query(
-      "SELECT COUNT(it) FROM InjuryType it WHERE it.specialEffects IS NOT NULL AND"
-          + " it.specialEffects <> ''")
+      """
+      SELECT COUNT(it) FROM InjuryType it WHERE it.specialEffects IS NOT NULL AND\
+       it.specialEffects <> ''\
+      """)
   Long countWithSpecialEffects();
 }

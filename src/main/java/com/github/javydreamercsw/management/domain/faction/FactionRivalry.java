@@ -92,7 +92,7 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add heat to the faction rivalry. */
-  public void addHeat(int heatGain, String reason) {
+  public void addHeat(final int heatGain, final String reason) {
     this.heat += heatGain;
 
     // Create heat event for tracking
@@ -124,7 +124,7 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
    * Attempt to resolve the faction rivalry with dice roll. ATW Rule: Both factions roll d20 → total
    * >30 = rivalry ends
    */
-  public boolean attemptResolution(int faction1Roll, int faction2Roll) {
+  public boolean attemptResolution(final int faction1Roll, final int faction2Roll) {
     if (!canAttemptResolution()) {
       return false;
     }
@@ -155,7 +155,7 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
   }
 
   /** End the faction rivalry. */
-  public void endRivalry(String reason) {
+  public void endRivalry(final String reason) {
     this.isActive = false;
     this.endedDate = Instant.now();
 
@@ -170,7 +170,7 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
   }
 
   /** Get the opposing faction in the rivalry. */
-  public Faction getOpponent(Faction faction) {
+  public Faction getOpponent(final Faction faction) {
     if (faction.equals(faction1)) {
       return faction2;
     } else if (faction.equals(faction2)) {
@@ -180,7 +180,7 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
   }
 
   /** Check if a faction is involved in this rivalry. */
-  public boolean involvesFaction(Faction faction) {
+  public boolean involvesFaction(final Faction faction) {
     return faction.equals(faction1) || faction.equals(faction2);
   }
 
@@ -211,8 +211,7 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
 
   /** Get rivalry summary with heat and intensity. */
   public String getRivalrySummary() {
-    return String.format(
-        "%s (%d heat - %s)", getDisplayName(), heat, getIntensity().getDisplayName());
+    return "%s (%d heat - %s)".formatted(getDisplayName(), heat, getIntensity().getDisplayName());
   }
 
   /** Check if both factions are still active. */

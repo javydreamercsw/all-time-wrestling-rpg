@@ -31,7 +31,7 @@ public class FactionRivalryNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public FactionRivalryNotionHandler(NotionHandler notionHandler) {
+  public FactionRivalryNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -71,7 +71,7 @@ public class FactionRivalryNotionHandler {
 
   /** Maps a Notion page to a FactionRivalryPage object. */
   private FactionRivalryPage mapPageToFactionRivalryPage(
-      @NonNull Page pageData, @NonNull String entityName) {
+      @NonNull final Page pageData, @NonNull final String entityName) {
     return notionHandler.mapPageToGenericEntity(
         pageData,
         entityName,

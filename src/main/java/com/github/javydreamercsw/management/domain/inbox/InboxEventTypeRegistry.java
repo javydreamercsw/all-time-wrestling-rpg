@@ -28,7 +28,7 @@ public class InboxEventTypeRegistry {
   private final List<InboxEventType> eventTypes;
 
   @Autowired
-  public InboxEventTypeRegistry(List<InboxEventType> eventTypes) {
+  public InboxEventTypeRegistry(final List<InboxEventType> eventTypes) {
     this.eventTypes = new ArrayList<>(eventTypes);
   }
 

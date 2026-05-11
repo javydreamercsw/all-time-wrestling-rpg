@@ -100,7 +100,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   @BeforeEach
-  public void setup(TestInfo testInfo) throws Exception {
+  public void setup(final TestInfo testInfo) throws Exception {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
@@ -224,7 +224,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return "/atw-rpg";
   }
 
-  protected void takeDocScreenshot(@NonNull String fileName) {
+  protected void takeDocScreenshot(@NonNull final String fileName) {
     if (Boolean.getBoolean("generate.docs")) {
       try {
         Path docsDir = Paths.get("docs", "screenshots");
@@ -241,10 +241,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void documentFeature(
-      @NonNull String category,
-      @NonNull String title,
-      @NonNull String description,
-      @NonNull String screenshotName) {
+      @NonNull final String category,
+      @NonNull final String title,
+      @NonNull final String description,
+      @NonNull final String screenshotName) {
     if (Boolean.getBoolean("generate.docs")) {
       takeDocScreenshot(screenshotName);
       updateManifest(category, title, description, screenshotName);
@@ -261,7 +261,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   @SuppressWarnings("unchecked")
   protected synchronized void updateManifest(
-      String category, String title, String description, String screenshotName) {
+      final String category,
+      final String title,
+      final String description,
+      final String screenshotName) {
     try {
       // Use relative path from the project root
       Path manifestPath = Paths.get("docs", "manifest.json");
@@ -317,7 +320,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     login(getUsername(), getPassword());
   }
 
-  protected void login(@NonNull String username, @NonNull String password) {
+  protected void login(@NonNull final String username, @NonNull final String password) {
     int maxRetries = 1;
     int attempt = 0;
     while (attempt++ < maxRetries) {
@@ -391,10 +394,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         // Ensure no leftover dialogs are open
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const overlays = document.querySelectorAll('vaadin-dialog-overlay,"
-                    + " vaadin-context-menu-overlay, vaadin-select-overlay,"
-                    + " vaadin-combo-box-overlay');overlays.forEach(o => { try { o.opened = false;"
-                    + " o.remove(); } catch(e){} });");
+                """
+                const overlays = document.querySelectorAll('vaadin-dialog-overlay,\
+                 vaadin-context-menu-overlay, vaadin-select-overlay,\
+                 vaadin-combo-box-overlay');overlays.forEach(o => { try { o.opened = false;\
+                 o.remove(); } catch(e){} });\
+                """);
       } catch (Exception e) {
         log.warn("Error during browser reset in teardown: {}", e.getMessage());
         // If the driver is in a really bad state, force it to be recreated next time
@@ -414,10 +419,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     String headlessEnv = System.getenv("HEADLESS");
     String githubActions = System.getenv("GITHUB_ACTIONS");
     if (headlessProp != null) {
-      return headlessProp.equalsIgnoreCase("true");
+      return "true".equalsIgnoreCase(headlessProp);
     }
     if (headlessEnv != null) {
-      return headlessEnv.equalsIgnoreCase("true");
+      return "true".equalsIgnoreCase(headlessEnv);
     }
     return "true".equalsIgnoreCase(githubActions);
   }
@@ -465,13 +470,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
-  protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+  protected WebElement waitForVaadinElementVisible(@NonNull final By selector) {
     waitForVaadinClientToLoad();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
 
-  protected void waitForGridToPopulate(@NonNull String gridId) {
+  protected void waitForGridToPopulate(@NonNull final String gridId) {
     // Delegate to the more robust 'settled' wait.
     waitForGridToSettle(gridId, Duration.ofSeconds(30));
 
@@ -506,10 +511,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             return (Boolean)
                 ((JavascriptExecutor) webDriver)
                     .executeScript(
-                        "return !!(window.Vaadin && window.Vaadin.Flow &&"
-                            + " window.Vaadin.Flow.clients &&"
-                            + " Object.values(window.Vaadin.Flow.clients).every(client =>"
-                            + " !client.isActive()));");
+                        """
+                        return !!(window.Vaadin && window.Vaadin.Flow &&\
+                         window.Vaadin.Flow.clients &&\
+                         Object.values(window.Vaadin.Flow.clients).every(client =>\
+                         !client.isActive()));\
+                        """);
           } catch (Exception e) {
             return false;
           }
@@ -523,7 +530,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void waitForVaadin(@NonNull Duration timeout) {
+  protected void waitForVaadin(@NonNull final Duration timeout) {
     new WebDriverWait(driver, timeout)
         .until(
             d ->
@@ -540,7 +547,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return "admin123";
   }
 
-  protected void click(@NonNull String tagName, @NonNull String text) {
+  protected void click(@NonNull final String tagName, @NonNull final String text) {
     try {
       WebElement element =
           waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
@@ -552,7 +559,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void clickButtonByText(@NonNull String text) {
+  protected void clickButtonByText(@NonNull final String text) {
     WebElement element =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='" + text + "']"));
     clickElement(element);
@@ -563,7 +570,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    *
    * @param element the WebElement to scroll into view and click
    */
-  protected void clickElement(@NonNull WebElement element) {
+  protected void clickElement(@NonNull final WebElement element) {
     scrollIntoView(element);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("before-click");
@@ -578,11 +585,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           (Boolean)
               ((JavascriptExecutor) driver)
                   .executeScript(
-                      "const layout = document.querySelector('vaadin-app-layout');"
-                          + "if (layout && layout.drawerOpened) { "
-                          + "  layout.drawerOpened = false; "
-                          + "  return true; "
-                          + "} return false;");
+                      """
+                      const layout = document.querySelector('vaadin-app-layout');\
+                      if (layout && layout.drawerOpened) { \
+                        layout.drawerOpened = false; \
+                        return true; \
+                      } return false;\
+                      """);
       if (Boolean.TRUE.equals(drawerWasOpened)) {
         // Give drawer time to close only if it was actually opened
         Thread.sleep(300);
@@ -605,28 +614,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         // Last resort: dispatch events
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const el = arguments[0];"
-                    + "const opts = {view: window, bubbles: true, cancelable: true};"
-                    + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
-                    + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
-                    + "el.dispatchEvent(new MouseEvent('click', opts));",
+                """
+                const el = arguments[0];\
+                const opts = {view: window, bubbles: true, cancelable: true};\
+                el.dispatchEvent(new MouseEvent('mousedown', opts));\
+                el.dispatchEvent(new MouseEvent('mouseup', opts));\
+                el.dispatchEvent(new MouseEvent('click', opts));\
+                """,
                 element);
       }
     }
     takeSequencedScreenshot("after-click");
   }
 
-  protected void clickElement(@NonNull By locator) {
+  protected void clickElement(@NonNull final By locator) {
     WebElement element = waitForVaadinElement(driver, locator);
     clickElement(element);
   }
 
-  protected void selectFromVaadinComboBox(@NonNull String id, @NonNull String itemText) {
+  protected void selectFromVaadinComboBox(
+      @NonNull final String id, @NonNull final String itemText) {
     WebElement comboBox = waitForVaadinElement(driver, By.id(id));
     selectFromVaadinComboBox(comboBox, itemText);
   }
 
-  protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
+  protected void selectFromVaadinComboBox(
+      @NonNull final WebElement comboBox, @NonNull final String itemText) {
     scrollIntoView(comboBox);
     waitForVaadinClientToLoad();
 
@@ -640,8 +653,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 (Boolean)
                     ((JavascriptExecutor) d)
                         .executeScript(
-                            "var el = arguments[0]; return el.opened === true"
-                                + " && !!el._overlayElement;",
+                            """
+                            var el = arguments[0]; return el.opened === true\
+                             && !!el._overlayElement;\
+                            """,
                             comboBox));
 
     WebElement item =
@@ -651,7 +666,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void selectFromVaadinMultiSelectComboBox(
-      @NonNull WebElement comboBox, @NonNull String itemText) {
+      @NonNull final WebElement comboBox, @NonNull final String itemText) {
     log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
     JavascriptExecutor js = (JavascriptExecutor) driver;
 
@@ -667,13 +682,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             d -> {
               Object found =
                   js.executeScript(
-                      "const items=Array.from(document.querySelectorAll("
-                          + "'vaadin-multi-select-combo-box-item'));"
-                          + "return items.find(el=>{"
-                          + "const r=el.getBoundingClientRect();"
-                          + "return r.width>0&&r.height>0"
-                          + "&&(el.innerText||el.textContent).trim().includes(arguments[0]);"
-                          + "})||null;",
+                      """
+                      const items=Array.from(document.querySelectorAll(\
+                      'vaadin-multi-select-combo-box-item'));\
+                      return items.find(el=>{\
+                      const r=el.getBoundingClientRect();\
+                      return r.width>0&&r.height>0\
+                      &&(el.innerText||el.textContent).trim().includes(arguments[0]);\
+                      })||null;\
+                      """,
                       itemText);
               return found instanceof WebElement ? (WebElement) found : null;
             });
@@ -686,14 +703,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     js.executeScript("arguments[0].opened = false;", comboBox);
   }
 
-  protected void selectFromVaadinMenuBar(@NonNull WebElement menuBar, @NonNull String itemText) {
+  protected void selectFromVaadinMenuBar(
+      @NonNull final WebElement menuBar, @NonNull final String itemText) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
     // In Vaadin 25, vaadin-menu-bar has vaadin-menu-bar-button in its light DOM.
     // Click the first one (the "Actions" trigger) to open the submenu.
     js.executeScript(
-        "const bar=arguments[0];"
-            + "const btn=bar.querySelector('vaadin-menu-bar-button')||bar;"
-            + "btn.click();",
+        """
+        const bar=arguments[0];\
+        const btn=bar.querySelector('vaadin-menu-bar-button')||bar;\
+        btn.click();\
+        """,
         menuBar);
 
     // After click, the open vaadin-menu-bar-submenu contains a DIV with a
@@ -704,34 +724,36 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             d -> {
               Object found =
                   js.executeScript(
-                      "const"
-                          + " openSub=Array.from(document.querySelectorAll('vaadin-menu-bar-submenu')).find(s=>s.opened);if(!openSub)return"
-                          + " null;const"
-                          + " listBox=openSub.querySelector('vaadin-menu-bar-list-box');if(!listBox)return"
-                          + " null;return"
-                          + " Array.from(listBox.children).find(el=>el.textContent.trim().includes(arguments[0]))||null;",
+                      """
+                      const\
+                       openSub=Array.from(document.querySelectorAll('vaadin-menu-bar-submenu')).find(s=>s.opened);if(!openSub)return\
+                       null;const\
+                       listBox=openSub.querySelector('vaadin-menu-bar-list-box');if(!listBox)return\
+                       null;return\
+                       Array.from(listBox.children).find(el=>el.textContent.trim().includes(arguments[0]))||null;\
+                      """,
                       itemText);
               return found instanceof WebElement ? (WebElement) found : null;
             });
     js.executeScript("arguments[0].click();", item);
   }
 
-  protected void toggleVaadinCheckbox(@NonNull By locator) {
+  protected void toggleVaadinCheckbox(@NonNull final By locator) {
     WebElement checkbox = waitForVaadinElement(driver, locator);
     clickElement(checkbox);
   }
 
-  protected void assertGridContains(@NonNull String gridId, @NonNull String text) {
+  protected void assertGridContains(@NonNull final String gridId, @NonNull final String text) {
     WebElement grid = driver.findElement(By.id(gridId));
     assertTrue(grid.getText().contains(text), "Grid " + gridId + " should contain text: " + text);
   }
 
-  protected List<WebElement> getGridRows(@NonNull String gridId) {
+  protected List<WebElement> getGridRows(@NonNull final String gridId) {
     WebElement grid = driver.findElement(By.id(gridId));
     return grid.findElements(By.cssSelector("vaadin-grid-cell-content"));
   }
 
-  protected String getColumnData(@NonNull WebElement row, int colIndex) {
+  protected String getColumnData(@NonNull final WebElement row, final int colIndex) {
     List<WebElement> cells = row.findElements(By.tagName("vaadin-grid-cell-content"));
     if (colIndex < cells.size()) {
       return cells.get(colIndex).getText();
@@ -740,30 +762,34 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   @SuppressWarnings("unchecked")
-  protected List<String> getGridColumnData(@NonNull WebElement grid, int colIndex) {
+  protected List<String> getGridColumnData(@NonNull final WebElement grid, final int colIndex) {
     return (List<String>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const grid=arguments[0];const colIndex=arguments[1];const"
-                    + " allCells=Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));const"
-                    + " rowCellMap=new Map();for(const cell of allCells){const"
-                    + " slot=cell.assignedSlot;if(!slot)continue;const"
-                    + " gridCell=slot.parentElement;if(!gridCell)continue;const"
-                    + " part=gridCell.getAttribute('part')||'';"
-                    + "if(!part.includes('body-cell'))continue;const"
-                    + " row=gridCell.parentElement;if(!row)continue;const"
-                    + " ci=Array.from(row.children).indexOf(gridCell);"
-                    + "if(!rowCellMap.has(row))rowCellMap.set(row,{});"
-                    + "rowCellMap.get(row)[ci]=cell.innerText.trim();}const"
-                    + " result=[];for(const[row,cells]of rowCellMap){const"
-                    + " hasContent=Object.values(cells).some(v=>v!=='');if(hasContent&&colIndex in"
-                    + " cells)result.push(cells[colIndex]);}return result;",
+                """
+                const grid=arguments[0];const colIndex=arguments[1];const\
+                 allCells=Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));const\
+                 rowCellMap=new Map();for(const cell of allCells){const\
+                 slot=cell.assignedSlot;if(!slot)continue;const\
+                 gridCell=slot.parentElement;if(!gridCell)continue;const\
+                 part=gridCell.getAttribute('part')||'';\
+                if(!part.includes('body-cell'))continue;const\
+                 row=gridCell.parentElement;if(!row)continue;const\
+                 ci=Array.from(row.children).indexOf(gridCell);\
+                if(!rowCellMap.has(row))rowCellMap.set(row,{});\
+                rowCellMap.get(row)[ci]=cell.innerText.trim();}const\
+                 result=[];for(const[row,cells]of rowCellMap){const\
+                 hasContent=Object.values(cells).some(v=>v!=='');if(hasContent&&colIndex in\
+                 cells)result.push(cells[colIndex]);}return result;\
+                """,
                 grid,
                 colIndex);
   }
 
   protected WebElement findButtonInGridRow(
-      @NonNull String gridId, @NonNull String rowText, @NonNull By buttonLocator) {
+      @NonNull final String gridId,
+      @NonNull final String rowText,
+      @NonNull final By buttonLocator) {
     WebElement grid = driver.findElement(By.id(gridId));
     List<WebElement> rows = grid.findElements(By.tagName("vaadin-grid-row"));
     for (WebElement row : rows) {
@@ -774,7 +800,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     throw new RuntimeException("Could not find row with text: " + rowText);
   }
 
-  protected void waitForGridToSettle(@NonNull String gridId, @NonNull Duration timeout) {
+  protected void waitForGridToSettle(
+      @NonNull final String gridId, @NonNull final Duration timeout) {
     new WebDriverWait(driver, timeout)
         .until(
             d -> {
@@ -787,27 +814,27 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             });
   }
 
-  protected void waitForNotification(@NonNull String text) {
+  protected void waitForNotification(@NonNull final String text) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         ExpectedConditions.presenceOfElementLocated(
             By.xpath("//vaadin-notification-card[contains(text(), '" + text + "')]")));
   }
 
-  protected void scrollIntoView(@NonNull WebElement element) {
+  protected void scrollIntoView(@NonNull final WebElement element) {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
   }
 
-  protected void takeSequencedScreenshot(@NonNull String context) {
+  protected void takeSequencedScreenshot(@NonNull final String context) {
     if (Boolean.getBoolean("enable.screenshots") && driver != null && testArtifactsDir != null) {
       screenshotCounter++;
-      String screenshotName = String.format("%03d-%s.png", screenshotCounter, context);
+      String screenshotName = "%03d-%s.png".formatted(screenshotCounter, context);
       Path destFile = testArtifactsDir.resolve(screenshotName);
       takeScreenshot(destFile.toString());
     }
   }
 
-  protected void takeScreenshot(@NonNull String filePath) {
+  protected void takeScreenshot(@NonNull final String filePath) {
     if (driver == null) {
       log.warn("Cannot take screenshot: WebDriver is null");
       return;
@@ -818,15 +845,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       log.debug("Screenshot saved to: {}", filePath);
     } catch (org.openqa.selenium.WebDriverException e) {
       log.warn(
-          "WebDriverException while taking screenshot: {}. This might happen during page"
-              + " navigation.",
+          """
+          WebDriverException while taking screenshot: {}. This might happen during page\
+           navigation.\
+          """,
           e.getMessage());
     } catch (IOException e) {
       log.error("Failed to save screenshot to: {}", filePath, e);
     }
   }
 
-  protected void takeElementScreenshot(@NonNull WebElement element, @NonNull String filePath) {
+  protected void takeElementScreenshot(
+      @NonNull final WebElement element, @NonNull final String filePath) {
     File scrFile = element.getScreenshotAs(OutputType.FILE);
     try {
       FileUtils.copyFile(scrFile, new File(filePath));
@@ -836,7 +866,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void savePageSource(@NonNull String filePath) {
+  protected void savePageSource(@NonNull final String filePath) {
     try {
       FileUtils.writeStringToFile(new File(filePath), driver.getPageSource(), "UTF-8");
       log.info("Page source saved to: {}", filePath);
@@ -852,7 +882,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     clickElement(logoutButton);
   }
 
-  protected void clearField(@NonNull WebElement field) {
+  protected void clearField(@NonNull final WebElement field) {
     takeSequencedScreenshot("before-clear");
     String os = System.getProperty("os.name").toLowerCase();
     Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
@@ -862,7 +892,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     takeSequencedScreenshot("after-clear");
   }
 
-  protected String getVaadinTextFieldErrorMessage(@NonNull String textFieldId) {
+  protected String getVaadinTextFieldErrorMessage(@NonNull final String textFieldId) {
     WebElement textFieldElement = driver.findElement(By.id(textFieldId));
 
     // Check if the field is invalid
@@ -889,7 +919,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return null; // Or throw an exception if the field is not invalid
   }
 
-  protected void waitForPageSourceToContain(@NonNull String text) {
+  protected void waitForPageSourceToContain(@NonNull final String text) {
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }

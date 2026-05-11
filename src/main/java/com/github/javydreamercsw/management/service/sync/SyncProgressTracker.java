@@ -42,7 +42,7 @@ public class SyncProgressTracker {
    *
    * @param listener The listener to register
    */
-  public void addProgressListener(SyncProgressListener listener) {
+  public void addProgressListener(final SyncProgressListener listener) {
     listeners.add(listener);
     log.debug("Added progress listener: {}", listener.getClass().getSimpleName());
   }
@@ -52,7 +52,7 @@ public class SyncProgressTracker {
    *
    * @param listener The listener to remove
    */
-  public void removeProgressListener(SyncProgressListener listener) {
+  public void removeProgressListener(final SyncProgressListener listener) {
     listeners.remove(listener);
     log.debug("Removed progress listener: {}", listener.getClass().getSimpleName());
   }
@@ -65,7 +65,8 @@ public class SyncProgressTracker {
    * @param totalSteps Total number of steps in the operation
    * @return SyncProgress object for tracking this operation
    */
-  public SyncProgress startOperation(String operationId, String operationName, int totalSteps) {
+  public SyncProgress startOperation(
+      final String operationId, final String operationName, final int totalSteps) {
     SyncProgress progress = new SyncProgress(operationId, operationName, totalSteps);
     activeOperations.add(progress);
 
@@ -83,7 +84,9 @@ public class SyncProgressTracker {
    * @param stepDescription Description of current step
    */
   public void updateProgress(
-      @NonNull String operationId, int currentStep, @NonNull String stepDescription) {
+      @NonNull final String operationId,
+      final int currentStep,
+      @NonNull final String stepDescription) {
     activeOperations.stream()
         .filter(op -> op.getOperationId().equals(operationId))
         .findFirst()
@@ -112,7 +115,7 @@ public class SyncProgressTracker {
    * @param message Detailed log message (can include emojis, timing, etc.)
    * @param level Log level (INFO, SUCCESS, WARN, ERROR)
    */
-  public void addLogMessage(String operationId, String message, String level) {
+  public void addLogMessage(final String operationId, final String message, final String level) {
     activeOperations.stream()
         .filter(op -> op.getOperationId().equals(operationId))
         .findFirst()
@@ -132,7 +135,10 @@ public class SyncProgressTracker {
    * @param itemsProcessed Number of items processed
    */
   public void completeOperation(
-      String operationId, boolean success, String resultMessage, int itemsProcessed) {
+      final String operationId,
+      final boolean success,
+      final String resultMessage,
+      final int itemsProcessed) {
     activeOperations.stream()
         .filter(op -> op.getOperationId().equals(operationId))
         .findFirst()
@@ -164,7 +170,7 @@ public class SyncProgressTracker {
    * @param operationId The operation ID
    * @param errorMessage Error message
    */
-  public void failOperation(String operationId, String errorMessage) {
+  public void failOperation(final String operationId, final String errorMessage) {
     completeOperation(operationId, false, errorMessage, 0);
   }
 
@@ -183,7 +189,7 @@ public class SyncProgressTracker {
    * @param operationId The operation ID
    * @return SyncProgress if found, null otherwise
    */
-  public SyncProgress getOperation(String operationId) {
+  public SyncProgress getOperation(final String operationId) {
     return activeOperations.stream()
         .filter(op -> op.getOperationId().equals(operationId))
         .findFirst()
@@ -199,7 +205,7 @@ public class SyncProgressTracker {
     return activeOperations.stream().anyMatch(op -> !op.isCompleted());
   }
 
-  private void notifyListeners(Consumer<SyncProgressListener> action) {
+  private void notifyListeners(final Consumer<SyncProgressListener> action) {
     listeners.forEach(
         listener -> {
           try {
@@ -218,7 +224,7 @@ public class SyncProgressTracker {
             return t;
           });
 
-  private void removeOperationAfterDelay(String operationId) {
+  private void removeOperationAfterDelay(final String operationId) {
     // Remove completed operation after 30 seconds to allow UI to show completion
     scheduler.schedule(
         () -> {
@@ -251,7 +257,8 @@ public class SyncProgressTracker {
     private LocalDateTime lastUpdated;
     private LocalDateTime completedAt;
 
-    public SyncProgress(String operationId, String operationName, int totalSteps) {
+    public SyncProgress(
+        final String operationId, final String operationName, final int totalSteps) {
       this.operationId = operationId;
       this.operationName = operationName;
       this.totalSteps = totalSteps;
@@ -308,7 +315,7 @@ public class SyncProgressTracker {
      */
     public String getStatusString() {
       if (!completed) {
-        return String.format("In Progress (%d/%d)", currentStep, totalSteps);
+        return "In Progress (%d/%d)".formatted(currentStep, totalSteps);
       } else if (success) {
         return "Completed Successfully";
       } else {

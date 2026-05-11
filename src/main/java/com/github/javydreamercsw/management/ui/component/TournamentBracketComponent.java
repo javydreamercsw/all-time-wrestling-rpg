@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class TournamentBracketComponent extends HorizontalLayout {
 
-  public TournamentBracketComponent(TournamentDTO tournament) {
+  public TournamentBracketComponent(final TournamentDTO tournament) {
     addClassName("tournament-bracket");
     setSpacing(false);
     setAlignItems(Alignment.CENTER);
@@ -131,7 +131,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
     }
   }
 
-  private Div createMatchCard(TournamentMatch match) {
+  private Div createMatchCard(final TournamentMatch match) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Border.ALL,
@@ -156,7 +156,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
     return card;
   }
 
-  private Div createWrestlerLine(String name, Long id, TournamentMatch match) {
+  private Div createWrestlerLine(final String name, final Long id, final TournamentMatch match) {
     Div line = new Div();
     line.addClassNames(
         LumoUtility.Display.FLEX,

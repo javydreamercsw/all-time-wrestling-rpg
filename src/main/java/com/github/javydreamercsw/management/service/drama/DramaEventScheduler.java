@@ -56,7 +56,7 @@ public class DramaEventScheduler {
    * @param event The game date changed event
    */
   @EventListener
-  public void onGameDateChanged(GameDateChangedEvent event) {
+  public void onGameDateChanged(final GameDateChangedEvent event) {
     long daysPassed = ChronoUnit.DAYS.between(event.getOldDate(), event.getNewDate());
 
     if (daysPassed <= 0) {
@@ -234,7 +234,7 @@ public class DramaEventScheduler {
   }
 
   /** Generate a single random drama event. */
-  private void generateSingleRandomEvent(@NonNull Long wrestlerId) {
+  private void generateSingleRandomEvent(@NonNull final Long wrestlerId) {
     try {
       // Generate the event - default to universe 1 for now.
       var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, 1L);

@@ -54,7 +54,7 @@ class CardServiceIT extends ManagementIntegrationTest {
     }
   }
 
-  private Card createCardAsAdmin(String name) {
+  private Card createCardAsAdmin(final String name) {
     Card card = new Card();
     card.setName(name);
     card.setType("Test");

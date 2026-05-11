@@ -35,12 +35,12 @@ public class SegmentNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public SegmentNotionHandler(NotionHandler notionHandler) {
+  public SegmentNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
   /** Loads a segment from the Notion database by name. */
-  public Optional<SegmentPage> loadSegment(@NonNull String segmentName) {
+  public Optional<SegmentPage> loadSegment(@NonNull final String segmentName) {
     log.debug("Loading segment: '{}'", segmentName);
 
     String matchDbId = notionHandler.getDatabaseId("Segments");
@@ -69,7 +69,7 @@ public class SegmentNotionHandler {
    * @param segmentId The ID of the segment to load.
    * @return Optional containing the MatchPage object if found, empty otherwise.
    */
-  public Optional<SegmentPage> loadSegmentById(@NonNull String segmentId) {
+  public Optional<SegmentPage> loadSegmentById(@NonNull final String segmentId) {
     log.debug("Loading segment with ID: '{}'", segmentId);
     return notionHandler.loadPage(segmentId).map(page -> mapPageToSegmentPage(page, ""));
   }
@@ -137,7 +137,8 @@ public class SegmentNotionHandler {
   }
 
   /** Maps a Notion page to a MatchPage object. */
-  private SegmentPage mapPageToSegmentPage(@NonNull Page pageData, @NonNull String matchName) {
+  private SegmentPage mapPageToSegmentPage(
+      @NonNull final Page pageData, @NonNull final String matchName) {
     SegmentPage matchPage =
         notionHandler.mapPageToGenericEntity(
             pageData, matchName, "Segment", SegmentPage::new, SegmentPage.NotionParent::new);
@@ -167,7 +168,9 @@ public class SegmentNotionHandler {
 
   // Helper method to create a NotionPage.Property from a PageProperty
   private NotionPage.Property createProperty(
-      Map<String, PageProperty> notionProperties, String propertyName, NotionClient client) {
+      final Map<String, PageProperty> notionProperties,
+      final String propertyName,
+      final NotionClient client) {
     PageProperty pageProperty = notionProperties.get(propertyName);
     if (pageProperty == null) {
       return null;

@@ -46,7 +46,7 @@ public class FeudResolutionService {
    * @param feud The feud to attempt to resolve.
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public void attemptFeudResolution(@NonNull MultiWrestlerFeud feud) {
+  public void attemptFeudResolution(@NonNull final MultiWrestlerFeud feud) {
     if (!feud.canAttemptResolution()) {
       log.debug(
           "Feud {} is not eligible for resolution (Heat: {})", feud.getName(), feud.getHeat());

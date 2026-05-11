@@ -54,11 +54,11 @@ public class NpcListView extends Main {
   final Grid<Npc> npcGrid;
 
   public NpcListView(
-      @NonNull NpcService npcService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull ImageGenerationServiceFactory imageFactory,
-      @NonNull ImageStorageService storageService,
-      @NonNull AiSettingsService aiSettingsService) {
+      @NonNull final NpcService npcService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final ImageGenerationServiceFactory imageFactory,
+      @NonNull final ImageStorageService storageService,
+      @NonNull final AiSettingsService aiSettingsService) {
     this.npcService = npcService;
     this.imageFactory = imageFactory;
     this.storageService = storageService;

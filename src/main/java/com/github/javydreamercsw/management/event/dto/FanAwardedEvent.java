@@ -28,7 +28,9 @@ public class FanAwardedEvent extends ApplicationEvent {
   private final Long fanChange;
 
   public FanAwardedEvent(
-      @NonNull Object source, @NonNull WrestlerState wrestlerState, @NonNull Long fanChange) {
+      @NonNull final Object source,
+      @NonNull final WrestlerState wrestlerState,
+      @NonNull final Long fanChange) {
     super(source);
     this.wrestlerState = wrestlerState;
     this.fanChange = fanChange;

@@ -152,12 +152,12 @@ public class Team extends AbstractSyncableEntity<Long> {
   }
 
   /** Check if a wrestler is a member of this team. */
-  public boolean hasMember(Wrestler wrestler) {
+  public boolean hasMember(final Wrestler wrestler) {
     return wrestler.equals(wrestler1) || wrestler.equals(wrestler2);
   }
 
   /** Get the team partner of a given wrestler. */
-  public Wrestler getPartner(Wrestler wrestler) {
+  public Wrestler getPartner(final Wrestler wrestler) {
     if (wrestler.equals(wrestler1)) {
       return wrestler2;
     } else if (wrestler.equals(wrestler2)) {

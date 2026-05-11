@@ -156,7 +156,7 @@ class NPCSegmentResolutionHomeFieldTest {
 
   /** Helper to expose TeamStatsCalculator for testing (inner class requires outer instance). */
   static class NPCSegmentResolutionServiceTestHelper extends NPCSegmentResolutionService {
-    public NPCSegmentResolutionService.TeamStatsCalculator createCalculator(Show show) {
+    public NPCSegmentResolutionService.TeamStatsCalculator createCalculator(final Show show) {
       return new TeamStatsCalculator(show);
     }
   }

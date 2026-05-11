@@ -52,12 +52,12 @@ public class GenericImageGenerationDialog extends Dialog {
   private boolean isBase64;
 
   public GenericImageGenerationDialog(
-      Supplier<String> promptSupplier,
-      Consumer<String> imageSaver,
-      ImageGenerationServiceFactory imageFactory,
-      ImageStorageService storageService,
-      AiSettingsService aiSettingsService,
-      Runnable onSave) {
+      final Supplier<String> promptSupplier,
+      final Consumer<String> imageSaver,
+      final ImageGenerationServiceFactory imageFactory,
+      final ImageStorageService storageService,
+      final AiSettingsService aiSettingsService,
+      final Runnable onSave) {
     this.promptSupplier = promptSupplier;
     this.imageSaver = imageSaver;
     this.imageFactory = imageFactory;
@@ -125,7 +125,7 @@ public class GenericImageGenerationDialog extends Dialog {
       // Let's default to URL for now, but handle b64 if needed.
       // OpenAI returns URLs.
       String format = "url";
-      if (service.getProviderName().equals("Mock AI")) {
+      if ("Mock AI".equals(service.getProviderName())) {
         format = "b64_json"; // Test base64 path
       }
 

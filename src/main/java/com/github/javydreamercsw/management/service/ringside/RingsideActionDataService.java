@@ -56,10 +56,10 @@ public class RingsideActionDataService {
 
   @Transactional
   public RingsideActionType createOrUpdateType(
-      @NonNull String name,
-      boolean increasesAwareness,
-      boolean canCauseDq,
-      double baseRiskMultiplier) {
+      @NonNull final String name,
+      final boolean increasesAwareness,
+      final boolean canCauseDq,
+      final double baseRiskMultiplier) {
     Optional<RingsideActionType> existingOpt = ringsideActionTypeRepository.findByName(name);
 
     RingsideActionType type;
@@ -81,12 +81,12 @@ public class RingsideActionDataService {
 
   @Transactional
   public RingsideAction createOrUpdateAction(
-      @NonNull String name,
-      @NonNull String typeName,
-      String description,
-      int impact,
-      int risk,
-      AlignmentType alignment) {
+      @NonNull final String name,
+      @NonNull final String typeName,
+      final String description,
+      final int impact,
+      final int risk,
+      final AlignmentType alignment) {
 
     RingsideActionType type =
         ringsideActionTypeRepository

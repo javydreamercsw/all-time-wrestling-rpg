@@ -76,7 +76,7 @@ public class CampaignUpgradeService {
   }
 
   @Transactional
-  public void purchaseUpgrade(Campaign campaign, Long upgradeId) {
+  public void purchaseUpgrade(final Campaign campaign, final Long upgradeId) {
     CampaignState state = campaign.getState();
     if (state.getSkillTokens() < 8) {
       throw new IllegalStateException("Not enough skill tokens. Need 8.");

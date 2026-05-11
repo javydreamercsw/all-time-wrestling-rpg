@@ -127,7 +127,7 @@ public class WrestlerState extends AbstractEntity<Long>
 
   // ==================== LOGIC METHODS ====================
 
-  public boolean canAfford(long cost) {
+  public boolean canAfford(final long cost) {
     return fans != null && fans >= cost;
   }
 

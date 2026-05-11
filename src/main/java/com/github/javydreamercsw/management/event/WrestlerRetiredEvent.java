@@ -26,7 +26,7 @@ public class WrestlerRetiredEvent extends ApplicationEvent {
   private final Wrestler wrestler;
   private final String reason;
 
-  public WrestlerRetiredEvent(Object source, Wrestler wrestler, String reason) {
+  public WrestlerRetiredEvent(final Object source, final Wrestler wrestler, final String reason) {
     super(source);
     this.wrestler = wrestler;
     this.reason = reason;

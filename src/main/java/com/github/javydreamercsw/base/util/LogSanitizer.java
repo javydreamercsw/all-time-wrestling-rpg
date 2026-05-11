@@ -29,7 +29,7 @@ public final class LogSanitizer {
    * @param input The string to sanitize.
    * @return The sanitized string, or an empty string if input is null.
    */
-  public static String sanitize(Object input) {
+  public static String sanitize(final Object input) {
     if (input == null) {
       return "";
     }

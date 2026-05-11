@@ -111,9 +111,11 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Booker",
         "Show Planning",
-        "The Show Planning interface allows you to book matches and segments for an upcoming show."
-            + " Drag and drop wrestlers to create matches, set stipulations, and define segment"
-            + " types.",
+        """
+        The Show Planning interface allows you to book matches and segments for an upcoming show.\
+         Drag and drop wrestlers to create matches, set stipulations, and define segment\
+         types.\
+        """,
         "booker-show-planning");
   }
 
@@ -127,8 +129,10 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Booker",
         "Show History",
-        "View a complete history of all booked shows. Click on any show to view its detailed"
-            + " results, ratings, and match history.",
+        """
+        View a complete history of all booked shows. Click on any show to view its detailed\
+         results, ratings, and match history.\
+        """,
         "booker-show-history");
   }
 
@@ -211,10 +215,12 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Booker",
         "Match Narration",
-        "Bring your matches to life with AI-generated or manual narration. The Story Director uses"
-            + " match participants, rules, and outcomes to weave a compelling narrative of the"
-            + " action. The new structured transcript format separates objective action from"
-            + " character-driven commentary.",
+        """
+        Bring your matches to life with AI-generated or manual narration. The Story Director uses\
+         match participants, rules, and outcomes to weave a compelling narrative of the\
+         action. The new structured transcript format separates objective action from\
+         character-driven commentary.\
+        """,
         "booker-match-narration");
   }
 
@@ -296,14 +302,16 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "AI Features",
         "Dynamic Commentator Personas",
-        "Experience the match through the eyes of unique commentator teams. Each commentator"
-            + " brings their own alignment, style, and catchphrases to the broadcast, creating"
-            + " an immersive 'sports-entertainment' feel. Face commentators cheer the heroes,"
-            + " while Heel commentators favor the rule-breakers.",
+        """
+        Experience the match through the eyes of unique commentator teams. Each commentator\
+         brings their own alignment, style, and catchphrases to the broadcast, creating\
+         an immersive 'sports-entertainment' feel. Face commentators cheer the heroes,\
+         while Heel commentators favor the rule-breakers.\
+        """,
         "ai-dynamic-commentary");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

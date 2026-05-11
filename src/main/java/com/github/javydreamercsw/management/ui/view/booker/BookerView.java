@@ -64,11 +64,11 @@ public class BookerView extends VerticalLayout {
 
   @Autowired
   public BookerView(
-      ShowService showService,
-      RivalryService rivalryService,
-      WrestlerService wrestlerService,
-      NewsService newsService,
-      UniverseContextService universeContextService) {
+      final ShowService showService,
+      final RivalryService rivalryService,
+      final WrestlerService wrestlerService,
+      final NewsService newsService,
+      final UniverseContextService universeContextService) {
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -141,7 +141,7 @@ public class BookerView extends VerticalLayout {
     return tabs;
   }
 
-  private Div createPages(Tabs tabs) {
+  private Div createPages(final Tabs tabs) {
     Grid<Wrestler> rosterGrid = createRosterOverviewGrid();
     Grid<Show> showsGrid = createUpcomingShowsGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();

@@ -118,11 +118,11 @@ public class SegmentNarrationConfig {
     private final int maxInputTokens;
 
     ProviderLimits(
-        String displayName,
-        int requestsPerMinute,
-        int requestsPerDay,
-        int maxOutputTokens,
-        int maxInputTokens) {
+        final String displayName,
+        final int requestsPerMinute,
+        final int requestsPerDay,
+        final int maxOutputTokens,
+        final int maxInputTokens) {
       this.displayName = displayName;
       this.requestsPerMinute = requestsPerMinute;
       this.requestsPerDay = requestsPerDay;

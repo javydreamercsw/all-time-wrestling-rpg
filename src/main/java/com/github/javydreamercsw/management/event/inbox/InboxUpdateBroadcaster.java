@@ -30,12 +30,12 @@ public class InboxUpdateBroadcaster {
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   private final List<Consumer<InboxUpdateEvent>> listeners = new CopyOnWriteArrayList<>();
 
-  public Registration register(Consumer<InboxUpdateEvent> listener) {
+  public Registration register(final Consumer<InboxUpdateEvent> listener) {
     listeners.add(listener);
     return () -> listeners.remove(listener);
   }
 
-  public void broadcast(InboxUpdateEvent event) {
+  public void broadcast(final InboxUpdateEvent event) {
     for (Consumer<InboxUpdateEvent> listener : listeners) {
       executor.execute(() -> listener.accept(event));
     }

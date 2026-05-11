@@ -43,7 +43,7 @@ public class CardService {
   @Autowired private Validator validator;
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Card createCard(@NonNull String name) {
+  public Card createCard(@NonNull final String name) {
     Card card = new Card();
     card.setName(name);
     // Set default values
@@ -71,7 +71,7 @@ public class CardService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Card> list(Pageable pageable) {
+  public List<Card> list(final Pageable pageable) {
     return cardRepository.findAll(pageable).toList();
   }
 
@@ -80,7 +80,7 @@ public class CardService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Card save(@NonNull Card card) {
+  public Card save(@NonNull final Card card) {
     card.setCreationDate(clock.instant());
     var violations = validator.validate(card);
     if (!violations.isEmpty()) {
@@ -90,7 +90,7 @@ public class CardService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public List<Card> saveAll(@NonNull List<Card> cards) {
+  public List<Card> saveAll(@NonNull final List<Card> cards) {
     cards.forEach(
         card -> {
           card.setCreationDate(clock.instant());
@@ -108,17 +108,17 @@ public class CardService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Card> findByNumberAndSet(Integer number, String setCode) {
+  public Optional<Card> findByNumberAndSet(final Integer number, final String setCode) {
     return cardRepository.findByNumberAndSetCode(number, setCode);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public void delete(Long id) {
+  public void delete(final Long id) {
     cardRepository.deleteById(id);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Card> findById(Long id) {
+  public Optional<Card> findById(final Long id) {
     return cardRepository.findById(id);
   }
 }

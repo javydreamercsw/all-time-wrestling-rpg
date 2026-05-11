@@ -72,7 +72,7 @@ public class DeckCard extends AbstractSyncableEntity<Long> { // Removed implemen
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

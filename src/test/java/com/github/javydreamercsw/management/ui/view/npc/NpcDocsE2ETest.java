@@ -61,8 +61,10 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "NPC",
         "NPC List",
-        "View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers."
-            + " You can create new NPCs, edit existing ones, and navigate to their profiles.",
+        """
+        View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers.\
+         You can create new NPCs, edit existing ones, and navigate to their profiles.\
+        """,
         "npc-list");
   }
 
@@ -75,8 +77,10 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "NPC",
         "NPC Profile",
-        "Detailed view of an NPC, displaying their image, type, biography, and stats. From here,"
-            + " you can generate a custom image using AI.",
+        """
+        Detailed view of an NPC, displaying their image, type, biography, and stats. From here,\
+         you can generate a custom image using AI.\
+        """,
         "npc-profile");
   }
 
@@ -104,12 +108,14 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "NPC",
         "Generate NPC Image",
-        "Use the integrated AI tools to generate a unique portrait for your NPC based on their"
-            + " description and type. You can regenerate until you find the perfect look.",
+        """
+        Use the integrated AI tools to generate a unique portrait for your NPC based on their\
+         description and type. You can regenerate until you find the perfect look.\
+        """,
         "npc-image-generation-dialog");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

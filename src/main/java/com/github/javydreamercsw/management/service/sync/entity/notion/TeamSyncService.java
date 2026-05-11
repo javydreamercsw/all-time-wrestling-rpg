@@ -60,12 +60,12 @@ public class TeamSyncService extends BaseSyncService {
   }
 
   public TeamSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor,
-      TeamRepository teamRepository,
-      WrestlerService wrestlerService,
-      UniverseRepository universeRepository) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor,
+      final TeamRepository teamRepository,
+      final WrestlerService wrestlerService,
+      final UniverseRepository universeRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.teamRepository = teamRepository;
     this.wrestlerService = wrestlerService;
@@ -73,7 +73,7 @@ public class TeamSyncService extends BaseSyncService {
     this.self = this;
   }
 
-  public SyncResult syncTeams(@NonNull String operationId) {
+  public SyncResult syncTeams(@NonNull final String operationId) {
     log.info("🏘️ Starting teams synchronization from Notion with operation ID: {}", operationId);
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Teams Sync", 4);
 
@@ -111,7 +111,7 @@ public class TeamSyncService extends BaseSyncService {
       syncServiceDependencies
           .getProgressTracker()
           .updateProgress(
-              operationId, 3, String.format("Saving %d teams to database...", teamDTOs.size()));
+              operationId, 3, "Saving %d teams to database...".formatted(teamDTOs.size()));
       log.info("🗄️ Saving teams to database...");
       long dbStart = System.currentTimeMillis();
       int savedCount = 0;
@@ -124,9 +124,8 @@ public class TeamSyncService extends BaseSyncService {
               .updateProgress(
                   operationId,
                   4,
-                  String.format(
-                      "Saving teams to database... (%d/%d processed)",
-                      processedItems, teamDTOs.size()));
+                  "Saving teams to database... (%d/%d processed)"
+                      .formatted(processedItems, teamDTOs.size()));
         }
         if (getSelf().processSingleTeam(dto)) {
           savedCount++;
@@ -140,7 +139,7 @@ public class TeamSyncService extends BaseSyncService {
           .completeOperation(
               operationId,
               true,
-              String.format("Successfully synchronized %d teams", savedCount),
+              "Successfully synchronized %d teams".formatted(savedCount),
               savedCount);
 
       return SyncResult.success("Teams", savedCount, 0, 0);
@@ -153,7 +152,7 @@ public class TeamSyncService extends BaseSyncService {
     }
   }
 
-  private TeamSyncDTO convertTeamPageToDTO(@NonNull TeamPage teamPage) {
+  private TeamSyncDTO convertTeamPageToDTO(@NonNull final TeamPage teamPage) {
     TeamSyncDTO dto = new TeamSyncDTO();
     dto.setExternalId(teamPage.getId());
 
@@ -225,7 +224,7 @@ public class TeamSyncService extends BaseSyncService {
   }
 
   /** Extracts a single relation ID from a Notion property. */
-  private String extractRelationId(Object property) {
+  private String extractRelationId(final Object property) {
     switch (property) {
       case null -> {
         return null;
@@ -260,7 +259,7 @@ public class TeamSyncService extends BaseSyncService {
 
   /** Extracts wrestler name from team page with enhanced relation handling. */
   private String extractWrestlerNameFromTeamPage(
-      @NonNull TeamPage teamPage, @NonNull String propertyName) {
+      @NonNull final TeamPage teamPage, @NonNull final String propertyName) {
     if (teamPage.getRawProperties() == null) {
       return null;
     }
@@ -273,7 +272,7 @@ public class TeamSyncService extends BaseSyncService {
 
   /** Saves a single team DTO to the database. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public boolean processSingleTeam(@NonNull TeamSyncDTO dto) {
+  public boolean processSingleTeam(@NonNull final TeamSyncDTO dto) {
     try {
       // Smart duplicate handling - prefer external ID, fallback to name
       Team team = null;

@@ -25,7 +25,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+  public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+      final IllegalArgumentException ex) {
     return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
   }
 }

@@ -174,7 +174,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     assertTrue(notFound);
   }
 
-  private WebElement findCardInGridWithScrolling(WebDriverWait wait, String cardName) {
+  private WebElement findCardInGridWithScrolling(final WebDriverWait wait, final String cardName) {
     return wait.until(
         d -> {
           WebElement grid = d.findElement(By.tagName("vaadin-grid"));

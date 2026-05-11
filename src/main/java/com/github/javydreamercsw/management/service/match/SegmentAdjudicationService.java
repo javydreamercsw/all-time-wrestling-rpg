@@ -90,23 +90,23 @@ public class SegmentAdjudicationService {
 
   @Autowired
   public SegmentAdjudicationService(
-      RivalryService rivalryService,
-      WrestlerService wrestlerService,
-      FeudResolutionService feudResolutionService,
-      MultiWrestlerFeudService feudService,
-      TitleService titleService,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      LegacyService legacyService,
-      FactionService factionService,
-      RingsideActionService ringsideActionService,
-      RingsideAiService ringsideAiService,
-      RetirementService retirementService,
-      GameSettingService gameSettingService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      final RivalryService rivalryService,
+      final WrestlerService wrestlerService,
+      final FeudResolutionService feudResolutionService,
+      final MultiWrestlerFeudService feudService,
+      final TitleService titleService,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final LegacyService legacyService,
+      final FactionService factionService,
+      final RingsideActionService ringsideActionService,
+      final RingsideAiService ringsideAiService,
+      final RetirementService retirementService,
+      final GameSettingService gameSettingService,
+      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
           wrestlerStatusService) {
     this(
         rivalryService,
@@ -129,25 +129,25 @@ public class SegmentAdjudicationService {
   }
 
   public SegmentAdjudicationService(
-      RivalryService rivalryService,
-      WrestlerService wrestlerService,
-      FeudResolutionService feudResolutionService,
-      MultiWrestlerFeudService feudService,
-      TitleService titleService,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      LegacyService legacyService,
-      FactionService factionService,
-      RingsideActionService ringsideActionService,
-      RingsideAiService ringsideAiService,
-      RetirementService retirementService,
-      GameSettingService gameSettingService,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      final RivalryService rivalryService,
+      final WrestlerService wrestlerService,
+      final FeudResolutionService feudResolutionService,
+      final MultiWrestlerFeudService feudService,
+      final TitleService titleService,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final LegacyService legacyService,
+      final FactionService factionService,
+      final RingsideActionService ringsideActionService,
+      final RingsideAiService ringsideAiService,
+      final RetirementService retirementService,
+      final GameSettingService gameSettingService,
+      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
+      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
           wrestlerStatusService,
-      Random random) {
+      final Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.feudResolutionService = feudResolutionService;
@@ -168,12 +168,12 @@ public class SegmentAdjudicationService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public void adjudicateMatch(@NonNull Segment segment) {
+  public void adjudicateMatch(@NonNull final Segment segment) {
     adjudicateMatch(segment, 1.0);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
+  public void adjudicateMatch(@NonNull final Segment segment, final double multiplier) {
     // Check for league fulfillment
     matchFulfillmentRepository
         .findBySegment(segment)
@@ -247,7 +247,7 @@ public class SegmentAdjudicationService {
     applyWearAndTear(segment);
 
     // Automated Ringside Actions
-    if (!segment.getSegmentType().getName().equals("Promo")) {
+    if (!"Promo".equals(segment.getSegmentType().getName())) {
       for (Wrestler w : segment.getWrestlers()) {
         Object supporter = ringsideActionService.getBestSupporter(segment, w);
         if (supporter != null) {
@@ -256,7 +256,7 @@ public class SegmentAdjudicationService {
       }
     }
 
-    if (!segment.getSegmentType().getName().equals("Promo")) {
+    if (!"Promo".equals(segment.getSegmentType().getName())) {
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
@@ -314,7 +314,7 @@ public class SegmentAdjudicationService {
             }
 
             // Promo bonus: +1 for shared spotlight
-            if (segment.getSegmentType().getName().equals("Promo")) {
+            if ("Promo".equals(segment.getSegmentType().getName())) {
               affinityGain += 1;
             }
 
@@ -327,7 +327,7 @@ public class SegmentAdjudicationService {
     // Add heat to rivalries
     int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
-    if (segmentTypeName.equals("Promo")) {
+    if ("Promo".equals(segmentTypeName)) {
       heat = 4;
     }
 
@@ -335,7 +335,7 @@ public class SegmentAdjudicationService {
     // Skip all-pairs heat addition for Rumbles to avoid performance issues,
     // excessive rivalry creation, and because determining eliminations from
     // narration is complex. Bookers can manage these rivalries manually.
-    if (!segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+    if (!"Abu Dhabi Rumble".equals(segment.getSegmentType().getName())) {
       for (int i = 0; i < participants.size(); i++) {
         for (int j = i + 1; j < participants.size(); j++) {
           rivalryService.addHeatBetweenWrestlers(
@@ -424,7 +424,7 @@ public class SegmentAdjudicationService {
         }
 
         if (winners.contains(participant)
-            && segment.getSegmentType().getName().equals("Abu Dhabi Rumble")) {
+            && "Abu Dhabi Rumble".equals(segment.getSegmentType().getName())) {
           legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
         }
 
@@ -457,7 +457,7 @@ public class SegmentAdjudicationService {
   }
 
   @Transactional
-  public void processRewards(@NonNull Segment segment, double difficultyMultiplier) {
+  public void processRewards(@NonNull final Segment segment, final double difficultyMultiplier) {
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
@@ -465,7 +465,7 @@ public class SegmentAdjudicationService {
     DiceBag d20 = new DiceBag(random, new int[] {20});
     int roll = d20.roll();
 
-    if (!segment.getSegmentType().getName().equals("Promo")) {
+    if (!"Promo".equals(segment.getSegmentType().getName())) {
       handleMatchRewards(segment, winners, losers, roll, difficultyMultiplier);
     } else {
       handlePromoRewards(segment, roll, difficultyMultiplier);
@@ -473,11 +473,11 @@ public class SegmentAdjudicationService {
   }
 
   private void handleMatchRewards(
-      Segment segment,
-      List<Wrestler> winners,
-      List<Wrestler> losers,
-      int roll,
-      double difficultyMultiplier) {
+      final Segment segment,
+      final List<Wrestler> winners,
+      final List<Wrestler> losers,
+      final int roll,
+      final double difficultyMultiplier) {
     int matchQualityBonus = calculateMatchQualityBonus(segment, roll);
 
     Long universeId =
@@ -542,7 +542,8 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private long applyVenueBonuses(Segment segment, Wrestler wrestler, long amount) {
+  private long applyVenueBonuses(
+      final Segment segment, final Wrestler wrestler, final long amount) {
     double modifier = 1.0;
 
     // Arena Alignment Bias (+25%)
@@ -601,7 +602,8 @@ public class SegmentAdjudicationService {
     return (long) (amount * modifier);
   }
 
-  private void handlePromoRewards(@NonNull Segment segment, int roll, double difficultyMultiplier) {
+  private void handlePromoRewards(
+      @NonNull final Segment segment, final int roll, final double difficultyMultiplier) {
     int promoQualityBonus = calculatePromoQualityBonus(roll);
 
     Long universeId =
@@ -634,7 +636,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private int calculateMatchQualityBonus(Segment segment, int roll) {
+  private int calculateMatchQualityBonus(final Segment segment, final int roll) {
     int bonus = 0;
     if (11 <= roll && roll <= 15) {
       bonus += 1_000;
@@ -657,7 +659,7 @@ public class SegmentAdjudicationService {
     return bonus;
   }
 
-  private int calculatePromoQualityBonus(int roll) {
+  private int calculatePromoQualityBonus(final int roll) {
     int bonus = 0;
     if (2 <= roll && roll <= 3) {
       bonus += new DiceBag(random, new int[] {3}).roll();
@@ -671,7 +673,7 @@ public class SegmentAdjudicationService {
     return bonus;
   }
 
-  private void handleTitleContenderFees(Segment segment, Long universeId) {
+  private void handleTitleContenderFees(final Segment segment, final Long universeId) {
     for (Title title : segment.getTitles()) {
       List<Wrestler> currentChampions = title.getCurrentChampions();
       Long contenderEntryFee = titleService.getContenderEntryFee(title);
@@ -700,7 +702,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private void assignBumps(Segment segment, Long universeId) {
+  private void assignBumps(final Segment segment, final Long universeId) {
     for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
         segment.getSegmentRules()) {
       if (rule.getBumpAddition() == null) {
@@ -742,7 +744,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private void attemptRivalryResolution(@NonNull Wrestler w1, @NonNull Wrestler w2) {
+  private void attemptRivalryResolution(@NonNull final Wrestler w1, @NonNull final Wrestler w2) {
     DiceBag diceBag = new DiceBag(20);
     Optional<Rivalry> rivalryBetweenWrestlers =
         rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
@@ -751,8 +753,8 @@ public class SegmentAdjudicationService {
             rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
   }
 
-  private void applyWearAndTear(@NonNull Segment segment) {
-    if (segment.getSegmentType().getName().equals("Promo")
+  private void applyWearAndTear(@NonNull final Segment segment) {
+    if ("Promo".equals(segment.getSegmentType().getName())
         || !gameSettingService.isWearAndTearEnabled()
         || segment.getShow().getUniverse() == null) {
       return;
@@ -766,9 +768,9 @@ public class SegmentAdjudicationService {
             .anyMatch(
                 r ->
                     r.getName() != null
-                        && (r.getName().equalsIgnoreCase("Extreme")
-                            || r.getName().equalsIgnoreCase("No DQ")
-                            || r.getName().equalsIgnoreCase("Cage")));
+                        && ("Extreme".equalsIgnoreCase(r.getName())
+                            || "No DQ".equalsIgnoreCase(r.getName())
+                            || "Cage".equalsIgnoreCase(r.getName())));
 
     if (isIntense) {
       baseLoss *= 2;

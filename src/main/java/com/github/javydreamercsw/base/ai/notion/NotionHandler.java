@@ -118,7 +118,7 @@ public class NotionHandler {
   }
 
   @Autowired
-  public NotionHandler(Optional<NotionTokenProvider> tokenProvider) {
+  public NotionHandler(final Optional<NotionTokenProvider> tokenProvider) {
     this.tokenProvider = tokenProvider.orElse(null);
     this.wrestlerNotionHandler = new WrestlerNotionHandler(this);
     this.showNotionHandler = new ShowNotionHandler(this);
@@ -182,7 +182,7 @@ public class NotionHandler {
   }
 
   /** Loads all databases from the Notion workspace into the internal map. */
-  private void loadDatabases(@NonNull NotionClient client) {
+  private void loadDatabases(@NonNull final NotionClient client) {
     try {
       log.debug("Starting database search in Notion workspace");
 
@@ -233,7 +233,7 @@ public class NotionHandler {
    * @param databaseName The name of the database
    * @return The database ID, or null if not found
    */
-  public String getDatabaseId(@NonNull String databaseName) {
+  public String getDatabaseId(@NonNull final String databaseName) {
     ensureInitialized();
     log.debug("Looking up database ID for: '{}'", databaseName);
     String id = databaseMap.get(databaseName);
@@ -251,7 +251,7 @@ public class NotionHandler {
    * @param databaseName The name of the database
    * @return Map of page names to page IDs
    */
-  public Map<String, String> getDatabaseNamesToIds(@NonNull String databaseName) {
+  public Map<String, String> getDatabaseNamesToIds(@NonNull final String databaseName) {
     log.debug("Loading all page names and IDs from database: '{}'", databaseName);
 
     String dbId = getDatabaseId(databaseName);
@@ -322,7 +322,7 @@ public class NotionHandler {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_QUERIES_CACHE,
       key = "#databaseName")
-  public List<String> getDatabasePageIds(@NonNull String databaseName) {
+  public List<String> getDatabasePageIds(@NonNull final String databaseName) {
     log.debug("Loading all page IDs from database: '{}'", databaseName);
 
     String dbId = getDatabaseId(databaseName);
@@ -348,7 +348,7 @@ public class NotionHandler {
    * @param wrestlerName The name of the wrestler to load (e.g., "Rob Van Dam")
    * @return Optional containing the WrestlerPage object if found, empty otherwise
    */
-  public Optional<WrestlerPage> loadWrestler(@NonNull String wrestlerName) {
+  public Optional<WrestlerPage> loadWrestler(@NonNull final String wrestlerName) {
     return wrestlerNotionHandler.loadByName(wrestlerName);
   }
 
@@ -373,7 +373,7 @@ public class NotionHandler {
    * @param showId The ID of the show to load.
    * @return Optional containing the ShowPage object if found, empty otherwise.
    */
-  public Optional<ShowPage> loadShowById(@NonNull String showId) {
+  public Optional<ShowPage> loadShowById(@NonNull final String showId) {
     return showNotionHandler.loadById(showId);
   }
 
@@ -390,7 +390,7 @@ public class NotionHandler {
     return showNotionHandler.loadAll();
   }
 
-  public Optional<ShowTemplatePage> loadShowTemplate(@NonNull String templateName) {
+  public Optional<ShowTemplatePage> loadShowTemplate(@NonNull final String templateName) {
     return showTemplateNotionHandler.loadShowTemplate(templateName);
   }
 
@@ -402,17 +402,17 @@ public class NotionHandler {
   }
 
   public Map<String, ShowTemplatePage> retrieveShowTemplateData(
-      @NonNull List<String> templateNames) {
+      @NonNull final List<String> templateNames) {
     return showTemplateNotionHandler.retrieveShowTemplateData(templateNames);
   }
 
   // ==================== MATCH LOADING METHODS ====================
 
-  public Optional<SegmentPage> loadSegment(@NonNull String segmentName) {
+  public Optional<SegmentPage> loadSegment(@NonNull final String segmentName) {
     return segmentNotionHandler.loadSegment(segmentName);
   }
 
-  public Optional<SegmentPage> loadSegmentById(@NonNull String segment) {
+  public Optional<SegmentPage> loadSegmentById(@NonNull final String segment) {
     return segmentNotionHandler.loadSegmentById(segment);
   }
 
@@ -423,11 +423,11 @@ public class NotionHandler {
     return segmentNotionHandler.loadAllSegments();
   }
 
-  public Optional<HeatPage> loadHeat(@NonNull String heatName) {
+  public Optional<HeatPage> loadHeat(@NonNull final String heatName) {
     return heatNotionHandler.loadHeat(heatName);
   }
 
-  public Optional<TeamPage> loadTeam(@NonNull String teamName) {
+  public Optional<TeamPage> loadTeam(@NonNull final String teamName) {
     return teamNotionHandler.loadTeam(teamName);
   }
 
@@ -438,7 +438,7 @@ public class NotionHandler {
     return teamNotionHandler.loadAllTeams();
   }
 
-  public Optional<SeasonPage> loadSeason(@NonNull String seasonName) {
+  public Optional<SeasonPage> loadSeason(@NonNull final String seasonName) {
     return seasonNotionHandler.loadSeason(seasonName);
   }
 
@@ -449,7 +449,7 @@ public class NotionHandler {
     return seasonNotionHandler.loadAllSeasons();
   }
 
-  public Optional<FactionPage> loadFaction(@NonNull String factionName) {
+  public Optional<FactionPage> loadFaction(@NonNull final String factionName) {
     return factionNotionHandler.loadFaction(factionName);
   }
 
@@ -499,7 +499,7 @@ public class NotionHandler {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_PAGES_CACHE,
       key = "#pageId")
-  public Optional<Page> loadPage(@NonNull String pageId) {
+  public Optional<Page> loadPage(@NonNull final String pageId) {
     log.debug("Loading page with ID: '{}'", pageId);
     try (NotionClient client = createNotionClient().orElse(null)) {
       if (client == null) {
@@ -537,10 +537,10 @@ public class NotionHandler {
 
   /** Generic method to load all entities from a database. */
   public <T> List<T> loadAllEntitiesFromDatabase(
-      @NonNull NotionClient client,
-      @NonNull String databaseId,
-      @NonNull String entityType,
-      @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
+      @NonNull final NotionClient client,
+      @NonNull final String databaseId,
+      @NonNull final String entityType,
+      @NonNull final java.util.function.BiFunction<Page, String, T> mapper) {
 
     List<T> entities = new ArrayList<>();
     try {
@@ -593,7 +593,9 @@ public class NotionHandler {
    * @return A list of entity IDs (Strings).
    */
   public List<String> loadAllEntityIdsFromDatabase(
-      @NonNull NotionClient client, @NonNull String databaseId, @NonNull String entityType) {
+      @NonNull final NotionClient client,
+      @NonNull final String databaseId,
+      @NonNull final String entityType) {
     List<String> entityIds = new ArrayList<>();
     try {
       log.debug("Loading all {} entity IDs from database {}", entityType, databaseId);
@@ -633,10 +635,10 @@ public class NotionHandler {
   }
 
   public <T> T mapPageToEntity(
-      Page page,
-      NotionClient client,
-      String entityType,
-      java.util.function.BiFunction<Page, String, T> mapper) {
+      final Page page,
+      final NotionClient client,
+      final String entityType,
+      final java.util.function.BiFunction<Page, String, T> mapper) {
     try {
       Page pageData =
           NotionUtil.executeWithRetry(
@@ -759,7 +761,7 @@ public class NotionHandler {
     return entityPage;
   }
 
-  public void setBasicPageInfo(@NonNull Object entityPage, @NonNull Page pageData) {
+  public void setBasicPageInfo(@NonNull final Object entityPage, @NonNull final Page pageData) {
     try {
       entityPage.getClass().getMethod("setObject", String.class).invoke(entityPage, "page");
       entityPage.getClass().getMethod("setId", String.class).invoke(entityPage, pageData.getId());
@@ -787,7 +789,7 @@ public class NotionHandler {
   }
 
   /** Helper method to set parent information. */
-  private void setParentInfo(@NonNull Object parent, @NonNull Page pageData) {
+  private void setParentInfo(@NonNull final Object parent, @NonNull final Page pageData) {
     try {
       parent.getClass().getMethod("setType", String.class).invoke(parent, "database_id");
       assert pageData.getParent() != null;
@@ -801,7 +803,7 @@ public class NotionHandler {
   }
 
   /** Helper method to set parent on entity page. */
-  private void setParent(@NonNull Object entityPage, @NonNull Object parent) {
+  private void setParent(@NonNull final Object entityPage, @NonNull final Object parent) {
     try {
       entityPage
           .getClass()
@@ -817,7 +819,7 @@ public class NotionHandler {
   }
 
   public void setRawProperties(
-      @NonNull Object entityPage, @NonNull Map<String, Object> properties) {
+      @NonNull final Object entityPage, @NonNull final Map<String, Object> properties) {
     try {
       entityPage.getClass().getMethod("setRawProperties", Map.class).invoke(entityPage, properties);
       log.debug("Set {} raw properties on entity page", properties.size());
@@ -873,7 +875,7 @@ public class NotionHandler {
    * @param pageId The ID of the Notion page.
    * @return The concatenated plain text content of the page, or an empty string if no content.
    */
-  public String getPageContentPlainText(@NonNull String pageId) {
+  public String getPageContentPlainText(@NonNull final String pageId) {
     log.debug("Retrieving content for page: {}", pageId);
     Optional<String> tokenOptional = getEffectiveNotionToken();
     if (tokenOptional.isEmpty()) {
@@ -899,7 +901,7 @@ public class NotionHandler {
     return factionRivalryNotionHandler.loadAllFactionRivalries();
   }
 
-  public <T> T executeWithRetry(@NonNull Supplier<T> action) {
+  public <T> T executeWithRetry(@NonNull final Supplier<T> action) {
     return NotionUtil.executeWithRetry(action);
   }
 }

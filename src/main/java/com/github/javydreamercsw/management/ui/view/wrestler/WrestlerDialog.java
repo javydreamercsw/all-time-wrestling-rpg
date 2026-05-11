@@ -53,13 +53,13 @@ public class WrestlerDialog extends Dialog {
   private final SecurityUtils securityUtils;
 
   public WrestlerDialog(
-      @NonNull WrestlerService wrestlerService,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull NpcService npcService,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull Runnable onSave,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull UniverseContextService universeContextService) {
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull @Qualifier("baseAccountService") final AccountService accountService,
+      @NonNull final NpcService npcService,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final Runnable onSave,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final UniverseContextService universeContextService) {
     this(
         wrestlerService,
         accountService,
@@ -88,14 +88,14 @@ public class WrestlerDialog extends Dialog {
   }
 
   public WrestlerDialog(
-      @NonNull WrestlerService wrestlerService,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull NpcService npcService,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull Wrestler wrestler,
-      @NonNull Runnable onSave,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull UniverseContextService universeContextService) {
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull @Qualifier("baseAccountService") final AccountService accountService,
+      @NonNull final NpcService npcService,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final Wrestler wrestler,
+      @NonNull final Runnable onSave,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.accountService = accountService;
     this.npcService = npcService;

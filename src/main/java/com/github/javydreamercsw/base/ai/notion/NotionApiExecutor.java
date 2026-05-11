@@ -41,10 +41,10 @@ public class NotionApiExecutor {
 
   @Autowired
   public NotionApiExecutor(
-      @NonNull NotionHandler notionHandler,
-      @NonNull NotionRateLimitService rateLimitService,
-      @NonNull NotionSyncProperties syncProperties,
-      @NonNull SyncProgressTracker syncProgressTracker) {
+      @NonNull final NotionHandler notionHandler,
+      @NonNull final NotionRateLimitService rateLimitService,
+      @NonNull final NotionSyncProperties syncProperties,
+      @NonNull final SyncProgressTracker syncProgressTracker) {
     this.notionHandler = notionHandler;
     this.rateLimitService = rateLimitService;
     this.syncProperties = syncProperties;
@@ -54,12 +54,13 @@ public class NotionApiExecutor {
   }
 
   /** Execute a Notion API call with proper rate limiting. */
-  public <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) {
+  public <T> T executeWithRateLimit(@NonNull final Supplier<T> apiCall) {
     return executeWithRateLimit(null, apiCall);
   }
 
   /** Execute a Notion API call with proper rate limiting and optional progress logging. */
-  public <T> T executeWithRateLimit(@Nullable String operationId, @NonNull Supplier<T> apiCall) {
+  public <T> T executeWithRateLimit(
+      @Nullable final String operationId, @NonNull final Supplier<T> apiCall) {
     try {
       if (operationId != null && rateLimitService.isRateLimited()) {
         syncProgressTracker.addLogMessage(operationId, "🚦 Rate limit active. Pausing...", "WARN");

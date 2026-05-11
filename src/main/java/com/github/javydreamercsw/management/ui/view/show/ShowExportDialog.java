@@ -51,9 +51,9 @@ public class ShowExportDialog extends Dialog {
   private final Button copyButton = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
 
   public ShowExportDialog(
-      @NonNull ShowExportService exportService,
-      @NonNull NotificationService notificationService,
-      @NonNull Show show) {
+      @NonNull final ShowExportService exportService,
+      @NonNull final NotificationService notificationService,
+      @NonNull final Show show) {
     this.exportService = exportService;
     this.notificationService = notificationService;
     this.show = show;

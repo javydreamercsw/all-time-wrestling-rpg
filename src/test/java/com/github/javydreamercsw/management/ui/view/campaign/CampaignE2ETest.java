@@ -55,7 +55,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   @Override
-  public void setup(org.junit.jupiter.api.TestInfo testInfo) throws Exception {
+  public void setup(final org.junit.jupiter.api.TestInfo testInfo) throws Exception {
     super.setup(testInfo);
 
     // Initialize campaign for the admin user if it doesn't exist
@@ -165,7 +165,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     // assertFalse(driver.getPageSource().contains("Available Skill Upgrades"));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

@@ -32,14 +32,14 @@ import org.springframework.stereotype.Service;
 public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
 
   public WrestlerNotionSyncService(
-      WrestlerRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final WrestlerRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Wrestler entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Wrestler entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
     if (entity.getStartingStamina() != null) {

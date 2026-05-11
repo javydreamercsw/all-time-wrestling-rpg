@@ -44,14 +44,14 @@ public enum DramaEventSeverity {
   private final String description;
   private final String emoji;
 
-  DramaEventSeverity(String displayName, String description, String emoji) {
+  DramaEventSeverity(final String displayName, final String description, final String emoji) {
     this.displayName = displayName;
     this.description = description;
     this.emoji = emoji;
   }
 
   @JsonCreator
-  public static DramaEventSeverity fromString(String value) {
+  public static DramaEventSeverity fromString(final String value) {
     if (value == null) {
       return null;
     }
@@ -110,7 +110,7 @@ public enum DramaEventSeverity {
 
   /** Represents a range of fan impact values. */
   public record FanImpactRange(Long min, Long max) {
-    public Long getRandomValue(java.util.Random random) {
+    public Long getRandomValue(final java.util.Random random) {
       if (min.equals(max)) {
         return min;
       }
@@ -120,7 +120,7 @@ public enum DramaEventSeverity {
 
   /** Represents a range of heat impact values. */
   public record HeatImpactRange(Integer min, Integer max) {
-    public Integer getRandomValue(java.util.Random random) {
+    public Integer getRandomValue(final java.util.Random random) {
       if (min.equals(max)) {
         return min;
       }

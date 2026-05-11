@@ -185,8 +185,10 @@ class AutomaticShowCreationDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Admin",
         "Season Settings - Schedule Generation Confirmation",
-        "The Season Settings tab showing the 'Generate Season Confirmation' button, before"
-            + " execution.",
+        """
+        The Season Settings tab showing the 'Generate Season Confirmation' button, before\
+         execution.\
+        """,
         "admin-season-settings-confirmation");
 
     // Confirm the dialog

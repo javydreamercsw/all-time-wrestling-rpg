@@ -118,13 +118,13 @@ public class Season extends AbstractSyncableEntity<Long> {
   }
 
   /** Add a show to this season. */
-  public void addShow(Show show) {
+  public void addShow(final Show show) {
     shows.add(show);
     show.setSeason(this);
   }
 
   /** Remove a show from this season. */
-  public void removeShow(Show show) {
+  public void removeShow(final Show show) {
     shows.remove(show);
     show.setSeason(null);
   }

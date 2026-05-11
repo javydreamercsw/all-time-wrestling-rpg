@@ -42,7 +42,7 @@ public class SecurityConfig {
   @Bean
   @Profile("!test & !e2e")
   public SecurityFilterChain vaadinSecurityFilterChain(
-      HttpSecurity http, UserDetailsService userDetailsService) throws Exception {
+      final HttpSecurity http, final UserDetailsService userDetailsService) throws Exception {
     // 1. Apply Vaadin security configurer first
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
 
@@ -110,7 +110,7 @@ public class SecurityConfig {
   @Bean
   @Profile("test & !e2e")
   @Order(0)
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
+  public SecurityFilterChain testSecurityFilterChain(final HttpSecurity http) {
     http.csrf(AbstractHttpConfigurer::disable)
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());

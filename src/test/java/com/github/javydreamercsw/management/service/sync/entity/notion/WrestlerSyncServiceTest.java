@@ -199,7 +199,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   }
 
   private WrestlerPage createMockWrestlerPage(
-      String id, String name, int health, int stamina, int charisma) {
+      final String id, final String name, final int health, final int stamina, final int charisma) {
     WrestlerPage page = new WrestlerPage();
     page.setId(id);
 

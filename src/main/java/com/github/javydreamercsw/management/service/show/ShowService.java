@@ -95,29 +95,30 @@ public class ShowService {
       retirementService;
 
   ShowService(
-      ShowRepository showRepository,
-      ShowTypeRepository showTypeRepository,
-      SeasonRepository seasonRepository,
-      ShowTemplateRepository showTemplateRepository,
-      UniverseRepository universeRepository,
-      LeagueRepository leagueRepository,
-      WrestlerStateRepository wrestlerStateRepository,
-      Clock clock,
-      SegmentAdjudicationService segmentAdjudicationService,
-      SegmentRepository segmentRepository,
-      ApplicationEventPublisher eventPublisher,
-      WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      GameSettingService gameSettingService,
-      CommentaryTeamRepository commentaryTeamRepository,
-      NewsGenerationService newsGenerationService,
-      LegacyService legacyService,
-      SecurityUtils securityUtils,
-      ArenaRepository arenaRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      WrestlerContractRepository contractRepository,
-      SalaryCalculator salaryCalculator,
-      com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService) {
+      final ShowRepository showRepository,
+      final ShowTypeRepository showTypeRepository,
+      final SeasonRepository seasonRepository,
+      final ShowTemplateRepository showTemplateRepository,
+      final UniverseRepository universeRepository,
+      final LeagueRepository leagueRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
+      final Clock clock,
+      final SegmentAdjudicationService segmentAdjudicationService,
+      final SegmentRepository segmentRepository,
+      final ApplicationEventPublisher eventPublisher,
+      final WrestlerService wrestlerService,
+      final WrestlerRepository wrestlerRepository,
+      final GameSettingService gameSettingService,
+      final CommentaryTeamRepository commentaryTeamRepository,
+      final NewsGenerationService newsGenerationService,
+      final LegacyService legacyService,
+      final SecurityUtils securityUtils,
+      final ArenaRepository arenaRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final WrestlerContractRepository contractRepository,
+      final SalaryCalculator salaryCalculator,
+      final com.github.javydreamercsw.management.service.wrestler.RetirementService
+          retirementService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -144,7 +145,7 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Show> list(Pageable pageable) {
+  public List<Show> list(final Pageable pageable) {
     return showRepository.findAllBy(pageable).toList();
   }
 
@@ -154,7 +155,7 @@ public class ShowService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  public Show save(@NonNull Show show) {
+  public Show save(@NonNull final Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
   }
@@ -176,17 +177,17 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Show> findByName(String showName) {
+  public List<Show> findByName(final String showName) {
     return showRepository.findByName(showName);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public boolean existsByNameAndShowDate(String name, LocalDate showDate) {
+  public boolean existsByNameAndShowDate(final String name, final LocalDate showDate) {
     return showRepository.findByNameAndShowDate(name, showDate).isPresent();
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Show> findByExternalId(String externalId) {
+  public Optional<Show> findByExternalId(final String externalId) {
     return showRepository.findByExternalId(externalId);
   }
 
@@ -196,7 +197,7 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Page<Show> getAllShows(Pageable pageable) {
+  public Page<Show> getAllShows(final Pageable pageable) {
     return showRepository.findAllBy(pageable);
   }
 
@@ -204,7 +205,7 @@ public class ShowService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
       key = "#id")
-  public Optional<Show> getShowById(Long id) {
+  public Optional<Show> getShowById(final Long id) {
     return showRepository.findById(id);
   }
 
@@ -212,12 +213,12 @@ public class ShowService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE,
       key = "#startDate + '-' + #endDate")
-  public List<Show> getShowsByDateRange(LocalDate startDate, LocalDate endDate) {
+  public List<Show> getShowsByDateRange(final LocalDate startDate, final LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Show> getShowsForMonth(int year, int month) {
+  public List<Show> getShowsForMonth(final int year, final int month) {
     YearMonth yearMonth = YearMonth.of(year, month);
     LocalDate startDate = yearMonth.atDay(1);
     LocalDate endDate = yearMonth.atEndOfMonth();
@@ -225,19 +226,20 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Show> getUpcomingShows(int limit) {
+  public List<Show> getUpcomingShows(final int limit) {
     LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(referenceDate, pageable);
   }
 
-  public List<Show> getUpcomingShowsWithRelationships(LocalDate referenceDate, int limit) {
+  public List<Show> getUpcomingShowsWithRelationships(
+      final LocalDate referenceDate, final int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findUpcomingWithRelationships(referenceDate, pageable);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Show> getUpcomingShowsForWrestler(@NonNull Wrestler wrestler, int limit) {
+  public List<Show> getUpcomingShowsForWrestler(@NonNull final Wrestler wrestler, final int limit) {
     LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Sort sort = Sort.by("showDate").ascending();
 
@@ -262,15 +264,15 @@ public class ShowService {
       },
       allEntries = true)
   public Show createShow(
-      String name,
-      String description,
-      Long showTypeId,
-      LocalDate showDate,
-      Long seasonId,
-      Long templateId,
-      Long universeId,
-      Long commentaryTeamId,
-      Long arenaId) {
+      final String name,
+      final String description,
+      final Long showTypeId,
+      final LocalDate showDate,
+      final Long seasonId,
+      final Long templateId,
+      final Long universeId,
+      final Long commentaryTeamId,
+      final Long arenaId) {
 
     Show show = new Show();
     show.setName(name);
@@ -337,16 +339,16 @@ public class ShowService {
       },
       allEntries = true)
   public Optional<Show> updateShow(
-      Long id,
-      String name,
-      String description,
-      Long showTypeId,
-      LocalDate showDate,
-      Long seasonId,
-      Long templateId,
-      Long universeId,
-      Long commentaryTeamId,
-      Long arenaId) {
+      final Long id,
+      final String name,
+      final String description,
+      final Long showTypeId,
+      final LocalDate showDate,
+      final Long seasonId,
+      final Long templateId,
+      final Long universeId,
+      final Long commentaryTeamId,
+      final Long arenaId) {
 
     return showRepository
         .findById(id)
@@ -441,7 +443,7 @@ public class ShowService {
         com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
       },
       allEntries = true)
-  public boolean deleteShow(@NonNull Long id) {
+  public boolean deleteShow(@NonNull final Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);
       return true;
@@ -457,7 +459,7 @@ public class ShowService {
         com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
       },
       allEntries = true)
-  public void adjudicateShow(@NonNull Long showId) {
+  public void adjudicateShow(@NonNull final Long showId) {
     Show show =
         showRepository
             .findById(showId)
@@ -470,7 +472,7 @@ public class ShowService {
         .forEach(
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
-              if (!segment.getSegmentType().getName().equals("Promo")) {
+              if (!"Promo".equals(segment.getSegmentType().getName())) {
                 segment.getWrestlers().forEach(w -> participatingWrestlerIds.add(w.getId()));
               }
               segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
@@ -502,7 +504,7 @@ public class ShowService {
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
-  private void processGmModeUpdates(Show show, Set<Long> participatingWrestlerIds) {
+  private void processGmModeUpdates(final Show show, final Set<Long> participatingWrestlerIds) {
     if (show.getUniverse() == null) {
       return;
     }
@@ -590,12 +592,12 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getSegments(@NonNull Show show) {
+  public List<Segment> getSegments(@NonNull final Show show) {
     return segmentRepository.findByShow(show);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Show> getShowsByUniverse(@NonNull Universe universe) {
+  public List<Show> getShowsByUniverse(@NonNull final Universe universe) {
     return showRepository.findByUniverse(universe);
   }
 
@@ -604,7 +606,7 @@ public class ShowService {
    * revenue. The guard on existing attendance prevents re-running.
    */
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void finalizeShowIfComplete(@NonNull Show show) {
+  public void finalizeShowIfComplete(@NonNull final Show show) {
     if (show.getAttendance() != null && show.getAttendance() > 0) {
       return;
     }
@@ -624,7 +626,7 @@ public class ShowService {
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Show finalizeShow(@NonNull Show show, @NonNull List<Segment> segments) {
+  public Show finalizeShow(@NonNull final Show show, @NonNull final List<Segment> segments) {
     // Collect unique wrestlers across all segments
     java.util.Set<Long> seen = new java.util.HashSet<>();
     long totalFanWeight =
@@ -688,7 +690,8 @@ public class ShowService {
     return saved;
   }
 
-  private boolean traitMatchesCard(@NonNull String trait, @NonNull List<Segment> segments) {
+  private boolean traitMatchesCard(
+      @NonNull final String trait, @NonNull final List<Segment> segments) {
     String t = trait.toLowerCase();
     boolean isHardcore = t.contains("hardcore") || t.contains("barbed-wire");
     if (isHardcore) {

@@ -61,11 +61,13 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
+@NoArgsConstructor
 @PermitAll
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
@@ -81,20 +83,17 @@ public class MainLayout extends AppLayout {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
 
-  /** For testing purposes. */
-  public MainLayout() {}
-
   @Autowired
   public MainLayout(
-      MenuService menuService,
-      InboxUpdateBroadcaster inboxUpdateBroadcaster,
-      Optional<BuildProperties> buildProperties,
-      SecurityUtils securityUtils,
-      AccountService accountService,
-      PasswordEncoder passwordEncoder,
-      ThemeService themeService,
-      UniverseContextService universeContextService,
-      UniverseRepository universeRepository) {
+      final MenuService menuService,
+      final InboxUpdateBroadcaster inboxUpdateBroadcaster,
+      final Optional<BuildProperties> buildProperties,
+      final SecurityUtils securityUtils,
+      final AccountService accountService,
+      final PasswordEncoder passwordEncoder,
+      final ThemeService themeService,
+      final UniverseContextService universeContextService,
+      final UniverseRepository universeRepository) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -185,7 +184,7 @@ public class MainLayout extends AppLayout {
     return nav;
   }
 
-  private SideNavItem createSideNavItem(MenuItem menuItem) {
+  private SideNavItem createSideNavItem(final MenuItem menuItem) {
     SideNavItem item = new SideNavItem(menuItem.getTitle());
     item.setPrefixComponent(menuItem.getIcon().create());
     String path = menuItem.getPath();
@@ -242,7 +241,7 @@ public class MainLayout extends AppLayout {
   }
 
   @Override
-  protected void onAttach(AttachEvent attachEvent) {
+  protected void onAttach(final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
     if (inboxUpdateBroadcaster != null) { // Needed for tests
@@ -261,7 +260,7 @@ public class MainLayout extends AppLayout {
   }
 
   @Override
-  protected void onDetach(DetachEvent detachEvent) {
+  protected void onDetach(final DetachEvent detachEvent) {
     super.onDetach(detachEvent);
     if (inboxUpdateBroadcasterRegistration != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration.remove();

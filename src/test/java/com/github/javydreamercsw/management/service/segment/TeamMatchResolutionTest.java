@@ -131,7 +131,7 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
     testShow = showRepository.save(testShow);
   }
 
-  private Wrestler createTestWrestler(String name, long fans, WrestlerTier tier) {
+  private Wrestler createTestWrestler(final String name, final long fans, final WrestlerTier tier) {
     Wrestler w =
         wrestlerRepository.save(
             Wrestler.builder()

@@ -78,7 +78,7 @@ public class DataTransferView extends Main {
   private int currentStep = 0;
 
   @Autowired
-  public DataTransferView(DataMigrationService migrationService) {
+  public DataTransferView(final DataMigrationService migrationService) {
     this.migrationService = migrationService;
     setId("data-transfer-wizard");
     initializeUI();

@@ -108,7 +108,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     }
   }
 
-  protected void login(@NonNull Account account) {
+  protected void login(@NonNull final Account account) {
     log.info("Logging in as user: {}", account.getUsername());
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);

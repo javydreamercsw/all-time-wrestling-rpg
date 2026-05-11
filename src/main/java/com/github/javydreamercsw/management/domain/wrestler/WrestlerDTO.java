@@ -59,7 +59,7 @@ public class WrestlerDTO implements Serializable {
   private Integer startingStamina;
   private Integer lowStamina;
 
-  public WrestlerDTO(@NonNull WrestlerState state) {
+  public WrestlerDTO(@NonNull final WrestlerState state) {
     this(state.getWrestler());
     this.fans = state.getFans();
     this.tier = state.getTier();
@@ -70,7 +70,7 @@ public class WrestlerDTO implements Serializable {
     // Note: Faction and Alignment might need more careful mapping if they become league-specific
   }
 
-  public WrestlerDTO(@NonNull Wrestler wrestler) {
+  public WrestlerDTO(@NonNull final Wrestler wrestler) {
     this.id = wrestler.getId(); // Initialize id
     this.name = wrestler.getName();
     this.description = wrestler.getDescription();
@@ -104,7 +104,7 @@ public class WrestlerDTO implements Serializable {
     }
   }
 
-  private MoveSet convertToMoveSet(Wrestler wrestler) {
+  private MoveSet convertToMoveSet(final Wrestler wrestler) {
     MoveSet ms = new MoveSet();
     List<Move> finishers = new ArrayList<>();
     List<Move> trademarks = new ArrayList<>();

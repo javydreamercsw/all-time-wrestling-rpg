@@ -85,18 +85,18 @@ public class DraftService {
   private final InboxEventType draftStartedEventType;
 
   public DraftService(
-      DraftRepository draftRepository,
-      DraftPickRepository draftPickRepository,
-      LeagueMembershipRepository leagueMembershipRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      LeagueRepository leagueRepository,
-      WrestlerRepository wrestlerRepository,
-      AccountRepository accountRepository,
-      WrestlerContractRepository contractRepository,
-      SalaryCalculator salaryCalculator,
-      DraftBroadcaster draftBroadcaster,
-      InboxService inboxService,
-      @Qualifier("DRAFT_STARTED") InboxEventType draftStartedEventType) {
+      final DraftRepository draftRepository,
+      final DraftPickRepository draftPickRepository,
+      final LeagueMembershipRepository leagueMembershipRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final LeagueRepository leagueRepository,
+      final WrestlerRepository wrestlerRepository,
+      final AccountRepository accountRepository,
+      final WrestlerContractRepository contractRepository,
+      final SalaryCalculator salaryCalculator,
+      final DraftBroadcaster draftBroadcaster,
+      final InboxService inboxService,
+      @Qualifier("DRAFT_STARTED") final InboxEventType draftStartedEventType) {
     this.draftRepository = draftRepository;
     this.draftPickRepository = draftPickRepository;
     this.leagueMembershipRepository = leagueMembershipRepository;
@@ -112,7 +112,7 @@ public class DraftService {
   }
 
   @Transactional
-  public Draft startDraft(League league) {
+  public Draft startDraft(final League league) {
     if (draftRepository.findByLeague(league).isPresent()) {
       throw new IllegalStateException("Draft already exists for this league.");
     }
@@ -161,7 +161,7 @@ public class DraftService {
   }
 
   @Transactional
-  public DraftPick makePick(Draft draft, Account user, Wrestler wrestler) {
+  public DraftPick makePick(final Draft draft, final Account user, final Wrestler wrestler) {
     if (draft.getStatus() != Draft.DraftStatus.ACTIVE) {
       throw new IllegalStateException("Draft is not active.");
     }
@@ -228,7 +228,7 @@ public class DraftService {
     return pick;
   }
 
-  private void advanceTurn(Draft draft) {
+  private void advanceTurn(final Draft draft) {
     League league = draft.getLeague();
     List<LeagueMembership> players =
         leagueMembershipRepository.findByLeagueAndRoleIn(
@@ -252,8 +252,10 @@ public class DraftService {
 
     if (totalPicks >= maxTotalPicks || availableWrestlers == 0) {
       log.info(
-          "Draft completing. Reason: totalPicks ({}) >= maxTotalPicks ({}) OR availableWrestlers"
-              + " ({}) == 0",
+          """
+          Draft completing. Reason: totalPicks ({}) >= maxTotalPicks ({}) OR availableWrestlers\
+           ({}) == 0\
+          """,
           totalPicks,
           maxTotalPicks,
           availableWrestlers);
@@ -289,7 +291,7 @@ public class DraftService {
     draftRepository.save(draft);
   }
 
-  private void completeDraft(Draft draft) {
+  private void completeDraft(final Draft draft) {
     draft.setStatus(Draft.DraftStatus.COMPLETED);
     draft.setCurrentTurnUser(null);
     draftRepository.save(draft);
@@ -299,7 +301,7 @@ public class DraftService {
     leagueRepository.save(league);
   }
 
-  private long countAvailableWrestlers(League league) {
+  private long countAvailableWrestlers(final League league) {
     Set<Long> draftedWrestlerIds =
         leagueRosterRepository.findByLeague(league).stream()
             .map(r -> r.getWrestler().getId())

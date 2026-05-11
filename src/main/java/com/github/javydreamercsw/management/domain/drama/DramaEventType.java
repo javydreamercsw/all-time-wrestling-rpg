@@ -75,13 +75,13 @@ public enum DramaEventType {
 
   private final String description;
 
-  DramaEventType(String displayName, String description) {
+  DramaEventType(final String displayName, final String description) {
     this.displayName = displayName;
     this.description = description;
   }
 
   @JsonCreator
-  public static DramaEventType fromString(String value) {
+  public static DramaEventType fromString(final String value) {
     if (value == null) {
       return null;
     }

@@ -60,11 +60,15 @@ public class CampaignAuthorityService {
    * @param opponentHealthPenalty Penalty applied to opponent health (negative for bonus).
    */
   public void applyUnfairMatchModifiers(
-      @NonNull Campaign campaign, int playerHealthPenalty, int opponentHealthPenalty) {
+      @NonNull final Campaign campaign,
+      final int playerHealthPenalty,
+      final int opponentHealthPenalty) {
     CampaignState state = campaign.getState();
     log.info(
-        "Applying Authority penalties to wrestler {}: Player Health Penalty {}, Opponent Health"
-            + " Penalty {}",
+        """
+        Applying Authority penalties to wrestler {}: Player Health Penalty {}, Opponent Health\
+         Penalty {}\
+        """,
         campaign.getWrestler().getName(),
         playerHealthPenalty,
         opponentHealthPenalty);

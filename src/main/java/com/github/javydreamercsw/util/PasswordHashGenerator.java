@@ -21,7 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 /** Utility to generate BCrypt password hashes. Run this to generate hashes for default accounts. */
 public class PasswordHashGenerator {
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
 
     System.out.println("Generating BCrypt hashes with 10 rounds:");

@@ -75,7 +75,8 @@ public class InjuryTypeListView extends Main {
   private Binder<InjuryType> binder;
 
   public InjuryTypeListView(
-      @NonNull InjuryTypeService injuryTypeService, @NonNull SecurityUtils securityUtils) {
+      @NonNull final InjuryTypeService injuryTypeService,
+      @NonNull final SecurityUtils securityUtils) {
     this.injuryTypeService = injuryTypeService;
     this.securityUtils = securityUtils;
     this.grid = new Grid<>(InjuryType.class, false);
@@ -294,7 +295,7 @@ public class InjuryTypeListView extends Main {
         .bind(InjuryType::getSpecialEffects, InjuryType::setSpecialEffects);
   }
 
-  private String formatEffect(Integer effect) {
+  private String formatEffect(final Integer effect) {
     if (effect == null) {
       return "0";
     }
@@ -312,7 +313,7 @@ public class InjuryTypeListView extends Main {
     editDialog.open();
   }
 
-  private void editInjuryType(InjuryType injuryType) {
+  private void editInjuryType(final InjuryType injuryType) {
     editingInjuryType = injuryType;
     editDialog.setHeaderTitle("Edit Injury Type: " + injuryType.getInjuryName());
     binder.setBean(injuryType);
@@ -357,7 +358,7 @@ public class InjuryTypeListView extends Main {
     }
   }
 
-  private void confirmDelete(InjuryType injuryType) {
+  private void confirmDelete(final InjuryType injuryType) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Delete Injury Type");
     dialog.setText(
@@ -371,7 +372,7 @@ public class InjuryTypeListView extends Main {
     dialog.open();
   }
 
-  private void deleteInjuryType(InjuryType injuryType) {
+  private void deleteInjuryType(final InjuryType injuryType) {
     try {
       boolean deleted = injuryTypeService.deleteInjuryType(injuryType.getId());
       if (deleted) {
@@ -388,12 +389,12 @@ public class InjuryTypeListView extends Main {
     }
   }
 
-  private void showSuccessNotification(String message) {
+  private void showSuccessNotification(final String message) {
     Notification notification = Notification.show(message, 3000, Notification.Position.TOP_END);
     notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void showErrorNotification(String message) {
+  private void showErrorNotification(final String message) {
     Notification notification = Notification.show(message, 5000, Notification.Position.TOP_END);
     notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
   }

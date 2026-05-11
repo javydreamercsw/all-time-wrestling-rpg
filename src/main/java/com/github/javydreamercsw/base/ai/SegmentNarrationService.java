@@ -20,6 +20,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
@@ -173,16 +174,15 @@ public interface SegmentNarrationService {
   /** Individual wrestling move with description. */
   @Setter
   @Getter
+  @NoArgsConstructor
   @ToString // Add this annotation
   class Move {
     // Getters and setters
     private String name;
     private String description;
-    private String type; // finisher, trademark, common, submission, etc.
+    private String type;
 
-    public Move() {}
-
-    public Move(String name, String description, String type) {
+    public Move(final String name, final String description, final String type) {
       this.name = name;
       this.description = description;
       this.type = type;

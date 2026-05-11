@@ -80,18 +80,18 @@ public class SegmentService {
 
   @Autowired
   public SegmentService(
-      SegmentRepository segmentRepository,
-      TitleRepository titleRepository,
-      @Lazy WrestlerService wrestlerService,
-      GameSettingService gameSettingService,
-      SecurityUtils securityUtils,
-      CampaignRepository campaignRepository,
-      LeagueRepository leagueRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      InboxService inboxService,
-      NewsGenerationService newsGenerationService,
-      @Qualifier("MATCH_REQUEST") InboxEventType matchRequestEventType) {
+      final SegmentRepository segmentRepository,
+      final TitleRepository titleRepository,
+      @Lazy final WrestlerService wrestlerService,
+      final GameSettingService gameSettingService,
+      final SecurityUtils securityUtils,
+      final CampaignRepository campaignRepository,
+      final LeagueRepository leagueRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final InboxService inboxService,
+      final NewsGenerationService newsGenerationService,
+      @Qualifier("MATCH_REQUEST") final InboxEventType matchRequestEventType) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
     this.wrestlerService = wrestlerService;
@@ -112,7 +112,7 @@ public class SegmentService {
    * @param dto The SegmentDTO to convert.
    * @return The corresponding Segment entity.
    */
-  public Segment toEntity(@NonNull SegmentDTO dto) {
+  public Segment toEntity(@NonNull final SegmentDTO dto) {
     Segment segment = new Segment();
     segment.setExternalId(dto.getExternalId());
     segment.setNarration(dto.getNarration());
@@ -136,7 +136,7 @@ public class SegmentService {
    * @param segment The Segment entity to convert.
    * @return The corresponding SegmentDTO.
    */
-  public SegmentDTO toDto(@NonNull Segment segment) {
+  public SegmentDTO toDto(@NonNull final Segment segment) {
     SegmentDTO dto = new SegmentDTO();
     dto.setExternalId(segment.getExternalId());
     dto.setName(segment.getNarration()); // Assuming narration is used as name for DTO
@@ -173,7 +173,9 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment createSegment(
-      @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
+      @NonNull final Show show,
+      @NonNull final SegmentType matchType,
+      @NonNull final Instant matchDate) {
     return createSegment(show, matchType, matchDate, new HashSet<>());
   }
 
@@ -189,10 +191,10 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Segment createSegment(
-      @NonNull Show show,
-      @NonNull SegmentType matchType,
-      @NonNull Instant matchDate,
-      @NonNull Set<Title> titles) {
+      @NonNull final Show show,
+      @NonNull final SegmentType matchType,
+      @NonNull final Instant matchDate,
+      @NonNull final Set<Title> titles) {
 
     Segment match = new Segment();
     match.setShow(show);
@@ -215,9 +217,11 @@ public class SegmentService {
    * @throws IllegalArgumentException if the segment with the given ID is not found.
    */
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (isAuthenticated() and"
-          + " @segmentService.canUserUpdateSegment(#id))")
-  public Segment updateSegment(@NonNull Long id, @NonNull SegmentDTO dto) {
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (isAuthenticated() and\
+       @segmentService.canUserUpdateSegment(#id))\
+      """)
+  public Segment updateSegment(@NonNull final Long id, @NonNull final SegmentDTO dto) {
     return segmentRepository
         .findById(id)
         .map(
@@ -247,9 +251,11 @@ public class SegmentService {
    * @return The updated Segment
    */
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (isAuthenticated() and"
-          + " @segmentService.canUserUpdateSegment(#segment.id))")
-  public Segment updateSegment(@NonNull Segment segment) {
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (isAuthenticated() and\
+       @segmentService.canUserUpdateSegment(#segment.id))\
+      """)
+  public Segment updateSegment(@NonNull final Segment segment) {
     return segmentRepository.save(segment);
   }
 
@@ -260,7 +266,7 @@ public class SegmentService {
    * @param segmentId The ID of the segment.
    * @return true if the user is authorized to update the segment.
    */
-  public boolean canUserUpdateSegment(Long segmentId) {
+  public boolean canUserUpdateSegment(final Long segmentId) {
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
       return true;
     }
@@ -333,7 +339,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Segment> findById(@NonNull Long id) {
+  public Optional<Segment> findById(@NonNull final Long id) {
     return segmentRepository.findById(id);
   }
 
@@ -345,7 +351,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Segment> findByIdWithShow(@NonNull Long id) {
+  public Optional<Segment> findByIdWithShow(@NonNull final Long id) {
     return segmentRepository.findByIdWithShow(id);
   }
 
@@ -357,7 +363,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Segment> findByIdWithDetails(@NonNull Long id) {
+  public Optional<Segment> findByIdWithDetails(@NonNull final Long id) {
     return segmentRepository.findByIdWithDetails(id);
   }
 
@@ -369,7 +375,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<SegmentDTO> findByIdAsDTO(@NonNull Long id) {
+  public Optional<SegmentDTO> findByIdAsDTO(@NonNull final Long id) {
     return findByIdWithDetails(id).map(this::toDto);
   }
 
@@ -381,7 +387,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Segment> getAllSegments(@NonNull Pageable pageable) {
+  public Page<Segment> getAllSegments(@NonNull final Pageable pageable) {
     return segmentRepository.findAllBy(pageable);
   }
 
@@ -393,7 +399,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getSegmentsByShow(@NonNull Show show) {
+  public List<Segment> getSegmentsByShow(@NonNull final Show show) {
     return segmentRepository.findByShow(show);
   }
 
@@ -406,7 +412,7 @@ public class SegmentService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<Segment> getSegmentsByWrestlerParticipation(
-      @NonNull Wrestler wrestler, @NonNull Pageable pageable) {
+      @NonNull final Wrestler wrestler, @NonNull final Pageable pageable) {
     return segmentRepository.findByWrestlerParticipation(wrestler, pageable);
   }
 
@@ -420,7 +426,7 @@ public class SegmentService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsBetween(
-      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
+      @NonNull final Wrestler wrestler1, @NonNull final Wrestler wrestler2) {
     return segmentRepository.findSegmentsBetween(wrestler1, wrestler2);
   }
 
@@ -454,7 +460,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getSegmentsAfter(@NonNull Instant date) {
+  public List<Segment> getSegmentsAfter(@NonNull final Instant date) {
     return segmentRepository.findBySegmentDateAfter(date);
   }
 
@@ -468,7 +474,9 @@ public class SegmentService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<Segment> getSegmentsByWrestlerParticipationAndSeason(
-      @NonNull Wrestler wrestler, @NonNull Season season, @NonNull Pageable pageable) {
+      @NonNull final Wrestler wrestler,
+      @NonNull final Season season,
+      @NonNull final Pageable pageable) {
     return segmentRepository.findByWrestlerParticipationAndSeason(wrestler, season, pageable);
   }
 
@@ -481,12 +489,14 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public long countWinsByWrestler(@NonNull Wrestler wrestler, @NonNull Long universeId) {
+  public long countWinsByWrestler(
+      @NonNull final Wrestler wrestler, @NonNull final Long universeId) {
     return segmentRepository.countWinsByWrestler(wrestler, universeId);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public long countMatchSegmentsByWrestler(@NonNull Wrestler wrestler, @NonNull Long universeId) {
+  public long countMatchSegmentsByWrestler(
+      @NonNull final Wrestler wrestler, @NonNull final Long universeId) {
     return segmentRepository.countMatchSegmentsByWrestler(wrestler, universeId);
   }
 
@@ -498,22 +508,22 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public long countWinsByWrestler(@NonNull Wrestler wrestler) {
+  public long countWinsByWrestler(@NonNull final Wrestler wrestler) {
     return segmentRepository.countWinsByWrestler(wrestler);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public long countSegmentsByWrestler(Wrestler wrestler) {
+  public long countSegmentsByWrestler(final Wrestler wrestler) {
     return segmentRepository.countSegmentsByWrestler(wrestler);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public long countMatchSegmentsByWrestler(Wrestler wrestler) {
+  public long countMatchSegmentsByWrestler(final Wrestler wrestler) {
     return segmentRepository.countMatchSegmentsByWrestler(wrestler);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public long countSegmentsByWrestlerAndSeason(Wrestler wrestler, Season season) {
+  public long countSegmentsByWrestlerAndSeason(final Wrestler wrestler, final Season season) {
     return segmentRepository.countByWrestlerParticipationAndSeason(wrestler, season);
   }
 
@@ -524,7 +534,7 @@ public class SegmentService {
    */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  public void deleteSegment(@NonNull Long id) {
+  public void deleteSegment(@NonNull final Long id) {
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
   }
@@ -537,7 +547,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public boolean existsByExternalId(@NonNull String externalId) {
+  public boolean existsByExternalId(@NonNull final String externalId) {
     return segmentRepository.existsByExternalId(externalId);
   }
 
@@ -549,7 +559,7 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Segment> findByExternalId(@NonNull String externalId) {
+  public Optional<Segment> findByExternalId(@NonNull final String externalId) {
     return segmentRepository.findByExternalId(externalId);
   }
 
@@ -572,13 +582,15 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getSegmentsByWrestlerParticipationWithShow(@NonNull Wrestler wrestler) {
+  public List<Segment> getSegmentsByWrestlerParticipationWithShow(
+      @NonNull final Wrestler wrestler) {
     return segmentRepository.findByWrestlerParticipationWithShow(wrestler);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getUpcomingSegmentsForWrestler(@NonNull Wrestler wrestler, int limit) {
+  public List<Segment> getUpcomingSegmentsForWrestler(
+      @NonNull final Wrestler wrestler, final int limit) {
     LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Pageable pageable = PageRequest.of(0, limit);
     return segmentRepository.findUpcomingSegmentsForWrestler(wrestler, referenceDate, pageable);
@@ -586,7 +598,7 @@ public class SegmentService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  public Segment saveSegment(@NonNull Segment segment) {
+  public Segment saveSegment(@NonNull final Segment segment) {
     boolean isNew = segment.getId() == null;
     Segment saved = segmentRepository.save(segment);
 
@@ -601,7 +613,7 @@ public class SegmentService {
     return saved;
   }
 
-  private void checkAndNotifyLeagueMatch(Segment segment) {
+  private void checkAndNotifyLeagueMatch(final Segment segment) {
     Show show = segment.getShow();
     if (show != null && show.getUniverse() != null) {
       leagueRepository
@@ -616,7 +628,7 @@ public class SegmentService {
   }
 
   private void notifyLeagueParticipant(
-      Segment segment, Show show, Wrestler wrestler, League league) {
+      final Segment segment, final Show show, final Wrestler wrestler, final League league) {
     leagueRosterRepository
         .findByLeagueAndWrestler(league, wrestler)
         .ifPresent(
@@ -657,7 +669,7 @@ public class SegmentService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  public void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
+  public void addParticipant(@NonNull final Segment segment, @NonNull final Wrestler wrestler) {
     segment.addParticipant(wrestler);
     segmentRepository.save(segment);
 
@@ -669,7 +681,7 @@ public class SegmentService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  public void setWinner(@NonNull Segment segment, @NonNull Wrestler winner) {
+  public void setWinner(@NonNull final Segment segment, @NonNull final Wrestler winner) {
     segment.setWinners(List.of(winner));
     segmentRepository.save(segment);
   }
@@ -677,8 +689,8 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void setAdjudicationStatus(
-      @NonNull Segment segment,
-      @NonNull com.github.javydreamercsw.management.domain.AdjudicationStatus status) {
+      @NonNull final Segment segment,
+      @NonNull final com.github.javydreamercsw.management.domain.AdjudicationStatus status) {
     segment.setAdjudicationStatus(status);
     segmentRepository.save(segment);
   }

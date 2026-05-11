@@ -22,6 +22,8 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,19 +34,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 
 /** A utility class for general security-related operations. */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public final class GeneralSecurityUtils {
-
-  private GeneralSecurityUtils() {
-    // private constructor to prevent instantiation
-  }
 
   /**
    * Run a task as an admin user.
    *
    * @param task The task to run.
    */
-  public static void runAsAdmin(@NonNull Runnable task) {
+  public static void runAsAdmin(@NonNull final Runnable task) {
     runAs(task, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
   }
 
@@ -55,7 +54,7 @@ public final class GeneralSecurityUtils {
    * @param supplier The task to run.
    * @return The result of the task.
    */
-  public static <T> T runAsAdmin(@NonNull Supplier<T> supplier) {
+  public static <T> T runAsAdmin(@NonNull final Supplier<T> supplier) {
     return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
   }
 
@@ -70,10 +69,10 @@ public final class GeneralSecurityUtils {
    * @return The result of the supplier.
    */
   public static <T> T runAs(
-      @NonNull Supplier<T> supplier,
-      @NonNull String username,
-      @NonNull String password,
-      @NonNull String... roles) {
+      @NonNull final Supplier<T> supplier,
+      @NonNull final String username,
+      @NonNull final String password,
+      @NonNull final String... roles) {
     SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
     SecurityContext originalContext = strategy.getContext();
     Authentication originalAuth = originalContext.getAuthentication();
@@ -143,10 +142,10 @@ public final class GeneralSecurityUtils {
    * @param roles The roles to use.
    */
   public static void runAs(
-      @NonNull Runnable task,
-      @NonNull String username,
-      @NonNull String password,
-      @NonNull String... roles) {
+      @NonNull final Runnable task,
+      @NonNull final String username,
+      @NonNull final String password,
+      @NonNull final String... roles) {
     runAs(
         () -> {
           task.run();
@@ -165,7 +164,7 @@ public final class GeneralSecurityUtils {
    * @param supplier The task.
    * @return The result.
    */
-  public static <T> T runWithContext(SecurityContext context, Supplier<T> supplier) {
+  public static <T> T runWithContext(final SecurityContext context, final Supplier<T> supplier) {
     SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
     SecurityContext originalContext = strategy.getContext();
     try {
@@ -184,7 +183,7 @@ public final class GeneralSecurityUtils {
    *
    * @param context The SecurityContext to set.
    */
-  private static void setTestSecurityContext(SecurityContext context) {
+  private static void setTestSecurityContext(final SecurityContext context) {
     try {
       Class<?> testHolderClass =
           Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");

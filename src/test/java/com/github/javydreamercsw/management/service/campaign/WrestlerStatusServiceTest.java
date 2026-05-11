@@ -58,7 +58,7 @@ class WrestlerStatusServiceTest {
 
   @InjectMocks private WrestlerStatusService wrestlerStatusService;
 
-  private void mockEnabled(boolean enabled) {
+  private void mockEnabled(final boolean enabled) {
     when(gameSettingService.isStatusCardsEnabled()).thenReturn(enabled);
     if (enabled) {
       when(expansionService.isExpansionEnabled(WrestlerStatusService.STATUS_CARDS_EXPANSION_CODE))

@@ -47,8 +47,10 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "Wrestler Relationships Management",
-        "Manage the social fabric of your promotion. Define marriages, family ties, and deep"
-            + " friendships that influence chemistry, AI narration, and random backstage events.",
+        """
+        Manage the social fabric of your promotion. Define marriages, family ties, and deep\
+         friendships that influence chemistry, AI narration, and random backstage events.\
+        """,
         "admin-wrestler-relationships");
   }
 
@@ -73,12 +75,14 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Wrestler Profile",
         "Personal Relationships",
-        "Wrestler profiles now include a 'Relationships' section showing their social connections."
-            + " These bonds provide chemistry bonuses when related wrestlers perform together.",
+        """
+        Wrestler profiles now include a 'Relationships' section showing their social connections.\
+         These bonds provide chemistry bonuses when related wrestlers perform together.\
+        """,
         "wrestler-profile-relationships");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

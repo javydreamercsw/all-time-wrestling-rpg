@@ -50,9 +50,9 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Autowired
   public ClaudeSegmentNarrationService(
-      ClaudeConfigProperties claudeConfigProperties,
-      Environment environment,
-      AiSettingsService aiSettingsService) {
+      final ClaudeConfigProperties claudeConfigProperties,
+      final Environment environment,
+      final AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
     this.objectMapper = new ObjectMapper();
     this.claudeConfigProperties = claudeConfigProperties;
@@ -60,7 +60,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   @Override
-  protected String callAIProvider(@NonNull String prompt) {
+  protected String callAIProvider(@NonNull final String prompt) {
     return callClaude(prompt);
   }
 
@@ -82,12 +82,12 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   @Override
-  public String generateText(@NonNull String prompt) {
+  public String generateText(@NonNull final String prompt) {
     return callClaude(prompt);
   }
 
   /** Makes a call to the Claude API with the given prompt. */
-  private String callClaude(@NonNull String prompt) {
+  private String callClaude(@NonNull final String prompt) {
     try {
       String fullApiUrl = claudeConfigProperties.getApiUrl();
       String modelName = claudeConfigProperties.getModelName();
@@ -139,7 +139,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   /** Extracts the content from Claude API response. */
-  private String extractContentFromResponse(@NonNull String responseBody) {
+  private String extractContentFromResponse(@NonNull final String responseBody) {
     try {
       @SuppressWarnings("unchecked")
       Map<String, Object> response = objectMapper.readValue(responseBody, Map.class);

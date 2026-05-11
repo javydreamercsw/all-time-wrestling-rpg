@@ -31,7 +31,7 @@ public enum TeamStatus {
 
   @Getter private final String displayName;
 
-  TeamStatus(String displayName) {
+  TeamStatus(final String displayName) {
     this.displayName = displayName;
   }
 

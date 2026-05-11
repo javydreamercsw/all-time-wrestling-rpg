@@ -68,17 +68,17 @@ public class DramaEventService {
 
   @Autowired
   public DramaEventService(
-      DramaEventRepository dramaEventRepository,
-      WrestlerRepository wrestlerRepository,
-      UniverseRepository universeRepository,
-      WrestlerStateRepository wrestlerStateRepository,
-      WrestlerService wrestlerService,
-      RivalryService rivalryService,
-      InjuryService injuryService,
-      SecurityUtils securityUtils,
-      Clock clock,
-      Random random,
-      ApplicationEventPublisher eventPublisher) {
+      final DramaEventRepository dramaEventRepository,
+      final WrestlerRepository wrestlerRepository,
+      final UniverseRepository universeRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
+      final WrestlerService wrestlerService,
+      final RivalryService rivalryService,
+      final InjuryService injuryService,
+      final SecurityUtils securityUtils,
+      final Clock clock,
+      final Random random,
+      final ApplicationEventPublisher eventPublisher) {
     this.dramaEventRepository = dramaEventRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.universeRepository = universeRepository;
@@ -95,13 +95,13 @@ public class DramaEventService {
   /** Create a manual drama event. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<DramaEvent> createDramaEvent(
-      @NonNull Long wrestler1Id,
-      Long wrestler2Id,
-      @NonNull DramaEventType eventType,
-      @NonNull DramaEventSeverity severity,
-      @NonNull String title,
-      @NonNull String description,
-      @NonNull Long universeId) {
+      @NonNull final Long wrestler1Id,
+      final Long wrestler2Id,
+      @NonNull final DramaEventType eventType,
+      @NonNull final DramaEventSeverity severity,
+      @NonNull final String title,
+      @NonNull final String description,
+      @NonNull final Long universeId) {
 
     Wrestler w1 =
         wrestlerRepository
@@ -132,7 +132,7 @@ public class DramaEventService {
   /** Generate a random drama event for a wrestler. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<DramaEvent> generateRandomDramaEvent(
-      @NonNull Long wrestlerId, @NonNull Long universeId) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     // Basic implementation for generating random events
     Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
 
@@ -164,7 +164,7 @@ public class DramaEventService {
 
   /** Process a specific drama event, applying its effects. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public int processEvent(@NonNull DramaEvent event) {
+  public int processEvent(@NonNull final DramaEvent event) {
     if (Boolean.TRUE.equals(event.getIsProcessed())) {
       return 0;
     }
@@ -200,7 +200,7 @@ public class DramaEventService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<DramaEvent> getEventsForWrestler(@NonNull Long wrestlerId) {
+  public List<DramaEvent> getEventsForWrestler(@NonNull final Long wrestlerId) {
     Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
     return dramaEventRepository.findByWrestler(wrestler);
   }
@@ -208,7 +208,7 @@ public class DramaEventService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<DramaEvent> getEventsForWrestler(
-      @NonNull Long wrestlerId, @NonNull Pageable pageable) {
+      @NonNull final Long wrestlerId, @NonNull final Pageable pageable) {
     Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
     return dramaEventRepository.findByWrestler(wrestler, pageable);
   }
@@ -221,7 +221,8 @@ public class DramaEventService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<DramaEvent> getEventsBetweenWrestlers(@NonNull Long w1Id, @NonNull Long w2Id) {
+  public List<DramaEvent> getEventsBetweenWrestlers(
+      @NonNull final Long w1Id, @NonNull final Long w2Id) {
     Wrestler wrestler1 = wrestlerRepository.findById(w1Id).orElseThrow();
     Wrestler wrestler2 = wrestlerRepository.findById(w2Id).orElseThrow();
     return dramaEventRepository.findBetweenWrestlers(wrestler1, wrestler2);
@@ -229,7 +230,7 @@ public class DramaEventService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public int getActiveInjuryCount(@NonNull Long wrestlerId, @NonNull Long universeId) {
+  public int getActiveInjuryCount(@NonNull final Long wrestlerId, @NonNull final Long universeId) {
     return injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId).size();
   }
 }

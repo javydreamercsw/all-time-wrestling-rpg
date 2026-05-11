@@ -51,9 +51,9 @@ public class NewsView extends Main {
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
   public NewsView(
-      @NonNull NewsService newsService,
-      @NonNull NewsGenerationService newsGenerationService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final NewsService newsService,
+      @NonNull final NewsGenerationService newsGenerationService,
+      @NonNull final SecurityUtils securityUtils) {
     this.newsService = newsService;
     this.newsGenerationService = newsGenerationService;
     this.newsGrid = new Grid<>();

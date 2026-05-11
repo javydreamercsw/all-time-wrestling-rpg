@@ -30,7 +30,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class ChangePasswordDialog extends Dialog {
 
   public ChangePasswordDialog(
-      AccountService accountService, PasswordEncoder passwordEncoder, Account account) {
+      final AccountService accountService,
+      final PasswordEncoder passwordEncoder,
+      final Account account) {
     setHeaderTitle("Change Password");
 
     FormLayout formLayout = new FormLayout();

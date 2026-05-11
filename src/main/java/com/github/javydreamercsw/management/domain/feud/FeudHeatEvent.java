@@ -98,7 +98,7 @@ public class FeudHeatEvent extends AbstractEntity<Long> {
       changeStr = "±0";
     }
 
-    return String.format("%s (%s heat → %d total)", reason, changeStr, heatAfterEvent);
+    return "%s (%s heat → %d total)".formatted(reason, changeStr, heatAfterEvent);
   }
 
   /** Get the heat change with appropriate emoji. */

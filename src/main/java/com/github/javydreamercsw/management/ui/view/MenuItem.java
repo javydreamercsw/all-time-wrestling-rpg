@@ -34,18 +34,20 @@ public class MenuItem {
   private List<MenuItem> children = new ArrayList<>();
   private List<RoleName> requiredRoles = new ArrayList<>();
 
-  public MenuItem(String title, VaadinIcon icon, String path) {
+  public MenuItem(final String title, final VaadinIcon icon, final String path) {
     this(title, icon, path, false);
   }
 
-  public MenuItem(String title, VaadinIcon icon, String path, boolean external) {
+  public MenuItem(
+      final String title, final VaadinIcon icon, final String path, final boolean external) {
     this.title = title;
     this.icon = icon;
     this.path = path;
     this.external = external;
   }
 
-  public MenuItem(String title, VaadinIcon icon, String path, RoleName... roles) {
+  public MenuItem(
+      final String title, final VaadinIcon icon, final String path, final RoleName... roles) {
     this.title = title;
     this.icon = icon;
     this.path = path;
@@ -54,7 +56,7 @@ public class MenuItem {
     }
   }
 
-  public void addChild(MenuItem child) {
+  public void addChild(final MenuItem child) {
     children.add(child);
   }
 

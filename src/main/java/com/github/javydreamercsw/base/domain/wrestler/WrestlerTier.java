@@ -95,14 +95,14 @@ public enum WrestlerTier {
   private final Long contenderEntryFee;
 
   WrestlerTier(
-      String displayName,
-      Long minFans,
-      Long maxFans,
-      String description,
-      String emoji,
-      Long requiredFans,
-      Long challengeCost,
-      Long contenderEntryFee) {
+      final String displayName,
+      final Long minFans,
+      final Long maxFans,
+      final String description,
+      final String emoji,
+      final Long requiredFans,
+      final Long challengeCost,
+      final Long contenderEntryFee) {
     this.displayName = displayName;
     this.minFans = minFans;
     this.maxFans = maxFans;
@@ -119,7 +119,7 @@ public enum WrestlerTier {
    * @param fans The wrestler's current fan count
    * @return The appropriate WrestlerTier
    */
-  public static WrestlerTier fromFanCount(Long fans) {
+  public static WrestlerTier fromFanCount(final Long fans) {
     if (fans == null || fans < 0) {
       return ROOKIE;
     }
@@ -141,7 +141,7 @@ public enum WrestlerTier {
    * @return The matching WrestlerTier.
    * @throws IllegalArgumentException if no matching tier is found.
    */
-  public static WrestlerTier fromDisplayName(@NonNull String displayName) {
+  public static WrestlerTier fromDisplayName(@NonNull final String displayName) {
     return Arrays.stream(values())
         .filter(tier -> tier.getDisplayName().equalsIgnoreCase(displayName))
         .findFirst()
@@ -155,7 +155,7 @@ public enum WrestlerTier {
    * @param wrestlerFans The wrestler's current fan count
    * @return true if the wrestler can challenge for this title tier
    */
-  public boolean isEligible(Long wrestlerFans) {
+  public boolean isEligible(final Long wrestlerFans) {
     return wrestlerFans != null && wrestlerFans >= requiredFans;
   }
 
@@ -175,9 +175,9 @@ public enum WrestlerTier {
    */
   public String getFanRangeDisplay() {
     if (maxFans == Long.MAX_VALUE) {
-      return String.format("%,d+", minFans);
+      return "%,d+".formatted(minFans);
     }
-    return String.format("%,d - %,d", minFans, maxFans);
+    return "%,d - %,d".formatted(minFans, maxFans);
   }
 
   /**

@@ -46,10 +46,10 @@ public class SeasonStatsService {
 
   @Autowired
   public SeasonStatsService(
-      SegmentRepository segmentRepository,
-      SeasonRepository seasonRepository,
-      TitleReignRepository titleReignRepository,
-      WrestlerRepository wrestlerRepository) {
+      final SegmentRepository segmentRepository,
+      final SeasonRepository seasonRepository,
+      final TitleReignRepository titleReignRepository,
+      final WrestlerRepository wrestlerRepository) {
     this.segmentRepository = segmentRepository;
     this.seasonRepository = seasonRepository;
     this.titleReignRepository = titleReignRepository;
@@ -63,7 +63,8 @@ public class SeasonStatsService {
    * @param season the season to calculate stats for
    * @return the season statistics
    */
-  public SeasonStatsDTO calculateStats(@NonNull Wrestler wrestler, @NonNull Season season) {
+  public SeasonStatsDTO calculateStats(
+      @NonNull final Wrestler wrestler, @NonNull final Season season) {
     log.info(
         "Calculating season stats for wrestler {} in season {}",
         wrestler.getName(),
@@ -115,7 +116,7 @@ public class SeasonStatsService {
         .build();
   }
 
-  private boolean isMatch(Segment segment) {
+  private boolean isMatch(final Segment segment) {
     if (segment.getSegmentType() == null) {
       return false;
     }
@@ -126,7 +127,7 @@ public class SeasonStatsService {
         && !typeName.contains("review");
   }
 
-  private boolean isReignInSeason(TitleReign reign, Season season) {
+  private boolean isReignInSeason(final TitleReign reign, final Season season) {
     Instant seasonStart = season.getStartDate();
     Instant seasonEnd = season.getEndDate() != null ? season.getEndDate() : Instant.now();
     Instant reignStart = reign.getStartDate();

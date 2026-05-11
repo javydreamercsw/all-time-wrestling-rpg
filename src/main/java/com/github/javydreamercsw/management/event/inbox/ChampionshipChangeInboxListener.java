@@ -39,10 +39,10 @@ public class ChampionshipChangeInboxListener
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public ChampionshipChangeInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("championshipChange") InboxEventType championshipChange,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("championshipChange") final InboxEventType championshipChange,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.championshipChange = championshipChange;
     this.eventPublisher = eventPublisher;
@@ -50,7 +50,7 @@ public class ChampionshipChangeInboxListener
   }
 
   @Override
-  public void onApplicationEvent(@NonNull ChampionshipChangeEvent event) {
+  public void onApplicationEvent(@NonNull final ChampionshipChangeEvent event) {
     log.info("Received ChampionshipChangeEvent for title ID: {}", event.getTitleId());
 
     String newChampions =
@@ -60,17 +60,15 @@ public class ChampionshipChangeInboxListener
 
     String message;
     if (event.getOldChampions().isEmpty()) {
-      message =
-          String.format("New champions for title ID %d: %s", event.getTitleId(), newChampions);
+      message = "New champions for title ID %d: %s".formatted(event.getTitleId(), newChampions);
     } else if (event.getNewChampions().isEmpty()) {
       message =
-          String.format(
-              "Title ID %d is now vacant. Former champions: %s", event.getTitleId(), oldChampions);
+          "Title ID %d is now vacant. Former champions: %s"
+              .formatted(event.getTitleId(), oldChampions);
     } else {
       message =
-          String.format(
-              "Championship change for title ID %d. New champions: %s (formerly %s)",
-              event.getTitleId(), newChampions, oldChampions);
+          "Championship change for title ID %d. New champions: %s (formerly %s)"
+              .formatted(event.getTitleId(), newChampions, oldChampions);
     }
 
     inboxService.createInboxItem(

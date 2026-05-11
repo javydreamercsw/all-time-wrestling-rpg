@@ -158,13 +158,17 @@ class SyncHealthControllerTest extends AbstractControllerTest {
         .andExpect(
             jsonPath("$[1]")
                 .value(
-                    "Average sync time is high. Consider optimizing sync operations or checking"
-                        + " network performance."))
+                    """
+                    Average sync time is high. Consider optimizing sync operations or checking\
+                     network performance.\
+                    """))
         .andExpect(
             jsonPath("$[2]")
                 .value(
-                    "No successful sync in over 24 hours. Check sync scheduler and"
-                        + " configuration."));
+                    """
+                    No successful sync in over 24 hours. Check sync scheduler and\
+                     configuration.\
+                    """));
   }
 
   @Test

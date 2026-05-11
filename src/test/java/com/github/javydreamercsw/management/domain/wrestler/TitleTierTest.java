@@ -74,7 +74,11 @@ class TitleTierTest {
     "150000, true, true, true, true"
   })
   void shouldCorrectlyCheckWrestlerEligibility(
-      Long fans, boolean extreme, boolean tagTeam, boolean intertemporal, boolean world) {
+      final Long fans,
+      final boolean extreme,
+      final boolean tagTeam,
+      final boolean intertemporal,
+      final boolean world) {
     assertThat(TitleTier.EXTREME.isEligible(fans)).isEqualTo(extreme);
     assertThat(TitleTier.TAG_TEAM.isEligible(fans)).isEqualTo(tagTeam);
     assertThat(TitleTier.INTERTEMPORAL.isEligible(fans)).isEqualTo(intertemporal);

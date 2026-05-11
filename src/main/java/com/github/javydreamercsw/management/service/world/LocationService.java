@@ -42,7 +42,10 @@ public class LocationService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Location createLocation(
-      String name, String description, String imageUrl, Set<String> culturalTags) {
+      final String name,
+      final String description,
+      final String imageUrl,
+      final Set<String> culturalTags) {
     Location location =
         Location.builder()
             .name(name)
@@ -55,7 +58,11 @@ public class LocationService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<Location> updateLocation(
-      Long id, String name, String description, String imageUrl, Set<String> culturalTags) {
+      final Long id,
+      final String name,
+      final String description,
+      final String imageUrl,
+      final Set<String> culturalTags) {
     return repository
         .findById(id)
         .map(
@@ -69,7 +76,7 @@ public class LocationService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Optional<Location> findById(Long id) {
+  public Optional<Location> findById(final Long id) {
     return repository.findById(id);
   }
 
@@ -79,7 +86,7 @@ public class LocationService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Page<Location> list(Pageable pageable) {
+  public Page<Location> list(final Pageable pageable) {
     return repository.findAll(pageable);
   }
 
@@ -88,12 +95,12 @@ public class LocationService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public void deleteLocation(Long id) {
+  public void deleteLocation(final Long id) {
     repository.deleteById(id);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Optional<Location> findByName(String name) {
+  public Optional<Location> findByName(final String name) {
     return repository.findByName(name);
   }
 
@@ -104,7 +111,7 @@ public class LocationService {
    * @param location The location entity.
    * @return The resolved image URL.
    */
-  public String resolveLocationImage(Location location) {
+  public String resolveLocationImage(final Location location) {
     if (location.getImageUrl() != null && !location.getImageUrl().isBlank()) {
       return location.getImageUrl();
     }

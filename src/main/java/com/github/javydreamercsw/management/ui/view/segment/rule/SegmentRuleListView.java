@@ -48,12 +48,14 @@ import jakarta.annotation.security.PermitAll;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route("segment-rule-list")
 @PageTitle("Segment Rules")
 @Menu(order = 7, icon = "vaadin:list-ol", title = "Segment Rules")
+@NoArgsConstructor
 @PermitAll
 public class SegmentRuleListView extends Main {
   @Autowired private SegmentRuleService segmentRuleService;
@@ -63,10 +65,6 @@ public class SegmentRuleListView extends Main {
   private Dialog editDialog;
   private SegmentRule editingSegmentRule;
   private Binder<SegmentRule> binder;
-
-  public SegmentRuleListView() {
-    // Vaadin requires a no-arg constructor.
-  }
 
   @PostConstruct
   private void initializeUI() {
@@ -135,7 +133,7 @@ public class SegmentRuleListView extends Main {
     refreshGrid();
   }
 
-  private HorizontalLayout createActionsColumn(@NonNull SegmentRule segmentRule) {
+  private HorizontalLayout createActionsColumn(@NonNull final SegmentRule segmentRule) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.setTooltipText("Edit Segment Rule");
@@ -164,14 +162,14 @@ public class SegmentRuleListView extends Main {
     editDialog.open();
   }
 
-  private void openEditDialog(@NonNull SegmentRule segmentRule) {
+  private void openEditDialog(@NonNull final SegmentRule segmentRule) {
     editingSegmentRule = segmentRule;
     setupEditDialog("Edit Segment Rule");
     binder.readBean(editingSegmentRule);
     editDialog.open();
   }
 
-  private void setupEditDialog(@NonNull String headerTitle) {
+  private void setupEditDialog(@NonNull final String headerTitle) {
     editDialog = new Dialog();
     editDialog.setHeaderTitle(headerTitle);
     editDialog.setWidth("500px");
@@ -251,7 +249,7 @@ public class SegmentRuleListView extends Main {
     }
   }
 
-  private void confirmDelete(@NonNull SegmentRule segmentRule) {
+  private void confirmDelete(@NonNull final SegmentRule segmentRule) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Confirm Delete");
     confirmDialog.add(
@@ -269,7 +267,7 @@ public class SegmentRuleListView extends Main {
     confirmDialog.open();
   }
 
-  private void deleteSegmentRule(@NonNull Dialog confirmDialog) {
+  private void deleteSegmentRule(@NonNull final Dialog confirmDialog) {
     try {
       Notification.show(
               "Segment rule deleted successfully!", 3000, Notification.Position.BOTTOM_START)

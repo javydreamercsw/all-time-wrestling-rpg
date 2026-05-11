@@ -27,7 +27,7 @@ public enum WrestlerStatusAction {
 
   private final String displayName;
 
-  WrestlerStatusAction(String displayName) {
+  WrestlerStatusAction(final String displayName) {
     this.displayName = displayName;
   }
 }

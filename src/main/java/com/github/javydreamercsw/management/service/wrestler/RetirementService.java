@@ -46,7 +46,7 @@ public class RetirementService {
    * @param leagueId The league ID
    */
   @Transactional
-  public void checkRetirement(Wrestler wrestler, Long leagueId) {
+  public void checkRetirement(final Wrestler wrestler, final Long leagueId) {
     if (!wrestler.getActive()) {
       return;
     }
@@ -99,7 +99,7 @@ public class RetirementService {
     eventPublisher.publishEvent(new WrestlerRetiredEvent(this, wrestler, reason));
   }
 
-  private String addRetirementFlag(String featureData) {
+  private String addRetirementFlag(final String featureData) {
     // Basic implementation - in a real scenario we'd use ObjectMapper
     return featureData == null
         ? "{\"retired\": true}"

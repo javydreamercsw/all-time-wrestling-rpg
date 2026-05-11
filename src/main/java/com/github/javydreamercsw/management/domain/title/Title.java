@@ -115,14 +115,15 @@ public class Title extends AbstractSyncableEntity<Long> {
   @ManyToMany(mappedBy = "titles", fetch = FetchType.EAGER)
   private List<Segment> segments = new ArrayList<>();
 
-  public void awardTitleTo(@NonNull List<Wrestler> newChampions, @NonNull Instant awardDate) {
+  public void awardTitleTo(
+      @NonNull final List<Wrestler> newChampions, @NonNull final Instant awardDate) {
     awardTitleTo(newChampions, awardDate, null);
   }
 
   public void awardTitleTo(
-      @NonNull List<Wrestler> newChampions,
-      @NonNull Instant awardDate,
-      @Nullable Segment wonAtSegment) {
+      @NonNull final List<Wrestler> newChampions,
+      @NonNull final Instant awardDate,
+      @Nullable final Segment wonAtSegment) {
     // End the current reign if one exists.
     getCurrentReign().ifPresent(reign -> reign.endReign(awardDate));
 
@@ -137,7 +138,7 @@ public class Title extends AbstractSyncableEntity<Long> {
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
   }
 
-  public void vacateTitle(Instant now) {
+  public void vacateTitle(final Instant now) {
     getCurrentReign().ifPresent(reign -> reign.endReign(now));
     this.champion.clear();
   }
@@ -152,7 +153,7 @@ public class Title extends AbstractSyncableEntity<Long> {
     return champion;
   }
 
-  public long getCurrentReignDays(Instant now) {
+  public long getCurrentReignDays(final Instant now) {
     return getCurrentReign().map(reign -> reign.getReignLengthDays(now)).orElse(0L);
   }
 
@@ -206,7 +207,7 @@ public class Title extends AbstractSyncableEntity<Long> {
    *
    * @param wrestler Wrestler to add as a challenger.
    */
-  public void addChallenger(@NonNull Wrestler wrestler) {
+  public void addChallenger(@NonNull final Wrestler wrestler) {
     if (!this.challengers.contains(wrestler)) {
       this.challengers.add(wrestler);
     }

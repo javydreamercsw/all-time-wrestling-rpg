@@ -90,7 +90,8 @@ class SegmentOutcomeServiceHomeFieldTest {
     when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(awayState);
   }
 
-  private WrestlerContext makeContext(@NonNull String name, @NonNull String hailingFrom) {
+  private WrestlerContext makeContext(
+      @NonNull final String name, @NonNull final String hailingFrom) {
     WrestlerContext ctx = new SegmentNarrationService.WrestlerContext();
     ctx.setName(name);
     ctx.setHailingFrom(hailingFrom);
@@ -99,7 +100,7 @@ class SegmentOutcomeServiceHomeFieldTest {
     return ctx;
   }
 
-  private VenueContext makeVenue(@NonNull String location) {
+  private VenueContext makeVenue(@NonNull final String location) {
     VenueContext venue = new SegmentNarrationService.VenueContext();
     venue.setName("Tokyo Dome");
     venue.setLocation(location);
@@ -107,7 +108,7 @@ class SegmentOutcomeServiceHomeFieldTest {
   }
 
   private SegmentNarrationService.SegmentNarrationContext makeContext(
-      @NonNull List<WrestlerContext> wrestlers, VenueContext venue) {
+      @NonNull final List<WrestlerContext> wrestlers, final VenueContext venue) {
     SegmentNarrationService.SegmentNarrationContext ctx =
         new SegmentNarrationService.SegmentNarrationContext();
     SegmentNarrationService.SegmentTypeContext st =

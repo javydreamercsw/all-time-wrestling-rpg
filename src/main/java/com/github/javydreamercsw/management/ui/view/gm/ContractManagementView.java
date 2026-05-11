@@ -47,9 +47,9 @@ public class ContractManagementView extends VerticalLayout {
   private final Grid<WrestlerContract> contractGrid = new Grid<>(WrestlerContract.class, false);
 
   public ContractManagementView(
-      LeagueService leagueService,
-      WrestlerContractRepository contractRepository,
-      SecurityUtils securityUtils) {
+      final LeagueService leagueService,
+      final WrestlerContractRepository contractRepository,
+      final SecurityUtils securityUtils) {
     this.leagueService = leagueService;
     this.contractRepository = contractRepository;
     this.securityUtils = securityUtils;
@@ -97,7 +97,7 @@ public class ContractManagementView extends VerticalLayout {
             });
   }
 
-  private void refreshGrid(League league) {
+  private void refreshGrid(final League league) {
     if (league == null) {
       contractGrid.setItems(List.of());
       return;

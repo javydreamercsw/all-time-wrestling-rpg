@@ -47,7 +47,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   @Override
   @Transactional
-  public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(@NonNull final String username)
+      throws UsernameNotFoundException {
     log.info("[E2E] loadUserByUsername called for: {}", username);
     Account account =
         accountRepository
@@ -98,7 +99,7 @@ public class CustomUserDetailsService implements UserDetailsService {
    * @param username the username
    */
   @Transactional
-  public void recordFailedLoginAttempt(@NonNull String username) {
+  public void recordFailedLoginAttempt(@NonNull final String username) {
     accountRepository
         .findByUsername(username)
         .ifPresent(
@@ -126,7 +127,7 @@ public class CustomUserDetailsService implements UserDetailsService {
    * @param username the username
    */
   @Transactional
-  public void recordSuccessfulLogin(@NonNull String username) {
+  public void recordSuccessfulLogin(@NonNull final String username) {
     accountRepository
         .findByUsername(username)
         .ifPresent(

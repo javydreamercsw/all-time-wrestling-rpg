@@ -197,7 +197,7 @@ class TitleListViewTest extends AbstractViewTest {
     List<Title> items = grid.getGenericDataView().getItems().toList();
     assertEquals(2, items.size());
     Optional<Title> createdTitle =
-        items.stream().filter(t -> t.getName().equals("New Title")).findFirst();
+        items.stream().filter(t -> "New Title".equals(t.getName())).findFirst();
     assertTrue(createdTitle.isPresent());
     assertEquals("Other Wrestler", createdTitle.get().getChampionNames());
   }

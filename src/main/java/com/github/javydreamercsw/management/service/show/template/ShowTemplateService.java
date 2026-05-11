@@ -58,7 +58,7 @@ public class ShowTemplateService {
    * @return List of show templates
    */
   @PreAuthorize("isAuthenticated()")
-  public List<ShowTemplate> list(Pageable pageable) {
+  public List<ShowTemplate> list(final Pageable pageable) {
     return showTemplateRepository.findAllBy(pageable).toList();
   }
 
@@ -84,7 +84,7 @@ public class ShowTemplateService {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
       },
       allEntries = true)
-  public ShowTemplate save(@NonNull ShowTemplate showTemplate) {
+  public ShowTemplate save(@NonNull final ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
     return showTemplateRepository.saveAndFlush(showTemplate);
   }
@@ -112,12 +112,12 @@ public class ShowTemplateService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "#name")
-  public Optional<ShowTemplate> findByName(@NonNull String name) {
+  public Optional<ShowTemplate> findByName(@NonNull final String name) {
     return showTemplateRepository.findByName(name);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<ShowTemplate> findByExternalId(@NonNull String externalId) {
+  public Optional<ShowTemplate> findByExternalId(@NonNull final String externalId) {
     return showTemplateRepository.findByExternalId(externalId);
   }
 
@@ -128,7 +128,7 @@ public class ShowTemplateService {
    * @return true if a show template with this name exists
    */
   @PreAuthorize("isAuthenticated()")
-  public boolean existsByName(@NonNull String name) {
+  public boolean existsByName(@NonNull final String name) {
     return showTemplateRepository.existsByName(name);
   }
 
@@ -142,7 +142,7 @@ public class ShowTemplateService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "#id")
-  public Optional<ShowTemplate> findById(@NonNull Long id) {
+  public Optional<ShowTemplate> findById(@NonNull final Long id) {
     return showTemplateRepository.findById(id);
   }
 
@@ -182,7 +182,7 @@ public class ShowTemplateService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "#showTypeName")
-  public List<ShowTemplate> findByShowTypeName(@NonNull String showTypeName) {
+  public List<ShowTemplate> findByShowTypeName(@NonNull final String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
   }
 
@@ -192,7 +192,7 @@ public class ShowTemplateService {
    * @param showType The show type
    * @return List of templates for the specified show type
    */
-  public List<ShowTemplate> findByShowType(@NonNull ShowType showType) {
+  public List<ShowTemplate> findByShowType(@NonNull final ShowType showType) {
     return showTemplateRepository.findByShowType(showType);
   }
 
@@ -214,21 +214,21 @@ public class ShowTemplateService {
       },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
-      @NonNull String name,
-      String description,
-      @NonNull String showTypeName,
-      String notionUrl,
-      String imageUrl,
-      String commentaryTeamName,
-      Integer expectedMatches,
-      Integer expectedPromos,
-      Integer durationDays,
-      com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
-      java.time.DayOfWeek dayOfWeek,
-      Integer dayOfMonth,
-      Integer weekOfMonth,
-      java.time.Month month,
-      com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
+      @NonNull final String name,
+      final String description,
+      @NonNull final String showTypeName,
+      final String notionUrl,
+      final String imageUrl,
+      final String commentaryTeamName,
+      final Integer expectedMatches,
+      final Integer expectedPromos,
+      final Integer durationDays,
+      final com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
+      final java.time.DayOfWeek dayOfWeek,
+      final Integer dayOfMonth,
+      final Integer weekOfMonth,
+      final java.time.Month month,
+      final com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
 
     // Find or create show type
     Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -287,7 +287,10 @@ public class ShowTemplateService {
       },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
-      @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
+      @NonNull final String name,
+      final String description,
+      @NonNull final String showTypeName,
+      final String notionUrl) {
     return createOrUpdateTemplate(
         name,
         description,
@@ -313,7 +316,7 @@ public class ShowTemplateService {
    * @return Page of show templates
    */
   @PreAuthorize("isAuthenticated()")
-  public Page<ShowTemplate> getAllTemplates(Pageable pageable) {
+  public Page<ShowTemplate> getAllTemplates(final Pageable pageable) {
     return showTemplateRepository.findAll(pageable);
   }
 
@@ -324,7 +327,7 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
-  public Optional<ShowTemplate> getTemplateById(@NonNull Long id) {
+  public Optional<ShowTemplate> getTemplateById(@NonNull final Long id) {
     return showTemplateRepository.findById(id);
   }
 
@@ -335,7 +338,7 @@ public class ShowTemplateService {
    * @return List of templates for the specified show type
    */
   @PreAuthorize("isAuthenticated()")
-  public List<ShowTemplate> getTemplatesByShowType(@NonNull String showTypeName) {
+  public List<ShowTemplate> getTemplatesByShowType(@NonNull final String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
   }
 
@@ -358,22 +361,22 @@ public class ShowTemplateService {
       },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
-      @NonNull Long id,
-      @NonNull String name,
-      String description,
-      @NonNull String showTypeName,
-      String notionUrl,
-      String imageUrl,
-      String commentaryTeamName,
-      Integer expectedMatches,
-      Integer expectedPromos,
-      Integer durationDays,
-      com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
-      java.time.DayOfWeek dayOfWeek,
-      Integer dayOfMonth,
-      Integer weekOfMonth,
-      java.time.Month month,
-      com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String description,
+      @NonNull final String showTypeName,
+      final String notionUrl,
+      final String imageUrl,
+      final String commentaryTeamName,
+      final Integer expectedMatches,
+      final Integer expectedPromos,
+      final Integer durationDays,
+      final com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
+      final java.time.DayOfWeek dayOfWeek,
+      final Integer dayOfMonth,
+      final Integer weekOfMonth,
+      final java.time.Month month,
+      final com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
 
     Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
     if (templateOpt.isEmpty()) {
@@ -440,11 +443,11 @@ public class ShowTemplateService {
       },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
-      @NonNull Long id,
-      @NonNull String name,
-      String description,
-      @NonNull String showTypeName,
-      String notionUrl) {
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String description,
+      @NonNull final String showTypeName,
+      final String notionUrl) {
     ShowTemplate st = showTemplateRepository.findById(id).orElseThrow();
     return updateTemplate(
         id,
@@ -476,7 +479,7 @@ public class ShowTemplateService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       allEntries = true)
-  public boolean deleteTemplate(@NonNull Long id) {
+  public boolean deleteTemplate(@NonNull final Long id) {
     if (showTemplateRepository.existsById(id)) {
       showTemplateRepository.deleteById(id);
       log.info("Deleted show template with ID: {}", id);

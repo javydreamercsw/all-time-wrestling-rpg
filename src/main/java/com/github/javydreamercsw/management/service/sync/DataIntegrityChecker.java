@@ -96,7 +96,9 @@ public class DataIntegrityChecker {
 
   /** Check shows data integrity. */
   private void checkShowsIntegrity(
-      List<String> errors, List<String> warnings, Map<String, Object> statistics) {
+      final List<String> errors,
+      final List<String> warnings,
+      final Map<String, Object> statistics) {
     try {
       long showCount = showService.count();
       statistics.put("totalShows", showCount);
@@ -155,7 +157,9 @@ public class DataIntegrityChecker {
 
   /** Check wrestlers data integrity. */
   private void checkWrestlersIntegrity(
-      List<String> errors, List<String> warnings, Map<String, Object> statistics) {
+      final List<String> errors,
+      final List<String> warnings,
+      final Map<String, Object> statistics) {
     try {
       long wrestlerCount = wrestlerRepository.count();
       statistics.put("totalWrestlers", wrestlerCount);
@@ -203,7 +207,9 @@ public class DataIntegrityChecker {
 
   /** Check factions data integrity. */
   private void checkFactionsIntegrity(
-      List<String> errors, List<String> warnings, Map<String, Object> statistics) {
+      final List<String> errors,
+      final List<String> warnings,
+      final Map<String, Object> statistics) {
     try {
       long factionCount = factionRepository.count();
       statistics.put("totalFactions", factionCount);
@@ -237,7 +243,9 @@ public class DataIntegrityChecker {
 
   /** Check teams data integrity. */
   private void checkTeamsIntegrity(
-      List<String> errors, List<String> warnings, Map<String, Object> statistics) {
+      final List<String> errors,
+      final List<String> warnings,
+      final Map<String, Object> statistics) {
     try {
       long teamCount = teamRepository.count();
       statistics.put("totalTeams", teamCount);
@@ -282,7 +290,9 @@ public class DataIntegrityChecker {
 
   /** Check referential integrity between entities. */
   private void checkReferentialIntegrity(
-      List<String> errors, List<String> warnings, Map<String, Object> statistics) {
+      final List<String> errors,
+      final List<String> warnings,
+      final Map<String, Object> statistics) {
     try {
       // Check if all show types referenced by shows exist
       long showTypeCount = showTypeService.count();
@@ -311,7 +321,10 @@ public class DataIntegrityChecker {
     private final Map<String, Object> statistics;
 
     public IntegrityCheckResult(
-        boolean valid, List<String> errors, List<String> warnings, Map<String, Object> statistics) {
+        final boolean valid,
+        final List<String> errors,
+        final List<String> warnings,
+        final Map<String, Object> statistics) {
       this.valid = valid;
       this.errors = new ArrayList<>(errors);
       this.warnings = new ArrayList<>(warnings);

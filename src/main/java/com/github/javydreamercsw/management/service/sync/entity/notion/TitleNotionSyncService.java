@@ -33,14 +33,14 @@ import org.springframework.stereotype.Service;
 public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
 
   public TitleNotionSyncService(
-      TitleRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final TitleRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Title entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Title entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 

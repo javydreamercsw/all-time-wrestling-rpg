@@ -26,7 +26,8 @@ public class WrestlerBumpHealedEvent extends ApplicationEvent {
 
   private final WrestlerState wrestlerState;
 
-  public WrestlerBumpHealedEvent(@NonNull Object source, @NonNull WrestlerState wrestlerState) {
+  public WrestlerBumpHealedEvent(
+      @NonNull final Object source, @NonNull final WrestlerState wrestlerState) {
     super(source);
     this.wrestlerState = wrestlerState;
   }

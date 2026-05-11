@@ -247,9 +247,11 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           documentFeature(
               "Player Dashboard",
               "Season Summary",
-              "The Season Summary component provides a snapshot of your wrestler's performance"
-                  + " during the currently active season, including their win-loss record, fan"
-                  + " growth progress, and any championships or accolades earned.",
+              """
+              The Season Summary component provides a snapshot of your wrestler's performance\
+               during the currently active season, including their win-loss record, fan\
+               growth progress, and any championships or accolades earned.\
+              """,
               "player-season-summary");
 
           // 3. Switch to Past Season (Season 1)
@@ -272,9 +274,11 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           documentFeature(
               "Player Dashboard",
               "Historical Season Performance",
-              "Review your past glory by switching between seasons. The dashboard stores historical"
-                  + " data, allowing you to track your wrestler's career trajectory and milestones"
-                  + " over time.",
+              """
+              Review your past glory by switching between seasons. The dashboard stores historical\
+               data, allowing you to track your wrestler's career trajectory and milestones\
+               over time.\
+              """,
               "player-season-history");
         });
   }
@@ -332,11 +336,13 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           documentFeature(
               "Player Dashboard",
               "Effective Stats and Status Cards",
-              "The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size"
-                  + " after applying all active modifiers — campaign bonuses/penalties, injuries,"
-                  + " bumps, and Status Cards. Hover over any stat for a full breakdown. Active"
-                  + " Status Cards appear as colour-coded badges: green for positive, red for"
-                  + " negative.",
+              """
+              The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size\
+               after applying all active modifiers — campaign bonuses/penalties, injuries,\
+               bumps, and Status Cards. Hover over any stat for a full breakdown. Active\
+               Status Cards appear as colour-coded badges: green for positive, red for\
+               negative.\
+              """,
               "player-effective-stats");
         });
   }

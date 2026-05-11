@@ -34,7 +34,7 @@ public class PlayerCampaignCard extends Composite<Div> {
   private final Div card;
   private boolean isFlipped = false;
 
-  public PlayerCampaignCard(@NonNull Campaign campaign) {
+  public PlayerCampaignCard(@NonNull final Campaign campaign) {
     getContent().addClassName("player-card-container");
 
     card = new Div();
@@ -59,7 +59,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     }
   }
 
-  private Div createCardFront(Campaign campaign) {
+  private Div createCardFront(final Campaign campaign) {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment = wrestler.getAlignment();
 
@@ -129,7 +129,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     return face;
   }
 
-  private Div createCardBack(Campaign campaign) {
+  private Div createCardBack(final Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler wrestler = campaign.getWrestler();
 
@@ -224,7 +224,12 @@ public class PlayerCampaignCard extends Composite<Div> {
   }
 
   private Div createStatusBar(
-      String label, String valueText, int current, int max, int lowLimit, String styleClass) {
+      final String label,
+      final String valueText,
+      final int current,
+      final int max,
+      final int lowLimit,
+      final String styleClass) {
     Div container = new Div();
     container.addClassName("status-bar-container");
 
@@ -271,7 +276,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     return container;
   }
 
-  private Div createStatRow(String label, String value) {
+  private Div createStatRow(final String label, final String value) {
     Div row = new Div();
     row.addClassName("stat-row");
     Span labelSpan = new Span(label);
@@ -282,7 +287,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     return row;
   }
 
-  private Div createGroupTitle(String title) {
+  private Div createGroupTitle(final String title) {
     Div div = new Div();
     div.setText(title);
     div.addClassName("stat-group-title");

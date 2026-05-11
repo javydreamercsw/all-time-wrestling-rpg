@@ -32,7 +32,7 @@ public class ShowExportService {
   private final List<ShowCardFormatter> formatters;
 
   public ShowExportService(
-      SegmentRepository segmentRepository, List<ShowCardFormatter> formatters) {
+      final SegmentRepository segmentRepository, final List<ShowCardFormatter> formatters) {
     this.segmentRepository = segmentRepository;
     this.formatters = formatters;
   }
@@ -61,11 +61,11 @@ public class ShowExportService {
    * @throws IllegalArgumentException if format is not found
    */
   public String export(
-      Show show,
-      String formatName,
-      boolean includeSummary,
-      boolean includeResults,
-      boolean includeNarration) {
+      final Show show,
+      final String formatName,
+      final boolean includeSummary,
+      final boolean includeResults,
+      final boolean includeNarration) {
     ShowCardFormatter formatter =
         formatters.stream()
             .filter(f -> f.getFormatName().equalsIgnoreCase(formatName))

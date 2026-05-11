@@ -32,12 +32,12 @@ public class NoOpSyncHealthMonitor implements ISyncHealthMonitor {
   }
 
   @Override
-  public void recordSuccess(String entityType, long durationMs, int itemCount) {
+  public void recordSuccess(final String entityType, final long durationMs, final int itemCount) {
     log.debug("No-Op: recordSuccess for {} (sync disabled)", entityType);
   }
 
   @Override
-  public void recordFailure(String entityType, String errorMessage) {
+  public void recordFailure(final String entityType, final String errorMessage) {
     log.debug("No-Op: recordFailure for {} (sync disabled)", entityType);
   }
 

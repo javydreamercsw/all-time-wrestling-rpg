@@ -65,7 +65,7 @@ public class DramaEventController {
       })
   @PostMapping
   public ResponseEntity<Object> createDramaEvent(
-      @Valid @RequestBody CreateDramaEventRequest request) {
+      @Valid @RequestBody final CreateDramaEventRequest request) {
     Optional<DramaEvent> event =
         dramaEventService.createDramaEvent(
             request.primaryWrestlerId(),
@@ -94,7 +94,7 @@ public class DramaEventController {
       })
   @PostMapping("/generate/{wrestlerId}/{universeId}")
   public ResponseEntity<Object> generateRandomDramaEvent(
-      @PathVariable Long wrestlerId, @PathVariable Long universeId) {
+      @PathVariable final Long wrestlerId, @PathVariable final Long universeId) {
     Optional<DramaEvent> event = dramaEventService.generateRandomDramaEvent(wrestlerId, universeId);
 
     return event
@@ -118,7 +118,8 @@ public class DramaEventController {
       summary = "Get drama events for wrestler",
       description = "Gets all drama events involving a specific wrestler")
   @GetMapping("/wrestler/{wrestlerId}")
-  public ResponseEntity<List<DramaEvent>> getEventsForWrestler(@PathVariable Long wrestlerId) {
+  public ResponseEntity<List<DramaEvent>> getEventsForWrestler(
+      @PathVariable final Long wrestlerId) {
     List<DramaEvent> events = dramaEventService.getEventsForWrestler(wrestlerId);
     return ResponseEntity.ok(events);
   }
@@ -128,7 +129,7 @@ public class DramaEventController {
       description = "Gets drama events for a wrestler with pagination")
   @GetMapping("/wrestler/{wrestlerId}/paginated")
   public ResponseEntity<Page<DramaEvent>> getEventsForWrestlerPaginated(
-      @PathVariable Long wrestlerId, Pageable pageable) {
+      @PathVariable final Long wrestlerId, final Pageable pageable) {
     Page<DramaEvent> events = dramaEventService.getEventsForWrestler(wrestlerId, pageable);
     return ResponseEntity.ok(events);
   }
@@ -147,7 +148,7 @@ public class DramaEventController {
       description = "Gets all drama events between two specific wrestlers")
   @GetMapping("/between/{wrestler1Id}/{wrestler2Id}")
   public ResponseEntity<List<DramaEvent>> getEventsBetweenWrestlers(
-      @PathVariable Long wrestler1Id, @PathVariable Long wrestler2Id) {
+      @PathVariable final Long wrestler1Id, @PathVariable final Long wrestler2Id) {
     List<DramaEvent> events = dramaEventService.getEventsBetweenWrestlers(wrestler1Id, wrestler2Id);
     return ResponseEntity.ok(events);
   }

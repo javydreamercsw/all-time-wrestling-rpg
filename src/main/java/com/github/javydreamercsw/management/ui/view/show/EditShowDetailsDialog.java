@@ -70,14 +70,14 @@ public class EditShowDetailsDialog extends Dialog {
   private final DatePicker showDateField = new DatePicker("Show Date");
 
   public EditShowDetailsDialog(
-      @NonNull ShowService showService,
-      @NonNull ShowTypeService showTypeService,
-      @NonNull SeasonService seasonService,
-      @NonNull ShowTemplateService showTemplateService,
-      @NonNull UniverseRepository universeRepository,
-      @NonNull CommentaryTeamRepository commentaryTeamRepository,
-      @NonNull com.github.javydreamercsw.management.service.world.ArenaService arenaService,
-      @NonNull Show show) {
+      @NonNull final ShowService showService,
+      @NonNull final ShowTypeService showTypeService,
+      @NonNull final SeasonService seasonService,
+      @NonNull final ShowTemplateService showTemplateService,
+      @NonNull final UniverseRepository universeRepository,
+      @NonNull final CommentaryTeamRepository commentaryTeamRepository,
+      @NonNull final com.github.javydreamercsw.management.service.world.ArenaService arenaService,
+      @NonNull final Show show) {
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;

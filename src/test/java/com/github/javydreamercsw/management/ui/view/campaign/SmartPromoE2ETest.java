@@ -165,7 +165,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     takeSequencedScreenshot("smart-promo-back-to-actions");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

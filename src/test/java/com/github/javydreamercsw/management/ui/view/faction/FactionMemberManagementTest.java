@@ -329,7 +329,7 @@ class FactionMemberManagementTest {
   }
 
   /** Helper method to create updated faction with new member. */
-  private Faction createUpdatedFactionWithNewMember(Wrestler newMember) {
+  private Faction createUpdatedFactionWithNewMember(final Wrestler newMember) {
     Faction updated = createTestFactionWithMembers();
     Set<WrestlerState> updatedMembers = new HashSet<>(updated.getMembers());
     WrestlerState newState = new WrestlerState();
@@ -341,7 +341,7 @@ class FactionMemberManagementTest {
   }
 
   /** Helper method to create updated faction with removed member. */
-  private Faction createUpdatedFactionWithRemovedMember(Wrestler removedMember) {
+  private Faction createUpdatedFactionWithRemovedMember(final Wrestler removedMember) {
     Faction updated = createTestFactionWithMembers();
     Set<WrestlerState> updatedMembers = new HashSet<>(updated.getMembers());
     updatedMembers.removeIf(ms -> ms.getWrestler().equals(removedMember));

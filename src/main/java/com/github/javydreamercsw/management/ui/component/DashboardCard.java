@@ -28,7 +28,7 @@ public class DashboardCard extends Composite<Div> {
 
   private final Div content;
 
-  public DashboardCard(@NonNull String title) {
+  public DashboardCard(@NonNull final String title) {
     getContent()
         .addClassNames(
             Display.FLEX,
@@ -49,16 +49,16 @@ public class DashboardCard extends Composite<Div> {
     getContent().add(content);
   }
 
-  public DashboardCard(@NonNull String title, Component... components) {
+  public DashboardCard(@NonNull final String title, final Component... components) {
     this(title);
     add(components);
   }
 
-  public void add(Component... components) {
+  public void add(final Component... components) {
     content.add(components);
   }
 
-  public void setMaxWidth(String maxWidth) {
+  public void setMaxWidth(final String maxWidth) {
     getContent().setMaxWidth(maxWidth);
   }
 }

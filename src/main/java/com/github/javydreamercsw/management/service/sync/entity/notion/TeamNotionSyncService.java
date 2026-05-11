@@ -31,14 +31,14 @@ import org.springframework.stereotype.Service;
 public class TeamNotionSyncService extends BaseNotionSyncService<Team> {
 
   public TeamNotionSyncService(
-      TeamRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final TeamRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Team entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Team entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 

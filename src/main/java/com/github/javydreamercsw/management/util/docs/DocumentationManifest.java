@@ -24,24 +24,23 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DocumentationManifest {
   private static final List<DocEntry> ENTRIES = new CopyOnWriteArrayList<>();
   private static final ObjectMapper MAPPER =
       new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-
-  private DocumentationManifest() {
-    // Static utility
-  }
 
   /**
    * Add a new entry to the manifest.
    *
    * @param entry The entry to add
    */
-  public static void addEntry(DocEntry entry) {
+  public static void addEntry(final DocEntry entry) {
     // Remove existing if same ID to allow updates/retries
     ENTRIES.removeIf(e -> e.getId().equals(entry.getId()));
     ENTRIES.add(entry);
@@ -56,7 +55,7 @@ public class DocumentationManifest {
     return new ArrayList<>(ENTRIES);
   }
 
-  private static void loadExisting(Path path) {
+  private static void loadExisting(final Path path) {
     if (Files.exists(path)) {
       try {
         ManifestWrapper wrapper = MAPPER.readValue(path.toFile(), ManifestWrapper.class);
@@ -77,7 +76,7 @@ public class DocumentationManifest {
    * @param path The path to write to
    * @throws IOException If writing fails
    */
-  public static void write(Path path) throws IOException {
+  public static void write(final Path path) throws IOException {
     if (path.getParent() != null) {
       Files.createDirectories(path.getParent());
     }

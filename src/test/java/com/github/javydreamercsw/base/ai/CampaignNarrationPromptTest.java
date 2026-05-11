@@ -27,7 +27,7 @@ class CampaignNarrationPromptTest {
 
   private static class TestSegmentNarrationService extends AbstractSegmentNarrationService {
     @Override
-    protected String callAIProvider(@NonNull String prompt) {
+    protected String callAIProvider(@NonNull final String prompt) {
       return "Mock Response";
     }
 
@@ -42,11 +42,11 @@ class CampaignNarrationPromptTest {
     }
 
     @Override
-    public String generateText(@NonNull String prompt) {
+    public String generateText(@NonNull final String prompt) {
       return "Mock Text";
     }
 
-    public String getPrompt(SegmentNarrationService.SegmentNarrationContext context) {
+    public String getPrompt(final SegmentNarrationService.SegmentNarrationContext context) {
       return buildSegmentNarrationPrompt(context);
     }
   }

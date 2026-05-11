@@ -35,10 +35,10 @@ import lombok.NonNull;
 public class MatchReportDialog extends Dialog {
 
   public MatchReportDialog(
-      @NonNull MatchFulfillmentService fulfillmentService,
-      @NonNull MatchFulfillment fulfillment,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull Runnable onSave) {
+      @NonNull final MatchFulfillmentService fulfillmentService,
+      @NonNull final MatchFulfillment fulfillment,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final Runnable onSave) {
 
     setHeaderTitle("Report Match Result");
     setId("match-report-dialog");

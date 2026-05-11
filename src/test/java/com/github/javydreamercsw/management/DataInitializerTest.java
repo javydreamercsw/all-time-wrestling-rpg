@@ -542,8 +542,10 @@ class DataInitializerTest {
       assertEquals(
           List.of(),
           missingLocationRefs,
-          "Every arena location must exist in locations.json to avoid skipped arenas during seed"
-              + " sync.");
+          """
+          Every arena location must exist in locations.json to avoid skipped arenas during seed\
+           sync.\
+          """);
     }
   }
 

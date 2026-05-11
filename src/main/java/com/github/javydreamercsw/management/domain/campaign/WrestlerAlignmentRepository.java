@@ -28,8 +28,10 @@ public interface WrestlerAlignmentRepository extends JpaRepository<WrestlerAlign
   Optional<WrestlerAlignment> findByWrestler(Wrestler wrestler);
 
   @Query(
-      "SELECT wa FROM WrestlerAlignment wa WHERE wa.wrestler = :wrestler AND"
-          + " wa.campaign.universe.id = :universeId")
+      """
+      SELECT wa FROM WrestlerAlignment wa WHERE wa.wrestler = :wrestler AND\
+       wa.campaign.universe.id = :universeId\
+      """)
   Optional<WrestlerAlignment> findByWrestlerAndUniverseId(
       @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
 }

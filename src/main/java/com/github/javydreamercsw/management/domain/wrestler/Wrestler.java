@@ -160,7 +160,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
         .orElse(alignments.isEmpty() ? null : alignments.iterator().next());
   }
 
-  public void setAlignment(WrestlerAlignment alignment) {
+  public void setAlignment(final WrestlerAlignment alignment) {
     if (alignment != null) {
       alignment.setWrestler(this);
       this.alignments.add(alignment);
@@ -209,7 +209,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   private Set<WrestlerState> wrestlerStates = new LinkedHashSet<>();
 
   @JsonIgnore
-  public java.util.Optional<WrestlerState> getState(Long universeId) {
+  public java.util.Optional<WrestlerState> getState(final Long universeId) {
     if (universeId == null) {
       return java.util.Optional.empty();
     }
@@ -221,12 +221,12 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   // ==================== ATW RPG METHODS ====================
 
   @JsonIgnore
-  public Integer getFanWeight(Long universeId) {
+  public Integer getFanWeight(final Long universeId) {
     return Math.toIntExact(getFans(universeId) / 5);
   }
 
   @JsonIgnore
-  public Long getFans(Long universeId) {
+  public Long getFans(final Long universeId) {
     if (universeId == null) {
       return 0L;
     }
@@ -238,7 +238,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @JsonIgnore
-  public Integer getEffectiveStartingHealth(Long universeId) {
+  public Integer getEffectiveStartingHealth(final Long universeId) {
     int bonus = 0;
     int penalty = 0;
     WrestlerAlignment alignment = getAlignment();
@@ -326,7 +326,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return Math.max(1, handSize);
   }
 
-  private int parseEffectValue(String effect, String key) {
+  private int parseEffectValue(final String effect, final String key) {
     try {
       String[] parts = effect.split(",");
       for (String part : parts) {
@@ -380,7 +380,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return allRivalries;
   }
 
-  public boolean hasActiveRivalryWith(Wrestler otherWrestler) {
+  public boolean hasActiveRivalryWith(final Wrestler otherWrestler) {
     return getActiveRivalries().stream()
         .anyMatch(rivalry -> rivalry.involvesWrestler(otherWrestler));
   }
@@ -429,7 +429,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @Override
   @Deprecated
   @jakarta.persistence.Transient
-  public void setTier(WrestlerTier tier) {
+  public void setTier(final WrestlerTier tier) {
     getDefaultState().ifPresent(s -> s.setTier(tier));
   }
 
@@ -442,7 +442,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setBumps(Integer bumps) {
+  public void setBumps(final Integer bumps) {
     getDefaultState().ifPresent(s -> s.setBumps(bumps));
   }
 
@@ -455,7 +455,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setFaction(Faction faction) {
+  public void setFaction(final Faction faction) {
     getDefaultState().ifPresent(s -> s.setFaction(faction));
   }
 
@@ -468,7 +468,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setManager(Npc manager) {
+  public void setManager(final Npc manager) {
     getDefaultState().ifPresent(s -> s.setManager(manager));
   }
 
@@ -481,7 +481,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setPhysicalCondition(Integer physicalCondition) {
+  public void setPhysicalCondition(final Integer physicalCondition) {
     getDefaultState().ifPresent(s -> s.setPhysicalCondition(physicalCondition));
   }
 
@@ -494,7 +494,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setCurrentHealth(Integer currentHealth) {
+  public void setCurrentHealth(final Integer currentHealth) {
     getDefaultState().ifPresent(s -> s.setCurrentHealth(currentHealth));
   }
 
@@ -507,7 +507,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setMorale(Integer morale) {
+  public void setMorale(final Integer morale) {
     getDefaultState().ifPresent(s -> s.setMorale(morale));
   }
 
@@ -520,7 +520,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
 
   @Deprecated
   @jakarta.persistence.Transient
-  public void setManagementStamina(Integer managementStamina) {
+  public void setManagementStamina(final Integer managementStamina) {
     getDefaultState().ifPresent(s -> s.setManagementStamina(managementStamina));
   }
 
@@ -543,7 +543,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
-  public void addFans(long fanGain) {
+  public void addFans(final long fanGain) {
     getDefaultState().ifPresent(s -> s.setFans(Math.max(0, s.getFans() + fanGain)));
   }
 
@@ -553,12 +553,12 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
-  public boolean canAfford(Long cost) {
+  public boolean canAfford(final Long cost) {
     return getFans() >= cost;
   }
 
   @Deprecated
-  public boolean spendFans(Long cost) {
+  public boolean spendFans(final Long cost) {
     if (canAfford(cost)) {
       addFans(-cost);
       return true;

@@ -100,9 +100,9 @@ public class CacheConfig {
   /** Cache statistics and monitoring bean. Provides insights into cache performance. */
   @Bean
   public CacheMonitor cacheMonitor(
-      CacheManager cacheManager,
+      final CacheManager cacheManager,
       @org.springframework.context.annotation.Lazy
-          com.github.javydreamercsw.management.service.npc.NpcService npcService) {
+          final com.github.javydreamercsw.management.service.npc.NpcService npcService) {
     return new CacheMonitor(cacheManager, npcService);
   }
 
@@ -112,8 +112,8 @@ public class CacheConfig {
     private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
 
     public CacheMonitor(
-        CacheManager cacheManager,
-        com.github.javydreamercsw.management.service.npc.NpcService npcService) {
+        final CacheManager cacheManager,
+        final com.github.javydreamercsw.management.service.npc.NpcService npcService) {
       this.cacheManager = cacheManager;
       this.npcService = npcService;
     }
@@ -132,7 +132,7 @@ public class CacheConfig {
                       "   - {}: {} entries (Hit Rate: {})",
                       cacheName,
                       caffeineCache.getNativeCache().estimatedSize(),
-                      String.format("%.2f", caffeineCache.getNativeCache().stats().hitRate()));
+                      "%.2f".formatted(caffeineCache.getNativeCache().stats().hitRate()));
                 } else if (cache != null) {
                   log.debug("   - {}: active (non-Caffeine cache)", cacheName);
                 }
@@ -185,7 +185,7 @@ public class CacheConfig {
     }
 
     /** Clears a specific cache by name. */
-    public void clearCache(String cacheName) {
+    public void clearCache(final String cacheName) {
       var cache = cacheManager.getCache(cacheName);
       if (cache != null) {
         cache.clear();

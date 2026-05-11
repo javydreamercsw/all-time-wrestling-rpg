@@ -160,7 +160,7 @@ class SeasonControllerIT extends AbstractRestControllerIT {
     assertThat(seasonRepository.findActiveSeason().get().getName()).isEqualTo("New Active");
   }
 
-  private Season saveSeason(String name, boolean active) {
+  private Season saveSeason(final String name, final boolean active) {
     Season season = new Season();
     season.setName(name);
     season.setDescription("Test description");

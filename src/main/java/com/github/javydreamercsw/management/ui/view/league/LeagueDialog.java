@@ -54,12 +54,12 @@ public class LeagueDialog extends Dialog {
   private final League league;
 
   public LeagueDialog(
-      @NonNull LeagueService leagueService,
-      @NonNull AccountService accountService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull LeagueMembershipRepository leagueMembershipRepository,
-      @NonNull Runnable onSave) {
+      @NonNull final LeagueService leagueService,
+      @NonNull final AccountService accountService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final LeagueMembershipRepository leagueMembershipRepository,
+      @NonNull final Runnable onSave) {
     this(
         leagueService,
         accountService,
@@ -71,13 +71,13 @@ public class LeagueDialog extends Dialog {
   }
 
   public LeagueDialog(
-      @NonNull LeagueService leagueService,
-      @NonNull AccountService accountService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull LeagueMembershipRepository leagueMembershipRepository,
-      League league,
-      @NonNull Runnable onSave) {
+      @NonNull final LeagueService leagueService,
+      @NonNull final AccountService accountService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final LeagueMembershipRepository leagueMembershipRepository,
+      final League league,
+      @NonNull final Runnable onSave) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;

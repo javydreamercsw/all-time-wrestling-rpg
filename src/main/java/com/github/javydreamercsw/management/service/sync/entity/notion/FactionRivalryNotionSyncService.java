@@ -51,9 +51,9 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
 
   @Autowired
   public FactionRivalryNotionSyncService(
-      FactionRivalryRepository factionRivalryRepository,
-      NotionHandler notionHandler,
-      SyncProgressTracker progressTracker) {
+      final FactionRivalryRepository factionRivalryRepository,
+      final NotionHandler notionHandler,
+      final SyncProgressTracker progressTracker) {
     this.factionRivalryRepository = factionRivalryRepository;
     this.notionHandler = notionHandler;
     this.progressTracker = progressTracker;
@@ -61,7 +61,7 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
 
   @Override
   @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
+  public BaseSyncService.SyncResult syncToNotion(@NonNull final String operationId) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
@@ -78,9 +78,8 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
               progressTracker.updateProgress(
                   operationId,
                   1,
-                  String.format(
-                      "Saving faction heat to Notion... (%d/%d processed)",
-                      processedCount, rivalries.size()));
+                  "Saving faction heat to Notion... (%d/%d processed)"
+                      .formatted(processedCount, rivalries.size()));
             }
             try {
               Map<String, PageProperty> properties = new HashMap<>();
@@ -172,9 +171,8 @@ public class FactionRivalryNotionSyncService implements NotionEntitySyncService 
           progressTracker.updateProgress(
               operationId,
               1,
-              String.format(
-                  "✅ Completed database save: %d faction rivalries saved/updated, %d errors",
-                  created + updated, errors));
+              "✅ Completed database save: %d faction rivalries saved/updated, %d errors"
+                  .formatted(created + updated, errors));
           return errors > 0
               ? BaseSyncService.SyncResult.failure(
                   "faction rivalries", "Error syncing faction rivalries!")

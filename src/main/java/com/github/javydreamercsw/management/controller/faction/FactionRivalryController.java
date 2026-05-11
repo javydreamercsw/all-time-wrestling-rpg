@@ -43,7 +43,7 @@ public class FactionRivalryController {
       summary = "Get all faction rivalries",
       description = "Retrieve all faction rivalries with pagination")
   @GetMapping
-  public ResponseEntity<Page<FactionRivalry>> getAllFactionRivalries(Pageable pageable) {
+  public ResponseEntity<Page<FactionRivalry>> getAllFactionRivalries(final Pageable pageable) {
     Page<FactionRivalry> rivalries = factionRivalryService.getAllFactionRivalries(pageable);
     return ResponseEntity.ok(rivalries);
   }
@@ -52,7 +52,7 @@ public class FactionRivalryController {
       summary = "Get faction rivalry by ID",
       description = "Retrieve a specific faction rivalry by its ID")
   @GetMapping("/{id}")
-  public ResponseEntity<FactionRivalry> getFactionRivalryById(@PathVariable Long id) {
+  public ResponseEntity<FactionRivalry> getFactionRivalryById(@PathVariable final Long id) {
     Optional<FactionRivalry> rivalry = factionRivalryService.getFactionRivalryById(id);
     return rivalry.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -70,7 +70,8 @@ public class FactionRivalryController {
       summary = "Get rivalries for faction",
       description = "Retrieve active rivalries for a specific faction")
   @GetMapping("/faction/{factionId}")
-  public ResponseEntity<List<FactionRivalry>> getRivalriesForFaction(@PathVariable Long factionId) {
+  public ResponseEntity<List<FactionRivalry>> getRivalriesForFaction(
+      @PathVariable final Long factionId) {
     List<FactionRivalry> rivalries = factionRivalryService.getActiveRivalriesForFaction(factionId);
     return ResponseEntity.ok(rivalries);
   }
@@ -108,7 +109,7 @@ public class FactionRivalryController {
       description = "Retrieve the hottest faction rivalries")
   @GetMapping("/hottest")
   public ResponseEntity<List<FactionRivalry>> getHottestRivalries(
-      @RequestParam(defaultValue = "10") int limit) {
+      @RequestParam(defaultValue = "10") final int limit) {
     List<FactionRivalry> rivalries = factionRivalryService.getHottestRivalries(limit);
     return ResponseEntity.ok(rivalries);
   }
@@ -132,7 +133,7 @@ public class FactionRivalryController {
   @Operation(summary = "Create faction rivalry", description = "Create a new faction rivalry")
   @PostMapping
   public ResponseEntity<Object> createFactionRivalry(
-      @Valid @RequestBody CreateFactionRivalryRequest request) {
+      @Valid @RequestBody final CreateFactionRivalryRequest request) {
     Optional<FactionRivalry> rivalry =
         factionRivalryService.createFactionRivalry(
             request.faction1Id(), request.faction2Id(), request.storylineNotes());
@@ -144,8 +145,10 @@ public class FactionRivalryController {
                 ResponseEntity.badRequest()
                     .body(
                         new ErrorResponse(
-                            "Cannot create faction rivalry - factions not found or rivalry already"
-                                + " exists")));
+                            """
+                            Cannot create faction rivalry - factions not found or rivalry already\
+                             exists\
+                            """)));
   }
 
   @Operation(
@@ -153,7 +156,7 @@ public class FactionRivalryController {
       description = "Add heat to an existing faction rivalry")
   @PostMapping("/{id}/heat")
   public ResponseEntity<Object> addHeat(
-      @PathVariable Long id, @Valid @RequestBody AddHeatRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final AddHeatRequest request) {
     Optional<FactionRivalry> rivalry =
         factionRivalryService.addHeat(id, request.heatGain(), request.reason());
 
@@ -172,7 +175,7 @@ public class FactionRivalryController {
       description = "Add heat between two factions (creates rivalry if needed)")
   @PostMapping("/heat")
   public ResponseEntity<Object> addHeatBetweenFactions(
-      @Valid @RequestBody AddHeatBetweenFactionsRequest request) {
+      @Valid @RequestBody final AddHeatBetweenFactionsRequest request) {
     Optional<FactionRivalry> rivalry =
         factionRivalryService.addHeatBetweenFactions(
             request.faction1Id(), request.faction2Id(), request.heatGain(), request.reason());
@@ -190,7 +193,7 @@ public class FactionRivalryController {
       description = "Attempt to resolve a faction rivalry with dice rolls")
   @PostMapping("/{id}/resolve")
   public ResponseEntity<ResolutionResult<FactionRivalry>> attemptResolution(
-      @PathVariable Long id, @Valid @RequestBody AttemptResolutionRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final AttemptResolutionRequest request) {
     ResolutionResult<FactionRivalry> result =
         factionRivalryService.attemptResolution(id, request.faction1Roll(), request.faction2Roll());
 
@@ -200,7 +203,8 @@ public class FactionRivalryController {
   @Operation(summary = "End faction rivalry", description = "End a faction rivalry")
   @DeleteMapping("/{id}")
   public ResponseEntity<Object> endFactionRivalry(
-      @PathVariable Long id, @RequestParam(defaultValue = "Rivalry ended") String reason) {
+      @PathVariable final Long id,
+      @RequestParam(defaultValue = "Rivalry ended") final String reason) {
     Optional<FactionRivalry> rivalry = factionRivalryService.endFactionRivalry(id, reason);
 
     return rivalry

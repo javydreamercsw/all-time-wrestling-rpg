@@ -52,10 +52,10 @@ public class DeckListView extends VerticalLayout {
   private final SecurityUtils securityUtils;
 
   public DeckListView(
-      @NonNull DeckService deckService,
-      @NonNull DeckCardService deckCardService,
-      @NonNull CardService cardService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final DeckService deckService,
+      @NonNull final DeckCardService deckCardService,
+      @NonNull final CardService cardService,
+      @NonNull final SecurityUtils securityUtils) {
     this.deckService = deckService;
     this.deckCardService = deckCardService;
     this.cardService = cardService;
@@ -101,7 +101,7 @@ public class DeckListView extends VerticalLayout {
   }
 
   // Java
-  private void openDeckEditor(@NonNull Deck deck) {
+  private void openDeckEditor(@NonNull final Deck deck) {
     Dialog dialog = new Dialog();
     dialog.setWidth("1000px");
 
@@ -208,7 +208,8 @@ public class DeckListView extends VerticalLayout {
     dialog.open();
   }
 
-  private void openDeckCardEditor(DeckCard deckCard, Grid<DeckCard> cardGrid, Deck deck) {
+  private void openDeckCardEditor(
+      final DeckCard deckCard, final Grid<DeckCard> cardGrid, final Deck deck) {
     Dialog editDialog = new Dialog();
     editDialog.setHeaderTitle("Edit Card Amount");
 
@@ -240,7 +241,7 @@ public class DeckListView extends VerticalLayout {
     editDialog.open();
   }
 
-  private void openDeckView(Deck deck) {
+  private void openDeckView(final Deck deck) {
     Dialog viewDialog = new Dialog();
     viewDialog.setWidth("1000px");
     viewDialog.setHeaderTitle("Deck Details");

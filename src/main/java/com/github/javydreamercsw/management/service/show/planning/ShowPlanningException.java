@@ -17,11 +17,11 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 public class ShowPlanningException extends RuntimeException {
-  public ShowPlanningException(String message) {
+  public ShowPlanningException(final String message) {
     super(message);
   }
 
-  public ShowPlanningException(String message, Throwable cause) {
+  public ShowPlanningException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

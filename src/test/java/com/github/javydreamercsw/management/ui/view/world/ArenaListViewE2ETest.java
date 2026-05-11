@@ -107,7 +107,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("E2E Test Arena"));
+                .anyMatch(it -> "E2E Test Arena".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -153,7 +153,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Edit Me Arena Updated"));
+                .anyMatch(it -> "Edit Me Arena Updated".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -161,7 +161,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
 
     assertTrue(
         arenaRepository.findAll().stream()
-            .anyMatch(a -> a.getName().equals("Edit Me Arena Updated")));
+            .anyMatch(a -> "Edit Me Arena Updated".equals(a.getName())));
   }
 
   @Test
@@ -202,7 +202,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> it.getText().equals("Delete Me Arena"));
+                .noneMatch(it -> "Delete Me Arena".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }

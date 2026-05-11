@@ -54,7 +54,9 @@ public class LocationListView extends Main {
   private final Grid<Location> grid = new Grid<>();
 
   public LocationListView(
-      LocationService service, SecurityUtils securityUtils, ImageStorageService storageService) {
+      final LocationService service,
+      final SecurityUtils securityUtils,
+      final ImageStorageService storageService) {
     this.service = service;
     this.securityUtils = securityUtils;
     this.storageService = storageService;
@@ -106,7 +108,7 @@ public class LocationListView extends Main {
     return grid;
   }
 
-  private Component createActionButtons(Location location) {
+  private Component createActionButtons(final Location location) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
     editButton.setId("edit-location-" + location.getId());
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -120,7 +122,7 @@ public class LocationListView extends Main {
     return new HorizontalLayout(editButton, deleteButton);
   }
 
-  private void deleteItem(Location location) {
+  private void deleteItem(final Location location) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setId("delete-location-dialog");
     confirmDialog.setHeaderTitle("Delete Location");
@@ -178,7 +180,7 @@ public class LocationListView extends Main {
     dialog.open();
   }
 
-  private void editItem(Location item) {
+  private void editItem(final Location item) {
     if (item == null) {
       return;
     }

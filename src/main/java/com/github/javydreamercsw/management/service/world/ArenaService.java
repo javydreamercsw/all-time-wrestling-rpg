@@ -51,12 +51,12 @@ public class ArenaService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Arena createArena(
-      String name,
-      String description,
-      Long locationId,
-      Integer capacity,
-      AlignmentBias alignmentBias,
-      Set<String> environmentalTraits) {
+      final String name,
+      final String description,
+      final Long locationId,
+      final Integer capacity,
+      final AlignmentBias alignmentBias,
+      final Set<String> environmentalTraits) {
     Location location =
         locationService
             .findById(locationId)
@@ -75,14 +75,14 @@ public class ArenaService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<Arena> updateArena(
-      Long id,
-      String name,
-      String description,
-      Long locationId,
-      Integer capacity,
-      AlignmentBias alignmentBias,
-      String imageUrl,
-      Set<String> environmentalTraits) {
+      final Long id,
+      final String name,
+      final String description,
+      final Long locationId,
+      final Integer capacity,
+      final AlignmentBias alignmentBias,
+      final String imageUrl,
+      final Set<String> environmentalTraits) {
     return repository
         .findById(id)
         .map(
@@ -103,7 +103,7 @@ public class ArenaService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Optional<Arena> findById(Long id) {
+  public Optional<Arena> findById(final Long id) {
     return repository.findById(id);
   }
 
@@ -113,7 +113,7 @@ public class ArenaService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Page<Arena> list(Pageable pageable) {
+  public Page<Arena> list(final Pageable pageable) {
     return repository.findAll(pageable);
   }
 
@@ -122,33 +122,35 @@ public class ArenaService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public void deleteArena(Long id) {
+  public void deleteArena(final Long id) {
     repository.deleteById(id);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Optional<Arena> findByName(String name) {
+  public Optional<Arena> findByName(final String name) {
     return repository.findByName(name);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Optional<String> generateArenaImage(Long arenaId) {
+  public Optional<String> generateArenaImage(final Long arenaId) {
     return repository
         .findById(arenaId)
         .map(
             arena -> {
               String prompt =
-                  String.format(
-                      "A futuristic wrestling arena named '%s' located in '%s'. Description: '%s'."
-                          + " Capacity: %d. Alignment Bias: %s. Environmental Traits: %s. Focus on"
-                          + " the unique visual style implied by these characteristics. Science"
-                          + " fiction, fantasy art, digital painting.",
-                      arena.getName(),
-                      arena.getLocation().getName(),
-                      arena.getDescription(),
-                      arena.getCapacity(),
-                      arena.getAlignmentBias().getDisplayName(),
-                      String.join(", ", arena.getEnvironmentalTraits()));
+                  """
+                  A futuristic wrestling arena named '%s' located in '%s'. Description: '%s'.\
+                   Capacity: %d. Alignment Bias: %s. Environmental Traits: %s. Focus on\
+                   the unique visual style implied by these characteristics. Science\
+                   fiction, fantasy art, digital painting.\
+                  """
+                      .formatted(
+                          arena.getName(),
+                          arena.getLocation().getName(),
+                          arena.getDescription(),
+                          arena.getCapacity(),
+                          arena.getAlignmentBias().getDisplayName(),
+                          String.join(", ", arena.getEnvironmentalTraits()));
 
               ImageRequest request =
                   ImageRequest.builder()
@@ -173,7 +175,7 @@ public class ArenaService {
    * @param isPle True if the show is a Premium Live Event (PLE), which prioritizes larger arenas.
    * @return The assigned Arena, or null if no arenas are available.
    */
-  public Long assignArenaToShow(boolean isPle) {
+  public Long assignArenaToShow(final boolean isPle) {
     List<Arena> allArenas = repository.findAll();
     if (allArenas.isEmpty()) {
       log.warn("No arenas available to assign to show.");
@@ -203,7 +205,7 @@ public class ArenaService {
    * @param arena The arena entity.
    * @return The resolved image URL.
    */
-  public String resolveArenaImage(Arena arena) {
+  public String resolveArenaImage(final Arena arena) {
     if (arena.getImageUrl() != null && !arena.getImageUrl().isBlank()) {
       return arena.getImageUrl();
     }

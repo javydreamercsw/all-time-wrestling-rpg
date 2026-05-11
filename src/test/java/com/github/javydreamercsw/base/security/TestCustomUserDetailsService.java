@@ -51,7 +51,8 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   @Autowired private Clock clock;
 
   @Override
-  public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(@NonNull final String username)
+      throws UsernameNotFoundException {
     return accountRepository
         .findByUsername(username)
         .map(
@@ -120,7 +121,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
             });
   }
 
-  private Wrestler findOrCreateWrestlerForAccount(@NonNull Account account) {
+  private Wrestler findOrCreateWrestlerForAccount(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -143,7 +144,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   }
 
   private static class TestCustomUserDetails extends CustomUserDetails {
-    public TestCustomUserDetails(Account account, Wrestler wrestler) {
+    public TestCustomUserDetails(final Account account, final Wrestler wrestler) {
       super(account, wrestler);
     }
 

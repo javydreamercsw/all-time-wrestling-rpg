@@ -97,7 +97,7 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add heat to the rivalry based on ATW RPG rules. */
-  public void addHeat(int heatGain, String reason) {
+  public void addHeat(final int heatGain, final String reason) {
     int newHeat = this.heat + heatGain;
     this.heat = Math.max(0, newHeat);
 
@@ -130,7 +130,7 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
    * Attempt to resolve the rivalry with dice roll. ATW Rule: Both roll d20 → total >30 = rivalry
    * ends
    */
-  public boolean attemptResolution(int wrestler1Roll, int wrestler2Roll) {
+  public boolean attemptResolution(final int wrestler1Roll, final int wrestler2Roll) {
     if (!canAttemptResolution()) {
       return false;
     }
@@ -161,7 +161,7 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   }
 
   /** End the rivalry. */
-  public void endRivalry(String reason) {
+  public void endRivalry(final String reason) {
     this.isActive = false;
     this.endedDate = Instant.now();
 
@@ -176,7 +176,7 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   }
 
   /** Get the other wrestler in the rivalry. */
-  public Wrestler getOpponent(Wrestler wrestler) {
+  public Wrestler getOpponent(final Wrestler wrestler) {
     if (wrestler.equals(wrestler1)) {
       return wrestler2;
     } else if (wrestler.equals(wrestler2)) {
@@ -186,7 +186,7 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   }
 
   /** Check if a wrestler is involved in this rivalry. */
-  public boolean involvesWrestler(Wrestler wrestler) {
+  public boolean involvesWrestler(final Wrestler wrestler) {
     return wrestler.equals(wrestler1) || wrestler.equals(wrestler2);
   }
 

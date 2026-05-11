@@ -40,7 +40,8 @@ public class TitleScriptService {
    * @param context The segment narration context to modify.
    * @param titles The titles to check for effects.
    */
-  public void applyTitleEffects(SegmentNarrationContext context, Collection<Title> titles) {
+  public void applyTitleEffects(
+      final SegmentNarrationContext context, final Collection<Title> titles) {
     if (titles == null || titles.isEmpty()) {
       return;
     }
@@ -71,7 +72,7 @@ public class TitleScriptService {
   }
 
   private void executeTitleScript(
-      String script, SegmentNarrationContext context, WrestlerContext champion) {
+      final String script, final SegmentNarrationContext context, final WrestlerContext champion) {
     log.info("Executing title script for {}: {}", champion.getName(), script);
     try {
       Binding binding = new Binding();

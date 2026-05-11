@@ -141,7 +141,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       // Verify all segments have valid participants
       for (Segment segment : allSegments) {
         assertThat(segment.getWrestlers()).isNotEmpty();
-        if (!segment.getSegmentType().getName().equals("Promo")) {
+        if (!"Promo".equals(segment.getSegmentType().getName())) {
           assertThat(segment.getWinners()).isNotEmpty();
         }
         assertThat(segment.getShow()).isEqualTo(show);
@@ -343,7 +343,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
       for (Segment segment : allSegments) {
         // Each segment should have basic required fields
-        if (!segment.getSegmentType().getName().equals("Promo")) { // Only matches have winners
+        if (!"Promo".equals(segment.getSegmentType().getName())) { // Only matches have winners
           assertThat(segment.getWinners()).isNotEmpty();
         }
         assertThat(segment.getSegmentDate()).isNotNull();

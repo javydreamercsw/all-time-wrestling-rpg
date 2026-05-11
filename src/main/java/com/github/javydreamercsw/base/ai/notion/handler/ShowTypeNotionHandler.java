@@ -29,7 +29,7 @@ public class ShowTypeNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public ShowTypeNotionHandler(NotionHandler notionHandler) {
+  public ShowTypeNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -68,7 +68,8 @@ public class ShowTypeNotionHandler {
   }
 
   /** Maps a Notion page to a ShowTypePage object. */
-  private ShowTypePage mapPageToShowTypePage(@NonNull Page pageData, @NonNull String showTypeName) {
+  private ShowTypePage mapPageToShowTypePage(
+      @NonNull final Page pageData, @NonNull final String showTypeName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, showTypeName, "Show Type", ShowTypePage::new, ShowTypePage.NotionParent::new);
   }

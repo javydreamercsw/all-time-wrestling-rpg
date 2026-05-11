@@ -60,7 +60,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
     campaignRepository.saveAndFlush(campaign);
   }
 
-  private Wrestler getOrCreateWrestler(Account account) {
+  private Wrestler getOrCreateWrestler(final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -138,7 +138,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
     assertTrue(driver.getCurrentUrl().contains("campaign/actions"));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

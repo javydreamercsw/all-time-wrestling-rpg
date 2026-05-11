@@ -61,7 +61,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
     campaignRepository.saveAndFlush(campaign);
   }
 
-  private Wrestler getOrCreateWrestler(Account account) {
+  private Wrestler getOrCreateWrestler(final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -115,9 +115,11 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Campaign",
         "Backstage Encounters",
-        "Random encounters can occur when you visit the backstage area. These interactive"
-            + " dialogue segments force you to make choices that affect your alignment and"
-            + " momentum.",
+        """
+        Random encounters can occur when you visit the backstage area. These interactive\
+         dialogue segments force you to make choices that affect your alignment and\
+         momentum.\
+        """,
         "campaign-backstage-encounter");
 
     // 4. Click a choice (Respect)
@@ -129,12 +131,14 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Campaign",
         "Encounter Outcomes",
-        "Every choice in a backstage encounter has a narrative outcome and mechanical"
-            + " consequences, such as alignment shifts or bonuses for your next match.",
+        """
+        Every choice in a backstage encounter has a narrative outcome and mechanical\
+         consequences, such as alignment shifts or bonuses for your next match.\
+        """,
         "campaign-backstage-encounter-outcome");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

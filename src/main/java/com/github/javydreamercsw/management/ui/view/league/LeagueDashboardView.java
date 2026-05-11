@@ -70,7 +70,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
   private Div tabsContent;
 
   @Override
-  public void setParameter(BeforeEvent event, Long leagueId) {
+  public void setParameter(final BeforeEvent event, final Long leagueId) {
     Optional<League> leagueOpt = leagueService.getLeagueById(leagueId);
     if (leagueOpt.isPresent()) {
       this.league = leagueOpt.get();
@@ -152,7 +152,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
     standingsGrid.addColumn(r -> r.getOwner().getUsername()).setHeader("Player");
     standingsGrid.addColumn(r -> r.getWrestler().getName()).setHeader("Wrestler");
     standingsGrid
-        .addColumn(r -> String.format("%d - %d - %d", r.getWins(), r.getLosses(), r.getDraws()))
+        .addColumn(r -> "%d - %d - %d".formatted(r.getWins(), r.getLosses(), r.getDraws()))
         .setHeader("Record");
 
     List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);

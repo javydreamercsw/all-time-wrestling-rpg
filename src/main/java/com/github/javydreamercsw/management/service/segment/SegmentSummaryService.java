@@ -36,7 +36,7 @@ public class SegmentSummaryService {
   private final SegmentNarrationServiceFactory narrationServiceFactory;
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public Segment summarizeSegment(@NonNull Long segmentId) {
+  public Segment summarizeSegment(@NonNull final Long segmentId) {
     Segment segment =
         segmentService
             .findById(segmentId)
@@ -57,8 +57,10 @@ public class SegmentSummaryService {
         } catch (RuntimeException e) {
           if (e.getCause() instanceof NotionAPIError apiError) {
             log.error(
-                "AI summary failed for segment {}: Notion API Error - {} (Status: {}). Trying next"
-                    + " provider...",
+                """
+                AI summary failed for segment {}: Notion API Error - {} (Status: {}). Trying next\
+                 provider...\
+                """,
                 segmentId,
                 apiError.getError().getMessage(),
                 apiError.getError().getStatus());

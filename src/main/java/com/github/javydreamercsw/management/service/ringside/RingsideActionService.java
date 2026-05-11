@@ -43,12 +43,12 @@ public class RingsideActionService {
   private final AlignmentService alignmentService;
 
   public RingsideActionService(
-      SegmentRepository segmentRepository,
-      WrestlerRepository wrestlerRepository,
-      NpcService npcService,
-      FactionService factionService,
-      TeamService teamService,
-      AlignmentService alignmentService) {
+      final SegmentRepository segmentRepository,
+      final WrestlerRepository wrestlerRepository,
+      final NpcService npcService,
+      final FactionService factionService,
+      final TeamService teamService,
+      final AlignmentService alignmentService) {
     this.segmentRepository = segmentRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.npcService = npcService;
@@ -70,7 +70,7 @@ public class RingsideActionService {
       String message) {}
 
   @Transactional(readOnly = true)
-  public boolean hasSupportAtRingside(Segment segment, Wrestler wrestler) {
+  public boolean hasSupportAtRingside(final Segment segment, final Wrestler wrestler) {
     if (wrestler == null || segment == null) {
       return false;
     }
@@ -115,7 +115,7 @@ public class RingsideActionService {
   }
 
   @Transactional(readOnly = true)
-  public Object getBestSupporter(Segment segment, Wrestler wrestler) {
+  public Object getBestSupporter(final Segment segment, final Wrestler wrestler) {
     if (wrestler == null || segment == null) {
       return null;
     }
@@ -173,7 +173,10 @@ public class RingsideActionService {
    */
   @Transactional
   public RingsideActionResult performAction(
-      Segment segment, Object interferer, Wrestler beneficiary, @NonNull RingsideAction action) {
+      final Segment segment,
+      final Object interferer,
+      final Wrestler beneficiary,
+      @NonNull final RingsideAction action) {
 
     Npc referee = segment.getReferee();
     int baseAwareness = npcService.getAwareness(referee);
@@ -238,7 +241,7 @@ public class RingsideActionService {
         action, success, detectionIncrease, ejected, disqualified, message);
   }
 
-  private boolean isNoDqMatch(Segment segment) {
+  private boolean isNoDqMatch(final Segment segment) {
     if (segment == null || segment.getSegmentRules() == null) {
       return false;
     }
@@ -248,7 +251,10 @@ public class RingsideActionService {
   }
 
   private String buildResultMessage(
-      RingsideAction action, boolean success, boolean ejected, boolean disqualified) {
+      final RingsideAction action,
+      final boolean success,
+      final boolean ejected,
+      final boolean disqualified) {
     if (disqualified) {
       return "The referee saw the illegal " + action.getName() + "! DISQUALIFICATION!";
     }

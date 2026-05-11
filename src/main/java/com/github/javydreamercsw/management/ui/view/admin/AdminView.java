@@ -68,12 +68,12 @@ public class AdminView extends VerticalLayout {
 
   @Autowired
   public AdminView(
-      RankingService rankingService,
-      WrestlerRepository wrestlerRepository,
-      ImageCleanupService imageCleanupService,
-      WrestlerService wrestlerService,
-      UniverseContextService universeContextService,
-      NotificationService notificationService) {
+      final RankingService rankingService,
+      final WrestlerRepository wrestlerRepository,
+      final ImageCleanupService imageCleanupService,
+      final WrestlerService wrestlerService,
+      final UniverseContextService universeContextService,
+      final NotificationService notificationService) {
     this.rankingService = rankingService;
     this.wrestlerRepository = wrestlerRepository;
     this.imageCleanupService = imageCleanupService;
@@ -115,7 +115,7 @@ public class AdminView extends VerticalLayout {
         new Tab("Manage Accounts"));
   }
 
-  private Div createPages(Tabs tabs) {
+  private Div createPages(final Tabs tabs) {
     Instantiator instantiator = VaadinService.getCurrent().getInstantiator();
     VerticalLayout adminToolsPage = createAdminToolsPage();
     adminToolsPage.setSizeFull();

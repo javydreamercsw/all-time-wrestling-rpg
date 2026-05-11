@@ -48,9 +48,9 @@ public class NpcService {
 
   @Autowired
   public NpcService(
-      NpcRepository npcRepository,
-      ExpansionService expansionService,
-      DefaultImageService imageService) {
+      final NpcRepository npcRepository,
+      final ExpansionService expansionService,
+      final DefaultImageService imageService) {
     this.npcRepository = npcRepository;
     this.expansionService = expansionService;
     this.imageService = imageService;
@@ -58,32 +58,32 @@ public class NpcService {
 
   public static final String ATTRIBUTE_AWARENESS = "awareness";
 
-  public Npc findByName(String name) {
+  public Npc findByName(final String name) {
     return npcRepository.findByName(name).orElse(null);
   }
 
-  public java.util.Optional<Npc> getByName(String name) {
+  public java.util.Optional<Npc> getByName(final String name) {
     return npcRepository.findByName(name);
   }
 
-  public Npc save(Npc npc) {
+  public Npc save(final Npc npc) {
     return npcRepository.save(npc);
   }
 
   @Transactional
-  public List<Npc> saveAll(List<Npc> npcs) {
+  public List<Npc> saveAll(final List<Npc> npcs) {
     return npcRepository.saveAll(npcs);
   }
 
-  public java.util.Optional<Npc> findByExternalId(String externalId) {
+  public java.util.Optional<Npc> findByExternalId(final String externalId) {
     return npcRepository.findByExternalId(externalId);
   }
 
-  public Npc findById(Long id) {
+  public Npc findById(final Long id) {
     return npcRepository.findById(id).orElse(null);
   }
 
-  public List<Npc> findAllByType(String npcType) {
+  public List<Npc> findAllByType(final String npcType) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return npcRepository.findAllByNpcType(npcType).stream()
         .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
@@ -105,7 +105,7 @@ public class NpcService {
         .collect(Collectors.toList());
   }
 
-  public Page<Npc> findAll(Pageable pageable) {
+  public Page<Npc> findAll(final Pageable pageable) {
     List<Npc> allFiltered = findAll();
 
     if (pageable.isUnpaged()) {
@@ -125,11 +125,11 @@ public class NpcService {
 
   @EventListener
   @CacheEvict(value = NPCS_CACHE, allEntries = true)
-  public void onExpansionToggled(ExpansionToggledEvent event) {
+  public void onExpansionToggled(final ExpansionToggledEvent event) {
     log.info("Expansion '{}' toggled, evicting NPC cache.", event.getExpansionCode());
   }
 
-  public void delete(Npc npc) {
+  public void delete(final Npc npc) {
     npcRepository.delete(npc);
   }
 
@@ -139,7 +139,7 @@ public class NpcService {
    * @param npc The NPC entity.
    * @return The resolved image URL.
    */
-  public String resolveNpcImage(Npc npc) {
+  public String resolveNpcImage(final Npc npc) {
     if (npc.getImageUrl() != null && !npc.getImageUrl().isBlank()) {
       return npc.getImageUrl();
     }
@@ -152,7 +152,7 @@ public class NpcService {
    * @param npc The NPC to check.
    * @return The awareness level (0-100), defaults to 50 if not set.
    */
-  public int getAwareness(Npc npc) {
+  public int getAwareness(final Npc npc) {
     if (npc == null || npc.getAttributes() == null) {
       return 50;
     }
@@ -170,7 +170,7 @@ public class NpcService {
    * @param awareness The awareness level (0-100).
    */
   @Transactional
-  public void setAwareness(Npc npc, int awareness) {
+  public void setAwareness(final Npc npc, final int awareness) {
     if (npc == null) {
       return;
     }

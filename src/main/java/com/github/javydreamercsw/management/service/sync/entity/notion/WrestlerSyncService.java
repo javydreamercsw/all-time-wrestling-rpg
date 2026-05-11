@@ -73,20 +73,21 @@ public class WrestlerSyncService extends BaseSyncService {
   }
 
   public WrestlerSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor,
-      WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository,
-      com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor,
+      final WrestlerService wrestlerService,
+      final WrestlerRepository wrestlerRepository,
+      final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+          universeRepository,
+      final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
           wrestlerStateRepository,
-      WrestlerNotionSyncService wrestlerNotionSyncService,
-      TierRecalculationService tierRecalculationService,
-      WrestlerAlignmentRepository wrestlerAlignmentRepository,
-      FactionRepository factionRepository,
-      NpcRepository npcRepository,
-      InjuryRepository injuryRepository) {
+      final WrestlerNotionSyncService wrestlerNotionSyncService,
+      final TierRecalculationService tierRecalculationService,
+      final WrestlerAlignmentRepository wrestlerAlignmentRepository,
+      final FactionRepository factionRepository,
+      final NpcRepository npcRepository,
+      final InjuryRepository injuryRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -101,7 +102,7 @@ public class WrestlerSyncService extends BaseSyncService {
     this.self = this;
   }
 
-  public SyncResult syncWrestlers(@NonNull String operationId) {
+  public SyncResult syncWrestlers(@NonNull final String operationId) {
     log.info(
         "🤼 Starting wrestlers synchronization from Notion with operation ID: {}", operationId);
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Wrestlers Sync", 4);
@@ -140,9 +141,7 @@ public class WrestlerSyncService extends BaseSyncService {
       syncServiceDependencies
           .getProgressTracker()
           .updateProgress(
-              operationId,
-              3,
-              String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
+              operationId, 3, "Saving %d wrestlers to database...".formatted(wrestlerDTOs.size()));
       log.info("🗄️ Saving wrestlers to database...");
       long dbStart = System.currentTimeMillis();
       int savedCount = 0;
@@ -155,9 +154,8 @@ public class WrestlerSyncService extends BaseSyncService {
               .updateProgress(
                   operationId,
                   4,
-                  String.format(
-                      "Saving wrestlers to database... (%d/%d processed)",
-                      processedItems, wrestlerDTOs.size()));
+                  "Saving wrestlers to database... (%d/%d processed)"
+                      .formatted(processedItems, wrestlerDTOs.size()));
         }
         if (getSelf().processSingleWrestler(dto)) {
           savedCount++;
@@ -173,7 +171,7 @@ public class WrestlerSyncService extends BaseSyncService {
           .completeOperation(
               operationId,
               true,
-              String.format("Successfully synchronized %d wrestlers", savedCount),
+              "Successfully synchronized %d wrestlers".formatted(savedCount),
               savedCount);
 
       return SyncResult.success("Wrestlers", savedCount, 0, 0);
@@ -186,7 +184,7 @@ public class WrestlerSyncService extends BaseSyncService {
     }
   }
 
-  private WrestlerSyncDTO convertWrestlerPageToDTO(@NonNull WrestlerPage wrestlerPage) {
+  private WrestlerSyncDTO convertWrestlerPageToDTO(@NonNull final WrestlerPage wrestlerPage) {
     WrestlerSyncDTO dto = new WrestlerSyncDTO();
     dto.setExternalId(wrestlerPage.getId());
 
@@ -303,7 +301,7 @@ public class WrestlerSyncService extends BaseSyncService {
 
   /** Saves a single wrestler DTO to the database. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public boolean processSingleWrestler(@NonNull WrestlerSyncDTO dto) {
+  public boolean processSingleWrestler(@NonNull final WrestlerSyncDTO dto) {
     try {
       // Smart duplicate handling - prefer external ID, fallback to name
       Wrestler wrestler = null;
@@ -536,7 +534,7 @@ public class WrestlerSyncService extends BaseSyncService {
     }
   }
 
-  public SyncResult syncToNotion(@NonNull String operationId) {
+  public SyncResult syncToNotion(@NonNull final String operationId) {
     return wrestlerNotionSyncService.syncToNotion(operationId);
   }
 

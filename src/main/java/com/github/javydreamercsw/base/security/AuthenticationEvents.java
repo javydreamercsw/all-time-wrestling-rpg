@@ -35,7 +35,7 @@ public class AuthenticationEvents {
   @Qualifier("managementAccountService") private AccountService accountService;
 
   @EventListener
-  public void onSuccess(AuthenticationSuccessEvent success) {
+  public void onSuccess(final AuthenticationSuccessEvent success) {
     String username = success.getAuthentication().getName();
     accountService
         .findByUsername(username)
@@ -49,7 +49,7 @@ public class AuthenticationEvents {
   }
 
   @EventListener
-  public void onFailure(AuthenticationFailureBadCredentialsEvent failure) {
+  public void onFailure(final AuthenticationFailureBadCredentialsEvent failure) {
     String username = failure.getAuthentication().getName();
     accountService
         .findByUsername(username)

@@ -62,7 +62,9 @@ public class RivalryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
   public Optional<Rivalry> createRivalry(
-      @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, @NonNull String storylineNotes) {
+      @NonNull final Long wrestler1Id,
+      @NonNull final Long wrestler2Id,
+      @NonNull final String storylineNotes) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -99,7 +101,7 @@ public class RivalryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
-  public Optional<Rivalry> addHeat(Long rivalryId, int heatGain, String reason) {
+  public Optional<Rivalry> addHeat(final Long rivalryId, final int heatGain, final String reason) {
     return rivalryRepository
         .findById(rivalryId)
         .filter(Rivalry::getIsActive)
@@ -127,7 +129,10 @@ public class RivalryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
   public Optional<Rivalry> addHeatBetweenWrestlers(
-      @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, int heatGain, @NonNull String reason) {
+      @NonNull final Long wrestler1Id,
+      @NonNull final Long wrestler2Id,
+      final int heatGain,
+      @NonNull final String reason) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -154,7 +159,9 @@ public class RivalryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
   public ResolutionResult<Rivalry> attemptResolution(
-      @NonNull Long rivalryId, @NonNull Integer wrestler1Roll, @NonNull Integer wrestler2Roll) {
+      @NonNull final Long rivalryId,
+      @NonNull final Integer wrestler1Roll,
+      @NonNull final Integer wrestler2Roll) {
     Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
@@ -166,9 +173,8 @@ public class RivalryService {
     if (!rivalry.canAttemptResolution()) {
       return new ResolutionResult<>(
           false,
-          String.format(
-              "Rivalry needs at least 20 heat to attempt resolution (current: %d)",
-              rivalry.getHeat()),
+          "Rivalry needs at least 20 heat to attempt resolution (current: %d)"
+              .formatted(rivalry.getHeat()),
           rivalry,
           0,
           0,
@@ -206,7 +212,7 @@ public class RivalryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
-  public Optional<Rivalry> endRivalry(@NonNull Long rivalryId, @NonNull String reason) {
+  public Optional<Rivalry> endRivalry(@NonNull final Long rivalryId, @NonNull final String reason) {
     return rivalryRepository
         .findById(rivalryId)
         .filter(Rivalry::getIsActive)
@@ -223,7 +229,7 @@ public class RivalryService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       key = "#rivalryId")
-  public Optional<Rivalry> getRivalryById(@NonNull Long rivalryId) {
+  public Optional<Rivalry> getRivalryById(@NonNull final Long rivalryId) {
     return rivalryRepository.findById(rivalryId);
   }
 
@@ -235,20 +241,20 @@ public class RivalryService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<RivalryDTO> findByIdAsDTO(@NonNull Long rivalryId) {
+  public Optional<RivalryDTO> findByIdAsDTO(@NonNull final Long rivalryId) {
     return getRivalryById(rivalryId).map(rivalryMapper::toRivalryDTO);
   }
 
   /** Get all rivalries with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Rivalry> getAllRivalries(@NonNull Pageable pageable) {
+  public Page<Rivalry> getAllRivalries(@NonNull final Pageable pageable) {
     return rivalryRepository.findAllBy(pageable);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Rivalry> getAllRivalriesWithWrestlers(@NonNull Pageable pageable) {
+  public Page<Rivalry> getAllRivalriesWithWrestlers(@NonNull final Pageable pageable) {
     return rivalryRepository.findAllWithWrestlers(pageable);
   }
 
@@ -265,7 +271,7 @@ public class RivalryService {
   /** Get active rivalries between two dates. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Rivalry> getActiveRivalriesBetween(Instant startDate, Instant endDate) {
+  public List<Rivalry> getActiveRivalriesBetween(final Instant startDate, final Instant endDate) {
     return rivalryRepository.findActiveRivalriesBetween(startDate, endDate);
   }
 
@@ -275,7 +281,7 @@ public class RivalryService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       key = "#wrestlerId")
-  public List<Rivalry> getRivalriesForWrestler(@NonNull Long wrestlerId) {
+  public List<Rivalry> getRivalriesForWrestler(@NonNull final Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(rivalryRepository::findActiveRivalriesForWrestler)
@@ -290,7 +296,7 @@ public class RivalryService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<RivalryDTO> getActiveRivalriesForWrestlerAsDTO(@NonNull Long wrestlerId) {
+  public List<RivalryDTO> getActiveRivalriesForWrestlerAsDTO(@NonNull final Long wrestlerId) {
     return getRivalriesForWrestler(wrestlerId).stream().map(rivalryMapper::toRivalryDTO).toList();
   }
 
@@ -321,7 +327,7 @@ public class RivalryService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       key = "#intensity")
-  public List<Rivalry> getRivalriesByIntensity(@NonNull RivalryIntensity intensity) {
+  public List<Rivalry> getRivalriesByIntensity(@NonNull final RivalryIntensity intensity) {
     return rivalryRepository.findByHeatRange(
         intensity.getMinHeat(),
         intensity.getMaxHeat() == Integer.MAX_VALUE ? 999 : intensity.getMaxHeat());
@@ -330,7 +336,7 @@ public class RivalryService {
   /** Get the hottest rivalries. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Rivalry> getHottestRivalries(int limit) {
+  public List<Rivalry> getHottestRivalries(final int limit) {
     return rivalryRepository.findHottestRivalries(
         org.springframework.data.domain.PageRequest.of(0, limit));
   }
@@ -342,7 +348,7 @@ public class RivalryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
   public Optional<Rivalry> updateStorylineNotes(
-      @NonNull Long rivalryId, @NonNull String storylineNotes) {
+      @NonNull final Long rivalryId, @NonNull final String storylineNotes) {
     return rivalryRepository
         .findById(rivalryId)
         .map(
@@ -355,7 +361,7 @@ public class RivalryService {
   /** Get rivalry statistics. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public RivalryStats getRivalryStats(@NonNull Long rivalryId) {
+  public RivalryStats getRivalryStats(@NonNull final Long rivalryId) {
     return rivalryRepository
         .findById(rivalryId)
         .map(
@@ -377,7 +383,7 @@ public class RivalryService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Rivalry> findByExternalId(@NonNull String externalId) {
+  public Optional<Rivalry> findByExternalId(@NonNull final String externalId) {
     return rivalryRepository.findByExternalId(externalId);
   }
 
@@ -386,7 +392,7 @@ public class RivalryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
-  public Rivalry save(@NonNull Rivalry rivalry) {
+  public Rivalry save(@NonNull final Rivalry rivalry) {
     return rivalryRepository.saveAndFlush(rivalry);
   }
 
@@ -394,7 +400,7 @@ public class RivalryService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<Rivalry> getRivalryBetweenWrestlers(
-      @NonNull Long wrestler1Id, @NonNull Long wrestler2Id) {
+      @NonNull final Long wrestler1Id, @NonNull final Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -408,7 +414,8 @@ public class RivalryService {
   /** Check if two wrestlers have rivalry history. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public boolean hasRivalryHistory(@NonNull Long wrestler1Id, @NonNull Long wrestler2Id) {
+  public boolean hasRivalryHistory(
+      @NonNull final Long wrestler1Id, @NonNull final Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 

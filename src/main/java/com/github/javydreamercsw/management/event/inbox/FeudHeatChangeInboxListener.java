@@ -38,10 +38,10 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public FeudHeatChangeInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudHeatChange") InboxEventType feudHeatChange,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("feudHeatChange") final InboxEventType feudHeatChange,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.feudHeatChange = feudHeatChange;
     this.eventPublisher = eventPublisher;
@@ -49,21 +49,21 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudHeatChangeEvent event) {
+  public void onApplicationEvent(@NonNull final FeudHeatChangeEvent event) {
     log.info("Received FeudHeatChangeEvent for feud ID: {}", event.getFeudId());
 
     String wrestlers =
         event.getWrestlers().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
 
     String message =
-        String.format(
-            "Feud '%s' involving %s %s %d heat. New total: %d. Reason: %s",
-            event.getFeudName(),
-            wrestlers,
-            (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
-            Math.abs(event.getNewHeat() - event.getOldHeat()),
-            event.getNewHeat(),
-            event.getReason());
+        "Feud '%s' involving %s %s %d heat. New total: %d. Reason: %s"
+            .formatted(
+                event.getFeudName(),
+                wrestlers,
+                (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
+                Math.abs(event.getNewHeat() - event.getOldHeat()),
+                event.getNewHeat(),
+                event.getReason());
 
     inboxService.createInboxItem(
         feudHeatChange, message, event.getFeudId().toString(), InboxItemTarget.TargetType.FEUD);

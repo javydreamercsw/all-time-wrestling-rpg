@@ -76,7 +76,7 @@ public class TitlePage extends NotionPage {
     return prop instanceof Number ? ((Number) prop).intValue() : null;
   }
 
-  private String extractPropertyAsString(String name) {
+  private String extractPropertyAsString(final String name) {
     if (getRawProperties() != null && getRawProperties().containsKey(name)) {
       Object prop = getRawProperties().get(name);
       if (prop instanceof String) {
@@ -86,7 +86,7 @@ public class TitlePage extends NotionPage {
     return null;
   }
 
-  private List<String> extractRelationIds(String name) {
+  private List<String> extractRelationIds(final String name) {
     List<String> ids = new ArrayList<>();
     if (getRawProperties() != null && getRawProperties().containsKey(name)) {
       Object prop = getRawProperties().get(name);

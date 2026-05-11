@@ -369,11 +369,11 @@ public abstract class AbstractIntegrationTest {
     }
   }
 
-  protected Wrestler createTestWrestler(@NonNull String name) {
+  protected Wrestler createTestWrestler(@NonNull final String name) {
     return createTestWrestler(name, 0L);
   }
 
-  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
+  public Wrestler createTestWrestler(@NonNull final String name, @NonNull final Long fans) {
     Universe universe =
         universeRepository.findAll().stream()
             .findFirst()
@@ -383,12 +383,15 @@ public abstract class AbstractIntegrationTest {
     return wrestlerRepository.saveAndFlush(wrestler);
   }
 
-  protected Account createTestAccount(@NonNull String username, @NonNull RoleName roleName) {
+  protected Account createTestAccount(
+      @NonNull final String username, @NonNull final RoleName roleName) {
     return createTestAccount(username, "password", roleName);
   }
 
   protected Account createTestAccount(
-      @NonNull String username, @NonNull String password, @NonNull RoleName roleName) {
+      @NonNull final String username,
+      @NonNull final String password,
+      @NonNull final RoleName roleName) {
     Role role =
         roleRepository
             .findByName(roleName)
@@ -405,15 +408,16 @@ public abstract class AbstractIntegrationTest {
             });
   }
 
-  protected void runAsAdmin(@NonNull Runnable task) {
+  protected void runAsAdmin(@NonNull final Runnable task) {
     GeneralSecurityUtils.runAsAdmin(task);
   }
 
-  protected void login(Object principal) {
+  protected void login(final Object principal) {
     login(principal, Collections.emptyList());
   }
 
-  protected void login(Object principal, Collection<? extends GrantedAuthority> authorities) {
+  protected void login(
+      final Object principal, final Collection<? extends GrantedAuthority> authorities) {
     final Account account;
     final String principalName;
 
@@ -485,7 +489,7 @@ public abstract class AbstractIntegrationTest {
     TestSecurityContextHolder.setContext(context);
   }
 
-  protected void loginAs(String username) {
+  protected void loginAs(final String username) {
     login(username);
   }
 

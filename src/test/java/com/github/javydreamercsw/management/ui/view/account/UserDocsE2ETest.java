@@ -36,13 +36,15 @@ public class UserDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "User Settings",
         "Profile Drawer",
-        "Access your personal settings by clicking the Profile button in the top navigation bar."
-            + " This opens a dedicated drawer on the right side of the screen, allowing you to"
-            + " manage your account without leaving your current context.",
+        """
+        Access your personal settings by clicking the Profile button in the top navigation bar.\
+         This opens a dedicated drawer on the right side of the screen, allowing you to\
+         manage your account without leaving your current context.\
+        """,
         "profile-drawer");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

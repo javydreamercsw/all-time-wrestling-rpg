@@ -59,7 +59,7 @@ public class HallOfFameE2ETest extends AbstractE2ETest {
             d -> {
               List<WebElement> cells =
                   d.findElements(By.cssSelector("#hall-of-fame-grid vaadin-grid-cell-content"));
-              return cells.size() > 0;
+              return !cells.isEmpty();
             });
 
     String pageSource = driver.getPageSource();

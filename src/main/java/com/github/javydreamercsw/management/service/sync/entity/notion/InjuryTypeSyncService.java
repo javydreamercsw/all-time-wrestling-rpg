@@ -42,10 +42,10 @@ public class InjuryTypeSyncService extends BaseSyncService {
 
   @Autowired
   public InjuryTypeSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      InjuryTypeService injuryTypeService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final InjuryTypeService injuryTypeService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.injuryTypeService = injuryTypeService;
   }
@@ -56,7 +56,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
    * @param operationId Operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncInjuryTypes(@NonNull String operationId) {
+  public SyncResult syncInjuryTypes(@NonNull final String operationId) {
     // Check if already synced in current session
     if (syncServiceDependencies
         .getSyncSessionManager()
@@ -92,7 +92,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
    * @param operationId Operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  private SyncResult performInjuryTypesSync(@NonNull String operationId) {
+  private SyncResult performInjuryTypesSync(@NonNull final String operationId) {
     log.info(
         "🩹 Starting injury types synchronization from Notion with operation ID: {}", operationId);
     long startTime = System.currentTimeMillis();
@@ -121,7 +121,8 @@ public class InjuryTypeSyncService extends BaseSyncService {
    * @param startTime Start time for performance tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  private SyncResult performInjuryTypesSyncActual(@NonNull String operationId, long startTime) {
+  private SyncResult performInjuryTypesSyncActual(
+      @NonNull final String operationId, final long startTime) {
     try {
       // Initialize progress tracking
       syncServiceDependencies
@@ -198,7 +199,8 @@ public class InjuryTypeSyncService extends BaseSyncService {
     }
   }
 
-  private List<InjuryDTO> convertInjuriesToDTOs(List<InjuryPage> injuryPages, String operationId) {
+  private List<InjuryDTO> convertInjuriesToDTOs(
+      final List<InjuryPage> injuryPages, final String operationId) {
     return processWithControlledParallelism(
         injuryPages,
         this::convertInjuryPageToDTO,
@@ -208,7 +210,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
         "Converted %d/%d injuries");
   }
 
-  private InjuryDTO convertInjuryPageToDTO(InjuryPage injuryPage) {
+  private InjuryDTO convertInjuryPageToDTO(final InjuryPage injuryPage) {
     try {
       // Extract basic properties first
       String externalId = injuryPage.getId();
@@ -242,7 +244,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
     }
   }
 
-  private int saveInjuriesToDatabase(List<InjuryDTO> injuryDTOs, String operationId) {
+  private int saveInjuriesToDatabase(final List<InjuryDTO> injuryDTOs, final String operationId) {
     List<InjuryType> createdInjuryTypes =
         processWithControlledParallelism(
             injuryDTOs,
@@ -254,7 +256,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
     return (int) createdInjuryTypes.stream().filter(java.util.Objects::nonNull).count();
   }
 
-  private InjuryType createInjuryTypeFromDTO(InjuryDTO dto) {
+  private InjuryType createInjuryTypeFromDTO(final InjuryDTO dto) {
     if (dto == null || !dto.isValid()) {
       log.warn("Skipping invalid injury DTO: {}", dto != null ? dto.getSummary() : "null");
       return null;
@@ -329,7 +331,8 @@ public class InjuryTypeSyncService extends BaseSyncService {
     }
   }
 
-  private boolean validateInjurySyncResults(List<InjuryDTO> injuryDTOs, int syncedCount) {
+  private boolean validateInjurySyncResults(
+      final List<InjuryDTO> injuryDTOs, final int syncedCount) {
     if (injuryDTOs.isEmpty()) {
       return true; // No injuries to validate
     }
@@ -354,7 +357,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
   }
 
   /** Parses an Instant from a Notion timestamp string. */
-  private Instant parseInstantFromString(String timestampString) {
+  private Instant parseInstantFromString(final String timestampString) {
     if (timestampString == null || timestampString.trim().isEmpty()) {
       return null;
     }
@@ -368,7 +371,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
   }
 
   // Injury property extraction methods
-  private Integer extractHealthEffectFromInjuryPage(InjuryPage injuryPage) {
+  private Integer extractHealthEffectFromInjuryPage(final InjuryPage injuryPage) {
     try {
       if (injuryPage.getRawProperties() != null) {
         Object healthEffect = injuryPage.getRawProperties().get("Health Effect");
@@ -385,7 +388,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
     }
   }
 
-  private Integer extractStaminaEffectFromInjuryPage(InjuryPage injuryPage) {
+  private Integer extractStaminaEffectFromInjuryPage(final InjuryPage injuryPage) {
     try {
       if (injuryPage.getRawProperties() != null) {
         Object staminaEffect = injuryPage.getRawProperties().get("Stamina Effect");
@@ -402,7 +405,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
     }
   }
 
-  private Integer extractCardEffectFromInjuryPage(InjuryPage injuryPage) {
+  private Integer extractCardEffectFromInjuryPage(final InjuryPage injuryPage) {
     try {
       if (injuryPage.getRawProperties() != null) {
         Object cardEffect = injuryPage.getRawProperties().get("Card Effect");
@@ -419,7 +422,7 @@ public class InjuryTypeSyncService extends BaseSyncService {
     }
   }
 
-  private String extractSpecialEffectsFromInjuryPage(InjuryPage injuryPage) {
+  private String extractSpecialEffectsFromInjuryPage(final InjuryPage injuryPage) {
     try {
       if (injuryPage.getRawProperties() != null) {
         Object specialEffects = injuryPage.getRawProperties().get("Special Effects");

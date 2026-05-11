@@ -89,41 +89,56 @@ class DataMigrationServiceTest {
     addSampleData(H2_PROTECTED_URL, H2_USER, "secret");
   }
 
-  private static void addSampleData(String url, String user, String password) throws SQLException {
+  private static void addSampleData(final String url, final String user, final String password)
+      throws SQLException {
     try (Connection conn = DriverManager.getConnection(url, user, password);
         Statement stmt = conn.createStatement()) {
       stmt.execute(
-          "MERGE INTO universe (id, name, type, creation_date) KEY(id) VALUES (10, 'Migration"
-              + " Test Universe', 'GLOBAL', CURRENT_TIMESTAMP())");
+          """
+          MERGE INTO universe (id, name, type, creation_date) KEY(id) VALUES (10, 'Migration\
+           Test Universe', 'GLOBAL', CURRENT_TIMESTAMP())\
+          """);
       stmt.execute(
-          "MERGE INTO injury_type (INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, special_effects)"
-              + " KEY(INJURY_TYPE_ID) VALUES (10, 'Migration Knee', 2, 'Migration Description')");
+          """
+          MERGE INTO injury_type (INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, special_effects)\
+           KEY(INJURY_TYPE_ID) VALUES (10, 'Migration Knee', 2, 'Migration Description')\
+          """);
       stmt.execute(
-          "MERGE INTO faction (faction_id, name, universe_id, creation_date) KEY(faction_id)"
-              + " VALUES (10, 'Migration Test Faction', 10, CURRENT_TIMESTAMP())");
+          """
+          MERGE INTO faction (faction_id, name, universe_id, creation_date) KEY(faction_id)\
+           VALUES (10, 'Migration Test Faction', 10, CURRENT_TIMESTAMP())\
+          """);
       stmt.execute(
-          "MERGE INTO npc (id, name, npc_type, external_id) KEY(id) VALUES (10,"
-              + " 'Migration Manager', 'MANAGER', 'ext-npc-migration-1')");
+          """
+          MERGE INTO npc (id, name, npc_type, external_id) KEY(id) VALUES (10,\
+           'Migration Manager', 'MANAGER', 'ext-npc-migration-1')\
+          """);
 
       stmt.execute(
-          "MERGE INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,"
-              + " LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, IS_PLAYER, GENDER, ACTIVE,"
-              + " UPDATED_AT) KEY(wrestler_id) VALUES (10, 'Migration Test Wrestler', 15, 2, 15, 4,"
-              + " 15, CURRENT_TIMESTAMP(), 'ext-migration-1', false, 'MALE', true,"
-              + " CURRENT_TIMESTAMP())");
+          """
+          MERGE INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,\
+           LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, IS_PLAYER, GENDER, ACTIVE,\
+           UPDATED_AT) KEY(wrestler_id) VALUES (10, 'Migration Test Wrestler', 15, 2, 15, 4,\
+           15, CURRENT_TIMESTAMP(), 'ext-migration-1', false, 'MALE', true,\
+           CURRENT_TIMESTAMP())\
+          """);
 
       stmt.execute(
-          "MERGE INTO wrestler_state (id, wrestler_id, universe_id, fans, tier, bumps,"
-              + " current_health, physical_condition, morale, management_stamina, faction_id,"
-              + " manager_id, updated_at) KEY(id) VALUES (10, 10, 10, 1000, 'ROOKIE', 0, 15, 100,"
-              + " 100, 100, 10, 10, CURRENT_TIMESTAMP())");
+          """
+          MERGE INTO wrestler_state (id, wrestler_id, universe_id, fans, tier, bumps,\
+           current_health, physical_condition, morale, management_stamina, faction_id,\
+           manager_id, updated_at) KEY(id) VALUES (10, 10, 10, 1000, 'ROOKIE', 0, 15, 100,\
+           100, 100, 10, 10, CURRENT_TIMESTAMP())\
+          """);
 
       stmt.execute(
-          "MERGE INTO injury (injury_id, wrestler_id, universe_id, name, description, severity,"
-              + " health_penalty, healing_cost, is_active, injury_date, creation_date, updated_at)"
-              + " KEY(injury_id) VALUES (10, 10, 10, 'Migration Torn ACL', 'Migration Torn ACL',"
-              + " 'SEVERE', 2, 100, true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),"
-              + " CURRENT_TIMESTAMP())");
+          """
+          MERGE INTO injury (injury_id, wrestler_id, universe_id, name, description, severity,\
+           health_penalty, healing_cost, is_active, injury_date, creation_date, updated_at)\
+           KEY(injury_id) VALUES (10, 10, 10, 'Migration Torn ACL', 'Migration Torn ACL',\
+           'SEVERE', 2, 100, true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),\
+           CURRENT_TIMESTAMP())\
+          """);
     }
   }
 
@@ -159,7 +174,7 @@ class DataMigrationServiceTest {
     verifyDataMigration(H2_PROTECTED_URL, H2_USER, "secret");
   }
 
-  private void verifyDataMigration(String h2Url, String h2User, String h2Password)
+  private void verifyDataMigration(final String h2Url, final String h2User, final String h2Password)
       throws SQLException {
     DatabaseManager h2Manager =
         DatabaseManagerFactory.getDatabaseManager("H2_FILE", h2Url, h2User, h2Password);
@@ -213,7 +228,7 @@ class DataMigrationServiceTest {
 
       while (tables.next()) {
         String tableName = tables.getString(1);
-        if (tableName.equalsIgnoreCase("flyway_schema_history")) {
+        if ("flyway_schema_history".equalsIgnoreCase(tableName)) {
           continue;
         }
         assertions.add(

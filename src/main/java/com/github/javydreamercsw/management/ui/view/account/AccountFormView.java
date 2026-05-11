@@ -55,8 +55,8 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
   private final ComboBox<Role> role = new ComboBox<>("Role");
 
   public AccountFormView(
-      @NonNull @Qualifier("managementAccountService") AccountService accountService,
-      @NonNull RoleRepository roleRepository) {
+      @NonNull @Qualifier("managementAccountService") final AccountService accountService,
+      @NonNull final RoleRepository roleRepository) {
     this.accountService = accountService;
     this.roleRepository = roleRepository;
     setupForm();
@@ -64,7 +64,7 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
   }
 
   @Override
-  public void setParameter(BeforeEvent event, Long parameter) {
+  public void setParameter(final BeforeEvent event, final Long parameter) {
     Optional<Account> optionalAccount = accountService.get(parameter);
     if (optionalAccount.isPresent()) {
       account = optionalAccount.get();

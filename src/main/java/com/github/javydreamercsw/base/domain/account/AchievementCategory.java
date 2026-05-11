@@ -29,7 +29,7 @@ public enum AchievementCategory {
 
   private final String displayName;
 
-  AchievementCategory(String displayName) {
+  AchievementCategory(final String displayName) {
     this.displayName = displayName;
   }
 }

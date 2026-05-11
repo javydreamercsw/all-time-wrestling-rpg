@@ -84,13 +84,13 @@ public class InjuryDTO {
    * @return Summary of the injury DTO
    */
   public String getSummary() {
-    return String.format(
-        "InjuryDTO[id=%s, name='%s', health=%d, stamina=%d, card=%d]",
-        externalId,
-        injuryName,
-        healthEffect != null ? healthEffect : 0,
-        staminaEffect != null ? staminaEffect : 0,
-        cardEffect != null ? cardEffect : 0);
+    return "InjuryDTO[id=%s, name='%s', health=%d, stamina=%d, card=%d]"
+        .formatted(
+            externalId,
+            injuryName,
+            healthEffect != null ? healthEffect : 0,
+            staminaEffect != null ? staminaEffect : 0,
+            cardEffect != null ? cardEffect : 0);
   }
 
   /**

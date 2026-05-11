@@ -49,7 +49,7 @@ public class CampaignScriptService {
    * @param script The Groovy snippet to execute.
    * @param campaign The campaign context.
    */
-  public void executeEffect(String script, Campaign campaign) {
+  public void executeEffect(final String script, final Campaign campaign) {
     if (script == null || script.isBlank()) {
       return;
     }
@@ -63,7 +63,7 @@ public class CampaignScriptService {
     evaluateSnippet("ctx.with { " + script + " }", variables);
   }
 
-  public Object executeScript(String scriptPath, Map<String, Object> variables) {
+  public Object executeScript(final String scriptPath, final Map<String, Object> variables) {
     try {
       Binding binding = new Binding(variables);
       groovy.lang.Script script = getScript(scriptPath, binding);
@@ -81,7 +81,7 @@ public class CampaignScriptService {
    * @param variables The variables to bind.
    * @return The result of the execution.
    */
-  public Object evaluateSnippet(String snippet, Map<String, Object> variables) {
+  public Object evaluateSnippet(final String snippet, final Map<String, Object> variables) {
     if (snippet == null || snippet.isBlank()) {
       return null;
     }
@@ -97,7 +97,8 @@ public class CampaignScriptService {
     }
   }
 
-  private groovy.lang.Script getScript(String scriptPath, Binding binding) throws IOException {
+  private groovy.lang.Script getScript(final String scriptPath, final Binding binding)
+      throws IOException {
     Resource resource = new ClassPathResource("scripts/campaign/" + scriptPath);
     if (!resource.exists()) {
       throw new IOException("Script not found: " + scriptPath);

@@ -117,19 +117,19 @@ public class ShowListView extends Main {
   final Grid<Show> showGrid;
 
   public ShowListView(
-      @NonNull ShowService showService,
-      @NonNull ShowTypeService showTypeService,
-      @NonNull SeasonService seasonService,
-      @NonNull ShowTemplateService showTemplateService,
-      @NonNull UniverseRepository universeRepository,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull AiSettingsService aiSettingsService,
-      @NonNull ArenaService arenaService,
-      @NonNull ShowExportService exportService,
-      @NonNull NotificationService notificationService,
-      Clock clock) {
+      @NonNull final ShowService showService,
+      @NonNull final ShowTypeService showTypeService,
+      @NonNull final SeasonService seasonService,
+      @NonNull final ShowTemplateService showTemplateService,
+      @NonNull final UniverseRepository universeRepository,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final ImageGenerationServiceFactory imageGenerationServiceFactory,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final AiSettingsService aiSettingsService,
+      @NonNull final ArenaService arenaService,
+      @NonNull final ShowExportService exportService,
+      @NonNull final NotificationService notificationService,
+      final Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
@@ -495,7 +495,7 @@ public class ShowListView extends Main {
     showGrid.setItems(shows);
   }
 
-  private void openGenerateArtDialog(ShowTemplate template) {
+  private void openGenerateArtDialog(final ShowTemplate template) {
     if (template == null) {
       return;
     }
@@ -513,8 +513,10 @@ public class ShowListView extends Main {
             sb.append(template.getDescription()).append(". ");
           }
           sb.append(
-              "High quality, bold typography, dramatic lighting, exciting atmosphere, sports"
-                  + " entertainment style.");
+              """
+              High quality, bold typography, dramatic lighting, exciting atmosphere, sports\
+               entertainment style.\
+              """);
           return sb.toString();
         };
 
@@ -647,7 +649,7 @@ public class ShowListView extends Main {
     editDialog.add(formLayout, buttonLayout);
   }
 
-  private void openEditDialog(Show show) {
+  private void openEditDialog(final Show show) {
     if (editDialog == null) {
       setupEditDialog();
     }
@@ -679,7 +681,7 @@ public class ShowListView extends Main {
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void openDeleteDialog(Show show) {
+  private void openDeleteDialog(final Show show) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Delete Show");
     confirmDialog.add(

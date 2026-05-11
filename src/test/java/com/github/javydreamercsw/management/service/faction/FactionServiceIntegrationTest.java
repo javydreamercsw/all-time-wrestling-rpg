@@ -108,8 +108,8 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Collections.singletonList("BASE_GAME"));
     activeFactions = factionService.getActiveFactions();
-    assertTrue(activeFactions.stream().noneMatch(f -> f.getName().equals("Extreme Faction")));
-    assertTrue(activeFactions.stream().anyMatch(f -> f.getName().equals("Test Faction")));
+    assertTrue(activeFactions.stream().noneMatch(f -> "Extreme Faction".equals(f.getName())));
+    assertTrue(activeFactions.stream().anyMatch(f -> "Test Faction".equals(f.getName())));
   }
 
   @Test
@@ -153,7 +153,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     assertThat(result).isEmpty();
     // Verify only one faction with that name exists
     List<Faction> factions = factionService.findAll();
-    assertThat(factions.stream().filter(f -> f.getName().equals("Test Faction"))).hasSize(1);
+    assertThat(factions.stream().filter(f -> "Test Faction".equals(f.getName()))).hasSize(1);
   }
 
   @Test
@@ -269,7 +269,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // Then
     assertThat(factions).isNotEmpty();
     Optional<Faction> foundFaction =
-        factions.stream().filter(f -> f.getName().equals("Test Faction")).findFirst();
+        factions.stream().filter(f -> "Test Faction".equals(f.getName())).findFirst();
     assertThat(foundFaction).isPresent();
     assertThat(foundFaction.get().getMembers()).isNotEmpty();
   }

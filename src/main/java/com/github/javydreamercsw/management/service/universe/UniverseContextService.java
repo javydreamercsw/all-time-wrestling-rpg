@@ -64,7 +64,7 @@ public class UniverseContextService implements Serializable {
     return threadLocalUniverseId.get();
   }
 
-  private void setInternalUniverseId(Long id) {
+  private void setInternalUniverseId(final Long id) {
     try {
       VaadinSession session = VaadinSession.getCurrent();
       if (session != null) {
@@ -91,7 +91,7 @@ public class UniverseContextService implements Serializable {
    *
    * @param universe The universe to set
    */
-  public void setCurrentUniverse(Universe universe) {
+  public void setCurrentUniverse(final Universe universe) {
     if (universe != null) {
       setCurrentUniverseId(universe.getId());
       log.info(
@@ -104,7 +104,7 @@ public class UniverseContextService implements Serializable {
    *
    * @param universeId The universe ID to set
    */
-  public void setCurrentUniverseId(@NonNull Long universeId) {
+  public void setCurrentUniverseId(@NonNull final Long universeId) {
     setInternalUniverseId(universeId);
   }
 }

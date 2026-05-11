@@ -103,13 +103,13 @@ public class HolidayFormDialog extends Div {
     return new HorizontalLayout(save, cancel);
   }
 
-  public void setHoliday(Holiday holiday) {
+  public void setHoliday(final Holiday holiday) {
     this.holiday = holiday;
     binder.readBean(holiday);
     configureFields(holiday.getType());
   }
 
-  private void configureFields(HolidayType holidayType) {
+  private void configureFields(final HolidayType holidayType) {
     boolean isFixed = holidayType == HolidayType.FIXED;
     dayOfMonth.setVisible(isFixed);
     month.setVisible(true); // Month is always visible
@@ -143,29 +143,29 @@ public class HolidayFormDialog extends Div {
   public abstract static class HolidayFormEvent extends ComponentEvent<HolidayFormDialog> {
     private final Holiday holiday;
 
-    protected HolidayFormEvent(HolidayFormDialog source, Holiday holiday) {
+    protected HolidayFormEvent(final HolidayFormDialog source, final Holiday holiday) {
       super(source, false);
       this.holiday = holiday;
     }
   }
 
   public static class SaveEvent extends HolidayFormEvent {
-    SaveEvent(HolidayFormDialog source, Holiday holiday) {
+    SaveEvent(final HolidayFormDialog source, final Holiday holiday) {
       super(source, holiday);
     }
   }
 
   public static class CloseEvent extends HolidayFormEvent {
-    CloseEvent(HolidayFormDialog source) {
+    CloseEvent(final HolidayFormDialog source) {
       super(source, null);
     }
   }
 
-  public Registration addSaveListener(ComponentEventListener<SaveEvent> listener) {
+  public Registration addSaveListener(final ComponentEventListener<SaveEvent> listener) {
     return addListener(SaveEvent.class, listener);
   }
 
-  public Registration addCloseListener(ComponentEventListener<CloseEvent> listener) {
+  public Registration addCloseListener(final ComponentEventListener<CloseEvent> listener) {
     return addListener(CloseEvent.class, listener);
   }
 }

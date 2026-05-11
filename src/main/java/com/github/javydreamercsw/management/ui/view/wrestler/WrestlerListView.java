@@ -67,15 +67,15 @@ public class WrestlerListView extends Main {
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
-      @NonNull WrestlerService wrestlerService,
-      @NonNull InjuryService injuryService,
-      @NonNull NpcService npcService,
-      @NonNull ExpansionService expansionService,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull CampaignService campaignService,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull UniverseContextService universeContextService) {
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      @NonNull final NpcService npcService,
+      @NonNull final ExpansionService expansionService,
+      @NonNull @Qualifier("baseAccountService") final AccountService accountService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final CampaignService campaignService,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;

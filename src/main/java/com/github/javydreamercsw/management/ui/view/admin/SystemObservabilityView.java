@@ -77,10 +77,10 @@ public class SystemObservabilityView extends VerticalLayout {
   private final Tabs tabs;
 
   public SystemObservabilityView(
-      @NonNull PerformanceMonitoringService performanceService,
-      @NonNull CacheMonitor cacheMonitor,
-      @NonNull DatabaseOptimizationConfig databaseConfig,
-      @NonNull SystemPulseService pulseService) {
+      @NonNull final PerformanceMonitoringService performanceService,
+      @NonNull final CacheMonitor cacheMonitor,
+      @NonNull final DatabaseOptimizationConfig databaseConfig,
+      @NonNull final SystemPulseService pulseService) {
     this.performanceService = performanceService;
     this.cacheMonitor = cacheMonitor;
     this.databaseConfig = databaseConfig;
@@ -118,7 +118,7 @@ public class SystemObservabilityView extends VerticalLayout {
     return new Tabs(performanceTab, cacheTab, databaseTab, systemPulseTab);
   }
 
-  private void updateContent(@NonNull Tab selectedTab) {
+  private void updateContent(@NonNull final Tab selectedTab) {
     content.removeAll();
     String label = selectedTab.getLabel();
 
@@ -165,9 +165,8 @@ public class SystemObservabilityView extends VerticalLayout {
     PerformanceSnapshot latest = history.get(history.size() - 1);
     Span summary =
         new Span(
-            String.format(
-                "Latest Stats: %.1f%% Memory, %d Threads (%d points in history)",
-                latest.getHeapUsagePercent(), latest.getThreadCount(), history.size()));
+            "Latest Stats: %.1f%% Memory, %d Threads (%d points in history)"
+                .formatted(latest.getHeapUsagePercent(), latest.getThreadCount(), history.size()));
     summary.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
     layout.add(refreshBtn, summary);
 
@@ -211,7 +210,7 @@ public class SystemObservabilityView extends VerticalLayout {
     return scroller;
   }
 
-  private ApexCharts createAiResponseTimeChart(List<PerformanceSnapshot> history) {
+  private ApexCharts createAiResponseTimeChart(final List<PerformanceSnapshot> history) {
     ApexChartsBuilder builder =
         ApexChartsBuilder.get()
             .withChart(
@@ -264,7 +263,7 @@ public class SystemObservabilityView extends VerticalLayout {
     return chart;
   }
 
-  private ApexCharts createAiTokenUsageChart(List<PerformanceSnapshot> history) {
+  private ApexCharts createAiTokenUsageChart(final List<PerformanceSnapshot> history) {
     ApexChartsBuilder builder =
         ApexChartsBuilder.get()
             .withChart(
@@ -310,10 +309,10 @@ public class SystemObservabilityView extends VerticalLayout {
   }
 
   private ApexCharts createAreaChart(
-      @NonNull String title,
-      @NonNull Double[] data,
-      @NonNull String[] labels,
-      @NonNull String color) {
+      @NonNull final String title,
+      @NonNull final Double[] data,
+      @NonNull final String[] labels,
+      @NonNull final String color) {
     ApexCharts chart =
         ApexChartsBuilder.get()
             .withChart(
@@ -342,7 +341,7 @@ public class SystemObservabilityView extends VerticalLayout {
     cacheGrid.addColumn(m -> m.get("name")).setHeader("Cache Name").setAutoWidth(true);
     cacheGrid.addColumn(m -> m.getOrDefault("size", "N/A")).setHeader("Entries");
     cacheGrid
-        .addColumn(m -> String.format("%.2f%%", (double) m.getOrDefault("hitRate", 0.0) * 100))
+        .addColumn(m -> "%.2f%%".formatted((double) m.getOrDefault("hitRate", 0.0) * 100))
         .setHeader("Hit Rate");
     cacheGrid.addColumn(m -> m.getOrDefault("evictionCount", "N/A")).setHeader("Evictions");
 

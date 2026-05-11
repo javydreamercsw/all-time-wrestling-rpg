@@ -128,29 +128,31 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   @Autowired
   public MatchView(
-      SegmentService segmentService,
-      WrestlerService wrestlerService,
-      InjuryService injuryService,
-      UniverseContextService universeContextService,
-      SecurityUtils securityUtils,
-      CampaignService campaignService,
-      CampaignRepository campaignRepository,
-      SegmentNarrationServiceFactory narrationServiceFactory,
-      NpcService npcService,
-      SegmentAdjudicationService segmentAdjudicationService,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      MatchFulfillmentService matchFulfillmentService,
-      PromoService promoService,
-      CommentaryTeamRepository commentaryTeamRepository,
-      NarrationParserService narrationParserService,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      final SegmentService segmentService,
+      final WrestlerService wrestlerService,
+      final InjuryService injuryService,
+      final UniverseContextService universeContextService,
+      final SecurityUtils securityUtils,
+      final CampaignService campaignService,
+      final CampaignRepository campaignRepository,
+      final SegmentNarrationServiceFactory narrationServiceFactory,
+      final NpcService npcService,
+      final SegmentAdjudicationService segmentAdjudicationService,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final MatchFulfillmentService matchFulfillmentService,
+      final PromoService promoService,
+      final CommentaryTeamRepository commentaryTeamRepository,
+      final NarrationParserService narrationParserService,
+      final com.github.javydreamercsw.management.service.ringside.RingsideActionService
           ringsideActionService,
-      com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      final com.github.javydreamercsw.management.service.ringside.RingsideAiService
+          ringsideAiService,
+      final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
           ringsideActionDataService,
-      com.github.javydreamercsw.management.service.team.TeamService teamService,
-      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final com.github.javydreamercsw.management.service.team.TeamService teamService,
+      final com.github.javydreamercsw.management.service.title.TitleScriptService
+          titleScriptService,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
@@ -175,7 +177,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   @Override
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     try {
       removeAll();
       String matchId = event.getRouteParameters().get("matchId").orElse(null);
@@ -235,7 +237,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     buildMatchInterface(playerWrestler);
   }
 
-  private void buildHeader(Wrestler playerWrestler) {
+  private void buildHeader(final Wrestler playerWrestler) {
     // Header Section
     VerticalLayout header = new VerticalLayout();
     header.setPadding(false);
@@ -288,7 +290,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
   }
 
-  private void showInteractivePromoInterface(Wrestler playerWrestler) {
+  private void showInteractivePromoInterface(final Wrestler playerWrestler) {
     DashboardCard promoCard = new DashboardCard("Interactive Promo Chat");
     promoCard.setId("interactive-promo-chat-card");
     VerticalLayout promoLayout = new VerticalLayout();
@@ -371,7 +373,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     add(promoCard);
   }
 
-  private void buildMatchInterface(Wrestler playerWrestler) {
+  private void buildMatchInterface(final Wrestler playerWrestler) {
     boolean isPromo =
         segment.getSegmentType() != null
             && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
@@ -583,8 +585,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     feedbackArea.setPlaceholder(
         isPromo
             ? "Provide bullet points or a general idea of the promo content..."
-            : "Provide specific details about the match (key spots, ringside actions, etc.) to"
-                + " guide the AI...");
+            : """
+            Provide specific details about the match (key spots, ringside actions, etc.) to\
+             guide the AI...\
+            """);
     feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
     feedbackArea.setId("feedback-area");
 
@@ -817,7 +821,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         // Default to All-Time Broadcast Team if not set
         team =
             commentaryTeamRepository.findAll().stream()
-                .filter(t -> t.getName().equalsIgnoreCase("All-Time Broadcast Team"))
+                .filter(t -> "All-Time Broadcast Team".equalsIgnoreCase(t.getName()))
                 .findFirst()
                 .orElse(null);
       }

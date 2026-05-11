@@ -55,7 +55,7 @@ class WrestlerTierTest {
     "200000, ICON",
     "999999, ICON"
   })
-  void shouldDetermineCorrectTierFromFanCount(Long fans, WrestlerTier expectedTier) {
+  void shouldDetermineCorrectTierFromFanCount(final Long fans, final WrestlerTier expectedTier) {
     assertThat(WrestlerTier.fromFanCount(fans)).isEqualTo(expectedTier);
   }
 

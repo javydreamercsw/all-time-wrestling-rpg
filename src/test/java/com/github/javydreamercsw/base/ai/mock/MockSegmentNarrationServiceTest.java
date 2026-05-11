@@ -26,11 +26,14 @@ class MockSegmentNarrationServiceTest {
   void testGenerateMockTextNarrationFormat() {
     MockSegmentNarrationService service = new MockSegmentNarrationService();
     String prompt =
-        "Generate a compelling wrestling narration for a Match. Here is the JSON context:\n\n"
-            + "{\"wrestlers\": [{\"name\": \"Wrestler A\", \"alignment\": \"FACE\"}, {\"name\":"
-            + " \"Wrestler B\", \"alignment\": \"HEEL\"}], \"commentators\": [{\"name\": \"Dara"
-            + " Hoshiko\"}, {\"name\": \"Lord Bastian Von Crowe\"}], \"venue\": {\"name\": \"Test"
-            + " Arena\"}}";
+        """
+        Generate a compelling wrestling narration for a Match. Here is the JSON context:
+
+        {"wrestlers": [{"name": "Wrestler A", "alignment": "FACE"}, {"name":\
+         "Wrestler B", "alignment": "HEEL"}], "commentators": [{"name": "Dara\
+         Hoshiko"}, {"name": "Lord Bastian Von Crowe"}], "venue": {"name": "Test\
+         Arena"}}\
+        """;
 
     String result = service.generateText(prompt);
 
@@ -106,8 +109,10 @@ class MockSegmentNarrationServiceTest {
   void testGenerateMockNarration() {
     MockSegmentNarrationService service = new MockSegmentNarrationService();
     String prompt =
-        "professional wrestling show planner. 2 matches and 1 promos. \"wrestlers\": [{\"name\":"
-            + " \"Wrestler A\"}]";
+        """
+        professional wrestling show planner. 2 matches and 1 promos. "wrestlers": [{"name":\
+         "Wrestler A"}]\
+        """;
     String result = service.generateText(prompt);
     assertTrue(result.contains("Mock description"));
     assertTrue(result.contains("segmentId"));

@@ -132,7 +132,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         cells.stream()
             .map(WebElement::getText)
             .map(String::trim)
-            .filter(text -> text.equals("Adam") || text.equals("Ben") || text.equals("Zack"))
+            .filter(text -> "Adam".equals(text) || "Ben".equals(text) || "Zack".equals(text))
             .toList();
 
     assertEquals(3, namesInOrder.size(), "Should find all three wrestler names in the grid");
@@ -186,7 +186,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Edit Updated"));
+                .anyMatch(it -> "Edit Updated".equals(it.getText()));
           } catch (Exception e) {
 
             return false;
@@ -194,7 +194,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         });
 
     assertTrue(
-        wrestlerRepository.findAll().stream().anyMatch(w -> w.getName().equals("Edit Updated")));
+        wrestlerRepository.findAll().stream().anyMatch(w -> "Edit Updated".equals(w.getName())));
   }
 
   @Test
@@ -225,7 +225,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> it.getText().equals("Delete"));
+                .noneMatch(it -> "Delete".equals(it.getText()));
           } catch (Exception e) {
 
             return false;
@@ -373,7 +373,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Bruised Ribs"));
+                .anyMatch(it -> "Bruised Ribs".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -383,7 +383,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Twisted Ankle"));
+                .anyMatch(it -> "Twisted Ankle".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -445,7 +445,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Broken Leg"));
+                .anyMatch(it -> "Broken Leg".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }

@@ -108,7 +108,7 @@ public class WrestlerRelationship extends AbstractEntity<Long> {
   }
 
   /** Get the other wrestler in the relationship. */
-  public Wrestler getPartner(Wrestler wrestler) {
+  public Wrestler getPartner(final Wrestler wrestler) {
     if (wrestler.equals(wrestler1)) {
       return wrestler2;
     } else if (wrestler.equals(wrestler2)) {
@@ -118,7 +118,7 @@ public class WrestlerRelationship extends AbstractEntity<Long> {
   }
 
   /** Check if a wrestler is involved in this relationship. */
-  public boolean involvesWrestler(Wrestler wrestler) {
+  public boolean involvesWrestler(final Wrestler wrestler) {
     return wrestler.equals(wrestler1) || wrestler.equals(wrestler2);
   }
 }

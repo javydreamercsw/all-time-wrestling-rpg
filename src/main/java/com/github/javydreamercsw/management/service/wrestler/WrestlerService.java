@@ -77,20 +77,22 @@ public class WrestlerService {
 
   @Autowired
   public WrestlerService(
-      WrestlerRepository wrestlerRepository,
-      WrestlerStateRepository wrestlerStateRepository,
-      TierBoundaryRepository tierBoundaryRepository,
-      ApplicationEventPublisher eventPublisher,
-      TierRecalculationService tierRecalculationService,
-      DefaultImageService imageService,
-      LegacyService legacyService,
-      @Lazy com.github.javydreamercsw.management.service.segment.SegmentService segmentService,
-      @Lazy com.github.javydreamercsw.management.service.title.TitleService titleService,
-      @Lazy com.github.javydreamercsw.management.service.injury.InjuryService injuryService,
-      SecurityUtils securityUtils,
-      com.github.javydreamercsw.management.domain.universe.UniverseRepository universeRepository,
-      WrestlerAlignmentRepository wrestlerAlignmentRepository,
-      UniverseContextService universeContextService) {
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
+      final TierBoundaryRepository tierBoundaryRepository,
+      final ApplicationEventPublisher eventPublisher,
+      final TierRecalculationService tierRecalculationService,
+      final DefaultImageService imageService,
+      final LegacyService legacyService,
+      @Lazy
+          final com.github.javydreamercsw.management.service.segment.SegmentService segmentService,
+      @Lazy final com.github.javydreamercsw.management.service.title.TitleService titleService,
+      @Lazy final com.github.javydreamercsw.management.service.injury.InjuryService injuryService,
+      final SecurityUtils securityUtils,
+      final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+          universeRepository,
+      final WrestlerAlignmentRepository wrestlerAlignmentRepository,
+      final UniverseContextService universeContextService) {
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
@@ -112,7 +114,7 @@ public class WrestlerService {
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  public Wrestler save(@NonNull Wrestler wrestler) {
+  public Wrestler save(@NonNull final Wrestler wrestler) {
     return wrestlerRepository.save(wrestler);
   }
 
@@ -121,19 +123,19 @@ public class WrestlerService {
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  public void delete(@NonNull Long id) {
+  public void delete(@NonNull final Long id) {
     wrestlerRepository.deleteById(id);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findById(@NonNull Long id) {
+  public Optional<Wrestler> findById(@NonNull final Long id) {
     return wrestlerRepository.findById(id);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findByIdWithInjuries(@NonNull Long id) {
+  public Optional<Wrestler> findByIdWithInjuries(@NonNull final Long id) {
     // In current implementation, injuries are part of state, so this might need careful handling.
     // For now, return the basic wrestler entity.
     return wrestlerRepository.findById(id);
@@ -142,7 +144,7 @@ public class WrestlerService {
   /** Find wrestler by ID and fetch injuries and status cards. */
   @PreAuthorize("isAuthenticated()")
   @Transactional(readOnly = true)
-  public Optional<Wrestler> findByIdWithDetails(Long id) {
+  public Optional<Wrestler> findByIdWithDetails(final Long id) {
     Optional<Wrestler> wrestler = wrestlerRepository.findByIdWithStatuses(id);
     wrestler.ifPresent(w -> w.getStatuses().size());
     return wrestler;
@@ -156,13 +158,13 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findByName(@NonNull String name) {
+  public Optional<Wrestler> findByName(@NonNull final String name) {
     return wrestlerRepository.findByName(name);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findByExternalId(@NonNull String externalId) {
+  public Optional<Wrestler> findByExternalId(@NonNull final String externalId) {
     return wrestlerRepository.findByExternalId(externalId);
   }
 
@@ -199,7 +201,7 @@ public class WrestlerService {
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
+  public Optional<Wrestler> awardFans(@NonNull final Long wrestlerId, @NonNull final Long fans) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -237,7 +239,7 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findAllByAccount(@NonNull Account account) {
+  public List<Wrestler> findAllByAccount(@NonNull final Account account) {
     return wrestlerRepository.findByAccount(account);
   }
 
@@ -250,49 +252,49 @@ public class WrestlerService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
-      @Nullable AlignmentType alignmentType,
-      com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @Nullable Long universeId) {
+      @Nullable final AlignmentType alignmentType,
+      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      @Nullable final Long universeId) {
     return findAllFiltered(alignmentType, gender, universeId, (String) null, null);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
-      @Nullable AlignmentType alignmentType,
-      com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @Nullable String expansionCode) {
+      @Nullable final AlignmentType alignmentType,
+      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      @Nullable final String expansionCode) {
     return findAllFiltered(alignmentType, gender, null, expansionCode, null);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
-      @Nullable AlignmentType alignmentType,
-      com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @Nullable Long universeId,
-      @Nullable String expansionCode) {
+      @Nullable final AlignmentType alignmentType,
+      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      @Nullable final Long universeId,
+      @Nullable final String expansionCode) {
     return findAllFiltered(alignmentType, gender, universeId, expansionCode, null);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
-      @Nullable AlignmentType alignmentType,
-      com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @NonNull Long universeId,
-      @Nullable Set<Wrestler> includedWrestlers) {
+      @Nullable final AlignmentType alignmentType,
+      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      @NonNull final Long universeId,
+      @Nullable final Set<Wrestler> includedWrestlers) {
     return findAllFiltered(alignmentType, gender, universeId, null, includedWrestlers);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
-      @Nullable AlignmentType alignmentType,
-      com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
-      @Nullable Long universeId,
-      @Nullable String expansionCode,
-      @Nullable Set<Wrestler> includedWrestlers) {
+      @Nullable final AlignmentType alignmentType,
+      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      @Nullable final Long universeId,
+      @Nullable final String expansionCode,
+      @Nullable final Set<Wrestler> includedWrestlers) {
     final Long finalUniverseId =
         universeId != null ? universeId : universeContextService.getCurrentUniverseId();
 
@@ -333,7 +335,7 @@ public class WrestlerService {
       allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public Wrestler createWrestler(
-      @NonNull String name, @NonNull Boolean isPlayer, String description) {
+      @NonNull final String name, @NonNull final Boolean isPlayer, final String description) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
     wrestler.setIsPlayer(isPlayer);
@@ -353,11 +355,11 @@ public class WrestlerService {
       allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public Wrestler createWrestler(
-      @NonNull String name,
-      @NonNull Boolean isPlayer,
-      String description,
-      @NonNull WrestlerTier tier,
-      com.github.javydreamercsw.management.domain.universe.Universe universe) {
+      @NonNull final String name,
+      @NonNull final Boolean isPlayer,
+      final String description,
+      @NonNull final WrestlerTier tier,
+      final com.github.javydreamercsw.management.domain.universe.Universe universe) {
     Wrestler wrestler = createWrestler(name, isPlayer, description);
     if (universe != null) {
       WrestlerState state = getOrCreateState(wrestler.getId(), universe.getId());
@@ -369,7 +371,7 @@ public class WrestlerService {
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  public void setAccountForWrestler(@NonNull Long wrestlerId, Long accountId) {
+  public void setAccountForWrestler(@NonNull final Long wrestlerId, final Long accountId) {
     wrestlerRepository
         .findById(wrestlerId)
         .ifPresent(
@@ -393,7 +395,8 @@ public class WrestlerService {
    * @return The WrestlerState
    */
   @Transactional
-  public WrestlerState getOrCreateState(@NonNull Long wrestlerId, @NonNull Long universeId) {
+  public WrestlerState getOrCreateState(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     Optional<WrestlerState> existing =
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId);
     if (existing.isPresent()) {
@@ -407,9 +410,8 @@ public class WrestlerService {
 
     if (wrestler == null || universe == null) {
       String msg =
-          String.format(
-              "Cannot create persistent WrestlerState: Wrestler %d or Universe %d not found.",
-              wrestlerId, universeId);
+          "Cannot create persistent WrestlerState: Wrestler %d or Universe %d not found."
+              .formatted(wrestlerId, universeId);
       log.error(msg);
       throw new IllegalStateException(msg);
     }
@@ -440,7 +442,7 @@ public class WrestlerService {
       allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<WrestlerState> awardFans(
-      @NonNull Long wrestlerId, @NonNull Long universeId, @NonNull Long fans) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId, @NonNull final Long fans) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
     long tempFans = fans;
     if (fans > 0) {
@@ -479,7 +481,8 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  public Optional<WrestlerState> addBump(@NonNull Long wrestlerId, @NonNull Long universeId) {
+  public Optional<WrestlerState> addBump(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
 
     if (state.addBump()) {
@@ -504,7 +507,8 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  public Optional<WrestlerState> healBump(@NonNull Long wrestlerId, @NonNull Long universeId) {
+  public Optional<WrestlerState> healBump(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
     if (state.getBumps() > 0) {
       state.setBumps(state.getBumps() - 1);
@@ -530,7 +534,9 @@ public class WrestlerService {
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
   public Optional<WrestlerState> healChance(
-      @NonNull Long wrestlerId, @NonNull Long universeId, @NonNull DiceBag diceBag) {
+      @NonNull final Long wrestlerId,
+      @NonNull final Long universeId,
+      @NonNull final DiceBag diceBag) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
 
     boolean hasInjury =
@@ -559,7 +565,8 @@ public class WrestlerService {
     return Optional.of(state);
   }
 
-  public Optional<WrestlerState> healChance(@NonNull Long wrestlerId, @NonNull Long universeId) {
+  public Optional<WrestlerState> healChance(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     return healChance(wrestlerId, universeId, new DiceBag(6));
   }
 
@@ -571,7 +578,8 @@ public class WrestlerService {
    * @return List of wrestlers
    */
   @Transactional(readOnly = true)
-  public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier, @NonNull Long universeId) {
+  public List<Wrestler> getWrestlersByTier(
+      @NonNull final WrestlerTier tier, @NonNull final Long universeId) {
     return wrestlerStateRepository.findByUniverseIdAndTier(universeId, tier).stream()
         .map(WrestlerState::getWrestler)
         .toList();
@@ -584,7 +592,7 @@ public class WrestlerService {
    * @return List of wrestlers
    */
   @Transactional(readOnly = true)
-  public List<Wrestler> getPlayerWrestlers(@NonNull Long universeId) {
+  public List<Wrestler> getPlayerWrestlers(@NonNull final Long universeId) {
     return wrestlerStateRepository.findByWrestlerIsPlayerTrueAndUniverseId(universeId).stream()
         .map(WrestlerState::getWrestler)
         .toList();
@@ -597,7 +605,7 @@ public class WrestlerService {
    * @return List of wrestlers
    */
   @Transactional(readOnly = true)
-  public List<Wrestler> getNpcWrestlers(@NonNull Long universeId) {
+  public List<Wrestler> getNpcWrestlers(@NonNull final Long universeId) {
     return wrestlerStateRepository.findByWrestlerIsPlayerFalseAndUniverseId(universeId).stream()
         .map(WrestlerState::getWrestler)
         .toList();
@@ -612,11 +620,12 @@ public class WrestlerService {
    * @return true if successful
    */
   @Transactional
-  public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long universeId, @NonNull Long cost) {
+  public boolean spendFans(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId, @NonNull final Long cost) {
     return awardFans(wrestlerId, universeId, -cost).isPresent();
   }
 
-  public List<WrestlerDTO> findAllAsDTO(@NonNull Long universeId) {
+  public List<WrestlerDTO> findAllAsDTO(@NonNull final Long universeId) {
     return findAll().stream().map(w -> toDTO(w, universeId)).toList();
   }
 
@@ -627,7 +636,8 @@ public class WrestlerService {
    * @param universeId The universe ID
    * @return Optional DTO
    */
-  public Optional<WrestlerDTO> findByIdAsDTO(@NonNull Long id, @NonNull Long universeId) {
+  public Optional<WrestlerDTO> findByIdAsDTO(
+      @NonNull final Long id, @NonNull final Long universeId) {
     return wrestlerRepository.findById(id).map(w -> toDTO(w, universeId));
   }
 
@@ -639,14 +649,14 @@ public class WrestlerService {
    * @return List of DTOs
    */
   public List<WrestlerDTO> findAllBySegment(
-      @NonNull com.github.javydreamercsw.management.domain.show.segment.Segment segment,
-      @NonNull Long universeId) {
+      @NonNull final com.github.javydreamercsw.management.domain.show.segment.Segment segment,
+      @NonNull final Long universeId) {
     return wrestlerRepository.findAllBySegment(segment).stream()
         .map(w -> toDTO(w, universeId))
         .toList();
   }
 
-  private WrestlerDTO toDTO(Wrestler wrestler, Long universeId) {
+  private WrestlerDTO toDTO(final Wrestler wrestler, final Long universeId) {
     WrestlerState state = getOrCreateState(wrestler.getId(), universeId);
     return new WrestlerDTO(state);
   }
@@ -661,7 +671,7 @@ public class WrestlerService {
   @Cacheable(value = CacheConfig.WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #universeId")
   @Transactional(readOnly = true)
   public Optional<WrestlerStats> getWrestlerStats(
-      @NonNull Long wrestlerId, @NonNull Long universeId) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     Wrestler wrestler =
         wrestlerRepository
             .findById(wrestlerId)
@@ -681,7 +691,7 @@ public class WrestlerService {
    * @return The resolved image source
    */
   public com.github.javydreamercsw.base.image.ImageResolution resolveWrestlerImage(
-      @NonNull Wrestler wrestler) {
+      @NonNull final Wrestler wrestler) {
     return imageService.resolveImage(wrestler.getName(), ImageCategory.WRESTLER);
   }
 
@@ -691,7 +701,7 @@ public class WrestlerService {
    * @param universeId The universe ID
    */
   @Transactional
-  public void recalibrateFanCounts(@NonNull Long universeId) {
+  public void recalibrateFanCounts(@NonNull final Long universeId) {
     List<Wrestler> wrestlers = findAll();
     for (Wrestler w : wrestlers) {
       WrestlerState state = getOrCreateState(w.getId(), universeId);
@@ -709,7 +719,7 @@ public class WrestlerService {
    * @param universeId The universe ID
    */
   @Transactional
-  public void resetAllFanCountsToZero(@NonNull Long universeId) {
+  public void resetAllFanCountsToZero(@NonNull final Long universeId) {
     List<Wrestler> wrestlers = findAll();
     for (Wrestler w : wrestlers) {
       WrestlerState state = getOrCreateState(w.getId(), universeId);
@@ -728,7 +738,7 @@ public class WrestlerService {
    */
   @Transactional
   @CacheEvict(value = CacheConfig.WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #universeId")
-  public void resetWearAndTear(@NonNull Long wrestlerId, @NonNull Long universeId) {
+  public void resetWearAndTear(@NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
     state.setPhysicalCondition(100);
     wrestlerStateRepository.save(state);
@@ -742,7 +752,7 @@ public class WrestlerService {
    * @param universeId The universe ID
    */
   @Transactional
-  public void resetAllWearAndTear(@NonNull Long universeId) {
+  public void resetAllWearAndTear(@NonNull final Long universeId) {
     List<Wrestler> wrestlers = findAll();
     for (Wrestler w : wrestlers) {
       resetWearAndTear(w.getId(), universeId);

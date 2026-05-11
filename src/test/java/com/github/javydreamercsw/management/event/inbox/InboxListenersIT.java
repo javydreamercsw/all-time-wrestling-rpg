@@ -184,9 +184,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
     assertEquals(fanAdjudication, eventTypeCaptor.getValue());
     String expectedMessage =
-        String.format(
-            "Wrestler %s gained %d fans. New total: %d",
-            wrestler1.getName(), fanChange, state1.getFans());
+        "Wrestler %s gained %d fans. New total: %d"
+            .formatted(wrestler1.getName(), fanChange, state1.getFans());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
@@ -212,7 +211,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
             typeCaptor.capture());
 
     assertEquals(adjudicationCompleted, eventTypeCaptor.getValue());
-    String expectedMessage = String.format("Adjudication completed for show: %s", show.getName());
+    String expectedMessage = "Adjudication completed for show: %s".formatted(show.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(show.getId());
     assertEquals(show.getId().toString(), referenceIdCaptor.getValue());
@@ -240,9 +239,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
     assertEquals(championshipChange, eventTypeCaptor.getValue());
     String expectedMessage =
-        String.format(
-            "Championship change for title ID %d. New champions: %s (formerly %s)",
-            title.getId(), wrestler1.getName(), wrestler2.getName());
+        "Championship change for title ID %d. New champions: %s (formerly %s)"
+            .formatted(title.getId(), wrestler1.getName(), wrestler2.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(title.getId());
     assertEquals(title.getId().toString(), referenceIdCaptor.getValue());
@@ -271,8 +269,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     assertEquals(wrestlerBump, eventTypeCaptor.getValue());
 
     String expectedMessage =
-        String.format(
-            "Wrestler %s received a bump. Total bumps: %d", wrestler1.getName(), state1.getBumps());
+        "Wrestler %s received a bump. Total bumps: %d"
+            .formatted(wrestler1.getName(), state1.getBumps());
 
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
@@ -301,9 +299,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
     assertEquals(wrestlerBumpHealed, eventTypeCaptor.getValue());
     String expectedMessage =
-        String.format(
-            "Wrestler %s's bumps have healed. New total: %d",
-            wrestler1.getName(), state1.getBumps());
+        "Wrestler %s's bumps have healed. New total: %d"
+            .formatted(wrestler1.getName(), state1.getBumps());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
@@ -330,8 +327,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
     assertEquals(wrestlerInjuryObtained, eventTypeCaptor.getValue());
     String expectedMessage =
-        String.format(
-            "Wrestler %s sustained a %s injury.", wrestler1.getName(), injury.getDescription());
+        "Wrestler %s sustained a %s injury."
+            .formatted(wrestler1.getName(), injury.getDescription());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
@@ -358,8 +355,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
     assertEquals(wrestlerInjuryHealed, eventTypeCaptor.getValue());
     String expectedMessage =
-        String.format(
-            "Wrestler %s's %s injury has healed.", wrestler1.getName(), injury.getDescription());
+        "Wrestler %s's %s injury has healed."
+            .formatted(wrestler1.getName(), injury.getDescription());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
     assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());

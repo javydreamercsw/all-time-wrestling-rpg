@@ -75,16 +75,16 @@ public class EditSegmentDialog extends Dialog {
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
 
   public EditSegmentDialog(
-      ProposedSegment segment,
-      WrestlerRepository wrestlerRepository,
-      WrestlerService wrestlerService,
-      TitleService titleService,
-      SegmentTypeRepository segmentTypeRepository,
-      SegmentRuleRepository segmentRuleRepository,
-      com.github.javydreamercsw.management.service.npc.NpcService npcService,
-      Gender defaultGenderConstraint,
-      Long universeId,
-      Runnable onSave) {
+      final ProposedSegment segment,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final TitleService titleService,
+      final SegmentTypeRepository segmentTypeRepository,
+      final SegmentRuleRepository segmentRuleRepository,
+      final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final Gender defaultGenderConstraint,
+      final Long universeId,
+      final Runnable onSave) {
     this.segment = segment;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
@@ -282,7 +282,7 @@ public class EditSegmentDialog extends Dialog {
     add(new VerticalLayout(formLayout));
   }
 
-  private void updateSynergyBonus(java.util.Collection<Wrestler> wrestlers) {
+  private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
     int totalBonus = 0;
     java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
     java.util.Map<Long, Integer> factionAffinity = new java.util.HashMap<>();
@@ -307,7 +307,7 @@ public class EditSegmentDialog extends Dialog {
     synergyBonusLabel.setVisible(totalBonus > 0);
   }
 
-  private void refreshParticipantsList(Set<Wrestler> selectedWrestlers) {
+  private void refreshParticipantsList(final Set<Wrestler> selectedWrestlers) {
 
     AlignmentType alignment = alignmentFilter.getValue();
 

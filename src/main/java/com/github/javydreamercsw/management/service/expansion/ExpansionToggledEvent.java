@@ -24,7 +24,8 @@ public class ExpansionToggledEvent extends ApplicationEvent {
   private final String expansionCode;
   private final boolean enabled;
 
-  public ExpansionToggledEvent(Object source, String expansionCode, boolean enabled) {
+  public ExpansionToggledEvent(
+      final Object source, final String expansionCode, final boolean enabled) {
     super(source);
     this.expansionCode = expansionCode;
     this.enabled = enabled;

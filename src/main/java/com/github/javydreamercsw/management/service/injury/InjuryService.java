@@ -64,12 +64,12 @@ public class InjuryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
   public Optional<Injury> createInjury(
-      Long wrestlerId,
-      Long universeId,
-      String name,
-      String description,
-      InjurySeverity severity,
-      String injuryNotes) {
+      final Long wrestlerId,
+      final Long universeId,
+      final String name,
+      final String description,
+      final InjurySeverity severity,
+      final String injuryNotes) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -106,7 +106,7 @@ public class InjuryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
   public Optional<Injury> createInjuryFromBumps(
-      @NonNull Long wrestlerId, @NonNull Long universeId) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state =
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
 
@@ -135,7 +135,7 @@ public class InjuryService {
     return Optional.of(savedInjury);
   }
 
-  public WrestlerState getWrestlerState(Long wrestlerId, Long universeId) {
+  public WrestlerState getWrestlerState(final Long wrestlerId, final Long universeId) {
     return wrestlerStateRepository
         .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
         .orElseGet(
@@ -158,7 +158,7 @@ public class InjuryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
-  public HealingResult attemptHealing(@NonNull Long injuryId) {
+  public HealingResult attemptHealing(@NonNull final Long injuryId) {
     return attemptHealing(injuryId, null);
   }
 
@@ -167,7 +167,7 @@ public class InjuryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
-  public HealingResult attemptHealing(@NonNull Long injuryId, Integer diceRoll) {
+  public HealingResult attemptHealing(@NonNull final Long injuryId, final Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
     if (injuryOpt.isEmpty()) {
@@ -198,7 +198,7 @@ public class InjuryService {
     if (state.getFans() < injury.getHealingCost()) {
       return new HealingResult(
           false,
-          String.format("Wrestler cannot afford %,d fans healing cost", injury.getHealingCost()),
+          "Wrestler cannot afford %,d fans healing cost".formatted(injury.getHealingCost()),
           injury,
           0,
           false);
@@ -221,9 +221,8 @@ public class InjuryService {
     String message =
         success
             ? "Injury healed successfully"
-            : String.format(
-                "Healing attempt failed (Rolled: %d, Needed: %d+)",
-                roll, injury.getSeverity().getHealingSuccessThreshold());
+            : "Healing attempt failed (Rolled: %d, Needed: %d+)"
+                .formatted(roll, injury.getSeverity().getHealingSuccessThreshold());
 
     return new HealingResult(success, message, injury, roll, true);
   }
@@ -233,7 +232,7 @@ public class InjuryService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
-  public HealingResult forceHeal(@NonNull Long injuryId) {
+  public HealingResult forceHeal(@NonNull final Long injuryId) {
     // 6 is sufficient to heal even CRITICAL injuries (threshold 6)
     return attemptHealing(injuryId, 6);
   }
@@ -244,14 +243,14 @@ public class InjuryService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       key = "#injuryId")
-  public Optional<Injury> getInjuryById(@NonNull Long injuryId) {
+  public Optional<Injury> getInjuryById(@NonNull final Long injuryId) {
     return injuryRepository.findById(injuryId);
   }
 
   /** Get all injuries with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Injury> getAllInjuries(@NonNull Pageable pageable) {
+  public Page<Injury> getAllInjuries(@NonNull final Pageable pageable) {
     return injuryRepository.findAllBy(pageable);
   }
 
@@ -262,7 +261,7 @@ public class InjuryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       key = "'activeForWrestler:' + #wrestlerId + ':' + #universeId")
   public List<Injury> getActiveInjuriesForWrestler(
-      @NonNull Long wrestlerId, @NonNull Long universeId) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     Universe universe = universeRepository.findById(universeId).orElseThrow();
     return wrestlerRepository
         .findById(wrestlerId)
@@ -277,7 +276,7 @@ public class InjuryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       key = "'allForWrestler:' + #wrestlerId + ':' + #universeId")
   public List<Injury> getAllInjuriesForWrestler(
-      @NonNull Long wrestlerId, @NonNull Long universeId) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     Universe universe = universeRepository.findById(universeId).orElseThrow();
     return wrestlerRepository
         .findById(wrestlerId)
@@ -288,21 +287,21 @@ public class InjuryService {
   @Deprecated
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Injury> getActiveInjuriesForWrestler(@NonNull Long wrestlerId) {
+  public List<Injury> getActiveInjuriesForWrestler(@NonNull final Long wrestlerId) {
     return getActiveInjuriesForWrestler(wrestlerId, 1L);
   }
 
   @Deprecated
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Injury> getAllInjuriesForWrestler(@NonNull Long wrestlerId) {
+  public List<Injury> getAllInjuriesForWrestler(@NonNull final Long wrestlerId) {
     return getAllInjuriesForWrestler(wrestlerId, 1L);
   }
 
   @Deprecated
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public InjuryStats getInjuryStatsForWrestler(Long wrestlerId) {
+  public InjuryStats getInjuryStatsForWrestler(final Long wrestlerId) {
     return getInjuryStatsForWrestler(wrestlerId, 1L);
   }
 
@@ -312,7 +311,7 @@ public class InjuryService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       key = "#severity")
-  public List<Injury> getInjuriesBySeverity(@NonNull InjurySeverity severity) {
+  public List<Injury> getInjuriesBySeverity(@NonNull final InjurySeverity severity) {
     return injuryRepository.findBySeverity(severity);
   }
 
@@ -329,7 +328,7 @@ public class InjuryService {
   /** Get wrestlers with active injuries in a specific universe. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> getWrestlersWithActiveInjuries(@NonNull Long universeId) {
+  public List<Wrestler> getWrestlersWithActiveInjuries(@NonNull final Long universeId) {
     Universe universe = universeRepository.findById(universeId).orElseThrow();
     return injuryRepository.findWrestlersWithActiveInjuries(universe);
   }
@@ -347,7 +346,7 @@ public class InjuryService {
    * @param injuryId The ID of the injury to heal.
    * @return The result of the healing attempt.
    */
-  public HealingResult healInjuryFree(@NonNull Long injuryId) {
+  public HealingResult healInjuryFree(@NonNull final Long injuryId) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
     if (injuryOpt.isEmpty()) {
       return new HealingResult(false, "Injury not found", null, 0, false);
@@ -379,7 +378,7 @@ public class InjuryService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Integer getTotalHealthPenaltyForWrestler(
-      @NonNull Long wrestlerId, @NonNull Long universeId) {
+      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     return universeRepository
         .findById(universeId)
         .flatMap(
@@ -403,7 +402,10 @@ public class InjuryService {
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
   public Optional<Injury> updateInjury(
-      @NonNull Long injuryId, String name, String description, String injuryNotes) {
+      @NonNull final Long injuryId,
+      final String name,
+      final String description,
+      final String injuryNotes) {
     return injuryRepository
         .findById(injuryId)
         .map(
@@ -424,14 +426,14 @@ public class InjuryService {
   /** Find injury by external ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Injury> findByExternalId(@NonNull String externalId) {
+  public Optional<Injury> findByExternalId(@NonNull final String externalId) {
     return injuryRepository.findByExternalId(externalId);
   }
 
   /** Get injury statistics for a wrestler in a specific universe. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public InjuryStats getInjuryStatsForWrestler(Long wrestlerId, Long universeId) {
+  public InjuryStats getInjuryStatsForWrestler(final Long wrestlerId, final Long universeId) {
     WrestlerState state =
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
     Wrestler wrestler = state.getWrestler();
@@ -476,7 +478,8 @@ public class InjuryService {
    * Generate random injury severity based on wrestler tier. Higher tier wrestlers are more
    * resilient and get less severe injuries.
    */
-  private InjurySeverity getRandomInjurySeverityForWrestler(@NonNull WrestlerData wrestlerData) {
+  private InjurySeverity getRandomInjurySeverityForWrestler(
+      @NonNull final WrestlerData wrestlerData) {
     int roll = random.nextInt(100) + 1;
 
     // Adjust probabilities based on wrestler tier
@@ -564,7 +567,7 @@ public class InjuryService {
   }
 
   /** Generate injury name based on severity. */
-  private String generateInjuryName(@NonNull InjurySeverity severity) {
+  private String generateInjuryName(@NonNull final InjurySeverity severity) {
     String[] minorInjuries = {"Bruised Ribs", "Twisted Ankle", "Minor Cut", "Muscle Strain"};
     String[] moderateInjuries = {
       "Sprained Wrist", "Bruised Shoulder", "Minor Concussion", "Pulled Muscle"
@@ -586,15 +589,17 @@ public class InjuryService {
   }
 
   /** Generate injury description based on severity. */
-  private String generateInjuryDescription(@NonNull InjurySeverity severity) {
+  private String generateInjuryDescription(@NonNull final InjurySeverity severity) {
     return switch (severity) {
       case MINOR -> "A minor injury that should heal quickly with proper rest.";
       case MODERATE -> "A moderate injury that requires some time to heal properly.";
       case SEVERE ->
           "A severe injury that significantly impacts performance and requires extended recovery.";
       case CRITICAL ->
-          "A critical injury that poses serious health risks and requires immediate medical"
-              + " attention.";
+          """
+          A critical injury that poses serious health risks and requires immediate medical\
+           attention.\
+          """;
     };
   }
 

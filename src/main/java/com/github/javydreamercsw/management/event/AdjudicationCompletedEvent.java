@@ -24,7 +24,7 @@ import org.springframework.context.ApplicationEvent;
 public class AdjudicationCompletedEvent extends ApplicationEvent {
   private final Show show;
 
-  public AdjudicationCompletedEvent(Object source, Show show) {
+  public AdjudicationCompletedEvent(final Object source, final Show show) {
     super(source);
     this.show = show;
   }

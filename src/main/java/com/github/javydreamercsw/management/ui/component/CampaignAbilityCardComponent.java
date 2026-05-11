@@ -28,7 +28,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 /** Component to display a Campaign Ability Card with alignment-based styling. */
 public class CampaignAbilityCardComponent extends Div {
 
-  public CampaignAbilityCardComponent(CampaignAbilityCard card) {
+  public CampaignAbilityCardComponent(final CampaignAbilityCard card) {
     addClassNames(
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Border.ALL,
@@ -99,7 +99,8 @@ public class CampaignAbilityCardComponent extends Div {
     }
   }
 
-  private void addEffect(AbilityTiming timing, String script, boolean oneTime, String label) {
+  private void addEffect(
+      final AbilityTiming timing, final String script, final boolean oneTime, final String label) {
     Div effectDiv = new Div();
     effectDiv.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);

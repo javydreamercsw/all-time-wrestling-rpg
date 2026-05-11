@@ -38,7 +38,7 @@ public class ForgotPasswordView extends Main {
   private static final Logger LOG = LoggerFactory.getLogger(ForgotPasswordView.class);
 
   public ForgotPasswordView(
-      AccountService accountService, PasswordResetService passwordResetService) {
+      final AccountService accountService, final PasswordResetService passwordResetService) {
     VerticalLayout layout = new VerticalLayout();
     layout.setAlignItems(VerticalLayout.Alignment.CENTER);
     add(layout);

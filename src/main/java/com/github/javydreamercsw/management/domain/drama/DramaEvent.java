@@ -215,7 +215,7 @@ public class DramaEvent extends AbstractEntity<Long> {
   }
 
   /** Mark the event as processed. */
-  public void markAsProcessed(String notes) {
+  public void markAsProcessed(final String notes) {
     this.isProcessed = true;
     this.processedDate = Instant.now();
     this.processingNotes = notes;

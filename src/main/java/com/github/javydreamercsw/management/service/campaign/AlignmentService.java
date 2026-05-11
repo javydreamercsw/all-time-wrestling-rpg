@@ -41,7 +41,7 @@ public class AlignmentService {
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignStateRepository campaignStateRepository;
 
-  public void shiftAlignment(@NonNull Campaign campaign, int amount) {
+  public void shiftAlignment(@NonNull final Campaign campaign, final int amount) {
     if (amount == 0) {
       return;
     }
@@ -92,7 +92,7 @@ public class AlignmentService {
     }
   }
 
-  public void updateAbilityCards(@NonNull Campaign campaign) {
+  public void updateAbilityCards(@NonNull final Campaign campaign) {
     Wrestler wrestler = campaign.getWrestler();
     Optional<WrestlerAlignment> alignmentOpt = wrestlerAlignmentRepository.findByWrestler(wrestler);
 
@@ -120,7 +120,8 @@ public class AlignmentService {
     campaignStateRepository.save(state);
   }
 
-  public void handleLevelChange(@NonNull Campaign campaign, int oldLevel, int newLevel) {
+  public void handleLevelChange(
+      @NonNull final Campaign campaign, final int oldLevel, final int newLevel) {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
@@ -170,7 +171,8 @@ public class AlignmentService {
     campaignStateRepository.save(state);
   }
 
-  private void removeOneCardOfLevel(@NonNull List<CampaignAbilityCard> cards, int level) {
+  private void removeOneCardOfLevel(
+      @NonNull final List<CampaignAbilityCard> cards, final int level) {
     cards.stream()
         .filter(c -> c.getLevel() == level)
         .findFirst()
@@ -182,7 +184,7 @@ public class AlignmentService {
   }
 
   private void recalculatePendingPicks(
-      @NonNull CampaignState state, @NonNull WrestlerAlignment alignment) {
+      @NonNull final CampaignState state, @NonNull final WrestlerAlignment alignment) {
     int level = alignment.getLevel();
     AlignmentType type = alignment.getAlignmentType();
 

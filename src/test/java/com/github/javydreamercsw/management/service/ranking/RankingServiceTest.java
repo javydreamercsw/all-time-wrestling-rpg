@@ -292,7 +292,8 @@ class RankingServiceTest {
     assertEquals("Champion", result.get(0).getName());
   }
 
-  private Wrestler createMockWrestler(Long id, String name, long fans, WrestlerTier tier) {
+  private Wrestler createMockWrestler(
+      final Long id, final String name, final long fans, final WrestlerTier tier) {
     Wrestler w = new Wrestler();
     w.setId(id);
     w.setName(name);

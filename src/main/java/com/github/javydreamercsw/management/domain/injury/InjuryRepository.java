@@ -37,8 +37,10 @@ public interface InjuryRepository
 
   /** Find active injuries for a specific wrestler in a universe. */
   @Query(
-      "SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.universe = :universe AND"
-          + " i.isActive = true")
+      """
+      SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.universe = :universe AND\
+       i.isActive = true\
+      """)
   List<Injury> findActiveInjuriesForWrestler(
       @Param("wrestler") Wrestler wrestler, @Param("universe") Universe universe);
 

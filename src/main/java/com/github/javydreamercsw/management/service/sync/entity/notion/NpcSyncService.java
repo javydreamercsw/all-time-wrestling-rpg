@@ -50,15 +50,16 @@ public class NpcSyncService extends BaseSyncService {
 
   @Autowired
   public NpcSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      NpcService npcService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NpcService npcService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.npcService = npcService;
   }
 
-  public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
+  public SyncResult syncNpcs(
+      @NonNull final String operationId, @NonNull final SyncDirection direction) {
     if (syncServiceDependencies
         .getSyncSessionManager()
         .isAlreadySyncedInSession(SyncEntityType.NPCS.getKey())) {
@@ -95,7 +96,7 @@ public class NpcSyncService extends BaseSyncService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public boolean processSingleNpc(NpcPage npcPage) {
+  public boolean processSingleNpc(final NpcPage npcPage) {
     try {
       Map<String, Object> rawProperties = npcPage.getRawProperties();
       String npcName =

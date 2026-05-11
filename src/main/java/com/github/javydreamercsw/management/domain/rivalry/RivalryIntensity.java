@@ -38,7 +38,12 @@ public enum RivalryIntensity {
   @Getter private final String description;
   @Getter private final String emoji;
 
-  RivalryIntensity(String displayName, int minHeat, int maxHeat, String description, String emoji) {
+  RivalryIntensity(
+      final String displayName,
+      final int minHeat,
+      final int maxHeat,
+      final String description,
+      final String emoji) {
     this.displayName = displayName;
     this.minHeat = minHeat;
     this.maxHeat = maxHeat;
@@ -47,7 +52,7 @@ public enum RivalryIntensity {
   }
 
   /** Get the intensity level for a given heat value. */
-  public static RivalryIntensity fromHeat(int heat) {
+  public static RivalryIntensity fromHeat(final int heat) {
     for (RivalryIntensity intensity : values()) {
       if (heat >= intensity.minHeat && heat <= intensity.maxHeat) {
         return intensity;

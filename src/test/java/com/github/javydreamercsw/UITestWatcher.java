@@ -34,7 +34,7 @@ import org.openqa.selenium.WebDriver;
 public class UITestWatcher implements AfterTestExecutionCallback {
 
   @Override
-  public void afterTestExecution(ExtensionContext context) throws Exception {
+  public void afterTestExecution(final ExtensionContext context) throws Exception {
     Path outputDir =
         Paths.get(
             "target",

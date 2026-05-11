@@ -378,7 +378,7 @@ class RivalryServiceTest {
                         && ((HeatChangeEvent) event).getSource() == rivalryService
                         && ((HeatChangeEvent) event).getRivalryId() == rivalry.getId()
                         && ((HeatChangeEvent) event).getOldHeat() == 5
-                        && ((HeatChangeEvent) event).getReason().equals("Backstage confrontation")
+                        && "Backstage confrontation".equals(((HeatChangeEvent) event).getReason())
                         && ((HeatChangeEvent) event)
                             .getWrestlers()
                             .containsAll(List.of(wrestler1, wrestler2))
@@ -386,7 +386,7 @@ class RivalryServiceTest {
                             .containsAll(((HeatChangeEvent) event).getWrestlers())));
   }
 
-  private Wrestler createWrestler(@NonNull String name, @NonNull Long id) {
+  private Wrestler createWrestler(@NonNull final String name, @NonNull final Long id) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(id);
     wrestler.setName(name);
@@ -408,7 +408,7 @@ class RivalryServiceTest {
   }
 
   private Rivalry createRivalry(
-      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2, int heat) {
+      @NonNull final Wrestler wrestler1, @NonNull final Wrestler wrestler2, final int heat) {
     Rivalry rivalry = new Rivalry();
     rivalry.setId(1L);
     rivalry.setWrestler1(wrestler1);

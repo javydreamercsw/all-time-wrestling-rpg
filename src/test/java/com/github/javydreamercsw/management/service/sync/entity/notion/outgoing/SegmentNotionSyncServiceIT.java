@@ -198,7 +198,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        String.format("Segment: %s (%s)", segment.getSegmentType().getName(), wrestler.getName()),
+        "Segment: %s (%s)".formatted(segment.getSegmentType().getName(), wrestler.getName()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         segment.getShow().getExternalId(),

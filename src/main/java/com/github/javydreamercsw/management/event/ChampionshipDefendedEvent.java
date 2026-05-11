@@ -31,7 +31,10 @@ public class ChampionshipDefendedEvent extends ApplicationEvent {
   private final List<Wrestler> challengers;
 
   public ChampionshipDefendedEvent(
-      Object source, Title title, List<Wrestler> champions, List<Wrestler> challengers) {
+      final Object source,
+      final Title title,
+      final List<Wrestler> champions,
+      final List<Wrestler> challengers) {
     super(source);
     this.titleId = title.getId();
     this.titleName = title.getName();

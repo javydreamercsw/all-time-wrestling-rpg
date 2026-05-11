@@ -47,7 +47,7 @@ public class HallOfFameView extends Main {
   private final Grid<Account> grid = new Grid<>(Account.class, false);
 
   public HallOfFameView(
-      AccountRepository accountRepository, TransactionTemplate transactionTemplate) {
+      final AccountRepository accountRepository, final TransactionTemplate transactionTemplate) {
     this.accountRepository = accountRepository;
     this.transactionTemplate = transactionTemplate;
     addClassNames(

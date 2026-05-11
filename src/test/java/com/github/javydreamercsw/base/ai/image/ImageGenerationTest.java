@@ -63,7 +63,7 @@ class ImageGenerationTest {
   }
 
   @Test
-  void testSaveImageBase64(@TempDir Path tempDir) {
+  void testSaveImageBase64(@TempDir final Path tempDir) {
     // Override storage location for test?
     // ImageStorageService hardcodes the path. I should probably make it configurable or protected.
     // For unit test, I can verify the logic if I refactor ImageStorageService to accept a base

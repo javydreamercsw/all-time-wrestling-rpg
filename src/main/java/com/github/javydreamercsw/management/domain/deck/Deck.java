@@ -62,7 +62,7 @@ public class Deck extends AbstractSyncableEntity<Long> { // Removed implements O
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  public void addCard(@NonNull Card card, @NonNull CardSet set, int amount) {
+  public void addCard(@NonNull final Card card, @NonNull final CardSet set, final int amount) {
     DeckCard newDeckCard = new DeckCard();
     newDeckCard.setCard(card);
     newDeckCard.setSet(set);

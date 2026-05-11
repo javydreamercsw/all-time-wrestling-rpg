@@ -36,13 +36,13 @@ public class SegmentTeam {
   private int totalHealthPenalty;
 
   /** Create a team with a single wrestler (for singles matches). */
-  public SegmentTeam(@NonNull Wrestler wrestler) {
+  public SegmentTeam(@NonNull final Wrestler wrestler) {
     this.members = List.of(wrestler);
     this.teamName = wrestler.getName();
   }
 
   /** Create a team with multiple wrestlers. */
-  public SegmentTeam(@NonNull List<Wrestler> wrestlers, String teamName) {
+  public SegmentTeam(@NonNull final List<Wrestler> wrestlers, final String teamName) {
     if (wrestlers.isEmpty()) {
       throw new IllegalArgumentException("Team must have at least one member");
     }
@@ -51,7 +51,7 @@ public class SegmentTeam {
   }
 
   /** Create a team with multiple wrestlers (auto-generated team name). */
-  public SegmentTeam(@NonNull List<Wrestler> wrestlers) {
+  public SegmentTeam(@NonNull final List<Wrestler> wrestlers) {
     this(wrestlers, null);
   }
 
@@ -68,7 +68,7 @@ public class SegmentTeam {
 
   /** Calculate team statistics for segment resolution. */
   public void calculateTeamStats(
-      @NonNull NPCSegmentResolutionService.TeamStatsCalculator calculator) {
+      @NonNull final NPCSegmentResolutionService.TeamStatsCalculator calculator) {
     this.totalWeight = calculator.calculateTeamWeight(this);
     this.averageTierBonus = calculator.calculateAverageTierBonus(this);
     this.totalHealthPenalty = calculator.calculateTeamHealthPenalty(this);
@@ -95,7 +95,7 @@ public class SegmentTeam {
   }
 
   /** Get a specific team member by index. */
-  public Wrestler getMember(int index) {
+  public Wrestler getMember(final int index) {
     return members.get(index);
   }
 
@@ -105,7 +105,7 @@ public class SegmentTeam {
   }
 
   /** Check if the team contains a specific wrestler. */
-  public boolean containsWrestler(@NonNull Wrestler wrestler) {
+  public boolean containsWrestler(@NonNull final Wrestler wrestler) {
     return members.contains(wrestler);
   }
 

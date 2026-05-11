@@ -127,7 +127,8 @@ class InjurySeverityTest {
   @ParameterizedTest
   @DisplayName("Should have correct healing success thresholds")
   @CsvSource({"MINOR, 3", "MODERATE, 4", "SEVERE, 5", "CRITICAL, 6"})
-  void shouldHaveCorrectHealingSuccessThresholds(InjurySeverity severity, int expectedThreshold) {
+  void shouldHaveCorrectHealingSuccessThresholds(
+      final InjurySeverity severity, final int expectedThreshold) {
     assertThat(severity.getHealingSuccessThreshold()).isEqualTo(expectedThreshold);
   }
 
@@ -147,7 +148,7 @@ class InjurySeverityTest {
     "CRITICAL, 6, true"
   })
   void shouldCorrectlyDetermineHealingSuccess(
-      InjurySeverity severity, int roll, boolean expectedSuccess) {
+      final InjurySeverity severity, final int roll, final boolean expectedSuccess) {
     assertThat(severity.isHealingSuccessful(roll)).isEqualTo(expectedSuccess);
   }
 
@@ -160,7 +161,7 @@ class InjurySeverityTest {
     "CRITICAL, 16" // (6-6+1)*100/6 = 1*100/6 = 16.67 ≈ 16
   })
   void shouldCalculateCorrectHealingSuccessPercentages(
-      InjurySeverity severity, int expectedPercentage) {
+      final InjurySeverity severity, final int expectedPercentage) {
     assertThat(severity.getHealingSuccessPercentage()).isEqualTo(expectedPercentage);
   }
 

@@ -47,15 +47,15 @@ public enum InjurySeverity {
   @Getter private final String emoji;
 
   InjurySeverity(
-      String displayName,
-      int minHealthPenalty,
-      int maxHealthPenalty,
-      int minStaminaPenalty,
-      int maxStaminaPenalty,
-      int minHandSizePenalty,
-      int maxHandSizePenalty,
-      Long baseHealingCost,
-      String emoji) {
+      final String displayName,
+      final int minHealthPenalty,
+      final int maxHealthPenalty,
+      final int minStaminaPenalty,
+      final int maxStaminaPenalty,
+      final int minHandSizePenalty,
+      final int maxHandSizePenalty,
+      final Long baseHealingCost,
+      final String emoji) {
     this.displayName = displayName;
     this.minHealthPenalty = minHealthPenalty;
     this.maxHealthPenalty = maxHealthPenalty;
@@ -68,7 +68,7 @@ public enum InjurySeverity {
   }
 
   /** Get a random health penalty within the severity range. */
-  public int getRandomHealthPenalty(Random random) {
+  public int getRandomHealthPenalty(final Random random) {
     if (minHealthPenalty == maxHealthPenalty) {
       return minHealthPenalty;
     }
@@ -76,7 +76,7 @@ public enum InjurySeverity {
   }
 
   /** Get a random stamina penalty within the severity range. */
-  public int getRandomStaminaPenalty(Random random) {
+  public int getRandomStaminaPenalty(final Random random) {
     if (minStaminaPenalty == maxStaminaPenalty) {
       return minStaminaPenalty;
     }
@@ -84,7 +84,7 @@ public enum InjurySeverity {
   }
 
   /** Get a random hand size penalty within the severity range. */
-  public int getRandomHandSizePenalty(Random random) {
+  public int getRandomHandSizePenalty(final Random random) {
     if (minHandSizePenalty == maxHandSizePenalty) {
       return minHandSizePenalty;
     }
@@ -102,7 +102,7 @@ public enum InjurySeverity {
   }
 
   /** Check if a healing roll is successful. */
-  public boolean isHealingSuccessful(int rollResult) {
+  public boolean isHealingSuccessful(final int rollResult) {
     return rollResult >= getHealingSuccessThreshold();
   }
 
@@ -127,6 +127,6 @@ public enum InjurySeverity {
 
   /** Get healing info display. */
   public String getHealingInfoDisplay() {
-    return String.format("%,d fans (%d%% success)", baseHealingCost, getHealingSuccessPercentage());
+    return "%,d fans (%d%% success)".formatted(baseHealingCost, getHealingSuccessPercentage());
   }
 }

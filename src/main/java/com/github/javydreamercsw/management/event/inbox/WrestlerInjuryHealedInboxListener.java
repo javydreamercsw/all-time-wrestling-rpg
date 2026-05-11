@@ -38,10 +38,10 @@ public class WrestlerInjuryHealedInboxListener
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public WrestlerInjuryHealedInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("wrestlerInjuryHealed") InboxEventType wrestlerInjuryHealed,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("wrestlerInjuryHealed") final InboxEventType wrestlerInjuryHealed,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.wrestlerInjuryHealed = wrestlerInjuryHealed;
     this.eventPublisher = eventPublisher;
@@ -49,14 +49,13 @@ public class WrestlerInjuryHealedInboxListener
   }
 
   @Override
-  public void onApplicationEvent(@NonNull WrestlerInjuryHealedEvent event) {
+  public void onApplicationEvent(@NonNull final WrestlerInjuryHealedEvent event) {
     log.info(
         "Received WrestlerInjuryHealedEvent for wrestler: {}", event.getWrestlerState().getName());
     inboxService.createInboxItem(
         wrestlerInjuryHealed,
-        String.format(
-            "Wrestler %s's %s injury has healed.",
-            event.getWrestlerState().getName(), event.getInjury().getDescription()),
+        "Wrestler %s's %s injury has healed."
+            .formatted(event.getWrestlerState().getName(), event.getInjury().getDescription()),
         event.getWrestlerState().getWrestler().getId().toString(),
         InboxItemTarget.TargetType.WRESTLER);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));

@@ -41,35 +41,35 @@ public class CampaignAbilityCardService {
     return campaignAbilityCardRepository.save(card);
   }
 
-  public List<CampaignAbilityCard> saveAll(List<CampaignAbilityCard> cards) {
+  public List<CampaignAbilityCard> saveAll(final List<CampaignAbilityCard> cards) {
     return campaignAbilityCardRepository.saveAll(cards);
   }
 
-  public void delete(Long id) {
+  public void delete(final Long id) {
     campaignAbilityCardRepository.deleteById(id);
   }
 
-  public Page<CampaignAbilityCard> list(Pageable pageable) {
+  public Page<CampaignAbilityCard> list(final Pageable pageable) {
     return campaignAbilityCardRepository.findAll(pageable);
   }
 
   public Optional<CampaignAbilityCard> findByNameAndAlignmentAndLevel(
-      String name, AlignmentType alignmentType, int level) {
+      final String name, final AlignmentType alignmentType, final int level) {
     return campaignAbilityCardRepository.findByNameAndAlignmentTypeAndLevel(
         name, alignmentType, level);
   }
 
   public CampaignAbilityCard createOrUpdateCard(
-      String name,
-      String description,
-      AlignmentType alignmentType,
-      int level,
-      boolean oneTimeUse,
-      AbilityTiming timing,
-      String effectScript,
-      String secondaryEffectScript,
-      boolean secondaryOneTimeUse,
-      AbilityTiming secondaryTiming) {
+      final String name,
+      final String description,
+      final AlignmentType alignmentType,
+      final int level,
+      final boolean oneTimeUse,
+      final AbilityTiming timing,
+      final String effectScript,
+      final String secondaryEffectScript,
+      final boolean secondaryOneTimeUse,
+      final AbilityTiming secondaryTiming) {
 
     Optional<CampaignAbilityCard> existingOpt =
         findByNameAndAlignmentAndLevel(name, alignmentType, level);

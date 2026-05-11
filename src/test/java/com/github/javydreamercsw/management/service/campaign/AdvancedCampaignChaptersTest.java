@@ -41,7 +41,7 @@ class AdvancedCampaignChaptersTest {
     assertThat(chapter.get().getTitle()).isEqualTo("The Fighting Champion");
     // Validate triggers
     assertThat(chapter.get().getEntryPoints())
-        .anyMatch(ep -> ep.getName().equals("Champion Status"));
+        .anyMatch(ep -> "Champion Status".equals(ep.getName()));
   }
 
   @Test
@@ -49,7 +49,7 @@ class AdvancedCampaignChaptersTest {
     Optional<CampaignChapterDTO> chapter = chapterService.getChapter("gang_warfare");
     assertThat(chapter).isPresent();
     assertThat(chapter.get().getTitle()).isEqualTo("Gang Warfare");
-    assertThat(chapter.get().getEntryPoints()).anyMatch(ep -> ep.getName().equals("Faction Heat"));
+    assertThat(chapter.get().getEntryPoints()).anyMatch(ep -> "Faction Heat".equals(ep.getName()));
   }
 
   @Test
@@ -58,6 +58,6 @@ class AdvancedCampaignChaptersTest {
     assertThat(chapter).isPresent();
     assertThat(chapter.get().getTitle()).isEqualTo("Corporate Power Trip");
     assertThat(chapter.get().getEntryPoints())
-        .anyMatch(ep -> ep.getName().equals("Authority Heat"));
+        .anyMatch(ep -> "Authority Heat".equals(ep.getName()));
   }
 }

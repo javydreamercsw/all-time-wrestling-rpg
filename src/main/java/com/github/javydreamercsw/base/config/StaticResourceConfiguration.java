@@ -34,7 +34,7 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
   private final StorageProperties storageProperties;
 
   @Override
-  public void addResourceHandlers(ResourceHandlerRegistry registry) {
+  public void addResourceHandlers(final ResourceHandlerRegistry registry) {
     String imagePath = storageProperties.getResolvedImageDir().toUri().toString();
     String defaultImagePath = storageProperties.getResolvedDefaultImageDir().toUri().toString();
 

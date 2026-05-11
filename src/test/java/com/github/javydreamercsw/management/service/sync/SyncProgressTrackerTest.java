@@ -132,19 +132,19 @@ class SyncProgressTrackerTest {
     SyncProgressListener listener =
         new SyncProgressListener() {
           @Override
-          public void onOperationStarted(SyncProgress progress) {
+          public void onOperationStarted(final SyncProgress progress) {
             startedCount.incrementAndGet();
             startedLatch.countDown();
           }
 
           @Override
-          public void onProgressUpdated(SyncProgress progress) {
+          public void onProgressUpdated(final SyncProgress progress) {
             updatedCount.incrementAndGet();
             updatedLatch.countDown();
           }
 
           @Override
-          public void onOperationCompleted(SyncProgress progress) {
+          public void onOperationCompleted(final SyncProgress progress) {
             completedCount.incrementAndGet();
             completedLatch.countDown();
           }
@@ -267,7 +267,7 @@ class SyncProgressTrackerTest {
     SyncProgressListener listener =
         new SyncProgressListener() {
           @Override
-          public void onOperationStarted(SyncProgress progress) {
+          public void onOperationStarted(final SyncProgress progress) {
             callCount.incrementAndGet();
             latch.countDown();
           }
@@ -305,7 +305,8 @@ class SyncProgressTrackerTest {
     SyncProgressListener listener =
         new SyncProgressListener() {
           @Override
-          public void onLogMessage(String logOperationId, String message, String level) {
+          public void onLogMessage(
+              final String logOperationId, final String message, final String level) {
             receivedOperationId.set(logOperationId);
             receivedMessage.set(message);
             receivedLevel.set(level);
@@ -337,7 +338,8 @@ class SyncProgressTrackerTest {
     SyncProgressListener listener =
         new SyncProgressListener() {
           @Override
-          public void onLogMessage(String logOperationId, String message, String level) {
+          public void onLogMessage(
+              final String logOperationId, final String message, final String level) {
             callCount.incrementAndGet();
           }
         };
@@ -365,7 +367,8 @@ class SyncProgressTrackerTest {
     SyncProgressListener listener =
         new SyncProgressListener() {
           @Override
-          public void onLogMessage(String logOperationId, String message, String level) {
+          public void onLogMessage(
+              final String logOperationId, final String message, final String level) {
             switch (level) {
               case "INFO" -> infoCount.incrementAndGet();
               case "SUCCESS" -> successCount.incrementAndGet();

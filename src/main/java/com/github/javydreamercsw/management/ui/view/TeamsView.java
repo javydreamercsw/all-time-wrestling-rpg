@@ -59,7 +59,9 @@ public class TeamsView extends VerticalLayout {
   private TeamFormDialog teamFormDialog;
 
   public TeamsView(
-      TeamService teamService, TeamFormDialog teamFormDialog, SecurityUtils securityUtils) {
+      final TeamService teamService,
+      final TeamFormDialog teamFormDialog,
+      final SecurityUtils securityUtils) {
     this.teamService = teamService;
     this.teamFormDialog = teamFormDialog;
     this.securityUtils = securityUtils;
@@ -119,7 +121,7 @@ public class TeamsView extends VerticalLayout {
                 .map(TeamDTO::fromEntity));
   }
 
-  private HorizontalLayout createActionsLayout(TeamDTO team) {
+  private HorizontalLayout createActionsLayout(final TeamDTO team) {
     Optional<Team> teamEntityOptional = teamService.getTeamById(team.getId());
     Team teamEntity = teamEntityOptional.orElse(null);
 
@@ -144,7 +146,7 @@ public class TeamsView extends VerticalLayout {
     return actions;
   }
 
-  private Button createStatusButton(TeamDTO team) {
+  private Button createStatusButton(final TeamDTO team) {
     Button statusButton = new Button();
     statusButton.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
 
@@ -206,11 +208,11 @@ public class TeamsView extends VerticalLayout {
     openTeamDialog(null);
   }
 
-  private void editTeam(TeamDTO team) {
+  private void editTeam(final TeamDTO team) {
     openTeamDialog(team);
   }
 
-  private void openTeamDialog(TeamDTO team) {
+  private void openTeamDialog(final TeamDTO team) {
     teamFormDialog.setTeam(team);
     teamFormDialog.addOpenedChangeListener(
         e -> {
@@ -221,7 +223,7 @@ public class TeamsView extends VerticalLayout {
     teamFormDialog.open();
   }
 
-  private void confirmDeleteTeam(TeamDTO team) {
+  private void confirmDeleteTeam(final TeamDTO team) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Delete Team");
     dialog.setText(
@@ -235,7 +237,7 @@ public class TeamsView extends VerticalLayout {
     dialog.open();
   }
 
-  private void confirmDisbandTeam(TeamDTO team) {
+  private void confirmDisbandTeam(final TeamDTO team) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Disband Team");
     dialog.setText("Are you sure you want to disband the team '" + team.getName() + "'?");
@@ -246,7 +248,7 @@ public class TeamsView extends VerticalLayout {
     dialog.open();
   }
 
-  private void deleteTeam(TeamDTO team) {
+  private void deleteTeam(final TeamDTO team) {
     try {
       boolean deleted = teamService.deleteTeam(team.getId());
       if (deleted) {
@@ -261,7 +263,7 @@ public class TeamsView extends VerticalLayout {
     }
   }
 
-  private void disbandTeam(TeamDTO team) {
+  private void disbandTeam(final TeamDTO team) {
     try {
       Optional<Team> updated = teamService.disbandTeam(team.getId());
       if (updated.isPresent()) {
@@ -276,7 +278,7 @@ public class TeamsView extends VerticalLayout {
     }
   }
 
-  private void reactivateTeam(TeamDTO team) {
+  private void reactivateTeam(final TeamDTO team) {
     try {
       Optional<Team> updated = teamService.reactivateTeam(team.getId());
       if (updated.isPresent()) {
@@ -291,12 +293,12 @@ public class TeamsView extends VerticalLayout {
     }
   }
 
-  private void showSuccessNotification(String message) {
+  private void showSuccessNotification(final String message) {
     Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
     notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void showErrorNotification(String message) {
+  private void showErrorNotification(final String message) {
     Notification notification = Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
   }

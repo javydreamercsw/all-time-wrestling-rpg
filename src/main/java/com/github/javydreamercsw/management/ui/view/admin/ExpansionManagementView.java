@@ -38,7 +38,7 @@ public class ExpansionManagementView extends VerticalLayout {
   private final ExpansionService expansionService;
   private final Grid<Expansion> grid = new Grid<>(Expansion.class, false);
 
-  public ExpansionManagementView(ExpansionService expansionService) {
+  public ExpansionManagementView(final ExpansionService expansionService) {
     this.expansionService = expansionService;
     initializeUI();
   }
@@ -51,8 +51,10 @@ public class ExpansionManagementView extends VerticalLayout {
     add(new H3("Expansion Packs"));
     add(
         new Span(
-            "Enable or disable expansion packs to control content visibility (Wrestlers, Teams,"
-                + " Factions)."));
+            """
+            Enable or disable expansion packs to control content visibility (Wrestlers, Teams,\
+             Factions).\
+            """));
 
     grid.addColumn(Expansion::getName)
         .setHeader("Expansion Name")
@@ -67,7 +69,7 @@ public class ExpansionManagementView extends VerticalLayout {
     add(grid);
   }
 
-  private Checkbox createEnabledCheckbox(Expansion expansion) {
+  private Checkbox createEnabledCheckbox(final Expansion expansion) {
     Checkbox checkbox = new Checkbox(expansion.isEnabled());
     checkbox.setId("expansion-toggle-" + expansion.getCode());
     checkbox.addValueChangeListener(
@@ -75,7 +77,7 @@ public class ExpansionManagementView extends VerticalLayout {
           expansionService.setExpansionEnabled(expansion.getCode(), event.getValue());
           String status = event.getValue() ? "enabled" : "disabled";
           Notification.show(
-                  String.format("Expansion '%s' has been %s.", expansion.getName(), status),
+                  "Expansion '%s' has been %s.".formatted(expansion.getName(), status),
                   3000,
                   Notification.Position.TOP_END)
               .addThemeVariants(

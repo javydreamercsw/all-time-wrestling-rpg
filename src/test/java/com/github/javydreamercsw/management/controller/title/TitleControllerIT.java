@@ -152,7 +152,7 @@ class TitleControllerIT extends AbstractControllerTest {
 
   private static long nextTitleId = 1L;
 
-  private Title createTestTitle(@NonNull String name, @NonNull WrestlerTier tier) {
+  private Title createTestTitle(@NonNull final String name, @NonNull final WrestlerTier tier) {
     Title title = new Title();
     title.setId(nextTitleId++); // Assign a unique ID for the mock
     title.setName(name);
@@ -166,7 +166,7 @@ class TitleControllerIT extends AbstractControllerTest {
     return title;
   }
 
-  public Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
+  public Wrestler createTestWrestler(@NonNull final String name, @NonNull final Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L); // Assign a dummy ID for the mock
     wrestler.setName(name);

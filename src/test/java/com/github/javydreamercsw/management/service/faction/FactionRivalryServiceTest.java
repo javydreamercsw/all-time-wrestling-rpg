@@ -78,7 +78,10 @@ class FactionRivalryServiceTest {
   @MethodSource("heatChangeScenarios")
   @DisplayName("Should publish FactionHeatChangeEvent with wrestlers for different heat levels")
   void shouldPublishFactionHeatChangeEventWithWrestlers(
-      int initialHeat, int heatGain, int expectedOldHeat, int expectedNewHeat) {
+      final int initialHeat,
+      final int heatGain,
+      final int expectedOldHeat,
+      final int expectedNewHeat) {
     // Given
     WrestlerState wrestler1 = createWrestlerState("Wrestler 1", 1L);
     WrestlerState wrestler2 = createWrestlerState("Wrestler 2", 2L);
@@ -115,7 +118,7 @@ class FactionRivalryServiceTest {
                             .equals(rivalry.getId())
                         && ((FactionHeatChangeEvent) event).getOldHeat() == expectedOldHeat
                         && ((FactionHeatChangeEvent) event).getNewHeat() == expectedNewHeat
-                        && ((FactionHeatChangeEvent) event).getReason().equals("Faction brawl")
+                        && "Faction brawl".equals(((FactionHeatChangeEvent) event).getReason())
                         && ((FactionHeatChangeEvent) event)
                             .getWrestlers()
                             .containsAll(expectedWrestlers)
@@ -123,7 +126,7 @@ class FactionRivalryServiceTest {
                             ((FactionHeatChangeEvent) event).getWrestlers())));
   }
 
-  private WrestlerState createWrestlerState(@NonNull String name, @NonNull Long id) {
+  private WrestlerState createWrestlerState(@NonNull final String name, @NonNull final Long id) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(id);
     wrestler.setName(name);
@@ -133,7 +136,9 @@ class FactionRivalryServiceTest {
   }
 
   private Faction createFaction(
-      @NonNull String name, @NonNull Long id, @NonNull List<WrestlerState> members) {
+      @NonNull final String name,
+      @NonNull final Long id,
+      @NonNull final List<WrestlerState> members) {
     Faction faction = Faction.builder().build();
     faction.setId(id);
     faction.setName(name);
@@ -142,7 +147,7 @@ class FactionRivalryServiceTest {
   }
 
   private FactionRivalry createFactionRivalry(
-      @NonNull Faction faction1, @NonNull Faction faction2, int heat) {
+      @NonNull final Faction faction1, @NonNull final Faction faction2, final int heat) {
     FactionRivalry rivalry = new FactionRivalry();
     rivalry.setId(1L);
     rivalry.setFaction1(faction1);

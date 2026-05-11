@@ -51,7 +51,7 @@ public enum FeudRole {
   @Getter private final String description;
   @Getter private final String emoji;
 
-  FeudRole(String displayName, String description, String emoji) {
+  FeudRole(final String displayName, final String description, final String emoji) {
     this.displayName = displayName;
     this.description = description;
     this.emoji = emoji;
@@ -94,13 +94,13 @@ public enum FeudRole {
   }
 
   /** Check if two roles are naturally opposed. */
-  public boolean isOpposedTo(FeudRole other) {
+  public boolean isOpposedTo(final FeudRole other) {
     return (isAntagonistic() && other.isProtagonistic())
         || (isProtagonistic() && other.isAntagonistic());
   }
 
   /** Get heat multiplier for interactions based on role dynamics. */
-  public double getHeatMultiplier(FeudRole other) {
+  public double getHeatMultiplier(final FeudRole other) {
     if (isOpposedTo(other)) {
       if (isMainCharacter() && other.isMainCharacter()) {
         return 2.0; // Main character conflicts generate the most heat

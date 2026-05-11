@@ -33,7 +33,7 @@ public class StorylineExportService {
 
   private final ObjectMapper objectMapper;
 
-  public String exportStorylineAsChapter(@NonNull CampaignStoryline storyline) {
+  public String exportStorylineAsChapter(@NonNull final CampaignStoryline storyline) {
     CampaignChapterDTO chapterDTO = toChapterDTO(storyline);
     try {
       return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(chapterDTO);
@@ -43,7 +43,7 @@ public class StorylineExportService {
     }
   }
 
-  public CampaignChapterDTO toChapterDTO(@NonNull CampaignStoryline storyline) {
+  public CampaignChapterDTO toChapterDTO(@NonNull final CampaignStoryline storyline) {
     // Determine entry and exit points for the chapter based on the storyline's milestones
     List<ChapterPointDTO> entryPoints =
         List.of(
@@ -61,10 +61,11 @@ public class StorylineExportService {
 
     // AI System Prompt should reflect the overarching goal of the storyline
     String aiSystemPrompt =
-        String.format(
-            "You are the Campaign Director for the storyline '%s'. Your goal is to guide the player"
-                + " through the narrative described by this storyline.",
-            storyline.getTitle());
+        """
+        You are the Campaign Director for the storyline '%s'. Your goal is to guide the player\
+         through the narrative described by this storyline.\
+        """
+            .formatted(storyline.getTitle());
 
     // For simplicity, we'll extract the title and description, and use a generic prompt.
     // Milestones don't directly map to rules/exclusions in a ChapterDTO.
@@ -91,7 +92,7 @@ public class StorylineExportService {
         .build();
   }
 
-  private String formatId(@NonNull String title) {
+  private String formatId(@NonNull final String title) {
     return title
         .toLowerCase()
         .replaceAll("[^a-z0-9 -]", "")
