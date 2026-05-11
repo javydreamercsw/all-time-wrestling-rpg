@@ -53,7 +53,9 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-@Route(value = "factions", layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
+@Route(
+    value = "faction-list",
+    layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
 @PageTitle("Factions | ATW RPG")
 @PermitAll
 public class FactionListView extends VerticalLayout {
