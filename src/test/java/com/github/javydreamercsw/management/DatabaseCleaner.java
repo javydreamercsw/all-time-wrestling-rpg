@@ -76,30 +76,30 @@ public class DatabaseCleaner implements DatabaseCleanup {
         () -> {
           // 1. First break known circular dependencies and clear tables with many-to-many
           // relationships
-          log.info("💔 Breaking circular dependencies...");
+          log.debug("💔 Breaking circular dependencies...");
           breakCircularDependencies();
 
           // 2. Clear join tables (defined via @JoinTable)
-          log.info("🔗 Clearing join tables...");
+          log.debug("🔗 Clearing join tables...");
           clearJoinTables();
 
           // 3. Discover all JPA repositories (with caching)
           if (cachedRepositories == null) {
-            log.info("📦 Discovering JPA repositories...");
+            log.debug("📦 Discovering JPA repositories...");
             cachedRepositories = discoverRepositories();
-            log.info("✅ Discovered {} repositories", cachedRepositories.size());
+            log.debug("✅ Discovered {} repositories", cachedRepositories.size());
           }
 
           // 4. Get the correct synchronization/deletion order (with caching)
           if (cachedSyncOrder == null) {
-            log.info("🔄 Calculating deletion order...");
+            log.debug("🔄 Calculating deletion order...");
             cachedEntityClasses = getEntityClasses();
             cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
             // Reverse the order for deletion (delete children before parents)
             List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
             Collections.reverse(reverseOrder);
             cachedSyncOrder = reverseOrder;
-            log.info("✅ Deletion order calculated ({} entities)", cachedSyncOrder.size());
+            log.debug("✅ Deletion order calculated ({} entities)", cachedSyncOrder.size());
           }
 
           // Entities that should not be cleared (static config, core roles, etc.)
@@ -131,7 +131,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
           // Determine if we should use surgical cleanup (optimized for E2E)
           // or full cleanup (safer for Integration Tests)
           boolean isE2E = Arrays.asList(environment.getActiveProfiles()).contains("e2e");
-          log.info("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
+          log.debug("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
 
           // Delete data in the correct order
           int deletedCount = 0;
@@ -141,7 +141,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
               continue;
             }
 
-            log.info("🗑️ Clearing entity: {}", entityName);
+            log.debug("🗑️ Clearing entity: {}", entityName);
 
             // Special handling for Entities that might have both master data and test data:
             // we want to keep the master data (with externalId) but remove test data (without
@@ -163,7 +163,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
                         "DELETE FROM "
                             + entityName.toLowerCase()
                             + " WHERE external_id IS NULL OR external_id = ''");
-                log.info("✅ Deleted {} test records from {}", deleted, entityName);
+                log.debug("✅ Deleted {} test records from {}", deleted, entityName);
                 deletedCount++;
                 continue; // Skip the full repository deletion below
               } catch (Exception e) {
@@ -178,7 +178,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
                   repository.deleteAllInBatch();
                   resetSequence(entityName);
                   deletedCount++;
-                  log.info("✅ Cleared repository: {}", entityName);
+                  log.debug("✅ Cleared repository: {}", entityName);
                 }
               } catch (Exception e) {
                 log.warn("Could not clear repository {}: {}", entityName, e.getMessage());
@@ -187,7 +187,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
                   jdbcTemplate.execute("DELETE FROM " + entityName.toUpperCase(Locale.ROOT));
                   resetSequence(entityName);
                   deletedCount++;
-                  log.info("✅ Manually cleared table: {}", entityName);
+                  log.debug("✅ Manually cleared table: {}", entityName);
                 } catch (Exception ex) {
                   log.trace("Manual delete also failed for {}: {}", entityName, ex.getMessage());
                 }
@@ -204,7 +204,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
                   entry.getValue().deleteAllInBatch();
                   resetSequence(entry.getKey());
                   deletedCount++;
-                  log.info("✅ Cleared remaining repository: {}", entry.getKey());
+                  log.debug("✅ Cleared remaining repository: {}", entry.getKey());
                 }
               } catch (Exception e) {
                 log.trace(
@@ -214,7 +214,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
           }
 
           // Re-initialize accounts to ensure admin, booker, etc. are available
-          log.info("👤 Re-initializing accounts...");
+          log.debug("👤 Re-initializing accounts...");
           accountInitializer.init();
           // No flush — clearRepositories() runs without an outer transaction
           // (PROPAGATION_NOT_SUPPORTED),
@@ -267,26 +267,25 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     for (String table : manualTables) {
       try {
-        if ("campaign_state".equals(table)) {
-          jdbcTemplate.execute(
-              "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
-        } else if ("campaign_storyline".equals(table)) {
-          jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
-        } else if ("storyline_milestone".equals(table)) {
-          jdbcTemplate.execute(
-              """
-              UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL,\
-               storyline_id = NULL\
-              """);
-        } else if ("faction".equals(table)) {
-          jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
-        } else if ("account".equals(table)) {
-          // Break link from wrestler back to account
-          jdbcTemplate.execute("UPDATE wrestler SET account_id = NULL");
+        switch (table) {
+          case "campaign_state" ->
+              jdbcTemplate.execute(
+                  "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
+          case "campaign_storyline" ->
+              jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
+          case "storyline_milestone" ->
+              jdbcTemplate.execute(
+                  "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id ="
+                      + " NULL, storyline_id = NULL");
+          case "faction" ->
+              jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
+          case "account" ->
+              // Break link from wrestler back to account
+              jdbcTemplate.execute("UPDATE wrestler SET account_id = NULL");
         }
 
         jdbcTemplate.execute("DELETE FROM " + table);
-        log.info("🗑️ Manually cleared table: {}", table);
+        log.debug("🗑️ Manually cleared table: {}", table);
       } catch (Exception e) {
         log.trace("Could not manually clear table {}: {}", table, e.getMessage());
       }
@@ -320,15 +319,15 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
 
     if (!joinTableNames.isEmpty()) {
-      log.info("🧹 Clearing {} join tables...", joinTableNames.size());
+      log.debug("🧹 Clearing {} join tables...", joinTableNames.size());
       for (String tableName : joinTableNames) {
         try {
-          log.info("Deleting all records from join table {}", tableName);
+          log.debug("Deleting all records from join table {}", tableName);
           // Use jdbcTemplate (same connection as outer transaction) to avoid creating a competing
           // PROPAGATION_REQUIRES_NEW transaction that would deadlock on table locks held by the
           // outer tx. JDBC exceptions caught here do not mark the JPA transaction rollback-only.
           jdbcTemplate.update("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
-          log.info("✅ Deleted all records from join table {}", tableName);
+          log.debug("✅ Deleted all records from join table {}", tableName);
         } catch (Exception e) {
           log.warn("⚠️ Could not clear join table {}: {}", tableName, e.getMessage());
         }
