@@ -289,7 +289,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               }
               getContent().add(mods);
 
-              if (!wrestlerWithDetails.getInjuries().isEmpty()) {
+              java.util.List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
+                  injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
+              if (!injuries.isEmpty()) {
                 VerticalLayout activeInjuries = new VerticalLayout();
                 activeInjuries.setPadding(false);
                 activeInjuries.setSpacing(false);
@@ -298,20 +300,18 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 healedInjuries.setPadding(false);
                 healedInjuries.setSpacing(false);
 
-                wrestlerWithDetails
-                    .getInjuries()
-                    .forEach(
-                        injury -> {
-                          Span i = new Span("🩹 " + injury.getDisplayString());
-                          i.addClassNames(FontSize.XSMALL);
-                          if (injury.isCurrentlyActive()) {
-                            i.addClassNames(TextColor.ERROR);
-                            activeInjuries.add(i);
-                          } else {
-                            i.addClassNames(TextColor.SECONDARY);
-                            healedInjuries.add(i);
-                          }
-                        });
+                injuries.forEach(
+                    injury -> {
+                      Span i = new Span("🩹 " + injury.getDisplayString());
+                      i.addClassNames(FontSize.XSMALL);
+                      if (injury.isCurrentlyActive()) {
+                        i.addClassNames(TextColor.ERROR);
+                        activeInjuries.add(i);
+                      } else {
+                        i.addClassNames(TextColor.SECONDARY);
+                        healedInjuries.add(i);
+                      }
+                    });
 
                 if (activeInjuries.getComponentCount() > 0) {
                   getContent().add(activeInjuries);

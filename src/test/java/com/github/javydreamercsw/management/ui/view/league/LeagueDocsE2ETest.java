@@ -151,6 +151,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     navigateTo("leagues");
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
     Wrestler w2 = wrestlers.get(1);
     clickElement(By.id("draft-wrestler-btn-" + w2.getId()));
 

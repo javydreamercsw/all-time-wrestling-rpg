@@ -35,6 +35,8 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
@@ -48,6 +50,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private InjuryRepository injuryRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
@@ -72,9 +75,12 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     wrestler.setBumps(2);
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
+    Universe defaultUniverse = universeRepository.findById(1L).orElseThrow();
+
     // Add an active injury
     Injury activeInjury = new Injury();
     activeInjury.setWrestler(wrestler);
+    activeInjury.setUniverse(defaultUniverse);
     activeInjury.setName("Broken Arm");
     activeInjury.setSeverity(InjurySeverity.SEVERE);
     activeInjury.setHealthPenalty(20);
@@ -85,6 +91,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     // Add a healed injury
     Injury healedInjury = new Injury();
     healedInjury.setWrestler(wrestler);
+    healedInjury.setUniverse(defaultUniverse);
     healedInjury.setName("Twisted Ankle");
     healedInjury.setSeverity(InjurySeverity.MINOR);
     healedInjury.setHealthPenalty(5);

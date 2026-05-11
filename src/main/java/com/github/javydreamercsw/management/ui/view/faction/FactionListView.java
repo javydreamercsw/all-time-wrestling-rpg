@@ -95,6 +95,7 @@ public class FactionListView extends VerticalLayout {
     name.setPlaceholder("Enter faction name...");
     name.setAriaLabel("Faction Name");
     name.setRequired(true);
+    name.setId("edit-name");
 
     description = new TextArea();
     description.setPlaceholder("Enter faction description...");
@@ -123,6 +124,7 @@ public class FactionListView extends VerticalLayout {
     setPadding(false);
     setSizeFull();
 
+    factionGrid.setId("faction-grid");
     configureGrid();
     setupEditDialog();
 
@@ -139,6 +141,7 @@ public class FactionListView extends VerticalLayout {
                 editDialog.open();
               });
       createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      createBtn.setId("create-faction-button");
     } else {
       createBtn = new Button();
       createBtn.setVisible(false);
@@ -175,12 +178,14 @@ public class FactionListView extends VerticalLayout {
           editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
           editButton.setTooltipText("Edit Faction");
           editButton.setVisible(securityUtils.canEdit());
+          editButton.setId("edit-" + faction.getId());
 
           Button membersButton =
               new Button(new Icon(VaadinIcon.USERS), e -> openMembersDialog(faction));
           membersButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
           membersButton.setTooltipText("Manage Members");
           membersButton.setVisible(securityUtils.canEdit());
+          membersButton.setId("members-" + faction.getId());
 
           Button deleteButton =
               new Button(
@@ -193,6 +198,7 @@ public class FactionListView extends VerticalLayout {
           deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
           deleteButton.setTooltipText("Delete Faction");
           deleteButton.setVisible(securityUtils.canDelete());
+          deleteButton.setId("delete-" + faction.getId());
 
           actions.add(editButton, membersButton, deleteButton);
           return actions;
@@ -254,6 +260,7 @@ public class FactionListView extends VerticalLayout {
 
     Button saveButton = new Button("Save", e -> saveFaction());
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setId("save-button");
     Button cancelButton = new Button("Cancel", e -> editDialog.close());
 
     editDialog.add(layout);
@@ -325,52 +332,48 @@ public class FactionListView extends VerticalLayout {
                   });
           removeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
           removeBtn.setTooltipText("Remove from Faction");
+          removeBtn.setId("remove-member-" + memberState.getWrestler().getId());
           return removeBtn;
         });
 
-    H3 availableWrestlersTitle = new H3("Available Wrestlers");
-    Grid<WrestlerState> availableWrestlersGrid = new Grid<>(WrestlerState.class, false);
-    availableWrestlersGrid
-        .addColumn(s -> s.getWrestler().getName())
-        .setHeader("Name")
-        .setSortable(true);
-    availableWrestlersGrid
-        .addColumn(s -> s.getTier().getDisplayWithEmoji())
-        .setHeader("Tier")
-        .setSortable(true);
-
+    // Add wrestler section — ComboBox + button so tests can select by name
+    H3 addWrestlerTitle = new H3("Add Wrestler");
     Long universeId = universeContextService.getCurrentUniverseId();
-    List<WrestlerState> available =
+    List<Wrestler> available =
         wrestlerService.findAllIncludingInactive().stream()
-            .map(w -> wrestlerService.getOrCreateState(w.getId(), universeId))
-            .filter(s -> s.getFaction() == null)
+            .filter(
+                w -> {
+                  WrestlerState state = wrestlerService.getOrCreateState(w.getId(), universeId);
+                  return state.getFaction() == null;
+                })
             .toList();
-    availableWrestlersGrid.setItems(available);
 
-    availableWrestlersGrid.addComponentColumn(
-        wState -> {
-          Button addBtn =
-              new Button(
-                  new Icon(VaadinIcon.PLUS),
-                  e -> {
-                    loadedFaction.addMember(wState);
-                    factionService.save(loadedFaction);
-                    dialog.close();
-                    openMembersDialog(loadedFaction);
-                    refreshGrid();
-                  });
-          addBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
-          addBtn.setTooltipText("Add to Faction");
-          return addBtn;
+    ComboBox<Wrestler> wrestlerCombo = new ComboBox<>("Wrestler");
+    wrestlerCombo.setItems(available);
+    wrestlerCombo.setItemLabelGenerator(Wrestler::getName);
+    wrestlerCombo.setId("add-member-wrestler-combo");
+
+    Button addMemberButton = new Button("Add Member");
+    addMemberButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+    addMemberButton.setId("add-member-button");
+    addMemberButton.addClickListener(
+        e -> {
+          Wrestler selected = wrestlerCombo.getValue();
+          if (selected != null) {
+            WrestlerState state = wrestlerService.getOrCreateState(selected.getId(), universeId);
+            loadedFaction.addMember(state);
+            factionService.save(loadedFaction);
+            dialog.close();
+            openMembersDialog(loadedFaction);
+            refreshGrid();
+          }
         });
 
-    content.add(
-        currentMembersTitle,
-        currentMembersGrid,
-        new Div(),
-        availableWrestlersTitle,
-        availableWrestlersGrid);
-    content.expand(currentMembersGrid, availableWrestlersGrid);
+    HorizontalLayout addRow = new HorizontalLayout(wrestlerCombo, addMemberButton);
+    addRow.setAlignItems(Alignment.BASELINE);
+
+    content.add(currentMembersTitle, currentMembersGrid, new Div(), addWrestlerTitle, addRow);
+    content.expand(currentMembersGrid);
 
     Button closeButton = new Button("Done", e -> dialog.close());
     dialog.getFooter().add(closeButton);

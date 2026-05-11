@@ -147,6 +147,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Use the ID we added: league-draft-room-btn-<id>
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
 
     // Verify draft header
     waitForPageSourceToContain("Round: 1 | Pick: 1");
@@ -174,6 +175,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     navigateTo("leagues");
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
 
     // Verify player1 turn
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Current Turn: player1"));
