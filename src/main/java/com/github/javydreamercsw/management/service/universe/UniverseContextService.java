@@ -83,7 +83,8 @@ public class UniverseContextService implements Serializable {
    * @return Current universe ID
    */
   public Long getCurrentUniverseId() {
-    return getInternalUniverseId();
+    Long id = getInternalUniverseId();
+    return id != null ? id : 1L;
   }
 
   /**

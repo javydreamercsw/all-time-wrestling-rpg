@@ -290,7 +290,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               getContent().add(mods);
 
               java.util.List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
-                  injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
+                  injuryService.getAllInjuriesForWrestler(
+                      wrestler.getId(), universeId != null ? universeId : 1L);
               if (!injuries.isEmpty()) {
                 VerticalLayout activeInjuries = new VerticalLayout();
                 activeInjuries.setPadding(false);
