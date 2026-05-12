@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -359,7 +360,7 @@ public class WrestlerService {
       @NonNull final Boolean isPlayer,
       final String description,
       @NonNull final WrestlerTier tier,
-      final com.github.javydreamercsw.management.domain.universe.Universe universe) {
+      final Universe universe) {
     Wrestler wrestler = createWrestler(name, isPlayer, description);
     if (universe != null) {
       WrestlerState state = getOrCreateState(wrestler.getId(), universe.getId());
@@ -405,8 +406,7 @@ public class WrestlerService {
 
     // Fallback for missing entities during tests/sync
     Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElse(null);
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        universeRepository.findById(universeId).orElse(null);
+    Universe universe = universeRepository.findById(universeId).orElse(null);
 
     if (wrestler == null || universe == null) {
       String msg =

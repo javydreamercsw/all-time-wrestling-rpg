@@ -307,7 +307,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     Wrestler icon =
         wrestlerService.createWrestler("Icon", true, "Desc", WrestlerTier.ICON, defaultUniverse);
     WrestlerState state = wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
-    state.setFans(1000000L);
+    state.setFans(1_000_000L);
     wrestlerStateRepository.saveAndFlush(state);
 
     // When
@@ -315,7 +315,8 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
 
     // Then
     WrestlerState updated = wrestlerService.getOrCreateState(icon.getId(), defaultUniverse.getId());
-    assertThat(updated.getFans()).isEqualTo(WrestlerTier.ICON.getMinFans());
+    WrestlerTier[] tiers = WrestlerTier.values();
+    assertThat(updated.getFans()).isEqualTo(tiers[WrestlerTier.ICON.ordinal() - 1].getMinFans());
   }
 
   @Test
