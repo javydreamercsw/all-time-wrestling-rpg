@@ -833,9 +833,9 @@
         <configuration>
           <skipTests>${surefire.skip}</skipTests>
           <!-- Parallel execution disabled to prevent database interference -->
-          <parallel>none</parallel>
+          <parallel>class</parallel>
 
-          <threadCount>4</threadCount>
+          <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
           <!-- Optimize for faster execution -->
@@ -866,7 +866,7 @@
           <skipITs>${e2e.skipITs}</skipITs>
 
           <!-- Parallel execution disabled to prevent database interference between tests sharing the same context -->
-          <parallel>none</parallel>
+          <parallel>class</parallel>
           <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
