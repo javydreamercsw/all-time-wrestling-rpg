@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -86,8 +87,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   @com.fasterxml.jackson.annotation.JsonIgnore
-  private List<com.github.javydreamercsw.management.domain.campaign.WrestlerStatus> statuses =
-      new ArrayList<>();
+  private List<WrestlerStatus> statuses = new ArrayList<>();
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;

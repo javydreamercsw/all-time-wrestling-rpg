@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -72,7 +73,10 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
     // Add some bumps
-    wrestler.setBumps(2);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setBumps(2);
+    wrestlerStateRepository.saveAndFlush(state);
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
     Universe defaultUniverse = universeRepository.findById(1L).orElseThrow();
