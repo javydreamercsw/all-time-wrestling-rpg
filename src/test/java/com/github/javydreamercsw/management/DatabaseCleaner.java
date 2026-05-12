@@ -277,7 +277,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
               jdbcTemplate.execute(
                   """
                   UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id =\
-                   NULL, storyline_id = NULL""");
+                   NULL, storyline_id = NULL\
+                  """);
           case "faction" ->
               jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
           case "account" ->
