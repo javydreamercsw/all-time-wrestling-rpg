@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
@@ -43,12 +42,10 @@ class TeamDTOTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("John Cena");
-    wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("The Rock");
-    wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     // Create test faction
     Faction faction = Faction.builder().build();

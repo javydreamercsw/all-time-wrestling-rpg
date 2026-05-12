@@ -46,7 +46,6 @@ class WrestlerHealthCalculationTest {
     wrestler.setId(1L); // Set ID for wrestler
     wrestler.setName("Test Wrestler");
     wrestler.setStartingHealth(15);
-    wrestler.setCurrentHealth(15);
 
     state =
         WrestlerState.builder()
