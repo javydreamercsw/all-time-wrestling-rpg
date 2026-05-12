@@ -27,7 +27,7 @@ import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
-import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
@@ -100,8 +100,10 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -143,7 +145,6 @@ public abstract class AbstractIntegrationTest {
   @MockitoBean protected RequestUtil requestUtil;
 
   @Autowired protected AuthenticationContext authenticationContext;
-
   @Autowired protected ApplicationContext applicationContext;
   @Autowired protected InboxRepository inboxRepository;
   @Autowired protected InboxItemTargetRepository inboxItemTargetRepository;
@@ -206,7 +207,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected TransactionTemplate transactionTemplate;
   @PersistenceContext protected EntityManager entityManager;
   @Autowired protected ObjectMapper objectMapper;
-  @Autowired protected com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired protected DataInitializer dataInitializer;
   @Autowired protected SegmentNarrationService segmentNarrationService;
   @Autowired protected BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired protected CampaignEncounterRepository campaignEncounterRepository;
@@ -219,6 +220,28 @@ public abstract class AbstractIntegrationTest {
 
   @Autowired(required = false)
   protected CacheManager cacheManager;
+
+  @BeforeEach
+  void startTest(TestInfo testInfo) {
+    log.info(
+        StringUtils.center(
+            String.format(
+                " Starting: %s.%s ",
+                testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
+            100,
+            "*"));
+  }
+
+  @AfterEach
+  void endTest(TestInfo testInfo) {
+    log.info(
+        StringUtils.center(
+            String.format(
+                " Finished: %s.%s ",
+                testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
+            100,
+            "*"));
+  }
 
   @AfterEach
   public void tearDown() throws Exception {
@@ -270,7 +293,7 @@ public abstract class AbstractIntegrationTest {
   }
 
   protected void clearAllRepositories() {
-    log.info("Starting comprehensive database cleanup...");
+    log.debug("Starting comprehensive database cleanup...");
 
     // 1. Clear ID sequences and basic links in a separate transaction
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -297,7 +320,7 @@ public abstract class AbstractIntegrationTest {
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
     transactionTemplate.execute(
         status -> {
-          log.info("Running DatabaseCleanup.clearRepositories()...");
+          log.debug("Running DatabaseCleanup.clearRepositories()...");
           databaseCleanup.clearRepositories();
           return null;
         });
@@ -406,10 +429,6 @@ public abstract class AbstractIntegrationTest {
               account.setRoles(Collections.singleton(role));
               return accountRepository.saveAndFlush(account);
             });
-  }
-
-  protected void runAsAdmin(@NonNull final Runnable task) {
-    GeneralSecurityUtils.runAsAdmin(task);
   }
 
   protected void login(final Object principal) {
