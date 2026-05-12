@@ -228,7 +228,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @JsonIgnore
   public Long getFans(final Long universeId) {
     if (universeId == null) {
-      return 0L;
+      return getDefaultState().map(WrestlerState::getFans).orElse(0L);
     }
     return wrestlerStates.stream()
         .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
