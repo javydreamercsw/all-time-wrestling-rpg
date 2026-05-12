@@ -507,7 +507,7 @@ public class DataInitializer implements Initializable {
       setting.setId(key);
       setting.setValue(value);
       gameSettingRepository.save(setting);
-      log.info("Initialized missing setting: {} = {}", key, maskIfSecret(key, value));
+      log.debug("Initialized missing setting: {} = {}", key, maskIfSecret(key, value));
     }
   }
 

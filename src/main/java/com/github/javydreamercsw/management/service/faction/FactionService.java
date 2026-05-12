@@ -234,7 +234,7 @@ public class FactionService {
     }
 
     Faction savedFaction = factionRepository.saveAndFlush(faction);
-    log.info(
+    log.debug(
         "Created faction: {} with {} members in universe {}",
         savedFaction.getName(),
         savedFaction.getMemberCount(),

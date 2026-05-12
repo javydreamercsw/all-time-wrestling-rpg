@@ -130,7 +130,7 @@ public class FactionRivalryService {
 
     FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
 
-    log.info(
+    log.debug(
         "Created faction rivalry: {} vs {} (ID: {})",
         faction1.getName(),
         faction2.getName(),
