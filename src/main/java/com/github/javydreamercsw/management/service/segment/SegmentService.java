@@ -500,6 +500,13 @@ public class SegmentService {
     return segmentRepository.countMatchSegmentsByWrestler(wrestler, universeId);
   }
 
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long countLossesByWrestler(
+      @NonNull final Wrestler wrestler, @NonNull final Long universeId) {
+    return segmentRepository.countLossesByWrestler(wrestler, universeId);
+  }
+
   /**
    * Counts wins for a wrestler.
    *

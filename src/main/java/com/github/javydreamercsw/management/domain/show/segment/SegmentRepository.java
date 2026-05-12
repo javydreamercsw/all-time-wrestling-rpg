@@ -116,6 +116,19 @@ public interface SegmentRepository
   long countWinsByWrestler(
       @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
 
+  /** Count losses for a wrestler in a specific universe. */
+  @Query(
+      """
+      SELECT COUNT(s) FROM Segment s
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler AND p.isWinner = false
+      AND s.show.universe.id = :universeId
+      AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
+      AND s.status = 'COMPLETED'
+      """)
+  long countLossesByWrestler(
+      @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
+
   /** Count total match segments for a wrestler in a specific universe. */
   @Query(
       """

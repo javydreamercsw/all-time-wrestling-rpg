@@ -679,6 +679,7 @@ public class WrestlerService {
 
     WrestlerStats stats = new WrestlerStats();
     stats.setWins(segmentService.countWinsByWrestler(wrestler, universeId));
+    stats.setLosses(segmentService.countLossesByWrestler(wrestler, universeId));
     stats.setTitlesHeld((long) titleService.findTitlesByChampion(wrestler, universeId).size());
 
     return Optional.of(stats);
@@ -703,11 +704,16 @@ public class WrestlerService {
   @Transactional
   public void recalibrateFanCounts(@NonNull final Long universeId) {
     List<Wrestler> wrestlers = findAll();
+    WrestlerTier[] tiers = WrestlerTier.values();
     for (Wrestler w : wrestlers) {
       WrestlerState state = getOrCreateState(w.getId(), universeId);
-      // Reset fans to the minimum of their current tier
-      state.setFans(state.getTier().getMinFans());
-      tierRecalculationService.recalculateTier(state);
+      WrestlerTier currentTier = state.getTier();
+      // ICON is demoted one tier down; all others reset to their tier's minimum
+      if (currentTier.ordinal() > 0 && currentTier == WrestlerTier.ICON) {
+        state.setFans(tiers[currentTier.ordinal() - 1].getMinFans());
+      } else {
+        state.setFans(currentTier.getMinFans());
+      }
       wrestlerStateRepository.save(state);
     }
     log.info("Recalibrated wrestler tiers and fan counts for universe {}.", universeId);
