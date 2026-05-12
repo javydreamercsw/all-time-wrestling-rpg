@@ -109,7 +109,7 @@ public class ShowSchedulerService {
           }
 
           if (!showService.existsByNameAndShowDate(showName, actualDate)) {
-            log.info("Creating show '{}' for date {}", showName, actualDate);
+            log.debug("Creating show '{}' for date {}", showName, actualDate);
             showService.createShow(
                 showName,
                 template.getDescription(),

@@ -21,7 +21,6 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -43,7 +42,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TierRecalculationService implements RankingService {
 
-  private final WrestlerRepository wrestlerRepository;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final TierBoundaryService tierBoundaryService;
   private final UniverseContextService universeContextService;
@@ -167,7 +165,7 @@ public class TierRecalculationService implements RankingService {
         WrestlerTier newTier = calculateTier(wrestlerData.getFans(), wrestlerData.getGender());
         if (newTier != null) {
           if (wrestlerData.getTier() != newTier) {
-            log.info(
+            log.debug(
                 "Updating {}'s tier from {} to {}",
                 wrestlerData.getName(),
                 wrestlerData.getTier(),
@@ -197,10 +195,10 @@ public class TierRecalculationService implements RankingService {
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void recalculateTier(final WrestlerData wrestlerData) {
-    Long fans = wrestlerData.getFans() != null ? wrestlerData.getFans() : 0L;
+    long fans = wrestlerData.getFans();
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
     if (wrestlerData.getTier() != newTier) {
-      log.info(
+      log.debug(
           "Updating {}'s tier from {} to {}",
           wrestlerData.getName(),
           wrestlerData.getTier(),

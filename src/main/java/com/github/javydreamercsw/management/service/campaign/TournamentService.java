@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +69,7 @@ public class TournamentService {
       return; // Already initialized
     }
 
-    log.info("Initializing Tournament for {}", campaign.getWrestler().getName());
+    log.debug("Initializing Tournament for {}", campaign.getWrestler().getName());
 
     List<Wrestler> roster = wrestlerRepository.findAll();
     roster.removeIf(w -> w.equals(campaign.getWrestler()));
@@ -203,23 +202,21 @@ public class TournamentService {
     }
 
     int currentRound = tournament.getCurrentRound();
-    log.info("Advancing tournament. Current Round: {}", currentRound);
+    log.debug("Advancing tournament. Current Round: {}", currentRound);
 
     List<TournamentMatch> currentRoundMatches =
-        tournament.getMatches().stream()
-            .filter(m -> m.getRound() == currentRound)
-            .collect(Collectors.toList());
+        tournament.getMatches().stream().filter(m -> m.getRound() == currentRound).toList();
 
-    log.info("Found {} matches for round {}", currentRoundMatches.size(), currentRound);
+    log.debug("Found {} matches for round {}", currentRoundMatches.size(), currentRound);
 
     // Simulate current round
     for (TournamentMatch match : currentRoundMatches) {
       if (match.getWinnerId() != null) {
-        log.info("Match {} already resolved. Winner: {}", match.getId(), match.getWinnerId());
+        log.debug("Match {} already resolved. Winner: {}", match.getId(), match.getWinnerId());
         continue; // Already resolved
       }
 
-      log.info(
+      log.debug(
           "Resolving match {}: {} vs {}",
           match.getId(),
           match.getWrestler1Name(),
@@ -231,7 +228,7 @@ public class TournamentService {
         // Player Match logic
         if (playerWon) {
           winnerId = campaign.getWrestler().getId();
-          log.info("Player WON match {}", match.getId());
+          log.debug("Player WON match {}", match.getId());
         } else {
           // Determine opponent ID
           winnerId =

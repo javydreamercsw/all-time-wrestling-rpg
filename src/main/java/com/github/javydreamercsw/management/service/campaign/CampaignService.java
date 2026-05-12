@@ -667,7 +667,7 @@ public class CampaignService {
 
     // Automatic check for chapter completion
     if (chapterService.isChapterComplete(state)) {
-      log.info("Chapter {} complete! Ready to advance.", state.getCurrentChapterId());
+      log.debug("Chapter {} complete! Ready to advance.", state.getCurrentChapterId());
       // For now we don't automatically advance here to allow for post-match narrative.
       // The CampaignNarrativeView choice will likely trigger advanceChapter.
     }
@@ -1031,7 +1031,7 @@ public class CampaignService {
 
     // Grant first pick when reaching Level 1 from 0 (Neutral)
     if (oldLevel == 0 && newLevel >= 1 && type != AlignmentType.NEUTRAL) {
-      log.info("Reached Level 1 {}: Eligible for first Level 1 card.", type);
+      log.debug("Reached Level 1 {}: Eligible for first Level 1 card.", type);
       state.setPendingL1Picks(state.getPendingL1Picks() + 1);
     }
 
@@ -1039,12 +1039,12 @@ public class CampaignService {
     if (type == AlignmentType.FACE) {
       // Face Level 4: Gain a level 2 card
       if (oldLevel < 4 && newLevel >= 4) {
-        log.info("Face reached Level 4: Eligible for Level 2 card.");
+        log.debug("Face reached Level 4: Eligible for Level 2 card.");
         state.setPendingL2Picks(state.getPendingL2Picks() + 1);
       }
       // Face Level 5: Gain a level 3 card, lose a level 1 card
       if (oldLevel < 5 && newLevel >= 5) {
-        log.info("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
+        log.debug("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
         state.setPendingL3Picks(state.getPendingL3Picks() + 1);
         // If they had no L1 card yet, we might want to decrement pending L1 picks instead?
@@ -1055,7 +1055,7 @@ public class CampaignService {
     } else {
       // Heel Level 4: Gain a level 2 card, lose a level 1 card
       if (oldLevel < 4 && newLevel >= 4) {
-        log.info("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
+        log.debug("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
         state.setPendingL2Picks(state.getPendingL2Picks() + 1);
         if (state.getPendingL1Picks() > 0) {
@@ -1064,7 +1064,7 @@ public class CampaignService {
       }
       // Heel Level 5: Gain another level 1 card
       if (oldLevel < 5 && newLevel >= 5) {
-        log.info("Heel reached Level 5: Eligible for another Level 1 card.");
+        log.debug("Heel reached Level 5: Eligible for another Level 1 card.");
         state.setPendingL1Picks(state.getPendingL1Picks() + 1);
       }
     }
@@ -1080,7 +1080,7 @@ public class CampaignService {
         .ifPresent(
             card -> {
               cards.remove(card);
-              log.info("Removed Level {} card: {}", level, card.getName());
+              log.debug("Removed Level {} card: {}", level, card.getName());
             });
   }
 

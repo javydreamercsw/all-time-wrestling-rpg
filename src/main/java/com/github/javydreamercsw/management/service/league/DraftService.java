@@ -244,14 +244,14 @@ public class DraftService {
     int totalPicks = draft.getCurrentPickNumber();
     int maxTotalPicks = players.size() * league.getMaxPicksPerPlayer();
 
-    log.info(
+    log.debug(
         "Checking draft progress: Pick {}/{}, Available Wrestlers: {}",
         totalPicks,
         maxTotalPicks,
         availableWrestlers);
 
     if (totalPicks >= maxTotalPicks || availableWrestlers == 0) {
-      log.info(
+      log.debug(
           """
           Draft completing. Reason: totalPicks ({}) >= maxTotalPicks ({}) OR availableWrestlers\
            ({}) == 0\

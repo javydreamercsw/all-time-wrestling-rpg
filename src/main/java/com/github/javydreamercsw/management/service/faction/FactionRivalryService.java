@@ -156,7 +156,7 @@ public class FactionRivalryService {
 
               FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
 
-              log.info(
+              log.debug(
                   "Added {} heat to faction rivalry {} (total: {}, reason: {})",
                   adjustedHeatGain,
                   rivalry.getDisplayName(),

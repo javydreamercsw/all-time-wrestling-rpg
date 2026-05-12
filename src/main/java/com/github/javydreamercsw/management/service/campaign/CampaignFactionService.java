@@ -45,7 +45,8 @@ public class CampaignFactionService {
   public Optional<Faction> joinFaction(
       @NonNull final Campaign campaign, @NonNull final Faction faction) {
     Wrestler player = campaign.getWrestler();
-    log.info("Wrestler {} joining faction {} during campaign", player.getName(), faction.getName());
+    log.debug(
+        "Wrestler {} joining faction {} during campaign", player.getName(), faction.getName());
     return factionService.addMemberToFaction(faction.getId(), player.getId());
   }
 
