@@ -79,8 +79,6 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     wrestlerStateRepository.saveAndFlush(state);
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
-    Universe defaultUniverse = universeRepository.findById(1L).orElseThrow();
-
     // Add an active injury
     Injury activeInjury = new Injury();
     activeInjury.setWrestler(wrestler);
