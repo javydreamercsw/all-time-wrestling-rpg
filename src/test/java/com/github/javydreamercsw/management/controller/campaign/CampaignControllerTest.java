@@ -72,7 +72,6 @@ class CampaignControllerTest extends AbstractIntegrationTest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private TitleRepository titleRepository;
-
   @Autowired private WrestlerRepository wrestlerRepository;
 
   private Wrestler testWrestler;
