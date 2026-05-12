@@ -78,14 +78,16 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
       Wrestler w2 = new Wrestler();
       w2.setName("Team Member 1");
       w2.setGender(Gender.MALE);
-      w2.setTier(WrestlerTier.MIDCARDER);
       wrestlerRepository.save(w2);
+
+      w2.getDefaultState().get().setTier(WrestlerTier.MIDCARDER);
 
       Wrestler w3 = new Wrestler();
       w3.setName("Team Member 2");
       w3.setGender(Gender.MALE);
-      w3.setTier(WrestlerTier.MIDCARDER);
       wrestlerRepository.save(w3);
+
+      w3.getDefaultState().get().setTier(WrestlerTier.MIDCARDER);
 
       Team team = new Team();
       team.setName("Test Team");

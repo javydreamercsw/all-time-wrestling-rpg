@@ -959,7 +959,6 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                newWrestler.setTier(WrestlerTier.fromFanCount(newWrestler.getFans()));
                 tierRecalculationService.recalculateTier(newWrestler);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());

@@ -938,7 +938,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     cc.setCurrentRival(
                         state.getRival() != null ? state.getRival().getName() : null);
                     cc.setActiveInjuries(
-                        playerWrestler.getActiveInjuries().stream()
+                        playerWrestler
+                            .getDefaultState()
+                            .map(
+                                com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                                    ::getActiveInjuries)
+                            .orElseGet(java.util.Collections::emptyList)
+                            .stream()
                             .map(com.github.javydreamercsw.management.domain.injury.Injury::getName)
                             .toList());
 

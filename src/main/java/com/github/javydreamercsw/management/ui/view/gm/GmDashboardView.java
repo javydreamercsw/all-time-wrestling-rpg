@@ -89,7 +89,10 @@ public class GmDashboardView extends VerticalLayout {
   private void configureRosterGrid() {
     Grid.Column<Wrestler> nameColumn =
         rosterGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
-    rosterGrid.addColumn(w -> w.getTier().getDisplayName()).setHeader("Tier");
+    rosterGrid
+        .addColumn(
+            w -> w.getDefaultState().map(s -> s.getTier().getDisplayName()).orElse("Unknown"))
+        .setHeader("Tier");
 
     rosterGrid
         .addColumn(w -> w.getManagementStamina() + "%")

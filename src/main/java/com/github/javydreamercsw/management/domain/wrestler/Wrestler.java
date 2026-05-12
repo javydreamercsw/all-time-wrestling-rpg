@@ -414,23 +414,15 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @JsonIgnore
   @Deprecated
   @jakarta.persistence.Transient
-  public Long getFans() {
+  public @NonNull Long getFans() {
     return getDefaultState().map(WrestlerState::getFans).orElse(0L);
   }
 
-  @Override
   @JsonIgnore
   @Deprecated
   @jakarta.persistence.Transient
   public WrestlerTier getTier() {
     return getDefaultState().map(WrestlerState::getTier).orElse(WrestlerTier.ROOKIE);
-  }
-
-  @Override
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setTier(final WrestlerTier tier) {
-    getDefaultState().ifPresent(s -> s.setTier(tier));
   }
 
   @JsonIgnore

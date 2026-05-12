@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.injury;
 
-import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -479,7 +478,7 @@ public class InjuryService {
    * resilient and get less severe injuries.
    */
   private InjurySeverity getRandomInjurySeverityForWrestler(
-      @NonNull final WrestlerData wrestlerData) {
+      @NonNull final WrestlerState wrestlerData) {
     int roll = random.nextInt(100) + 1;
 
     // Adjust probabilities based on wrestler tier

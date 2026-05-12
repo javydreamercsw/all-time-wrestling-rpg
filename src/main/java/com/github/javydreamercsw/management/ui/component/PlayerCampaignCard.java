@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -70,7 +71,12 @@ public class PlayerCampaignCard extends Composite<Div> {
     // Header
     Div header = new Div();
     header.addClassName("player-card-header");
-    header.addClassName("wrestler-tier-" + wrestler.getTier().name().toLowerCase());
+    header.addClassName(
+        "wrestler-tier-"
+            + wrestler
+                .getDefaultState()
+                .map(s -> s.getTier().name().toLowerCase())
+                .orElse("rookie"));
     header.add(new Span(wrestler.getName()));
 
     Icon alignmentIcon;
@@ -101,8 +107,21 @@ public class PlayerCampaignCard extends Composite<Div> {
     content.add(
         createStatusBar(
             "Health",
-            String.valueOf(wrestler.getCurrentHealthWithPenalties()),
-            wrestler.getCurrentHealthWithPenalties(),
+            String.valueOf(
+                wrestler
+                    .getDefaultState()
+                    .map(
+                        s ->
+                            Math.max(
+                                1, s.getCurrentHealth() - s.getBumps() - s.getTotalInjuryPenalty()))
+                    .orElse(1)),
+            wrestler
+                .getDefaultState()
+                .map(
+                    s ->
+                        Math.max(
+                            1, s.getCurrentHealth() - s.getBumps() - s.getTotalInjuryPenalty()))
+                .orElse(1),
             20,
             wrestler.getLowHealth(),
             "health"));
@@ -159,12 +178,12 @@ public class PlayerCampaignCard extends Composite<Div> {
     bumpRow.add(new Span("Bumps"));
     Div bumpIcons = new Div();
     bumpIcons.addClassName("icon-row");
-    for (int i = 0; i < wrestler.getBumps(); i++) {
+    for (int i = 0; i < wrestler.getDefaultState().map(WrestlerState::getBumps).orElse(0); i++) {
       Icon bumpIcon = VaadinIcon.CIRCLE.create();
       bumpIcon.addClassName("bump-icon");
       bumpIcons.add(bumpIcon);
     }
-    if (wrestler.getBumps() == 0) {
+    if (wrestler.getDefaultState().map(WrestlerState::getBumps).orElse(0) == 0) {
       Span none = new Span("-");
       none.addClassName(LumoUtility.TextColor.SECONDARY);
       bumpIcons.add(none);
@@ -178,7 +197,7 @@ public class PlayerCampaignCard extends Composite<Div> {
     injuryRow.add(new Span("Active Injuries"));
     Div injuryIcons = new Div();
     injuryIcons.addClassName("icon-row");
-    int injuryCount = wrestler.getActiveInjuries().size();
+    int injuryCount = wrestler.getDefaultState().map(s -> s.getActiveInjuries().size()).orElse(0);
     for (int i = 0; i < injuryCount; i++) {
       Icon cross = VaadinIcon.PLUS.create();
       cross.addClassName("injury-icon");

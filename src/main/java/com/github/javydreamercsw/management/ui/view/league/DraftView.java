@@ -201,7 +201,10 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
   private void configureAvailableGrid() {
     Grid.Column<Wrestler> nameColumn =
         availableWrestlersGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
-    availableWrestlersGrid.addColumn(w -> w.getTier().name()).setHeader("Tier").setSortable(true);
+    availableWrestlersGrid
+        .addColumn(w -> w.getDefaultState().map(s -> s.getTier().name()).orElse("ROOKIE"))
+        .setHeader("Tier")
+        .setSortable(true);
     availableWrestlersGrid.addColumn(Wrestler::getStartingStamina).setHeader("Stamina");
     availableWrestlersGrid.addColumn(Wrestler::getStartingHealth).setHeader("Health");
 

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
@@ -168,7 +169,9 @@ public class BackstageEncounterService {
         .append(".\n\n");
 
     sb.append("WRESTLER CONTEXT:\n");
-    sb.append("- Tier: ").append(player.getTier()).append("\n");
+    sb.append("- Tier: ")
+        .append(player.getDefaultState().map(WrestlerState::getTier).orElse(null))
+        .append("\n");
     if (player.getAlignment() != null) {
       sb.append("- Alignment: ")
           .append(player.getAlignment().getAlignmentType())
@@ -203,7 +206,7 @@ public class BackstageEncounterService {
                 sb.append("- ")
                     .append(w.getName())
                     .append(" (Tier: ")
-                    .append(w.getTier())
+                    .append(w.getDefaultState().map(WrestlerState::getTier).orElse(null))
                     .append(")\n"));
 
     sb.append("\nINSTRUCTIONS:\n");

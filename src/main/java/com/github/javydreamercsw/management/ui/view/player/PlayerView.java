@@ -547,14 +547,16 @@ public class PlayerView extends VerticalLayout {
         hpTooltip.append("\nCampaign Penalty: -").append(state.getHealthPenalty());
       }
     }
-    if (playerWrestler.getBumps() > 0) {
-      hpTooltip.append("\nBump Penalty: -").append(playerWrestler.getBumps());
+    int bumps = playerWrestler.getDefaultState().map(WrestlerState::getBumps).orElse(0);
+    if (bumps > 0) {
+      hpTooltip.append("\nBump Penalty: -").append(bumps);
     }
     int conditionPenalty = Math.min(5, (100 - playerWrestler.getPhysicalCondition()) / 5);
     if (conditionPenalty > 0) {
       hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
     }
-    int injuryPenalty = playerWrestler.getTotalInjuryPenalty();
+    int injuryPenalty =
+        playerWrestler.getDefaultState().map(WrestlerState::getTotalInjuryPenalty).orElse(0);
     if (injuryPenalty > 0) {
       hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
     }

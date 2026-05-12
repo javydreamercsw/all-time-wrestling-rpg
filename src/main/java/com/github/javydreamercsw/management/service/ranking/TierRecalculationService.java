@@ -166,16 +166,10 @@ public class TierRecalculationService implements RankingService {
       for (WrestlerData wrestlerData : genderWrestlers) {
         WrestlerTier newTier = calculateTier(wrestlerData.getFans(), wrestlerData.getGender());
         if (newTier != null) {
-          if (wrestlerData.getTier() != newTier) {
-            log.info(
-                "Updating {}'s tier from {} to {}",
-                wrestlerData.getName(),
-                wrestlerData.getTier(),
-                newTier);
-            wrestlerData.setTier(newTier);
-            if (wrestlerData instanceof WrestlerState state) {
-              wrestlerStateRepository.save(state);
-            }
+          if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
+            log.info("Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+            state.setTier(newTier);
+            wrestlerStateRepository.save(state);
           }
         } else {
           log.warn(
@@ -199,16 +193,10 @@ public class TierRecalculationService implements RankingService {
   public void recalculateTier(final WrestlerData wrestlerData) {
     Long fans = wrestlerData.getFans() != null ? wrestlerData.getFans() : 0L;
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
-    if (wrestlerData.getTier() != newTier) {
-      log.info(
-          "Updating {}'s tier from {} to {}",
-          wrestlerData.getName(),
-          wrestlerData.getTier(),
-          newTier);
-      wrestlerData.setTier(newTier);
-      if (wrestlerData instanceof WrestlerState state) {
-        wrestlerStateRepository.save(state);
-      }
+    if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
+      log.info("Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+      state.setTier(newTier);
+      wrestlerStateRepository.save(state);
     }
   }
 

@@ -420,22 +420,18 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Wrestler 2");
-    wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler3 = Wrestler.builder().build();
     wrestler3.setId(3L);
     wrestler3.setName("Wrestler 3");
-    wrestler3.setTier(WrestlerTier.MIDCARDER);
 
     Wrestler wrestler4 = Wrestler.builder().build();
     wrestler4.setId(4L);
     wrestler4.setName("Wrestler 4");
-    wrestler4.setTier(WrestlerTier.MIDCARDER);
 
     // Create rivalries
     Rivalry rivalry1 = new Rivalry();
@@ -532,7 +528,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+    wrestler1.getDefaultState().get().setTier(WrestlerTier.MAIN_EVENTER);
 
     // Mock the wrestler service to return our wrestler
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -132,7 +133,8 @@ public class BackstageActionService {
       case RECOVERY:
         var activeInjuries =
             injuryService.getActiveInjuriesForWrestler(campaign.getWrestler().getId());
-        int currentBumps = campaign.getWrestler().getBumps();
+        int currentBumps =
+            campaign.getWrestler().getDefaultState().map(WrestlerState::getBumps).orElse(0);
 
         if (successes >= 2) {
           // Prioritize healing 1 injury over 2 bumps (Injury is more severe)
