@@ -225,8 +225,9 @@ public abstract class AbstractIntegrationTest {
   void startTest(final TestInfo testInfo) {
     log.info(
         StringUtils.center(
-            " Starting: %s.%s ".formatted(
-                testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
+            " Starting: %s.%s "
+                .formatted(
+                    testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
             100,
             "*"));
   }
@@ -235,8 +236,9 @@ public abstract class AbstractIntegrationTest {
   void endTest(final TestInfo testInfo) {
     log.info(
         StringUtils.center(
-            " Finished: %s.%s ".formatted(
-                testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
+            " Finished: %s.%s "
+                .formatted(
+                    testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
             100,
             "*"));
   }
