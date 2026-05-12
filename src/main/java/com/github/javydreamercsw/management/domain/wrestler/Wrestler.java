@@ -479,12 +479,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return getDefaultState().map(WrestlerState::getPhysicalCondition).orElse(100);
   }
 
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setPhysicalCondition(final Integer physicalCondition) {
-    getDefaultState().ifPresent(s -> s.setPhysicalCondition(physicalCondition));
-  }
-
   @JsonIgnore
   @Deprecated
   @jakarta.persistence.Transient
@@ -505,23 +499,11 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return getDefaultState().map(WrestlerState::getMorale).orElse(100);
   }
 
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setMorale(final Integer morale) {
-    getDefaultState().ifPresent(s -> s.setMorale(morale));
-  }
-
   @JsonIgnore
   @Deprecated
   @jakarta.persistence.Transient
   public Integer getManagementStamina() {
     return getDefaultState().map(WrestlerState::getManagementStamina).orElse(100);
-  }
-
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setManagementStamina(final Integer managementStamina) {
-    getDefaultState().ifPresent(s -> s.setManagementStamina(managementStamina));
   }
 
   @JsonIgnore
@@ -548,29 +530,8 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   }
 
   @Deprecated
-  public boolean addBump() {
-    return getDefaultState().map(WrestlerState::addBump).orElse(false);
-  }
-
-  @Deprecated
   public boolean canAfford(final Long cost) {
     return getFans() >= cost;
-  }
-
-  @Deprecated
-  public boolean spendFans(final Long cost) {
-    if (canAfford(cost)) {
-      addFans(-cost);
-      return true;
-    }
-    return false;
-  }
-
-  @Deprecated
-  public void refreshCurrentHealth() {
-    Long universeId =
-        wrestlerStates.isEmpty() ? 1L : wrestlerStates.iterator().next().getUniverse().getId();
-    setCurrentHealth(getEffectiveStartingHealth(universeId));
   }
 
   @JsonIgnore
