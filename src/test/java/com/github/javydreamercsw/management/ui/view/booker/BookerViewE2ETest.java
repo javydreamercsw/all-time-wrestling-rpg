@@ -23,8 +23,6 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -43,7 +41,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private UniverseRepository universeRepository;
   @Autowired private ShowService showService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
@@ -55,9 +52,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testBookerViewLoads() {
-    Universe defaultUniverse =
-        universeRepository.save(Universe.builder().name("Default Universe").build());
-
     // Create a wrestler
     Wrestler wrestler =
         Wrestler.builder().name("Test Wrestler").isPlayer(true).gender(Gender.MALE).build();
