@@ -634,10 +634,7 @@ public class ShowService {
             .flatMap(s -> s.getWrestlers().stream())
             .filter(w -> w.getId() != null && seen.add(w.getId()))
             .mapToLong(
-                w -> {
-                  Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : null;
-                  return w.getFanWeight(universeId);
-                })
+                w -> show.getUniverse() != null ? w.getFanWeight(show.getUniverse().getId()) : 0)
             .sum();
 
     int baseAttendance = (int) (totalFanWeight / 2);
