@@ -42,7 +42,7 @@ public class SecurityConfig {
   @Bean
   @Profile("!test & !e2e")
   public SecurityFilterChain vaadinSecurityFilterChain(
-      final HttpSecurity http, final UserDetailsService userDetailsService) throws Exception {
+      final HttpSecurity http, final UserDetailsService userDetailsService) {
     // 1. Apply Vaadin security configurer first
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
 

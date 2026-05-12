@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -55,6 +56,7 @@ public class SecurityUtils {
             user ->
                 user.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
+                    .filter(Objects::nonNull)
                     .anyMatch(authority -> authority.equals(role)))
         .orElse(false);
   }
