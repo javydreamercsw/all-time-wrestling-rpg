@@ -199,7 +199,7 @@ public class StorylineDirectorService {
       return;
     }
 
-    log.info(
+    log.debug(
         "Evaluating progress for storyline: {}. Milestone: {}. Success: {}",
         storyline.getTitle(),
         current.getTitle(),
@@ -223,12 +223,12 @@ public class StorylineDirectorService {
     if (next != null) {
       next.setStatus(StorylineMilestone.MilestoneStatus.ACTIVE);
       storyline.setCurrentMilestone(next);
-      log.info("Advanced to next milestone: {}", next.getTitle());
+      log.debug("Advanced to next milestone: {}", next.getTitle());
     } else {
       storyline.setStatus(CampaignStoryline.StorylineStatus.COMPLETED);
       storyline.setEndedAt(LocalDateTime.now());
       state.setActiveStoryline(null);
-      log.info("Storyline arc completed: {}", storyline.getTitle());
+      log.debug("Storyline arc completed: {}", storyline.getTitle());
     }
 
     storylineRepository.save(storyline);

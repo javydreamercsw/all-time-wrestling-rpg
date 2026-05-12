@@ -165,7 +165,7 @@ public class ShowPlanningService {
     Gender genderConstraint =
         show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
-    log.info(
+    log.debug(
         "Found {} active titles, filtering by gender: {}", activeTitles.size(), genderConstraint);
     for (Title title : activeTitles) {
       // Skip titles that don't match the gender constraint
@@ -328,7 +328,7 @@ public class ShowPlanningService {
       segmentsToSave.add(segment);
     }
     segmentRepository.saveAll(segmentsToSave);
-    log.info("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
+    log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }
 

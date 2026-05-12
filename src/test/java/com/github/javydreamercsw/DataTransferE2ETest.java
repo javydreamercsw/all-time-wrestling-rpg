@@ -37,7 +37,7 @@ import org.testcontainers.mysql.MySQLContainer;
 public class DataTransferE2ETest extends AbstractE2ETest {
 
   private static final MySQLContainer MYSQL_CONTAINER =
-      new MySQLContainer("mysql:8.0.26")
+      new MySQLContainer("mysql:8.0")
           .withDatabaseName("testdb")
           .withUsername("testuser")
           .withPassword("testpass");

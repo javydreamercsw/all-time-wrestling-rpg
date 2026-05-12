@@ -260,7 +260,7 @@ public class DataInitializer implements Initializable {
     syncCommentaryTeamsFromFile();
     loadAchievements();
     syncRingsideActions();
-    log.info("Data initialization complete.");
+    log.debug("Data initialization complete.");
   }
 
   private void syncRingsideActions() {
@@ -346,7 +346,7 @@ public class DataInitializer implements Initializable {
           }
         }
         achievementRepository.saveAll(toSave);
-        log.info(
+        log.debug(
             "Achievement loading completed - {} achievements processed",
             achievementsFromFile.size());
       } catch (IOException e) {
@@ -760,7 +760,7 @@ public class DataInitializer implements Initializable {
           }
         }
         cardSetService.saveAll(toSave);
-        log.info("Card sets loading completed - {} sets processed", setsFromFile.size());
+        log.debug("Card sets loading completed - {} sets processed", setsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading card sets from file", e);
       }
@@ -1234,7 +1234,7 @@ public class DataInitializer implements Initializable {
           }
         }
         deckService.saveAll(decksToSave);
-        log.info(
+        log.debug(
             "Deck loading completed - {} decks processed, {} updated",
             decksFromFile.size(),
             decksToSave.size());
@@ -1291,7 +1291,7 @@ public class DataInitializer implements Initializable {
           toSave.add(npc);
         }
         npcService.saveAll(toSave);
-        log.info("Npc loading completed - {} npcs processed", dtos.size());
+        log.debug("Npc loading completed - {} npcs processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading npcs from file", e);
       }
@@ -1339,7 +1339,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded faction: {}", dto.getName());
         }
-        log.info("Faction loading completed - {} factions processed", dtos.size());
+        log.debug("Faction loading completed - {} factions processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading factions from file", e);
       }
@@ -1386,7 +1386,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded team: {}", dto.getName());
         }
-        log.info("Team loading completed - {} teams processed", dtos.size());
+        log.debug("Team loading completed - {} teams processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading teams from file", e);
       }
@@ -1519,7 +1519,7 @@ public class DataInitializer implements Initializable {
           }
         }
         arenaRepository.saveAll(toSave);
-        log.info("Arena loading completed - {} arenas processed", arenasFromFile.size());
+        log.debug("Arena loading completed - {} arenas processed", arenasFromFile.size());
       } catch (IOException e) {
         log.error("Error loading arenas from file", e);
       }

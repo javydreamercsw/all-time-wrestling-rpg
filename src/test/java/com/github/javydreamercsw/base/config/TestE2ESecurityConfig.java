@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -62,7 +63,8 @@ public class TestE2ESecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain testSecurityFilterChain(final HttpSecurity http) throws Exception {
+  public SecurityFilterChain testSecurityFilterChain(
+      final HttpSecurity http, final AuthenticationContext authenticationContext) throws Exception {
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(
@@ -114,7 +116,11 @@ public class TestE2ESecurityConfig {
                 .deleteCookies("JSESSIONID")
                 .permitAll());
 
-    return http.build();
+    // Build first, then wire AuthenticationContext — applySecurityConfiguration calls
+    // http.getObject() which requires the chain to already be built.
+    SecurityFilterChain chain = http.build();
+    AuthenticationContext.applySecurityConfiguration(http, authenticationContext);
+    return chain;
   }
 
   @Bean

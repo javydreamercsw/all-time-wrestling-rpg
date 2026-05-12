@@ -74,7 +74,7 @@ public class LegacyService {
 
     managedAccount.setLegacyScore(score);
     accountRepository.save(managedAccount);
-    log.info("Updated legacy score for {}: {}", managedAccount.getUsername(), score);
+    log.debug("Updated legacy score for {}: {}", managedAccount.getUsername(), score);
 
     checkAchievements(managedAccount, wrestlers, totalFans, currentTitlesHeld);
   }
@@ -190,7 +190,7 @@ public class LegacyService {
                 eventPublisher.publishEvent(
                     new AchievementUnlockedEvent(this, managedAccount, achievement));
 
-                log.info(
+                log.debug(
                     "Unlocked achievement '{}' for {}",
                     achievement.getName(),
                     managedAccount.getUsername());

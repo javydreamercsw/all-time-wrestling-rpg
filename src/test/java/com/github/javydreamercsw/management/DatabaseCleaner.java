@@ -69,7 +69,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   @Override
   public void clearRepositories() {
-    log.info("🧹 Starting database cleanup...");
+    log.debug("🧹 Starting database cleanup...");
 
     // Ensure we have admin privileges for this manual execution
     GeneralSecurityUtils.runAsAdmin(
@@ -220,7 +220,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
           // (PROPAGATION_NOT_SUPPORTED),
           // so flushing would throw TransactionRequiredException. Clear the first-level cache only.
           entityManager.clear();
-          log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+          log.debug("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
         });
   }
 
