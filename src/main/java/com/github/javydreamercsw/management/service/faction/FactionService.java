@@ -102,7 +102,7 @@ public class FactionService {
   public List<Faction> findAllByUniverse(@NonNull final Long universeId) {
     Universe universe = universeRepository.findById(universeId).orElseThrow();
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return factionRepository.findByUniverse(universe).stream()
+    return factionRepository.findByUniverseWithLeaderAndManager(universe).stream()
         .filter(
             faction ->
                 faction.getMembers().stream()

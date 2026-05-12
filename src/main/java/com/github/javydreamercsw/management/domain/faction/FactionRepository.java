@@ -36,6 +36,17 @@ public interface FactionRepository
   /** Find all factions for a specific universe. */
   List<Faction> findByUniverse(Universe universe);
 
+  /** Find all factions for a specific universe with leader and manager eagerly loaded. */
+  @Query(
+      """
+      SELECT DISTINCT f FROM Faction f
+      LEFT JOIN FETCH f.leader
+      LEFT JOIN FETCH f.manager
+      WHERE f.universe = :universe
+      ORDER BY f.name
+      """)
+  List<Faction> findByUniverseWithLeaderAndManager(@Param("universe") Universe universe);
+
   /** Find faction by name. */
   Optional<Faction> findByName(String name);
 
