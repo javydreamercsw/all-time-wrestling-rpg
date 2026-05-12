@@ -93,7 +93,7 @@ public class UniverseContextService implements Serializable {
    * @param universe The universe to set
    */
   public void setCurrentUniverse(final Universe universe) {
-    if (universe != null && universe.getId()!=null) {
+    if (universe != null && universe.getId() != null) {
       setCurrentUniverseId(universe.getId());
       log.debug(
           "Current universe context set to: {} (ID: {})", universe.getName(), universe.getId());

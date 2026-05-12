@@ -29,8 +29,7 @@ import org.testcontainers.mysql.MySQLContainer;
 @Testcontainers
 class DatabaseManagerTest {
 
-  @Container
-  private static final MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0");
+  @Container private static final MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0");
 
   @Test
   void testGetConnection() {
