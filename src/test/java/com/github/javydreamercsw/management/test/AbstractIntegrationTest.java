@@ -329,7 +329,7 @@ public abstract class AbstractIntegrationTest {
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          log.info("Ensuring default universe...");
+          log.debug("Ensuring default universe...");
           clearCache();
           ensureDefaultUniverseExists();
           return null;
