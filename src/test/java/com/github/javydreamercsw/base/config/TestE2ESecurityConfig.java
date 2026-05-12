@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -63,6 +64,10 @@ public class TestE2ESecurityConfig {
 
   @Bean
   public SecurityFilterChain testSecurityFilterChain(final HttpSecurity http) throws Exception {
+    // VaadinSecurityConfigurer wires AuthenticationContext.logoutHandler — without it
+    // AuthenticationContext.logout() NPEs because logoutHandler is never set.
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(
