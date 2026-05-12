@@ -663,9 +663,7 @@
             <!-- Lombok -->
             <recipe>org.openrewrite.java.migrate.lombok.UseLombokGetter</recipe>
             <recipe>org.openrewrite.java.migrate.lombok.UseLombokSetter</recipe>
-            <recipe>org.openrewrite.java.migrate.lombok.UseLombokArgsConstructor</recipe>
-            <recipe>org.openrewrite.java.migrate.lombok.UseLombokEqualsAndHashCode</recipe>
-            <recipe>org.openrewrite.java.migrate.lombok.UseLombokToString</recipe>
+            <recipe>org.openrewrite.java.migrate.lombok.UseNoArgsConstructor</recipe>
 
             <!-- Remove unused code -->
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLabels</recipe>
