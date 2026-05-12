@@ -31,8 +31,6 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -77,7 +75,6 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
   @Autowired private TournamentService tournamentService;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
-  @Autowired private FactionRepository factionRepository;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private StorylineDirectorService storylineDirectorService;
   @Autowired private StorylineExportService storylineExportService;
@@ -196,14 +193,7 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
 
   @Test
   public void testGangWarfareChapterFlow() {
-    // 1. Setup criteria for "Gang Warfare"
-    // Entry: hasFaction = true
-    Faction faction = Faction.builder().name("Test Faction").build();
-    faction = factionRepository.save(faction);
-    player.setFaction(faction);
-    wrestlerRepository.save(player);
-
-    // Force transition
+    // Force transition (entry condition not evaluated — chapter forced directly)
     campaign.getState().setCurrentChapterId("gang_warfare");
     campaignStateRepository.save(campaign.getState());
     assertThat(campaign.getState().getCurrentChapterId()).isEqualTo("gang_warfare");

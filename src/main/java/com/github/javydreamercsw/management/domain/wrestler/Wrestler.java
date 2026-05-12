@@ -453,12 +453,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return getDefaultState().map(WrestlerState::getFaction).orElse(null);
   }
 
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setFaction(final Faction faction) {
-    getDefaultState().ifPresent(s -> s.setFaction(faction));
-  }
-
   @JsonIgnore
   @Deprecated
   @jakarta.persistence.Transient
@@ -484,12 +478,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
   @jakarta.persistence.Transient
   public Integer getCurrentHealth() {
     return getDefaultState().map(WrestlerState::getCurrentHealth).orElse(startingHealth);
-  }
-
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setCurrentHealth(final Integer currentHealth) {
-    getDefaultState().ifPresent(s -> s.setCurrentHealth(currentHealth));
   }
 
   @JsonIgnore

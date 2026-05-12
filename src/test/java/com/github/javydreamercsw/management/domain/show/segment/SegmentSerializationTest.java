@@ -21,10 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -41,9 +37,6 @@ class SegmentSerializationTest {
   @Test
   void testSegmentSerialization() throws Exception {
     // Given
-    Faction faction = Faction.builder().build();
-    faction.setName("Test Faction");
-
     Title title = new Title();
     title.setName("Test Title");
 
@@ -53,24 +46,14 @@ class SegmentSerializationTest {
 
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
-    wrestler.setFaction(faction);
     wrestler.setStartingHealth(100);
     wrestler.setStartingStamina(100);
     wrestler.setLowHealth(20);
     wrestler.setLowStamina(20);
     wrestler.setDeckSize(50);
-    wrestler.setBumps(0);
-    wrestler.setTier(WrestlerTier.MIDCARDER);
     wrestler.setGender(Gender.MALE);
     wrestler.setIsPlayer(false);
     wrestler.getReigns().add(reign);
-
-    Injury injury = new Injury();
-    injury.setName("Test Injury");
-    injury.setWrestler(wrestler);
-    injury.setIsActive(true);
-    injury.setSeverity(InjurySeverity.MINOR);
-    wrestler.getInjuries().add(injury);
 
     Show show = new Show();
     show.setName("Test Show");

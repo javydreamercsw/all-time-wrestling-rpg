@@ -264,13 +264,10 @@ class RivalryControllerIT extends AbstractRestControllerIT {
     wrestler.setName(name);
     wrestler.setStartingHealth(15);
     wrestler.setStartingStamina(15);
-    wrestler.setCurrentHealth(15);
     wrestler.setLowHealth(5);
     wrestler.setLowStamina(5);
     wrestler.setDeckSize(40);
-    wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
-    wrestler.setTier(WrestlerTier.ROOKIE);
     Wrestler savedWrestler = wrestlerRepository.save(wrestler);
 
     com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =

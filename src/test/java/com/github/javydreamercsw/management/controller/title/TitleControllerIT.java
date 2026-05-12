@@ -172,7 +172,6 @@ class TitleControllerIT extends AbstractControllerTest {
     wrestler.setName(name);
     wrestler.setStartingHealth(15);
     wrestler.setStartingStamina(15);
-    wrestler.setCurrentHealth(15);
     wrestler.setLowHealth(5); // Set required low health
     wrestler.setLowStamina(5); // Set required low stamina
     wrestler.setDeckSize(40); // Set required deck size

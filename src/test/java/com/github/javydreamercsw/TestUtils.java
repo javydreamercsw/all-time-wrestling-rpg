@@ -110,7 +110,6 @@ public class TestUtils {
     }
     w.setDescription(description);
     w.setIsPlayer(account != null);
-    w.setTier(tier);
     w.setDescription(description);
     // Defaults
     w.setDeckSize(15);

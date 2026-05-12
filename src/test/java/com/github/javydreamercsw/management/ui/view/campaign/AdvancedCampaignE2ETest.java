@@ -29,8 +29,6 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -39,8 +37,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +47,6 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
-  @Autowired private FactionRepository factionRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private CampaignRepository campaignRepository;
@@ -117,21 +112,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
 
   @Test
   void testGangWarfareTrigger() {
-    // 1. Put player in a faction
-    List<Faction> factions = factionRepository.findAll();
-    if (factions.isEmpty()) {
-      Faction f = new Faction();
-      f.setName("Test Faction");
-      f.setActive(true);
-      f.setFormedDate(Instant.now());
-      f.setCreationDate(Instant.now());
-      f = factionRepository.saveAndFlush(f);
-      factions = Collections.singletonList(f);
-    }
-    player.setFaction(factions.get(0));
-    wrestlerRepository.saveAndFlush(player);
-
-    // 2. Start Campaign and force chapter
+    // Start Campaign and force chapter directly (entry condition not evaluated)
     Campaign campaign = campaignService.startCampaign(player);
     campaign.getState().setCurrentChapterId("gang_warfare");
     campaignStateRepository.saveAndFlush(campaign.getState());
