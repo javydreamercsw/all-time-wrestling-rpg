@@ -116,20 +116,19 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     womensTitle.setUniverse(defaultUniverse);
     titleRepository.save(womensTitle);
 
-    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerStateRepository.findAll()));
+    tierRecalculationService.recalculateRanking(
+        new ArrayList<>(wrestlerStateRepository.findAllWithWrestler()));
   }
 
   @Test
   public void testFemaleGenderFiltering() {
     try {
       // Navigate to the Wrestler Rankings view
-      log.info("Navigating to wrestler rankings");
       driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Verify both wrestlers are displayed initially
-      log.info("Verifying both wrestlers are displayed");
       waitForGridToPopulate("wrestler-rankings-grid");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
       assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
@@ -161,25 +160,21 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testMaleGenderFiltering() {
     try {
       // Navigate to the Wrestler Rankings view
-      log.info("Navigating to wrestler rankings");
       driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Verify both wrestlers are displayed initially
-      log.info("Verifying both wrestlers are displayed");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
       assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
 
       // Select "MALE" from the gender ComboBox
-      log.info("Filtering by MALE");
       WebElement genderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("gender-selection")));
       Assertions.assertNotNull(genderComboBox);
       selectFromVaadinComboBox(genderComboBox, "MALE");
 
       // Verify only the male wrestler is displayed
-      log.info("Verifying only male wrestler is displayed");
       waitForGridToPopulate("wrestler-rankings-grid");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
 
@@ -198,13 +193,11 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testChampionshipAndTierBoundaries() {
     try {
       // Navigate to the Championship Rankings view
-      log.info("Navigating to championship rankings");
       driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Select the women's championship
-      log.info("Selecting women's championship");
       WebElement championshipComboBox =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-combo-box")));
@@ -212,29 +205,24 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       championshipComboBox.sendKeys(womensTitle.getName(), Keys.TAB);
 
       // Verify the female wrestler is in the contenders list
-      log.info("Verifying female wrestler is a contender");
       waitForGridToPopulate("wrestler-contenders-grid");
       assertGridContains("wrestler-contenders-grid", femaleWrestler.getName());
 
       // Open the "Tier Boundaries" dialog
-      log.info("Opening tier boundaries dialog");
       WebElement showTierBoundariesButton =
           wait.until(ExpectedConditions.elementToBeClickable(By.id("show-tier-boundaries-button")));
       Assertions.assertNotNull(showTierBoundariesButton);
       clickElement(showTierBoundariesButton);
 
       // Wait for the dialog to appear
-      log.info("Waiting for dialog");
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
       // Select "FEMALE" in the dialog's gender ComboBox
-      log.info("Filtering tier boundaries by FEMALE");
       WebElement dialogGenderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("tier-gender-selection")));
       selectFromVaadinComboBox(dialogGenderComboBox, "FEMALE");
 
       // Verify that the female tier boundaries are displayed in the dialog's grid
-      log.info("Verifying female tier boundaries");
       waitForGridToPopulate("tier-boundaries-grid");
       assertGridContains("tier-boundaries-grid", "Midcarder");
     } catch (Exception e) {

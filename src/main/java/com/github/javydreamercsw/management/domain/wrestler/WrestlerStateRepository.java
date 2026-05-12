@@ -42,6 +42,9 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
 
   List<WrestlerState> findByUniverseId(Long universeId);
 
+  @Query("SELECT s FROM WrestlerState s LEFT JOIN FETCH s.wrestler")
+  List<WrestlerState> findAllWithWrestler();
+
   List<WrestlerState> findByUniverseIdAndTier(
       Long universeId, com.github.javydreamercsw.base.domain.wrestler.WrestlerTier tier);
 }

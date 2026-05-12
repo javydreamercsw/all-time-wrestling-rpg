@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -745,7 +745,23 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void assertGridContains(@NonNull final String gridId, @NonNull final String text) {
     WebElement grid = driver.findElement(By.id(gridId));
-    assertTrue(grid.getText().contains(text), "Grid " + gridId + " should contain text: " + text);
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    // Scroll grid to end so Vaadin virtualizes all rows into the DOM, then scan cell text.
+    js.executeScript(
+        "arguments[0].scrollToIndex(arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+        grid);
+    waitForVaadinClientToLoad();
+    Boolean found =
+        (Boolean)
+            js.executeScript(
+                """
+                const grid=arguments[0];const needle=arguments[1];
+                return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))
+                  .some(c=>c.innerText&&c.innerText.includes(needle));
+                """,
+                grid,
+                text);
+    assertEquals(Boolean.TRUE, found, "Grid " + gridId + " should contain text: " + text);
   }
 
   protected List<WebElement> getGridRows(@NonNull final String gridId) {
