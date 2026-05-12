@@ -30,7 +30,7 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
 
   @Query(
       """
-      SELECT s FROM WrestlerState s LEFT JOIN FETCH s.manager\
+      SELECT s FROM WrestlerState s LEFT JOIN FETCH s.wrestler LEFT JOIN FETCH s.manager\
        WHERE s.wrestler.id = :wrestlerId AND s.universe.id = :universeId\
       """)
   Optional<WrestlerState> findByWrestlerIdAndUniverseId(

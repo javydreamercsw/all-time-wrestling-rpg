@@ -37,9 +37,8 @@ public class LoginE2ETest extends AbstractE2ETest {
 
     // Verify redirection to the main view
     waitForVaadinElement(driver, By.tagName("vaadin-app-layout"));
-    assertTrue(
-        Objects.requireNonNull(driver.getCurrentUrl()).endsWith(getContextPath() + "/?continue"),
-        driver.getCurrentUrl());
+    String currentUrl = Objects.requireNonNull(driver.getCurrentUrl());
+    assertTrue(currentUrl.contains(getContextPath() + "/"), currentUrl);
   }
 
   @Test

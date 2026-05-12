@@ -45,6 +45,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -59,6 +60,7 @@ public class WrestlerListView extends Main {
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
   private final NpcService npcService;
+  private final ExpansionService expansionService;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
@@ -79,6 +81,7 @@ public class WrestlerListView extends Main {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
+    this.expansionService = expansionService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.imageStorageService = imageStorageService;
@@ -250,14 +253,21 @@ public class WrestlerListView extends Main {
             .map(Wrestler::getId)
             .collect(Collectors.toSet());
 
+    Set<String> enabledCodes = new HashSet<>(expansionService.getEnabledExpansionCodes());
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
-      wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+      wrestlerGrid.setItems(
+          wrestlerService.findAllIncludingInactive().stream()
+              .filter(w -> enabledCodes.contains(w.getExpansionCode()))
+              .toList());
     } else {
       securityUtils
           .getAuthenticatedUser()
           .ifPresent(
               user -> {
-                wrestlerGrid.setItems(wrestlerService.findAllByAccount(user.getAccount()));
+                wrestlerGrid.setItems(
+                    wrestlerService.findAllByAccount(user.getAccount()).stream()
+                        .filter(w -> enabledCodes.contains(w.getExpansionCode()))
+                        .toList());
               });
     }
   }
