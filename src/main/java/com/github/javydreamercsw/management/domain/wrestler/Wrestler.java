@@ -512,16 +512,6 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return getDefaultState().map(WrestlerState::getTotalInjuryPenalty).orElse(0);
   }
 
-  @Deprecated
-  public void addFans(final long fanGain) {
-    getDefaultState().ifPresent(s -> s.setFans(Math.max(0, s.getFans() + fanGain)));
-  }
-
-  @Deprecated
-  public boolean canAfford(final Long cost) {
-    return getFans() >= cost;
-  }
-
   @JsonIgnore
   @Deprecated
   public Integer getCurrentHealthWithPenalties() {

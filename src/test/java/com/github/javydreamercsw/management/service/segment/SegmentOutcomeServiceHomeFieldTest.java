@@ -66,9 +66,9 @@ class SegmentOutcomeServiceHomeFieldTest {
     homeState.setWrestler(homeDbWrestler);
     homeDbWrestler.getWrestlerStates().add(homeState);
 
-    homeDbWrestler.addFans(10_000L);
-    homeDbWrestler.setTier(WrestlerTier.MIDCARDER);
-    homeDbWrestler.setBumps(0);
+    homeState.setFans(10_000L);
+    homeState.setTier(WrestlerTier.MIDCARDER);
+    homeState.setBumps(0);
     homeDbWrestler.setDecks(Collections.emptySet());
 
     Wrestler awayDbWrestler = new Wrestler();
@@ -78,9 +78,9 @@ class SegmentOutcomeServiceHomeFieldTest {
     awayState.setWrestler(awayDbWrestler);
     awayDbWrestler.getWrestlerStates().add(awayState);
 
-    awayDbWrestler.addFans(10_000L);
-    awayDbWrestler.setTier(WrestlerTier.MIDCARDER);
-    awayDbWrestler.setBumps(0);
+    awayState.setFans(10_000L);
+    awayState.setTier(WrestlerTier.MIDCARDER);
+    awayState.setBumps(0);
     awayDbWrestler.setDecks(Collections.emptySet());
 
     when(wrestlerRepository.findByName("Kazuchika Okada")).thenReturn(Optional.of(homeDbWrestler));
