@@ -222,22 +222,20 @@ public abstract class AbstractIntegrationTest {
   protected CacheManager cacheManager;
 
   @BeforeEach
-  void startTest(TestInfo testInfo) {
+  void startTest(final TestInfo testInfo) {
     log.info(
         StringUtils.center(
-            String.format(
-                " Starting: %s.%s ",
+            " Starting: %s.%s ".formatted(
                 testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
             100,
             "*"));
   }
 
   @AfterEach
-  void endTest(TestInfo testInfo) {
+  void endTest(final TestInfo testInfo) {
     log.info(
         StringUtils.center(
-            String.format(
-                " Finished: %s.%s ",
+            " Finished: %s.%s ".formatted(
                 testInfo.getTestClass().get().getSimpleName(), testInfo.getDisplayName()),
             100,
             "*"));
