@@ -176,67 +176,6 @@ public class WrestlerService {
 
   // ==================== ATW RPG METHODS ====================
 
-  /**
-   * Awards fans to a wrestler with diminishing returns and rounding.
-   *
-   * <p>Positive gains are subject to a "Fan Tax" based on the wrestler's current tier to simulate
-   * the difficulty of gaining new fans at high fame levels:
-   *
-   * <ul>
-   *   <li>ICON: 10% reduction (90% efficiency)
-   *   <li>MAIN_EVENTER: 7% reduction (93% efficiency)
-   *   <li>MIDCARDER: 5% reduction (95% efficiency)
-   *   <li>CONTENDER: 3% reduction (97% efficiency)
-   * </ul>
-   *
-   * <p>After the tax, positive gains are rounded to the nearest 1,000. Negative values
-   * (losses/spending) are applied exactly as provided.
-   *
-   * @param wrestlerId The ID of the wrestler
-   * @param fans The raw amount of fans to add (positive) or remove (negative)
-   * @return The updated wrestler, or empty if not found or cannot afford loss
-   */
-  @Transactional
-  @CacheEvict(
-      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
-      allEntries = true)
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Wrestler> awardFans(@NonNull final Long wrestlerId, @NonNull final Long fans) {
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(
-            wrestler -> {
-              if (fans < 0 && !wrestler.canAfford(-fans)) {
-                return null; // Not enough fans
-              }
-              long tempFans = fans;
-              if (fans > 0) {
-                tempFans =
-                    switch (wrestler.getTier()) {
-                      case ICON -> tempFans * 90 / 100;
-                      case MAIN_EVENTER -> tempFans * 93 / 100;
-                      case MIDCARDER -> tempFans * 95 / 100;
-                      case CONTENDER -> tempFans * 97 / 100;
-                      default -> tempFans;
-                    };
-                tempFans = Math.round(tempFans / 1000.0) * 1000;
-              }
-              wrestler.addFans(tempFans);
-              tierRecalculationService.recalculateTier(wrestler);
-              Wrestler savedWrestler = wrestlerRepository.save(wrestler);
-              eventPublisher.publishEvent(
-                  new FanAwardedEvent(
-                      this, savedWrestler.getDefaultState().orElse(null), tempFans));
-
-              if (savedWrestler.getAccount() != null) {
-                legacyService.updateLegacyScore(savedWrestler.getAccount());
-              }
-
-              return savedWrestler;
-            })
-        .filter(java.util.Objects::nonNull);
-  }
-
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllByAccount(@NonNull final Account account) {

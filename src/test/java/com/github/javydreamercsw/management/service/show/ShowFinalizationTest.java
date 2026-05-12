@@ -133,7 +133,7 @@ class ShowFinalizationTest {
     WrestlerState state = new WrestlerState();
     state.setWrestler(w);
     w.getWrestlerStates().add(state);
-    w.addFans(fans);
+    state.setFans(fans);
     return w;
   }
 
