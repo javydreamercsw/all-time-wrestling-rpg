@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +48,9 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   public void setUp() {
     cleanupLeagues();
-    universeRepository.deleteAll();
-    wrestlerStateRepository.deleteAll();
   }
 
   @Test
