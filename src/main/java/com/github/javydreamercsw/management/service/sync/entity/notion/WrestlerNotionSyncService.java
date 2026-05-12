@@ -56,18 +56,30 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
       properties.put(
           "Fans", NotionPropertyBuilder.createNumberProperty(entity.getFans().doubleValue()));
     }
-    if (entity.getTier() != null) {
-      properties.put(
-          "Tier", NotionPropertyBuilder.createSelectProperty(entity.getTier().getDisplayName()));
-    }
+    entity
+        .getDefaultState()
+        .ifPresent(
+            state -> {
+              if (state.getTier() != null) {
+                properties.put(
+                    "Tier",
+                    NotionPropertyBuilder.createSelectProperty(state.getTier().getDisplayName()));
+              }
+            });
     if (entity.getGender() != null) {
       properties.put(
           "Gender", NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
     }
-    if (entity.getBumps() != null) {
-      properties.put(
-          "Bumps", NotionPropertyBuilder.createNumberProperty(entity.getBumps().doubleValue()));
-    }
+    entity
+        .getDefaultState()
+        .ifPresent(
+            state -> {
+              if (state.getBumps() != null) {
+                properties.put(
+                    "Bumps",
+                    NotionPropertyBuilder.createNumberProperty(state.getBumps().doubleValue()));
+              }
+            });
     if (entity.getLowHealth() != null) {
       properties.put(
           "Low Health",
@@ -124,12 +136,17 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
     properties.put(
         "Injuries",
         NotionPropertyBuilder.createRelationProperty(
-            entity.getInjuries() == null
-                ? java.util.Collections.emptyList()
-                : entity.getInjuries().stream()
-                    .map(com.github.javydreamercsw.management.domain.injury.Injury::getExternalId)
-                    .filter(Objects::nonNull)
-                    .toList()));
+            entity
+                .getDefaultState()
+                .map(
+                    state ->
+                        state.getInjuries().stream()
+                            .map(
+                                com.github.javydreamercsw.management.domain.injury.Injury
+                                    ::getExternalId)
+                            .filter(Objects::nonNull)
+                            .toList())
+                .orElse(java.util.Collections.emptyList())));
 
     properties.put(
         "Titles",

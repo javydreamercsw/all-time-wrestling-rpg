@@ -106,7 +106,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
         .findByIdWithDetails(wrestler.getId())
         .ifPresent(
             wrestlerWithDetails -> {
-              Span bumps = new Span("Bumps: " + wrestlerWithDetails.getBumps());
+              int bumpsCount =
+                  wrestlerWithDetails.getDefaultState().map(WrestlerState::getBumps).orElse(0);
+              Span bumps = new Span("Bumps: " + bumpsCount);
               bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
 
               Span condition =
@@ -164,8 +166,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 }
               }
 
-              if (wrestlerWithDetails.getBumps() > 0) {
-                hpTooltip.append("\nBump Penalty: -").append(wrestlerWithDetails.getBumps());
+              if (bumpsCount > 0) {
+                hpTooltip.append("\nBump Penalty: -").append(bumpsCount);
               }
 
               int conditionPenalty =
@@ -174,7 +176,11 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }
 
-              int injuryPenalty = wrestlerWithDetails.getTotalInjuryPenalty();
+              int injuryPenalty =
+                  wrestlerWithDetails
+                      .getDefaultState()
+                      .map(WrestlerState::getTotalInjuryPenalty)
+                      .orElse(0);
               if (injuryPenalty > 0) {
                 hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
               }
@@ -185,9 +191,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
               String hpText = "❤️ Effective HP: " + effectiveHp;
               Span hp = new Span(hpText);
-              if (wrestlerWithDetails.getBumps() > 0) {
-                Span bumpIndicator =
-                    new Span(" (📉 -" + wrestlerWithDetails.getBumps() + " bumps)");
+              if (bumpsCount > 0) {
+                Span bumpIndicator = new Span(" (📉 -" + bumpsCount + " bumps)");
                 bumpIndicator.addClassNames(TextColor.ERROR, FontSize.XSMALL, Margin.Left.XSMALL);
                 hp.add(bumpIndicator);
               }

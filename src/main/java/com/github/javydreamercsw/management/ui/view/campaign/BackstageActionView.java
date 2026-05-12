@@ -195,7 +195,11 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     actionsList.setSpacing(true);
 
     boolean actionsAvailable = state.getActionsTaken() < 2;
-    boolean needsRecovery = wrestler.getBumps() > 0 || !wrestler.getActiveInjuries().isEmpty();
+    boolean needsRecovery =
+        wrestler
+            .getDefaultState()
+            .map(s -> s.getBumps() > 0 || !s.getActiveInjuries().isEmpty())
+            .orElse(false);
 
     actionsList.add(
         createActionButton(

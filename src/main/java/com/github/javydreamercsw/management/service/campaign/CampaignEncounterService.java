@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
@@ -156,7 +157,9 @@ public class CampaignEncounterService {
       sb.append("- Bio: ").append(campaign.getWrestler().getDescription()).append("\n");
     }
     sb.append("- Gender: ").append(campaign.getWrestler().getGender()).append("\n");
-    sb.append("- Tier: ").append(campaign.getWrestler().getTier()).append("\n");
+    sb.append("- Tier: ")
+        .append(campaign.getWrestler().getDefaultState().map(WrestlerState::getTier).orElse(null))
+        .append("\n");
     if (campaign.getWrestler().getAlignment() != null) {
       sb.append("- Alignment: ")
           .append(campaign.getWrestler().getAlignment().getAlignmentType())
@@ -305,7 +308,8 @@ public class CampaignEncounterService {
         .forEach(
             w -> {
               sb.append("- ").append(w.getName());
-              sb.append(" (Tier: ").append(w.getTier());
+              sb.append(" (Tier: ")
+                  .append(w.getDefaultState().map(WrestlerState::getTier).orElse(null));
               sb.append(", Gender: ").append(w.getGender()).append(")");
               if (w.getDescription() != null) {
                 sb.append(". Bio: ").append(w.getDescription());

@@ -503,7 +503,7 @@ public class NarrationDialog extends Dialog {
                 });
         wc.setTeam("Team " + (i + 1));
         wc.setGender(wrestler.getGender());
-        wc.setTier(wrestler.getTier().name());
+        wc.setTier(wrestler.getTier() != null ? wrestler.getTier().name() : "ROOKIE");
         wc.setMoveSet(wrestler.getMoveSet());
         List<String> feuds = new ArrayList<>();
         for (RivalryDTO rivalry :
@@ -615,7 +615,7 @@ public class NarrationDialog extends Dialog {
       wc.setDescription(wrestler.getDescription());
       wc.setTeam("Team " + (wrestlerContexts.size() + 1));
       wc.setGender(wrestler.getGender());
-      wc.setTier(wrestler.getTier().name());
+      wc.setTier(wrestler.getTier() != null ? wrestler.getTier().name() : "ROOKIE");
       wc.setMoveSet(wrestler.getMoveSet());
       List<String> feuds = new ArrayList<>();
       for (RivalryDTO rivalry :

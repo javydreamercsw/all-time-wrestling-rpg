@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueMembershipReposi
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -171,7 +172,10 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
     Grid<LeagueRoster> rosterGrid = new Grid<>(LeagueRoster.class, false);
     rosterGrid.addColumn(r -> r.getOwner().getUsername()).setHeader("Owner").setSortable(true);
     rosterGrid.addColumn(r -> r.getWrestler().getName()).setHeader("Wrestler").setSortable(true);
-    rosterGrid.addColumn(r -> r.getWrestler().getTier()).setHeader("Tier").setSortable(true);
+    rosterGrid
+        .addColumn(r -> r.getWrestler().getDefaultState().map(WrestlerState::getTier).orElse(null))
+        .setHeader("Tier")
+        .setSortable(true);
     rosterGrid.addColumn(r -> r.getWrestler().getFans()).setHeader("Fans").setSortable(true);
 
     List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);

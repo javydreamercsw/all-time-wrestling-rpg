@@ -102,7 +102,11 @@ public class TitleFormDialog extends Dialog {
     includeInRankings.setReadOnly(!securityUtils.canEdit());
     champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(
-        w -> "%s (%s)".formatted(w.getName(), w.getTier().getDisplayName()));
+        w ->
+            "%s (%s)"
+                .formatted(
+                    w.getName(),
+                    w.getDefaultState().map(s -> s.getTier().getDisplayName()).orElse("Unknown")));
     champion.setReadOnly(!securityUtils.canEdit());
 
     imageUrl = new TextField("Image URL");

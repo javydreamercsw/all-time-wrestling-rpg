@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
@@ -1081,7 +1082,7 @@ public class CampaignDashboardView extends VerticalLayout {
         new Button(
             "Set Bumps=2",
             e -> {
-              currentCampaign.getWrestler().setBumps(2);
+              currentCampaign.getWrestler().getDefaultState().ifPresent(s -> s.setBumps(2));
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
             }));
@@ -1089,14 +1090,13 @@ public class CampaignDashboardView extends VerticalLayout {
         new Button(
             "Heal All",
             e -> {
-              currentCampaign.getWrestler().setBumps(0);
+              currentCampaign.getWrestler().getDefaultState().ifPresent(s -> s.setBumps(0));
               currentCampaign
                   .getWrestler()
-                  .getActiveInjuries()
-                  .forEach(
-                      i -> {
-                        i.heal();
-                      });
+                  .getDefaultState()
+                  .map(WrestlerState::getActiveInjuries)
+                  .orElseGet(java.util.Collections::emptyList)
+                  .forEach(i -> i.heal());
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
             }));

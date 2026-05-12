@@ -633,7 +633,8 @@ public class ShowService {
         segments.stream()
             .flatMap(s -> s.getWrestlers().stream())
             .filter(w -> w.getId() != null && seen.add(w.getId()))
-            .mapToLong(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getFanWeight)
+            .mapToLong(
+                w -> show.getUniverse() != null ? w.getFanWeight(show.getUniverse().getId()) : 0)
             .sum();
 
     int baseAttendance = (int) (totalFanWeight / 2);
