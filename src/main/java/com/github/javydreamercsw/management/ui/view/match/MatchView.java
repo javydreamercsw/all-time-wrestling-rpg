@@ -181,7 +181,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     try {
       removeAll();
       String matchId = event.getRouteParameters().get("matchId").orElse(null);
-      log.info("Entering MatchView for matchId: {}", matchId);
+      log.debug("Entering MatchView for matchId: {}", matchId);
       if (matchId != null) {
         Long id = Long.valueOf(matchId);
         // Try finding as a fulfillment first to get full context
@@ -195,7 +195,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
         if (segment != null) {
           List<Wrestler> wrestlers = segment.getWrestlers();
-          log.info(
+          log.debug(
               "Found segment: {} with {} wrestlers",
               segment.getId(),
               wrestlers != null ? wrestlers.size() : "NULL");
@@ -212,7 +212,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   private void buildView() {
-    log.info("Building MatchView for segment: {}", segment.getId());
+    log.debug("Building MatchView for segment: {}", segment.getId());
     setId("match-view-" + segment.getId());
     setAlignItems(Alignment.CENTER);
     getStyle().set("background-color", "var(--lumo-contrast-5pct)");

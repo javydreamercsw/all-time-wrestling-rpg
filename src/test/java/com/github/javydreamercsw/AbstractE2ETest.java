@@ -325,7 +325,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int attempt = 0;
     while (attempt++ < maxRetries) {
       try {
-        log.info("Login attempt {} for user: {}", attempt, username);
+        log.debug("Login attempt {} for user: {}", attempt, username);
         driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");

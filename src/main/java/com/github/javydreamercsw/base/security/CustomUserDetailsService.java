@@ -49,7 +49,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   @Transactional
   public UserDetails loadUserByUsername(@NonNull final String username)
       throws UsernameNotFoundException {
-    log.info("[E2E] loadUserByUsername called for: {}", username);
+    log.debug("[E2E] loadUserByUsername called for: {}", username);
     Account account =
         accountRepository
             .findByUsername(username)

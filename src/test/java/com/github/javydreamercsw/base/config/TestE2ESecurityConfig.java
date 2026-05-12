@@ -88,7 +88,7 @@ public class TestE2ESecurityConfig {
                 .loginProcessingUrl("/login")
                 .successHandler(
                     (req, res, auth) -> {
-                      log.info(
+                      log.debug(
                           "[E2E] Login SUCCESS: user={}, authorities={}",
                           auth.getName(),
                           auth.getAuthorities());
