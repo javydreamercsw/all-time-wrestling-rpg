@@ -760,7 +760,7 @@ public class DataInitializer implements Initializable {
           }
         }
         cardSetService.saveAll(toSave);
-        log.info("Card sets loading completed - {} sets processed", setsFromFile.size());
+        log.debug("Card sets loading completed - {} sets processed", setsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading card sets from file", e);
       }
