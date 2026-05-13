@@ -30,6 +30,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,7 +49,7 @@ public class TierRecalculationService implements RankingService {
 
   @Override
   public void recalculateRanking(final List<WrestlerData> wrestlersData) {
-    log.info("Starting tier recalculation...");
+    log.debug("Starting tier recalculation...");
 
     Map<Gender, List<WrestlerData>> wrestlersByGender =
         wrestlersData.stream().collect(Collectors.groupingBy(WrestlerData::getGender));
@@ -75,7 +76,7 @@ public class TierRecalculationService implements RankingService {
         genderWrestlers.sort((w1, w2) -> w2.getFans().compareTo(w1.getFans()));
         int totalWrestlers = genderWrestlers.size();
         if (totalWrestlers == 0) {
-          log.info("No wrestlers found for gender {} to recalculate tiers.", gender);
+          log.warn("No wrestlers found for gender {} to recalculate tiers.", gender);
           continue;
         }
 
@@ -169,12 +170,12 @@ public class TierRecalculationService implements RankingService {
                 "Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
             state.setTier(newTier);
             wrestlerStateRepository.save(state);
+          } else {
+            log.warn(
+                "Wrestler {} with {} fans does not match any tier!",
+                wrestlerData.getName(),
+                wrestlerData.getFans());
           }
-        } else {
-          log.warn(
-              "Wrestler {} with {} fans does not match any tier!",
-              wrestlerData.getName(),
-              wrestlerData.getFans());
         }
       }
     }
@@ -193,13 +194,13 @@ public class TierRecalculationService implements RankingService {
     long fans = wrestlerData.getFans();
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
     if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
-      log.info("Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+      log.debug("Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
       state.setTier(newTier);
       wrestlerStateRepository.save(state);
     }
   }
 
-  private WrestlerTier calculateTier(final long fans, final Gender gender) {
+  private WrestlerTier calculateTier(final long fans, @NonNull final Gender gender) {
     List<TierBoundary> boundaries = new ArrayList<>(tierBoundaryService.findAllByGender(gender));
     // Sort by prestige (ICON first)
     boundaries.sort(Comparator.comparingInt(b -> b.getTier().ordinal()));

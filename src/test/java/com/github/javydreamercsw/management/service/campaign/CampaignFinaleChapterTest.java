@@ -64,8 +64,6 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
   @Autowired private ObjectMapper objectMapper;
 
   private Campaign campaign;
-  private Wrestler player;
-  private Wrestler rival;
 
   @BeforeEach
   public void setUp() {
@@ -103,12 +101,12 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
     account.setRoles(Collections.singleton(bookerRole));
     account = accountRepository.save(account);
 
-    player =
+    Wrestler player =
         Wrestler.builder().name("Finale Player").startingHealth(100).startingStamina(100).build();
     player.setAccount(account);
     player = wrestlerRepository.save(player);
 
-    rival = wrestlerRepository.save(Wrestler.builder().name("Evil Rival").build());
+    wrestlerRepository.save(Wrestler.builder().name("Evil Rival").build());
 
     login(account);
 

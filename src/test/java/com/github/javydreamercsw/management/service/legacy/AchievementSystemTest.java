@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.legacy;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -32,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -47,6 +49,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
@@ -91,10 +94,12 @@ class AchievementSystemTest {
   @Mock private RetirementService retirementService;
   @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private UniverseContextService universeContextService;
 
   @BeforeEach
   public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
+    lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     legacyService =
         new LegacyService(
             accountRepository,
@@ -120,6 +125,7 @@ class AchievementSystemTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             new Random());
 
     account = new Account();
@@ -130,17 +136,18 @@ class AchievementSystemTest {
     lenient().when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
     wrestler = new Wrestler();
+    wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
     wrestler.setAccount(account);
 
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        new com.github.javydreamercsw.management.domain.universe.Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
-    wrestlerState = new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    wrestlerState = new WrestlerState();
     wrestlerState.setWrestler(wrestler);
     wrestlerState.setUniverse(universe);
     wrestlerState.setFans(0L);
+    wrestlerState.setPhysicalCondition(100);
     wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(wrestlerState)));
 
     // Mock achievement repository to return an achievement if found
@@ -155,6 +162,10 @@ class AchievementSystemTest {
               a.setXpValue(10);
               return Optional.of(a);
             });
+
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
+        .thenAnswer(invocation -> wrestlerState);
   }
 
   @Test

@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -108,13 +107,19 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     femaleState.setTier(WrestlerTier.MIDCARDER);
     wrestlerStateRepository.save(femaleState);
 
-    womensTitle = new Title();
-    womensTitle.setName("Women's World Championship");
-    womensTitle.setGender(Gender.FEMALE);
-    womensTitle.setTier(WrestlerTier.ROOKIE);
-    womensTitle.setChampionshipType(ChampionshipType.SINGLE);
-    womensTitle.setUniverse(defaultUniverse);
-    titleRepository.save(womensTitle);
+    womensTitle =
+        titleRepository
+            .findByName("Women World Championship")
+            .orElseGet(
+                () -> {
+                  Title t = new Title();
+                  t.setName("Women World Championship");
+                  t.setGender(Gender.FEMALE);
+                  t.setTier(WrestlerTier.ROOKIE);
+                  t.setChampionshipType(ChampionshipType.SINGLE);
+                  t.setUniverse(defaultUniverse);
+                  return titleRepository.save(t);
+                });
 
     tierRecalculationService.recalculateRanking(
         new ArrayList<>(wrestlerStateRepository.findAllWithWrestler()));
@@ -200,9 +205,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Select the women's championship
       WebElement championshipComboBox =
           wait.until(
-              ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-combo-box")));
+              ExpectedConditions.visibilityOfElementLocated(By.id("championship-combo-box")));
       Assertions.assertNotNull(championshipComboBox);
-      championshipComboBox.sendKeys(womensTitle.getName(), Keys.TAB);
+      selectFromVaadinComboBox(championshipComboBox, womensTitle.getName());
 
       // Verify the female wrestler is in the contenders list
       waitForGridToPopulate("wrestler-contenders-grid");

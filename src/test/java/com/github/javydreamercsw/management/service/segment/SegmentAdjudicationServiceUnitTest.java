@@ -30,15 +30,22 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,33 +68,21 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private TitleService titleService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRepository leagueRepository;
-
   @Mock private LeagueRosterRepository leagueRosterRepository;
-
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
-
-  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-      relationshipService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
-
-  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
-  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
+  @Mock private RetirementService retirementService;
+  @Mock private GameSettingService gameSettingService;
+  @Mock private WrestlerRelationshipService relationshipService;
+  @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private LocationService locationService;
+  @Mock private ArenaService arenaService;
+  @Mock private UniverseContextService universeContextService;
 
   private SegmentAdjudicationService adjudicationService;
 
-  private Segment promoSegment;
   private Segment matchSegment;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
@@ -113,6 +108,7 @@ class SegmentAdjudicationServiceUnitTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             random);
 
     wrestler1 = Wrestler.builder().build();
@@ -126,7 +122,7 @@ class SegmentAdjudicationServiceUnitTest {
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
 
-    promoSegment = new Segment();
+    Segment promoSegment = new Segment();
     promoSegment.setSegmentType(promoType);
     promoSegment.addParticipant(wrestler1);
     promoSegment.addParticipant(wrestler2);

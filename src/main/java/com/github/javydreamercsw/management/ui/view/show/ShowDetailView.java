@@ -478,7 +478,7 @@ public class ShowDetailView extends Main
         e -> new ShowExportDialog(exportService, notificationService, show).open());
 
     HorizontalLayout header =
-        new HorizontalLayout(detailsTitle, exportCardButton, editDetailsButton);
+        new HorizontalLayout(detailsTitle, planShowButton, exportCardButton, editDetailsButton);
     header.setWidthFull();
     header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 

@@ -47,7 +47,7 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
   void testCaptureFactionListView() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
     waitForVaadinClientToLoad();
-    waitForText("Faction List");
+    waitForText("Factions");
 
     documentFeature(
         "Entities",

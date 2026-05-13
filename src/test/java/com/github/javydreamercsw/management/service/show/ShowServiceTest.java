@@ -125,8 +125,6 @@ class ShowServiceTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            leagueRosterRepository,
-            contractRepository,
             salaryCalculator,
             retirementService);
     show = new Show();

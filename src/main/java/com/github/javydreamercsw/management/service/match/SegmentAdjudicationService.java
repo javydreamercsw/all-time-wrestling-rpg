@@ -19,24 +19,31 @@ package com.github.javydreamercsw.management.service.match;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -68,25 +75,21 @@ public class SegmentAdjudicationService {
   private final Random random;
   private final TitleService titleService;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
-  private final com.github.javydreamercsw.management.domain.league.LeagueRepository
-      leagueRepository;
-  private final com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
+  private final LeagueRosterRepository leagueRosterRepository;
+  private final LeagueRepository leagueRepository;
   private final LegacyService legacyService;
   private final FactionService factionService;
   private final RingsideActionService ringsideActionService;
   private final RingsideAiService ringsideAiService;
   private final RetirementService retirementService;
-  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
-  private final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
+  private final GameSettingService gameSettingService;
+  private final WrestlerRelationshipService relationshipService;
+  private final WrestlerStatusService wrestlerStatusService;
+  private final UniverseContextService universeContextService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
-  private com.github.javydreamercsw.management.service.show.ShowService showService;
+  private ShowService showService;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -96,7 +99,7 @@ public class SegmentAdjudicationService {
       final MultiWrestlerFeudService feudService,
       final TitleService titleService,
       final MatchFulfillmentRepository matchFulfillmentRepository,
-      final com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository,
+      final LeagueRepository leagueRepository,
       final LeagueRosterRepository leagueRosterRepository,
       final LegacyService legacyService,
       final FactionService factionService,
@@ -104,10 +107,9 @@ public class SegmentAdjudicationService {
       final RingsideAiService ringsideAiService,
       final RetirementService retirementService,
       final GameSettingService gameSettingService,
-      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-          wrestlerStatusService) {
+      final WrestlerRelationshipService relationshipService,
+      final WrestlerStatusService wrestlerStatusService,
+      final UniverseContextService universeContextService) {
     this(
         rivalryService,
         wrestlerService,
@@ -125,6 +127,7 @@ public class SegmentAdjudicationService {
         gameSettingService,
         relationshipService,
         wrestlerStatusService,
+        universeContextService,
         new Random());
   }
 
@@ -135,7 +138,7 @@ public class SegmentAdjudicationService {
       final MultiWrestlerFeudService feudService,
       final TitleService titleService,
       final MatchFulfillmentRepository matchFulfillmentRepository,
-      final com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository,
+      final LeagueRepository leagueRepository,
       final LeagueRosterRepository leagueRosterRepository,
       final LegacyService legacyService,
       final FactionService factionService,
@@ -143,10 +146,9 @@ public class SegmentAdjudicationService {
       final RingsideAiService ringsideAiService,
       final RetirementService retirementService,
       final GameSettingService gameSettingService,
-      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-          wrestlerStatusService,
+      final WrestlerRelationshipService relationshipService,
+      final WrestlerStatusService wrestlerStatusService,
+      final UniverseContextService universeContextService,
       final Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -164,15 +166,17 @@ public class SegmentAdjudicationService {
     this.gameSettingService = gameSettingService;
     this.relationshipService = relationshipService;
     this.wrestlerStatusService = wrestlerStatusService;
+    this.universeContextService = universeContextService;
     this.random = random;
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull final Segment segment) {
     adjudicateMatch(segment, 1.0);
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @Transactional
   public void adjudicateMatch(@NonNull final Segment segment, final double multiplier) {
     // Check for league fulfillment
     matchFulfillmentRepository
@@ -275,6 +279,7 @@ public class SegmentAdjudicationService {
     // Faction Affinity Logic
     Map<Long, Integer> factionParticipants = new HashMap<>();
     Map<Long, Integer> factionWinners = new HashMap<>();
+
     Long universeId =
         segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
 
@@ -284,7 +289,6 @@ public class SegmentAdjudicationService {
               .getState(universeId)
               .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
               .orElse(null);
-
       if (faction != null) {
         Long factionId = faction.getId();
         factionParticipants.put(factionId, factionParticipants.getOrDefault(factionId, 0) + 1);
@@ -407,18 +411,12 @@ public class SegmentAdjudicationService {
     segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
 
     for (Wrestler participant : segment.getWrestlers()) {
-
       if (participant.getAccount() != null) {
-
         for (String baseKey : achievementKeys) {
-
           String keySuffix =
               baseKey.toUpperCase().replaceAll("[^A-Z0-9 ]", "").trim().replace(" ", "_");
-
           legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
-
           if (winners.contains(participant)) {
-
             legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
           }
         }
@@ -473,19 +471,19 @@ public class SegmentAdjudicationService {
   }
 
   private void handleMatchRewards(
-      final Segment segment,
-      final List<Wrestler> winners,
-      final List<Wrestler> losers,
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final List<Wrestler> losers,
       final int roll,
       final double difficultyMultiplier) {
     int matchQualityBonus = calculateMatchQualityBonus(segment, roll);
 
-    Long universeId =
-        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+    Long universeId = universeContextService.getCurrentUniverseId();
+    ;
 
     // Deduct fan fees for challengers in title segments
     if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
-      handleTitleContenderFees(segment, universeId);
+      handleTitleContenderFees(segment);
     }
 
     // Award fans to winners
@@ -502,10 +500,7 @@ public class SegmentAdjudicationService {
         final long awardToGrant = finalAward;
         GeneralSecurityUtils.runAsAdmin(
                 () -> wrestlerService.awardFans(winner.getId(), universeId, awardToGrant))
-            .ifPresent(
-                w ->
-                    log.debug(
-                        "Awarded {} fans to winner {}", awardToGrant, w.getWrestler().getName()));
+            .ifPresent(w -> log.debug("Awarded {} fans to winner {}", awardToGrant, w.getName()));
       }
     }
 
@@ -526,11 +521,7 @@ public class SegmentAdjudicationService {
         GeneralSecurityUtils.runAsAdmin(
                 () -> wrestlerService.awardFans(loser.getId(), universeId, changeToApply))
             .ifPresent(
-                w ->
-                    log.debug(
-                        "Deducted/awarded {} fans to loser {}",
-                        changeToApply,
-                        w.getWrestler().getName()));
+                w -> log.debug("Deducted/awarded {} fans to loser {}", changeToApply, w.getName()));
       }
     }
 
@@ -606,9 +597,6 @@ public class SegmentAdjudicationService {
       @NonNull final Segment segment, final int roll, final double difficultyMultiplier) {
     int promoQualityBonus = calculatePromoQualityBonus(roll);
 
-    Long universeId =
-        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
-
     // Assign fans to all participants
     for (Wrestler participant : segment.getWrestlers()) {
       if (participant.getId() != null) {
@@ -619,14 +607,14 @@ public class SegmentAdjudicationService {
         finalAward = applyVenueBonuses(segment, participant, finalAward);
 
         final long awardToGrant = finalAward;
+        Long universeId =
+            segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
         GeneralSecurityUtils.runAsAdmin(
                 () -> wrestlerService.awardFans(participant.getId(), universeId, awardToGrant))
             .ifPresent(
                 w ->
                     log.debug(
-                        "Awarded {} fans to wrestler {} during promo",
-                        awardToGrant,
-                        w.getWrestler().getName()));
+                        "Awarded {} fans to wrestler {} during promo", awardToGrant, w.getName()));
       }
     }
 
@@ -636,7 +624,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private int calculateMatchQualityBonus(final Segment segment, final int roll) {
+  private int calculateMatchQualityBonus(@NonNull final Segment segment, final int roll) {
     int bonus = 0;
     if (11 <= roll && roll <= 15) {
       bonus += 1_000;
@@ -673,7 +661,9 @@ public class SegmentAdjudicationService {
     return bonus;
   }
 
-  private void handleTitleContenderFees(final Segment segment, final Long universeId) {
+  private void handleTitleContenderFees(@NonNull final Segment segment) {
+    Long universeId =
+        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
     for (Title title : segment.getTitles()) {
       List<Wrestler> currentChampions = title.getCurrentChampions();
       Long contenderEntryFee = titleService.getContenderEntryFee(title);
@@ -688,7 +678,7 @@ public class SegmentAdjudicationService {
                   w ->
                       log.info(
                           "Wrestler {} paid {} fans for contending in title segment {}",
-                          w.getWrestler().getName(),
+                          w.getName(),
                           contenderEntryFee,
                           segment.getId()),
                   () ->
@@ -702,9 +692,8 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private void assignBumps(final Segment segment, final Long universeId) {
-    for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
-        segment.getSegmentRules()) {
+  private void assignBumps(@NonNull final Segment segment, final Long universeId) {
+    for (SegmentRule rule : segment.getSegmentRules()) {
       if (rule.getBumpAddition() == null) {
         continue;
       }
@@ -714,7 +703,7 @@ public class SegmentAdjudicationService {
             if (winner.getId() != null) {
               GeneralSecurityUtils.runAsAdmin(
                       () -> wrestlerService.addBump(winner.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to winner {}", w.getWrestler().getName()));
+                  .ifPresent(w -> log.debug("Added bump to winner {}", w.getName()));
             }
           }
           break;
@@ -723,7 +712,7 @@ public class SegmentAdjudicationService {
             if (loser.getId() != null) {
               GeneralSecurityUtils.runAsAdmin(
                       () -> wrestlerService.addBump(loser.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to loser {}", w.getWrestler().getName()));
+                  .ifPresent(w -> log.debug("Added bump to loser {}", w.getName()));
             }
           }
           break;
@@ -732,8 +721,7 @@ public class SegmentAdjudicationService {
             if (participant.getId() != null) {
               GeneralSecurityUtils.runAsAdmin(
                       () -> wrestlerService.addBump(participant.getId(), universeId))
-                  .ifPresent(
-                      w -> log.debug("Added bump to participant {}", w.getWrestler().getName()));
+                  .ifPresent(w -> log.debug("Added bump to participant {}", w.getName()));
             }
           }
           break;
@@ -755,12 +743,9 @@ public class SegmentAdjudicationService {
 
   private void applyWearAndTear(@NonNull final Segment segment) {
     if ("Promo".equals(segment.getSegmentType().getName())
-        || !gameSettingService.isWearAndTearEnabled()
-        || segment.getShow().getUniverse() == null) {
+        || !gameSettingService.isWearAndTearEnabled()) {
       return;
     }
-
-    Long universeId = segment.getShow().getUniverse().getId();
 
     int baseLoss = 1 + random.nextInt(3); // 1-3% base loss
     boolean isIntense =
@@ -780,11 +765,13 @@ public class SegmentAdjudicationService {
       baseLoss += 1;
     }
 
+    Long universeId = universeContextService.getCurrentUniverseId();
+
     for (Wrestler wrestler : segment.getWrestlers()) {
-      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-          wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+      WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
       int current = state.getPhysicalCondition();
       state.setPhysicalCondition(Math.max(0, current - baseLoss));
+      wrestlerService.save(wrestler);
       log.info(
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
           baseLoss, wrestler.getName(), universeId, state.getPhysicalCondition());

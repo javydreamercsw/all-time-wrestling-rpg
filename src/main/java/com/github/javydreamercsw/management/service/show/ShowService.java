@@ -21,7 +21,6 @@ import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -36,7 +35,6 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -88,8 +86,6 @@ public class ShowService {
   private final LegacyService legacyService;
   private final SecurityUtils securityUtils;
   private final ArenaRepository arenaRepository;
-  private final LeagueRosterRepository leagueRosterRepository;
-  private final WrestlerContractRepository contractRepository;
   private final SalaryCalculator salaryCalculator;
   private final com.github.javydreamercsw.management.service.wrestler.RetirementService
       retirementService;
@@ -114,8 +110,6 @@ public class ShowService {
       final LegacyService legacyService,
       final SecurityUtils securityUtils,
       final ArenaRepository arenaRepository,
-      final LeagueRosterRepository leagueRosterRepository,
-      final WrestlerContractRepository contractRepository,
       final SalaryCalculator salaryCalculator,
       final com.github.javydreamercsw.management.service.wrestler.RetirementService
           retirementService) {
@@ -138,8 +132,6 @@ public class ShowService {
     this.legacyService = legacyService;
     this.securityUtils = securityUtils;
     this.arenaRepository = arenaRepository;
-    this.leagueRosterRepository = leagueRosterRepository;
-    this.contractRepository = contractRepository;
     this.salaryCalculator = salaryCalculator;
     this.retirementService = retirementService;
   }

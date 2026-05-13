@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
@@ -56,7 +55,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class BackstageActionView extends VerticalLayout implements BeforeEnterObserver {
 
   private final BackstageActionService backstageActionService;
-  private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
@@ -69,7 +67,6 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   @Autowired
   public BackstageActionView(
       final BackstageActionService backstageActionService,
-      final CampaignRepository campaignRepository,
       final WrestlerRepository wrestlerRepository,
       final WrestlerService wrestlerService,
       final InjuryService injuryService,
@@ -77,7 +74,6 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
       final SecurityUtils securityUtils,
       final CampaignService campaignService) {
     this.backstageActionService = backstageActionService;
-    this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;

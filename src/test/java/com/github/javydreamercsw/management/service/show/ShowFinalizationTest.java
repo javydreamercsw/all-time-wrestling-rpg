@@ -119,8 +119,6 @@ class ShowFinalizationTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            leagueRosterRepository,
-            contractRepository,
             salaryCalculator,
             retirementService);
 
