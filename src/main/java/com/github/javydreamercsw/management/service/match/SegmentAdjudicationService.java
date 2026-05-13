@@ -171,6 +171,7 @@ public class SegmentAdjudicationService {
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @Transactional
   public void adjudicateMatch(@NonNull Segment segment, double multiplier) {
     // Check for league fulfillment
     matchFulfillmentRepository
