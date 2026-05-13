@@ -164,22 +164,17 @@ public class TierRecalculationService implements RankingService {
       for (WrestlerData wrestlerData : genderWrestlers) {
         WrestlerTier newTier = calculateTier(wrestlerData.getFans(), wrestlerData.getGender());
         if (newTier != null) {
-          if (wrestlerData.getTier() != newTier) {
+          if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
             log.debug(
-                "Updating {}'s tier from {} to {}",
+                "Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+            state.setTier(newTier);
+            wrestlerStateRepository.save(state);
+          } else {
+            log.warn(
+                "Wrestler {} with {} fans does not match any tier!",
                 wrestlerData.getName(),
-                wrestlerData.getTier(),
-                newTier);
-            wrestlerData.setTier(newTier);
-            if (wrestlerData instanceof WrestlerState state) {
-              wrestlerStateRepository.save(state);
-            }
+                wrestlerData.getFans());
           }
-        } else {
-          log.warn(
-              "Wrestler {} with {} fans does not match any tier!",
-              wrestlerData.getName(),
-              wrestlerData.getFans());
         }
       }
     }
@@ -197,16 +192,10 @@ public class TierRecalculationService implements RankingService {
   public void recalculateTier(final WrestlerData wrestlerData) {
     long fans = wrestlerData.getFans();
     WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
-    if (wrestlerData.getTier() != newTier) {
-      log.debug(
-          "Updating {}'s tier from {} to {}",
-          wrestlerData.getName(),
-          wrestlerData.getTier(),
-          newTier);
-      wrestlerData.setTier(newTier);
-      if (wrestlerData instanceof WrestlerState state) {
-        wrestlerStateRepository.save(state);
-      }
+    if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
+      log.debug("Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+      state.setTier(newTier);
+      wrestlerStateRepository.save(state);
     }
   }
 
