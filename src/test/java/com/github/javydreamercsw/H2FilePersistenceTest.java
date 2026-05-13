@@ -66,7 +66,7 @@ class H2FilePersistenceTest {
   }
 
   @Test
-  void data_written_to_h2_file_survives_connection_close(@TempDir Path tempDir)
+  void data_written_to_h2_file_survives_connection_close(@TempDir final Path tempDir)
       throws SQLException {
     String url = "jdbc:h2:file:" + tempDir.resolve("atwrpg") + ";AUTO_SERVER=FALSE";
 

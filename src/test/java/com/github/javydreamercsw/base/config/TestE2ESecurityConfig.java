@@ -67,7 +67,7 @@ public class TestE2ESecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
+  public SecurityFilterChain testSecurityFilterChain(final HttpSecurity http) {
     // Configure public access to static resources FIRST
     http.authorizeHttpRequests(
         auth ->
