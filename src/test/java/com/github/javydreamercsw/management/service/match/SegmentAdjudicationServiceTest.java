@@ -114,7 +114,6 @@ class SegmentAdjudicationServiceTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
-            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,

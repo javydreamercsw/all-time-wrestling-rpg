@@ -187,6 +187,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test-autoconfigure</artifactId>
       <scope>test</scope>
@@ -613,6 +618,12 @@
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-dev-server</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-client</artifactId>
+      <version>7.0.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -828,9 +839,9 @@
         <configuration>
           <skipTests>${surefire.skip}</skipTests>
           <!-- Parallel execution disabled to prevent database interference -->
-          <parallel>none</parallel>
+          <parallel>class</parallel>
 
-          <threadCount>4</threadCount>
+          <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
           <!-- Optimize for faster execution -->
@@ -861,7 +872,7 @@
           <skipITs>${e2e.skipITs}</skipITs>
 
           <!-- Parallel execution disabled to prevent database interference between tests sharing the same context -->
-          <parallel>none</parallel>
+          <parallel>class</parallel>
           <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
@@ -1115,6 +1126,7 @@
           <ignoredUsedUndeclaredDependencies>
             <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.vaadin:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>org.springframework.security:spring-security-oauth2-core</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
@@ -1543,6 +1555,11 @@
             <configuration>
               <!-- Ensure E2E is not skipped in this profile. -->
               <skipITs>false</skipITs>
+
+              <!-- One JVM fork per core, fresh per test class for DB/port isolation -->
+              <forkCount>1C</forkCount>
+              <reuseForks>false</reuseForks>
+              <parallel>none</parallel>
 
               <includes>
                 <include>**/*E2ETest.java</include>

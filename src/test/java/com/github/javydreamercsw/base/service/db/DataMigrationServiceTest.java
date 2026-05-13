@@ -40,7 +40,7 @@ class DataMigrationServiceTest {
 
   @Container
   private static final MySQLContainer MYSQL_CONTAINER =
-      new MySQLContainer("mysql:8.0.26")
+      new MySQLContainer("mysql:8.0")
           .withDatabaseName("test")
           .withUsername("test")
           .withPassword("test");

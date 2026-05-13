@@ -100,7 +100,6 @@ class WearAndTearAdjudicationTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
-            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,

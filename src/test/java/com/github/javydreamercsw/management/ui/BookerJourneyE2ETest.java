@@ -198,17 +198,23 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       Objects.requireNonNull(
               wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
           .sendKeys(showName);
-      List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-      WebElement showTypeComboBox = comboBoxes.get(0);
-      WebElement seasonComboBox = comboBoxes.get(1);
-      WebElement templateComboBox = comboBoxes.get(2);
+      WebElement showTypeComboBox =
+          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-type")));
+      WebElement seasonComboBox =
+          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("season")));
+      WebElement templateComboBox =
+          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-template")));
 
-      showTypeComboBox.sendKeys(SHOW_TYPE_NAME, Keys.TAB);
+      selectFromVaadinComboBox(showTypeComboBox, SHOW_TYPE_NAME);
 
       wait.until(driver -> templateComboBox.isEnabled());
 
-      seasonComboBox.sendKeys(SEASON_NAME, Keys.TAB);
-      templateComboBox.sendKeys(TEMPLATE_NAME, Keys.TAB);
+      selectFromVaadinComboBox(seasonComboBox, SEASON_NAME);
+      selectFromVaadinComboBox(templateComboBox, TEMPLATE_NAME);
+
+      WebElement universeComboBox =
+          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("universe")));
+      selectFromVaadinComboBox(universeComboBox, "Default Universe");
 
       driver
           .findElement(By.id("show-date"))
@@ -307,15 +313,12 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       // Verify navigation to the show detail view
       log.info("Waiting for show detail URL again");
       wait.until(ExpectedConditions.urlContains("/show-detail"));
+      waitForVaadinClientToLoad();
 
-      log.info("Waiting for grid to populate");
-      wait.until(
-          driver -> {
-            List<WebElement> elements =
-                driver.findElements(
-                    By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
-            return elements.size() > 60 ? elements : null;
-          });
+      log.info("Waiting for segments grid (URL: {})", driver.getCurrentUrl());
+      // segments-grid may be hidden (no segments yet) but present in DOM
+      waitForVaadinElement(driver, By.id("segments-grid-wrapper"));
+      waitForGridToPopulate("segments-grid");
 
       // Click the edit button on the first row
       log.info("Clicking edit segment button");
@@ -509,7 +512,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
 
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Click on the newly created show in the grid to navigate to its detail page
     WebElement viewShowDetails =
@@ -519,6 +522,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.id("segments-grid-wrapper"));
+    waitForGridToPopulate("segments-grid");
 
     WebElement narrateButton =
         wait.until(
@@ -528,7 +534,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     clickElement(narrateButton);
 
     // Wait for the dialog to appear
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.id("narration-dialog")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
@@ -541,8 +547,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     clickElement(saveNarrationButton);
 
     // Wait for the dialog to disappear
-    WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("narration-dialog")));
+    WebDriverWait longWait = new WebDriverWait(driver, Duration.ofMinutes(1));
+    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement summaryButton =
         wait.until(

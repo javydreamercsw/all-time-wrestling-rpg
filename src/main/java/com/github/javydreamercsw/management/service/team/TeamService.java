@@ -261,7 +261,7 @@ public class TeamService {
     }
 
     Team savedTeam = teamRepository.saveAndFlush(team);
-    log.info("Updated team: {}", savedTeam.getName());
+    log.debug("Updated team: {}", savedTeam.getName());
 
     return Optional.of(savedTeam);
   }

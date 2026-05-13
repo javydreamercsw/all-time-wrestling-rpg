@@ -488,7 +488,7 @@ public class CampaignEncounterService {
     state.setVictoryPoints(state.getVictoryPoints() + finalVp);
     stateRepository.save(state);
 
-    log.info(
+    log.debug(
         "Recorded choice for wrestler {}: {}. Alignment shift: {}",
         campaign.getWrestler().getName(),
         choice.getText(),

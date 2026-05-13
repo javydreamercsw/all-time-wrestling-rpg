@@ -170,6 +170,11 @@ public class FactionListView extends VerticalLayout {
         .setSortable(true);
     factionGrid.addColumn(Faction::getMemberCount).setHeader("Members").setSortable(true);
     factionGrid.addColumn(Faction::getAlignment).setHeader("Alignment").setSortable(true);
+    factionGrid
+        .addColumn(Faction::getAffinity)
+        .setHeader("Synergy")
+        .setSortable(true)
+        .setTooltipGenerator(f -> "Faction affinity/synergy score built through shared victories");
 
     factionGrid.addComponentColumn(
         faction -> {

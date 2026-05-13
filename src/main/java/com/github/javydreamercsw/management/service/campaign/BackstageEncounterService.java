@@ -89,7 +89,7 @@ public class BackstageEncounterService {
     // 20% chance to trigger
     boolean triggered = random.nextInt(100) < 20;
     if (triggered) {
-      log.info("Triggering random backstage encounter for campaign: {}", campaign.getId());
+      log.debug("Triggering random backstage encounter for campaign: {}", campaign.getId());
       updateLastEncounterDate(state);
     }
     return triggered;
@@ -272,7 +272,7 @@ public class BackstageEncounterService {
 
     stateRepository.save(state);
 
-    log.info(
+    log.debug(
         "Recorded backstage choice for {}: {}. Alignment shift: {}, Momentum bonus: {}",
         campaign.getWrestler().getName(),
         choice.getText(),

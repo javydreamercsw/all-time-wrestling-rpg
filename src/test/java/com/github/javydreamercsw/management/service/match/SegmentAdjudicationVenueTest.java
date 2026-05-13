@@ -101,7 +101,6 @@ class SegmentAdjudicationVenueTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
-            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
