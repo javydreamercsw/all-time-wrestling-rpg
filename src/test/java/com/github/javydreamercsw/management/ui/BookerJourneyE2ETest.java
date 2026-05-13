@@ -547,7 +547,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     clickElement(saveNarrationButton);
 
     // Wait for the dialog to disappear
-    WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(60));
+    WebDriverWait longWait = new WebDriverWait(driver, Duration.ofMinutes(1));
     longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     WebElement summaryButton =
