@@ -167,12 +167,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     contextArea.setWidthFull();
     contextArea.setHeight("200px");
     contextArea.setReadOnly(true);
+    contextArea.setId("show-planning-context-area");
 
     proposeSegmentsButton = new Button("AI Propose Segments", e -> proposeSegments());
     proposeSegmentsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     proposeSegmentsButton.setEnabled(false);
+    proposeSegmentsButton.setId("propose-segments-button");
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
+    proposedSegmentsGrid.setId("proposed-segments-grid");
     proposedSegmentsGrid.addColumn(ProposedSegment::getType).setHeader("Type").setResizable(true);
     Grid.Column<ProposedSegment> summaryColumn =
         proposedSegmentsGrid
@@ -255,6 +258,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     approveButton = new Button("Approve & Create Segments", e -> approvePlanning());
     approveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
     approveButton.setEnabled(false);
+    approveButton.setId("approve-segments-button");
 
     templateImage = new Image();
     templateImage.setHeight("150px");
@@ -362,7 +366,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   @Override
   public void setParameter(final BeforeEvent event, final Long parameter) {
     if (parameter != null) {
-      showService.getShowById(parameter).ifPresent(showComboBox::setValue);
+      showService
+          .getShowById(parameter)
+          .ifPresent(
+              show -> {
+                showComboBox.setValue(show);
+                loadContext();
+              });
     }
   }
 }

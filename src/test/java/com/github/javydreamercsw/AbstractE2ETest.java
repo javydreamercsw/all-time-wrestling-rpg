@@ -821,12 +821,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     new WebDriverWait(driver, timeout)
         .until(
             d -> {
-              WebElement grid = d.findElement(By.id(gridId));
-              Object result =
-                  ((JavascriptExecutor) d)
-                      .executeScript(
-                          "return !!(arguments[0].loading || arguments[0].pending);", grid);
-              return result == null || !(Boolean) result;
+              try {
+                WebElement grid = d.findElement(By.id(gridId));
+                Object result =
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !!(arguments[0].loading || arguments[0].pending);", grid);
+                return result == null || !(Boolean) result;
+              } catch (org.openqa.selenium.NoSuchElementException e) {
+                return false;
+              }
             });
   }
 
@@ -896,6 +900,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     waitForVaadinElement(driver, By.id("logout-button"));
     WebElement logoutButton = driver.findElement(By.id("logout-button"));
     clickElement(logoutButton);
+    // Vaadin logout may not redirect in E2E mode (anyRequest().permitAll()), so navigate directly
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+    lastLoggedInUser = null;
   }
 
   protected void clearField(@NonNull final WebElement field) {

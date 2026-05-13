@@ -625,6 +625,7 @@ public class WrestlerService {
     return awardFans(wrestlerId, universeId, -cost).isPresent();
   }
 
+  @Transactional(readOnly = true)
   public List<WrestlerDTO> findAllAsDTO(@NonNull final Long universeId) {
     return findAll().stream().map(w -> toDTO(w, universeId)).toList();
   }
@@ -636,6 +637,7 @@ public class WrestlerService {
    * @param universeId The universe ID
    * @return Optional DTO
    */
+  @Transactional(readOnly = true)
   public Optional<WrestlerDTO> findByIdAsDTO(
       @NonNull final Long id, @NonNull final Long universeId) {
     return wrestlerRepository.findById(id).map(w -> toDTO(w, universeId));
@@ -648,6 +650,7 @@ public class WrestlerService {
    * @param universeId The universe ID
    * @return List of DTOs
    */
+  @Transactional(readOnly = true)
   public List<WrestlerDTO> findAllBySegment(
       @NonNull final com.github.javydreamercsw.management.domain.show.segment.Segment segment,
       @NonNull final Long universeId) {

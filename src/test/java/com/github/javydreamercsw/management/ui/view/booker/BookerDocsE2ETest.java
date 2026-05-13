@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class BookerDocsE2ETest extends AbstractE2ETest {
@@ -84,21 +85,21 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now().plusDays(7));
     show.setDescription("Planning Documentation Show");
     show.setType(weekly);
+    show.setUniverse(defaultUniverse);
     show = showRepository.save(show);
 
-    // 3. Navigate to Show Planning
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-planning");
+    // 3. Navigate to Show Planning with the show ID (view requires a parameter)
+    driver.get(
+        "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + show.getId());
     waitForVaadinClientToLoad();
 
-    // 4. Select the show
-    selectFromVaadinComboBox("select-show-combo-box", "Show to Plan");
+    // 4. Wait for context to auto-load
+    WebElement contextArea = waitForVaadinElement(driver, By.id("show-planning-context-area"));
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(d -> !contextArea.getText().isEmpty());
 
-    // 5. Load Context
-    clickButtonByText("Load Context");
-    waitForText("Show Planning Context");
-
-    // 6. Propose Segments (Triggers Mock AI)
-    clickButtonByText("Propose Segments");
+    // 5. Propose Segments (Triggers Mock AI)
+    clickElement(waitForVaadinElement(driver, By.id("propose-segments-button")));
 
     // Wait for the grid to be populated (Mock AI has 1-3s delay)
     waitForVaadinElement(driver, By.id("proposed-segments-grid"));
@@ -139,7 +140,6 @@ class BookerDocsE2ETest extends AbstractE2ETest {
   @Test
   void testCaptureMatchNarrationView() {
     // 1. Setup participants
-    Account admin = accountRepository.findByUsername("admin").get();
     Wrestler w1 =
         wrestlerRepository
             .findByName("Roster Wrestler 1")
