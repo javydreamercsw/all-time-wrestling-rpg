@@ -65,7 +65,7 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
 
   private Campaign campaign;
 
-    @BeforeEach
+  @BeforeEach
   public void setUp() {
     // Populate Reference Data
     if (showTypeRepository.count() == 0) {
@@ -101,7 +101,8 @@ public class CampaignFinaleChapterTest extends AbstractMockUserIntegrationTest {
     account.setRoles(Collections.singleton(bookerRole));
     account = accountRepository.save(account);
 
-    Wrestler player = Wrestler.builder().name("Finale Player").startingHealth(100).startingStamina(100).build();
+    Wrestler player =
+        Wrestler.builder().name("Finale Player").startingHealth(100).startingStamina(100).build();
     player.setAccount(account);
     player = wrestlerRepository.save(player);
 
