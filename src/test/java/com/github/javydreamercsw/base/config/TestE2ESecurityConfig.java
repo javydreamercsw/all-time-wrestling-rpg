@@ -16,33 +16,37 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import static org.mockito.Mockito.mock;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
-import com.vaadin.flow.spring.security.AuthenticationContext;
-import lombok.extern.slf4j.Slf4j;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Security configuration for E2E tests. Uses Vaadin's SpringSecurityAutoConfiguration to wire
- * VaadinAwareSecurityContextHolderStrategy, but provides a simplified filter chain.
- */
 @TestConfiguration
 @EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Profile("e2e")
-@Import({InboxEventTypeConfig.class})
-@Slf4j
+@Import(InboxEventTypeConfig.class)
 public class TestE2ESecurityConfig {
 
   @Bean
@@ -63,8 +67,8 @@ public class TestE2ESecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain testSecurityFilterChain(
-      final HttpSecurity http, final AuthenticationContext authenticationContext) throws Exception {
+  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
+    // Configure public access to static resources FIRST
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers(
@@ -78,53 +82,47 @@ public class TestE2ESecurityConfig {
                     "/VAADIN/**",
                     "/line-awesome/**",
                     "/frontend/**")
-                .permitAll()
-                .anyRequest()
                 .permitAll());
 
-    http.csrf(AbstractHttpConfigurer::disable);
+    // Apply Vaadin security configurer AFTER specific matchers
+    // This will add its own matchers and then anyRequest().authenticated()
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+
+    // Basic form login for the "login" action used in LoginView
+    http.formLogin(form -> form.loginPage("/login").permitAll());
+
+    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
-    http.formLogin(
-        form ->
-            form.loginPage("/login")
-                .loginProcessingUrl("/login")
-                .successHandler(
-                    (req, res, auth) -> {
-                      log.debug(
-                          "[E2E] Login SUCCESS: user={}, authorities={}",
-                          auth.getName(),
-                          auth.getAuthorities());
-                      res.sendRedirect("/atw-rpg/");
-                    })
-                .failureHandler(
-                    (req, res, ex) -> {
-                      log.error(
-                          "[E2E] Login FAILED: user={}, reason={}",
-                          req.getParameter("username"),
-                          ex.getMessage());
-                      res.sendRedirect("/atw-rpg/login?error");
-                    })
-                .permitAll());
-
-    http.logout(
-        logout ->
-            logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .permitAll());
-
-    // Build first, then wire AuthenticationContext — applySecurityConfiguration calls
-    // http.getObject() which requires the chain to already be built.
-    SecurityFilterChain chain = http.build();
-    AuthenticationContext.applySecurityConfiguration(http, authenticationContext);
-    return chain;
+    return http.build();
   }
 
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(10);
+  }
+
+  @Bean
+  public ClientRegistrationRepository clientRegistrationRepository() {
+    return new InMemoryClientRegistrationRepository(
+        ClientRegistration.withRegistrationId("atw-rpg")
+            .clientId("test-client")
+            .clientSecret("test-secret")
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+            .scope("openid")
+            .authorizationUri("http://localhost/oauth2/authorize")
+            .tokenUri("http://localhost/oauth2/token")
+            .userInfoUri("http://localhost/userinfo")
+            .userNameAttributeName("sub")
+            .clientName("ATW-RPG")
+            .build());
+  }
+
+  @Bean
+  public OAuth2AuthorizedClientRepository authorizedClientRepository() {
+    return new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(
+        mock(org.springframework.security.oauth2.client.OAuth2AuthorizedClientService.class));
   }
 }
