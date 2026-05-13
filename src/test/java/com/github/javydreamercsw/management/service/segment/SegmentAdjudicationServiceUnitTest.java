@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
@@ -78,6 +79,7 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private LocationService locationService;
   @Mock private ArenaService arenaService;
+  @Mock private UniverseContextService universeContextService;
 
   private SegmentAdjudicationService adjudicationService;
 
@@ -105,6 +107,7 @@ class SegmentAdjudicationServiceUnitTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             random);
 
     wrestler1 = Wrestler.builder().build();

@@ -36,6 +36,8 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -45,6 +47,10 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +63,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -87,18 +94,13 @@ class SegmentAdjudicationServiceTest {
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
   @Mock private WrestlerRelationshipService relationshipService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
-
-  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
-  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
-  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
-  @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
+  @Mock private RetirementService retirementService;
+  @Mock private GameSettingService gameSettingService;
+  @Mock private LocationService locationService;
+  @Mock private ArenaService arenaService;
+  @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private UniverseContextService universeContextService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
   @Mock private Universe universe;
@@ -123,6 +125,7 @@ class SegmentAdjudicationServiceTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             random);
     org.springframework.test.util.ReflectionTestUtils.setField(
         segmentAdjudicationService, "eventPublisher", eventPublisher);

@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -80,6 +81,7 @@ public class SegmentAdjudicationService {
   private final GameSettingService gameSettingService;
   private final WrestlerRelationshipService relationshipService;
   private final WrestlerStatusService wrestlerStatusService;
+  private final UniverseContextService universeContextService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
@@ -101,7 +103,8 @@ public class SegmentAdjudicationService {
       final RetirementService retirementService,
       final GameSettingService gameSettingService,
       final WrestlerRelationshipService relationshipService,
-      final WrestlerStatusService wrestlerStatusService) {
+      final WrestlerStatusService wrestlerStatusService,
+      final UniverseContextService universeContextService) {
     this(
         rivalryService,
         wrestlerService,
@@ -118,6 +121,7 @@ public class SegmentAdjudicationService {
         gameSettingService,
         relationshipService,
         wrestlerStatusService,
+        universeContextService,
         new Random());
   }
 
@@ -135,10 +139,9 @@ public class SegmentAdjudicationService {
       final RingsideAiService ringsideAiService,
       final RetirementService retirementService,
       final GameSettingService gameSettingService,
-      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-          wrestlerStatusService,
+      final WrestlerRelationshipService relationshipService,
+      final WrestlerStatusService wrestlerStatusService,
+      final UniverseContextService universeContextService,
       final Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
@@ -155,6 +158,7 @@ public class SegmentAdjudicationService {
     this.gameSettingService = gameSettingService;
     this.relationshipService = relationshipService;
     this.wrestlerStatusService = wrestlerStatusService;
+    this.universeContextService = universeContextService;
     this.random = random;
   }
 
@@ -461,8 +465,8 @@ public class SegmentAdjudicationService {
       final double difficultyMultiplier) {
     int matchQualityBonus = calculateMatchQualityBonus(segment, roll);
 
-    Long universeId =
-        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+    Long universeId = universeContextService.getCurrentUniverseId();
+    ;
 
     // Deduct fan fees for challengers in title segments
     if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
@@ -748,7 +752,7 @@ public class SegmentAdjudicationService {
       baseLoss += 1;
     }
 
-    Long universeId = segment.getShow().getUniverse().getId();
+    Long universeId = universeContextService.getCurrentUniverseId();
 
     for (Wrestler wrestler : segment.getWrestlers()) {
       int current = wrestler.getDefaultState().get().getPhysicalCondition();

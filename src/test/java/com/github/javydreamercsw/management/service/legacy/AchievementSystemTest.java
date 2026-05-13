@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
@@ -91,6 +92,7 @@ class AchievementSystemTest {
   @Mock private RetirementService retirementService;
   @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private UniverseContextService universeContextService;
 
   @BeforeEach
   public void setUp() {
@@ -119,6 +121,7 @@ class AchievementSystemTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             new Random());
 
     account = new Account();

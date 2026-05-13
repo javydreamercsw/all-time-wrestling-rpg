@@ -72,7 +72,6 @@ class BackstageActionViewTest {
     BackstageActionView view =
         new BackstageActionView(
             backstageActionService,
-            campaignRepository,
             wrestlerRepository,
             wrestlerService,
             injuryService,
@@ -110,7 +109,6 @@ class BackstageActionViewTest {
     BackstageActionView view =
         new BackstageActionView(
             backstageActionService,
-            campaignRepository,
             wrestlerRepository,
             wrestlerService,
             injuryService,
