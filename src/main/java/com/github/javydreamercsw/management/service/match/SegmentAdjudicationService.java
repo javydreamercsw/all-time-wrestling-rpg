@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -26,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -73,6 +76,7 @@ public class SegmentAdjudicationService {
   private final TitleService titleService;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final LeagueRosterRepository leagueRosterRepository;
+  private final LeagueRepository leagueRepository;
   private final LegacyService legacyService;
   private final FactionService factionService;
   private final RingsideActionService ringsideActionService;
@@ -95,6 +99,7 @@ public class SegmentAdjudicationService {
       final MultiWrestlerFeudService feudService,
       final TitleService titleService,
       final MatchFulfillmentRepository matchFulfillmentRepository,
+      final LeagueRepository leagueRepository,
       final LeagueRosterRepository leagueRosterRepository,
       final LegacyService legacyService,
       final FactionService factionService,
@@ -112,6 +117,7 @@ public class SegmentAdjudicationService {
         feudService,
         titleService,
         matchFulfillmentRepository,
+        leagueRepository,
         leagueRosterRepository,
         legacyService,
         factionService,
@@ -132,6 +138,7 @@ public class SegmentAdjudicationService {
       final MultiWrestlerFeudService feudService,
       final TitleService titleService,
       final MatchFulfillmentRepository matchFulfillmentRepository,
+      final LeagueRepository leagueRepository,
       final LeagueRosterRepository leagueRosterRepository,
       final LegacyService legacyService,
       final FactionService factionService,
@@ -149,6 +156,7 @@ public class SegmentAdjudicationService {
     this.feudService = feudService;
     this.titleService = titleService;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
+    this.leagueRepository = leagueRepository;
     this.leagueRosterRepository = leagueRosterRepository;
     this.legacyService = legacyService;
     this.factionService = factionService;
@@ -187,40 +195,43 @@ public class SegmentAdjudicationService {
     losers.removeAll(winners);
 
     // Update League Stats if applicable
-    if (segment.getShow().getLeague() != null) {
-      com.github.javydreamercsw.management.domain.league.League league =
-          segment.getShow().getLeague();
-      if (winners.isEmpty()) {
-        // Draw
-        for (Wrestler w : segment.getWrestlers()) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setDraws(roster.getDraws() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
-        }
-      } else {
-        for (Wrestler w : winners) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setWins(roster.getWins() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
-        }
-        for (Wrestler w : losers) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setLosses(roster.getLosses() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
-        }
-      }
+    if (segment.getShow().getUniverse() != null) {
+      leagueRepository
+          .findByUniverse(segment.getShow().getUniverse())
+          .ifPresent(
+              league -> {
+                if (winners.isEmpty()) {
+                  // Draw
+                  for (Wrestler w : segment.getWrestlers()) {
+                    leagueRosterRepository
+                        .findByLeagueAndWrestler(league, w)
+                        .ifPresent(
+                            roster -> {
+                              roster.setDraws(roster.getDraws() + 1);
+                              leagueRosterRepository.save(roster);
+                            });
+                  }
+                } else {
+                  for (Wrestler w : winners) {
+                    leagueRosterRepository
+                        .findByLeagueAndWrestler(league, w)
+                        .ifPresent(
+                            roster -> {
+                              roster.setWins(roster.getWins() + 1);
+                              leagueRosterRepository.save(roster);
+                            });
+                  }
+                  for (Wrestler w : losers) {
+                    leagueRosterRepository
+                        .findByLeagueAndWrestler(league, w)
+                        .ifPresent(
+                            roster -> {
+                              roster.setLosses(roster.getLosses() + 1);
+                              leagueRosterRepository.save(roster);
+                            });
+                  }
+                }
+              });
     }
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)
@@ -269,9 +280,17 @@ public class SegmentAdjudicationService {
     Map<Long, Integer> factionParticipants = new HashMap<>();
     Map<Long, Integer> factionWinners = new HashMap<>();
 
+    Long universeId =
+        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+
     for (Wrestler participant : segment.getWrestlers()) {
-      if (participant.getFaction() != null) {
-        Long factionId = participant.getFaction().getId();
+      Faction faction =
+          participant
+              .getState(universeId)
+              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+              .orElse(null);
+      if (faction != null) {
+        Long factionId = faction.getId();
         factionParticipants.put(factionId, factionParticipants.getOrDefault(factionId, 0) + 1);
         if (winners.contains(participant)) {
           factionWinners.put(factionId, factionWinners.getOrDefault(factionId, 0) + 1);
@@ -392,18 +411,12 @@ public class SegmentAdjudicationService {
     segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
 
     for (Wrestler participant : segment.getWrestlers()) {
-
       if (participant.getAccount() != null) {
-
         for (String baseKey : achievementKeys) {
-
           String keySuffix =
               baseKey.toUpperCase().replaceAll("[^A-Z0-9 ]", "").trim().replace(" ", "_");
-
           legacyService.unlockAchievement(participant.getAccount(), "PARTICIPATE_" + keySuffix);
-
           if (winners.contains(participant)) {
-
             legacyService.unlockAchievement(participant.getAccount(), "WIN_" + keySuffix);
           }
         }
@@ -755,12 +768,13 @@ public class SegmentAdjudicationService {
     Long universeId = universeContextService.getCurrentUniverseId();
 
     for (Wrestler wrestler : segment.getWrestlers()) {
-      int current = wrestler.getDefaultState().get().getPhysicalCondition();
-      wrestler.getDefaultState().get().setPhysicalCondition(Math.max(0, current - baseLoss));
+      WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+      int current = state.getPhysicalCondition();
+      state.setPhysicalCondition(Math.max(0, current - baseLoss));
       wrestlerService.save(wrestler);
       log.info(
-          "Applied {}% wear and tear to {}. New condition: {}%",
-          baseLoss, wrestler.getName(), wrestler.getDefaultState().get().getPhysicalCondition());
+          "Applied {}% wear and tear to {} in league {}. New condition: {}%",
+          baseLoss, wrestler.getName(), universeId, state.getPhysicalCondition());
 
       // Check for retirement
       retirementService.checkRetirement(wrestler, universeId);

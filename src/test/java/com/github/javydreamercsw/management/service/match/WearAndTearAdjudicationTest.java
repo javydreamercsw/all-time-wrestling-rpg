@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.match;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -74,11 +75,7 @@ class WearAndTearAdjudicationTest {
   @Mock private LeagueRepository leagueRepository;
   @Mock private RetirementService retirementService;
   @Mock private Universe universe;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
-
+  @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
@@ -102,6 +99,7 @@ class WearAndTearAdjudicationTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,

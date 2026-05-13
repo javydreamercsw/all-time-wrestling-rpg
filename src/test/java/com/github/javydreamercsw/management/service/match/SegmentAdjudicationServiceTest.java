@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -116,6 +117,7 @@ class SegmentAdjudicationServiceTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -204,8 +206,7 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void testAdjudicateChampionshipChange() {
-    com.github.javydreamercsw.management.domain.title.Title title =
-        mock(com.github.javydreamercsw.management.domain.title.Title.class);
+    Title title = mock(Title.class);
     when(segment.getIsTitleSegment()).thenReturn(true);
     when(segment.getTitles()).thenReturn(Set.of(title));
     Wrestler oldChamp = mock(Wrestler.class);
