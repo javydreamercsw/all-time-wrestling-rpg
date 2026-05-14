@@ -28,6 +28,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStorylineRepository;
+import com.github.javydreamercsw.management.domain.campaign.StorylineMilestoneRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -54,6 +56,8 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private CampaignStorylineRepository campaignStorylineRepository;
+  @Autowired private StorylineMilestoneRepository storylineMilestoneRepository;
   @Autowired private DataInitializer dataInitializer;
 
   private Wrestler player;
@@ -64,6 +68,8 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
+    storylineMilestoneRepository.deleteAllInBatch();
+    campaignStorylineRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
 
     dataInitializer.init();
@@ -71,7 +77,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     Account admin = accountRepository.findByUsername("admin").get();
 
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    player = wrestlers.isEmpty() ? null : wrestlers.get(0);
+    player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     if (player == null) {
       Wrestler w =
@@ -90,7 +96,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Test
   void testFightingChampionTrigger() {
     // 1. Give player a title
-    Title title = titleRepository.findAll().get(0);
+    Title title = titleRepository.findAll().getFirst();
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
     reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(player)));
@@ -141,7 +147,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     waitForText("Corporate Power Trip");
-    assertTrue(driver.getPageSource().contains("Corporate Power Trip"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Corporate Power Trip"));
   }
 
   private void waitForText(final String text) {
