@@ -953,7 +953,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
     }
 
-    // 2. Wait for the item to appear and click it via JS
+    // 2. Wait for the item to appear and click it via JS.
+    // Items live in the combo box's light DOM (slotted into the overlay), so scoping the
+    // querySelectorAll to the combo box element avoids matching items from other open combos.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     try {
       wait.until(
@@ -961,18 +963,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             return (Boolean)
                 ((JavascriptExecutor) d)
                     .executeScript(
-                        "const text = arguments[0];const items ="
-                            + " Array.from(document.querySelectorAll('vaadin-multi-select-combo-box-item,"
-                            + " vaadin-combo-box-item, vaadin-item'));const item = items.find(i =>"
-                            + " i.textContent.trim() === text ||"
-                            + " i.textContent.trim().includes(text));if (item) { item.click();"
-                            + " return true; }return false;",
+                        "const cb = arguments[0]; const text = arguments[1];"
+                            + " const items = Array.from(cb.querySelectorAll("
+                            + " 'vaadin-multi-select-combo-box-item, vaadin-combo-box-item,"
+                            + " vaadin-item'));"
+                            + " const item = items.find(i => i.offsetParent !== null"
+                            + " && (i.textContent.trim() === text"
+                            + " || i.textContent.trim().includes(text)));"
+                            + " if (item) { item.click(); return true; } return false;",
+                        comboBox,
                         itemText);
           });
 
-      // Give it a moment to register the selection
+      // Close the dropdown so it doesn't overlap subsequent interactions
+      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = false;", comboBox);
       try {
-        Thread.sleep(500);
+        Thread.sleep(300);
       } catch (InterruptedException ignored) {
       }
     } catch (Exception e) {
