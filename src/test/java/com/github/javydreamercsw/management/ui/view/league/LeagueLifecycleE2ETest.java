@@ -269,15 +269,15 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     selectFromVaadinComboBox("segment-type-combo-box", "One on One");
 
-    WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
-
     String p1WrestlerName = getPlayer1WrestlerName(league);
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, p1WrestlerName);
+    WebElement team1Combo = driver.findElement(By.id("add-team-combo-1"));
+    selectFromVaadinMultiSelectComboBox(team1Combo, p1WrestlerName);
 
     // Add another wrestler (can be admin's or anyone)
     // We need at least 2
     String adminWrestlerName = getAdminWrestlerName(league);
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, adminWrestlerName);
+    WebElement team2Combo = driver.findElement(By.id("add-team-combo-2"));
+    selectFromVaadinMultiSelectComboBox(team2Combo, adminWrestlerName);
 
     clickElement(By.id("add-segment-save-button"));
     waitForNotification("Segment added successfully!");
