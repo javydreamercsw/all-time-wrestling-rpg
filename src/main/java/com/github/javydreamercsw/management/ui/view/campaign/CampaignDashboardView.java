@@ -1123,6 +1123,7 @@ public class CampaignDashboardView extends VerticalLayout {
     debugContent.add(new Span("Match Simulation"), matchLayout);
 
     Details debugDetails = new Details("🛠️ Debug / Dev Tools", debugContent);
+    debugDetails.setId("debug-tools-panel");
     debugDetails.setOpened(false);
     debugDetails.addClassNames(
         LumoUtility.Width.FULL,

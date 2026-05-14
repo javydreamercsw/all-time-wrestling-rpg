@@ -19,10 +19,14 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,8 +34,11 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class CampaignTournamentE2ETest extends AbstractE2ETest {
+
+  @Autowired private TournamentService tournamentService;
 
   @BeforeEach
   public void setupTournamentData() {
@@ -45,17 +52,29 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
       showTypeRepository.saveAndFlush(st);
     }
 
-    // Create Tournament User
-    Account account = createTestAccount("tournamentuser", RoleName.PLAYER);
+    // Create Tournament User — password must match what testTournamentFullFlow uses to log in
+    Account account = createTestAccount("tournamentuser", getPassword(), RoleName.PLAYER);
     Wrestler playerWrestler = createTestWrestler("Tournament Player");
     playerWrestler.setAccount(account);
     wrestlerRepository.saveAndFlush(playerWrestler);
 
-    // Create Campaign
+    // Create opponents first (5 opponents -> 6 total -> Bracket size 8)
+    for (int i = 1; i < 5 + 1; i++) {
+      wrestlerRepository.save(
+          Wrestler.builder()
+              .name("Opponent " + i)
+              .startingHealth(100)
+              .startingStamina(100)
+              .build());
+    }
+
+    // Build state with chapterId in one save; a separate saveAndFlush on detached state inserts a
+    // dup.
+    campaignChapterService.loadChapters();
     Campaign campaign =
         Campaign.builder()
             .wrestler(playerWrestler)
-            .status(com.github.javydreamercsw.management.domain.campaign.CampaignStatus.ACTIVE)
+            .status(CampaignStatus.ACTIVE)
             .startedAt(java.time.LocalDateTime.now())
             .universe(defaultUniverse)
             .build();
@@ -66,32 +85,27 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
             .campaign(campaign)
             .victoryPoints(9)
             .currentGameDate(java.time.LocalDate.now())
+            .currentChapterId("tournament")
             .build();
     campaign.setState(state);
-    campaignRepository.saveAndFlush(campaign);
+    campaign = campaignRepository.saveAndFlush(campaign);
 
-    // Create opponents (5 opponents -> 6 total -> Bracket size 8)
-    for (int i = 1; i < 5 + 1; i++) {
-      wrestlerRepository.save(
-          Wrestler.builder()
-              .name("Opponent " + i)
-              .startingHealth(100)
-              .startingStamina(100)
-              .build());
-    }
+    wrestlerAlignmentRepository.save(
+        WrestlerAlignment.builder()
+            .wrestler(playerWrestler)
+            .campaign(campaign)
+            .alignmentType(AlignmentType.NEUTRAL)
+            .level(1)
+            .build());
 
-    // Chapter 1: The Tournament (Using Chapter 4 from All or Nothing)
-    campaignChapterService.loadChapters();
-    campaignService.advanceChapter(campaign); // Advance to Chapter 4
-    campaignService.advanceChapter(campaign);
-    campaignService.advanceChapter(campaign);
+    tournamentService.initializeTournament(campaign);
   }
 
   @Test
   void testTournamentFullFlow() {
-    // Login as tournament user
+    // Switch to the tournament user (account was created in setupTournamentData)
     logout();
-    login("tournamentuser", "admin123");
+    login("tournamentuser", getPassword());
 
     // Navigate to Campaign Dashboard
     driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
@@ -106,7 +120,13 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
       new WebDriverWait(driver, Duration.ofSeconds(30))
           .until(
               ExpectedConditions.textToBePresentInElementLocated(
-                  By.tagName("h4"), "Tournament Bracket"));
+                  By.tagName("h4"), "Tournament Bracket (Round " + round + ")"));
+
+      // Expand the debug tools panel so the sim buttons become visible
+      ((org.openqa.selenium.JavascriptExecutor) driver)
+          .executeScript(
+              "var el = document.getElementById('debug-tools-panel'); if(el) el.opened = true;");
+      waitForVaadinClientToLoad();
 
       if (round < expectedRounds) {
         // Simulate Winning the match

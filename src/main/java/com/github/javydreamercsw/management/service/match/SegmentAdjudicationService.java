@@ -178,6 +178,17 @@ public class SegmentAdjudicationService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public void adjudicateMatch(@NonNull final Segment segment, final double multiplier) {
+    adjudicateMatchInternal(segment, multiplier);
+  }
+
+  /** Called by CampaignService where the player security context cannot be elevated. */
+  @Transactional
+  public void adjudicateMatchForCampaign(@NonNull final Segment segment, final double multiplier) {
+    adjudicateMatchInternal(segment, multiplier);
+  }
+
+  @Transactional
+  private void adjudicateMatchInternal(@NonNull final Segment segment, final double multiplier) {
     // Check for league fulfillment
     matchFulfillmentRepository
         .findBySegment(segment)

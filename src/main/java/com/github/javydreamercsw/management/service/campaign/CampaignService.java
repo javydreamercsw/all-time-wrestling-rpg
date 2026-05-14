@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.service.campaign;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -298,7 +297,13 @@ public class CampaignService {
                         .findByName("One on One")
                         .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
 
-    Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
+    Segment newSegment = new Segment();
+    newSegment.setShow(show);
+    newSegment.setSegmentType(type);
+    newSegment.setSegmentDate(java.time.Instant.now());
+    newSegment.setIsTitleSegment(false);
+    newSegment.setTitles(new java.util.HashSet<>());
+    final Segment segment = segmentRepository.save(newSegment);
     segment.setNarration(narration);
 
     if ("fighting_champion".equals(chapter.getId())) {
@@ -513,13 +518,7 @@ public class CampaignService {
 
       final double finalMultiplier = multiplier;
       final Segment finalMatch = match;
-      // Apply rewards directly for Campaign
-      GeneralSecurityUtils.runAsAdmin(
-          (java.util.function.Supplier<Void>)
-              () -> {
-                adjudicationService.adjudicateMatch(finalMatch, finalMultiplier);
-                return null;
-              });
+      adjudicationService.adjudicateMatchForCampaign(finalMatch, finalMultiplier);
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segmentRepository.save(match);
 
@@ -758,16 +757,18 @@ public class CampaignService {
                             return showTypeRepository.save(st);
                           });
 
-              return showService.createShow(
-                  finalShowName,
-                  "Story matches for " + player.getName(),
-                  weekly.getId(),
-                  finalDate,
-                  season.getId(),
-                  finalTemplateId,
-                  null,
-                  null,
-                  null);
+              // Build directly to avoid ShowService's @PreAuthorize when called from player context
+              Show show = new Show();
+              show.setName(finalShowName);
+              show.setDescription("Story matches for " + player.getName());
+              show.setShowDate(finalDate);
+              show.setCreationDate(java.time.Instant.now());
+              show.setType(weekly);
+              show.setSeason(season);
+              if (finalTemplateId != null) {
+                showTemplateRepository.findById(finalTemplateId).ifPresent(show::setTemplate);
+              }
+              return showRepository.saveAndFlush(show);
             });
   }
 
