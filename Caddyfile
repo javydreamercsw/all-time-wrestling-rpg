@@ -1,0 +1,28 @@
+# Caddy reverse proxy for HTTPS access to the production app.
+# Run with: caddy run
+# First-time setup: caddy trust  (installs Caddy's local CA so browsers trust the cert)
+#
+# To trust the cert on a phone scanning a QR code:
+#   Export the CA: caddy trust --export > caddy-root.crt, then sideload it on the device.
+#   On Android: Settings > Security > Install certificate
+#   On iOS: Settings > General > VPN & Device Management, then trust it under Certificate Trust Settings
+
+{
+    local_certs
+}
+
+https://localhost:443 {
+    reverse_proxy localhost:8080 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+    }
+}
+
+https://192.168.4.47:443 {
+    reverse_proxy localhost:8080 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+    }
+}
