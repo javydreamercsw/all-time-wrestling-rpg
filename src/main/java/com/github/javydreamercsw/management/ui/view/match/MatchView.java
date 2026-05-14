@@ -55,6 +55,8 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.messages.MessageInput;
 import com.vaadin.flow.component.messages.MessageList;
 import com.vaadin.flow.component.messages.MessageListItem;
@@ -259,6 +261,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       matchType.setId("match-type");
       header.add(matchType);
     }
+    Button shareQrButton = new Button("Share QR Code", new Icon(VaadinIcon.QRCODE));
+    shareQrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    shareQrButton.setId("share-qr-button");
+    shareQrButton.addClickListener(e -> new QrCodeDialog(segment.getId()).open());
+    header.add(shareQrButton);
+
     add(header);
 
     // Navigation / Campaign context
