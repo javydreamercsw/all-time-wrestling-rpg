@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -145,6 +146,13 @@ class SegmentAdjudicationServiceUnitTest {
     org.mockito.Mockito.lenient()
         .when(matchFulfillmentRepository.findBySegment(any(Segment.class)))
         .thenReturn(Optional.empty());
+    org.mockito.Mockito.lenient()
+        .when(universeContextService.getCurrentUniverseId())
+        .thenReturn(1L);
+    WrestlerState defaultState = WrestlerState.builder().physicalCondition(100).build();
+    org.mockito.Mockito.lenient()
+        .when(wrestlerService.getOrCreateState(any(), any()))
+        .thenReturn(defaultState);
   }
 
   @Test
