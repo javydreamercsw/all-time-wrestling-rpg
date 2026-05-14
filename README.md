@@ -490,11 +490,11 @@ The **Share QR Code** feature generates a scannable QR code so players can open 
 2. **Update the `Caddyfile`** in the project root — replace `192.168.4.47` with your actual LAN IP if it has changed:
 	```
 	https://192.168.4.47:443 {
-	    reverse_proxy localhost:8080 {
-	        header_up X-Forwarded-Proto https
-	        header_up X-Forwarded-For {remote_host}
-	        header_up X-Forwarded-Host {host}
-	    }
+		reverse_proxy localhost:8080 {
+			header_up X-Forwarded-Proto https
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Host {host}
+		}
 	}
 	```
 
