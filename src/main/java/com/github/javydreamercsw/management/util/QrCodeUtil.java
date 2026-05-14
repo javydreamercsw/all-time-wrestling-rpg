@@ -26,12 +26,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import javax.imageio.ImageIO;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class QrCodeUtil {
 
-  private QrCodeUtil() {}
-
-  public static String toBase64Png(String content, int size) throws WriterException, IOException {
+  public static String toBase64Png(final String content, final int size) throws WriterException, IOException {
     QRCodeWriter writer = new QRCodeWriter();
     BitMatrix matrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size);
     BufferedImage image = MatrixToImageWriter.toBufferedImage(matrix);

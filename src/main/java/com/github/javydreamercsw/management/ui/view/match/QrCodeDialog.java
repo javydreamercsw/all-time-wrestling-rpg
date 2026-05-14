@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class QrCodeDialog extends Dialog {
 
-  public QrCodeDialog(Long matchId) {
+  public QrCodeDialog(final Long matchId) {
     setHeaderTitle("Share Match");
 
     String matchUrl = UrlUtil.getNetworkUrl() + "/match/" + matchId;
