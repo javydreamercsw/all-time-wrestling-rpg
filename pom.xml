@@ -1434,7 +1434,7 @@
                   <mainClass>com.github.javydreamercsw.Application</mainClass>
                   <destination>${project.build.directory}/dist</destination>
                   <javaOptions>
-                    <option>-Dspring.profiles.active=prod</option>
+                    <option>-Dspring.profiles.active=prod,h2</option>
                     <option>-Djava.awt.headless=false</option>
                     <option>-Datw.desktop.enabled=true</option>
                     <option>-Dserver.port=0</option>
