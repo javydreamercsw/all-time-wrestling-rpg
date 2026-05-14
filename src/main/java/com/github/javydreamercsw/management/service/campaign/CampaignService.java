@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.campaign;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -518,7 +519,14 @@ public class CampaignService {
 
       final double finalMultiplier = multiplier;
       final Segment finalMatch = match;
-      adjudicationService.adjudicateMatchForCampaign(finalMatch, finalMultiplier);
+      // Run as admin so all downstream @PreAuthorize guards pass (e.g. awardFans, save).
+      // runAsAdmin now updates the VaadinSession context so it works on WebSocket push threads.
+      GeneralSecurityUtils.runAsAdmin(
+          (java.util.function.Supplier<Void>)
+              () -> {
+                adjudicationService.adjudicateMatchForCampaign(finalMatch, finalMultiplier);
+                return null;
+              });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segmentRepository.save(match);
 
@@ -566,7 +574,14 @@ public class CampaignService {
 
       // Finals Phase (Tournament Bracket)
       Show currentShow = state.getCurrentMatch().getShow();
-      tournamentService.advanceTournament(campaign, won, currentShow);
+      final boolean finalWon = won;
+      final Show finalShow = currentShow;
+      GeneralSecurityUtils.runAsAdmin(
+          (java.util.function.Supplier<Void>)
+              () -> {
+                tournamentService.advanceTournament(campaign, finalWon, finalShow);
+                return null;
+              });
 
       if (!won) {
         log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
@@ -579,7 +594,12 @@ public class CampaignService {
           // (redundant check but safe)
           // For purely NPC rounds, 'won' param is ignored by advanceTournament logic for player
           // match
-          tournamentService.advanceTournament(campaign, false, currentShow);
+          GeneralSecurityUtils.runAsAdmin(
+              (java.util.function.Supplier<Void>)
+                  () -> {
+                    tournamentService.advanceTournament(campaign, false, currentShow);
+                    return null;
+                  });
           // Refresh state
           tournament = tournamentService.getTournamentState(campaign);
         }

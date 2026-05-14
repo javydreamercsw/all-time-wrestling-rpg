@@ -99,12 +99,13 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
             .build());
 
     tournamentService.initializeTournament(campaign);
+    // Logout from the default admin account.
+    logout();
   }
 
   @Test
   void testTournamentFullFlow() {
     // Switch to the tournament user (account was created in setupTournamentData)
-    logout();
     login("tournamentuser", getPassword());
 
     // Navigate to Campaign Dashboard
