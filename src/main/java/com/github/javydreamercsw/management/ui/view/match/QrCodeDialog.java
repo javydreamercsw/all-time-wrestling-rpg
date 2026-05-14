@@ -33,7 +33,7 @@ public class QrCodeDialog extends Dialog {
   public QrCodeDialog(Long matchId) {
     setHeaderTitle("Share Match");
 
-    String matchUrl = UrlUtil.getBaseUrl() + "/match/" + matchId;
+    String matchUrl = UrlUtil.getNetworkUrl() + "/match/" + matchId;
 
     VerticalLayout layout = new VerticalLayout();
     layout.setPadding(false);

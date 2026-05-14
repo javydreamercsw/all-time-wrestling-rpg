@@ -22,6 +22,7 @@ All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows 
 	- [Running the Application with Docker](#running-the-application-with-docker)
 - [Running with a Standalone Tomcat Server](#running-with-a-standalone-tomcat-server)
 - [Configuring Tomcat for HTTPS](#configuring-tomcat-for-https)
+- [HTTPS over LAN with Caddy (QR Code Sharing)](#https-over-lan-with-caddy-qr-code-sharing)
 - [Code Quality](#code-quality)
 - [Code Coverage](#code-coverage)
 - [Code Formatting](#code-formatting)
@@ -412,7 +413,12 @@ EOF
 	brew services restart tomcat
 	```
 
-The application will be accessible at `http://localhost:8080/atw-rpg` (assuming Tomcat is running on the default port 8080).
+	If you have set up the Caddy reverse proxy (see [HTTPS over LAN with Caddy](#https-over-lan-with-caddy-qr-code-sharing)), the `relink.sh` script starts Caddy automatically. To start both manually:
+	```bash
+	brew services restart tomcat && caddy start --config /opt/homebrew/etc/tomcat/Caddyfile
+	```
+
+The application will be accessible at `http://localhost:8080/atw-rpg` (or `https://<your-lan-ip>/atw-rpg` if Caddy is running).
 
 ### Configuring Tomcat for HTTPS
 
@@ -461,6 +467,63 @@ The application will now be accessible at `https://localhost:8443/atw-rpg`. Acce
 
 **Note on Browser Warnings:**
 When using a self-signed certificate, your browser will display a security warning. This is expected. You can safely bypass this warning for development by clicking "Advanced" and then "Proceed to localhost (unsafe)". For a public-facing production server, you should obtain a certificate from a trusted Certificate Authority (CA) like Let's Encrypt.
+
+### HTTPS over LAN with Caddy (QR Code Sharing)
+
+The **Share QR Code** feature generates a scannable QR code so players can open a match on their phones. For phones to reach the server, the app must be accessible via a LAN IP address over HTTPS. [Caddy](https://caddyserver.com) handles this with zero certificate management: it terminates HTTPS on port 443, proxies to Tomcat on port 8080, and forwards the real host/protocol via headers so the QR code URL is correct.
+
+> **Note:** Both the server and the scanning device must be on the same Wi-Fi network. Disable any work VPN on the server machine before sharing, as VPN interfaces can interfere with LAN routing.
+
+#### Prerequisites
+
+- [Caddy](https://caddyserver.com) installed (`brew install caddy` on macOS)
+- Tomcat already running on port 8080
+
+#### One-time setup
+
+1. **Find your LAN IP:**
+	```bash
+	ipconfig getifaddr en0
+	```
+	Note the IP (e.g. `192.168.4.47`).
+
+2. **Update the `Caddyfile`** in the project root — replace `192.168.4.47` with your actual LAN IP if it has changed:
+	```
+	https://192.168.4.47:443 {
+	    reverse_proxy localhost:8080 {
+	        header_up X-Forwarded-Proto https
+	        header_up X-Forwarded-For {remote_host}
+	        header_up X-Forwarded-Host {host}
+	    }
+	}
+	```
+
+3. **Install Caddy's local CA** so your Mac trusts the certificate:
+	```bash
+	caddy trust
+	```
+
+4. **Trust the cert on each phone** (one-time per device):
+
+	Export the CA certificate:
+	```bash
+	ls ~/Library/Application\ Support/Caddy/pki/authorities/local/
+	# root.crt is in that directory — AirDrop it to the phone
+	```
+
+	- **iOS:** Open the file → Install Profile → go to **Settings → General → VPN & Device Management** and trust it under *Certificate Trust Settings*.
+	- **Android:** **Settings → Security → Install certificate → CA Certificate**.
+
+#### Starting
+
+The `Caddyfile` is stored at `/opt/homebrew/etc/tomcat/Caddyfile` alongside the Tomcat config, so it survives upgrades. The `relink.sh` script starts Caddy automatically when Tomcat is restarted. To start it manually:
+```bash
+caddy start --config /opt/homebrew/etc/tomcat/Caddyfile
+```
+
+The app is then reachable at:
+- `https://localhost/atw-rpg` — from this machine
+- `https://<your-lan-ip>/atw-rpg` — from phones on the same network
 
 ### Code Quality
 
