@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import java.time.Duration;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -36,6 +37,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Slf4j
 public class CampaignTournamentE2ETest extends AbstractE2ETest {
 
   @Autowired private TournamentService tournamentService;
@@ -116,12 +118,12 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     int expectedRounds = 4;
 
     for (int round = 1; round < expectedRounds + 1; round++) {
-
-      // Wait for the bracket to update
+      log.info("Round {})", round);
+      // Wait for the bracket header with this round's text to appear in the DOM
+      String roundHeaderXpath =
+          "//h4[contains(text(), 'Tournament Bracket (Round " + round + ")')]";
       new WebDriverWait(driver, Duration.ofSeconds(30))
-          .until(
-              ExpectedConditions.textToBePresentInElementLocated(
-                  By.tagName("h4"), "Tournament Bracket (Round " + round + ")"));
+          .until(ExpectedConditions.presenceOfElementLocated(By.xpath(roundHeaderXpath)));
 
       // Expand the debug tools panel so the sim buttons become visible
       ((org.openqa.selenium.JavascriptExecutor) driver)

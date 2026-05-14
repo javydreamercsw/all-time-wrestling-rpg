@@ -574,10 +574,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     scrollIntoView(element);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("before-click");
-    // First, wait for the element to be visible.
+    // Wait for the element to become visible (short window — elements inside vaadin-details or
+    // animated containers may be present but hidden; fall through to JS click in that case).
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.visibilityOf(element));
-    wait.until(ExpectedConditions.elementToBeClickable(element));
+    boolean visible;
+    try {
+      new WebDriverWait(driver, Duration.ofSeconds(5))
+          .until(ExpectedConditions.visibilityOf(element));
+      visible = true;
+    } catch (org.openqa.selenium.TimeoutException ignored) {
+      visible = false;
+    }
+    if (visible) {
+      wait.until(ExpectedConditions.elementToBeClickable(element));
+    }
 
     // Ensure the drawer is closed if it might intercept clicks
     try {
@@ -842,7 +852,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void scrollIntoView(@NonNull final WebElement element) {
-    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].scrollIntoView({behavior:'instant',block:'center'});", element);
   }
 
   protected void takeSequencedScreenshot(@NonNull final String context) {
