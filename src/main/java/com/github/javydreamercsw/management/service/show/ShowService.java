@@ -305,7 +305,9 @@ public class ShowService {
 
     if (leagueId != null) {
       League league = leagueRepository.findById(leagueId).orElse(null);
-      if (league != null) show.setLeague(league);
+      if (league != null) {
+        show.setLeague(league);
+      }
     }
 
     if (commentaryTeamId != null) {
@@ -597,6 +599,11 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsByUniverse(@NonNull final Universe universe) {
     return showRepository.findByUniverse(universe);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Show> getShowsByLeague(@NonNull final League league) {
+    return showRepository.findByLeague(league);
   }
 
   /**

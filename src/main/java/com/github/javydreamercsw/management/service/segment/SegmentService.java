@@ -621,8 +621,15 @@ public class SegmentService {
   }
 
   private void checkAndNotifyLeagueMatch(final Segment segment) {
-    Show show = segment.getShow();
-    if (show == null) return;
+    if (segment.getShow() == null || segment.getShow().getId() == null) {
+      return;
+    }
+
+    // Reload show within this transaction to guarantee league is accessible
+    Show show = entityManager.find(Show.class, segment.getShow().getId());
+    if (show == null) {
+      return;
+    }
 
     League league = show.getLeague();
     if (league == null && show.getUniverse() != null) {

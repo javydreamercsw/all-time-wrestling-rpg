@@ -222,19 +222,21 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
         .sendKeys(showName);
 
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    WebElement showTypeComboBox = comboBoxes.get(0);
-    WebElement seasonComboBox = comboBoxes.get(1);
-    WebElement templateComboBox = comboBoxes.get(2);
-    WebElement leagueComboBox = comboBoxes.get(3);
+    selectFromVaadinComboBox("show-type", "Weekly");
 
-    selectFromVaadinComboBox(showTypeComboBox, "Weekly");
+    // Wait for template to become enabled after show-type is selected
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !arguments[0].disabled;",
+                            d.findElement(By.id("show-template"))));
 
-    wait.until(ignored -> templateComboBox.isEnabled());
-
-    selectFromVaadinComboBox(seasonComboBox, String.valueOf(Year.now().getValue()));
-    selectFromVaadinComboBox(templateComboBox, "Continuum");
-    selectFromVaadinComboBox(leagueComboBox, leagueName);
+    selectFromVaadinComboBox("season", String.valueOf(Year.now().getValue()));
+    selectFromVaadinComboBox("show-template", "Continuum");
+    selectFromVaadinComboBox("show-league", leagueName);
 
     driver
         .findElement(By.id("show-date"))
@@ -251,7 +253,9 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     List<Show> matchingShows = showService.findByName(showName);
     Assertions.assertEquals(1, matchingShows.size());
     Show show = matchingShows.getFirst();
-    Assertions.assertNotNull(show.getUniverse(), "Show universe should be set");
+    Assertions.assertNotNull(show.getLeague(), "Show league should be set");
+    Assertions.assertEquals(
+        leagueName, show.getLeague().getName(), "Show league name should match");
 
     // Click on the newly created show in the grid to navigate to its detail page
     log.info("Navigating to show detail page");

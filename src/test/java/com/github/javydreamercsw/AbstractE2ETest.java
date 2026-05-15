@@ -655,11 +655,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    // Set Vaadin's filter property to narrow the list, then open the dropdown
+    // Click the shadow-root input to trigger Vaadin's overlay lifecycle, then filter
     js.executeScript(
-        "arguments[0].filter = arguments[1]; arguments[0].opened = true;", comboBox, itemText);
+        """
+        const el = arguments[0];
+        const input = el.shadowRoot && el.shadowRoot.querySelector('input');
+        if (input) { input.focus(); input.click(); }
+        el.opened = true;
+        el.filter = arguments[1];
+        """,
+        comboBox,
+        itemText);
 
-    // Wait for a visible combo-box item whose text matches
+    // Wait for a visible combo-box item whose text matches.
+    // If no items appear, retry opening (handles lazy data providers or slow Vaadin push).
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement item =
         wait.until(
@@ -669,13 +678,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                       """
                       const items = Array.from(document.querySelectorAll(\
                       'vaadin-combo-box-item'));\
-                      return items.find(el => {\
+                      const visible = items.filter(el => {\
                         const r = el.getBoundingClientRect();\
-                        return r.width > 0 && r.height > 0\
-                          && (el.innerText || el.textContent).trim().includes(arguments[0]);\
-                      }) || null;\
+                        return r.width > 0 && r.height > 0;\
+                      });\
+                      if (visible.length === 0) {\
+                        const cb = arguments[1];\
+                        const inp = cb.shadowRoot && cb.shadowRoot.querySelector('input');\
+                        if (inp) { inp.click(); }\
+                        cb.opened = true;\
+                      }\
+                      return visible.find(\
+                        el => (el.innerText || el.textContent).trim().includes(arguments[0])\
+                      ) || null;\
                       """,
-                      itemText);
+                      itemText,
+                      comboBox);
               return found instanceof WebElement ? (WebElement) found : null;
             });
 
@@ -825,13 +843,67 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       @NonNull final String rowText,
       @NonNull final By buttonLocator) {
     WebElement grid = driver.findElement(By.id(gridId));
-    List<WebElement> rows = grid.findElements(By.tagName("vaadin-grid-row"));
-    for (WebElement row : rows) {
-      if (row.getText().contains(rowText)) {
-        return row.findElement(buttonLocator);
-      }
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+
+    // Scroll grid to end so all rows are virtualized into the DOM
+    js.executeScript(
+        "arguments[0].scrollToIndex(arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+        grid);
+    waitForVaadinClientToLoad();
+
+    // Vaadin Grid uses slot-based rendering: vaadin-grid-cell-content elements in the light
+    // DOM carry a slot attribute like "vaadin-grid-cell-content-{rowIdx}-{colIdx}". Extract
+    // the row prefix from the matching cell and then check all sibling cells (same row) for
+    // the target button — no shadow DOM traversal needed.
+    String buttonCss = buttonLocator.toString().replace("By.cssSelector: ", "");
+    Object raw =
+        js.executeScript(
+            """
+            const grid = arguments[0];
+            const needle = arguments[1];
+            const css = arguments[2];
+            const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));
+            const matchCell = cells.find(c => (c.innerText || c.textContent || '').includes(needle));
+            if (!matchCell) return 'ERR:no_cell';
+            const slotName = matchCell.getAttribute('slot') || '';
+            // slot name format: vaadin-grid-cell-content-<rowIdx>-<colIdx>
+            const parts = slotName.split('-');
+            // last two parts are colIdx and rowIdx; row prefix is everything except last segment
+            if (parts.length < 2) return 'ERR:bad_slot:' + slotName;
+            const rowPrefix = parts.slice(0, parts.length - 1).join('-');
+            // Find all sibling cells in the same row
+            const rowCells = cells.filter(c => {
+              const s = c.getAttribute('slot') || '';
+              return s.startsWith(rowPrefix + '-');
+            });
+            for (const cell of rowCells) {
+              const found = cell.querySelector(css);
+              if (found) return found;
+            }
+            return 'ERR:no_button_in_row:' + rowPrefix + ':cells=' + rowCells.length;
+            """,
+            grid,
+            rowText,
+            buttonCss);
+
+    if (!(raw instanceof WebElement button)) {
+      Object debugResult =
+          js.executeScript(
+              """
+              const grid = arguments[0];
+              const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));
+              return cells.map(c => (c.getAttribute('slot') || '') + '|' + (c.innerText || c.textContent || '').substring(0, 60)).join('\\n');
+              """,
+              grid);
+      throw new RuntimeException(
+          "Could not find row with text: "
+              + rowText
+              + " | debug="
+              + raw
+              + " | cells="
+              + debugResult);
     }
-    throw new RuntimeException("Could not find row with text: " + rowText);
+    return button;
   }
 
   protected void waitForGridToSettle(
