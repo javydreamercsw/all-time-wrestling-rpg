@@ -136,8 +136,11 @@ public class DraftService {
     draft.setCurrentPickNumber(1);
     draft.setDirection(1); // Start going forward
 
-    // Set first player (sorted by ID)
-    players.sort(Comparator.comparing(m -> m.getMember().getId()));
+    // Commissioner-player picks first; within the same role, sort by account ID for stability
+    players.sort(
+        Comparator.<LeagueMembership>comparingInt(
+                m -> m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER ? 0 : 1)
+            .thenComparingLong(m -> m.getMember().getId()));
     draft.setCurrentTurnUser(players.get(0).getMember());
 
     Draft saved = draftRepository.save(draft);
