@@ -221,15 +221,16 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
             .findByWrestlerIdAndUniverseId(loser.getId(), defaultUniverse.getId())
             .get();
 
-    // Winner fan gain: (2d6 + 3) * 1000 + matchQualityBonus
-    // Min: (2+3)*1000 + 0 = 5000. Max: (12+3)*1000 + 10000 = 25000
+    // Winner fan gain: ((2d6 + 3) * 1000 + matchQualityBonus) * moraleMultiplier
+    // moraleMultiplier = 1.0 + morale/500 (default morale=100 → 1.2x)
+    // Min: (2+3)*1000 = 5000. Max: ((12+3)*1000 + 10000) * 1.2 = 30000
     org.assertj.core.api.Assertions.assertThat(winnerState.getFans())
-        .isBetween(initialFans + 5_000, initialFans + 25_000);
+        .isBetween(initialFans + 5_000, initialFans + 30_000);
 
-    // Loser fan gain: (1d6 - 4) * 1000 + matchQualityBonus
-    // Min: (1-4)*1000 + 0 = -3000. Max: (6-4)*1000 + 10000 = 12000
+    // Loser fan gain: ((1d6 - 4) * 1000 + matchQualityBonus) * moraleMultiplier (only if > 0)
+    // Min: (1-4)*1000 = -3000. Max: ((6-4)*1000 + 10000) * 1.2 = 14400
     org.assertj.core.api.Assertions.assertThat(loserState.getFans())
-        .isBetween(initialFans - 3_000, initialFans + 12_000);
+        .isBetween(initialFans - 3_000, initialFans + 14_400);
 
     assertEquals(0, winnerState.getBumps());
     assertEquals(1, loserState.getBumps());
