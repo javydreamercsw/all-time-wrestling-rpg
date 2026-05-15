@@ -23,6 +23,8 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
@@ -96,8 +98,10 @@ public class ShowListView extends Main {
 
   private final ComboBox<Season> newSeason;
   private final ComboBox<ShowTemplate> newTemplate;
+  private final ComboBox<League> newLeague;
   private final ComboBox<Universe> newUniverse;
   private final ComboBox<Arena> newArena;
+  private final LeagueRepository leagueRepository;
 
   private Dialog editDialog;
   private TextField editName;
@@ -129,6 +133,7 @@ public class ShowListView extends Main {
       @NonNull final ArenaService arenaService,
       @NonNull final ShowExportService exportService,
       @NonNull final NotificationService notificationService,
+      @NonNull final LeagueRepository leagueRepository,
       final Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -142,6 +147,7 @@ public class ShowListView extends Main {
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
+    this.leagueRepository = leagueRepository;
     this.clock =
         clock != null ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
 
@@ -181,6 +187,16 @@ public class ShowListView extends Main {
     newTemplate.setPlaceholder("Select a template (optional)");
     newTemplate.setId("show-template");
     newTemplate.setEnabled(false);
+
+    newLeague = new ComboBox<>("League");
+    newLeague.setItems(
+        leagueRepository.findAll().stream()
+            .sorted(Comparator.comparing(League::getName))
+            .collect(Collectors.toList()));
+    newLeague.setItemLabelGenerator(League::getName);
+    newLeague.setClearButtonVisible(true);
+    newLeague.setPlaceholder("Select a league (optional)");
+    newLeague.setId("show-league");
 
     newUniverse = new ComboBox<>("Universe");
     newUniverse.setItems(
@@ -233,6 +249,7 @@ public class ShowListView extends Main {
             newShowType,
             newSeason,
             newTemplate,
+            newLeague,
             newUniverse,
             newArena,
             newShowDate,
@@ -476,12 +493,14 @@ public class ShowListView extends Main {
         newSeason.getValue() != null ? newSeason.getValue().getId() : null,
         newTemplate.getValue() != null ? newTemplate.getValue().getId() : null,
         newUniverse.getValue() != null ? newUniverse.getValue().getId() : null,
+        newLeague.getValue() != null ? newLeague.getValue().getId() : null,
         null,
         newArena.getValue() != null ? newArena.getValue().getId() : null);
     name.clear();
     newShowType.clear();
     newSeason.clear();
     newTemplate.clear();
+    newLeague.clear();
     newUniverse.clear();
     newArena.clear();
     newShowDate.setValue(LocalDate.now(this.clock));

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -140,6 +141,8 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
 
     ShowExportService exportService = mock(ShowExportService.class);
     NotificationService notificationService = mock(NotificationService.class);
+    LeagueRepository leagueRepository = mock(LeagueRepository.class);
+    when(leagueRepository.findAll()).thenReturn(java.util.Collections.emptyList());
 
     ShowListView showListView =
         new ShowListView(
@@ -155,6 +158,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             arenaService,
             exportService,
             notificationService,
+            leagueRepository,
             clock);
     Grid<Show> grid = showListView.showGrid;
 

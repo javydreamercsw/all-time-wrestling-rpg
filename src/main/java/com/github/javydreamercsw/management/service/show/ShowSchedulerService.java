@@ -117,7 +117,8 @@ public class ShowSchedulerService {
                 actualDate,
                 season.getId(),
                 template.getId(),
-                null, // League ID - might need to be passed in
+                null, // universeId
+                null, // leagueId - might need to be passed in
                 template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null,
                 arenaService.assignArenaToShow(template.isPremiumLiveEvent()));
           }

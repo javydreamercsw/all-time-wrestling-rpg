@@ -263,6 +263,7 @@ public class ShowService {
       final Long seasonId,
       final Long templateId,
       final Long universeId,
+      @org.springframework.lang.Nullable final Long leagueId,
       final Long commentaryTeamId,
       final Long arenaId) {
 
@@ -300,6 +301,11 @@ public class ShowService {
               .findById(universeId)
               .orElseThrow(() -> new IllegalArgumentException("Universe not found: " + universeId));
       show.setUniverse(universe);
+    }
+
+    if (leagueId != null) {
+      League league = leagueRepository.findById(leagueId).orElse(null);
+      if (league != null) show.setLeague(league);
     }
 
     if (commentaryTeamId != null) {

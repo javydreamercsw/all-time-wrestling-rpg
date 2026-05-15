@@ -112,6 +112,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
+            any(),
             eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
@@ -121,6 +122,7 @@ class ShowSchedulerServiceTest {
             eq(LocalDate.of(2026, 2, 9)),
             eq(1L),
             eq(1L),
+            any(),
             any(),
             any(),
             eq(100L)); // Verify arenaId is passed
@@ -134,6 +136,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
+            any(),
             eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
@@ -145,6 +148,7 @@ class ShowSchedulerServiceTest {
             eq(1L),
             any(),
             any(),
+            any(),
             eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
@@ -154,6 +158,7 @@ class ShowSchedulerServiceTest {
             eq(LocalDate.of(2026, 3, 2)),
             eq(1L),
             eq(1L),
+            any(),
             any(),
             any(),
             eq(100L)); // Verify arenaId is passed
@@ -183,6 +188,7 @@ class ShowSchedulerServiceTest {
             eq(2L),
             any(),
             any(),
+            any(),
             eq(100L)); // Verify arenaId is passed
     verify(showService, atLeastOnce())
         .createShow(
@@ -192,6 +198,7 @@ class ShowSchedulerServiceTest {
             eq(LocalDate.of(2026, 2, 23)),
             eq(1L),
             eq(2L),
+            any(),
             any(),
             any(),
             eq(100L)); // Verify arenaId is passed
@@ -227,6 +234,6 @@ class ShowSchedulerServiceTest {
 
     // Verify no shows were created
     verify(showService, org.mockito.Mockito.never())
-        .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
   }
 }

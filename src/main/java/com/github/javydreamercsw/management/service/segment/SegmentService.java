@@ -622,15 +622,17 @@ public class SegmentService {
 
   private void checkAndNotifyLeagueMatch(final Segment segment) {
     Show show = segment.getShow();
-    if (show != null && show.getUniverse() != null) {
-      leagueRepository
-          .findByUniverse(show.getUniverse())
-          .ifPresent(
-              league -> {
-                for (Wrestler wrestler : segment.getWrestlers()) {
-                  notifyLeagueParticipant(segment, show, wrestler, league);
-                }
-              });
+    if (show == null) return;
+
+    League league = show.getLeague();
+    if (league == null && show.getUniverse() != null) {
+      league = leagueRepository.findByUniverse(show.getUniverse()).orElse(null);
+    }
+
+    if (league != null) {
+      for (Wrestler wrestler : segment.getWrestlers()) {
+        notifyLeagueParticipant(segment, show, wrestler, league);
+      }
     }
   }
 

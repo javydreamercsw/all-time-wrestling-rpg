@@ -37,6 +37,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -232,7 +233,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "league-history-tab");
   }
 
-  private void navigateTo(final String route) {
+  private void navigateTo(@NonNull final String route) {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
     waitForVaadinClientToLoad();
   }
@@ -291,19 +292,28 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("show-name"));
     driver.findElement(By.id("show-name")).sendKeys(showName);
 
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    comboBoxes.get(0).sendKeys("Weekly", Keys.TAB);
-    new WebDriverWait(driver, Duration.ofSeconds(10)).until(d -> comboBoxes.get(2).isEnabled());
-    comboBoxes.get(1).sendKeys(seasonName, Keys.TAB);
-    comboBoxes.get(2).sendKeys("Continuum", Keys.TAB);
-    comboBoxes.get(3).sendKeys(leagueName, Keys.TAB);
+    selectFromVaadinComboBox("show-type", "Weekly");
+
+    // Template is disabled until show-type is selected
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !arguments[0].disabled;",
+                            d.findElement(By.id("show-template"))));
+
+    selectFromVaadinComboBox("season", seasonName);
+    selectFromVaadinComboBox("show-template", "Continuum");
+    selectFromVaadinComboBox("show-league", leagueName);
 
     driver
         .findElement(By.id("show-date"))
         .sendKeys(
             gameSettingService
                 .getCurrentGameDate()
-                .format(DateTimeFormatter.ofPattern("M/d/yyyy"))); // Corrected to use game date
+                .format(DateTimeFormatter.ofPattern("M/d/yyyy")));
 
     clickElement(By.id("create-show-button"));
     waitForPageSourceToContain("Show created.");

@@ -549,6 +549,7 @@ public class ShowDetailView extends Main
     Button addSegmentBtn =
         new Button("Add Segment", new Icon(VaadinIcon.PLUS), e -> openAddSegmentDialog(show));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    addSegmentBtn.setId("add-segment-btn");
 
     header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentBtn));
 
