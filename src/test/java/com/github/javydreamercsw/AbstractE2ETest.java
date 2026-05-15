@@ -44,6 +44,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
@@ -69,6 +70,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestE2ESecurityConfig.class)
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
+@ExtendWith(UITestWatcher.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @Autowired protected ObjectMapper objectMapper;
