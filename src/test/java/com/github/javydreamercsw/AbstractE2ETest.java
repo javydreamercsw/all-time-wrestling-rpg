@@ -643,13 +643,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void clickElement(@NonNull final By locator) {
     int maxRetries = 3;
-    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    for (int attempt = 1; attempt < maxRetries + 1; attempt++) {
       try {
         WebElement element = waitForVaadinElement(driver, locator);
         clickElement(element);
         return;
       } catch (org.openqa.selenium.StaleElementReferenceException e) {
-        if (attempt == maxRetries) throw e;
+        if (attempt == maxRetries) {
+          throw e;
+        }
         log.warn(
             "StaleElementReferenceException in clickElement(By), retry {}/{}", attempt, maxRetries);
       }
