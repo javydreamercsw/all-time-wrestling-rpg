@@ -621,14 +621,18 @@ public class SegmentService {
   }
 
   private void checkAndNotifyLeagueMatch(final Segment segment) {
-    if (segment.getShow() == null || segment.getShow().getId() == null) {
+    if (segment.getShow() == null) {
       return;
     }
 
-    // Reload show within this transaction to guarantee league is accessible
-    Show show = entityManager.find(Show.class, segment.getShow().getId());
-    if (show == null) {
-      return;
+    // Reload show within this transaction to guarantee lazy associations are accessible;
+    // fall back to the in-memory instance when the show has not been persisted yet (e.g. tests).
+    Show show = segment.getShow();
+    if (show.getId() != null) {
+      Show reloaded = entityManager.find(Show.class, show.getId());
+      if (reloaded != null) {
+        show = reloaded;
+      }
     }
 
     League league = show.getLeague();
