@@ -36,12 +36,14 @@ public interface FactionRepository
   /** Find all factions for a specific universe. */
   List<Faction> findByUniverse(Universe universe);
 
-  /** Find all factions for a specific universe with leader and manager eagerly loaded. */
+  /** Find all factions for a specific universe with leader, manager, and members eagerly loaded. */
   @Query(
       """
       SELECT DISTINCT f FROM Faction f
       LEFT JOIN FETCH f.leader
       LEFT JOIN FETCH f.manager
+      LEFT JOIN FETCH f.members m
+      LEFT JOIN FETCH m.wrestler
       WHERE f.universe = :universe
       ORDER BY f.name
       """)
@@ -188,11 +190,12 @@ public interface FactionRepository
       """)
   List<Faction> findAllWithTeams();
 
-  /** Find faction by ID with members and leader eagerly loaded. */
+  /** Find faction by ID with members (and their wrestlers) and leader eagerly loaded. */
   @Query(
       """
       SELECT f FROM Faction f
       LEFT JOIN FETCH f.members m
+      LEFT JOIN FETCH m.wrestler
       LEFT JOIN FETCH f.leader
       WHERE f.id = :id
       """)

@@ -653,26 +653,34 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     scrollIntoView(comboBox);
     waitForVaadinClientToLoad();
 
-    // Open the dropdown via JS (shadow DOM prevents normal click from opening it)
-    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+    JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    // Wait for the overlay to appear in the DOM (may be attached to document body)
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d ->
-                (Boolean)
-                    ((JavascriptExecutor) d)
-                        .executeScript(
-                            """
-                            var el = arguments[0]; return el.opened === true\
-                             && !!el._overlayElement;\
-                            """,
-                            comboBox));
+    // Set Vaadin's filter property to narrow the list, then open the dropdown
+    js.executeScript(
+        "arguments[0].filter = arguments[1]; arguments[0].opened = true;", comboBox, itemText);
 
+    // Wait for a visible combo-box item whose text matches
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement item =
-        waitForVaadinElement(
-            driver, By.xpath("//vaadin-combo-box-item[contains(text(), '" + itemText + "')]"));
-    clickElement(item);
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      """
+                      const items = Array.from(document.querySelectorAll(\
+                      'vaadin-combo-box-item'));\
+                      return items.find(el => {\
+                        const r = el.getBoundingClientRect();\
+                        return r.width > 0 && r.height > 0\
+                          && (el.innerText || el.textContent).trim().includes(arguments[0]);\
+                      }) || null;\
+                      """,
+                      itemText);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
+
+    scrollIntoView(item);
+    item.click();
   }
 
   protected void selectFromVaadinMultiSelectComboBox(

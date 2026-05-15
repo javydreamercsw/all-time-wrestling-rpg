@@ -84,7 +84,11 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   void testEditFaction() {
     // Create a faction to edit
     Faction faction =
-        Faction.builder().name("Faction to Edit").description("Original Description").build();
+        Faction.builder()
+            .name("Faction to Edit")
+            .description("Original Description")
+            .universe(defaultUniverse)
+            .build();
     factionService.save(faction);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
@@ -130,7 +134,11 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   void testDeleteFaction() {
     // Create a faction to delete
     Faction faction =
-        Faction.builder().name("Faction to Delete").description("Description").build();
+        Faction.builder()
+            .name("Faction to Delete")
+            .description("Description")
+            .universe(defaultUniverse)
+            .build();
     factionService.save(faction);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
@@ -174,7 +182,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   @Test
   void testAddWrestlerToFaction() {
     // Create a faction and a wrestler
-    Faction faction = factionService.save(Faction.builder().name("Faction with Wrestler").build());
+    Faction faction =
+        factionService.save(
+            Faction.builder().name("Faction with Wrestler").universe(defaultUniverse).build());
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Faction Wrestler"));
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
@@ -208,7 +218,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("members-grid"), wrestler.getName()));
 
-    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()
@@ -222,7 +232,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   @Test
   void testRemoveWrestlerFromFaction() {
     // Create a faction and a wrestler, and add the wrestler to the faction
-    Faction faction = factionService.save(Faction.builder().name("Faction to Remove From").build());
+    Faction faction =
+        factionService.save(
+            Faction.builder().name("Faction to Remove From").universe(defaultUniverse).build());
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Wrestler to Remove"));
     Assertions.assertNotNull(faction.getId());
     Assertions.assertNotNull(wrestler.getId());
@@ -262,13 +274,13 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     long factionId = faction.getId();
     wait.until(
         d -> {
-          Optional<Faction> f = factionService.getFactionById(factionId);
+          Optional<Faction> f = factionService.getFactionByIdWithMembers(factionId);
           return f.isPresent()
               && f.get().getMembers().stream()
                   .noneMatch(m -> m.getWrestler() != null && wrestlerId == m.getWrestler().getId());
         });
 
-    Optional<Faction> updatedFaction = factionService.getFactionById(factionId);
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(factionId);
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()

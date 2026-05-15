@@ -160,6 +160,13 @@ public class FactionService {
     return factionRepository.findById(id);
   }
 
+  /** Get faction by ID with members eagerly loaded. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Faction> getFactionByIdWithMembers(final Long id) {
+    return factionRepository.findByIdWithMembers(id);
+  }
+
   /** Get faction by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -364,7 +371,7 @@ public class FactionService {
   @PreAuthorize("isAuthenticated()")
   public Optional<Faction> getFactionForWrestler(@NonNull final Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
-    return wrestlerOpt.flatMap(wrestler -> factionRepository.findActiveFactionByMember(wrestler));
+    return wrestlerOpt.flatMap(factionRepository::findActiveFactionByMember);
   }
 
   /** Get factions with active rivalries. */

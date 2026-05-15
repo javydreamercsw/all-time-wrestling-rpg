@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -105,6 +106,12 @@ public class Faction extends AbstractSyncableEntity<Long> {
   @Column(name = "affinity", nullable = false)
   @Builder.Default
   private int affinity = 0;
+
+  // Computed count of members — avoids lazy-init when rendering grid columns detached
+  @org.hibernate.annotations.Formula(
+      "(SELECT COUNT(*) FROM wrestler_state ws WHERE ws.faction_id = faction_id)")
+  @Getter(AccessLevel.NONE)
+  private Integer memberCountComputed;
 
   // Faction members
   @OneToMany(
@@ -180,7 +187,9 @@ public class Faction extends AbstractSyncableEntity<Long> {
 
   /** Get the number of active members. */
   public int getMemberCount() {
-    return members.size();
+    // Use the DB-computed count when available (avoids lazy-init on detached entities).
+    // Falls back to the in-memory collection for transient/builder-constructed instances.
+    return memberCountComputed != null ? memberCountComputed : members.size();
   }
 
   /** Check if this faction is a singles faction (1 member). */
