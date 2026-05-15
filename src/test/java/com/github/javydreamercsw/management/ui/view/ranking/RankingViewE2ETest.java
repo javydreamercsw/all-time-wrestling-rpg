@@ -156,13 +156,12 @@ class RankingViewE2ETest extends AbstractE2ETest {
     // Verify card presence
     assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='Legacy Champ']")));
 
-    // Verify match link
-    WebElement link =
-        waitForVaadinElement(driver, By.xpath("//a[contains(text(), 'Won at: Historic Event')]"));
-    assertNotNull(link);
+    // Verify match link is present, then click with a fresh lookup to avoid stale references
+    By linkLocator = By.xpath("//a[contains(text(), 'Won at: Historic Event')]");
+    assertNotNull(waitForVaadinElement(driver, linkLocator));
 
     // Click and verify navigation
-    clickElement(link);
+    clickElement(linkLocator);
     wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
   }
 }

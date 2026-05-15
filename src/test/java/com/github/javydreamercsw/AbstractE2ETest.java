@@ -586,6 +586,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       visible = true;
     } catch (org.openqa.selenium.TimeoutException ignored) {
       visible = false;
+    } catch (org.openqa.selenium.StaleElementReferenceException ignored) {
+      visible = false;
     }
     if (visible) {
       wait.until(ExpectedConditions.elementToBeClickable(element));
@@ -640,8 +642,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void clickElement(@NonNull final By locator) {
-    WebElement element = waitForVaadinElement(driver, locator);
-    clickElement(element);
+    int maxRetries = 3;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        WebElement element = waitForVaadinElement(driver, locator);
+        clickElement(element);
+        return;
+      } catch (org.openqa.selenium.StaleElementReferenceException e) {
+        if (attempt == maxRetries) throw e;
+        log.warn(
+            "StaleElementReferenceException in clickElement(By), retry {}/{}", attempt, maxRetries);
+      }
+    }
   }
 
   protected void selectFromVaadinComboBox(
@@ -934,9 +946,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void scrollIntoView(@NonNull final WebElement element) {
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].scrollIntoView({behavior:'instant',block:'center'});", element);
+    try {
+      ((JavascriptExecutor) driver)
+          .executeScript(
+              "arguments[0].scrollIntoView({behavior:'instant',block:'center'});", element);
+    } catch (org.openqa.selenium.StaleElementReferenceException e) {
+      log.warn("StaleElementReferenceException in scrollIntoView — element was re-rendered");
+    }
   }
 
   protected void takeSequencedScreenshot(@NonNull final String context) {
