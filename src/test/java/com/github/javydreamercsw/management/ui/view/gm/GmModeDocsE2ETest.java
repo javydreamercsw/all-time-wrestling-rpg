@@ -23,8 +23,7 @@ class GmModeDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureGmDashboard() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/gm-dashboard");
-    waitForVaadinClientToLoad();
+    navigateTo("gm-dashboard");
 
     documentFeature(
         "General Manager",
@@ -39,8 +38,7 @@ class GmModeDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureContractManagement() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/contracts");
-    waitForVaadinClientToLoad();
+    navigateTo("contracts");
 
     documentFeature(
         "General Manager",

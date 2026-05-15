@@ -236,7 +236,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     login("player", "player123");
 
     // 1. Navigate to Player Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -323,7 +323,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     wrestlerStatusRepository.save(status);
 
     login("player", "player123");
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(

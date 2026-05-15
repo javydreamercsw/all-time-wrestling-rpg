@@ -44,7 +44,7 @@ public class LoginE2ETest extends AbstractE2ETest {
   @Test
   public void testFailedLogin() {
     logout();
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+    navigateTo("login");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement loginFormHost =

@@ -37,7 +37,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -231,11 +230,6 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "League History",
         "Keep track of all shows and match results that occurred within the league.",
         "league-history-tab");
-  }
-
-  private void navigateTo(@NonNull final String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
   }
 
   private void ensurePlayerAccount() {

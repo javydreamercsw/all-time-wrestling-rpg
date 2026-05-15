@@ -29,8 +29,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAdminToolsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     // Default tab is Admin Tools
     waitForText("Recalculate Wrestler Tiers");
@@ -47,9 +46,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAiSettingsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     // Click the AI Settings tab more robustly
     WebElement tab =
@@ -99,9 +96,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
       injuryTypeRepository.save(kneeInjury);
     }
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/injury-types");
-
-    waitForVaadinClientToLoad();
+    navigateTo("injury-types");
 
     waitForText("Injury Types");
 
@@ -118,8 +113,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureWrestlerListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-list");
     waitForText("Wrestlers");
 
     documentFeature(
@@ -134,8 +128,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureBackstageActionsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-template-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-template-list");
     waitForText("Show Templates");
 
     documentFeature(
@@ -150,8 +143,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureExpansionManagementView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     WebElement tab =
         waitForVaadinElement(

@@ -109,8 +109,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.saveAndFlush(campaign.getState());
 
     // 3. Verify Dashboard shows correct chapter
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     waitForText("The Fighting Champion");
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("The Fighting Champion"));
@@ -124,8 +123,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.saveAndFlush(campaign.getState());
 
     // 3. Verify Dashboard shows correct chapter
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     waitForText("Gang Warfare");
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Gang Warfare"));
@@ -143,8 +141,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.saveAndFlush(state);
 
     // 3. Verify Dashboard shows correct chapter
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     waitForText("Corporate Power Trip");
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Corporate Power Trip"));

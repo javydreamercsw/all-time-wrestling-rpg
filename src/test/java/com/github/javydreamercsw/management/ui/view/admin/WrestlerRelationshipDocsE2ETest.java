@@ -29,8 +29,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAdminRelationshipsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     WebElement tab =
         waitForVaadinElement(
@@ -61,8 +60,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
             .findByName("Johnny All Time")
             .orElseThrow(() -> new RuntimeException("Johnny All Time not found"));
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-list");
 
     // Use the action menu to navigate to profile
     WebElement actionMenu =

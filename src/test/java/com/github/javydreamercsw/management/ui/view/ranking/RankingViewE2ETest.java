@@ -138,7 +138,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
     titleRepository.saveAndFlush(title);
 
     // When
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
+    navigateTo("championship-rankings");
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

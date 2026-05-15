@@ -39,8 +39,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFaction() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
@@ -91,8 +90,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             .build();
     factionService.save(faction);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
@@ -141,8 +139,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             .build();
     factionService.save(faction);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     long initialSize = factionService.count();
@@ -187,8 +184,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             Faction.builder().name("Faction with Wrestler").universe(defaultUniverse).build());
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Faction Wrestler"));
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     waitForVaadinToLoad(driver);
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     WebElement membersButton = driver.findElement(By.id("members-" + faction.getId()));
@@ -240,8 +236,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(wrestler.getId());
     factionService.addMemberToFaction(faction.getId(), wrestler.getId());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for the vaadin-grid to be visible

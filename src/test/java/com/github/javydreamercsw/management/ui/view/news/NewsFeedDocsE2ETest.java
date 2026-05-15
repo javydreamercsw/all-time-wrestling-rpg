@@ -24,8 +24,7 @@ class NewsFeedDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void testCaptureNewsAndSocialFeed() {
     // 1. Navigate to News & Rumors (Admin view has synthesis button)
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/news");
-    waitForVaadinClientToLoad();
+    navigateTo("news");
 
     // 2. Capture News Grid & Synthesis Button
     documentFeature(
@@ -39,8 +38,7 @@ class NewsFeedDocsE2ETest extends AbstractDocsE2ETest {
         "news-grid");
 
     // 3. Navigate to Social Feed
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/news/feed");
-    waitForVaadinClientToLoad();
+    navigateTo("news/feed");
 
     // 4. Capture Social Feed
     documentFeature(

@@ -43,7 +43,7 @@ public class AccountFormE2ETest extends AbstractE2ETest {
             username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
 
     // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+    navigateTo("account-list");
 
     // Wait for the grid to load
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));

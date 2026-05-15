@@ -123,8 +123,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
   @Test
   void testCaptureShowListView() {
     // Navigate to Show List (History)
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-list");
     waitForText("Shows");
 
     documentFeature(
@@ -196,8 +195,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     segment = segmentRepository.save(segment);
 
     // 3. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("match/" + segment.getId());
 
     // 4. Trigger AI Narration
     clickButtonByText("Generate Match Narration (AI)");
@@ -283,8 +281,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     segment = segmentRepository.save(segment);
 
     // 3. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("match/" + segment.getId());
 
     // 4. Trigger AI Narration
     clickButtonByText("Generate Match Narration (AI)");

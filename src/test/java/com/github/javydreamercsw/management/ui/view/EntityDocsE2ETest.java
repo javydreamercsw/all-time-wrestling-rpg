@@ -45,8 +45,7 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureFactionListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     waitForText("Factions");
 
     documentFeature(
@@ -61,8 +60,7 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureTeamsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/teams");
-    waitForVaadinClientToLoad();
+    navigateTo("teams");
     waitForText("Teams");
 
     documentFeature(
@@ -77,8 +75,7 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureTitleListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/title-list");
-    waitForVaadinClientToLoad();
+    navigateTo("title-list");
     waitForText("Titles");
 
     documentFeature(
@@ -93,8 +90,7 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureSeasonListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/season-list");
-    waitForVaadinClientToLoad();
+    navigateTo("season-list");
     waitForText("Seasons");
 
     documentFeature(

@@ -987,6 +987,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
+  protected void navigateTo(@NonNull final String route) {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
+    waitForVaadinClientToLoad();
+  }
+
   protected void logout() {
     driver.get("http://localhost:" + serverPort + getContextPath());
     waitForVaadinElement(driver, By.id("logout-button"));

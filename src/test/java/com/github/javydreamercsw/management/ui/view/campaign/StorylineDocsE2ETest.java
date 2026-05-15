@@ -86,8 +86,7 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
     campaignRepository.save(campaign);
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     // Find the journal details component and expand it

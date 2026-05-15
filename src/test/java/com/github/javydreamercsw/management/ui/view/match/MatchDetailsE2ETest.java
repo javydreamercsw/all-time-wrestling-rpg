@@ -123,8 +123,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     segment = segmentRepository.saveAndFlush(segment);
 
     // 2. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("match/" + segment.getId());
     takeSequencedScreenshot("match-view-injuries");
 
     // 3. Verify active injury and bumps are visible

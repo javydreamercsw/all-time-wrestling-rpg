@@ -54,8 +54,7 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureNpcListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-list");
-    waitForVaadinClientToLoad();
+    navigateTo("npc-list");
     waitForGridToPopulate("npc-grid");
 
     documentFeature(
@@ -70,8 +69,7 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureNpcProfileView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("npc-profile/" + npc.getId());
     waitForText("Docs Gen NPC");
 
     documentFeature(
@@ -86,8 +84,7 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureNpcImageGenerationDialog() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("npc-profile/" + npc.getId());
     waitForText("Docs Gen NPC");
 
     // Click Generate Image

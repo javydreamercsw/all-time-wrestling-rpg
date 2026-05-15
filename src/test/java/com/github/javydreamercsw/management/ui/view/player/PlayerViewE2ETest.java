@@ -236,7 +236,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     // Navigate to the PlayerView
     assertDoesNotThrow(
         () -> {
-          driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+          navigateTo("player");
           assertEquals(
               finalWrestler.getName(),
               waitForVaadinElement(driver, By.id("wrestler-name")).getText());
@@ -316,7 +316,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     login("player", "player123");
 
     // Navigate to the PlayerView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
 
     waitForVaadinToLoad(driver);
 
@@ -357,7 +357,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     wrestlerStateRepository.saveAndFlush(state);
 
     login("player", "player123");
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -410,7 +410,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     wrestlerStatusRepository.save(status);
 
     login("player", "player123");
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -481,7 +481,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     login("player", "player123");
 
     // Navigate to the PlayerView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(

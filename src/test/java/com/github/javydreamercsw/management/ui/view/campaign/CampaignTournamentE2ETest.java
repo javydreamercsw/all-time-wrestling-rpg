@@ -111,7 +111,7 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     login("tournamentuser", getPassword());
 
     // Navigate to Campaign Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
+    navigateTo("campaign");
     waitForAppToBeReady();
 
     // Verify Initial State: Round 1

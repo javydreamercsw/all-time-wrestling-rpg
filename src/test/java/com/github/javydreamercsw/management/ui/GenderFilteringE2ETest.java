@@ -129,7 +129,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testFemaleGenderFiltering() {
     try {
       // Navigate to the Wrestler Rankings view
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
+      navigateTo("wrestler-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
@@ -165,7 +165,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testMaleGenderFiltering() {
     try {
       // Navigate to the Wrestler Rankings view
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
+      navigateTo("wrestler-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
@@ -198,7 +198,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testChampionshipAndTierBoundaries() {
     try {
       // Navigate to the Championship Rankings view
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
+      navigateTo("championship-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 

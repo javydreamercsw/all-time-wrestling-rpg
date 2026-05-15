@@ -361,11 +361,6 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains(showName));
   }
 
-  private void navigateTo(final String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
-  }
-
   private void waitForTurnChangeToAdmin() {
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(

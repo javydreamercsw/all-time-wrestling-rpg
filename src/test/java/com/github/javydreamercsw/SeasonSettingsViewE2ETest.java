@@ -60,7 +60,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     boundary.setMinFans(originalMinFans + 100);
     tierBoundaryRepository.saveAndFlush(boundary);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     // Click the tab
     click("vaadin-tab", "Season Settings");
@@ -107,7 +107,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     state.setFans(tier.getMinFans() + 100);
     wrestlerStateRepository.saveAndFlush(state);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     // Click the tab
     click("vaadin-tab", "Season Settings");
@@ -145,7 +145,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     state.setFans(WrestlerTier.ICON.getMinFans());
     wrestlerStateRepository.saveAndFlush(state);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     // Click the tab
     click("vaadin-tab", "Season Settings");
@@ -184,7 +184,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     state.setFans(WrestlerTier.ICON.getMinFans());
     wrestlerStateRepository.saveAndFlush(state);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     // Click the tab
     click("vaadin-tab", "Season Settings");

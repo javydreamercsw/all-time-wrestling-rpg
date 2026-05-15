@@ -69,7 +69,7 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
 
   @Test
   void testImageGenerationFlow() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-list");
+    navigateTo("npc-list");
     waitForGridToPopulate("npc-grid");
 
     // 1. Navigate to Profile

@@ -65,7 +65,7 @@ public class ShowTemplateImageGenerationE2ETest extends AbstractE2ETest {
 
   @Test
   void testShowTemplateImageGenerationFlow() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-template-list");
+    navigateTo("show-template-list");
     waitForGridToPopulate("template-grid"); // AbstractE2ETest helper if customized, or use local
 
     // 1. Click "Generate Art" button in grid

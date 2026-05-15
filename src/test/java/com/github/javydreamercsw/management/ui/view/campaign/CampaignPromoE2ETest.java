@@ -111,8 +111,7 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
 
     // 1. Navigate directly to Promo View
     // URL pattern: campaign/promo
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/promo");
     takeSequencedScreenshot("promo-view-initial");
 
     // 2. Verify we are on the promo view

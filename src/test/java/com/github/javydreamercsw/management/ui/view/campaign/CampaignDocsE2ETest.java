@@ -61,8 +61,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Wait for full content including alignment track before capturing
     waitForText("Campaign: All or Nothing");
@@ -87,8 +86,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: The Beginning");
@@ -114,8 +112,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     tournamentService.initializeTournament(campaign);
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Tournament Bracket");
@@ -138,8 +135,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "tag_team");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Tag Team Redemption");
@@ -162,8 +158,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "betrayal");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Betrayal");
@@ -186,8 +181,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "fighting_champion");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: The Fighting Champion");
@@ -210,8 +204,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "gang_warfare");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Gang Warfare");
@@ -234,8 +227,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "corporate_power_trip");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Corporate Power Trip");
@@ -258,8 +250,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "fighting_champion"); // Any chapter works
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/actions");
 
     // 3. Verify & Capture
     waitForText("Backstage Area");
@@ -311,8 +302,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/promo");
 
     // 3. Verify & Capture
     // Mock AI gives "The crowd is buzzing" as opener
@@ -338,8 +328,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/promo");
 
     // 3. Perform Action (Click a hook)
     waitForPageSourceToContain("The crowd is buzzing");
