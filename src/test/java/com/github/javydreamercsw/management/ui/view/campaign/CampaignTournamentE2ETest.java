@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,7 +113,6 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
     navigateTo("campaign");
     waitForAppToBeReady();
 
-    // Verify Initial State: Round 1
     int expectedRounds = 4;
 
     for (int round = 1; round < expectedRounds + 1; round++) {
@@ -125,31 +123,33 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
       new WebDriverWait(driver, Duration.ofSeconds(30))
           .until(ExpectedConditions.presenceOfElementLocated(By.xpath(roundHeaderXpath)));
 
-      // Expand the debug tools panel so the sim buttons become visible
-      ((org.openqa.selenium.JavascriptExecutor) driver)
-          .executeScript(
-              "var el = document.getElementById('debug-tools-panel'); if(el) el.opened = true;");
+      // Advance tournament state via service (debug panel is unavailable in production mode)
+      Campaign campaign =
+          campaignRepository.findAll().stream()
+              .filter(
+                  c ->
+                      c.getWrestler() != null
+                          && c.getWrestler().getAccount() != null
+                          && "tournamentuser".equals(c.getWrestler().getAccount().getUsername()))
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("Tournament campaign not found"));
+
+      Wrestler opponent =
+          wrestlerRepository.findAll().stream()
+              .filter(w -> !w.equals(campaign.getWrestler()))
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("No opponent found"));
+
+      campaignService.createMatchForEncounter(
+          campaign, opponent.getName(), "Test Tournament Match", "One on One");
+      campaignService.processMatchResult(campaign, true);
+      campaignService.completePostMatch(campaign);
+
+      // Reload to reflect updated state
+      driver.navigate().refresh();
       waitForVaadinClientToLoad();
 
-      if (round < expectedRounds) {
-        // Simulate Winning the match
-        WebElement winButton =
-            waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Sim. Win (Face)']"));
-        clickElement(winButton);
-
-        // Verify "Advance to Next Day" button
-        WebElement advanceButton =
-            waitForVaadinElement(
-                driver, By.xpath("//vaadin-button[text()='Match Complete - Advance to Next Day']"));
-
-        // Click Advance (Clears match, advances day, refreshes UI)
-        clickElement(advanceButton);
-      } else {
-        // Final Round (Champion)
-        WebElement winButton =
-            waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Sim. Win (Face)']"));
-        clickElement(winButton);
-
+      if (round == expectedRounds) {
         // Verify Tournament Champion message
         new WebDriverWait(driver, Duration.ofSeconds(30))
             .until(

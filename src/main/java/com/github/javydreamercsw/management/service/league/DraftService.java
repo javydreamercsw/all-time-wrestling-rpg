@@ -189,11 +189,20 @@ public class DraftService {
     // Create Contract
     League league = draft.getLeague();
     int duration = league.getDurationWeeks() != null ? league.getDurationWeeks() : 12;
+    Long universeId = league.getUniverse() != null ? league.getUniverse().getId() : null;
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState salaryState =
+        wrestler
+            .getState(universeId)
+            .or(wrestler::getDefaultState)
+            .orElseGet(
+                () ->
+                    com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
+                        .build());
     com.github.javydreamercsw.management.domain.wrestler.WrestlerContract contract =
         com.github.javydreamercsw.management.domain.wrestler.WrestlerContract.builder()
             .wrestler(wrestler)
             .league(league)
-            .salaryPerShow(salaryCalculator.calculateWeeklySalary(wrestler))
+            .salaryPerShow(salaryCalculator.calculateWeeklySalary(wrestler, salaryState))
             .durationWeeks(duration)
             .isInitialDraft(true)
             .isActive(true)
