@@ -1571,7 +1571,6 @@
               <excludes>
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
-                <exclude>**/*DocsE2ETest.java</exclude>
               </excludes>
               <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
@@ -1808,7 +1807,68 @@
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
+              <excludes>
+                <exclude>**/*DocsE2ETest.java</exclude>
+              </excludes>
+              <rerunFailingTestsCount>2</rerunFailingTestsCount>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>docs-e2e</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <jacoco.docs-e2e.destFile>${project.build.directory}/jacoco-docs-e2e.exec</jacoco.docs-e2e.destFile>
+        <surefire.skip>true</surefire.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <destFile>${jacoco.docs-e2e.destFile}</destFile>
+                  <propertyName>failsafeArgLine</propertyName>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*DocsE2ETest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
+              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
+              <systemPropertyVariables>
+                <webdriver.chrome.whitelistedIps/>
+                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
+                <headless>${headless}</headless>
+              </systemPropertyVariables>
+              <rerunFailingTestsCount>2</rerunFailingTestsCount>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
