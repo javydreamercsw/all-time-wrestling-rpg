@@ -176,7 +176,10 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
         .addColumn(r -> r.getWrestler().getDefaultState().map(WrestlerState::getTier).orElse(null))
         .setHeader("Tier")
         .setSortable(true);
-    rosterGrid.addColumn(r -> r.getWrestler().getFans()).setHeader("Fans").setSortable(true);
+    rosterGrid
+        .addColumn(r -> r.getWrestler().getDefaultState().map(WrestlerState::getFans).orElse(0L))
+        .setHeader("Fans")
+        .setSortable(true);
 
     List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);
     rosterGrid.setItems(rosters);

@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -60,6 +61,7 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull final InjuryService injuryService,
       @NonNull final NpcService npcService,
       @NonNull final CampaignService campaignService,
+      @NonNull final WrestlerStateRepository wrestlerStateRepository,
       @NonNull final Runnable refreshProvider,
       final boolean isProfileView,
       @NonNull final SecurityUtils securityUtils,
@@ -109,6 +111,7 @@ public class WrestlerActionMenu extends MenuBar {
                       accountService,
                       npcService,
                       imageStorageService,
+                      wrestlerStateRepository,
                       wrestler,
                       refreshProvider,
                       securityUtils,

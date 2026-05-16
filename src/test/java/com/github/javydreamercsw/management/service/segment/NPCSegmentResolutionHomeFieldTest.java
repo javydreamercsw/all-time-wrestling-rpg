@@ -86,24 +86,11 @@ class NPCSegmentResolutionHomeFieldTest {
     when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(awayState);
 
     // Both wrestlers: equal fans and tier, no injuries, no bumps
+    // State-level data is provided via the WrestlerState mocks above (homeState/awayState)
     when(homeWrestler.getId()).thenReturn(1L);
-    when(homeWrestler.getFans()).thenReturn(10_000L);
-    when(homeWrestler.getFanWeight()).thenReturn(2000);
-    when(homeWrestler.getTier()).thenReturn(WrestlerTier.MIDCARDER);
-    when(homeWrestler.getBumps()).thenReturn(0);
-    when(homeWrestler.getInjuries()).thenReturn(Collections.emptyList());
-    when(homeWrestler.getFaction()).thenReturn(null);
-    when(homeWrestler.getManager()).thenReturn(null);
     when(homeWrestler.getHeritageTag()).thenReturn("Japan");
 
     when(awayWrestler.getId()).thenReturn(2L);
-    when(awayWrestler.getFans()).thenReturn(10_000L);
-    when(awayWrestler.getFanWeight()).thenReturn(2000);
-    when(awayWrestler.getTier()).thenReturn(WrestlerTier.MIDCARDER);
-    when(awayWrestler.getBumps()).thenReturn(0);
-    when(awayWrestler.getInjuries()).thenReturn(Collections.emptyList());
-    when(awayWrestler.getFaction()).thenReturn(null);
-    when(awayWrestler.getManager()).thenReturn(null);
     when(awayWrestler.getHeritageTag()).thenReturn("USA");
 
     when(location.getName()).thenReturn("Tokyo Dome");

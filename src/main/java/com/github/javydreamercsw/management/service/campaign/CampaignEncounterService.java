@@ -168,9 +168,11 @@ public class CampaignEncounterService {
           .append(")\n");
     }
 
-    if (campaign.getWrestler().getFaction() != null) {
-      sb.append("- Faction: ").append(campaign.getWrestler().getFaction().getName()).append("\n");
-    }
+    campaign
+        .getWrestler()
+        .getDefaultState()
+        .map(WrestlerState::getFaction)
+        .ifPresent(faction -> sb.append("- Faction: ").append(faction.getName()).append("\n"));
 
     sb.append("- Tournament Progress: ")
         .append(campaign.getState().getWins())

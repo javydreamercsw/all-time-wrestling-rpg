@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
@@ -521,32 +522,39 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 segment.getWrestlers().stream()
                     .filter(w -> w != null && !w.equals(playerWrestler))
                     .forEach(
-                        opponent -> {
-                          if (opponent.getManager() != null) {
-                            ringsideAiService
-                                .evaluateRingsideAction(segment, opponent.getManager(), opponent)
+                        opponent ->
+                            opponent
+                                .getDefaultState()
+                                .map(WrestlerState::getManager)
                                 .ifPresent(
-                                    npcResult -> {
-                                      Notification.show(
-                                              "Opponent Retaliation: " + npcResult.message())
-                                          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
-                                      if (npcResult.success()) {
-                                        String currentFeedback = feedbackArea.getValue();
-                                        feedbackArea.setValue(
-                                            (currentFeedback == null ? "" : currentFeedback)
-                                                + "\n"
-                                                + "Incorporate successful opponent ringside action:"
-                                                + " "
-                                                + npcResult.action().getName()
-                                                + ".");
-                                      }
-                                      // Update UI to reflect new awareness level
-                                      if (actionComponentWrapper[0] != null) {
-                                        actionComponentWrapper[0].updateUI();
-                                      }
-                                    });
-                          }
-                        });
+                                    manager ->
+                                        ringsideAiService
+                                            .evaluateRingsideAction(segment, manager, opponent)
+                                            .ifPresent(
+                                                npcResult -> {
+                                                  Notification.show(
+                                                          "Opponent Retaliation: "
+                                                              + npcResult.message())
+                                                      .addThemeVariants(
+                                                          NotificationVariant.LUMO_CONTRAST);
+                                                  if (npcResult.success()) {
+                                                    String currentFeedback =
+                                                        feedbackArea.getValue();
+                                                    feedbackArea.setValue(
+                                                        (currentFeedback == null
+                                                                ? ""
+                                                                : currentFeedback)
+                                                            + "\n"
+                                                            + "Incorporate successful opponent"
+                                                            + " ringside action: "
+                                                            + npcResult.action().getName()
+                                                            + ".");
+                                                  }
+                                                  // Update UI to reflect new awareness level
+                                                  if (actionComponentWrapper[0] != null) {
+                                                    actionComponentWrapper[0].updateUI();
+                                                  }
+                                                })));
               });
       sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
     }

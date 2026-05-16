@@ -959,16 +959,11 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                tierRecalculationService.recalculateTier(newWrestler);
+                // Tier recalculated after state is created in the post-save loop below
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
                 }
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    newWrestler.setManager(manager);
-                  }
-                }
+                // Manager is set on WrestlerState in the post-save loop below
                 if (w.getDrive() != null) {
                   newWrestler.setDrive(w.getDrive());
                 }

@@ -156,7 +156,10 @@ public class TitleFormDialog extends Dialog {
             var selected = champion.getValue();
             List<Wrestler> eligible =
                 wrestlerRepository.findAll().stream()
-                    .peek(tierRecalculationService::recalculateTier)
+                    .peek(
+                        w ->
+                            w.getDefaultState()
+                                .ifPresent(tierRecalculationService::recalculateTier))
                     .filter(
                         w ->
                             tempTitle.getGender() == null || w.getGender() == tempTitle.getGender())

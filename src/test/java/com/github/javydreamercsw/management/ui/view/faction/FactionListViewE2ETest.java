@@ -123,7 +123,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("faction-grid"), "Faction to Edit Edited"));
 
-    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     assertTrue(updatedFaction.isPresent());
     assertEquals("Faction to Edit Edited", updatedFaction.get().getName());
   }

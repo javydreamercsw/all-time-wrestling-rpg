@@ -18,17 +18,12 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
-import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import jakarta.persistence.*;
@@ -54,7 +49,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerData {
+public class Wrestler extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})
@@ -408,111 +403,5 @@ public class Wrestler extends AbstractSyncableEntity<Long> implements WrestlerDa
     return wrestlerStates.isEmpty()
         ? java.util.Optional.empty()
         : java.util.Optional.of(wrestlerStates.iterator().next());
-  }
-
-  @Override
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public @NonNull Long getFans() {
-    return getDefaultState().map(WrestlerState::getFans).orElse(0L);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public WrestlerTier getTier() {
-    return getDefaultState().map(WrestlerState::getTier).orElse(WrestlerTier.ROOKIE);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Integer getBumps() {
-    return getDefaultState().map(WrestlerState::getBumps).orElse(0);
-  }
-
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setBumps(final Integer bumps) {
-    getDefaultState().ifPresent(s -> s.setBumps(bumps));
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Faction getFaction() {
-    return getDefaultState().map(WrestlerState::getFaction).orElse(null);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Npc getManager() {
-    return getDefaultState().map(WrestlerState::getManager).orElse(null);
-  }
-
-  @Deprecated
-  @jakarta.persistence.Transient
-  public void setManager(final Npc manager) {
-    getDefaultState().ifPresent(s -> s.setManager(manager));
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Integer getPhysicalCondition() {
-    return getDefaultState().map(WrestlerState::getPhysicalCondition).orElse(100);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Integer getCurrentHealth() {
-    return getDefaultState().map(WrestlerState::getCurrentHealth).orElse(startingHealth);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Integer getMorale() {
-    return getDefaultState().map(WrestlerState::getMorale).orElse(100);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  @jakarta.persistence.Transient
-  public Integer getManagementStamina() {
-    return getDefaultState().map(WrestlerState::getManagementStamina).orElse(100);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  public List<Injury> getInjuries() {
-    return getDefaultState().map(WrestlerState::getInjuries).orElse(new ArrayList<>());
-  }
-
-  @JsonIgnore
-  @Deprecated
-  public List<Injury> getActiveInjuries() {
-    return getDefaultState().map(WrestlerState::getActiveInjuries).orElse(new ArrayList<>());
-  }
-
-  @JsonIgnore
-  @Deprecated
-  public Integer getTotalInjuryPenalty() {
-    return getDefaultState().map(WrestlerState::getTotalInjuryPenalty).orElse(0);
-  }
-
-  @JsonIgnore
-  @Deprecated
-  public Integer getCurrentHealthWithPenalties() {
-    return Math.max(1, getCurrentHealth() - getBumps() - getTotalInjuryPenalty());
-  }
-
-  @JsonIgnore
-  @Deprecated
-  public Integer getFanWeight() {
-    return Math.toIntExact(getFans() / 5);
   }
 }

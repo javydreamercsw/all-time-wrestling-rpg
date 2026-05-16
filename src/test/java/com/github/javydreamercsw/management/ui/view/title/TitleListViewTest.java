@@ -128,7 +128,13 @@ class TitleListViewTest extends AbstractViewTest {
               if (t.getTier() == null) {
                 return false;
               }
-              return w.getTier().ordinal() >= t.getTier().ordinal();
+              com.github.javydreamercsw.base.domain.wrestler.WrestlerTier wTier =
+                  w.getDefaultState()
+                      .map(
+                          com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                              ::getTier)
+                      .orElse(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ROOKIE);
+              return wTier.ordinal() >= t.getTier().ordinal();
             });
 
     // Mock SecurityUtils

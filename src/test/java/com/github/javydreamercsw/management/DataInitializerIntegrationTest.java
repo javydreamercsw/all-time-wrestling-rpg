@@ -82,8 +82,9 @@ class DataInitializerIntegrationTest extends AbstractIntegrationTest {
     assertEquals(existingWrestler.getStartingHealth(), updatedWrestler.getStartingHealth());
 
     // Check that the values not in the JSON file were preserved
-    assertEquals(existingWrestler.getFans(), updatedWrestler.getFans());
-    assertEquals(existingWrestler.getBumps(), updatedWrestler.getBumps());
+    WrestlerState updatedState = wrestlerService.getOrCreateState(updatedWrestler.getId(), 1L);
+    assertEquals(state.getFans(), updatedState.getFans());
+    assertEquals(state.getBumps(), updatedState.getBumps());
     assertEquals(existingWrestler.getImageUrl(), updatedWrestler.getImageUrl());
   }
 }

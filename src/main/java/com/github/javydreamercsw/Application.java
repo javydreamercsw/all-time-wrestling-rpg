@@ -21,7 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.DataInitializer;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import java.time.Clock;
 import java.util.List;
 import java.util.Random;
@@ -95,7 +95,7 @@ public class Application extends SpringBootServletInitializer {
   @Bean
   @Profile("test & !e2e")
   public CommandLineRunner recalculateRanking(
-      final RankingService rankingService, final WrestlerRepository wrestlerRepository) {
+      final RankingService rankingService, final WrestlerStateRepository wrestlerStateRepository) {
     return args -> {
       log.info("Recalculating tiers on startup...");
       if (SecurityContextHolder.getContext().getAuthentication() == null
@@ -104,7 +104,8 @@ public class Application extends SpringBootServletInitializer {
             "Skipping tier recalculation on startup: No authenticated user in SecurityContext.");
         return;
       }
-      rankingService.recalculateRanking(new java.util.ArrayList<>(wrestlerRepository.findAll()));
+      rankingService.recalculateRanking(
+          new java.util.ArrayList<>(wrestlerStateRepository.findAll()));
       log.info("Tier recalculation complete.");
     };
   }

@@ -24,6 +24,8 @@ import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -44,6 +46,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public class WrestlerDialog extends Dialog {
 
   private final WrestlerService wrestlerService;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final AccountService accountService;
   private final NpcService npcService;
   private final ImageStorageService imageStorageService;
@@ -57,6 +60,7 @@ public class WrestlerDialog extends Dialog {
       @NonNull @Qualifier("baseAccountService") final AccountService accountService,
       @NonNull final NpcService npcService,
       @NonNull final ImageStorageService imageStorageService,
+      @NonNull final WrestlerStateRepository wrestlerStateRepository,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final UniverseContextService universeContextService) {
@@ -65,6 +69,7 @@ public class WrestlerDialog extends Dialog {
         accountService,
         npcService,
         imageStorageService,
+        wrestlerStateRepository,
         createDefaultWrestler(),
         onSave,
         securityUtils,
@@ -92,6 +97,7 @@ public class WrestlerDialog extends Dialog {
       @NonNull @Qualifier("baseAccountService") final AccountService accountService,
       @NonNull final NpcService npcService,
       @NonNull final ImageStorageService imageStorageService,
+      @NonNull final WrestlerStateRepository wrestlerStateRepository,
       @NonNull final Wrestler wrestler,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils,
@@ -100,6 +106,7 @@ public class WrestlerDialog extends Dialog {
     this.accountService = accountService;
     this.npcService = npcService;
     this.imageStorageService = imageStorageService;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     this.universeContextService = universeContextService;
     this.wrestler = wrestler;
     this.securityUtils = securityUtils;
@@ -121,6 +128,11 @@ public class WrestlerDialog extends Dialog {
     managerField.setItemLabelGenerator(Npc::getName);
     managerField.setId("wrestler-dialog-manager-field");
     managerField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+    // Initialize manager from the wrestler's default WrestlerState (per-universe field)
+    this.wrestler
+        .getDefaultState()
+        .map(WrestlerState::getManager)
+        .ifPresent(managerField::setValue);
 
     IntegerField deckSizeField = new IntegerField("Deck Size");
     deckSizeField.setId("wrestler-dialog-deck-size-field");
@@ -212,7 +224,7 @@ public class WrestlerDialog extends Dialog {
 
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
-    binder.forField(managerField).bind(Wrestler::getManager, Wrestler::setManager);
+    // Manager is stored in WrestlerState (per-universe), not bound via binder
     binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
     binder.forField(deckSizeField).bind(Wrestler::getDeckSize, Wrestler::setDeckSize);
     binder
@@ -240,6 +252,15 @@ public class WrestlerDialog extends Dialog {
                       this.wrestlerService.save(this.wrestler); // Capture the saved wrestler
                   this.wrestler.setId(
                       savedWrestler.getId()); // Ensure local wrestler object has the ID
+
+                  // Save manager to the wrestler's default WrestlerState (per-universe field)
+                  this.wrestler
+                      .getDefaultState()
+                      .ifPresent(
+                          state -> {
+                            state.setManager(managerField.getValue());
+                            wrestlerStateRepository.save(state);
+                          });
 
                   // Handle account assignment if isPlayer is true and an account is selected
                   if (isPlayerField.getValue()) {

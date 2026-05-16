@@ -22,7 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ImageCleanupService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -60,7 +60,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class AdminView extends VerticalLayout {
 
   private final RankingService rankingService;
-  private final WrestlerRepository wrestlerRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final ImageCleanupService imageCleanupService;
   private final WrestlerService wrestlerService;
   private final UniverseContextService universeContextService;
@@ -69,13 +69,13 @@ public class AdminView extends VerticalLayout {
   @Autowired
   public AdminView(
       final RankingService rankingService,
-      final WrestlerRepository wrestlerRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
       final ImageCleanupService imageCleanupService,
       final WrestlerService wrestlerService,
       final UniverseContextService universeContextService,
       final NotificationService notificationService) {
     this.rankingService = rankingService;
-    this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     this.imageCleanupService = imageCleanupService;
     this.wrestlerService = wrestlerService;
     this.universeContextService = universeContextService;
@@ -211,7 +211,7 @@ public class AdminView extends VerticalLayout {
             } else {
               // Fallback if not TierRecalculationService
               rankingService.recalculateRanking(
-                  new java.util.ArrayList<>(wrestlerRepository.findAll()));
+                  new java.util.ArrayList<>(wrestlerStateRepository.findAll()));
             }
             notificationService.showSuccess("All wrestler tiers recalculated successfully!");
           } catch (Exception e) {

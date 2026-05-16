@@ -269,9 +269,12 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     manager.setNpcType("Manager");
     manager = npcService.save(manager);
 
-    Wrestler wrestlerWithManager = TestUtils.createWrestler("Managed Wrestler");
-    wrestlerWithManager.setManager(manager);
-    wrestlerWithManager = wrestlerRepository.saveAndFlush(wrestlerWithManager);
+    Wrestler wrestlerWithManager =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Managed Wrestler"));
+    WrestlerState managerState =
+        wrestlerService.getOrCreateState(wrestlerWithManager.getId(), defaultUniverse.getId());
+    managerState.setManager(manager);
+    wrestlerStateRepository.save(managerState);
 
     // When
     driver.get(
