@@ -792,7 +792,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void toggleVaadinCheckbox(@NonNull final By locator) {
     WebElement checkbox = waitForVaadinElement(driver, locator);
-    clickElement(checkbox);
+    scrollIntoView(checkbox);
+    waitForVaadinClientToLoad();
+    // Click the shadow DOM <input> directly; outer-element clicks don't always reach it in
+    // headless Chrome when the vaadin-checkbox shadow root intercepts the event.
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            """
+            const cb = arguments[0];
+            const input = cb.shadowRoot ? cb.shadowRoot.querySelector('input') : null;
+            if (input) { input.click(); } else { cb.click(); }
+            """,
+            checkbox);
   }
 
   protected void assertGridContains(@NonNull final String gridId, @NonNull final String text) {
