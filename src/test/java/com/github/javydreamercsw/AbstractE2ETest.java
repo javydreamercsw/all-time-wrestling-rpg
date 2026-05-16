@@ -578,6 +578,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     } catch (Exception ignored) {
       // Not all pages might have vaadin-app-layout
     }
+
+    // Wait for at least two animation frames so headless Chrome completes its CSS layout pass.
+    // In headless mode, Vite's async CSS injection may finish after Vaadin's Flow clients go idle,
+    // causing screenshots to be taken before utility classes (e.g. flex layout) take effect.
+    try {
+      ((JavascriptExecutor) driver)
+          .executeAsyncScript(
+              "const done = arguments[arguments.length - 1];"
+                  + "requestAnimationFrame(() => requestAnimationFrame(done));");
+    } catch (Exception ignored) {
+      // Non-critical; proceed even if rAF is unavailable
+    }
   }
 
   protected void toggleVaadinCheckbox(@NonNull By selector) {
