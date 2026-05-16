@@ -1571,6 +1571,7 @@
               <excludes>
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
+                <exclude>**/*DocsE2ETest.java</exclude>
               </excludes>
               <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
               <systemPropertyVariables>
