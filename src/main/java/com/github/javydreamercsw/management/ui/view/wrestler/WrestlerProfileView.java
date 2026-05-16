@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -115,6 +116,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       wrestlerStatusService;
   private final com.github.javydreamercsw.management.service.campaign.StatusCardService
       statusCardService;
+  private final WrestlerStateRepository wrestlerStateRepository;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -160,7 +162,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
           wrestlerStatusService,
       final com.github.javydreamercsw.management.service.campaign.StatusCardService
-          statusCardService) {
+          statusCardService,
+      final WrestlerStateRepository wrestlerStateRepository) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
@@ -178,6 +181,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.relationshipService = relationshipService;
     this.wrestlerStatusService = wrestlerStatusService;
     this.statusCardService = statusCardService;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
@@ -328,6 +332,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               injuryService,
               npcService,
               campaignService,
+              wrestlerStateRepository,
               this::updateView,
               true,
               securityUtils,

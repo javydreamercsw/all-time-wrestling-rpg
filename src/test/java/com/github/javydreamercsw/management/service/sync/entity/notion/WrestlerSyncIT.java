@@ -29,7 +29,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,7 +96,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
             TestUtils.createWrestler("W6", 10_000L))
         .forEach(wrestlerRepository::save);
 
-    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
+    tierRecalculationService.recalculateAllTiers();
   }
 
   @Test
@@ -125,7 +124,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     assertThat(wrestlerOpt).isPresent();
     Wrestler wrestler = wrestlerOpt.get();
     assertThat(wrestler.getName()).isEqualTo("Test Wrestler");
-    assertThat(wrestler.getFans()).isEqualTo(100_000L);
+    assertThat(wrestler.getFans(null)).isEqualTo(100_000L);
 
     // Test update
     syncSessionManager.clearSyncSession(); // Reset session to allow second sync
@@ -139,6 +138,6 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     assertThat(updatedWrestlerOpt).isPresent();
     Wrestler updatedWrestler = updatedWrestlerOpt.get();
     assertThat(updatedWrestler.getName()).isEqualTo("Test Wrestler Updated");
-    assertThat(updatedWrestler.getFans()).isEqualTo(120_000L);
+    assertThat(updatedWrestler.getFans(1L)).isEqualTo(120_000L);
   }
 }

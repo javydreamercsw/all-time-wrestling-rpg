@@ -123,7 +123,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("faction-grid"), "Faction to Edit Edited"));
 
-    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     assertTrue(updatedFaction.isPresent());
     assertEquals("Faction to Edit Edited", updatedFaction.get().getName());
   }
@@ -214,7 +214,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("members-grid"), wrestler.getName()));
 
-    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()
@@ -269,13 +269,13 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     long factionId = faction.getId();
     wait.until(
         d -> {
-          Optional<Faction> f = factionService.getFactionById(factionId);
+          Optional<Faction> f = factionService.getFactionByIdWithMembers(factionId);
           return f.isPresent()
               && f.get().getMembers().stream()
                   .noneMatch(m -> m.getWrestler() != null && wrestlerId == m.getWrestler().getId());
         });
 
-    Optional<Faction> updatedFaction = factionService.getFactionById(factionId);
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(factionId);
     assertTrue(updatedFaction.isPresent());
     assertTrue(
         updatedFaction.get().getMembers().stream()

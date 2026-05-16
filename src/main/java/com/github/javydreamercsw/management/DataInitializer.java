@@ -959,7 +959,7 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                tierRecalculationService.recalculateTier(newWrestler);
+                // Tier recalculated after state is created in the post-save loop below
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
                 }

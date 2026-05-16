@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -65,6 +66,7 @@ public class WrestlerListView extends Main {
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private Set<Long> injuredWrestlerIds;
   final Grid<Wrestler> wrestlerGrid;
 
@@ -77,7 +79,8 @@ public class WrestlerListView extends Main {
       @NonNull final SecurityUtils securityUtils,
       @NonNull final CampaignService campaignService,
       @NonNull final ImageStorageService imageStorageService,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final WrestlerStateRepository wrestlerStateRepository) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
@@ -86,6 +89,7 @@ public class WrestlerListView extends Main {
     this.securityUtils = securityUtils;
     this.imageStorageService = imageStorageService;
     this.universeContextService = universeContextService;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -192,6 +196,7 @@ public class WrestlerListView extends Main {
                       injuryService,
                       npcService,
                       campaignService,
+                      wrestlerStateRepository,
                       this::reloadGrid,
                       false,
                       securityUtils,
@@ -235,6 +240,7 @@ public class WrestlerListView extends Main {
                       accountService,
                       npcService,
                       imageStorageService,
+                      wrestlerStateRepository,
                       this::reloadGrid,
                       securityUtils,
                       universeContextService);
