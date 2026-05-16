@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +53,7 @@ class NPCSegmentControllerTest extends AbstractControllerTest {
   @MockitoBean private SegmentRepository segmentRepository;
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private ShowRepository showRepository;
+  @MockitoBean protected WrestlerRepository wrestlerRepository;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;

@@ -59,12 +59,8 @@ public class NPCSegmentResolutionService {
   @Autowired protected Random random;
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
-  @Autowired
-  private RingsideActionService
-      ringsideActionService;
-  @Autowired
-  private RingsideActionDataService
-      ringsideActionDataService;
+  @Autowired private RingsideActionService ringsideActionService;
+  @Autowired private RingsideActionDataService ringsideActionDataService;
 
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
