@@ -129,7 +129,10 @@ public class WrestlerDialog extends Dialog {
     managerField.setId("wrestler-dialog-manager-field");
     managerField.setReadOnly(!securityUtils.canEdit(this.wrestler));
     // Initialize manager from the wrestler's default WrestlerState (per-universe field)
-    this.wrestler.getDefaultState().map(WrestlerState::getManager).ifPresent(managerField::setValue);
+    this.wrestler
+        .getDefaultState()
+        .map(WrestlerState::getManager)
+        .ifPresent(managerField::setValue);
 
     IntegerField deckSizeField = new IntegerField("Deck Size");
     deckSizeField.setId("wrestler-dialog-deck-size-field");
@@ -251,10 +254,13 @@ public class WrestlerDialog extends Dialog {
                       savedWrestler.getId()); // Ensure local wrestler object has the ID
 
                   // Save manager to the wrestler's default WrestlerState (per-universe field)
-                  this.wrestler.getDefaultState().ifPresent(state -> {
-                    state.setManager(managerField.getValue());
-                    wrestlerStateRepository.save(state);
-                  });
+                  this.wrestler
+                      .getDefaultState()
+                      .ifPresent(
+                          state -> {
+                            state.setManager(managerField.getValue());
+                            wrestlerStateRepository.save(state);
+                          });
 
                   // Handle account assignment if isPlayer is true and an account is selected
                   if (isPlayerField.getValue()) {

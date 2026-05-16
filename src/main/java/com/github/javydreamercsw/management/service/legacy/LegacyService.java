@@ -64,7 +64,10 @@ public class LegacyService {
 
     List<Wrestler> wrestlers = wrestlerRepository.findByAccount(managedAccount);
 
-    long totalFans = wrestlers.stream().mapToLong(w -> w.getDefaultState().map(WrestlerState::getFans).orElse(0L)).sum();
+    long totalFans =
+        wrestlers.stream()
+            .mapToLong(w -> w.getDefaultState().map(WrestlerState::getFans).orElse(0L))
+            .sum();
     long currentTitlesHeld =
         wrestlers.stream()
             .flatMap(w -> w.getReigns().stream())
@@ -175,7 +178,10 @@ public class LegacyService {
 
                 // Recalculate score without re-triggering achievement checks
                 List<Wrestler> wrestlers = wrestlerRepository.findByAccount(managedAccount);
-                long totalFans = wrestlers.stream().mapToLong(w -> w.getDefaultState().map(WrestlerState::getFans).orElse(0L)).sum();
+                long totalFans =
+                    wrestlers.stream()
+                        .mapToLong(w -> w.getDefaultState().map(WrestlerState::getFans).orElse(0L))
+                        .sum();
                 long currentTitlesHeld =
                     wrestlers.stream()
                         .flatMap(w -> w.getReigns().stream())

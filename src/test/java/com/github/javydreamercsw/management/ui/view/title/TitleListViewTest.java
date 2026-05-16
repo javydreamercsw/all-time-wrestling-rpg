@@ -130,7 +130,9 @@ class TitleListViewTest extends AbstractViewTest {
               }
               com.github.javydreamercsw.base.domain.wrestler.WrestlerTier wTier =
                   w.getDefaultState()
-                      .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getTier)
+                      .map(
+                          com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                              ::getTier)
                       .orElse(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ROOKIE);
               return wTier.ordinal() >= t.getTier().ordinal();
             });
